@@ -33,6 +33,59 @@ CASTER_MAGNITUDE = 'canary:formula/caster-magnitude'
 
 class SpellUnresolved(Exception):
     pass
+
+
+def match_windup(probe):
+    """SW-1 exact template: returns (caster effect constant, delay ms, the one recorded Combat) or raises SpellUnresolved."""
+    cast = re.fullmatch(WINDUP_CAST, spell_scripts.cast_body(probe.source) or '')
+    source = re.sub(r'\s+', ' ', re.sub(r'--[^\n]*', '', probe.source))
+    function = cast and re.search(WINDUP_FUNCTION.format(name=re.escape(cast.group(2))), source)
+    combats = list(probe.rec['combats'].values())
+    if not function or len(combats) != 1 or not re.search(rf'\blocal {function.group(2)} = Combat\(\)', source):
+        raise SpellUnresolved('onCastSpell is not the windup template')
+    return cast.group(1), int(cast.group(3)), combats[0]
+
+
+def probe_top_item_first_tile(probe, lua_spell, empty):
+    """D18 `top_item_first_tile` (SW-2): the cast reads each tile of its floor once, columns west to east and each column
+    north to south; with a listed item as the top visible thing of exactly one tile, it removes exactly that item and
+    reads no further tile. Candidates are the probe world's engine item constants and the script's integer literals.
+    Returns (tiles in scan order, listed item ids, effect values sent) or raises SpellUnresolved."""
+    order = [tuple(e[1:4]) for e in empty if e[0] == 'tile']
+    if (not order or order != sorted(set(order)) or any(dz for _, _, dz in order)
+            or any(e[0] != 'tile' for e in empty)):
+        raise SpellUnresolved('the cast does not read each tile of its floor once, columns west to east, each north to south')
+    candidates = list(dict.fromkeys([*PROBE_ITEM_CONSTANTS.values(), *map(int, re.findall(r'\b\d{3,6}\b', probe.source))]))
+    listed, effects = [], set()
+    for item_id in candidates:
+        removed_on = 0
+        for index, tile in enumerate(order):
+            probe.world['items'] = probe.lua.table_from({'top': item_id})
+            probe.world['top_at'] = probe.lua.table_from(list(tile))
+            caster = probe.make('monster', 'caster', None, 0)
+            probe.creatures['caster'] = caster
+            ok, log = probe.run(lua_spell['onCastSpell'], caster, probe.lua.table())
+            probe.world['top_at'] = None
+            if not ok:
+                raise SpellUnresolved('onCastSpell needs more of the world than the stubs model')
+            if any(e[0] not in ('tile', 'removeItem', 'effect') for e in log):
+                raise SpellUnresolved('the cast does more than remove items')
+            removed = [tuple(e[1:5]) for e in log if e[0] == 'removeItem']
+            reads = [tuple(e[1:4]) for e in log if e[0] == 'tile']
+            if not removed and reads == order and not any(e[0] == 'effect' for e in log):
+                continue
+            if removed != [(*tile, item_id)] or reads != order[:index + 1]:
+                raise SpellUnresolved('item removal is not one top item on the first tile, then no further tile read')
+            removed_on += 1
+            effects |= {e[4] for e in log if e[0] == 'effect'}
+        if removed_on not in (0, len(order)):
+            raise SpellUnresolved(f'item {item_id} is removed on some tiles of the area only')
+        if removed_on:
+            listed.append(item_id)
+    probe.world['items'] = probe.lua.table()
+    if not listed:
+        raise SpellUnresolved('the cast removes none of the probed item ids')
+    return order, listed, effects
 BATCH_1 = ['mammals/rat', 'giants/cyclops', 'humanoids/orc_spearman', 'vermins/scorpion', 'humanoids/orc_shaman',
          'humans/necromancer', 'elementals/fire_elemental', 'dragons/dragon', 'undeads/ghost',
          'quests/killing_in_the_name_of/demodras']
@@ -92,7 +145,14 @@ RULES = {
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-09-27.json'
 BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
-PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile', 'area_damage_named_target')
+PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile', 'area_damage_named_target',
+                   'fear')
+# SW-1: a caster effect, then one Combat after a delay if the caster still exists (soulwars_fear.lua).
+WINDUP_CAST = r'creature:getPosition\(\):sendMagicEffect\((CONST_ME_\w+)\) addEvent\((\w+), (\d+), creature:getId\(\), var\) return true'
+WINDUP_FUNCTION = (r'local function {name}\((\w+), var\) local creature = Creature\(\1\) if not creature then return end '
+                   r'return (\w+):execute\(creature, var\) end')
+# src/utils/utils_definitions.hpp: engine item ids that spell scripts read as globals (probe world, SW-2).
+PROBE_ITEM_CONSTANTS = {'ITEM_MAGICWALL_SAFE': 10181, 'ITEM_MAGICWALL': 2128, 'ITEM_WILDGROWTH_SAFE': 10182, 'ITEM_WILDGROWTH': 2130}
 PATH_TRAIL = (r'local target = Creature\(var\.number\) if not target then return false end local creaturePos = creature:getPosition\(\) '
               r'local path = creaturePos:getPathTo\(target:getPosition\(\), 0, 0, true, (true|false), (\d+)\) if not path or #path == 0 '
               r'then return false end for i = 1, #path do creaturePos:getNextPosition\(path\[i\], 1\) '
@@ -1331,7 +1391,7 @@ class Converter:
         notes = [f'{where}: custom logic modelled from its probed behaviour against stub worlds (D18 pattern `{pattern}`, '
                  'spell_probes.py).']
         if key not in {a['identity']['key'] for a in deps['abilities']}:
-            probe = spell_probes.Probe(self.canary, info['script'], self.spell_scripts.areas, {})
+            probe = spell_probes.Probe(self.canary, info['script'], self.spell_scripts.areas, PROBE_ITEM_CONSTANTS)
             if probe.entries():
                 return None, 'the script rolls a value or touches the world while it loads (fixed per server start)'
             lua_spell = probe.spell(name)
@@ -1339,6 +1399,8 @@ class Converter:
             try:
                 if pattern == 'conditional_summon':
                     self.probe_summon(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                elif pattern == 'fear':
+                    self.windup(probe, key, geometry, range_tiles, scratch, asset, notes)
                 elif pattern == 'path_trail_missile':
                     self.path_trail(probe, key, geometry, range_tiles, scratch, asset, notes)
                 elif pattern == 'heal_allies_in_area':
@@ -1601,6 +1663,19 @@ class Converter:
                                                  'affects': affects}))
         return extra
 
+    def windup(self, probe, key, geometry, range_tiles, deps, asset, notes):
+        """SW-1 `Ability.windup`: the caster effect at the cast, then one Combat after N ms if the caster still exists."""
+        if not geometry['needs_target']:
+            raise SpellUnresolved('the windup spell needs no target')
+        effect, delay, combat = match_windup(probe)
+        combat = self.spell_scripts._combat(probe.lua, combat)
+        if combat['callbacks'] or combat['area']:
+            raise SpellUnresolved('the windup combat has callbacks or an area')
+        self.combat_ability(key, combat, geometry, range_tiles, deps, asset, notes)
+        deps['abilities'][-1]['windup'] = {'delay_ms': delay, 'caster_asset_binding': asset(self.visual('@' + effect, 'effect')[0])}
+        notes.append(f'Template match: {effect} on the caster at the cast, then the combat after {delay} ms if the caster still '
+                     'exists. SW-1 (Q3 a): it hits the caster\'s target when the windup ends, not the one taken at the cast.')
+
     def path_trail(self, probe, key, geometry, range_tiles, deps, asset, notes):
         """The Canary single-target 'chain' template: a path trail effect, then one combat on the target."""
         match = re.fullmatch(PATH_TRAIL, spell_scripts.cast_body(probe.source) or '')
@@ -1628,30 +1703,38 @@ class Converter:
         for e in empty:
             if e[0] == 'getItemById' and e[4] not in queried:
                 queried.append(e[4])
-        if not tiles or not queried or any(dz for _, _, dz in tiles):
+        if tiles and not queried:
+            tiles, queried, effects = probe_top_item_first_tile(probe, lua_spell, empty)
+            selection = 'top_item_first_tile'
+            probed = (f'Probed: the first tile, columns west to east and each north to south, whose top visible item is one of '
+                    f'{queried} loses that item, and the cast stops.')
+        elif not tiles or not queried or any(dz for _, _, dz in tiles):
             raise SpellUnresolved('the cast inspects no items on its own floor')
-        for present in (queried, queried[1:]):
-            probe.world['items'] = probe.lua.table_from({i: True for i in present})
-            log = self.cast_runs(probe, lua_spell, modes=('low',))[0, 'low'][0]
-            removed = [e for e in log if e[0] == 'removeItem']
-            if sorted(tuple(e[1:4]) for e in removed) != tiles or {e[4] for e in removed} != {present[0]}:
-                raise SpellUnresolved('item removal is not one first-listed item per inspected tile')
-            if any(e[0] not in ('tile', 'getItemById', 'removeItem', 'effect') for e in log):
-                raise SpellUnresolved('the cast does more than remove items')
-        effects = {e[4] for e in log if e[0] == 'effect'}
+        else:
+            for present in (queried, queried[1:]):
+                probe.world['items'] = probe.lua.table_from({i: True for i in present})
+                log = self.cast_runs(probe, lua_spell, modes=('low',))[0, 'low'][0]
+                removed = [e for e in log if e[0] == 'removeItem']
+                if sorted(tuple(e[1:4]) for e in removed) != tiles or {e[4] for e in removed} != {present[0]}:
+                    raise SpellUnresolved('item removal is not one first-listed item per inspected tile')
+                if any(e[0] not in ('tile', 'getItemById', 'removeItem', 'effect') for e in log):
+                    raise SpellUnresolved('the cast does more than remove items')
+            effects = {e[4] for e in log if e[0] == 'effect'}
+            selection = 'first_listed_per_tile'
+            probed = f'Probed: every tile of the area around the caster loses the first present of items {queried}.'
         items = []
         for item_id in queried:
             item = ref('Item', f'canary:item/{int(item_id)}')
             self.pending_definitions.add((item['family'], item['key']))
             items.append(item)
-        body = {'operation': 'remove_items', 'removed_items': {'items': items, 'selection': 'first_listed_per_tile'}}
+        body = {'operation': 'remove_items', 'removed_items': {'items': items, 'selection': selection}}
         if len(effects) == 1:
             binding, note = self.visual(next(iter(effects)), 'effect')
             body['presentation'] = {'impact_asset_binding': asset(binding)}
         xs, ys = [x for x, _, _ in tiles], [y for _, y, _ in tiles]
         rows = [''.join(('C' if (x, y) == (0, 0) else 'x') if (x, y, 0) in tiles else ('c' if (x, y) == (0, 0) else '.')
                         for x in range(min(xs), max(xs) + 1)) for y in range(min(ys), max(ys) + 1)]
-        notes.append(f'Probed: every tile of the area around the caster loses the first present of items {queried}.')
+        notes.append(probed)
         deps['effects'].append({'identity': ident(f'{key}/effect-remove'), **body})
         deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': 0, 'needs_target': False,
                                   'needs_direction': False, 'area': {'matrix': {'north': rows}},

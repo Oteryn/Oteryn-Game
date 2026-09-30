@@ -218,6 +218,14 @@ class ConvertAndValidateTest(unittest.TestCase):
         bindings.write_bytes(data)
         write_definitions(self.root, data)
 
+    def repin_bindings(self):
+        """Pin the current bindings file in the index, to test the palette rules alone."""
+        index = self.index()
+        index["item_bindings"]["sha256"] = validate.hashlib.sha256(
+            (self.root / validate.ITEM_BINDINGS).read_bytes()
+        ).hexdigest()
+        self.write_index(index)
+
     def index(self):
         return json.loads((self.root / validate.INDEX).read_text())
 
@@ -738,7 +746,7 @@ class ConvertAndValidateTest(unittest.TestCase):
     def test_validator_rejects_an_item_key_without_a_definition(self):
         write_definitions(self.root, ITEMS_BY_SERVER_ID, skip={REGISTRY})
         self.assertTrue(
-            any("nor an Item key with a record" in e for e in self.errors())
+            any("not an Item key with a record" in e for e in self.errors())
         )
         out = convert.build(self.blobs, ITEMS_BY_SERVER_ID, defined={GOLD, "oteryn:x"})
         for path, data in out.items():
@@ -889,7 +897,7 @@ class ConvertAndValidateTest(unittest.TestCase):
             (unused, "no item uses"),
             (out_of_range, "palette indexes outside"),
             (provisional_but_bound, "has a family key"),
-            (wrong_binding, "nor an Item key with a record"),
+            (wrong_binding, "must use its Item key"),
             (wrong_revision, "provisional key must be"),
             (retired_but_used, "retired palette entries an item still uses"),
             (retired_not_true, "malformed entry"),
@@ -940,7 +948,7 @@ class ConvertAndValidateTest(unittest.TestCase):
             json.dumps({"records": records})
         )
 
-    def test_palette_resolution_order_is_terrain_object_item_provisional(self):
+    def test_palette_resolution_order_is_item_terrain_object_provisional(self):
         terrain, objects = {1949: self.TERRAIN_KEY}, {1949: self.OBJECT_KEY}
         both = self.palette_of(
             convert.build(
@@ -952,16 +960,27 @@ class ConvertAndValidateTest(unittest.TestCase):
             convert.build(self.blobs, ITEMS_BY_SERVER_ID, world_object=objects)
         )
         self.assertEqual(only_object[2]["key"], self.OBJECT_KEY)
-        # an Item-bound id that a catalogue also routes takes the catalogue key
+        # an Item-bound id that a catalogue also routes keeps its Item key (#162 Q1b)
         routed = self.palette_of(
             convert.build(
                 self.blobs,
                 ITEMS_BY_SERVER_ID,
                 terrain={100: "oteryn:terrain.tibia.i100"},
+                world_object={100: "oteryn:world-object.tibia.i100"},
             )
         )
-        self.assertEqual(routed[0]["key"], "oteryn:terrain.tibia.i100")
+        self.assertEqual(routed[0]["key"], GOLD)
         self.assertFalse(routed[0]["provisional"])
+        # a binding whose Item key has no record does not count: the catalogue key follows
+        undefined = self.palette_of(
+            convert.build(
+                self.blobs,
+                ITEMS_BY_SERVER_ID,
+                defined={"oteryn:x"},
+                terrain={100: "oteryn:terrain.tibia.i100"},
+            )
+        )
+        self.assertEqual(undefined[0]["key"], "oteryn:terrain.tibia.i100")
         # an id no family covers stays provisional
         self.assertTrue(self.palette_of(self.out)[2]["provisional"])
 
@@ -994,7 +1013,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         # no catalogue: the key is neither a catalogue key nor an Item binding
         errors = validate.validate(root)
         self.assertTrue(
-            any("nor an Item key with a record" in e for e in errors), errors
+            any("not an Item key with a record" in e for e in errors), errors
         )
         # the catalogue routes the id to a different family
         self.write_catalogue(root, "world_object", {1949: self.OBJECT_KEY})
@@ -1003,11 +1022,20 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.write_catalogue(root, "terrain", {1949: self.TERRAIN_KEY})
         self.assertEqual(validate.validate(root), [])
 
-    def test_a_routed_item_bound_id_must_use_the_catalogue_key(self):
+    def test_an_item_bound_id_must_keep_its_item_key_when_a_catalogue_routes_it(self):
         root = self.install(self.out)
         self.write_catalogue(root, "terrain", {100: "oteryn:terrain.tibia.i100"})
-        errors = validate.validate(root)
-        self.assertTrue(any("id 100 must use" in e for e in errors), errors)
+        self.assertEqual(validate.validate(root), [])
+        out = convert.build(
+            self.blobs, ITEMS_BY_SERVER_ID, terrain={100: "oteryn:terrain.tibia.i100"}
+        )
+        self.assertEqual(out, self.out)
+
+        def catalogue_first(palette):
+            palette[0] = {**palette[0], "key": "oteryn:terrain.tibia.i100"}
+
+        errors = self.edit_palette(catalogue_first)
+        self.assertTrue(any("has an Item record" in e for e in errors), errors)
 
     def test_provisional_id_with_a_catalogue_record_is_rejected(self):
         root = self.install(self.out)
@@ -1106,13 +1134,31 @@ class ConvertAndValidateTest(unittest.TestCase):
 
     def test_bindings_change_makes_a_registry_entry_stale(self):
         self.write_bindings(bindings_for([(100, GOLD), (1234, GOLD.upper())]))
-        self.assertTrue(
-            any("nor an Item key with a record" in e for e in self.errors())
-        )
+        self.repin_bindings()
+        self.assertTrue(any("must use its Item key" in e for e in self.errors()))
         self.write_bindings(
             bindings_for([(100, GOLD), (1234, REGISTRY), (1949, "a:b")])
         )
+        self.repin_bindings()
         self.assertTrue(any("has a family key" in e for e in self.errors()))
+
+    def test_item_bindings_sha256_must_match_the_actual_file(self):
+        # The index pins the digest of the file the palette keys derive from; the
+        # validator hashes the real file, so a changed binding cannot hide behind the pin.
+        self.assertEqual(self.errors(), [])
+        pinned = self.index()["item_bindings"]["sha256"]
+        self.assertEqual(
+            pinned,
+            validate.hashlib.sha256(
+                (self.root / validate.ITEM_BINDINGS).read_bytes()
+            ).hexdigest(),
+        )
+        bindings = self.root / validate.ITEM_BINDINGS
+        bindings.write_bytes(bindings.read_bytes() + b"\n")
+        errors = self.errors()
+        self.assertTrue(any("item_bindings.sha256" in e for e in errors), errors)
+        bindings.write_bytes(bindings.read_bytes()[:-1])
+        self.assertEqual(self.errors(), [])
 
     def test_summary_palette_counts_are_checked(self):
         path = self.root / validate.SUMMARY

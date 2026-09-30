@@ -94,27 +94,29 @@ def pos(x: int, y: int, floor: int = FLOOR) -> dict:
 
 
 def write_cities(root: Path) -> None:
-    towns = [("Aville", 21, 21), ("Bville", 43, 23), ("Elsewhere", 200, 200)]
-    records = [
+    """AREAS-1 city records (`areas` list, `hometown.temple` with `z`), one without a temple."""
+    towns = [
+        ("Aville", 21, 21),
+        ("Bville", 43, 23),
+        ("Elsewhere", 200, 200),
+        ("Nohome", None, None),
+    ]
+    areas = [
         {
-            "declaration": {
-                "identity": {
-                    "key": f"oteryn:area.city.{name.lower()}",
-                    "revision": "definition-r1",
-                },
-                "name": name,
-                "temple": pos(x, y),
+            "hometown": None if x is None else {"temple": {"x": x, "y": y, "z": FLOOR}},
+            "identity": {
+                "key": f"oteryn:content.area.city.{name.lower()}",
+                "revision": "definition-r1",
             },
-            "source_bindings": [],
+            "kind": "city",
+            "name": name,
         }
         for name, x, y in towns
     ]
-    directory = "content/world/areas/cities"
-    write(root, f"{directory}/cities-00000-00002.json", {"records": records})
     write(
         root,
-        f"{directory}/index.json",
-        {"shards": [f"{directory}/cities-00000-00002.json"]},
+        "content/world/areas/cities/areas-00000-00003.json",
+        {"areas": areas, "schema": "OTERYN_AREA_DEFINITIONS/v1"},
     )
 
 
@@ -319,13 +321,13 @@ class ConverterTest(unittest.TestCase):
         )
         self.assertEqual(alpha["anchor"], pos(21, 21))
         self.assertEqual(
-            [c["key"] for c in alpha["cities"]], ["oteryn:area.city.aville"]
+            [c["key"] for c in alpha["cities"]], ["oteryn:content.area.city.aville"]
         )
         self.assertEqual(alpha["identity"]["key"], "oteryn:area.island.alpha")
-        # A wiki city that is not a City Area is counted, not invented.
+        # A wiki city that is not an AREAS-1 city is counted, not invented.
         self.assertEqual(
             [c["key"] for c in alpha["source_facts"]["wiki_cities"]],
-            ["oteryn:area.city.aville"],
+            ["oteryn:content.area.city.aville"],
         )
         self.assertEqual(self.summary["wiki_cities_unmatched"], 1)
         self.assertNotIn("event_only", alpha)
@@ -334,7 +336,7 @@ class ConverterTest(unittest.TestCase):
         beta = records(self.out)["Beta"]
         self.assertEqual(beta["footprint"]["tile_count"], 9)
         self.assertEqual(
-            [c["key"] for c in beta["cities"]], ["oteryn:area.city.bville"]
+            [c["key"] for c in beta["cities"]], ["oteryn:content.area.city.bville"]
         )
         row = next(r for r in self.summary["included"] if r["title"] == "Beta")
         self.assertEqual(row["boundary_tiles"], {"lava": 12, "water": 0, "void": 0})
@@ -494,6 +496,22 @@ class ConverterTest(unittest.TestCase):
         ]
         with self.assertRaises(ConvertError):
             build(self.root, make_root(self.root, [row]))
+
+    def test_city_temple_of_a_city_missing_from_areas_1_is_pinned_by_the_snapshot(
+        self,
+    ) -> None:
+        row = page(1, "Gone", [])
+        row["coordinates"] = [
+            {
+                "city": "Gone",
+                "floor": FLOOR,
+                "origin": "city_temple",
+                "x": 21,
+                "y": 21,
+            }
+        ]
+        out = build(self.root, make_root(self.root, [row]))
+        self.assertIn("Gone", records(out))
 
     def test_keys_are_reused_by_page_id(self) -> None:
         write_family(self.root, self.data)
@@ -792,22 +810,24 @@ class ValidatorTest(unittest.TestCase):
             self.declaration(shard, "Alpha")["cities"] = [
                 {
                     "family": "Area",
-                    "key": "oteryn:area.city.elsewhere",
+                    "key": "oteryn:content.area.city.elsewhere",
                     "revision": "definition-r1",
                 }
             ]
 
         self.edit_shard(mutate)
-        self.assertIn("temple of oteryn:area.city.elsewhere is outside", self.errors())
+        self.assertIn(
+            "temple of oteryn:content.area.city.elsewhere is outside", self.errors()
+        )
 
     def test_unknown_city(self) -> None:
         def mutate(shard):
             self.declaration(shard, "Alpha")["cities"][0]["key"] = (
-                "oteryn:area.city.nowhere"
+                "oteryn:content.area.city.nowhere"
             )
 
         self.edit_shard(mutate)
-        self.assertIn("is not a City Area", self.errors())
+        self.assertIn("is not an AREAS-1 city", self.errors())
 
     def test_binding_must_be_in_the_snapshot(self) -> None:
         def mutate(shard):

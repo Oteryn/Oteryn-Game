@@ -1,18 +1,19 @@
-# World metadata authoring (City, HuntingPlace, Island and Region Area, teleport Transition)
+# World metadata authoring (HuntingPlace and Island Area, teleport Transition)
 
 This package populates the world tree from the pinned CrystalServer map. Steps 1 and 2
-cover **metadata**: towns and teleports, plus hunting places from the English
-TibiaWiki. Step 3 covers the **base map** (19.3 M tiles, 24.9 M items) in a binary region
-format selected by measurement (see "Base map (step 3)" below). Houses are not part of this
-package: the official House catalogue in `content/houses/` is owned by
-`OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1` (HOUSES-5).
+cover **metadata**: teleports, plus hunting places from the English TibiaWiki and
+map-verified islands. Step 3 covers the **base map** (19.3 M tiles, 24.9 M items) in a binary
+region format selected by measurement (see "Base map (step 3)" below). Other world families
+have their own owners: Cities and Regions are the Area catalogue
+(`content/world/areas/{cities,regions}/`, `area-authoring`, AREAS-1; the official-client region
+converter and the city fact enrichment of earlier drafts are removed in its favour), Terrain and
+WorldObjects are the WO-2 catalogue (`content/world/{terrain,objects}/`) and Houses are the
+House catalogue in `content/houses/` (`OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1`).
 
 | Family | Path | Records | Shard schema |
 |---|---|---:|---|
-| `Area.City` | `content/world/areas/cities/` | 35 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Area.HuntingPlace` | `content/world/areas/hunting-places/` | 445 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Area.Island` | `content/world/areas/islands/` | 59 | `OTERYN_AREA_AUTHORING_SHARD/v1` (`island.schema.json`) |
-| `Area.Region` | `content/world/areas/regions/` | 465 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 | `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
 
@@ -64,13 +65,12 @@ of `tibia.fandom.com` (the Portuguese wiki refuses build containers). Evidence i
   (namespace `tibiawiki-fandom/page-id`, the binding records the revision id). The name is
   the page title, not the infobox `name` (which carries `<br>` and typos).
 - Only unambiguous facts are written; the rest is omitted and counted in the capture
-  summary: `city` (exact case-insensitive match with a City Area name), `position` (a single
-  `Mapper Coords` in `sector.offset` form: x = sector * 256 + offset, same frame as the City
-  temples; a 311-record check against the matched city temple gives a median distance of 177
-  tiles), `recommended_levels` (plain integers per vocation) and `source_facts` (`city_name`,
+  summary: `city` (exact case-insensitive match with an AREAS-1 city name, keyed `oteryn:content.area.city.<slug>`; the wiki name stays in `source_facts.city_name`; 245 resolved, 200 unmatched because only 22 cities exist), `position` (a single
+  `Mapper Coords` in `sector.offset` form: x = sector * 256 + offset, same frame as the city
+  temples; `recommended_levels` (plain integers per vocation) and `source_facts` (`city_name`,
   `creature_names`). Creature names are wiki text, not Creature keys.
 - The validator checks the snapshot pin and canonical bytes, that every snapshot page is
-  bound once with its revision, city references, extent and capture counts.
+  bound once with its revision, city references (checked against the AREAS-1 city records in `main`), extent and capture counts.
 
 ## Islands (map-verified)
 
@@ -92,7 +92,7 @@ map or the wiki changes.
   water` 629-634,880-891,...). `convert_islands.py --crystal-root PATH` re-derives it from the
   pinned `items.xml` and fails (or rewrites) on a difference.
 - `convert_islands.py [--check]` reads the snapshot, the region files, the ground classes and
-  the City Areas offline (about 20 s). A tile is land unless its first (ground) item is water
+  the AREAS-1 city records offline (about 20 s). A tile is land unless its first (ground) item is water
   or lava; an absent tile is void. The component of a coordinate is a 4-neighbour breadth-first
   search over land tiles of one floor, capped at 400,000 tiles. A coordinate on water starts
   from the nearest land tile within 5 tiles (squared distance, first strictly nearer wins).
@@ -111,7 +111,7 @@ map or the wiki changes.
     a continent, is `continent`.
 - Key `oteryn:area.island.<slug(page title)>`, reused by page id once committed. Each record
   holds `footprint` (floor, `tile_count` and bounding box, computed from the map), `anchor`
-  (the verified start tile), `cities` (City Areas whose temple lies in the component on the
+  (the verified start tile), `cities` (AREAS-1 city keys `oteryn:content.area.city.<slug>` whose hometown temple lies in the component on the
   same floor), `event_only: true` where the wiki says the island is event-only, and
   `source_facts` (`evidence`, `wiki_class`, `wiki_status`, `wiki_cities` as separate wiki
   claims, `anchor_origin`, `source_coordinate` when the anchor differs from it,
@@ -156,106 +156,22 @@ map or the wiki changes.
   reasons in `samples/islands-capture-v1.json`. Tiny footprints such as Laguna Islands (97)
   are confirmed and kept.
 - `validate_islands.py` checks the pins (snapshot, ground classes, evidence anchors, base
-  map), snapshot bindings (every snapshot page bound or excluded exactly once), City
+  map), snapshot bindings (every snapshot page bound or excluded exactly once), AREAS-1 city
   references and temple containment, footprints and anchors inside the World bounds, the
   anchor inside its footprint and within 5 tiles of the snapshot coordinate (or equal to
   its map correction or evidence anchor), additional components, `underground` (exactly the
   components below floor 7), component links and the capture summary. It does not re-run
   the search; `convert_islands.py --check` does.
 
-## Regions (official Tibia 15.30 client map)
-
-`Area.Region` comes from the official client files committed under `content/assets/files/`
-(owner-confirmed redistribution): `map-<sha256>.dat` and the `subarea-*` mask images. Evidence
-is `OfficialClient`, source key `oteryn:source.tibia_client`, binding namespace
-`tibia-client/map-area-id` (the binding records the sha256 of `map.dat`). The converter reads
-the files offline and verifies each against `imports/official/client-assets/15.30/manifest.json`.
-
-The formats are undocumented; `client_map_reader.py` decodes only what was checked against the
-data and fails closed on anything else (unknown field, wire type, framing, BMP shape).
-
-- `map.dat` is a raw protobuf. It holds 465 areas: 28 with a child list (`region`) and 437
-  without (`subregion`), every subregion listed by at least one region (Tibiadrome by five).
-  The rest of the file: 1270 markers, 948 satellite/minimap image entries, 209 subarea mask
-  entries and two declared corner positions. It carries no third level, so there is no
-  street or district tier.
-- A subarea mask is a Tibia-framed LZMA stream holding a 32-bit BMP of one pixel per tile,
-  anchored at the entry's position. A non-zero pixel is a tile of the area. The file name ends
-  in the sha256 of the decoded BMP, which the reader checks, and the BMP size equals the map
-  entry. The 209 masks hold 1,901,667 tiles, all on floor 7.
-- Coordinate check: the frame is the one City temples use. The Thais temple (32369,32241,7)
-  lies in the mask of `Thais City` only, the Ab'Dendriel temple (32732,31634,7) in
-  `Ab'Dendriel City` only, and 21 of the 22 floor-7 City temples fall inside a mask of a
-  similarly named area. 138 of 139 area anchors on masked areas lie inside their own mask
-  (`Thais Trolls' Cave` does not). The region `Thais` anchors at exactly the Thais temple.
-- Key `oteryn:area.region.<slug(name)>`, reused by area id once committed. 21 names occur twice
-  (a region and a subregion of the same name); the region keeps the plain slug and the
-  subregion gets `_subregion`. A remaining collision fails closed.
-- Records: `area_kind` `region` or `subregion`, official `name`, `anchor` (map.dat position,
-  158 records), `parent_regions` (subregions only, sorted), `footprint` (209 subregions: floor,
-  tight bounding box, `tile_count`, and the mask image path and sha256) and `cities`.
-- `cities` lists City Areas whose temple lies in a subregion's mask on the mask's floor (21 of
-  35 cities). A region lists the cities of its subregions. A mask is proven for floor 7 only.
-  For a temple on a floor other than 7, the candidate is the floor-7 position (x, y): the city
-  is linked only when that lies inside exactly one subregion mask, and the link is recorded in
-  the capture summary (`cities.projected`, method `temple_projected_to_floor_7`, 12 cities:
-  Ankrahmun, Darashia, Dawnport, Edron, Farmine, Gray Beach, Issavi, Kazordoon, Krailos,
-  Moonfall, Rathleton, Roshamuul). An ambiguous or outside projection stays unlinked
-  (Gnomprona, `projection_outside`). The temple outside every mask (Home) stays unlinked; the
-  summary records its nearest mask and Chebyshev distance (`cities.unlinked`, Greenshore, 66),
-  which is information only. The validator checks the projected links against the footprint
-  boxes and the unlinked list against the records (33 of 35 cities linked).
-- Not imported, counted in `samples/map-regions-capture-v1.json`: the meaning of area field 6
-  (28 areas) and of the secondary names of field 7 (53 areas), the 1270 markers, the satellite
-  and minimap images, the declared corner positions, the 228 subregions without a mask and
-  `staticmapdata-*.dat` (995 blocks of appearance-id tile grids per position, no area data).
-- The validator checks the pinned map file, manifest and mask files, hierarchy, sorted unique
-  lists, city references and temple containment, extent, counts and stray files.
-
-## Cities (English TibiaWiki)
-
-The 35 City Areas keep their keys, names, temples and CrystalServer bindings, and gain facts
-from `tibia.fandom.com` (evidence `Derived`, source key `oteryn:source.tibiawiki`), by the
-same pattern as the hunting places.
-
-- `fandom_city_snapshot.py fetch` (network, not run by CI) stores
-  `imports/tibiawiki/cities/fandom-snapshot-v1.json`. A city page is matched by exact title
-  and must hold an `Infobox Geography`; per page it records the page id, revision id,
-  wikitext sha256, the raw `implemented`, `ruler` and `near` fields, and the names of the
-  `Category:<City> NPCs` pages (the page's NPC list is a category query, not wikitext). No
-  prose. Cities apart, each with a reason:
-  - no page with the exact title: `Dawnport Tutorial`, `Home`, `Salgadora`;
-  - a page without the city infobox (`Infobox Hunt`): `Bounac`, `Cobra Bastion`;
-  - ambiguous: `Targuna` (a placeholder town sharing its temple with `Dawnport Tutorial`).
-- `convert_city_facts.py [--check]` rewrites the City shard and index offline (29 records
-  enriched) and writes `samples/cities-capture-v1.json`. It is idempotent, so run it after
-  `convert_world_metadata.py` regenerates the plain records. That converter now applies this
-  enrichment itself whenever the committed snapshot exists, so both `--check` modes agree. The index gains `enrichment`
-  (the pinned snapshot); its `source` stays the CrystalServer pin.
-- Added: a second binding `tibiawiki-fandom/page-id` (revision id); `source_facts`
-  (`implemented`, cleaned `ruler` and `near` text, `npc_names_unmatched`, 29 records);
-  `implemented` only for a plain version (`6.2`, `Pre-6.0`, `12.20.8834`; 25 records, 4 stay
-  raw); `npcs`, sorted NPC keys (26 records, 969 names linked, 239 unmatched).
-- NPC definitions carry no display name, so a wiki name links only when it equals the key
-  slug with underscores read as spaces (case-insensitive). Names with an apostrophe, dot or
-  hyphen stay unmatched.
-- The validator checks the snapshot pin and canonical bytes, the page/revision bindings, the
-  exact-name match, NPC key existence, that linked and unmatched names cover the snapshot,
-  and the capture counts.
-
 ## What is imported and what is not
 
-Keys are stable across source updates: when the family files are already committed, the
-converter reuses the existing key for the same source id (`crystalserver/town-id`)
-even if the source renames the town, and only mints a slug
-key for a new id (failing closed if it collides with any committed key). Teleport keys are
-position-based.
+Teleport keys are position-based.
 
-- **City:** one record per OTBM town, holding the name and temple position. All 35 towns
-  are kept as the source declares them, including `Dawnport Tutorial`, `Island of
-  Destiny`, `Targuna` and `Home`. The English TibiaWiki adds facts, see "Cities" below.
-- **Teleport:** holds a from/to position, and the teleport `Item` resolved through
-  `imports/crystalserver/bindings/items.json`. Only teleports whose destination is set,
+- **Teleport:** holds a from/to position and an `object` reference that is the A12 4.6 family
+  key of the item id: the WO-2 `WorldObject` key `oteryn:world-object.tibia.i<id>` or `Terrain`
+  key `oteryn:terrain.tibia.i<id>` when the catalogue has the id (826 and 42 of 872), else the
+  `Item` key from `imports/crystalserver/bindings/items.json` (4), else the run fails
+  closed. The validator requires the family and key to exist. Only teleports whose destination is set,
   inside the map and on an existing tile are imported. The capture summary counts those
   rejected:
   - 1573 with an unset destination, which are script-driven;
@@ -271,7 +187,7 @@ position-based.
 ## Coexistence with the legacy WorldProject package
 
 `content/world/` is still the legacy WorldProject package root. The family shards in
-`areas/cities/`, `areas/hunting-places/`, `areas/islands/`, `areas/regions/` and `transitions/` are not
+`areas/hunting-places/`, `areas/islands/` and `transitions/` are not
 WorldProject locators:
 
 - `validate_materialized_game_tree.py` accepts a populated family index there only when its
@@ -304,8 +220,7 @@ repository test's directory-scan budget grows by exactly the one added entry
 - `floors` is the strictly increasing list of floors that hold tiles: 0-15.
 - `legacy_world_id` is the identity of `content/world/definitions/reference.json`.
 - `validate_world_record.py` requires bounds and floors to equal the recomputed base map
-  extent, and every City temple, House entry, door and footprint corner, teleport `from` and
-  `to` and hunting place position to lie inside the bounds on a declared floor. Base map
+  extent, and every teleport `from` and `to`, hunting place position and footprint corner to lie inside the bounds on a declared floor. Base map
   tiles are inside by that equality.
 
 ## Floor changes
@@ -337,19 +252,17 @@ python test_world_authoring.py             # synthetic OTBM and wiki fixtures, c
 python convert_world_record.py --check     # World record from the committed base map (offline)
 python validate_world_record.py            # World record and positions inside its bounds
 python test_world_record.py                # World converter, validator, worlds/ tree exception
-python convert_city_facts.py --check       # offline, from the committed city snapshot
 python convert_hunting_places.py --check   # offline, from the committed TibiaWiki snapshot
-python convert_islands.py --check          # offline, from the snapshot, the base map and the City Areas
+python convert_islands.py --check          # offline, from the snapshot, the base map and the AREAS-1 city and region records
 python validate_islands.py                 # island family, pins, footprints, capture summary
 python test_islands.py                     # synthetic map: island, landmass, lava, alias, archipelago
 # Needs the pinned crystalserver checkout: python convert_islands.py --crystal-root ... [--check]
-python convert_map_regions.py --check      # offline, from the committed official client files
-# Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
+# `--check` also reports (`EXTRA`) generator-owned shards no longer generated; write mode
+# deletes them. Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
 python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]
 # Refresh the wiki snapshot (network), then reconvert:
 python fandom_hunting_snapshot.py fetch && python convert_hunting_places.py
 python fandom_island_snapshot.py fetch && python convert_islands.py
-python fandom_city_snapshot.py fetch && python convert_city_facts.py
 ```
 
 ## Base map (step 3)
@@ -379,20 +292,22 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   index into `palette` in `index.json`. The palette holds the distinct server item
   ids the map uses (and any retired ones) as `{"key", "source_item_id", "provisional"}`. A fresh build orders it by
   ascending id, and the palette is then **append-only** (see below):
-  - else an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) to a
+  - an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) to a
     key that has an Item record in `content/items/definitions` takes that target key, either `oteryn:item.registry.iNNNNNNNN` or a named key such
     as `oteryn:item.currency.gold_coin`, with `provisional: false`;
-  - an id that a WO-2 catalogue routes (A12 section 4.6) takes the catalogue key with
-    `provisional: false`: `oteryn:terrain.tibia.i<id>` if the Terrain catalogue has it, else
-    `oteryn:world-object.tibia.i<id>`. This wins over an Item binding of the same id;
+  - else an id that a WO-2 catalogue has takes the catalogue key with `provisional: false`:
+    `oteryn:terrain.tibia.i<id>` if the Terrain catalogue has it, else
+    `oteryn:world-object.tibia.i<id>`;
   - any other id takes `donor:crystalserver@00ce02a5:item/<id>` (the donor-census key
     form) with `provisional: true`. This covers ids that `items.xml` declares but no Item
     binding covers yet, ids bound to an Item key without a definition (the A12 section 5 rule
     forbids such a key in `content/`) and ids no source declares; the item agent's B1b
     registry step admits the first two.
 
-  **Resolution order (A12 section 4.6):** Terrain catalogue, WorldObject catalogue, Item key with
-  an Item record, else the provisional donor key. Appearance-only ids (the official client
+  **Resolution order (architect ruling, #162 Q1b):** the Item key of an id with an Item record in
+  `content/items/definitions` (even when a catalogue also routes the id; the compiler follows
+  `routed_to`), else the Terrain catalogue key, else the WorldObject catalogue key, else the
+  provisional donor key. Appearance-only ids (the official client
   declares them, `items.xml` does not) have no record in any family and stay provisional; they
   are listed in `samples/appearance-only-ids-v1.json` (see "Appearance-only ids").
 
@@ -403,14 +318,18 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   `index.json` only. The 22 MB of region files do not change. The capture summary counts palette
   entries and occurrences per family (`palette.families`: terrain, world_object, item) and the
   provisional ones, split into ids that `items.xml` declares at the pinned revision and
-  appearance-only ids. Current counts: 25,984 palette entries; 7,576 Terrain keys (17,119,916
-  occurrences); 7,699 WorldObject keys (1,304,021); 4,714 Item keys (5,744,591); 5,995 provisional
+  appearance-only ids. Current counts: 25,984 palette entries; 19,989 Item keys (24,168,528
+  occurrences; the 7,576 Terrain and 7,699 WorldObject ids that have Item records are here);
+  0 Terrain and 0 WorldObject catalogue keys; 5,995 provisional
   (814,803 occurrences): 5,950 appearance-only (760,257; 5,949 with a client appearance plus id 99,
   which neither `items.xml` nor the client declares) and 45 ids that `items.xml` declares
   (54,546, 40 of them bound to an Item key without a definition).
-  `validate_world_base.py` requires every non-provisional key to exist in its family: the key of
-  the Terrain catalogue record of that id, else of the WorldObject catalogue record, else an Item
-  binding target with an Item record; a provisional id must have none of them.
+  `validate_world_base.py` requires every non-provisional key to follow that order: an Item
+  binding target with an Item record, else the Terrain catalogue key, else the WorldObject
+  catalogue key; a provisional id must have none of them. It also hashes the actual
+  `imports/crystalserver/bindings/items.json` and fails when it differs from
+  `item_bindings.sha256` in the index, so the palette cannot outlive a change of the bindings
+  (regenerate it with `convert_world_base.py`; the region files keep their bytes).
   The converter still fails closed, and never guesses, on an item or tile attribute
   outside the carried set.
 - **Fill from `maps.7z`** (owner-approved, fill-only): `data-global/world/maps.7z` at the pinned
@@ -638,7 +557,7 @@ each row with the id, `class`, occurrences, `speed` (bank waypoints, ground only
   else `unpass` -> `blocking`; else `decoration`. Counts: ground 740, border 1,534, blocking 2,614,
   decoration 1,061. There is no `liquid` class: the client declares no flag for water or lava ground.
 - **Reader:** `client_appearance_reader.py` decodes the raw protobuf with the framing of
-  `client_map_reader.py` (fails closed on malformed frames, repeated ids, non boolean flags and
+  `client_map_reader.py` (kept as the shared protobuf and frame reader; its area and mask code has no user since AREAS-1 owns the regions) (fails closed on malformed frames, repeated ids, non boolean flags and
   unsupported wire types). It reads the id, name and the flags `bank` (with waypoints), `clip`,
   `unpass`, `unmove` and `automap` (colour). `edron_rework.py` also uses it for walkability.
 - `convert_appearance_only_ids.py --crystal-root PATH [--check]` writes the list from the committed

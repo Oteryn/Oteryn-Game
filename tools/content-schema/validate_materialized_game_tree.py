@@ -15,11 +15,12 @@ WORLD_STATES={"READY_UNPOPULATED","LEGACY_COMPAT_PRESENT"}
 SHARED_WITH_LOCATOR="content/world/worlds/"
 SHARED_MAX_SHARDS=1
 FAMILY_INDEX="OTERYN_FAMILY_INDEX/v1"
-# WO-2: the Terrain and WorldObject catalogues are populated beside the legacy package. They keep
-# the plain directory marker (population_state POPULATED); their shards are pinned by
-# world-object-authoring/build_catalogue.py --check.
-POPULATED_WORLD_CATALOGUES={"content/world/terrain/":"terrain-","content/world/objects/":"objects-"}
-CATALOGUE_SHARD=re.compile(r"^(terrain|objects)-\d{5}-\d{5}\.json$")
+# WO-2 and AREAS-1: the Terrain, WorldObject and Area (city, region) catalogues are populated
+# beside the legacy package. They keep the plain directory marker (population_state POPULATED);
+# their shards are pinned by world-object-authoring/build_catalogue.py --check and
+# area-authoring/build_areas.py build --check.
+POPULATED_WORLD_CATALOGUES={"content/world/terrain/":"terrain-","content/world/objects/":"objects-","content/world/areas/cities/":"areas-","content/world/areas/regions/":"areas-"}
+CATALOGUE_SHARD=re.compile(r"^(terrain|objects|areas)-\d{5}-\d{5}\.json$")
 class ValidationError(RuntimeError): pass
 def req(ok: bool, code: str)->None:
     if not ok: raise ValidationError(code)

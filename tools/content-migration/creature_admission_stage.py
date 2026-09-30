@@ -289,6 +289,8 @@ class Stage:
                 details['path_requirement'] = ability['path_requirement']
             if 'chain' in ability:
                 details['chain'] = dict(ability['chain'])
+            if 'windup' in ability:
+                details['windup'] = dict(ability['windup'])
             for cue in ('cast_cue', 'impact_cue'):
                 if cue in ability.get('audio', {}):
                     details[cue] = ability['audio'][cue]

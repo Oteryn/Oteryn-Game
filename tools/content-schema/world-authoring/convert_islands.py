@@ -458,16 +458,20 @@ def load_snapshot(data: bytes) -> dict:
 
 
 def city_index(root: Path) -> dict[str, dict]:
-    """Lower-cased City Area name -> {key, temple} from the committed City family."""
-    directory = root / base.FAMILIES["Area.City"]["dir"]
-    index = json.loads((directory / "index.json").read_text(encoding="utf-8"))
+    """Lower-cased AREAS-1 city name -> {key, temple} (`temple` None without a hometown).
+
+    The city records are owned by `area-authoring` (`content/world/areas/cities/areas-*.json`,
+    keys `oteryn:content.area.city.<slug>`); this tool only reads them.
+    """
     cities = {}
-    for shard in index["shards"]:
-        for record in json.loads((root / shard).read_text(encoding="utf-8"))["records"]:
-            declaration = record["declaration"]
-            cities[declaration["name"].lower()] = {
-                "key": declaration["identity"]["key"],
-                "temple": declaration["temple"],
+    for shard in sorted((root / "content/world/areas/cities").glob("areas-*.json")):
+        for record in json.loads(shard.read_text(encoding="utf-8"))["areas"]:
+            hometown = record["hometown"]
+            temple = hometown and hometown["temple"]
+            cities[record["name"].lower()] = {
+                "key": record["identity"]["key"],
+                "temple": temple
+                and {"x": temple["x"], "y": temple["y"], "floor": temple["z"]},
             }
     return cities
 
@@ -521,7 +525,11 @@ def evaluate(
     for coordinate in coordinates:
         if coordinate["origin"] == "city_temple":
             city = cities.get(coordinate["city"].lower())
-            temple = city and city["temple"]
+            if city is None:
+                # A CrystalServer town with no AREAS-1 city: the snapshot pins the
+                # coordinate, there is no temple here to compare it with.
+                continue
+            temple = city["temple"]
             if not temple or (temple["x"], temple["y"]) != (
                 coordinate["x"],
                 coordinate["y"],
@@ -700,7 +708,8 @@ def records_for(
             city_keys = sorted(
                 c["key"]
                 for c in cities.values()
-                if c["temple"]["floor"] == floor
+                if c["temple"]
+                and c["temple"]["floor"] == floor
                 and components.contains(
                     result["component"], c["temple"]["x"], c["temple"]["y"], floor
                 )

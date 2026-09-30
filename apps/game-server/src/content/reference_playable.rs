@@ -810,6 +810,11 @@ pub struct RewardClaimPlacement {
     pub placement: PlacementKey,
     /// Exactly one top-level item in the first slice (CHEST-1, reward chest §5.1).
     pub items: Vec<RewardClaimItem>,
+    /// The achievement taking this chest grants (quest authoring format §4
+    /// `placements[].achievement`), as its catalogue key `oteryn:achievement/<slug>`: a source
+    /// ref is bound to that key at authoring (achievement contract §2.2), never at runtime. The
+    /// runtime catalogue must have the key (contract §3.3, checked at Content activation).
+    pub achievement: Option<String>,
 }
 
 /// A `once` RewardClaim (D39-D42): its identity is the definition's key and revision, and it
@@ -2001,10 +2006,14 @@ fn canonicalize_definition(definition: &mut ReferenceDefinition) {
     }
 }
 
+/// Namespace of an achievement catalogue key (achievement contract §2.1).
+const REWARD_CLAIM_ACHIEVEMENT_PREFIX: &str = "oteryn:achievement/";
+
 /// Shape of a first-slice RewardClaim: server-only, at least one placement, no placement listed
-/// twice, and each placement rewards exactly one item with a positive count. The item references
-/// are resolved by `validate_definition_references`; facts such as stack maximum are enforced by
-/// the MINT admission.
+/// twice, and each placement rewards exactly one item with a positive count and names its
+/// achievement, if any, by an `oteryn:achievement/` key. The item references are resolved by
+/// `validate_definition_references`; facts such as stack maximum are enforced by the MINT
+/// admission; the achievement key binds to the runtime catalogue at Content activation.
 fn validate_reward_claim_definition(
     definition: &ReferenceDefinition,
     claim: &ReferenceRewardClaimDefinition,
@@ -2034,6 +2043,14 @@ fn validate_reward_claim_definition(
         if entry.items.iter().any(|item| item.count == 0) {
             return Err(ContentError::InvalidArtifact(
                 "reference-playable reward claim item requires a positive count",
+            ));
+        }
+        if entry.achievement.as_deref().is_some_and(|key| {
+            key.strip_prefix(REWARD_CLAIM_ACHIEVEMENT_PREFIX)
+                .is_none_or(str::is_empty)
+        }) {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable reward claim achievement must be an oteryn:achievement/ key",
             ));
         }
     }
@@ -2331,17 +2348,47 @@ fn validate_definition_references(
         }
         ReferenceDefinitionKind::RewardClaim(claim) => {
             for item in claim.placements.iter().flat_map(|entry| &entry.items) {
-                resolve_expected_definition(
+                let target = resolve_expected_definition(
                     definitions,
                     &item.item,
                     DefinitionFamily::Item,
                     "reference-playable reward claim item must target Item",
                 )?;
+                validate_reward_claim_count(target, item.count)?;
             }
             Ok(())
         }
         _ => Ok(()),
     }
+}
+
+/// A reward count must fit the Item's known stack facts: one for a non-stackable Item, and no
+/// more than a known stack maximum. Unknown facts are left to the MINT admission, which fails
+/// closed on them (D82).
+fn validate_reward_claim_count(
+    target: &ReferenceDefinition,
+    count: u32,
+) -> Result<(), ContentError> {
+    let ReferenceDefinitionKind::Item(item) = &target.kind else {
+        return Ok(());
+    };
+    let over = match item.stack_class {
+        ReferenceItemStackClass::NonStackable => count != 1,
+        ReferenceItemStackClass::StackCapable => match &item.semantics.stack {
+            ReferenceItemField::Known(stack) => match stack.stack_max {
+                ReferenceItemField::Known(maximum) => count > u32::from(maximum),
+                _ => false,
+            },
+            _ => false,
+        },
+        ReferenceItemStackClass::Unknown => false,
+    };
+    if over {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim count exceeds the Item's stack",
+        ));
+    }
+    Ok(())
 }
 
 /// D38 W1b: fail-closed both directions. A `LocalObject` placement must carry an authored

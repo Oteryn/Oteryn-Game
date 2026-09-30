@@ -114,13 +114,18 @@ def read_family(root: Path, errors: list[str]) -> tuple[dict, list[dict]]:
     return index, records
 
 
-def city_temples(root: Path) -> dict[str, dict]:
-    index = load(root, f"{CITIES}/index.json")
+def city_temples(root: Path) -> dict[str, dict | None]:
+    """AREAS-1 city key -> hometown temple (x, y, floor), None without a hometown."""
     temples = {}
-    for shard in index["shards"]:
-        for record in load(root, shard)["records"]:
-            declaration = record["declaration"]
-            temples[declaration["identity"]["key"]] = declaration["temple"]
+    for shard in sorted((root / CITIES).glob("areas-*.json")):
+        for record in load(root, str(shard.relative_to(root)))["areas"]:
+            hometown = record["hometown"]
+            temple = hometown and hometown["temple"]
+            temples[record["identity"]["key"]] = temple and {
+                "x": temple["x"],
+                "y": temple["y"],
+                "floor": temple["z"],
+            }
     return temples
 
 
@@ -257,7 +262,7 @@ def validate_records(
             )
         for city in facts.get("wiki_cities", []):
             if city["key"] not in temples:
-                errors.append(f"{key}: wiki city {city['key']} is not a City Area")
+                errors.append(f"{key}: wiki city {city['key']} is not an AREAS-1 city")
         wiki_names = sorted(primary.get("wiki_cities", []))
         if len(facts.get("wiki_cities", [])) > len(wiki_names):
             errors.append(f"{key}: more wiki cities than the snapshot names")
@@ -316,8 +321,10 @@ def validate_records(
             errors.append(f"{key}: cities must be unique and sorted")
         for city in listed_keys:
             temple = temples.get(city)
-            if temple is None:
-                errors.append(f"{key}: city {city} is not a City Area")
+            if city not in temples:
+                errors.append(f"{key}: city {city} is not an AREAS-1 city")
+            elif temple is None:
+                errors.append(f"{key}: city {city} has no hometown temple")
             elif not any(
                 temple["floor"] == box["floor"]
                 and box["min_x"] <= temple["x"] <= box["max_x"]

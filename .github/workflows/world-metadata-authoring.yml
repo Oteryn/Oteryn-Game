@@ -5,22 +5,21 @@ on:
     paths:
       - tools/content-schema/world-authoring/**
       - tools/content-schema/validate_materialized_game_tree.py
-      - content/world/areas/**
       - content/world/transitions/**
       - content/world/placements/**
       - content/world/worlds/**
       - content/world/objects/**
       - content/world/terrain/**
+      - content/world/areas/hunting-places/**
+      - content/world/areas/islands/**
+      - content/world/areas/cities/**
+      - content/world/areas/regions/**
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/hunting-places/**
       - imports/tibiawiki/islands/**
-      - imports/tibiawiki/cities/**
       - content/npcs/definitions/**
-      - imports/official/client-assets/15.30/manifest.json
       - content/assets/files/catalog-content.json
       - content/assets/files/appearances-*.dat
-      - content/assets/files/map-*.dat
-      - content/assets/files/subarea-*
       - .github/workflows/world-metadata-authoring.yml
   workflow_dispatch:
 
@@ -43,8 +42,15 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
           persist-credentials: false
+
+      - name: Verify checked-out SHA
+        working-directory: .
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -57,11 +63,9 @@ jobs:
       - name: Validate committed world metadata and base map families
         run: |
           set -euo pipefail
-          python convert_city_facts.py --check
           python convert_hunting_places.py --check
           python convert_islands.py --check
           python validate_islands.py
-          python convert_map_regions.py --check
           python validate_world_metadata.py
           python validate_world_base.py
           python convert_world_record.py --check

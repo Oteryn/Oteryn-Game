@@ -10,6 +10,8 @@
   `imports/tibiawiki/achievements/2026-09-29/` (572 TibiaWiki records and their join to the client records; merged
   in #1286)
 - Tooling: `tools/content-schema/achievement-authoring/`
+- Pending amendment: `OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md` (candidate) amends the display and points rule of
+  §2.3 and §4 on its acceptance; until then the text below applies
 - Does not authorize: a migration, runtime or protocol code, client or website display, or populating
   `content/achievements/`
 
@@ -79,7 +81,9 @@ The catalogue is populated in a separate content change, not by this contract:
 
 A world's catalogue entry is compatible with a recorded fact when it has the fact's key. Because a key never
 changes meaning (§2.1), no other test is needed. A fact whose key the world's catalogue lacks is not shown and
-counts no points there; the fact is unchanged.
+counts no points there; the fact is unchanged. Pending amendment: on acceptance of
+`OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md`, its §2.1 replaces the previous sentence (every recorded fact is shown
+and counted from its key's record in this catalogue).
 
 ## 3. Grant path
 
@@ -110,7 +114,9 @@ Exclusive-choice achievements (Marid Ally, Efreet Ally) can be earned by differe
 
 An account's points are the sum of `points` over its facts whose keys the evaluating world's catalogue has. They
 count once per account and carry no gameplay value (D48). Rankings rank accounts. How a ranking or a character
-page reads them is a Platform or Atlas export question and is not decided here.
+page reads them is a Platform or Atlas export question and is not decided here. Pending amendment: on acceptance
+of `OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md`, its §2.1 replaces the first sentence (the sum over all of the
+account's facts, each read from the catalogue record of its key; a retired record has 0 points).
 
 ## 5. Delivery order
 
@@ -124,6 +130,7 @@ page reads them is a Platform or Atlas export question and is not decided here.
 
 - Physical schema and migration (step 3).
 - Progress counters: each stays with the domain that counts (D48) and needs its own owner.
-- Protocol, client display of secret achievements, and the website and ranking export.
+- Protocol and client display are in `OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md`; the website and ranking export
+  stay undecided.
 - Declared differences in the Reference parity manifest (account scope, D48) (follow-up of the account-progress
   decision).

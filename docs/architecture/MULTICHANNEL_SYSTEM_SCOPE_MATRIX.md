@@ -91,6 +91,11 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | Channel directory | World Registry | World | Health-driven/eventual with guarded admission | Lists and routes channels | Shared control plane |
 | Game Session | Gateway/session issuer | Character + World + Channel | Strong, short-lived | Frozen to selected channel | Mandatory binding |
 
+**Pending on acceptance of BANK-0** (`reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md`):
+the Bank row becomes "Game bank ledger (BANK-0); Account + World (owner answer 1b, #162
+5912593702); strong durable, immutable ledger; the same balance on all channels of the World,
+another World has its own; shared".
+
 ## Required identity envelope
 
 Every runtime command, event and timer that can mutate or address gameplay state must carry enough identity to resolve its owner without process-global lookup.

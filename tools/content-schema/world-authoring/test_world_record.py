@@ -80,11 +80,9 @@ def make_root(root: Path) -> None:
         {"coordinate_frame": FRAME, "world_id": "0123456789ab70cd8ef0123456789abc"},
     )
     families = {
-        "Area.City": {"temple": pos(800, 800, 7)},
         "Transition.Teleport": {"from": pos(800, 800, 7), "to": pos(900, 1000, 9)},
-        "Area.HuntingPlace": {"position": pos(1000, 1480, 7)},
-        "Area.Region": {
-            "anchor": pos(800, 800, 7),
+        "Area.HuntingPlace": {
+            "position": pos(1000, 1480, 7),
             "footprint": {
                 "coordinate_frame": FRAME,
                 "floor": 7,
@@ -204,7 +202,6 @@ class WorldRecordTest(unittest.TestCase):
 
     def test_positions_outside_bounds_or_floors_are_rejected(self):
         cases = {
-            "Area.City": ("temple", pos(1024, 800, 7), "outside the world bounds"),
             "Transition.Teleport": ("to", pos(900, 1000, 8), "undeclared floor"),
             "Area.HuntingPlace": ("position", pos(1000, 774, 7), "outside"),
         }
@@ -220,8 +217,8 @@ class WorldRecordTest(unittest.TestCase):
                 write(self.root, path, shard)
         self.assertEqual(self.errors(), [])
 
-    def test_region_footprint_positions_are_rejected(self):
-        path = f"{validate.FAMILIES['Area.Region'][0]}/x-00000-00000.json"
+    def test_footprint_positions_are_rejected(self):
+        path = f"{validate.FAMILIES['Area.HuntingPlace'][0]}/x-00000-00000.json"
         shard = json.loads((self.root / path).read_text())
         declaration = shard["records"][0]["declaration"]
         declaration["footprint"]["floor"] = 8
@@ -294,9 +291,9 @@ class SharedDirectoryRuleTest(unittest.TestCase):
         path = "content/world/areas/cities/"
         payload = {
             "population_state": "POPULATED",
-            "shards": [path + "cities-00000-00000.json"],
+            "shards": [path + "areas-00000-00000.json"],
         }
-        local = {"index.json", "cities-00000-00000.json", "world.json"}
+        local = {"index.json", "areas-00000-00000.json", "world.json"}
         with self.assertRaises(tree.ValidationError):
             tree.check_family_index(path, payload, local, {"world.json"})
         tree.check_family_index(path, payload, local - {"world.json"}, set())

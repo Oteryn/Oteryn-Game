@@ -172,7 +172,9 @@ def check_region(row: dict) -> dict:
     return result
 
 
-def check_index(index: dict, summary: dict, errors: list[str]) -> None:
+def check_index(
+    index: dict, summary: dict, errors: list[str], root: Path | None = None
+) -> None:
     if set(index) != INDEX_KEYS:
         errors.append(f"{INDEX}: keys must be exactly {sorted(INDEX_KEYS)}")
     expected = {
@@ -203,6 +205,18 @@ def check_index(index: dict, summary: dict, errors: list[str]) -> None:
         errors.append(
             f"{INDEX}: item_bindings must name {ITEM_BINDINGS} and its sha256"
         )
+    elif root is not None:
+        # The palette keys derive from this file: its actual bytes must be the pinned ones.
+        try:
+            actual = hashlib.sha256((root / ITEM_BINDINGS).read_bytes()).hexdigest()
+        except OSError as error:
+            errors.append(f"{ITEM_BINDINGS}: unreadable ({error})")
+        else:
+            if actual != bindings["sha256"]:
+                errors.append(
+                    f"{INDEX}: item_bindings.sha256 {bindings['sha256']} differs from "
+                    f"the actual {ITEM_BINDINGS} sha256 {actual}; regenerate the palette"
+                )
     generator = str(index.get("generator"))
     if not (HERE.parents[2] / generator).is_file():
         errors.append(f"{INDEX}: generator {generator!r} does not exist")
@@ -614,8 +628,9 @@ def check_palette(
         if key in keys:
             errors.append(f"{where}: key {key!r} is listed twice")
         keys.add(key)
-        # A12 section 4.6 precedence: Terrain catalogue, WorldObject catalogue, Item key
-        # with an Item record, else the provisional donor key.
+        # Canonical key precedence (architect ruling #162 Q1b): the Item key of an id with an
+        # Item record, else the Terrain catalogue key, else the WorldObject catalogue key,
+        # else the provisional donor key.
         if row["provisional"]:
             if key != f"{DONOR_PREFIX}{server_id}":
                 errors.append(
@@ -623,6 +638,12 @@ def check_palette(
                 )
             if server_id in bound or server_id in terrain or server_id in world_object:
                 errors.append(f"{where}: provisional id {server_id} has a family key")
+        elif server_id in bound:
+            if key not in bound[server_id]:
+                errors.append(
+                    f"{where}: id {server_id} has an Item record and must use "
+                    f"its Item key, not {key!r}"
+                )
         elif server_id in terrain:
             if key != terrain[server_id]:
                 errors.append(f"{where}: id {server_id} must use {terrain[server_id]}")
@@ -631,10 +652,10 @@ def check_palette(
                 errors.append(
                     f"{where}: id {server_id} must use {world_object[server_id]}"
                 )
-        elif key not in bound.get(server_id, ()):
+        else:
             errors.append(
-                f"{where}: key {key!r} is not a Terrain or WorldObject catalogue key, "
-                f"nor an Item key with a record, of server id {server_id}"
+                f"{where}: key {key!r} is not an Item key with a record and not a "
+                f"catalogue key of server id {server_id}"
             )
     return len(errors) == start
 
@@ -728,7 +749,7 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
         return errors
     index = load(root, INDEX)
     summary = load(root, SUMMARY)
-    check_index(index, summary, errors)
+    check_index(index, summary, errors, root)
     rows = index.get("regions", [])
     paths = [row.get("path") for row in rows]
     if index.get("shards") != paths:

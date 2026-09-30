@@ -7,10 +7,12 @@ item, an index into the ``palette`` of index.json. The palette holds one entry p
 map server item id and is append-only: a fresh build orders entries by ascending id, and a
 build over a committed palette keeps every entry at its index, appends new ids at the end
 in ascending id order and flags an entry the map no longer uses ``"retired": true``. An id
-routed by A12 section 4.6 (WO-0 D93/D94) resolves to the committed Terrain catalogue key
-(`oteryn:terrain.tibia.i<id>`), else to the committed WorldObject catalogue key
-(`oteryn:world-object.tibia.i<id>`), else, when bound in the item bindings to an Item key that
-has an Item record, to that Item key. Any other id, including every appearance-only id, gets a
+resolves to its canonical A12 key in this order (architect ruling, #162 Q1b): the Item key it
+is bound to in the item bindings when that key has an Item record in
+`content/items/definitions` (even when the id is routed to Terrain or WorldObject; the compiler
+follows `routed_to` later), else the committed Terrain catalogue key
+(`oteryn:terrain.tibia.i<id>`), else the committed WorldObject catalogue key
+(`oteryn:world-object.tibia.i<id>`). Any other id, including every appearance-only id, gets a
 provisional donor key. The conversion fails closed on an item or tile attribute it does
 not carry.
 
@@ -235,12 +237,12 @@ def palette_entry(
     terrain: dict[int, str] | None = None,
     world_object: dict[int, str] | None = None,
 ) -> dict:
-    """Terrain catalogue key, else WorldObject catalogue key, else Item key (with an Item
-    record), else the provisional donor key (A12 section 4.6)."""
+    """Item key (bound to an Item record), else Terrain catalogue key, else WorldObject
+    catalogue key, else the provisional donor key (architect ruling #162 Q1b)."""
     key = (
-        (terrain or {}).get(server_id)
+        bound.get(server_id)
+        or (terrain or {}).get(server_id)
         or (world_object or {}).get(server_id)
-        or bound.get(server_id)
     )
     return {
         "key": key or donor_key(server_id),

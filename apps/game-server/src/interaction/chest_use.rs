@@ -18,7 +18,8 @@
 //!   calling [`settle_chest_use`] again with the same request reconciles it.
 //! - **Replay precondition.** A replay recomputes the intent from the current Content and the
 //!   equipped backpack; nothing is read back from the stored candidate. It returns the first
-//!   outcome only while the chest placement, the reward item and the backpack definitions are
+//!   outcome only while the chest placement, its claim entry (reward and achievement), the
+//!   reward item and the backpack definitions and the achievement's catalogue entry are
 //!   unchanged and the same backpack is equipped. Otherwise it is refused or conflicts before any
 //!   DUR-03 write, and the committed first outcome stays durable. The FND-02 command-result
 //!   replay (§17.1) is the path that must answer a duplicate `CommandRef` after such a change.
@@ -34,6 +35,14 @@
 //! [`resolve_item_definition_facts`]; the MINT's own admission still enforces every D40-D42 and
 //! D92 rule, so an item without a known stack class fails closed (D82).
 //!
+//! Achievement (`OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1` §3, §5 step 4): the key is the claim
+//! placement's `achievement` in Content (the RewardClaim format's `placements[].achievement`,
+//! quest authoring format §4, bound to its catalogue key at authoring, contract §2.2). Its entry
+//! is resolved in the runtime [`AchievementCatalogue`]; the caller names neither. The MINT grants
+//! it in its fenced commit (`Earnable`), records nothing (`Retired`) or refuses the claim before
+//! any write (`Absent`, which Content validation at activation already refuses, §3.3). A chest
+//! without an achievement grants none.
+//!
 //! Like B3-2, this has no production caller yet: the client `USE` command (control-wire lane)
 //! and its network dispatch are a later stage. Note for that dispatch: a commit that did not
 //! finish (ambiguous, or rejected by a stale fence) leaves its reservation pending, and every
@@ -44,6 +53,7 @@
 //! `tests/interaction_workflow.rs` recompiles `interaction/mod.rs` without Content or
 //! durability.
 
+use crate::achievement_catalogue::AchievementCatalogue;
 use crate::combat::DurabilitySession;
 use crate::combat_pickup::{PickupContentError, resolve_item_definition_facts};
 use crate::content::{
@@ -53,7 +63,8 @@ use crate::content::{
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{CurrentCharacterItemFence, ItemTransferError};
 use crate::durability::reward_claim_mint::{
-    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+    RewardClaimAchievement, RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest,
+    RewardClaimRefusal,
 };
 use crate::foundation::CommandRef;
 use crate::interaction::{
@@ -186,7 +197,7 @@ pub(crate) fn chest_use_occurrence(
 }
 
 /// A placed chest resolved from the current Content: its placement definition, the claim that
-/// lists it and that placement's reward.
+/// lists it and that placement's reward and achievement.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ResolvedChest {
     /// The placement definition as `Item:key@revision` (§5.3).
@@ -194,6 +205,8 @@ pub(crate) struct ResolvedChest {
     pub(crate) claim: TypedDefinitionRef,
     pub(crate) reward_item: TypedDefinitionRef,
     pub(crate) quantity: u32,
+    /// That placement's `oteryn:achievement/<slug>` key, if the chest grants one.
+    pub(crate) achievement: Option<String>,
 }
 
 fn durable_ref(family: &str, definition: &ContentDefinitionRef) -> TypedDefinitionRef {
@@ -244,14 +257,29 @@ pub(crate) fn resolve_chest(
         claim: durable_ref("RewardClaim", claim),
         reward_item: durable_ref("Item", &reward.item),
         quantity: reward.count,
+        achievement: entry.achievement.clone(),
+    })
+}
+
+/// The chest's achievement with its entry in the world's catalogue; `None` for a chest that
+/// grants none.
+fn chest_achievement(
+    achievements: &AchievementCatalogue,
+    key: Option<String>,
+) -> Option<RewardClaimAchievement> {
+    key.map(|key| RewardClaimAchievement {
+        catalogue: achievements.lookup(&key),
+        key,
     })
 }
 
 /// Everything before DUR-03: resolve the chest and the facts from `content` and the equipped
-/// backpack, and build the child occurrence and the MINT intent. Reads only; writes nothing.
+/// backpack, the achievement's entry from `achievements`, and build the child occurrence and the
+/// MINT intent. Reads only; writes nothing.
 pub(crate) async fn prepare_chest_use(
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
+    achievements: &AchievementCatalogue,
     fence: CurrentCharacterItemFence,
     request: ChestUseRequest,
 ) -> Result<(ChildOccurrenceRef, RewardClaimMintRequest), ChestUseError> {
@@ -279,9 +307,7 @@ pub(crate) async fn prepare_chest_use(
         content_revision: request.content_revision,
         ruleset_revision: request.ruleset_revision,
         sim_revision: request.sim_revision,
-        // The chest placement carries no achievement yet: resolving one needs
-        // the achievement catalogue lookup, which D39 does not have.
-        achievement: None,
+        achievement: chest_achievement(achievements, chest.achievement),
     };
     Ok((child, mint_request))
 }
@@ -291,10 +317,12 @@ pub(crate) async fn prepare_chest_use(
 pub(crate) async fn settle_chest_use(
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
+    achievements: &AchievementCatalogue,
     fence: CurrentCharacterItemFence,
     request: ChestUseRequest,
 ) -> Result<ChestUseOutcome, ChestUseError> {
-    let (child, mint_request) = prepare_chest_use(session, content, fence, request).await?;
+    let (child, mint_request) =
+        prepare_chest_use(session, content, achievements, fence, request).await?;
     let mut candidate = session
         .root
         .freeze_reward_claim_mint(session.authority, session.node, fence, mint_request)
@@ -343,6 +371,7 @@ mod tests {
                 revision_ref: "definition-r1".into(),
             },
             quantity: 1,
+            achievement: None,
         }
     }
 
@@ -420,6 +449,38 @@ mod tests {
             chest_use_occurrence(&empty, &chest),
             Err(InteractionError::EmptySemanticKey)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn the_chest_achievement_is_resolved_in_the_catalogue() -> TestResult {
+        use crate::durability::account_achievement::AchievementCatalogueLookup;
+        let catalogue = AchievementCatalogue::embedded().map_err(|error| format!("{error:?}"))?;
+        assert_eq!(chest_achievement(&catalogue, None), None);
+        for (key, catalogue_entry) in [
+            (
+                "oteryn:achievement/annihilator",
+                AchievementCatalogueLookup::Earnable {
+                    revision: "1".into(),
+                },
+            ),
+            (
+                "oteryn:achievement/the_more_the_merrier",
+                AchievementCatalogueLookup::Retired,
+            ),
+            (
+                "oteryn:achievement/not_in_the_catalogue",
+                AchievementCatalogueLookup::Absent,
+            ),
+        ] {
+            assert_eq!(
+                chest_achievement(&catalogue, Some(key.into())),
+                Some(RewardClaimAchievement {
+                    key: key.into(),
+                    catalogue: catalogue_entry,
+                })
+            );
+        }
         Ok(())
     }
 }

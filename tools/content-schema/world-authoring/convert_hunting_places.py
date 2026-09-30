@@ -2,7 +2,7 @@
 """Convert the pinned English TibiaWiki hunting-place snapshot into `Area.HuntingPlace` records.
 
 Reads `imports/tibiawiki/hunting-places/fandom-snapshot-v1.json` (offline; captured by
-`fandom_hunting_snapshot.py`) and the committed City Areas, and writes
+`fandom_hunting_snapshot.py`) and the AREAS-1 City Areas (content/world/areas/cities/), and writes
 content/world/areas/hunting-places/ plus `samples/hunting-places-capture-v1.json`. Only
 facts that parse unambiguously are written; everything else is omitted and counted.
 
@@ -26,6 +26,7 @@ SNAPSHOT = "imports/tibiawiki/hunting-places/fandom-snapshot-v1.json"
 SUMMARY = "tools/content-schema/world-authoring/samples/hunting-places-capture-v1.json"
 CRYSTAL_SUMMARY = "tools/content-schema/world-authoring/samples/source-capture-v1.json"
 GENERATOR = "tools/content-schema/world-authoring/convert_hunting_places.py"
+CITY_DIRECTORY = "content/world/areas/cities"
 SNAPSHOT_SCHEMA = "OTERYN_TIBIAWIKI_FANDOM_HUNTING_PLACES_SNAPSHOT/v1"
 NAMESPACE = "tibiawiki-fandom/page-id"
 SOURCE_KEY = "oteryn:source.tibiawiki"
@@ -85,15 +86,11 @@ def parse_mapper_coords(raw: str) -> tuple[int, int, int] | None:
 
 
 def city_names(root: Path) -> dict[str, str]:
-    """Lower-cased City Area name -> key, from the committed City family."""
-    directory = root / base.FAMILIES["Area.City"]["dir"]
+    """Lower-cased City Area name -> key, from the AREAS-1 city records in main."""
     names: dict[str, str] = {}
-    for shard in json.loads((directory / "index.json").read_text(encoding="utf-8"))[
-        "shards"
-    ]:
-        for record in json.loads((root / shard).read_text(encoding="utf-8"))["records"]:
-            declaration = record["declaration"]
-            names[declaration["name"].lower()] = declaration["identity"]["key"]
+    for shard in sorted((root / CITY_DIRECTORY).glob("areas-*.json")):
+        for area in json.loads(shard.read_text(encoding="utf-8"))["areas"]:
+            names[area["name"].lower()] = area["identity"]["key"]
     return names
 
 
@@ -261,20 +258,7 @@ def main() -> int:
     except (base.ConvertError, OSError, KeyError, json.JSONDecodeError) as error:
         print(f"FAIL {error!r}", file=sys.stderr)
         return 1
-    stale = [
-        path
-        for path, data in out.items()
-        if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data
-    ]
-    if args.check:
-        for path in stale:
-            print(f"STALE {path}", file=sys.stderr)
-        return 1 if stale else 0
-    for path in stale:
-        (ROOT / path).parent.mkdir(parents=True, exist_ok=True)
-        (ROOT / path).write_bytes(out[path])
-    print(f"wrote {len(stale)} of {len(out)} files")
-    return 0
+    return base.apply(out, args.check)
 
 
 if __name__ == "__main__":

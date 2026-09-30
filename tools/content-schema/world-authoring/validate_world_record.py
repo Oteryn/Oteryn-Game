@@ -5,7 +5,7 @@ python validate_world_record.py [--root REPOSITORY_ROOT]
 
 Checks the family files (schema, canonical bytes, no stray file beside the legacy locator),
 that the record's bounds and floors equal the exact tile bounding box and floors of the
-committed base map, that the source map header covers the bounds, and that every city,
+committed base map, that the source map header covers the bounds, and that every
 teleport and hunting place position lies inside the bounds
 on a declared floor. Base map tiles are inside by the exact-extent equality.
 """

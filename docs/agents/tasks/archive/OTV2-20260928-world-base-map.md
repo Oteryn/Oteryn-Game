@@ -53,15 +53,18 @@ sha256-pinned and `OtsHypothesisOnly`.
   order: `{key, source_item_id, provisional}`.
   - A bound id (`imports/crystalserver/bindings/items.json`, `ots/item_server_id`) takes its
     binding target key, registry or named, with `provisional: false`.
-  - A12 section 4.6 alignment (WO-2 #1319 @907ed0f0, owner order: #1319 merges first, then this PR
-    regenerates): order Terrain catalogue key `oteryn:terrain.tibia.i<id>` (7,576 palette
-    entries), else WorldObject catalogue key `oteryn:world-object.tibia.i<id>` (7,699), else
-    the Item binding target with an Item record (4,714), else the provisional donor key.
+  - Key order (architect ruling #162 Q1b, supersedes catalogue-first): the Item key of an id
+    with an Item record (19,989 entries, including the 7,576 Terrain and 7,699 WorldObject ids
+    that have records; the compiler follows `routed_to`), else the Terrain then the WorldObject
+    catalogue key (0 today), else the provisional donor key. Regenerated with region files
+    byte-identical.
   - Any other id takes `donor:crystalserver@00ce02a5:item/<id>` with `provisional: true`:
     5,995 entries (5,949 appearance-only ids with a client appearance, id 99, 45 `items.xml`
-    ids of which 40 are bound to an undefined Item key).
-  - This PR writes neither `content/world/terrain/` nor `content/world/objects/`: they are
-    the WO-2 catalogues; the earlier own `Terrain` and `WorldObject.FloorChange` families are removed.
+    ids).
+  - This PR writes neither `content/world/terrain/` nor `content/world/objects/` (WO-2
+    catalogues), nor `areas/{cities,regions}/`: City and Region are the AREAS-1 Area
+    catalogue in `main` (#1353, keys `oteryn:content.area.city.<slug>`); the earlier own
+    Terrain, FloorChange, City and Region families and their converters are removed.
   - Item identity work later rewrites palette entries only. Region files do not change.
 - **Format:** measured before selection (about 22 MB versus 3.25 GB as JSON sectors). Spec
   in the `world_region_codec.py` docstring.
@@ -88,35 +91,35 @@ sha256-pinned and `OtsHypothesisOnly`.
       and floors 0-15, generated offline by `convert_world_record.py --check`. The one
       explicit exception to "no family beside a legacy locator" is `worlds/` (index plus
       exactly one shard); the repository test scan budget grows by exactly that entry.
-      `validate_world_record.py` checks every placement extent, City, teleport and
+      `validate_world_record.py` checks every placement extent, teleport and
       hunting place position against the bounds and floors.
 - [x] Floor changes have no family here: the WO-2 catalogues carry the `floorchange` value as the
       `floor_change` fact (444 of 447 item types: 158 Terrain, 286 WorldObject; 166, 167 and 53431
       stay Items and are listed in `edron_rework.py`). The base capture summary keeps the counts
       (`floor_changes`: 331 types on the map, 28,160 occurrences). Ladders up, rope spots, sewer
-      grates and tool holes are scripted uses and are not invented.
+      grates and tool holes are scripted uses.
 - [x] `Area.Island` holds only islands the base map confirms (owner rule): 60 records
       (56 island, 3 archipelago, 1 continent; 3 event-only; 1 underground) computed by
       `convert_islands.py --check` from the committed region files, the pinned TibiaWiki
       snapshot (`imports/tibiawiki/islands/fandom-snapshot-v1.json`),
       `island-ground-classes.json` and the owner-approved `island-evidence-anchors.json`
       (each record keeps `anchor_source`). Each record has a map-computed footprint and anchor,
-      the cities whose temple lies in the component, page-id bindings and the wiki evidence
+      the AREAS-1 cities whose hometown temple lies in the component (13 city and wiki-city
+      links resolve by exact name or temple; 20 referenced a city AREAS-1 lacks and are
+      dropped and counted), page-id bindings and the wiki evidence
       sentence. Percht Island merges into Orcsoberfest Island; Fibula uses the map-corrected
       island; Newhaven has two components. 7 candidates are excluded with a reason in
       `samples/islands-capture-v1.json`. `validate_islands.py` and `test_islands.py` pass.
 - [x] Blue Valley is partially filled from `maps.7z:blue_valley.otbm` (fill-only: a tile is
       added only where the base map has no tile at that position, nothing existing is
-      overwritten or merged): 2,965 tiles and 3,364 items added (floor 2 118, floor 3 219,
-      floor 4 685, floor 5 918, floor 6 1,025; floor 7 none from the fill), pinned by the
+      overwritten or merged): 2,965 tiles and 3,364 items added, pinned by the
       sha256 of the archive and member, counts in the capture summary `fill`, reproduced by
       `convert_world_base.py --check` (needs `py7zr`, `requirements-regenerate.txt`).
 - [x] `maps.7z:summer-update-2025.otbm` is partially filled (owner decision 2b, fill-only,
       pinned, `--check`): the converter takes fragment tiles the base lacks, floors 8-15 by
       4-connected component except the Edron underground (box x33274-33456, y31786-31884,
       floors 8-12; reworked by the next item), floors 0-7 only where the official 15.30
-      minimap shows land. 16,928 tiles, 19,667 items (floors 2-6 151, floor 8 1,913, 9 5,678,
-      10 584, 11 611, 12 169, 13 3,608, 14 3,619, 15 595), 6 provisional palette entries.
+      minimap shows land. 16,928 tiles, 19,667 items, 6 provisional palette entries.
 - [x] Blue Valley floor 7 (owner decision 1a): the `replace` rule of the same pin swaps a
       base tile for the fragment tile only where the base ground is water, the fragment
       ground is land and the 15.30 minimap ZZ07 shows land: 905 tiles (896 inside the Blue
@@ -132,8 +135,7 @@ sha256-pinned and `OtsHypothesisOnly`.
       official minimap land; only missing or plain-water tiles, fill tiles count as base.
       22,978 tiles added, 18,520 replaced (counts per floor in README and summary); none under
       the 5% skip limit. 18 yellow markers are `unresolved_entrances`. Blue Valley island
-      15,612 tiles. Temple of Light is event-only because the wiki marks it an event place, not
-      the map: converter right. The drawing list is drafted and needs detail work.
+      15,612 tiles. Temple of Light is event-only because the wiki marks it so.
 - [x] Edron underground (owner decision 1a, reference-derived): floors 9 and 10 of the box
       are imported from the summer file and repaired with the player-recorded real-Tibia
       minimap (tibiamaps/tibia-map-data, sha256-pinned in `source.edron`, read from
@@ -143,20 +145,22 @@ sha256-pinned and `OtsHypothesisOnly`.
 - [x] Appearance-only ids (declared by the official 15.30 client `appearances-2dfa943b....dat`, not by
       `items.xml`) stay provisional, since no A12 family covers them. `samples/appearance-only-ids-v1.json`
       lists 5,949 of them with class and occurrences as evidence for the WO lane
-      (`convert_appearance_only_ids.py --check`). The palette regenerated on the accepted
-      keys with region files byte-identical; `validate_world_base.py` requires every
-      non-provisional key to exist in its family.
+      (`convert_appearance_only_ids.py --check`). `validate_world_base.py` requires every
+      non-provisional key to follow the key order above.
+- [x] Codex review fixes: P1 (the workflow checks out and verifies the PR head SHA, same as
+      #1160) and P2 (`validate_world_base.py` hashes the real `items.json` and fails when it
+      differs from `item_bindings.sha256`; `test_world_base.py` covers it).
 - [x] Required checks pass on the frozen PR head; merge commit: squash merge of #1170.
 
 ## Excluded scope
 
 - Admitting provisional items (item B1b).
-- A patch layer for authored Oteryn edits over a regenerated base.
+- A patch layer for authored edits over a regenerated base.
 - Runtime consumption, the per-channel overlay and the native `WorldTilePosition` mapping.
 - `access.otbm`, `asura_resp.otbm`, `boss_rooms_-_part_2.otbm` and `final.otbm` of
   `data-global/world/15.30/`: unreferenced local-coordinate drafts (17,801 tiles, absent from
   the base, overlapping the off-by-default Movement Trainer of `custom/global-custom.otbm`).
-  Owner decision: not imported, deferred.
+  Deferred by owner decision.
 - The other `maps.7z` members (`newheaven`, `winter-update-2025`: one tile each) and the six
   `15.30/` fragment maps already in `world.otbm` (0 missing tiles; the base wins). Known
   gap: the General Murius raid spawn (32427,31131,15) has no tile in the base.
@@ -168,8 +172,7 @@ sha256-pinned and `OtsHypothesisOnly`.
   pass.
 - `convert_islands.py --check`, `validate_islands.py` and `test_islands.py` pass.
 - `convert_appearance_only_ids.py --check` (pinned checkout) passes.
-- `tools/content-census/item_key_references.py` fails on `main` itself (991 dangling keys in
-  `imports/tibiawiki/facts/items-stats.json`); this branch adds none.
+- `tools/content-census/item_key_references.py` passes.
 - `validate_world_base.py` passes; `test_world_base.py` and `test_world_authoring.py` pass.
 - `ruff check` and `ruff format --check` pass from the repository root.
 - `validate_materialized_game_tree.py`, `validate_governance.py` and

@@ -28,7 +28,7 @@ import fandom_hunting_snapshot as wiki
 
 ROOT = wiki.ROOT
 SNAPSHOT_PATH = "imports/tibiawiki/islands/fandom-snapshot-v1.json"
-CITIES_INDEX = "content/world/areas/cities/index.json"
+CITIES_DIRECTORY = "content/world/areas/cities"
 SCHEMA = "OTERYN_TIBIAWIKI_FANDOM_ISLANDS_SNAPSHOT/v1"
 LICENSE_NOTE = (
     "TibiaWiki (Fandom), CC BY-SA; only page identity, the wiki's map coordinates, status "
@@ -136,6 +136,14 @@ DERIVED = {
     ],
     "Vandura": [("Liberty Bay", 32309, 32794, 7)],
     "Vega": [("Ice Islands", 31991, 31700, 7)],
+}
+# CrystalServer town temples of places that have no AREAS-1 city (the removed City drafts
+# held them); the committed snapshot pins these coordinates.
+CITY_TEMPLE_FALLBACK = {
+    "Island of Destiny": (32091, 32027),
+    "Marapur": (33842, 32853),
+    "Newhaven": (32536, 32514),
+    "Targuna": (31934, 31925),
 }
 # A page named like a City Area without coordinates uses that city's temple x/y on this floor.
 CITY_TEMPLE = {
@@ -302,14 +310,14 @@ def infobox_status(wikitext: str) -> list[str]:
 
 
 def city_temples(root: Path = ROOT) -> dict[str, tuple[int, int]]:
-    """City name -> temple (x, y) from the committed City Areas."""
-    index = json.loads((root / CITIES_INDEX).read_text(encoding="utf-8"))
-    temples = {}
-    for shard in index["shards"]:
-        for record in json.loads((root / shard).read_text(encoding="utf-8"))["records"]:
-            declaration = record["declaration"]
-            temple = declaration["temple"]
-            temples[declaration["name"]] = (temple["x"], temple["y"])
+    """City name -> temple (x, y): the AREAS-1 hometowns, else the fallback table."""
+    temples = dict(CITY_TEMPLE_FALLBACK)
+    for shard in sorted((root / CITIES_DIRECTORY).glob("areas-*.json")):
+        for record in json.loads(shard.read_text(encoding="utf-8"))["areas"]:
+            hometown = record["hometown"]
+            if hometown:
+                temple = hometown["temple"]
+                temples[record["name"]] = (temple["x"], temple["y"])
     return temples
 
 

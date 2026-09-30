@@ -1,1 +1,10 @@
-{"coordinate_frame":"global-target-2026-09-27","enrichment":{"evidence":"Derived","fetched_at":"2026-09-29","generator":"tools/content-schema/world-authoring/convert_city_facts.py","license":"TibiaWiki (Fandom), CC BY-SA; only raw values of a few short factual infobox fields (implemented version, ruler, neighbouring places) and the NPC names of the city's NPC category are recorded, never article prose.","site":"https://tibia.fandom.com","snapshot":{"path":"imports/tibiawiki/cities/fandom-snapshot-v1.json","sha256":"a2a7e4213050a71665bd156a4d43a2f27bf0b5fb89b51440061a73e622b01fe0"},"source_key":"oteryn:source.tibiawiki"},"family":"Area.City","generator":"tools/content-schema/world-authoring/convert_world_metadata.py","population_state":"POPULATED","record_count":35,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/world/areas/cities/cities-00000-00034.json"],"source":{"evidence":"OtsHypothesisOnly","files":[{"path":"data-global/world/world.otbm","sha256":"dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7"}],"ref":"summer-update","repository":"zimbadev/crystalserver","revision":"00ce02a57ca5a12e48f32a3476e37471167e4c3f","source_key":"oteryn:source.crystalserver"}}
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "content/world/areas/cities/",
+  "kind": "static_content",
+  "owner": "Area",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "City Area definitions: 22 cities (the 19 House towns and the hometowns Rookgaard, Roshamuul and Dawnport) from the 15.30 client map areas, with the hometown temple of the 19 hometowns; built by tools/content-schema/area-authoring/build_areas.py."
+}

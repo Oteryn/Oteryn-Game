@@ -31,7 +31,6 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import client_appearance_reader as appearances
-import convert_map_regions as regions
 import convert_world_base as world_base
 import convert_world_metadata as metadata
 import world_region_codec as codec
@@ -39,6 +38,10 @@ from convert_world_metadata import ConvertError, canonical
 
 ROOT = metadata.ROOT
 HERE = metadata.HERE
+FILES = "content/assets/files"
+MANIFEST = "imports/official/client-assets/15.30/manifest.json"
+CLIENT_VERSION = "15.30"
+SOURCE_KEY = "oteryn:source.tibia_client"
 SAMPLE = HERE / "samples/appearance-only-ids-v1.json"
 PLACEMENTS_INDEX = f"{world_base.DIRECTORY}/index.json"
 APPEARANCES_NAME = re.compile(r"^appearances-([0-9a-f]{64})\.dat$")
@@ -63,25 +66,25 @@ def appearance_class(flags: frozenset[str]) -> str:
 
 def load_client(root: Path) -> tuple[dict[int, appearances.Appearance], dict]:
     """The decoded appearances and their pin, verified against the client asset manifest."""
-    manifest_doc = json.loads((root / regions.MANIFEST).read_text(encoding="utf-8"))
+    manifest_doc = json.loads((root / MANIFEST).read_text(encoding="utf-8"))
     files = {row["name"]: row["sha256"] for row in manifest_doc["files"]}
     names = sorted(n for n in files if APPEARANCES_NAME.fullmatch(n))
     if len(names) != 1:
         raise ConvertError("the client manifest must list exactly one appearances file")
     name = names[0]
-    data = (root / regions.FILES / name).read_bytes()
+    data = (root / FILES / name).read_bytes()
     digest = hashlib.sha256(data).hexdigest()
     if files[name] != digest or name != f"appearances-{digest}.dat":
         raise ConvertError(f"{name}: sha256 differs from the client asset manifest")
     source = {
-        "client_version": regions.CLIENT_VERSION,
+        "client_version": CLIENT_VERSION,
         "evidence": "OfficialClient",
-        "files": [{"path": f"{regions.FILES}/{name}", "sha256": digest}],
+        "files": [{"path": f"{FILES}/{name}", "sha256": digest}],
         "manifest": {
             "archive_sha256": manifest_doc["archive_sha256"],
-            "path": regions.MANIFEST,
+            "path": MANIFEST,
         },
-        "source_key": regions.SOURCE_KEY,
+        "source_key": SOURCE_KEY,
     }
     return appearances.read_appearances(data), source
 

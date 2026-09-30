@@ -1822,6 +1822,7 @@ fn reward_placement(
             item: item.clone(),
             count,
         }],
+        achievement: None,
     })
 }
 
@@ -1988,6 +1989,48 @@ fn reward_claim_shape_fails_closed() -> Result<(), ContentError> {
 }
 
 #[test]
+fn a_reward_claim_achievement_is_a_catalogue_key_never_a_source_ref() -> Result<(), ContentError> {
+    // Contract §2.2: the authoring ref `canary:achievement/annihilator` binds by slug to
+    // `oteryn:achievement/annihilator` before Content; Content carries only the bound key.
+    let mut bound = source_with_reward_claim()?;
+    reward_claim_kind_mut(&mut bound)?.placements[0].achievement =
+        Some("oteryn:achievement/annihilator".into());
+    let canonical = link_reference_playable(bound)?;
+    let achievements: Vec<Option<&str>> = canonical
+        .definitions
+        .iter()
+        .filter_map(|definition| match &definition.kind {
+            ReferenceDefinitionKind::RewardClaim(claim) => Some(claim),
+            _ => None,
+        })
+        .flat_map(|claim| &claim.placements)
+        .map(|entry| entry.achievement.as_deref())
+        .collect();
+    // Placements are sorted canonically: chest-b (the first listed) comes second.
+    assert_eq!(achievements, [None, Some("oteryn:achievement/annihilator")]);
+
+    for unbound in [
+        "canary:achievement/annihilator",
+        "annihilator",
+        "oteryn:achievement/",
+        "",
+    ] {
+        let mut candidate = source_with_reward_claim()?;
+        reward_claim_kind_mut(&mut candidate)?.placements[0].achievement = Some(unbound.into());
+        assert!(
+            matches!(
+                link_reference_playable(candidate),
+                Err(ContentError::InvalidArtifact(
+                    "reference-playable reward claim achievement must be an oteryn:achievement/ key"
+                ))
+            ),
+            "{unbound}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn reward_claim_items_resolve_only_to_typed_items() -> Result<(), ContentError> {
     let mut wrong_family = source_with_reward_claim()?;
     let item = reward_claim_kind_mut(&mut wrong_family)?.placements[0].items[0]
@@ -2075,5 +2118,53 @@ fn a_placement_cannot_place_a_reward_claim() -> Result<(), ContentError> {
             "reference-playable placement cannot place a reward claim"
         ))
     ));
+    Ok(())
+}
+
+#[test]
+fn reward_claim_count_fits_the_items_known_stack() -> Result<(), ContentError> {
+    let set_count =
+        |source: &mut ReferencePlayableContentSource, count| -> Result<(), ContentError> {
+            for entry in &mut reward_claim_kind_mut(source)?.placements {
+                entry.items[0].count = count;
+            }
+            Ok(())
+        };
+    // NonStackable: exactly one.
+    let mut single = source_with_reward_claim()?;
+    typed_item_kind_mut(&mut single)?.stack_class = ReferenceItemStackClass::NonStackable;
+    let mut two = single.clone();
+    set_count(&mut single, 1)?;
+    link_reference_playable(single)?;
+    set_count(&mut two, 2)?;
+    assert!(matches!(
+        link_reference_playable(two),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim count exceeds the Item's stack"
+        ))
+    ));
+
+    // StackCapable with a known maximum: at most that maximum.
+    let mut capped = source_with_reward_claim()?;
+    typed_item_kind_mut(&mut capped)?.semantics.stack =
+        ReferenceItemField::Known(ReferenceItemStack {
+            stackable: ReferenceItemField::Known(true),
+            stack_max: ReferenceItemField::Known(5),
+        });
+    let mut over = capped.clone();
+    set_count(&mut capped, 5)?;
+    link_reference_playable(capped)?;
+    set_count(&mut over, 6)?;
+    assert!(matches!(
+        link_reference_playable(over),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim count exceeds the Item's stack"
+        ))
+    ));
+
+    // Unknown stack facts are left to the MINT admission (D82).
+    let mut unknown = source_with_reward_claim()?;
+    set_count(&mut unknown, 1_000)?;
+    link_reference_playable(unknown)?;
     Ok(())
 }
