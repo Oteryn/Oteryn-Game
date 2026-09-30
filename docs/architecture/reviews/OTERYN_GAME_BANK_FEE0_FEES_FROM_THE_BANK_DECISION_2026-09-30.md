@@ -142,6 +142,11 @@ How does a fee fall back to the bank when the carried coins are not enough?
   paragraph also covers `FEE_DEBIT` entries.
 - **D178** is not touched: no new fee source, no new sink.
 
+**Amendment (pending on acceptance of HOUSE-OWN-0, #1368).** The house auction price and rent
+(owner decision D238) are bank-only, as Tibia takes them: they are not fees of §3 and never use coins
+first; their ledger entries reference a house operation, not a fee record
+(`OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md` §9).
+
 ## 7. Rejected options
 
 - **Bank first, then coins.** Tibia and Canary take coins first.

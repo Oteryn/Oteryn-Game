@@ -243,6 +243,11 @@ no `CharacterRevision` advance, the item writer's fence. NPC-TRADE-1 and
 NPC-TRAVEL-1 widen `0023` (fee source kinds, the root-advance requirement for an item-only source,
 and the entry-removal proof) in their own migrations.
 
+**Amendment (HOUSE-OWN-0, owner decision D238), pending on acceptance of HOUSE-OWN-0 (#1368).**
+Two variants are added: `HousePrice {house, auction}` and `HouseRent {house, period}`. Both are
+paid only from the bank, never from coins, and are not `0023` fee records: their ledger entries
+reference a house operation (`OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md` §9).
+
 ### 4.5 Audit evidence
 
 One event per logical transaction (`DUR03-RL-07-EVENTS` = 1), one closed aggregate with the §39

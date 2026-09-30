@@ -121,6 +121,13 @@ Where does a bank balance live, and how do deposit, withdraw and transfer work?
   its own. Game owns it as in-game value. Platform never writes it, and it never converts to money,
   Tibia Coins or another World's balance. Atlas may read an export.
 
+**Amendment (pending on acceptance of HOUSE-OWN-0, #1368; `OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md` §9).** The ledger
+gains the house kinds `HOUSE_BID_RESERVE`, `HOUSE_BID_RELEASE`, `HOUSE_PRICE` and `HOUSE_RENT`; an
+entry references exactly one of a bank operation, a fee record, a Market operation or a house
+operation; a deferred guard per house operation sums its ledger deltas, bid escrow change and burns
+to 0; escrow returns may exceed `BANK0-RL-01` up to 9,000,000,000,000,000. Price and rent are
+burns of house shapes; the bank shapes of §5 still have none.
+
 ## 4. Operations (BANK-1)
 
 ### 4.1 Common rules

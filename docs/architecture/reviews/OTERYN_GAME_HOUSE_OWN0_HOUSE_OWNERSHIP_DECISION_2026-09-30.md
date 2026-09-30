@@ -2,8 +2,9 @@
 
 - Decision: `HOUSE-OWN0-PHYSICAL-HOUSE-OWNERSHIP-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
-  economy, security and protocol) and protected integration. It builds on BANK-0 (PR #1357),
-  MARKET-0 (PR #1367, `CharacterInbox`) and HOUSE-CUSTODY-0, and integrates after them. Owner
+  economy, security and protocol) and protected integration. It builds on BANK-0 and BANK-FEE-0
+  (both on `main`), MARKET-0 (PR #1367, `CharacterInbox`) and HOUSE-CUSTODY-0, and integrates after
+  #1367. Owner
   questions H1 and H2 (§14) are answered (#162 5913348961); H2a supersedes EXP-HOUSES-01 §10 until
   Premium is delivered.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
@@ -16,10 +17,11 @@
   junior rule); MARKET-0 (`CharacterInbox`, the World job pattern, the Market credit ceiling);
   DUR-03 §15, §17, §18 and §34; the gold fee decision §4.4 (D178); the scope matrix house rows;
   owner rule 5905825574 (Global parity)
-- Amends, each pending on acceptance of HOUSE-OWN-0 (#162 5912405163): EXP-HOUSES-01 §26 (a
-  pointer to the values chosen here); HOUSE-CUSTODY-0 §4 (the delivery order, a pointer). After
-  #1357 and #1367 integrate, HOUSE-1 adds the ledger kinds to BANK-0 §3 and the house delivery to
-  MARKET-0 §5. The gold fee §4.4 variants are admitted by the H1 answer and written by HOUSE-1.
+- Amends, each pending on acceptance of HOUSE-OWN-0 (#162 5912405163), in this PR:
+  EXP-HOUSES-01 §26 and §10 (pointers); HOUSE-CUSTODY-0 §4 (pointer); BANK-0 §3 (the house
+  ledger kinds and reference, §9 here); BANK-FEE-0 (price and rent are bank-only, outside its §3);
+  DUR-03 §39.3 and the gold fee decision §4.4 (the house `FeeBurnCause` variants, admitted by the
+  owner as D238).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -81,7 +83,7 @@ How does a character get, keep and lose an ordinary physical house?
 
 - **Property.** `game_house_properties`: one row per (World, house key) for every `private_house`
   and `shop` of the active catalogue, created `VACANT`. Columns: state (`VACANT`, `AUCTION`,
-  `OWNED`, `MOVE_OUT_PENDING`, `DISPOSITION`), owner CharacterId and AccountId, `paid_until`,
+  `OWNED`, `MOVE_OUT_PENDING`, `DISPOSITION`, `RETIRED`), owner CharacterId and AccountId, `paid_until`,
   `grace_until`, `move_out_at`, `revision`, `acl_revision`, `content_fence_operation`. Guildhalls
   get no row.
 - **Tiles.** `game_house_tiles`: (World, house key, position), materialized from the active bundle
@@ -94,6 +96,18 @@ How does a character get, keep and lose an ordinary physical house?
   World-transfer workflow (EXP-HOUSES-01 §15) locks the Character root, then its bid and property
   rows, and refuses while either exists.
 - **Scope.** World, strong durable, one state on every channel (the scope matrix row).
+- **Identity.** A property is keyed by (WorldId, house key): that is the `HouseId` of the catalogue
+  §2.1, never a content revision.
+- **Catalogue revisions** (catalogue §4), applied when a new bundle activates at a planned reset:
+  - a new house gets a `VACANT` row;
+  - a retired house in `VACANT` becomes `RETIRED` and is never auctioned again; one in `AUCTION` has
+    its auction cancelled with every escrow returned by release steps (§4), then becomes `RETIRED`;
+  - the reset preflight refuses a bundle that retires or re-keys a house in `OWNED`,
+    `MOVE_OUT_PENDING` or `DISPOSITION`, or changes its tiles so that the HOUSE-CUSTODY-0 §3.6 check
+    fails: an operator first runs a §7 disposition with cause `CATALOGUE_RETIREMENT` (no ban). Rent
+    already burned is not refunded: refunding would be a new value source (D178);
+  - door entries whose position no longer is a door of the house grant nothing (catalogue §2.2)
+    and are deleted by the reset; a rent change applies from the next due date.
 
 ## 4. Auction (HOUSE-1)
 
@@ -113,7 +127,9 @@ How does a character get, keep and lose an ordinary physical house?
   on the auction.
 - **Escrow.** Every bid holds `escrow_gold` = its max + the snapshotted rent, as DUR-03 §18 value in
   custody on the bid row, debited from the bank when the bid is placed or raised
-  (`HOUSE_BID_RESERVE`). A guard keeps it equal to max + rent while the auction is open and 0 after.
+  (`HOUSE_BID_RESERVE`). A bid is `HELD`, then `WON` or `RELEASED`; a guard keeps `escrow_gold` =
+  max + rent while `HELD` (whether or not the auction has closed) and 0 once `WON` or `RELEASED`.
+  Each release step moves bids from `HELD` to `RELEASED` by key.
   So every bid that can win is backed (§11.3), and a bid without funds cannot enter or set the
   price. Lowering the max, down to the current price, returns the difference
   (`HOUSE_BID_RELEASE`). A bid is never withdrawn.
@@ -135,10 +151,12 @@ How does a character get, keep and lose an ordinary physical house?
      `VACANT` and nothing is charged.
   2. Release steps return the escrow of every other bid, excluded ones included, at most
      `HOUSEOWN0-RL-06` (100) bids per step, keyed by (auction, step).
-- **Replay.** Each bid has an occurrence bound 1:1 to its CommandRef with a SHA-256 request
-  binding; settlement steps are keyed by (house, auction, step), so a retry replays its outcome.
+- **Replay.** Each bid, raise or lower is its own command with an occurrence bound 1:1 to its
+  CommandRef and a SHA-256 request binding; settlement steps are keyed by (house, auction, step), so a retry replays its outcome.
 - **Credits.** Escrow returns are value already owned: like MARKET-0's Market credits, they may
-  exceed `BANK0-RL-01` up to `MARKET0-RL-10`.
+  exceed `BANK0-RL-01` up to the hard ceiling 9,000,000,000,000,000 (`HOUSEOWN0-RL-13`, the same
+  value as `MARKET0-RL-10`). Whichever of HOUSE-1 and MARKET-1 lands first adds that ceiling to the
+  balance CHECK; the other reuses it.
 
 ## 5. Rent (HOUSE-1)
 
@@ -209,7 +227,18 @@ direct grant on the house tables (HOUSE-CUSTODY-0 §3.5).
   settlement); the property row; the auction and its bids by id; the slot rows by AccountId; the ban
   row; for a disposition step, the items by ItemInstanceId and the Inbox counters by CharacterId;
   then the balance rows by `account_id`.
+- **Fence.** Every `HOUSE_INTENT` command takes the composition decision rule 2 session fence
+  (recovery fence, admission relations, the acting Character's session generation and guards) before
+  the property row; World jobs take only the recovery fence and admission relations.
 - No `CharacterRevision` advance: houses, bids and ledger entries are not Character state.
+- **Ledger** (BANK-0 §3 amendment): a house operation table (`game_house_operations`, keyed by the
+  command occurrence or the job step key); a ledger entry references exactly one of a bank
+  operation, a fee record (BANK-FEE-0), a Market operation (MARKET-0) or a house operation; kinds
+  `HOUSE_BID_RESERVE`, `HOUSE_BID_RELEASE`, `HOUSE_PRICE` and `HOUSE_RENT`; a deferred guard per house
+  operation: its ledger deltas plus the change of bid escrow plus the burns sum to 0. Price and rent
+  are bank-only, as Tibia takes them: they are not BANK-FEE-0 fees and do not use its coins-first
+  rule. They are burns of house shapes, not of bank shapes, so BANK-0 §5's "no burn in any bank
+  shape" still holds.
 - **Classes (§17):** reservations and releases are `TRANSFER` value lines; price and rent are one
   `BURN` value line each under the house variants of `FeeBurnCause` (owner answer H1); disposition moves are item
   `TRANSFER` lines. One house event per transaction, retention under BANK-RET-0's economy profile.
@@ -261,6 +290,7 @@ direct grant on the house tables (HOUSE-CUSTODY-0 §3.5).
 | `HOUSEOWN0-RL-10` move-out notice | 1 to 30 days |
 | `HOUSEOWN0-RL-11` houses per job pass | 100 |
 | `HOUSEOWN0-RL-12` entries per ACL list | 200 |
+| `HOUSEOWN0-RL-13` balance hard ceiling for escrow returns | 9,000,000,000,000,000 |
 | Bid | 0 items, 1 value line, 1 event |
 | Settlement first step | 0 items, 4 value lines (price, rent, return, escrow), 1 event |
 | Release or disposition step | 100 bids and 100 value lines, or 100 items and 200 location lines; 1 event |

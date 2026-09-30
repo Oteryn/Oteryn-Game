@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-house-own-0
-pr: "exact PR in the #162 FREEZE_SHA entry"
+pr: "#1368"
 base_sha: 9acef5cc
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -22,6 +22,10 @@ owned_paths:
   - docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md
   - docs/architecture/reviews/OTERYN_GAME_HOUSE_CUSTODY0_HOUSE_ITEM_CUSTODY_DECISION_2026-09-30.md
   - docs/agents/tasks/archive/OTV2-20260930-house-own0.md
+  - docs/architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md
+  - docs/architecture/reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
+  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md
 public_contracts:
   - docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md
 depends_on: []
@@ -87,6 +91,11 @@ protocol review.
   move-out ordering, the tie time, and the declared differences. Its runtime-gating question
   follows HOUSE-CUSTODY-0 §4; its ban-scope and reserve-price questions are Global-parity rulings.
 - Amendments follow the control-plane rule (#162 5912405163): pending on acceptance.
+- Review of `1ecb3770` (#1368 5913732069: 3 MEDIUM, 4 LOW), all answered in one push: the escrow
+  invariant per bid state, the house ledger reference and kinds with BANK-0, BANK-FEE-0, DUR-03 §39.3
+  and gold fee §4.4 amendments in this PR, catalogue revisions (retirement, re-keying, doors, rent),
+  the explicit session fence, one occurrence per raise or lower, the balance ceiling fallback, and
+  this record's PR number.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
