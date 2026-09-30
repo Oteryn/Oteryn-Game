@@ -1,8 +1,10 @@
 // ACHIEVEMENT step 3 account facts (migration 0021,
 // `durability::account_achievement`). Every wrapper provides the same
 // path-loaded crate root and the `bestiary_postgres_harness` module, whose
-// Character 41 of account 40 is live on session 50.
+// Character 41 of account 40 is live on session 50, and the path-loaded
+// `achievement_catalogue` for the display read.
 
+use crate::achievement_catalogue::AchievementCatalogue;
 use crate::bestiary_postgres_harness::{
     CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
 };
@@ -10,9 +12,11 @@ use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
 use crate::durability::account_achievement::{
     AccountAchievement, AchievementCatalogueLookup, AchievementGrantError, AchievementGrantOutcome,
-    AchievementGrantRequest, AchievementSourceEvent,
+    AchievementGrantRequest, AchievementSourceEvent, EarnedAchievement,
 };
+use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::foundation::{ConnectionGeneration, GameSessionId};
+use oteryn_protocol_oteryn::account_achievements::AccountAchievementsResult;
 
 const ACCOUNT: u8 = 40;
 const SECOND_CHARACTER: u8 = 44;
@@ -559,6 +563,18 @@ fn grants_commit_under_the_runtime_role_grants() -> TestResult {
                     AchievementGrantOutcome::Retired,
                 ]
             ));
+            // The display read needs only the runtime role's SELECT (display contract §4.4).
+            let facts = runtime
+                .read_account_achievements(&authority, id(ACCOUNT), 2)
+                .await
+                .map_err(|error| format!("runtime read: {error:?}"))?;
+            assert_eq!(
+                facts
+                    .iter()
+                    .map(|fact| fact.achievement_key.as_str())
+                    .collect::<Vec<_>>(),
+                [COOKIES]
+            );
             TestResult::Ok(())
         }
         .await;
@@ -570,6 +586,243 @@ fn grants_commit_under_the_runtime_role_grants() -> TestResult {
             .await?;
         outcome?;
         assert_eq!(counts(harness).await?, (2, 1));
+        Ok(())
+    })
+}
+
+// ACCOUNT_ACHIEVEMENTS_QUERY display read (`OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1`
+// §3-§4): `DurabilityRoot::read_account_achievements` and the runtime
+// catalogue's page, over real facts.
+
+const OTHER_ACCOUNT: u8 = 45;
+const OTHER_CHARACTER: u8 = 46;
+const EMPTY_ACCOUNT: u8 = 47;
+
+fn catalogue() -> TestResult<AchievementCatalogue> {
+    AchievementCatalogue::embedded().map_err(|error| debug(error).into())
+}
+
+/// The session account's facts as the query reads them.
+async fn read_facts(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    account: u8,
+) -> TestResult<Vec<EarnedAchievement>> {
+    root.read_account_achievements(authority, id(account), catalogue()?.len() + 1)
+        .await
+        .map_err(|error| debug(error).into())
+}
+
+async fn read_page(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    account: u8,
+    page: u32,
+) -> TestResult<AccountAchievementsResult> {
+    let facts = read_facts(root, authority, account).await?;
+    catalogue()?
+        .account_achievements_page(&facts, page)
+        .map_err(|error| debug(error).into())
+}
+
+/// A fact recorded outside the fenced grant path, as a historical grant: its
+/// request and the fact in one transaction, under a live Character of
+/// `account`. `tag` names the source event.
+async fn insert_fact(
+    harness: &Harness,
+    account: u8,
+    character: u8,
+    key: &str,
+    tag: u16,
+    earned_at: i64,
+) -> TestResult {
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query(
+        "INSERT INTO game_account_achievement_grant_requests VALUES \
+         ('oteryn:test-history', $1, $2, 'r1', encode($3,'hex')::uuid, \
+          encode($4,'hex')::uuid, $5)",
+    )
+    .bind(tag.to_be_bytes().as_slice())
+    .bind(key)
+    .bind(id(account).as_slice())
+    .bind(id(character).as_slice())
+    .bind(earned_at)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_account_achievements VALUES \
+         (encode($1,'hex')::uuid, $2, 'oteryn:test-history', $3)",
+    )
+    .bind(id(account).as_slice())
+    .bind(key)
+    .bind(tag.to_be_bytes().as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+/// A live Character 46 of a second account 45.
+async fn seed_other_account(harness: &Harness) -> TestResult {
+    sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
+        .bind(id(OTHER_ACCOUNT).as_slice())
+        .execute(&harness.pool)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_roots VALUES \
+         (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Other Hero')",
+    )
+    .bind(id(OTHER_CHARACTER).as_slice())
+    .bind(id(OTHER_ACCOUNT).as_slice())
+    .bind(id(WORLD).as_slice())
+    .execute(&harness.pool)
+    .await?;
+    Ok(())
+}
+
+fn row_keys(page: &AccountAchievementsResult) -> Vec<&str> {
+    page.rows.iter().map(|row| row.key.as_str()).collect()
+}
+
+/// Display contract §3.2, §4.1-§4.2: only the account's own facts, one row per
+/// fact with the earning time of its first committed request, and no record
+/// the account has not earned.
+#[test]
+fn the_query_returns_only_the_accounts_own_earned_facts() -> TestResult {
+    run("query_own", async |harness, root| {
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+        let first = granted(
+            root.commit_test_achievement_grants(
+                &authority,
+                &harness.node,
+                fence(1)?,
+                vec![earnable(COOKIES, 60)],
+            )
+            .await
+            .map_err(debug)?,
+        )?;
+        // A later request for the same key keeps the first provenance.
+        root.commit_test_achievement_grants(
+            &authority,
+            &harness.node,
+            fence(1)?,
+            vec![earnable(COOKIES, 61)],
+        )
+        .await
+        .map_err(debug)?;
+        seed_other_account(harness).await?;
+        insert_fact(harness, OTHER_ACCOUNT, OTHER_CHARACTER, NUT, 1, 5).await?;
+        assert_eq!(counts(harness).await?, (3, 2));
+
+        let own = read_page(root, &authority, ACCOUNT, 0).await?;
+        assert_eq!(row_keys(&own), [COOKIES]);
+        assert_eq!(own.rows[0].earned_at, first.earned_at_unix_ms);
+        assert_eq!(own.rows[0].name, "Allow Cookies?");
+        assert_eq!((own.total_points, own.fact_count), (2, 1));
+        assert!(!own.has_more);
+
+        let other = read_page(root, &authority, OTHER_ACCOUNT, 0).await?;
+        assert_eq!(row_keys(&other), [NUT]);
+        assert_eq!(other.rows[0].earned_at, 5);
+        assert_eq!((other.total_points, other.fact_count), (3, 1));
+
+        // An account with no fact reads an empty page.
+        assert_eq!(
+            read_page(root, &authority, EMPTY_ACCOUNT, 0).await?,
+            AccountAchievementsResult::default()
+        );
+        Ok(())
+    })
+}
+
+/// Display contract §2.1, §3.3: a retired fact is shown with 0 points, and a
+/// zero-point grant moves `fact_count` but not `total_points`.
+#[test]
+fn a_retired_fact_shows_with_zero_points_and_moves_only_the_watermark() -> TestResult {
+    run("query_retired", async |harness, root| {
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+        granted(
+            root.commit_test_achievement_grants(
+                &authority,
+                &harness.node,
+                fence(1)?,
+                vec![earnable(COOKIES, 60)],
+            )
+            .await
+            .map_err(debug)?,
+        )?;
+        let before = read_page(root, &authority, ACCOUNT, 0).await?;
+        assert_eq!((before.total_points, before.fact_count), (2, 1));
+        // Granted before the record was retired.
+        insert_fact(harness, ACCOUNT, CHARACTER, MERRIER, 1, 9).await?;
+        let after = read_page(root, &authority, ACCOUNT, 0).await?;
+        assert_eq!((after.total_points, after.fact_count), (2, 2));
+        let retired = after
+            .rows
+            .iter()
+            .find(|row| row.key == MERRIER)
+            .ok_or("the retired fact is shown")?;
+        assert_eq!(
+            (retired.points, retired.secret, retired.grade),
+            (0, true, 1)
+        );
+        Ok(())
+    })
+}
+
+/// Display contract §3.3-§3.4: pages of 64 rows in grade, name, key order,
+/// `has_more` until the last page, no rows past the end.
+#[test]
+fn the_query_pages_by_64_rows() -> TestResult {
+    run("query_pages", async |harness, root| {
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+        let catalogue = catalogue()?;
+        let shard: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../content/achievements/achievements-00000-00499.json"
+        ))?;
+        let keys: Vec<String> = shard["records"]
+            .as_array()
+            .ok_or("records")?
+            .iter()
+            .filter_map(|record| record["identity"]["key"].as_str().map(str::to_owned))
+            .take(130)
+            .collect();
+        assert_eq!(keys.len(), 130);
+        for (tag, key) in (1_u16..).zip(&keys) {
+            insert_fact(harness, ACCOUNT, CHARACTER, key, tag, i64::from(tag)).await?;
+        }
+        let facts = read_facts(root, &authority, ACCOUNT).await?;
+        let all = catalogue
+            .account_achievements_page(&facts, 0)
+            .map_err(debug)?;
+        let mut seen = Vec::new();
+        for (page, rows, has_more) in [(0, 64, true), (1, 64, true), (2, 2, false), (3, 0, false)] {
+            let result = read_page(root, &authority, ACCOUNT, page).await?;
+            assert_eq!(
+                (result.rows.len(), result.has_more),
+                (rows, has_more),
+                "{page}"
+            );
+            assert_eq!(
+                (result.total_points, result.fact_count),
+                (all.total_points, 130)
+            );
+            seen.extend(result.rows);
+        }
+        let ordered = seen.windows(2).all(|pair| {
+            (pair[0].grade, &pair[0].name, &pair[0].key)
+                < (pair[1].grade, &pair[1].name, &pair[1].key)
+        });
+        assert!(ordered, "grade, name, key order across pages");
+        let mut shown: Vec<String> = seen.into_iter().map(|row| row.key).collect();
+        shown.sort();
+        let mut expected = keys;
+        expected.sort();
+        assert_eq!(shown, expected);
         Ok(())
     })
 }

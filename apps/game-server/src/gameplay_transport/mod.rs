@@ -51,9 +51,10 @@ use crate::foundation::{
     RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 use connection::{
-    AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, ControlLossResult, ControllerBinding,
-    FirstEntryOutcome, FreshAdmissionAttempt, FreshAdmissionAuthority, GraceExpiryResult,
-    IDLE_LIVENESS, SessionContinuity, StepOutcome, UseOutcome, admit_frame, serve_admitted,
+    AccountAchievementsReply, AdmissionRefusal, AdmittedSession, ConnectionIdentifiers,
+    ControlLossResult, ControllerBinding, FirstEntryOutcome, FreshAdmissionAttempt,
+    FreshAdmissionAuthority, GraceExpiryResult, IDLE_LIVENESS, SessionContinuity, StepOutcome,
+    UseOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -329,6 +330,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub(crate) door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
     /// The V1 spell book the cast intent's index resolves against (spell cast §3, SPELL-D1).
     pub(crate) spells: &'a crate::spell::SpellBook,
+    /// The Achievement catalogue the `ACCOUNT_ACHIEVEMENTS_QUERY` display read resolves every
+    /// fact against (display contract §2.1, §4).
+    pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -399,6 +403,7 @@ pub async fn serve_gameplay(
         movement_cells: owners.movement_cells,
         door: owners.door,
         spells: owners.spells,
+        achievements: owners.achievements,
         spell_states: Mutex::default(),
         clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
@@ -470,6 +475,7 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// other.
     pub(crate) door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
     pub(crate) spells: &'a crate::spell::SpellBook,
+    pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub(crate) spell_states: Mutex<actor_spell::ChannelSpellStates>,
@@ -567,6 +573,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && (i64::from(cell.x) - i64::from(actor_x)).abs() <= 1
                 && (i64::from(cell.y) - i64::from(actor_y)).abs() <= 1
         })
+    }
+}
+
+/// Display contract §3.3, §4: the page of `facts`, encoded. A fact under a key the catalogue
+/// lacks is an integrity fault and a malformed row a server fault (`REJECTED`, no rows); a row
+/// over its byte bounds fails closed with `PAYLOAD_LIMIT_EXCEEDED`. Nothing is truncated.
+fn account_achievements_reply(
+    catalogue: &crate::achievement_catalogue::AchievementCatalogue,
+    facts: &[crate::durability::account_achievement::EarnedAchievement],
+    page: u32,
+) -> AccountAchievementsReply {
+    use oteryn_protocol_oteryn::account_achievements::{
+        AccountAchievementsError, encode_account_achievements_result,
+    };
+    let Ok(result) = catalogue.account_achievements_page(facts, page) else {
+        return AccountAchievementsReply::Rejected;
+    };
+    match encode_account_achievements_result(&result) {
+        Ok(payload) => AccountAchievementsReply::Page(payload),
+        Err(AccountAchievementsError::LimitExceeded) => AccountAchievementsReply::LimitExceeded,
+        Err(AccountAchievementsError::Malformed) => AccountAchievementsReply::Rejected,
     }
 }
 
@@ -797,6 +824,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             &intent,
             now,
         )
+    }
+
+    /// Display contract §4: a read-only query of the facts, no Character fence and no Channel
+    /// owner lock. More facts than catalogue keys prove an unknown key, so one more than the
+    /// catalogue's size is read and the page build refuses it.
+    async fn account_achievements(
+        &self,
+        account_id: [u8; 16],
+        page: u32,
+    ) -> AccountAchievementsReply {
+        let limit = self.achievements.len().saturating_add(1);
+        match self
+            .root
+            .read_account_achievements(self.character, account_id, limit)
+            .await
+        {
+            Ok(facts) => account_achievements_reply(self.achievements, &facts, page),
+            Err(_) => AccountAchievementsReply::Rejected,
+        }
     }
 
     async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
@@ -1572,6 +1618,87 @@ mod tests {
         0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x71, 0x11, 0x91, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
         0x11,
     ];
+
+    /// Display contract §3.3, §4.3: a valid page encodes; a row over its byte bounds fails closed
+    /// as `LimitExceeded` (then `PAYLOAD_LIMIT_EXCEEDED`); an unknown key or a malformed row is
+    /// `REJECTED`. Nothing is truncated or skipped.
+    #[test]
+    fn account_achievements_reply_encodes_or_fails_closed() -> Result<(), Box<dyn Error>> {
+        use crate::achievement_catalogue::AchievementCatalogue;
+        use crate::durability::account_achievement::EarnedAchievement;
+        use oteryn_protocol_oteryn::account_achievements::decode_account_achievements_result;
+        let record = |slug: &str, name: &str, grade: u32| {
+            format!(
+                r#"{{"identity":{{"family":"Achievement","key":"oteryn:achievement/{slug}","revision":"1"}},"name":"{name}","description":"D","grade":{grade},"points":2,"secret":false}}"#
+            )
+        };
+        let shard = format!(
+            r#"{{"family":"Achievement","records":[{},{},{}]}}"#,
+            record("fits", "Fits", 1),
+            record("long", &"n".repeat(65), 1),
+            record("gradeless", "Gradeless", 0),
+        );
+        let catalogue =
+            AchievementCatalogue::from_shards(&[&shard]).map_err(|error| format!("{error:?}"))?;
+        let facts = |slugs: &[&str]| -> Vec<EarnedAchievement> {
+            slugs
+                .iter()
+                .map(|slug| EarnedAchievement {
+                    achievement_key: format!("oteryn:achievement/{slug}"),
+                    earned_at_unix_ms: 7,
+                })
+                .collect()
+        };
+        let AccountAchievementsReply::Page(payload) =
+            account_achievements_reply(&catalogue, &facts(&["fits"]), 0)
+        else {
+            return Err("a valid page encodes".into());
+        };
+        let page =
+            decode_account_achievements_result(&payload).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            (page.total_points, page.fact_count, page.rows.len()),
+            (2, 1, 1)
+        );
+        for (slugs, expected) in [
+            (
+                &["fits", "long"][..],
+                AccountAchievementsReply::LimitExceeded,
+            ),
+            (
+                &["fits", "gradeless"][..],
+                AccountAchievementsReply::Rejected,
+            ),
+            (&["fits", "absent"][..], AccountAchievementsReply::Rejected),
+        ] {
+            assert_eq!(
+                account_achievements_reply(&catalogue, &facts(slugs), 0),
+                expected,
+                "{slugs:?}"
+            );
+        }
+        // Only the reply that would carry the over-bound row fails; its grade puts it on page 1.
+        let many: Vec<String> = (0..70).map(|index| format!("k{index:02}")).collect();
+        let records: Vec<String> = many.iter().map(|slug| record(slug, "A", 1)).collect();
+        let shard = format!(
+            r#"{{"family":"Achievement","records":[{},{}]}}"#,
+            records.join(","),
+            record("long", &"n".repeat(65), 4),
+        );
+        let catalogue =
+            AchievementCatalogue::from_shards(&[&shard]).map_err(|error| format!("{error:?}"))?;
+        let mut slugs: Vec<&str> = many.iter().map(String::as_str).collect();
+        slugs.push("long");
+        assert!(matches!(
+            account_achievements_reply(&catalogue, &facts(&slugs), 0),
+            AccountAchievementsReply::Page(_)
+        ));
+        assert_eq!(
+            account_achievements_reply(&catalogue, &facts(&slugs), 1),
+            AccountAchievementsReply::LimitExceeded
+        );
+        Ok(())
+    }
 
     // USE-WIRE-V1 reach (#162 5868482467). SEAM_EVIDENCE: gameplay_transport/mod.rs
     // use_object_reachable unit coverage (a genuine TOO_FAR case cannot be reached through real
