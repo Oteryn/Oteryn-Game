@@ -22,6 +22,8 @@ WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enric
 CHARM_INDEX = "content/charms/index.json"
 # Proficiency likewise (tools/content-schema/proficiency-authoring, `proficiency_authoring.py content`).
 PROFICIENCY_INDEX = "content/proficiencies/index.json"
+# RewardClaim likewise (tools/content-schema/reward-claim-authoring, `reward_claim_authoring.py content`).
+REWARD_CLAIM_INDEX = "content/interactions/reward_claims/index.json"
 # A12 (ITEM-ID-1): the staged packet is history naming retired Item keys; its targets are emitted
 # through the append-only alias table (content/items/aliases.json).
 ITEM_ALIASES = ROOT / "content" / "items" / "aliases.json"
@@ -464,6 +466,10 @@ def main() -> int:
     if proficiency_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or proficiency_index.get("family") != "Proficiency":
         raise RuntimeError("PROFICIENCY_INDEX_MISSING")
     proficiency_count = proficiency_index["record_count"]
+    reward_claim_index = load(ROOT / REWARD_CLAIM_INDEX)
+    if reward_claim_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or reward_claim_index.get("family") != "RewardClaim":
+        raise RuntimeError("REWARD_CLAIM_INDEX_MISSING")
+    reward_claim_count = reward_claim_index["record_count"]
     creature_managed = [path for shards in creature_shards.values() for path in shards]
     creature_managed += [f"{node}index.json" for node, _ in CREATURE_FAMILIES.values()]
     service_managed = [path for shards in service_shards.values() for path in shards]
@@ -473,7 +479,8 @@ def main() -> int:
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",
                       *service_managed, CHARM_INDEX, *charm_index["shards"],
-                      PROFICIENCY_INDEX, *proficiency_index["shards"], *outputs.keys()])
+                      PROFICIENCY_INDEX, *proficiency_index["shards"],
+                      REWARD_CLAIM_INDEX, *reward_claim_index["shards"], *outputs.keys()])
     # A family that grows renames its last shard; drop the superseded shard files so every shard is managed.
     shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
     managed_set = set(managed)
@@ -492,6 +499,7 @@ def main() -> int:
             "Mount": {"records": len(mount_rows), "index": "content/cosmetics/mounts/index.json"},
             "Charm": {"records": charm_count, "index": CHARM_INDEX},
             "Proficiency": {"records": proficiency_count, "index": PROFICIENCY_INDEX},
+            "RewardClaim": {"records": reward_claim_count, "index": REWARD_CLAIM_INDEX},
             **{family: {"records": creature_counts[family], "index": f"{node}index.json"}
                for family, (node, _) in CREATURE_FAMILIES.items()},
             "NPC": {"records": len(npc_rows), "index": "content/npcs/definitions/index.json"},
@@ -515,7 +523,8 @@ def main() -> int:
         },
         "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts,
                            "NPC": len(npc_rows), "Encounter": len(encounter_rows), "Dialogue": len(dialogue_rows),
-                           **service_counts, "Charm": charm_count, "Proficiency": proficiency_count},
+                           **service_counts, "Charm": charm_count, "Proficiency": proficiency_count,
+                           "RewardClaim": reward_claim_count},
         "item_authoring_counts": {"authoring": len(authoring_by_target), "taxonomy": len(taxonomy_rows), "relation_sources": len(relation_rows)},
         "source_binding_counts": {"Item": len(item_bindings), "Mount": len(mount_bindings), "Creature": len(creature_bindings),
                                    "NPC": len(npc_bindings), "Encounter": len(encounter_bindings)},
@@ -531,7 +540,7 @@ def main() -> int:
         "manifest": "content/manifest.json",
         "content_lock": "content/content.lock.json",
         "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Encounter", "Dialogue", "Service", "Charm",
-                             "Proficiency"],
+                             "Proficiency", "RewardClaim"],
         "legacy_compatibility_root": "content/world",
         "runtime_source": "legacy_until_separately_qualified",
         "next_population_families": [

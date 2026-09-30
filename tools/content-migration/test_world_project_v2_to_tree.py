@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,11 +18,11 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 33567, "Mount": 252,
-    "Creature": 1477, "Presentation": 2587, "Behavior": 2587, "Loot": 1030, "Ability": 5890, "Effect": 4492, "Formula": 4809,
+    "Creature": 1479, "Presentation": 2589, "Behavior": 2589, "Loot": 1032, "Ability": 5902, "Effect": 4502, "Formula": 4820,
     "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
-    "Proficiency": 443,
+    "Proficiency": 443, "RewardClaim": 231,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1477, "Encounter": 61, "NPC": 2376}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1479, "Encounter": 61, "NPC": 2376}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -53,7 +55,16 @@ assert manifest["families"]["Proficiency"] == {"records": 443, "index": "content
 assert "Proficiency" in project["migrated_families"] and "Proficiency" not in project["next_population_families"]
 assert sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
 assert "content/proficiencies/index.json" in paths
+assert manifest["families"]["RewardClaim"] == {"records": 231, "index": "content/interactions/reward_claims/index.json"}
+assert "RewardClaim" in project["migrated_families"]
+assert sum(path.startswith("content/interactions/reward_claims/reward-claims-") for path in paths) == 3
+assert "content/interactions/reward_claims/index.json" in paths
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
+
+# The RewardClaim family has no legacy source: its own authoring tool must reproduce it exactly.
+reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
+for script in ("test_reward_claim_authoring.py",):
+    subprocess.run([sys.executable, script], cwd=reward_claim_tool, check=True)
 
 print(f"PASS managed_files={len(paths)} item_shards=68")

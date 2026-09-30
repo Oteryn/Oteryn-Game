@@ -2298,6 +2298,9 @@ pub mod content;
 
 // D39 chest `USE` wiring to the CHEST-1 reward-claim MINT shares its cases with
 // the focused standalone target through the same protected lane.
+#[allow(dead_code, unused_imports)]
+#[path = "../src/achievement_catalogue.rs"]
+pub mod achievement_catalogue;
 #[path = "support/chest_use_postgres_cases.rs"]
 mod chest_use_postgres_cases;
 #[allow(dead_code, unused_imports)]

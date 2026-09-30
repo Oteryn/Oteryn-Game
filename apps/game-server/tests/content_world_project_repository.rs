@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "0ea13ce2310bcfd7b6f62cc646619b48db4d6bd8f2863282663c49ef7ea4aed4",
+        "3cd789ce9b8863fbc57f782f55ba8b4cf585585b79c97413d6cba6c1b91c42ee",
     ),
     (
         "definitions/declarations.json",
-        14_959_876,
-        "c39bd3fff8f0e7701777ad30b2cab3a0e07301c393684ccd886ea9511572e8ef",
+        14_978_131,
+        "bb78c1914a1c3eab64c7342de2bd83dc2295862b6ab3b61dc7a8af51990e2a4b",
     ),
     (
         "definitions/reference.json",
-        21_328_476,
-        "e7722bf85b7a0d14c01c99dd6e27578c6455f955cdc37d7586006f42f6b747d7",
+        21_343_422,
+        "7e1e2aa7d00d52ced4908586a6e51d6d997caee93a19f7033000fc335774f991",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "aa581bcab32b7eb9b7ab87045e1c0f03ce39308fb7d2fce0b7115b96646cb019",
+        "ccc4932b2b07d4f4c5ceb321fd340817eefc96cf0923332ec7c0bfb3f3d8df90",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "08a099fe2e8e64faa0e46183ae527b1071b8ea1c581ea29b36fb5ab16eb3f4fc",
+        "d7e1562903830119e840688935a9b78de9a3dfa225c2f22f876a5604dcc92fc7",
     ),
     (
         "provenance/imports.json",
         32_476,
-        "284214f8ee1eddb28c7f0776d2366d5b70d37ba3b63f5cf6f44365b7e204e83b",
+        "e8d3445d7493c31b8f87087d8e5926aa407ab2ad85a4150f537b0f681a15fb80",
     ),
     (
         "provenance/sources.json",
-        1_308_309,
-        "0d96084d938cbef6e2bb23b6d526af22f9896cd2c7917316ff6bf17d568eea5d",
+        1_308_924,
+        "d823a995a0766ff5d8d1371dc059fd2ea6ed7f6d2349d2f352257fefe0080f18",
     ),
     (
         "worlds/world.json",
@@ -93,15 +93,15 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a1e9d9d005ea47ca706415bbb99343e93b0cd9c02919b3363b6268136f6b8f87";
+const TREE_SHA256: &str = "f3b4ad4174bba87a3fca0dc8a348a1c01e8e69bcaf5637ccf3713743099b706d";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
 const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1477;
-const CREATURE_RECORDS: usize = 20652;
-const CREATURE_PROFILES: usize = 19706;
+const CREATURES: usize = 1479;
+const CREATURE_RECORDS: usize = 20693;
+const CREATURE_PROFILES: usize = 19745;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1110;
 const NPC_RECORDS: usize = 2220;
