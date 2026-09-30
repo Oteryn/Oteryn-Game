@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/map-bundle-1b
 issue: 162
-pr: null   # 1b-1: the PR named in the #162 FREEZE_SHA entry; 1b-2 not opened
+pr: 1382   # 1b-1; 1b-2 not opened
 base_sha: 7be0677
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: null
@@ -68,7 +68,7 @@ The scope is above the ~500-line batch guide, so it lands in two PRs:
 ## Context checkpoint
 
 ```yaml
-last_progress: 1b-1 authored and frozen; FREEZE_SHA posted on #162
+last_progress: 1b-1 authored as #1382; frozen head in the #162 FREEZE_SHA entry
 status: implementing
 branch: claude/map-bundle-1b
 owner_action_required: null
