@@ -120,10 +120,15 @@ are online, without learning more than Tibia shows and without breaking the soci
 - `game_vip_lists`: one row per (`account_id`, `world_id`): `revision`, `next_entry_no`,
   `rate_tokens`, `rate_at`. Created on the first write.
 - `game_vip_entries`: (`account_id`, `world_id`, `character_id`) primary key; `entry_no`
-  (unique per list, never reused within it); `description`; `icon`; `notify`; `added_at`;
-  `inviter_character_id` (the acting character of the add); `consent` (`NONE`, `PENDING`,
-  `ACCEPTED`); `invite_expires_at`; indexed by (`character_id`, `consent`) for the target's view.
-  The target root must be on the same World (checked in the write function against `0005`).
+  (unique per list, never reused within it); `description`; `icon`; `notify`; `added_at`. This is
+  the Account-shared watch-list entry only; it holds no consent. The target root must be on the
+  same World (checked in the write function against `0005`).
+- `game_vip_consents`: one row per invitation, (`account_id`, `world_id`, `inviter_character_id`,
+  `character_id`) primary key, so two characters of one Account each hold their own invitation to
+  the same target (owner answer V2); `consent` (`PENDING`, `ACCEPTED`; a declined, revoked or
+  blocked invitation has no row); `invite_expires_at`. Indexed by (`character_id`, `consent`) for
+  the target's view and by `inviter_character_id` for rename and deletion (§10). A row is deleted
+  with its entry (Remove) and is only ever created for an existing entry.
 - `game_vip_groups`: custom groups only, (`account_id`, `world_id`, `group_no` 4-8), `name`,
   unique per list. Groups 1-3 are the fixed Enemies, Friends and Trading Partners: constants,
   never stored, never renamed or removed.
@@ -163,10 +168,14 @@ are online, without learning more than Tibia shows and without breaking the soci
   (later) belongs to a deleted character all answer the same `UNKNOWN_NAME`, so the answer never
   reveals where a name exists (as CHAT-0 `NOT_ONLINE`). Adding the acting character itself is
   `REJECTED`. Adding the Account's own other characters is allowed, as in Tibia, and needs their
-  consent like any other. A listed target is `ALREADY_LISTED`. A full list is `LIST_FULL` (§6). On
-  success the entry is created with an invitation (§5.1) and sent as `UNCONFIRMED`.
-- **Remove `{entry_no}`**, with its group memberships; it also withdraws the entry's invitation
-  or consent. Adding the name again sends a new invitation.
+  consent like any other. A target for which the acting character already holds an invitation row
+  is `ALREADY_LISTED`; a target already on the list through another character of the Account gets
+  no second entry, only this character's own invitation (§5.1), and the add answers `OK`. A full list is `LIST_FULL` (§6). On
+  success the entry (if new) and the acting character's invitation are created (§5.1) and the
+  entry is sent as `UNCONFIRMED`.
+- **Remove `{entry_no}`**, with its group memberships; the entry is shared by the Account's
+  characters, so it also deletes every invitation and consent row of that entry (of all the
+  Account's characters). Adding the name again sends a new invitation.
 - **Edit `{entry_no, description, icon, notify, groups[]}`**: replaces all four. The description is
   UTF-8, 0 to `VIP0-RL-04` characters, no control characters, trimmed. The icon is 0 to
   `VIP0-RL-05`. The groups are fixed ones and existing custom ones, each once; an unknown group is
@@ -181,19 +190,20 @@ are online, without learning more than Tibia shows and without breaking the soci
 ### 5.1 Consent and "hide my status" (owner answer V1 c, §14)
 
 - **Invite.** An add first locks the target's `game_character_roots` row FOR UPDATE (no revision
-  moves; the PARTY-PVP-0 §4.1 pattern), then the list row. The entry gets `consent` `PENDING`,
-  `inviter_character_id` the acting character and `invite_expires_at` = the database clock +
-  `VIP0-RL-14`. When the target has blocked the inviting character (PARTY-PVP-0 §3
+  moves; the PARTY-PVP-0 §4.1 pattern), then the list row. The entry is
+  created if the list has none for the target, and the acting character's own `game_vip_consents`
+  row is inserted as `PENDING` with `invite_expires_at` = the database clock + `VIP0-RL-14`; other
+  characters' rows for the same target are untouched. When the target has blocked the inviting character (PARTY-PVP-0 §3
   `game_character_social_blocks`) or already has `VIP0-RL-13` unexpired pending invitations, the
-  entry is written with `consent` `NONE` instead: the add answers `OK` and the entry shows
+  entry is written without a consent row instead: the add answers `OK` and the entry shows
   `UNCONFIRMED` either way, so the watcher never learns that it was blocked or capped.
 - **Accept `{invitation}`**, by the target character on its own session: a `PENDING`, unexpired
-  entry naming it becomes `ACCEPTED`. A target with `VIP0-RL-15` accepted entries answers
-  `LIST_FULL`. **Reject `{invitation}`**: `PENDING` becomes `NONE`. Anything else is `NOT_FOUND`.
-- **Revoke `{watcher}`**, by the target: an `ACCEPTED` entry naming it becomes `NONE`, and the
+  consent row naming it becomes `ACCEPTED`. A target with `VIP0-RL-15` accepted entries answers
+  `LIST_FULL`. **Reject `{invitation}`**: the `PENDING` row is deleted. Anything else is `NOT_FOUND`.
+- **Revoke `{watcher}`**, by the target: an `ACCEPTED` consent row naming it is deleted, and the
   watcher sees `UNCONFIRMED` from its next status evaluation. The watcher revokes by Remove.
-- **Expiry.** A `PENDING` entry past `invite_expires_at` reads as `NONE` whether or not a row has
-  been rewritten; no job is needed.
+- **Expiry.** A `PENDING` consent row past `invite_expires_at` reads as absent whether or not a
+  row has been rewritten; no job is needed.
 - **Hide my status `{shown | hidden}`**, by the target on its own consent rows: the
   `vip_status` column of `game_character_social_settings` (PARTY-PVP-0 §3; a missing row reads
   `SHOWN`; the same row carries `vip_consent_revision`, §5.1 below). The write first locks its own `game_character_roots` row FOR UPDATE and, after its
@@ -208,8 +218,9 @@ are online, without learning more than Tibia shows and without breaking the soci
   derived from other Accounts' rows, so it has its own revision: `vip_consent_revision` on the
   target's `game_character_social_settings` row (created on first write). Every change to what
   that view shows advances it in the same transaction, under the target's `game_character_roots`
-  lock already held: an add that writes `PENDING`, accept, reject, revoke, a watcher's Remove of a
-  `PENDING` or `ACCEPTED` entry, and the deletion of a list. An add written as `NONE` (blocked or
+  lock already held: an add that writes `PENDING`, accept, reject, revoke, a watcher's Remove of an
+  entry with a consent row, the deletion of a list, and the rename or deletion of an inviting
+  character (§10). An add that writes no consent row (blocked or
   capped) changes nothing the target sees and advances nothing. After the commit the writer sends
   a relay hint `{kind: vip_consent, character_id, revision}` (advisory, bounded like any relay
   line); a node holding a session of that character re-reads the consent view and revision from
@@ -264,8 +275,8 @@ are online, without learning more than Tibia shows and without breaking the soci
 ### 8.1 What online means
 
 - **Consent gate** (§3, §5.1), read with the session row at every status evaluation (snapshot,
-  hint re-read, reconcile): a watcher session gets `UNCONFIRMED` unless the entry's `consent` is
-  `ACCEPTED` and its character is the entry's `inviter_character_id`; then `OFFLINE` while the
+  hint re-read, reconcile): a watcher session gets `UNCONFIRMED` unless the session's own character has a
+  `game_vip_consents` row for the target that is `ACCEPTED`; then `OFFLINE` while the
   target's `vip_status` is `HIDDEN`. A failed or stale read sends no `ONLINE` (less disclosure).
 - Otherwise a target is **online** while it has a session row of this World in state 1 or 2
   (`0001`), so a client drop in grace or a channel switch shows no change, and offline without
@@ -330,7 +341,12 @@ are online, without learning more than Tibia shows and without breaking the soci
 
 - Entries are keyed by CharacterId, so a later **rename** keeps every entry. The rename
   transaction sends a relay hint `{kind: renamed, character_id}`; nodes re-read the name and send
-  an entry upsert to its watchers. Until the rename decision lands, a name changes only at the
+  an entry upsert to its watchers. The same transaction also locks each affected target's roots
+  row (ascending CharacterId), advances that target's `vip_consent_revision` for every
+  `game_vip_consents` row naming the renamed character as inviter, and after the commit sends one
+  `{kind: vip_consent, character_id, revision}` hint per such target (§5.1), so the target's
+  pending and accepted views show the new inviter name at once. A deletion does the same for the
+  consent rows it removes, inviter side and target side. Until the rename decision lands, a name changes only at the
   next snapshot. Showing the new name matches Global (Canary reads the current name).
 - A later **terminal deletion** deletes the character's entries and group memberships in its own
   transaction (Canary: `ON DELETE CASCADE`) and sends an offline hint and a list hint for each
@@ -399,14 +415,14 @@ Game-side "everyone is Premium" switch (D69): only these caps read it, and only 
 table and the wire an invitation flow, and unilateral rows written before the answer would exist
 under an unaccepted model; b) VIP-1 after V1 (recommended: fail closed, no redesign, no row under
 an unaccepted model). **Ruled b)**. V1 is answered (§14), so VIP-1 may be allocated; the
-invitation state lives on the entry row (§4), with no new table.
+invitation state lives in `game_vip_consents` (§4), keyed per inviting character (V2).
 
 **R4. Hiding must fail closed.** a) Accept up to 60 s of stale `ONLINE` after a lost hint: rejected,
 it discloses after the target used a privacy control; b) a 10 s visibility confirmation for shown
 `ONLINE` entries plus `UNCONFIRMED` while the listener is down (recommended: bounded, cheap, no
 cross-node acknowledgement); c) a synchronous cross-node acknowledgement of every hide: new
-infrastructure. **Ruled b)**. Owner question raised in the report: is a residual window of up to
-10 s acceptable, or must hiding wait for a cross-node acknowledgement?
+infrastructure. **Ruled b)**. Owner-confirmed (2026-09-30, #162 comment 5919525206): the
+residual window of up to 10 s is acceptable; hiding does not wait for a cross-node acknowledgement.
 
 ## 14. Owner questions
 
@@ -436,7 +452,7 @@ Global.
 watcher Account's characters on the World (R1), but the target accepted an invitation that named
 one character. a) Only the inviting character sees the status (the fail-closed rule applied until
 answered, §3); b) every character of the watcher's Account on the World sees it, which the target
-cannot know. The store keeps `inviter_character_id`, so b) needs no store change.
+cannot know. **Ruled a)**; the store keys each invitation by the inviting character (`game_vip_consents`, §4), so two characters of one Account can each invite the same target.
 
 Owner answer (2026-09-30, #162): only the inviting character sees the status. This is option a)
 above; on #162 it was asked with the letters reversed and answered as "1b". The rule of §3 is
@@ -446,7 +462,7 @@ binding and is no longer a fail-closed placeholder.
 
 - **Must decide now:** YES. The owner asked for the VIP list now; CHAT-0 and PARTY-PVP-0 left it
   here.
-- **Minimum sufficient:** five tables (four list tables and the command receipts), one write
+- **Minimum sufficient:** six tables (four list tables, the per-character consents and the command receipts), one write
   function per operation, one command, one domain, one presence hint kind on the existing relay, one
   reconcile query per node per minute.
 - **Superseding evidence:** official Global values for description length, icons, group names,
