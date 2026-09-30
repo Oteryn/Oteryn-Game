@@ -24,7 +24,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| GEM-R | impl, content review | the gem ruleset: families, mod catalogues, values per grade, resonance slots, fees, yields, grade costs; validator (§4) | W-R |
+| GEM-R | impl, content review | the gem ruleset: families, mod catalogues, values per grade, resonance slots, fees, yields, grade costs; validator; revision migration rule (§4, §5.3) | W-R |
 | GEM-CONTENT-1 | content lane | gem and fragment item facts (stack of 100), the vocation family of each gem item, loot rows for bosses, the jewelry NPC offers check (§3) | none |
 | GEM-1 | hard, persistence and economy review | the Atelier tables, a new receipt kind, `commit_character_atelier` on CHAR-REV-SEQ-1; reveal, dismantle, switch domain, lock, grade up; the causes and their DUR-03 and gold fee amendments (§5-§8) | W-1; GEM-R; GOLD-FEE-2; G1; G2 |
 | GEM-VESSEL-1 | hard, persistence review | the vessel table in `commit_character_wheel`, the Wheel receipt extension (§9) | W-1; GEM-1 |
@@ -121,7 +121,8 @@ gem item keys per family and quality; family to vocation; the basic mod catalogu
 and slot-2 lists and the compatibility rule; the supreme catalogue per vocation; each mod's value
 per grade and vocation; the resonance slots (three per domain) as a slot flag; the clockwise domain
 order; fees (§6); fragment yields; grade costs; the preceding-mod chain. Source order: official
-statements win, then Canary. Unsourced values are marked `PARITY_PENDING` in the data.
+statements win, then Canary. Unsourced values are marked `PARITY_PENDING` in the data. A new
+revision carries the migration obligation of §5.3.
 
 ## 5. Revealed gem state (GEM-1)
 
@@ -134,8 +135,8 @@ Wheel.
 - `game_character_gems`: `gem_id` (UUIDv7, the planned identity of the revealing occurrence),
   `character_id`, family, quality (0-2), domain (0-3), `basic_mod_1`, `basic_mod_2` (regular and
   greater), `supreme_mod` (greater), `locked`, `ruleset_revision`, the revealing occurrence.
-- `game_character_gem_grades`: (`character_id`, kind basic or supreme, mod) → grade 1-3; no row is
-  Grade I. Grades belong to the character, not to a gem (manual; Canary `m_basicGrades`).
+- `game_character_gem_grades`: (`character_id`, kind basic or supreme, mod) → grade 1-3 and
+  `ruleset_revision`; no row is Grade I. Grades belong to the character, not to a gem (manual; Canary `m_basicGrades`).
 - `game_character_atelier_state`: `character_id`, `atelier_revision` (+1 per change), `gem_count`.
 - `game_character_atelier_receipts`: one per change: occurrence, SHA-256 request binding, action,
   the CharacterRevision it advanced, before and after `atelier_revision`, the gem or grade row
@@ -156,8 +157,43 @@ bank balance (BANK-FEE-0 lock order). The request carries the expected `atelier_
 advances `CharacterRevision` once, with its receipt, and commits its item lines in the same
 transaction (D177). A replay of the occurrence returns the first outcome. A refusal writes nothing.
 
+**Runtime projection (`WHEELGEM0-RT`).** Combat reads the runtime actor's Wheel projection, never
+the database (WHEEL-0 §4 Load). Admission loads the vessel gems, their rows and the grade rows into
+it with the Wheel state. After an Atelier commit that changes a gem in a vessel or a grade row (a
+grade up can change an active mod's effective grade and, at Grade IV, the extra Wheel points), the
+writer refreshes the actor's projection from the committed rows, re-deriving active mods, effective
+grades and available points, before it reports `OK`. If the refresh cannot complete, the actor is
+reloaded from durable state before it processes another command; the committed change is never
+rolled back and never reported before the projection matches. An offline character has no actor;
+admission loads the committed rows. A replay returns the first outcome and refreshes nothing new.
+
 **Eligibility.** Every Atelier action needs Wheel eligibility (WHEEL-0 §6, with W1 a): Global opens
 the Atelier inside the Wheel window. Gems and grades survive a lapse; their effects are 0 (§9.3).
+
+### 5.3 Ruleset revision compatibility (`WHEELGEM0-RV`)
+
+Gem and grade rows follow the Wheel state candidate §3.2.1 (DUR-02 rules 10 and 19): stored data is
+never reinterpreted under another ruleset. Every write stamps the world's current Wheel ruleset
+revision on the gem or grade row it writes.
+
+- **Current revision.** A row whose `ruleset_revision` is current loads and derives normally.
+- **Non-current revision: fail closed.** The row is kept exactly as stored and never read against
+  the current catalogues, values, compatibility rule or preceding-mod chain. Its mods, and the mod
+  type of a grade row, contribute 0 to every effect of §9.3, count as Grade I for the preceding-mod
+  cap and give no Grade IV point. Every Atelier action on such a gem or mod type (dismantle, switch
+  domain, lock, grade up) and every vessel placement of such a gem is refused with
+  `RULESET_MIGRATION_PENDING`, writing nothing. A gem already in a vessel stays there, dormant.
+- **Migration obligation (GEM-R).** A revision that changes mod identities, values, the
+  compatibility rule, the grade chain, fees or yields ships exactly one of: (1) an explicit
+  source-to-destination migration of gem and grade rows, validated against the destination
+  catalogues and run as a DUR-02 rule 19 staged migration; (2) a declared-compatible mapping, a
+  validated statement that both revisions read the stored rows identically, so the revision is
+  re-stamped without changing any mod or grade. The release names which one applies; a revision
+  without one cannot become current for a world holding rows under an older revision.
+- **Architect ruling R3.** WHEEL-0's third option, reset with refund, is not admitted here: a
+  reset destroys revealed gems and grades the player paid for, and a refund of gold or fragments
+  would be a value source outside G1 and G2. Fail closed until a migration exists.
+- The first revision has no migration; it lands with the first ruleset change.
 
 ## 6. Reveal (GEM-1)
 
@@ -170,8 +206,12 @@ the Atelier inside the Wheel window. Gems and grades survive a lapse; their effe
   dismantling (§7), which names its own mint. The fee (D177, BANK-FEE-0) is in the same
   transaction: one TransactionId, one Atelier receipt, one CharacterRevision advance. Touched items:
   the gem stack and the coin inputs (all backpack entries, at most 20) plus 2 change outputs = 22.
-- **Draw.** The RNG purpose `gem_reveal` (SIM-DETERMINISM-01), seeded from the occurrence,
-  CharacterId and ruleset revision, draws in order: the domain (0-3), basic mod 1 from the slot-1
+- **Draw.** The RNG purpose `gem_reveal` (SIM-DETERMINISM-01 §10-§12) derives its seed from the
+  protected server-controlled gameplay RNG root through the `gem_reveal` purpose substream, plus
+  the occurrence, CharacterId and ruleset revision (`WHEELGEM0-RNG`). The root and substream are
+  access-controlled, never sent to a client or ordinary telemetry (§28), so the command's public
+  identity alone cannot predict the result before the fee is paid; the occurrence keeps a retry of
+  the same command on the same draw. It draws in order: the domain (0-3), basic mod 1 from the slot-1
   list, basic mod 2 from the slot-2 list compatible with mod 1 (regular and greater), the supreme
   mod from the vocation's list (greater). The outputs are written in the receipt; a replay returns
   them and never draws again; a changed ruleset revision is a new binding and conflicts.
@@ -182,28 +222,32 @@ the Atelier inside the Wheel window. Gems and grades survive a lapse; their effe
 
 ## 7. Dismantle, switch domain, lock (GEM-1)
 
-- **Dismantle** `{gem_id}`: refused if `LOCKED`, `IN_VESSEL`, or `LAST_OF_DOMAIN` (the character's
-  only revealed gem of that domain). The gem row is deleted (the receipt keeps it), and fragments
+- **Dismantle** `{gem_id}`: refused if `LOCKED`, `IN_VESSEL`, `LAST_OF_DOMAIN` (the character's
+  only revealed gem of that domain) or `RULESET_MIGRATION_PENDING` (§5.3). The gem row is deleted (the receipt keeps it), and fragments
   are a **MINT** (§14) under `GemAtelierCause::Dismantle {gem_id, occurrence}` into a compatible
   stack with room or a fresh entry planned in the transaction (§11.3); else `NO_ROOM`, nothing
-  written. The count is drawn under `gem_dismantle` from the manual's revealed ranges (lesser 1-3,
+  written. The count is drawn under `gem_dismantle`, seeded as `WHEELGEM0-RNG` (§6), from the
+  manual's revealed ranges (lesser 1-3,
   regular 2-5 lesser fragments; greater 1-3 greater fragments). A new value source: G2.
-- **Switch domain** `{gem_id}`: refused if `LOCKED` or `IN_VESSEL` (architect ruling R2); fee
+- **Switch domain** `{gem_id}`: refused if `LOCKED`, `IN_VESSEL` (architect ruling R2) or
+  `RULESET_MIGRATION_PENDING`; fee
   `GemSwitchDomain`; the domain moves one step clockwise.
-- **Lock** `{gem_id, locked}`: a Character change with no item line and no fee.
+- **Lock** `{gem_id, locked}`: a Character change with no item line and no fee; refused with
+  `RULESET_MIGRATION_PENDING` (§5.3).
 
 ## 8. Grades and fragments (GEM-1, GEM-CRUSH-1)
 
 - **Grade up** `{kind, mod, expected_grade}` raises one mod type one grade, I to IV (stored 0 to
   3). Any mod of the vocation's catalogue can be graded, as in Canary (`PARITY_PENDING`). Refusals:
-  `MAX_GRADE`, `STALE_GRADE`, `NOT_ENOUGH_FRAGMENTS`, `NOT_ENOUGH_GOLD`. Grades never decrease.
+  `MAX_GRADE`, `STALE_GRADE`, `NOT_ENOUGH_FRAGMENTS`, `NOT_ENOUGH_GOLD`, `RULESET_MIGRATION_PENDING`
+  (§5.3). Grades never decrease.
 - **Shape.** Lesser (basic) or greater (supreme) fragments are a **BURN** from backpack stacks in
   B3 order under `GemAtelierCause::GradeUp {kind, mod, to_grade, occurrence}`; the fee is
   `GemGradeUp`. Fragments and coins share the 20 backpack entries: 22 touched items.
 - **Crushing (GEM-CRUSH-1).** A crusher used on an unrevealed gem is an item-only transaction
   (composition rule 1): one gem unit BURN, one crusher charge (STATE_MUTATION, retiring at 0), one
-  fragment MINT under `GemAtelierCause::Crush {occurrence}`, drawn under `gem_crush` from the
-  manual's unrevealed ranges. It waits for ITEM-USE-0's item target. A new value source: G2. The
+  fragment MINT under `GemAtelierCause::Crush {occurrence}`, drawn under `gem_crush`, seeded as
+  `WHEELGEM0-RNG` (§6), from the manual's unrevealed ranges. It waits for ITEM-USE-0's item target. A new value source: G2. The
   amber crusher is a Store item and is not decided here.
 
 ## 9. Vessels and effects
@@ -214,8 +258,8 @@ the Atelier inside the Wheel window. Gems and grades survive a lapse; their effe
 - Placement is part of the Wheel configuration and is written by `commit_character_wheel` with
   the expected `wheel_revision`, in the same full replacement as the slots (Canary's save packet).
   The Wheel receipt gains before and after vessel vectors (4 gem ids each).
-- Checks: the gem is the character's, its domain equals the vessel's (`WRONG_DOMAIN`), one gem per
-  vessel. The Atelier rows are read under the same `character_root` lock.
+- Checks: the gem is the character's, its domain equals the vessel's (`WRONG_DOMAIN`), its row is
+  under the current ruleset revision (`RULESET_MIGRATION_PENDING`, §5.3), one gem per vessel. The Atelier rows are read under the same `character_root` lock.
 - **Where:** anywhere while eligible, in and out, as in Canary (architect ruling R1). Point
   removal keeps WHEEL-0's temple rule; a vessel change alone needs no temple.
 - A vessel with no active resonance may hold a gem; its mods are dormant.
@@ -236,7 +280,8 @@ at 3 (greater).
 - Revelation mastery mods add points to the domain sum that sets the revelation stage (WHEEL-0's
   superseding evidence).
 - Each mod type at Grade IV adds 1 extra Wheel point (WHEEL-0 §6.3), derived from the grade rows.
-- All are 0 while the character is not eligible; the state stays stored.
+- All are 0 while the character is not eligible, and for rows under a non-current ruleset revision
+  (§5.3); the state stays stored.
 
 ## 10. Wire (GEM-WIRE-1)
 
@@ -247,7 +292,8 @@ at 3 (greater).
 - **`ATELIER_INTENT`:** `reveal`, `dismantle`, `switch_domain`, `set_lock`, `grade_up`, each with
   `expected_atelier_revision`. Results: `OK` and the refusals of §6-§8, plus the common results.
 - **`WHEEL_INTENT set_allocation`** gains `vessels[4]` (a gem id or none), sent and read only
-  under `WHEEL_GEM_V1`; without it the vessels are unchanged. New result `WRONG_DOMAIN`.
+  under `WHEEL_GEM_V1`; without it the vessels are unchanged. New results `WRONG_DOMAIN` and
+  `RULESET_MIGRATION_PENDING`.
 - **Domain:** active mods and effective grades, so the client shows them.
 
 ## 11. Durable writes and causes
@@ -309,6 +355,8 @@ c) no new source: fragments only from NPCs and trade.
 - **Extending `WHEEL_V1` in place.** It would hold W-2 behind gems.
 - **Canary's yields and missing dismantle checks.** The manual gives the ranges and refusals.
 - **Mods drawn at display or at load.** Only a draw bound to the occurrence is replay-safe.
+- **A reveal seed from public values only.** The player could compute the result before paying.
+- **Reset with refund on a ruleset change (R3).** It destroys paid state and mints unadmitted value.
 
 ## 15. Owner-rule applications (Global parity, 5905825574)
 
@@ -343,7 +391,9 @@ entries only; the 250 gem cap; any catalogue mod can be graded; no favourite fla
 2. **Serialization:** every Atelier and vessel change on CHAR-REV-SEQ-1; fence and
    `character_root` first; expected `atelier_revision` or `wheel_revision`.
 3. **Restart:** receipts keyed by occurrence; planned gem ids and output slots; RNG outputs in the
-   receipt; replays return the first outcome.
+   receipt, seeded from the protected root (`WHEELGEM0-RNG`); replays return the first outcome;
+   the runtime projection refreshed before `OK` (`WHEELGEM0-RT`); non-current ruleset rows fail
+   closed (`WHEELGEM0-RV`).
 4. **Typed references:** CharacterId, gem id, mod keys, ruleset revision, occurrence, TransactionId.
 5. **Wire:** §10, capability `WHEEL_GEM_V1`, numbers reserved on #162 at allocation.
 6. **Owner:** G1 and G2 answered and recorded on #162 before GEM-1 is allocated.

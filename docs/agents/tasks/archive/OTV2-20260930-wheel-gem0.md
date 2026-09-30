@@ -82,6 +82,9 @@ combat review; GEM-WIRE-1 protocol review; GEM-R content review.
 - `python3 tools/agents/validate_governance.py`: PASS on the draft authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the draft authoring tree.
 - `git diff --cached --check`: clean.
+- Codex round-1 repair (PR #1414, 3 findings): ruleset revision compatibility §5.3
+  (`WHEELGEM0-RV`, R3), protected reveal RNG root (`WHEELGEM0-RNG`), runtime projection refresh
+  (`WHEELGEM0-RT`); validators re-run PASS.
 
 ## Closeout
 
