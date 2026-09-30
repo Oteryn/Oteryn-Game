@@ -120,7 +120,7 @@ Encounter
 
 `chance_percent`, `counter_compare(counter, op, value)`, `flag(name, value)`,
 `creature_present(role, anchor or near(role, radius, square or circle), present/absent)`, `in_anchor(role or killer, anchor)`,
-`killer_is_player`, `has_master(role, value)` (Canary skips summoned copies of a boss),
+`killer_is_player` (the killing damage is a player's own; damage from a player's summon or familiar is not; SW-4 adds an optional `value: false` for the opposite, §13.2), `has_master(role, value)` (Canary skips summoned copies of a boss),
 `has_condition(role, conditions, present)` (D46: whether the role's creature has any of the listed conditions on itself:
 poison, fire, energy, bleeding, drown, freezing, dazzled or cursed),
 `summon_count(role, op, value)` (D45: how many live summons a creature of the role has; Shulgrax calls
@@ -878,10 +878,12 @@ their answers are recorded in §12.6.
 - Status: **ACCEPTED** by the owner 2026-09-30 (answers in §13.6, given in the task session and posted verbatim on
   #162; the control plane assigns their D-numbers). Nothing here is implemented yet; the order is §13.5.
 - Task: design only, task C of the monster-unblocking plan (KAN-16, #162).
-- Scope: the 15 participants of `soul_war_taint_zones`. Eight wait only for the encounter: Capricious, Distorted,
-  Infernal, Mould and Vibrant Phantom, Courage Leech, Infernal Demon and Rotten Golem. Seven are blocked in the
-  converter: Mirror Image, Bony Sea Devil, Brachiodemon, Branchy Crawler, Cloak of Terror, Many Faces and Turbulent
-  Elemental.
+- Scope: the 15 hunting participants of `soul_war_taint_zones`. Eight wait only for the encounter: Capricious,
+  Distorted, Infernal, Mould and Vibrant Phantom, Courage Leech, Infernal Demon and Rotten Golem. Seven are blocked in
+  the converter: Mirror Image, Bony Sea Devil, Brachiodemon, Branchy Crawler, Cloak of Terror, Many Faces and Turbulent
+  Elemental. Under Q1 a two boss-room roles join (§13.1), so the encounter has 17 participating creatures: Spiteful
+  Spitter, blocked only by its `onThink`, is admitted with the encounter (16 creatures in all); Dreadful Harvester is
+  already admitted and joins as a participant.
 - Companion: §10 of `OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md` holds the two monster-side extensions (SW-1 fear windup,
   SW-2 magic wall removal). This section holds the encounter-side ones, the questions for all of them and the decision
   test.
@@ -916,7 +918,7 @@ their answers are recorded in §12.6.
 | `soulwars fear` | monster | SW-1: `Ability.windup` (monster schema §10.1) |
 | `destroy magic walls` | monster | SW-2: none; the existing `remove_items` `top_item_first_tile` and two converter fixes (§10.2) |
 | taint teleport (`onThink`) | encounter | SW-3: `timer_elapsed` `each`, a picked player in `creature_present`, and a delayed `teleport` to that player |
-| Mirror Image (`onPlayerAttack`) | encounter | SW-4: `damage_taken` gains `base_vocation` |
+| Mirror Image (`onPlayerAttack`) | encounter | SW-4: `damage_taken` gains `base_vocation`; `killer_is_player` gains `value: false` |
 | zones with safe areas | encounter | SW-5: an area location gains `minus` boxes |
 | Cloak of Terror blood | encounter | SW-6 (Q6 a): `map_item` at `subject_position`, `unless_present` |
 
@@ -1053,7 +1055,10 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
    for damage by a player of that base vocation (a promoted vocation counts as its base). The rest uses existing
    terms: one rule per base vocation with a weighted `one_of` of five `transform`s at full health. Weights 28:3:3:3:3
    give exactly 70% and 7.5% for each other vocation. After the transform the creature is no longer a Mirror Image, so
-   the rules fire once. Declined: a condition on the attacker's vocation, which would be a new condition kind.
+   the rules fire once. Q5 b adds a second widening: `killer_is_player` takes an optional `value` (default `true`, the
+   current meaning); `value: false` holds when the damage is not a player's own. Damage from a player's summon or
+   familiar is not the player's own: it neither transforms the image (`base_vocation` fires only for the player's
+   own damage) nor kills it. Declined: a condition on the attacker's vocation, which would be a new condition kind.
 4. **Authored JSON** (the druid rule; the other four swap the weights):
    ```json
    {"key": "mirror_image_turns_for_a_druid",
@@ -1071,16 +1076,22 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
       {"weight": 3, "actions": [{"kind": "transform", "role": "mirror_image", "health": "full",
         "into": {"family": "Creature", "key": "canary:creature/monk_s_apparition", "revision": "canary-47dfd51f"}}]}]}]}
    ```
-   The five apparitions already convert with no open row. A sixth rule (Q5 b) adds `lethal_damage(mirror_image)` →
-   `prevent_death` when the lethal damage is not a player's own (for example a familiar's). That needs
-   `killer_is_player` to take an optional `value: false`, a widening of an existing condition that SW-4 includes.
+   The five apparitions already convert with no open row. A sixth rule (Q5 b) keeps the image at 1 hit point against
+   damage that is not a player's own:
+   ```json
+   {"key": "mirror_image_floor", "trigger": {"kind": "lethal_damage", "role": "mirror_image"},
+    "conditions": [{"kind": "killer_is_player", "value": false}],
+    "actions": [{"kind": "prevent_death", "role": "mirror_image"}]}
+   ```
 5. **Validation and tests.**
-   - Schema: optional `base_vocation` on `damage_taken`. Semantic: only with `source: player`.
-   - `verify_encounter_schema.py`: one positive check and a negative check for `base_vocation` with `source: any`.
-   - Rust (E1): the `DamageTaken` mirror gains the field and the check.
+   - Schema: optional `base_vocation` on `damage_taken`; optional boolean `value` on `killer_is_player`. Semantic:
+     `base_vocation` only with `source: player`; `killer_is_player` without `value` keeps its meaning.
+   - `verify_encounter_schema.py`: positive checks for the vocation rule and the floor rule; negative checks for
+     `base_vocation` with `source: any` and for a non-boolean `value`. Every existing sample validates unchanged.
+   - Rust (E1): the `DamageTaken` and `KillerIsPlayer` mirrors gain the fields and checks, with focused tests.
    - Transcription: `mirror_image.lua` 109-143 and `mirror_image_transform.lua` 1-22 mapped, or omitted as deviations
-     under Q5 b (the over-time path, the no-vocation removal); the
-     `registrants()` fix; Mirror Image leaves `hunting_monster` for its own role.
+     under Q5 b (the over-time path, the no-vocation removal); the `registrants()` fix; Mirror Image leaves
+     `hunting_monster` for its own role.
 6. **Out of scope.** The apparition kill counter `MirroredNightmareBossAccess` (quest domain, already an approved
    omission); the wall mirrors that spawn apparitions (Tibiopedia; interaction domain).
 
@@ -1166,9 +1177,9 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
 |---|---|---|
 | SW-2 magic walls | Bony Sea Devil, Brachiodemon, Cloak of Terror, Many Faces | The Monster |
 | SW-1 fear windup | Bony Sea Devil, Turbulent Elemental | Hazardous Phantom, Goshnar's Spite (Goshnar's Megalomania green and purple once they convert) |
-| SW-3 taint teleport | Bony Sea Devil, Brachiodemon, Branchy Crawler, Cloak of Terror, Many Faces | Spiteful Spitter, as a participant of the same encounter |
+| SW-3 taint teleport | Bony Sea Devil, Brachiodemon, Branchy Crawler, Cloak of Terror, Many Faces | Spiteful Spitter, admitted with the encounter; Dreadful Harvester (already admitted) gains its teleport rule |
 | SW-4 Mirror Image | Mirror Image | none |
-| SW-5, SW-6 | all 15 through the anchor; Cloak of Terror | none |
+| SW-5, SW-6 | all 17 participants through the anchor; Cloak of Terror | none |
 
 - The other nine `onThink` monsters (Goshnar's Greed, the three souls, Soul Sphere, Soulsnatcher, Symbol of Hatred,
   Grand Master Oberon, The Primal Menace) run other logic, and SW-3 does not cover them.
@@ -1177,8 +1188,8 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
 - Order:
   1. SW-2: converter only, no schema change; frees The Monster at once.
   2. SW-1: frees Hazardous Phantom and Goshnar's Spite at once.
-  3. SW-3..6 with the transcription. Under E4 the encounter and its 15 creatures are admitted together, so the
-     group enters only when all of them are done.
+  3. SW-3..6 with the transcription. Under E4 the encounter is admitted together with its 16 not yet admitted
+     creatures (the 15 hunting monsters and Spiteful Spitter), so the group enters only when all of them are done.
 
 ### 13.6 Owner questions (deviations and product choices only)
 
@@ -1248,7 +1259,7 @@ Second source check (2026-09-30), used for the answers above:
 The test covers SW-1..6 together. SW-2 needs no schema change and is included for its converter work and the
 `top_item_first_tile` scan order.
 
-1. **Must decide now?** Yes. Under E4 the `soul_war_taint_zones` encounter and its 15 creatures wait for the seven
+1. **Must decide now?** Yes. Under E4 the `soul_war_taint_zones` encounter and its 16 creatures wait for the seven
    blocked monsters and the unlocated anchor, and the closed vocabulary rules out approximating them (D28). SW-1 and
    SW-2 also free four monsters outside the group. No runtime work waits on this; it concerns content admission only.
 2. **What concrete downstream work is blocked?**
@@ -1264,7 +1275,8 @@ The test covers SW-1..6 together. SW-2 needs no schema change and is included fo
      - SW-1: a pending cast outlives its tick and needs the caster's identity;
      - SW-3: per-creature timer fan-out, a player pick, a per-player cooldown in encounter state, and a tile test for
        solid and projectile blocking;
-     - SW-4: the attacker's base vocation on each damage event;
+     - SW-4: the attacker's base vocation on each damage event, and whether the damage is a player's own (summon and
+       familiar damage is not);
      - SW-5: area membership with holes;
      - SW-6: creating an item on a creature's tile and handing its step-in to the interaction domain.
    - SW-3 is the largest widening. `picked` becomes a third rule-scoped subject beside `triggering` and `spawned`; a
