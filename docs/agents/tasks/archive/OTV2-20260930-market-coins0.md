@@ -102,6 +102,10 @@ protocol review; the instruction payload privacy review.
 - Codex round 3 (#1412, 2 P1, 0 P2): STATUS and reconciliation now cover claim keys and their
   settled/aborted state (§5, §7); Game-side restore defined as a coordinated cut with ENUMERATE
   (MKTCOIN0-GAME-RESTORE, §5; MKTCOIN-P dependency); validators re-run PASS.
+- Codex round 4 (#1412, 4 P1, 0 P2): the round-3 automated ENUMERATE restore protocol is
+  withdrawn; any Game or Platform restore crossing coin activity keeps coin trading on the World
+  closed until a reviewed manual reconciliation (MKTCOIN0-RESTORE, §5; MKTCOIN-P dependency);
+  validators re-run PASS.
 - Owner confirmation A2 (2026-09-30, #162 5919339646): the C2 chargeback rule is confirmed (§5,
   §12, §13); validators re-run PASS.
 

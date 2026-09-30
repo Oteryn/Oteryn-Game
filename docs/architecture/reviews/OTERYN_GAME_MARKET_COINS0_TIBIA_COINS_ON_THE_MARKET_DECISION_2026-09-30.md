@@ -165,7 +165,6 @@ key; the same key with other content is an integrity conflict.
 | `RELEASE {instruction_id, hold_key, amount}` | returns coins from the hold to its account | only an integrity fault |
 | `ABORT {instruction_id, hold_key or claim_key, cancelled_amount, settle_count, settle_sum}` | after the key's `settle_count` SETTLEs are applied (`MKTCOIN0-ABORT-ORDER`), releases exactly `cancelled_amount` of a hold or ends exactly `cancelled_amount` of a claim, or records a tombstone so a late `HOLD` or `CLAIM` with that key is refused | an integrity fault only (`MKTCOIN0-ABORT-ORDER`); before its watermark it is deferred, not applied |
 | `STATUS {key_kind HOLD or CLAIM, key, instruction_ids}` | for a hold: amount, settled, released, state, a recall flag; for a claim: amount, settled, ended (aborted) amount, state (`OPEN`, `SETTLED`, `ABORTED`, `UNKNOWN`), including a deferred ABORT; and which of the named instruction ids (at most 16 per call) Platform has applied | none |
-| `ENUMERATE {world, applied_since, cursor}` | pages the SETTLE, RELEASE and ABORT receipts Platform applied for the World since `applied_since`: `instruction_id`, keys, amount, applied time (used only by the Game-restore cut, §5) | none |
 | `BALANCE {account}` | total and transferable coins, for display only | unavailable |
 
 - **No minting:** Platform refuses any SETTLE or RELEASE that would take a hold below zero, so
@@ -222,26 +221,29 @@ key; the same key with other content is an integrity conflict.
   is bounded on both sides: Platform refuses a HOLD or CLAIM whose `issued_at` is older than
   `MKTCOIN0-RL-13` (10 minutes) with `STALE_REQUEST`, and Game's deliverer stops resending an
   instruction older than `MKTCOIN0-RL-14` (30 days) and raises `MARKET_COIN_MISMATCH` for it
-  instead. Compaction never removes a record inside that horizon. **Restore:** a Platform restore
-  must not leave a key, tombstone or receipt Game has seen missing or older than Game's
-  acknowledged state. After any restore, the Market coin service stays closed (HOLD and CLAIM
-  refused `COINS_UNAVAILABLE`, instructions deferred) until a reconciliation against Game's
-  operation, instruction and acknowledgement records re-creates every missing tombstone and
-  receipt; a difference it cannot re-create is `MARKET_COIN_MISMATCH`.
-- **Game-side restore (`MKTCOIN0-GAME-RESTORE`).** A Game database restore to a point before
-  a SETTLE, RELEASE or ABORT that Platform already applied would roll back Game's gold transfer,
-  counters, outbox row and instruction id while Platform keeps the coin movement, and Game could
-  not find it by key. The restore is therefore a coordinated cut: the operator records the restore
-  point (the restored state's last committed time) before reopening; the Market coin service
-  (all coin offer placing, accepting, matching and the deliverer) stays closed, and Platform
-  refuses HOLD and CLAIM for the World with `COINS_UNAVAILABLE`, until Game has paged `ENUMERATE`
-  for the World from that restore point minus the replay horizon (`MKTCOIN0-RL-14`) and matched
-  every returned `instruction_id` to a restored instruction record. An applied instruction
-  unknown to the restored Game is an orphan settlement: its offer stays frozen, it raises
-  `MARKET_COIN_MISMATCH`, and it is corrected only by a reviewed compensating operation on the
-  owning side (DUR-03 §26), never by a direct edit and never by reissuing the instruction. A
-  restored instruction Platform never applied is resent normally. The service reopens only with
-  zero unexplained differences. `ENUMERATE` and the World refusal are MKTCOIN-P requirements.
+  instead. Compaction never removes a record inside that horizon. **Restore:** see `MKTCOIN0-RESTORE` below; the receipts are
+  never re-created by a script.
+- **Restore of Game or Platform (`MKTCOIN0-RESTORE`, fail closed).** v1 defines no automated
+  cross-system restore protocol. After any restore of the Game database or of the Platform wallet
+  that crosses coin activity (its restore point is earlier than the newest HOLD, CLAIM, SETTLE,
+  RELEASE or ABORT on the World, or the operator cannot show it is not), coin trading on every
+  affected World stays closed: no coin offer placing, accepting or matching, no deliverer,
+  and Platform refuses HOLD and CLAIM for the World with `COINS_UNAVAILABLE`. The closure is a
+  MKTCOIN-P requirement (a per-World switch an operator can set and that a restore leaves set). It
+  reopens only after a reviewed manual reconciliation, a declared operational procedure (a
+  MKTCOIN-P dependency owned with the restore runbook), run by two operators and recorded. The
+  procedure must: (1) inventory every active custody key on Platform (holds and claims, with
+  offer, operation, binding, account and amounts) and every SETTLE, RELEASE and ABORT receipt
+  applied since the restore point, and refuse to proceed if Platform's retained records do not
+  reach back to the restore point minus the replay horizon (`MKTCOIN0-RL-14`); (2) match each
+  against restored Game offers, operations and instruction records; (3) correct every difference
+  (an orphan hold, claim or settlement, a rolled-back Platform effect, or a receipt without its
+  wallet effect) only by a reviewed compensating operation on the owning side (DUR-03 §26), and
+  never by a direct edit, by re-creating a tombstone or receipt alone, or by reissuing an
+  instruction; and (4) end with zero unexplained differences and balances validated. A restore
+  older than Platform's retention is never reopened by this procedure; it stays closed until the
+  owner decides. Because the closure holds until then, the restore cases (a Game restore rolling
+  back a fill Platform applied, an orphan hold, a rolled-back receipt) cannot reach trading.
 - **Recall:** Platform may flag an open hold (fraud, account closure). Game sees the flag through
   `STATUS` and runs a cancel step for that offer (fee kept). Coins already settled stay settled.
 - **Platform-side coin history:** Platform writes "sold on Market" and "bought on Market" entries
@@ -343,7 +345,7 @@ refused CLAIM can only be `ACCOUNT_BLOCKED`, which ends the operation `FAILED`.
 | `MKTCOIN0-RL-09` coin instructions per Game transaction | 2 (a fill with a held credit: SETTLE, RELEASE) |
 | `MKTCOIN0-RL-10` Platform HOLD and CLAIM volume cap | per Account and per World per 24 h, set by MKTCOIN-P and recorded on #162 before activation |
 | `MKTCOIN0-RL-11` Platform SETTLE volume cap | per destination Account and per World per 24 h, set by MKTCOIN-P and recorded on #162 before activation; over it the SETTLE is deferred |
-| `MKTCOIN0-RL-12` Platform key, tombstone and receipt retention | at least 90 days after the key ends; survives restore (§5) |
+| `MKTCOIN0-RL-12` Platform key, tombstone and receipt retention | at least 90 days after the key ends; restore rule `MKTCOIN0-RESTORE` (§5) |
 | `MKTCOIN0-RL-13` HOLD or CLAIM request age | 10 minutes after `issued_at`; older is `STALE_REQUEST` |
 | `MKTCOIN0-RL-14` instruction redelivery horizon | 30 days; then `MARKET_COIN_MISMATCH` |
 | Place coin sell | 0 items, 1 value line (fee), 1 hold, 1 event |
@@ -452,7 +454,7 @@ Owner answers (2026-09-30, #162, Q10-Q12):
    settlement watermark (§5).
 3. **Restart:** operations, offers and instructions are durable; the deliverer and reconciler
    resume; Platform applies each key once and keeps keys, tombstones and receipts through
-   `MKTCOIN0-RL-12` and across restore (§5).
+   `MKTCOIN0-RL-12` and the closed-after-restore rule `MKTCOIN0-RESTORE` (§5).
 4. **Typed references:** `MarketOfferId`, AccountId, WorldId, the ware key, hold key, claim key,
    instruction id,
    operation occurrence (`MarketOperationId`, the SETTLE `taker_operation_id`), the binding kind,
