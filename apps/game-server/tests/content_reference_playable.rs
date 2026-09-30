@@ -1822,6 +1822,7 @@ fn reward_placement(
             item: item.clone(),
             count,
         }],
+        achievement: None,
     })
 }
 
@@ -1984,6 +1985,48 @@ fn reward_claim_shape_fails_closed() -> Result<(), ContentError> {
         }
     }
     assert!(link_reference_playable(misfiled).is_err());
+    Ok(())
+}
+
+#[test]
+fn a_reward_claim_achievement_is_a_catalogue_key_never_a_source_ref() -> Result<(), ContentError> {
+    // Contract §2.2: the authoring ref `canary:achievement/annihilator` binds by slug to
+    // `oteryn:achievement/annihilator` before Content; Content carries only the bound key.
+    let mut bound = source_with_reward_claim()?;
+    reward_claim_kind_mut(&mut bound)?.placements[0].achievement =
+        Some("oteryn:achievement/annihilator".into());
+    let canonical = link_reference_playable(bound)?;
+    let achievements: Vec<Option<&str>> = canonical
+        .definitions
+        .iter()
+        .filter_map(|definition| match &definition.kind {
+            ReferenceDefinitionKind::RewardClaim(claim) => Some(claim),
+            _ => None,
+        })
+        .flat_map(|claim| &claim.placements)
+        .map(|entry| entry.achievement.as_deref())
+        .collect();
+    // Placements are sorted canonically: chest-b (the first listed) comes second.
+    assert_eq!(achievements, [None, Some("oteryn:achievement/annihilator")]);
+
+    for unbound in [
+        "canary:achievement/annihilator",
+        "annihilator",
+        "oteryn:achievement/",
+        "",
+    ] {
+        let mut candidate = source_with_reward_claim()?;
+        reward_claim_kind_mut(&mut candidate)?.placements[0].achievement = Some(unbound.into());
+        assert!(
+            matches!(
+                link_reference_playable(candidate),
+                Err(ContentError::InvalidArtifact(
+                    "reference-playable reward claim achievement must be an oteryn:achievement/ key"
+                ))
+            ),
+            "{unbound}"
+        );
+    }
     Ok(())
 }
 
