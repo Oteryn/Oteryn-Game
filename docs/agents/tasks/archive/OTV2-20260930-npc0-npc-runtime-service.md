@@ -94,6 +94,8 @@ needs protocol review.
   arrival, compile rule) and 3 others, all fixed: item-only reading of D177 in the gold fee §4.3,
   travel item-only with an obligation, death supersedes arrival, placement fallback, compile rule
   aligned with ADR-0021, offer counts corrected.
+- Repair after freeze `9f9e06de` (found by the ITEM-MOVE-WIRE-0 review): domain revisions are
+  monotonic per GameSession across reconnect (FND-02 §13.3, §15), not reset per connection.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

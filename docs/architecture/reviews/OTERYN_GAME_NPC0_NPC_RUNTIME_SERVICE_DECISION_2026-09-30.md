@@ -136,10 +136,13 @@ shapes are new?
 - **Travel.** No command of its own. A travel keyword opens a confirmation bound to the route,
   price and content revision; `yes` through `NPC_TALK_INTENT` within `NPC0-RL-06` seconds confirms
   it. Anything else, or the timeout, cancels it.
-- **Revisions.** Domains 7 and 8 are owned by the channel runtime. Their revision scope is the
-  connection generation: every admission, reconnect and channel transfer starts them with a new
-  snapshot, and revisions are never reused within a scope (FND-02 §15). Reconnect or transfer
-  closes the conversation, and the new snapshot is empty (boundary §7).
+- **Revisions.** Domains 7 and 8 are owned by the channel runtime. Their revision stream is
+  monotonic per `GameSessionId` and never reused (FND-02 §15), as the spatial revision already
+  continues across a reconnect (`gameplay_transport/connection.rs`, `resume.rs`). Every
+  admission, reconnect and channel transfer sends a new snapshot at a revision above any the
+  session has seen. Reconnect or transfer closes the conversation, and that snapshot is empty
+  (boundary §7). A command reserved before a reconnect and executed after it resolves against the
+  current conversation; a mismatch rejects as stale (FND-02 §13.3).
 - A client without capability 3 never receives domains 7 and 8, and a command 7 or 8 from it is
   refused as unsupported.
 - **Limits** (measured and registered by NPC-WIRE-1): `NPC0-RL-01` talk text bytes, `NPC0-RL-02`
