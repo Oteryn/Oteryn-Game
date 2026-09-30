@@ -44,12 +44,14 @@ Worlds. It authorizes neither population nor runtime; population is the next cha
   GUI-only ACL (no player-facing `aleta` spells), fine-grained per-door access. The contract adds no housing
   semantics.
 - DERIVED: a World's `HouseId` is its instance of the catalogue key; the representation stays persistence detail.
-- ASSUMPTION (owner question): `shop` houses are ordinary physical houses under the personal housing slot.
+- PROVEN (owner decision 2026-09-30, 2a): `shop` houses are ordinary physical houses: owner `CharacterId`, the
+  personal physical-house slot and the same auction, rent and ACL rules; `(Shop)` is a name marker only.
 
 ## Owner direction (2026-09-30)
 
-1a prepare this contract; 2a populate `content/houses/` right after acceptance; 3 pending (recommendation b:
-keep the TibiaWiki BR comparison as the README summary and the capture workflow, no committed facts file).
+1a prepare this contract; 2a populate `content/houses/` right after acceptance; 3b keep the TibiaWiki BR
+comparison as the README summary and the capture workflow, no committed facts file. Follow-up the same day:
+1a open the PR; 2a shops are ordinary physical houses; 3b confirmed.
 
 ## Validation (local)
 
