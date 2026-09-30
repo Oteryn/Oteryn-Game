@@ -122,6 +122,7 @@ DEFINITION_REVIEWED = {
                               'sha1': '82a635859c0aa2e635492ab2fecbf11ff962f80b'}},
     'Enpa-Deia Pema': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Enpa-Deia Pema.gif',
                                   'sha1': 'f3b2891090a2faf249a40a378ff87b3b65d5e9cc'}},
+    'Flickering Soul': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30'}},
     'Gareth': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Gareth.gif',
                           'sha1': '987161bfb6872869531d7d6a2e7b86383791d538'}},
     'Grumpy Stone': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'crystal', 'image': 'File:Grumpy Stone.gif',
