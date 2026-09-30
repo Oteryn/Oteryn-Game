@@ -19,7 +19,7 @@
     "only path" sentence;
   - `RESOURCE_LIMITS_REGISTRY.json`: four budget rows, in this PR.
 - Amended (§4.5, §4.6) by the architect ruling on #162 5910173902 (palette keys, zero-destination
-  teleports), applied with ITEM-MOVE-WIRE-0.
+  teleports), pending on acceptance of ITEM-MOVE-WIRE-0.
 - The wire child MAP-WIRE-1 needs owner acceptance of its own contract candidate.
 - Runtime, migration, content and production authority: NONE. Each child in §5 needs its own
   #162 allocation.
@@ -282,7 +282,8 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
 ### 4.5 Keys (5a)
 
 - A palette key resolves only through the Item registry (A12 keys) or a catalogue family
-  (Terrain or WorldObject). Any other key fails compilation. *Amendment (ruling 5910173902):* an
+  (Terrain or WorldObject). Any other key fails compilation. *Amendment (ruling 5910173902,
+  pending on acceptance of ITEM-MOVE-WIRE-0):* an
   id with an Item record uses its Item key, and the compiler follows the Item's A12 §4.6 pointer
   (`routed_to`) to its Terrain or WorldObject record; only an id without an Item record uses its
   Terrain or WorldObject catalogue key directly.
@@ -294,7 +295,8 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
   bundle. The runtime gives them no behaviour unless an admitted definition binds them explicitly,
   as `RewardClaim` placements (D39) or doors do.
 - **Teleports.** A `teleport` attribute must agree with its Transition.Teleport record.
-  Otherwise compilation fails. *Amendment (ruling 5910173902):* a `teleport` attribute whose
+  Otherwise compilation fails. *Amendment (ruling 5910173902, pending on acceptance of
+  ITEM-MOVE-WIRE-0):* a `teleport` attribute whose
   destination is (0,0,0) is not a teleport. The compiler drops it with a diagnostic; the tile keeps
   its legacy `action`/`unique` binding, and the dropped attribute still excludes the entry from
   map-item materialization (§4.4). The dropped list is a parity report before a production

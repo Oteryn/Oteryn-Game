@@ -89,6 +89,8 @@ No code, migration or content change is made.
   identity; USE field 2 as a generic item target; handle table bound and resume continuity;
   adjustments recorded as architect corrections; container closing; ADR-0021 amendment wording;
   branch sequencing; VIS-2 and combat loot MINT dependencies).
+- Control-plane rule (#162 5912405163): the ADR-0021 and LCFA edits read "pending on acceptance
+  of ITEM-MOVE-WIRE-0".
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

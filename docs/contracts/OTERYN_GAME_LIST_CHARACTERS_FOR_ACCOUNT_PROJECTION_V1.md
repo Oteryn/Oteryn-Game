@@ -81,7 +81,8 @@ Watermark request, exact member set:
 
 Success response (`200`, exact): `{"contract_version":1,"result":"accepted"}` or `{"contract_version":1,"result":"superseded"}`. Failures are empty bodies: `400` malformed, `401` unauthenticated, `409` equal `(epoch, revision)` with different content, `429` rate limited, `503` unavailable.
 
-**Clarification (architect ruling #162 5910360309).** "Content" is the projected character set
+**Clarification (architect ruling #162 5910360309), pending on acceptance of ITEM-MOVE-WIRE-0,
+which carries it.** "Content" is the projected character set
 only (the `characters` value, compared canonically). `source_observed_at` and the envelope fields
 are not content: an equal pair with equal `characters` is an idempotent `200 accepted`, and the
 consumer keeps its first stored `source_observed_at`. The same reading applies to the snapshot
