@@ -175,7 +175,10 @@ party row; member rows by CharacterId; invitation rows; consent rows.
   `character_root`), so every `PartyView` refreshes (§4.2, §4.4).
 - **Revoke `{invitee}`** by the leader; **decline** by the invitee.
 - **Accept `{party}`.** The invitee holds a valid invitation and is in no party; it joins with
-  the invitation's `seq`. Accepting removes its other invitations. The members need not be on the
+  the invitation's `seq`. Accepting deletes only the accepted invitation (architect ruling): the invitee's other
+  invitations stay until revoked, declined or expired (accepting one while in a party is refused `ALREADY_IN_PARTY`)
+  (5 minutes, `PARTYPVP0-RL-30`), and the cleanup job ends any party left with only its leader
+  and no invitation (§3 lifetime). So an accept locks one party and never has to close others. The members need not be on the
   same channel (PartyId baseline).
 - **Leave.** Refused (`LOGOUT_BLOCKED`) while the member's combat lock runs (§8.1: the logout
   block, the PZ block or the kill block). A leaving leader passes by the succession rule.
@@ -191,7 +194,13 @@ party row; member rows by CharacterId; invitation rows; consent rows.
   channel switch keeps membership: it is not a logout (PartyId baseline).
 - **Cleanup job** (World job, recovery fence and admission relations only): removes a member
   whose Character has no session row in state 1 or 2 for `PARTYPVP0-RL-08` (60 s), a leader by the
-  succession rule, which covers a node crash and outlasts a channel switch. It also deletes expired
+  succession rule, which covers a node crash and outlasts a channel switch. Architect ruling: it
+  removes a member only when the Character is also legally absent (the admission relations show no
+  present or uncontrolled actor of it on any channel, FND-04B) and its combat lock is clear (the
+  durable `logout_block_until`, `pz_block_until` and `kill_block_until` are all past the database
+  clock, §8.1); otherwise the member stays and the next pass re-checks, so a disconnect never
+  bypasses the rule that the combat lock blocks leaving a party (at most the 15-minute kill block
+  delays the removal). It also deletes expired
   invitations, oldest `expires_at` first, at most 100 per pass, one party per transaction (party
   row locked, then re-checked); a party left with only its leader and no invitation ends in that
   transaction (§3 lifetime).
@@ -306,9 +315,12 @@ Character + World, strong durable, one state on every channel (the scope matrix 
 
 - `game_character_pvp_state`: `character_id` primary key, `world_id`, `skull` (`NONE`, `RED`,
   `BLACK`), `skull_until`, `kill_block_until`, `logout_block_until`, `pz_block_until`,
-  `white_skull_until`, `adventurer_forfeited`, `ledger_total_buckets`, `revision`.
+  `white_skull_until`, `adventurer_forfeited`, `ledger_total_buckets` (per 10 s bucket: all-source damage taken and PvP damage taken), `revision`.
 - `game_character_pvp_ledger` (§8.3): (`victim_character_id`, `contributor_character_id`) primary
-  key, `buckets` (at most 31 entries of bucket start, damage, assist; 10 s buckets), `last_at`; at most `PARTYPVP0-RL-25` (16) per victim.
+  key, `buckets` (at most 31 entries of bucket start, damage, assist; 10 s buckets), `last_at`,
+  `compact` (false for a full row; true for a demoted one that keeps only identity, a damage or
+  assist flag and `last_at`, no buckets, §8.3); at most `PARTYPVP0-RL-25` (16) full and
+  `PARTYPVP0-RL-32` (64) compact per victim.
 - `game_character_unjustified_points`: (`character_id`, `death_occurrence_id`) primary key,
   `victim_character_id`, `points_milli` (1 to 1,000), `committed_at`.
 - `game_character_revenge_marks` (orange): (`victim_character_id`, `killer_character_id`,
@@ -418,17 +430,27 @@ attack, the mode is locked to Red Fist. A black skull cannot select Red Fist.
 
 Per character victim, runtime: each character contributor's damage (its summons' included) and
 assists (a paralysis applied, a trap closed, a heal on an attacker) over the last `PARTYPVP0-RL-18`
-(5 minutes), at most `PARTYPVP0-RL-25` (16) contributors, plus the total damage taken from all
-sources in that window. Architect ruling (replaces D3's "the 17th is not tracked", which would let an
-untracked attacker escape §9): a PvP damaging or assisting action by a character with no ledger slot
-while all 16 are taken is refused (`PVP_REFUSED {LEDGER_FULL}`; an area effect skips that target)
-before any effect, so every accepted attacker is tracked and the contributor count in §9 and §10.1
-is complete. Slots free as contributors age out of the window.
+(5 minutes), at most `PARTYPVP0-RL-25` (16) full contributors and `PARTYPVP0-RL-32` (64) compact
+ones, plus the damage taken from all sources and the PvP damage taken, per 10 s bucket, in that
+window. The PvP damage total is kept apart from the contributor rows, so the §10.1 ratio never
+depends on which contributors are tracked. Architect ruling (replaces round 3's `LEDGER_FULL`
+refusal, which a coordinated group could hold open for renewable immunity, and D3's "the 17th is not
+tracked"): legal PvP damage and assists are never refused for ledger space. A new contributor when
+all 16 full slots are taken **demotes** the full contributor with the least damage in the window
+(assist-only first, then oldest `last_at`) to a compact row, and takes the slot; its amounts stay in
+the PvP total, and it stays classified in §9 as a damage or assist contributor. When the 64 compact
+slots are also taken the compact row with the oldest `last_at` is dropped. Declared residual: only
+an attack by more than 80 distinct characters within 5 minutes can drop the oldest contributors'
+consequences (they are the ones that hit longest ago), and never the victim's protection; the
+final-blow character is always classified, from the death itself. Slots free as contributors age
+out of the window.
 
 **Durable snapshot** (architect ruling; §9 and §10.1 must not lose contributors to a node crash):
 the ledger is written ahead with the §8.1 deadlines. Every durable deadline write that touches a
-victim upserts its `game_character_pvp_ledger` rows from the runtime ledger (the acting contribution
-as a row with the amounts known before it) and sets `ledger_total_buckets` in its state row; amounts
+victim (and, architect ruling, a **ledger flush** of the victim's own state row at least once per
+`PARTYPVP0-RL-27` (10 s) for as long as the victim's window holds PvP damage, whatever the source of
+the damage since the last write: monster, field or condition damage included) upserts its `game_character_pvp_ledger` rows from the runtime ledger (the acting contribution
+as a row with the amounts known before it) and sets `ledger_total_buckets` in its state row (the flush takes the all-source total from the runtime, so non-PvP damage no longer depends on a PvP deadline write); amounts
 are kept per 10 s time bucket (`PARTYPVP0-RL-27`), each hit or assist adding to the bucket of its time; a hit or assist by a contributor with no durable row for that victim always
 triggers such a write before it takes effect (a failed write refuses the action). So every
 contributor is durable before it contributes, and the stored amounts are at most `PARTYPVP0-RL-27`
@@ -437,7 +459,7 @@ buckets that are still within the window, each bucket aging out at its end + the
 near the start of the window expires on time even when a later hit by the same contributor is
 current, and a restored amount is never lower than the live one (at most 10 s longer); the stored
 total ages out per bucket the same way. A contributor row with no live bucket is deleted. The victim's death transaction (§9) deletes its rows; the World job deletes expired
-ones (§6.2). A crash can lose at most 10 s of amounts, never a contributor
+ones (§6.2). A crash can lose at most 10 s of amounts of any source, never a contributor
 (`PARTYPVP0-RL-31`).
 
 ## 9. Kill classification and skulls (PVP-RT-1 computes; PVP-1 commits)
@@ -568,11 +590,12 @@ the action. Reaching level 21 needs no write.
 | `PARTYPVP0-RL-28` blocked characters per character | 100 |
 | `PARTYPVP0-RL-29` open invitations per invitee | 20 |
 | `PARTYPVP0-RL-30` invitation lifetime | 5 minutes; expired rows deleted by the cleanup job, 100 per pass |
-| `PARTYPVP0-RL-31` durable PvP ledger | at most 16 rows per victim, at most 10 s behind, deleted 5 minutes after `last_at` or at the victim's death |
+| `PARTYPVP0-RL-32` compact PvP contributors per victim | 64 |
+| `PARTYPVP0-RL-31` durable PvP ledger | at most 16 full and 64 compact rows per victim, at most 10 s behind, deleted 5 minutes after `last_at` or at the victim's death |
 | PvP legality party check | 1 indexed read per character target; 1 batched read per area effect |
 | Party operation | 1 transaction, 0 items, 0 value lines, 1 relay hint |
-| PvP additions to a death | at most 17 state rows, 16 point rows, 16 mark rows, 16 ledger rows deleted; no value lines |
-| PvP deadline write | 1 transaction, at most 2 state rows and 16 ledger rows, per character at most once per 10 s plus once per new contributor |
+| PvP additions to a death | at most 17 state rows, 16 point rows, 16 mark rows, 80 ledger rows deleted; no value lines |
+| PvP deadline write | 1 transaction, at most 2 state rows and 80 ledger rows, per character at most once per 10 s plus once per new contributor |
 
 ## 14. Rejected options
 

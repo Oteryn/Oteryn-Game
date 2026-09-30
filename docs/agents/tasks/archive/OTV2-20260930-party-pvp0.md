@@ -99,6 +99,11 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 - Codex round 3 (#1402, 2 P1): durable PvP ledger now keeps per-10 s time buckets so a restore
   expires old hits on time (never below the live amount, at most 10 s longer); a 17th attacker is refused
   (`LEDGER_FULL`) instead of untracked; validators re-run PASS.
+- Codex round 4 (#1402, 3 P1, 1 P2): a full ledger demotes the smallest contributor to a compact
+  row instead of refusing legal damage (no renewable immunity; `RL-32`); the all-source damage total
+  is flushed at least every 10 s while PvP damage is in the window; party cleanup removes a member
+  only when legally absent and combat-lock clear; accept deletes only its own invitation, other
+  invitations expire and the cleanup job ends leader-only parties; validators re-run PASS.
 - Owner answers (2026-09-30, #162): P1 b and a — per-World PvP type; Optional and Open PvP both
   delivered; the first World launches as Optional PvP (stated assumption pending owner
   confirmation); validators re-run PASS.
