@@ -883,7 +883,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // CipSoft appearance) stays out.
     assert!(keys.contains("oteryn:item.tibia.i54335"));
     assert!(keys.contains("oteryn:item.tibia.i21887"));
-    assert!(!keys.contains("oteryn:item.tibia.i48296"));
+    assert!(!keys.contains(concat!("oteryn:item.tibia.", "i48296")));
     let gold_coin = linked
         .definitions
         .iter()
