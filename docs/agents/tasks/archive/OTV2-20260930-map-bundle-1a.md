@@ -89,7 +89,7 @@ production path. The ADR-0021 §4.8 security review of the bundle reader applies
 
 - `cargo fmt --all --check`: PASS.
 - `cargo clippy --locked -p oteryn-world-bundle-compiler --all-targets --quiet -- -D warnings`: PASS.
-- `cargo test --locked -p oteryn-world-bundle-compiler --quiet`: 8 passed.
+- `cargo test --locked -p oteryn-world-bundle-compiler --quiet`: 11 passed (after review round 1).
 - `cargo run --locked -p oteryn-architecture-check -- workspace .`: PASS.
 - `python3 tools/agents/validate_governance.py` and the `tools/agents/tests` suite: PASS.
 - `git diff --check`: clean.
@@ -111,6 +111,19 @@ production path. The ADR-0021 §4.8 security review of the bundle reader applies
 - Hand-written code is about 1,000 lines of Rust plus tests, above the ~500-line guide: the
   format writer, the fail-closed reader and the B3 reader are one reviewable unit with the format
   document (ADR-0021 §5 reviews the format with the compiler).
+- Review round 1 on `5e34fac9` (comments 5910607238 and 5910692846), all answered in one repair
+  push (a new frozen head; the head is named in the #162 handback):
+  - `build_class` and `family` deserialize from a JSON string only (test added);
+  - the manifest field order is a writer-only rule (format §3);
+  - "exactly one byte encoding" now applies to the raw payload only; `compiler_version` fixes the
+    frame bytes (§5);
+  - boundary tests: reduced `ReadCaps` maxima for file, sector-count, sector-raw and total-raw,
+    exact and one over; exact bundle tile and entry budgets. Rows that need a real maximum
+    (a 1 GiB bundle, 1,048,576 sectors, 16 MiB payload, 1 GiB total accepted) are covered by the
+    reduced-cap tests; rewording those `boundary_tests` rows is left to the registry owner
+    (`RESOURCE_LIMITS_REGISTRY.json` is outside this repair's owned paths);
+  - a deterministic reseal-and-flip reader test; "stacking order" is now "payload order";
+  - OPEN-1 to OPEN-3 updated to the architect's answers (#162 5910173902); OPEN-4 stays open.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ## Context checkpoint

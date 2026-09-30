@@ -49,23 +49,48 @@ pub fn compiler_version() -> String {
     )
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum BuildClass {
     Production,
     /// Also what a missing value means.
     #[default]
     NonProduction,
-    /// Any other value; treated as `non-production` (ADR-0021 §4.2). Never written.
-    #[serde(other, skip_serializing)]
+    /// Any other string; treated as `non-production` (ADR-0021 §4.2). Never written.
+    #[serde(skip_serializing)]
     Unknown,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Deserialized from a JSON string only: a non-string value (`{"production":null}`, a number,
+/// `null`) is an error, never a build class (format document §8).
+impl<'de> Deserialize<'de> for BuildClass {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(match String::deserialize(deserializer)?.as_str() {
+            "production" => Self::Production,
+            "non-production" => Self::NonProduction,
+            _ => Self::Unknown,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Family {
     Item,
     Terrain,
+}
+
+/// Deserialized from a JSON string only; any other string or value is an error.
+impl<'de> Deserialize<'de> for Family {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        match String::deserialize(deserializer)?.as_str() {
+            "item" => Ok(Self::Item),
+            "terrain" => Ok(Self::Terrain),
+            other => Err(serde::de::Error::custom(format!(
+                "unknown family `{other}`"
+            ))),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -347,9 +372,30 @@ fn le32(data: &[u8], at: usize) -> usize {
     u32::from_le_bytes([data[at], data[at + 1], data[at + 2], data[at + 3]]) as usize
 }
 
+/// The hard maxima [`read`] enforces. Tests pass reduced values to hit each boundary cheaply.
+#[derive(Clone, Copy, Debug)]
+pub struct ReadCaps {
+    pub file_bytes: usize,
+    pub sectors: usize,
+    pub sector_raw_bytes: usize,
+    pub total_raw_bytes: usize,
+}
+
+pub const READ_CAPS: ReadCaps = ReadCaps {
+    file_bytes: MAX_FILE_BYTES,
+    sectors: MAX_SECTORS,
+    sector_raw_bytes: MAX_SECTOR_RAW_BYTES,
+    total_raw_bytes: MAX_TOTAL_RAW_BYTES,
+};
+
 /// Reads and fully verifies a bundle. Every size is checked before it is allocated.
 pub fn read(data: &[u8]) -> Result<Bundle, Error> {
-    limit(data.len() <= MAX_FILE_BYTES, "bundle file too large")?;
+    read_with(data, READ_CAPS)
+}
+
+/// [`read`] with explicit maxima; production callers use [`read`].
+pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
+    limit(data.len() <= caps.file_bytes, "bundle file too large")?;
     check(
         data.len() >= HEADER + DIGEST,
         "bundle shorter than header and trailer",
@@ -364,7 +410,7 @@ pub fn read(data: &[u8]) -> Result<Bundle, Error> {
     check(trailer == digest, "bundle digest mismatch")?;
     let (manifest_length, count) = (le32(data, 8), le32(data, 12));
     limit(manifest_length <= MAX_MANIFEST_BYTES, "manifest too large")?;
-    limit(count <= MAX_SECTORS, "too many sectors")?;
+    limit(count <= caps.sectors, "too many sectors")?;
     let table = HEADER + manifest_length;
     let mut expected = table + ENTRY * count;
     check(
@@ -391,7 +437,7 @@ pub fn read(data: &[u8]) -> Result<Bundle, Error> {
             "sector frame runs past the payloads",
         )?;
         limit(
-            raw_length <= MAX_SECTOR_RAW_BYTES,
+            raw_length <= caps.sector_raw_bytes,
             "sector payload too large",
         )?;
         limit(
@@ -399,7 +445,10 @@ pub fn read(data: &[u8]) -> Result<Bundle, Error> {
             "sector ratio too high",
         )?;
         total_raw += raw_length;
-        limit(total_raw <= MAX_TOTAL_RAW_BYTES, "bundle payload too large")?;
+        limit(
+            total_raw <= caps.total_raw_bytes,
+            "bundle payload too large",
+        )?;
         check(
             manifest.world.floors.binary_search(&floor).is_ok(),
             "sector floor outside the World",

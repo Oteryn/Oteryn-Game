@@ -33,7 +33,7 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
-| 16 | `manifest_length` | manifest | canonical JSON (§3) |
+| 16 | `manifest_length` | manifest | JSON, written canonically (§3) |
 | … | 50 × `sector_count` | sector table | §4 |
 | … | Σ `compressed_length` | sector frames | back to back, in table order |
 | end − 32 | 32 | digest | §6 |
@@ -43,7 +43,9 @@ between two frames. The whole file is at most `MAP01-BUNDLE-FILE-BYTES`.
 
 ## 3. Manifest
 
-The manifest is one UTF-8 JSON object written in the field order below, without whitespace. A
+The manifest is one UTF-8 JSON object. The writer emits it in the field order below without
+whitespace (a writer-only rule: the reader accepts any valid JSON of this shape, in any field or
+whitespace order, and byte identity is guaranteed by the digest, §6). A
 reader rejects unknown fields at every level (fail closed); a new field needs a new
 `format_version`.
 
@@ -86,7 +88,7 @@ sector coordinate is absolute.
 
 ## 5. Sector payload
 
-Each frame is exactly one zstd frame at level 3: no skippable or second frame, the content
+Each frame is exactly one zstd frame (the writer uses level 3): no skippable or second frame, the content
 checksum flag set, and a declared content size equal to `raw_length`. It decompresses to exactly
 `raw_length` bytes of the B3 sector grammar
 (`world_region_codec.py`, `OTERYN_WORLD_REGION_B3/v1`), unchanged except for two meanings:
@@ -103,7 +105,8 @@ and the present values in bit order. Container contents follow their container o
 deeper. A present attribute with value 0 or an empty text stays present.
 
 Varints must be canonical: no redundant zero high group and no bits past 64. With the frame
-rules above, one content has exactly one byte encoding. The writer decodes every payload it
+rules above, the raw payload of a given content has exactly one byte encoding. The frame bytes
+themselves are not unique across zstd versions or levels; `compiler_version` fixes them (§6). The writer decodes every payload it
 produced and writes it only if it reads back to the same tiles within the same limits, so it
 never writes what a reader rejects. The B3 reader applies the same varint rule; the B3 encoder
 already writes canonical varints.
@@ -129,7 +132,7 @@ placement_key = x << 32 | y << 16 | (−floor) << 8 | ordinal        (u64)
 ```
 
 `ordinal` is the index of the entry among the top-level entries (depth 0) of its tile in
-stacking order, below 64 (`MAP01-TILE-BASE-ENTRIES`). A floor outside `-15..0` or an ordinal of
+payload order, below 64 (`MAP01-TILE-BASE-ENTRIES`). A floor outside `-15..0` or an ordinal of
 64 or more has no key. Contents of a container have no key of
 their own; they belong to their top-level entry.
 
@@ -185,19 +188,24 @@ provisional key in a production build, and any limit above.
 
 ## 10. Open items
 
-These depend on the Sol Supervising Architect's answers on #162 (5909595542) and are **not
-decided** here. MAP-BUNDLE-1b closes them before this format is accepted.
+OPEN-1 to OPEN-3 were answered by the Sol Supervising Architect on #162 (5910173902); the
+answers are recorded below and implemented by MAP-BUNDLE-1b. OPEN-4 stays open and is closed by
+MAP-BUNDLE-1b before this format is accepted.
 
-- **OPEN-1, palette key families.** ADR-0021 §4.5 admits only Item and Terrain keys; after
-  #1319 about 7,699 palette ids are WorldObject keys. Either `family` gains `world-object`, or
-  the compiler follows the A12 §4.6 Item pointer and `family` stays as it is.
-- **OPEN-2, appearance-only terrain keys.** 5,949 ids have no Item key and #1170 keys them
-  `oteryn:terrain.aNNNNNN`. Whether they are minted as `oteryn:terrain.tibia.i<id>` or keep
-  that scheme changes only the manifest keys, not the layout.
-- **OPEN-3, orphan teleports.** 1,576 map teleport attributes have no Transition record, most
-  with destination (0,0,0). Either the compiler drops them with a diagnostic and the tile is not
-  a teleport, or compilation fails until the content is fixed. Until then the skeleton keeps
-  every teleport attribute and fails when its destination lies outside the World.
+- **OPEN-1, palette key families. Answered (Q1b, #162 5910173902).** A palette entry is the id's
+  canonical A12 key. An id with an Item record uses its Item key, and the compiler follows the
+  A12 §4.6 `routed_to` pointer (WO-2b). `family` stays `item` or `terrain`; there is no ADR
+  amendment. Applied by MAP-BUNDLE-1b (about 7,699 ids are WorldObject keys after #1319).
+- **OPEN-2, appearance-only terrain keys. Answered (Q2a).** The World Project generator mints
+  `oteryn:terrain.tibia.i<id>` for the 5,949 ids without an Item key; `oteryn:terrain.aNNNNNN` is
+  not used. Only manifest keys change, not the layout.
+- **OPEN-3, orphan teleports. Answered (Q3 split).** Of 1,576 map teleport attributes without a
+  Transition record, the compiler treats two classes differently: a destination of (0,0,0) means
+  the attribute is dropped with a diagnostic and recorded in the parity report, and the tile is
+  not a teleport; a real destination with no Transition record fails compilation. The count of
+  each class is recorded by the MAP-BUNDLE-1b parity report (the two sum to 1,576; most are
+  (0,0,0)). The skeleton still keeps every teleport attribute and fails when its destination
+  lies outside the World; 1b implements the split.
 - **OPEN-4, draft marker.** v1 lists draft areas in the manifest by key. Whether the runtime also
   needs a per-tile draft marker, and how draft tiles are gated, is decided with the area family
   in MAP-BUNDLE-1b.

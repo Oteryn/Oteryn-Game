@@ -289,6 +289,32 @@ fn build_class_fails_closed_and_placement_keys_are_positional() -> TestResult {
     let mut json: serde_json::Value = serde_json::to_value(&manifest)?;
     json["build_class"] = "staging".into();
     assert!(!serde_json::from_value::<Manifest>(json.clone())?.is_production());
+    // Only a string is a build class: an object, null or a number is malformed, not production.
+    for bad in [
+        serde_json::json!({"production": null}),
+        serde_json::json!({"non-production": null}),
+        serde_json::Value::Null,
+        serde_json::json!(1),
+        serde_json::json!(["production"]),
+    ] {
+        json["build_class"] = bad;
+        assert!(serde_json::from_value::<Manifest>(json.clone()).is_err());
+    }
+    json["build_class"] = "production".into();
+    assert!(serde_json::from_value::<Manifest>(json.clone())?.is_production());
+    // The same holds for `family`: a string naming a known family, nothing else.
+    assert!(json["palette"][0]["family"].is_string());
+    for bad in [
+        serde_json::json!({"item": null}),
+        serde_json::json!({"terrain": null}),
+        serde_json::Value::Null,
+        serde_json::json!("world-object"),
+    ] {
+        json["palette"][0]["family"] = bad;
+        assert!(serde_json::from_value::<Manifest>(json.clone()).is_err());
+    }
+    json["palette"][0]["family"] = "terrain".into();
+    assert!(serde_json::from_value::<Manifest>(json.clone()).is_ok());
     json.as_object_mut().ok_or("object")?.remove("build_class");
     assert!(!serde_json::from_value::<Manifest>(json)?.is_production());
     assert_eq!(
@@ -495,5 +521,94 @@ fn skipped_containers_still_resolve_and_the_writer_round_trips() -> TestResult {
         sector::decode(&two, (0, 0), bundle::TILE_LIMITS, &mut small),
         Err(Error::Limit(_))
     ));
+    Ok(())
+}
+
+fn word(bytes: &[u8], at: usize) -> usize {
+    u32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize
+}
+
+/// The registry's file, sector-count, sector-raw and total-raw boundaries, hit with reduced
+/// maxima on a real bundle: exactly the maximum is accepted, one more is a `Limit`.
+#[test]
+fn reduced_maxima_accept_the_boundary_and_refuse_one_more() -> TestResult {
+    let bytes = build(BuildClass::NonProduction)?.bytes;
+    let (count, table) = (word(&bytes, 12), 16 + word(&bytes, 8));
+    let raws: Vec<usize> = (0..count)
+        .map(|i| word(&bytes, table + 50 * i + 14))
+        .collect();
+    let (total, largest) = (
+        raws.iter().sum::<usize>(),
+        *raws.iter().max().ok_or("rows")?,
+    );
+    assert!(count >= 2);
+    let refused = |caps| matches!(bundle::read_with(&bytes, caps), Err(Error::Limit(_)));
+    let exact = bundle::ReadCaps {
+        file_bytes: bytes.len(),
+        sectors: count,
+        sector_raw_bytes: largest,
+        total_raw_bytes: total,
+    };
+    assert!(bundle::read_with(&bytes, exact).is_ok());
+    assert!(refused(bundle::ReadCaps {
+        file_bytes: bytes.len() - 1,
+        ..exact
+    }));
+    assert!(refused(bundle::ReadCaps {
+        sectors: count - 1,
+        ..exact
+    }));
+    assert!(refused(bundle::ReadCaps {
+        sector_raw_bytes: largest - 1,
+        ..exact
+    }));
+    // The total is over only on the row that crosses it, before that row is decompressed.
+    assert!(refused(bundle::ReadCaps {
+        total_raw_bytes: total - 1,
+        ..exact
+    }));
+    assert_eq!(
+        bundle::READ_CAPS.total_raw_bytes,
+        bundle::MAX_TOTAL_RAW_BYTES
+    );
+    // A file over the real 1 GiB maximum is refused before anything is parsed.
+    let huge = vec![0u8; bundle::MAX_FILE_BYTES + 1];
+    assert!(matches!(bundle::read(&huge), Err(Error::Limit(_))));
+    Ok(())
+}
+
+/// `MAP01-BUNDLE-TILES` and `MAP01-BUNDLE-ENTRIES`: exactly the budget decodes, one less fails.
+#[test]
+fn bundle_tile_and_entry_budgets_are_exact() -> TestResult {
+    let tiles = vec![
+        tile(1, 2, vec![item(0, 0), item(1, 0), item(2, 1)]),
+        tile(3, 2, vec![item(0, 0)]),
+    ];
+    let payload = sector::encode(&tiles)?;
+    let decode = |tiles, entries| {
+        let mut budget = sector::Budget { tiles, entries };
+        sector::decode(&payload, (0, 0), bundle::TILE_LIMITS, &mut budget)
+    };
+    assert_eq!(decode(2, 4)?, tiles);
+    assert!(matches!(decode(1, 4), Err(Error::Limit(_))));
+    assert!(matches!(decode(2, 3), Err(Error::Limit(_))));
+    Ok(())
+}
+
+/// ADR-0021 §4.8: flip every byte, recompute the digest, and the reader may refuse but must not
+/// panic; without the reseal the digest itself refuses.
+#[test]
+fn reader_survives_every_resealed_byte_flip() -> TestResult {
+    let bytes = build(BuildClass::NonProduction)?.bytes;
+    let body = bytes.len() - 32;
+    for at in 0..body {
+        for mask in [0x01u8, 0x80, 0xFF] {
+            let mut flipped = bytes.clone();
+            flipped[at] ^= mask;
+            assert!(bundle::read(&flipped).is_err());
+            // Any outcome but a panic is acceptable for a resealed flip.
+            let _ = bundle::read(&reseal(flipped));
+        }
+    }
     Ok(())
 }
