@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "f0fe85ac884923347545de02d44b8449618f786c5fa9579ee074e2f5a12962b1",
+        "3689791ba6efc88197a6f478223a425599f67ccabff2f29945963d095d1bb066",
     ),
     (
         "definitions/declarations.json",
-        14_834_242,
-        "8285f535f72551a5c149d619514b5ec37e6c4cd50c22c57b0e0fb87689dee7ba",
+        14_938_464,
+        "4b13f55ec1cc2f3985c47de27e265a069cca3729e6cd675e874be2bf01be0756",
     ),
     (
         "definitions/reference.json",
-        21_258_697,
-        "6ee7da59dab0c6bc00ab65a336c9f18c07c2310cd672b134c4293abc082636ae",
+        21_316_331,
+        "2aeef18975a6d2e07bae8322ae886b1246b3e6c18ef7c72975f998a5aeafc048",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "81106935ba5c7cb6a7e18e4faff6ff46d9ddf3a9be31e1d7e53380623fa33a03",
+        "9bad2c17c819472ba9076b772614699b836af4ab9b82fb3c2104348d67d6539f",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "22e5712d07836d8f73a201c26310586d6bd872346ec4573346cfcf5d85b36c75",
+        "e124fbcc70899b09f2d909b8967a3925a2d53c2c21d4a5a9c8f1e28f474ab975",
     ),
     (
         "provenance/imports.json",
-        31_225,
-        "350f489a9ac45497f4add64c08161fa245b2706322ecaf3d8f386812c15d111a",
+        32_476,
+        "d91343f3e0bbc2d053b272ac59df4856e18ae720987c788d14dc3c11afa35c11",
     ),
     (
         "provenance/sources.json",
-        1_293_892,
-        "80291ae36670f3299d03db97095f8bb4ede548e7169f292e304e3ce459be4087",
+        1_299_026,
+        "c384023117ceb182e8b48f8ed800de85be6fac5527f3a6f22bf29179580a9f7c",
     ),
     (
         "worlds/world.json",
@@ -105,15 +105,15 @@ fn is_unshared_successor_shard(locator: &str) -> bool {
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "fa64bbbc96a2b35dfd92f82c9c67a17f1adee4b6cb6fbe52efef0e363eaec09b";
+const TREE_SHA256: &str = "317f66009654b7950a303aee8127aeb79afaec10826f735a5f9ad31f78dd4d4b";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
 const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1463;
-const CREATURE_RECORDS: usize = 20464;
-const CREATURE_PROFILES: usize = 19519;
+const CREATURES: usize = 1476;
+const CREATURE_RECORDS: usize = 20638;
+const CREATURE_PROFILES: usize = 19693;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1094;
 const NPC_RECORDS: usize = 2188;
@@ -121,7 +121,7 @@ const NPC_DECLARATIONS: usize = 2179;
 const NPC_DIALOGUES: usize = 707;
 const NPC_BINDINGS: usize = 2344;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
-const ENCOUNTERS: usize = 58;
+const ENCOUNTERS: usize = 61;
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")

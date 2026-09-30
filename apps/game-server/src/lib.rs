@@ -48,6 +48,14 @@ mod combat;
 )]
 #[path = "combat/pickup.rs"]
 mod combat_pickup;
+// D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
+// recompiles `interaction/mod.rs` without Content or durability.
+#[allow(
+    dead_code,
+    reason = "D39 has no production caller yet; the client USE command wires one"
+)]
+#[path = "interaction/chest_use.rs"]
+mod interaction_chest_use;
 
 pub mod character_bootstrap_intent;
 pub mod character_recovery_fence;

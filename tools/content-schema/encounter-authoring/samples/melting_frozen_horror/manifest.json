@@ -1,7 +1,14 @@
 {
   "encounter": "canary:encounter/melting_frozen_horror",
   "classification": "OTS_HYPOTHESIS_ONLY",
-  "covers": {},
+  "covers": {
+    "ForgottenKnowledgeBossDeath": [
+      "canary:creature/melting_frozen_horror"
+    ],
+    "MeltingDeath": [
+      "canary:creature/melting_frozen_horror"
+    ]
+  },
   "sources": [
     {
       "kind": "git",
@@ -16,16 +23,44 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua",
       "blob_sha1": "00ced55f16d363011cad6cc00bc14ea07fbdd253"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/dragon_egg.lua",
+      "blob_sha1": "ae92b32650b83507832f22ae73e836ac722c13ad"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/solid_frozen_horror.lua",
+      "blob_sha1": "2f03a064b82b418ac43decae33677ea71ef918b3"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_frozen_horror.lua",
+      "blob_sha1": "c21a5e60f0d291b042eecb3c3002be38df1fbaac"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_melting_death.lua",
+      "blob_sha1": "42cdb6cf6a55cd5b60a0e6d1f324f44f35cefdb3"
     }
   ],
   "entries": [
     {
       "source_index": 0,
       "source_lines": [
-        1
+        17
       ],
       "status": "mapped",
-      "resolution": "Melting Frozen Horror is the melting_frozen_horror participant.",
+      "resolution": "Melting Frozen Horror is the melting_frozen_horror participant; its file registers ForgottenKnowledgeBossDeath.",
       "destination": "/encounter/participants/0/creatures"
     },
     {
@@ -60,23 +95,119 @@
       "destination": "/encounter/rules/0/actions/0"
     },
     {
+      "source_index": 2,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Dragon Egg is the dragon_egg participant.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Solid Frozen Horror is the solid_frozen_horror participant.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        7,
+        10,
+        11,
+        12,
+        36,
+        37,
+        38,
+        39
+      ],
+      "status": "mapped",
+      "resolution": "The lever places the dragon egg on (32269, 31084, 14), the melting frozen horror on its parking tile (32267, 31071, 14) and the solid frozen horror in the room: the roles the death script acts on.",
+      "destination": "/encounter/participants"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        50
+      ],
+      "status": "mapped",
+      "resolution": "clearForgotten cleans (32264, 31070, 14)-(32284, 31104, 14): the arena anchor.",
+      "destination": "/encounter/anchors/0"
+    },
+    {
       "source_index": 1,
       "source_lines": [
         37,
         38,
-        39,
+        39
+      ],
+      "status": "mapped",
+      "resolution": "The top creature of the egg tile: the dragon egg the lever placed there (speed 0), if it is still alive.",
+      "destination": "/encounter/rules/1/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
         40,
-        41,
+        41
+      ],
+      "status": "mapped",
+      "resolution": "The dragon egg is removed.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
         42,
-        43,
+        43
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"baby dragon\", pos, true, true): an unowned baby dragon with full health on the egg's tile (role_position is read when the trigger fires).",
+      "destination": "/encounter/rules/1/actions/1"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "status": "mapped",
+      "resolution": "MeltingDeath replaces the top creature of the egg tile once more; the net result is still one baby dragon.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
         44,
         45,
         46,
-        47,
-        48
+        47
       ],
-      "status": "unresolved_semantics",
-      "resolution": "On its death the top creature on tile (32269, 31084, 14) is removed and a baby dragon is created in its place, and the top creature on (32267, 31071, 14) is removed. Which creatures stand on those tiles is map state, not visible in the script; modelling it needs those roles confirmed (D25: wiki or map evidence)."
+      "status": "mapped",
+      "resolution": "Canary removes the top creature of the parking tile (32267, 31071, 14). Owner answer Q4 (format §12.3, global over Canary): Forgotten Knowledge has one form-changing boss, so the death of the melting form always removes the solid form, even when the melting horror dies on the parking tile.",
+      "destination": "/encounter/rules/2/actions/0"
     }
   ],
   "outcome_evidence": [

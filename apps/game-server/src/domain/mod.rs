@@ -2,7 +2,9 @@
 
 pub mod appearance;
 pub mod bestiary;
+pub mod character_name;
 pub mod charm;
+pub mod currency;
 pub mod death;
 pub mod equipment;
 pub mod premium;

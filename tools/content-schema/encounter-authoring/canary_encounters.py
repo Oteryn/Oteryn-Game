@@ -240,7 +240,7 @@ DREAMS = ['Unpleasant Dream', 'Horrible Dream', 'Nightmarish Dream', 'Mind-Wreck
 
 def dream_courts(build):
     """dreamCourtsDeath: boss kill outcomes (quest progress and a 20 h cooldown for the reward and quest domains), the
-    Plagueroot plant attendant, and Alptramun's dream escalation (unresolved: needs an ability-cast trigger)."""
+    Plagueroot plant attendant, and Alptramun's dream replacement (owner answer Q1)."""
     event = 'dreamCourtsDeath'
     for boss, name, display, lines, questline, cap, timer in DREAM_COURTS_BOSSES:
         item = build.get(name, f'Dream Courts: {display}', 'instance_per_party')
@@ -280,39 +280,40 @@ def dream_courts(build):
                 'Game.createMonster("plant attendant", death position): a new unowned plant attendant with full health.')
     alptramun = build.items['alptramun']
     build.participant(alptramun, 'alptramun', 'Alptramun', event)
-    alptramun['encounter']['state']['counters'].append({'name': 'dreams_killed', 'initial': 0})
-    build.entry(alptramun, DREAM_COURTS_LEVERS, [87], 'mapped', '/encounter/state/counters/0',
-                'The Dream Scar lever starts the Alptramun fight with AlptramunSummonsKilled at 0.')
-    path = build.rule(alptramun, {'key': 'alptramun_resets_dreams', 'trigger': {'kind': 'creature_died', 'role': 'alptramun'},
-                                  'conditions': [{'kind': 'has_master', 'role': 'alptramun', 'value': False}],
-                                  'actions': [{'kind': 'counter', 'counter': 'dreams_killed', 'operation': 'set', 'value': 0}]})
-    build.entry(alptramun, DREAM_COURTS_DEATH, [117, 118, 119], 'mapped', path + '/actions/0',
-                'The death of Alptramun sets AlptramunSummonsKilled back to 0.')
-    for dream, band in zip(DREAMS, ((0, 9), (9, 18), (18, 27), (27, 36))):
-        role = slug(dream)
-        build.participant(alptramun, role, dream, event)
+    build.entry(alptramun, DREAM_COURTS_DEATH, [117, 118, 119], 'approved_omission', None,
+                'The death of Alptramun resets AlptramunSummonsKilled. The counter is read only by alptramun_summon.lua, which '
+                'nothing casts; the owner chose the global replacement instead (Q1, format §12.1).')
+    build.entry(alptramun, DREAM_COURTS_LEVERS, [87], 'approved_omission', None,
+                'The lever sets AlptramunSummonsKilled to 0; the counter is superseded by the global replacement (Q1).')
+    build.entry(alptramun, DREAM_COURTS_LEVERS, [22, 23, 24], 'mapped', '/encounter/participants/1/creatures',
+                'The lever places two unmastered unpleasant dreams with Alptramun: the initial dreams (entry placement, Q1).')
+    tiers = [creature(dream) for dream in DREAMS]
+    for dream in DREAMS:
+        build.participant(alptramun, slug(dream), dream, event)
+    for tier, dream in enumerate(DREAMS):
+        role, next_tier = slug(dream), min(tier + 1, len(DREAMS) - 1)
         path = build.rule(alptramun, {
-            'key': f'{role}_killed', 'trigger': {'kind': 'creature_died', 'role': role},
-            'conditions': [{'kind': 'has_master', 'role': role, 'value': False},
-                           {'kind': 'counter_compare', 'counter': 'dreams_killed', 'op': '>=', 'value': band[0]},
-                           {'kind': 'counter_compare', 'counter': 'dreams_killed', 'op': '<=', 'value': band[1]}],
-            'actions': [{'kind': 'counter', 'counter': 'dreams_killed', 'operation': 'add', 'value': 1}]})
+            'key': f'{role}_replaced', 'trigger': {'kind': 'creature_died', 'role': role},
+            'conditions': [{'kind': 'has_master', 'role': role, 'value': False}],
+            'actions': [{'kind': 'spawn', 'role': slug(DREAMS[next_tier]), 'creature': tiers[next_tier], 'count': 1,
+                         'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
         build.entry(alptramun, DREAM_COURTS_DEATH, [92, 93, 94, 95], 'mapped', path + '/conditions/0',
-                    'Returns without effect for a creature with a master.')
-        build.entry(alptramun, DREAM_COURTS_DEATH, [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                                    86, 87, 88, 123, 124, 125, 126, 127, 128, 129, 130, 131], 'mapped',
-                    path + '/actions/0',
-                    f'The death of an unmastered {dream.lower()} raises AlptramunSummonsKilled by one while it is within '
-                    f'{band[0]}-{band[1]}.')
-    build.entry(alptramun, ALPTRAMUN_SUMMON, list(range(1, 60)), 'unresolved_semantics', None,
-                'The escalation that reads the counter: alptramun_summon.lua summons 1-4 dreams (up to 5 summons, as Alptramun\'s '
-                'summons) whose type rises with AlptramunSummonsKilled in bands of nine. No Canary monster casts this spell '
-                '(it is not in Alptramun\'s attacks or defenses), and summoned dreams have a master, so this script would not '
-                'count them. The reference-date wiki says Alptramun "will initially appear with several summons. These '
-                'summons, when killed, will be replaced by even stronger summons" without numbers; defining that ability '
-                '(an ability_cast rule, D29) needs its exact rule from the owner or further evidence.')
+                    'Returns without effect for a creature with a master: summoned copies never trigger a replacement.')
+        build.entry(alptramun, ALPTRAMUN_SUMMON, [8, 9, 10, 11, 12, 13], 'mapped', path + '/actions/0',
+                    f'Owner answer Q1 (format §12.1, global over Canary): a killed {dream.lower()} is replaced at once by '
+                    f'the next tier, a {DREAMS[next_tier].lower()}, capped at tier 4, unowned with full health. The tier order is '
+                    'the config order of alptramun_summon.lua.')
+    build.entry(alptramun, DREAM_COURTS_DEATH, list(range(67, 89)) + list(range(123, 132)), 'approved_omission', None,
+                'The death of an unmastered dream raises AlptramunSummonsKilled within its band. Nothing reads the counter '
+                'once the never-cast summon spell is omitted, so the counter is superseded by the replacement rules (Q1).')
+    build.entry(alptramun, ALPTRAMUN_SUMMON, list(range(1, 8)) + list(range(14, 60)), 'approved_omission', None,
+                'The alptramun summon spell is registered, but no monster casts it (Alptramun\'s attacks and defenses do not '
+                'list it), and dreams it summoned would have a master, which the counter skips. Superseded by the global '
+                'replacement (owner answer Q1, format §12.1).')
 
 FORGOTTEN_KNOWLEDGE_KILL = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua'
+FROZEN_HORROR_LEVER = 'data-otservbr-global/scripts/quests/forgotten_knowledge/actions_frozen_horror.lua'
+FROZEN_HORROR_MELTING = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_melting_death.lua'
 # boss, encounter, display, config line, storage, cooldown seconds
 FORGOTTEN_KNOWLEDGE_BOSSES = [
     ('Lady Tenebris', 'lady_tenebris', 'Lady Tenebris', 3, 'LadyTenebrisKilled', 20 * 3600),
@@ -327,13 +328,13 @@ FORGOTTEN_KNOWLEDGE_BOSSES = [
 
 
 def forgotten_knowledge(build):
-    """ForgottenKnowledgeBossDeath: boss kill outcomes (a cooldown for the reward domain); the Melting Frozen Horror egg
-    swap on fixed tiles stays unresolved; an astral glyph death has no effect."""
+    """ForgottenKnowledgeBossDeath and MeltingDeath: boss kill outcomes (a cooldown for the reward domain); the Melting
+    Frozen Horror hatches the dragon egg and removes the solid form (owner answer Q4); an astral glyph death has no effect."""
     event = 'ForgottenKnowledgeBossDeath'
     for boss, name, display, line, storage, cooldown in FORGOTTEN_KNOWLEDGE_BOSSES:
         item = build.get(name, f'Forgotten Knowledge: {display}', 'instance_per_party')
         role = slug(boss)
-        build.participant(item, role, boss, event if boss != 'Melting Frozen Horror' else None)
+        build.participant(item, role, boss, event)
         outcome = f'{role}_defeated'
         item['encounter']['outcomes'].append(outcome)
         path = build.rule(item, {'key': f'{role}_death_outcome', 'trigger': {'kind': 'creature_died', 'role': role},
@@ -352,10 +353,42 @@ def forgotten_knowledge(build):
             'outcome': outcome, 'credited': 'damage_contributors',
             'reward_domain': {'canary_storage': f'Storage.Quest.U11_02.ForgottenKnowledge.{storage}', 'cooldown_seconds': cooldown}})
     horror = build.items['melting_frozen_horror']
-    build.entry(horror, FORGOTTEN_KNOWLEDGE_KILL, [37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48], 'unresolved_semantics', None,
-                'On its death the top creature on tile (32269, 31084, 14) is removed and a baby dragon is created in its place, '
-                'and the top creature on (32267, 31071, 14) is removed. Which creatures stand on those tiles is map state, '
-                'not visible in the script; modelling it needs those roles confirmed (D25: wiki or map evidence).')
+    fight = horror['encounter']
+    build.participant(horror, 'dragon_egg', 'Dragon Egg')
+    build.participant(horror, 'solid_frozen_horror', 'Solid Frozen Horror')
+    covered = horror['manifest']['covers'].setdefault('MeltingDeath', [])
+    covered.append(creature('Melting Frozen Horror')['key'])
+    baby_dragon = creature('Baby Dragon')
+    build.define(horror, baby_dragon)
+    fight['anchors'].append({'key': 'horror_arena', 'kind': 'area',
+                             'description': 'The lever\'s cleanup area, Canary (32264, 31070, 14) to (32284, 31104, 14).'})
+    build.entry(horror, FROZEN_HORROR_LEVER, [7, 10, 11, 12, 36, 37, 38, 39], 'mapped', '/encounter/participants',
+                'The lever places the dragon egg on (32269, 31084, 14), the melting frozen horror on its parking tile '
+                '(32267, 31071, 14) and the solid frozen horror in the room: the roles the death script acts on.')
+    build.entry(horror, FROZEN_HORROR_LEVER, [50], 'mapped', '/encounter/anchors/0',
+                'clearForgotten cleans (32264, 31070, 14)-(32284, 31104, 14): the arena anchor.')
+    path = build.rule(horror, {
+        'key': 'melting_frozen_horror_hatches_the_egg', 'trigger': {'kind': 'creature_died', 'role': 'melting_frozen_horror'},
+        'conditions': [{'kind': 'creature_present', 'role': 'dragon_egg', 'anchor': 'horror_arena', 'present': True}],
+        'actions': [{'kind': 'remove', 'role': 'dragon_egg'},
+                    {'kind': 'spawn', 'creature': baby_dragon, 'count': 1,
+                     'at': {'role_position': 'dragon_egg'}, 'owner': 'none', 'health': 'full'}]})
+    build.entry(horror, FORGOTTEN_KNOWLEDGE_KILL, [37, 38, 39], 'mapped', path + '/conditions/0',
+                'The top creature of the egg tile: the dragon egg the lever placed there (speed 0), if it is still alive.')
+    build.entry(horror, FORGOTTEN_KNOWLEDGE_KILL, [40, 41], 'mapped', path + '/actions/0', 'The dragon egg is removed.')
+    build.entry(horror, FORGOTTEN_KNOWLEDGE_KILL, [42, 43], 'mapped', path + '/actions/1',
+                'Game.createMonster("baby dragon", pos, true, true): an unowned baby dragon with full health on the egg\'s tile '
+                '(role_position is read when the trigger fires).')
+    build.entry(horror, FROZEN_HORROR_MELTING, list(range(1, 22)), 'mapped', path,
+                'MeltingDeath replaces the top creature of the egg tile once more; the net result is still one baby dragon.')
+    path = build.rule(horror, {
+        'key': 'melting_frozen_horror_removes_the_solid_form',
+        'trigger': {'kind': 'creature_died', 'role': 'melting_frozen_horror'},
+        'conditions': [], 'actions': [{'kind': 'remove', 'role': 'solid_frozen_horror'}]})
+    build.entry(horror, FORGOTTEN_KNOWLEDGE_KILL, [44, 45, 46, 47], 'mapped', path + '/actions/0',
+                'Canary removes the top creature of the parking tile (32267, 31071, 14). Owner answer Q4 (format §12.3, '
+                'global over Canary): Forgotten Knowledge has one form-changing boss, so the death of the melting form always '
+                'removes the solid form, even when the melting horror dies on the parking tile.')
     keeper = build.items['the_last_lore_keeper']
     build.participant(keeper, 'astral_glyph', 'An Astral Glyph', event)
     build.entry(keeper, FORGOTTEN_KNOWLEDGE_KILL, [12, 13], 'approved_omission', None,
@@ -449,7 +482,7 @@ ESSENCE_PILLARS = [
 
 def cults_of_tibia(build):
     """CultsOfTibiaBossDeath, DestroyedPillar and EssenceOfMaliceSpawnsDeath: mission outcomes of the Cults of Tibia
-    bosses, the Essence of Malice pillar room and the Corruptor of Souls hand-over. The Sandking stays unresolved."""
+    bosses, the Essence of Malice pillar room and the Corruptor of Souls hand-over (The Sandking fight: sandking_fight)."""
     event = 'CultsOfTibiaBossDeath'
     for boss, name, line, storage, value in CULTS_MISSION_BOSSES:
         item = build.get(name, f'Cults of Tibia: {boss if name != "the_corruptor_of_souls" else "The Corruptor of Souls"}',
@@ -503,8 +536,8 @@ def cults_of_tibia(build):
                 'The corruptor itself credits no mission; the credit comes with The Source of Corruption.')
 
     sandking = build.get('the_sandking', 'Cults of Tibia: The Sandking', 'instance_per_party')
-    build.participant(sandking, 'the_sandking', 'The Sandking')
-    sandking['encounter']['state']['counters'].append({'name': 'stage', 'initial': 0})
+    build.participant(sandking, 'the_sandking', 'The Sandking', event)
+    sandking['encounter']['state']['counters'].append({'name': 'stage', 'initial': 1})
     sandking['encounter']['outcomes'].append('the_sandking_defeated')
     path = build.rule(sandking, {
         'key': 'the_sandking_death_outcome', 'trigger': {'kind': 'creature_died', 'role': 'the_sandking'},
@@ -518,13 +551,13 @@ def cults_of_tibia(build):
     build.entry(sandking, CULTS_BOSSES, [46, 47, 48, 49, 50, 7], 'mapped', path + '/actions/0',
                 'onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage '
                 'CultsOfTibia.Life.Mission to 8 when it is lower.')
-    build.entry(sandking, CULTS_BOSSES, [7, 24, 25, 26], 'unresolved_semantics', path + '/conditions/1',
-                'The credit needs the global "sandking" storage at least 5: the fight stage, set to 1 by '
-                'actions_bosses_levers.lua line 481 and advanced by creaturescripts_sandking.lua. It is the stage counter of '
-                'this encounter, but the rules that advance it are not transcribed yet.')
+    build.entry(sandking, CULTS_BOSSES, [7, 24, 25, 26], 'mapped', path + '/conditions/1',
+                'The credit needs the global "sandking" storage at least 5: the stage counter of this encounter, set to 1 by '
+                'the lever and advanced by the sandking fight rules.')
     sandking['manifest']['outcome_evidence'].append({
         'outcome': 'the_sandking_defeated', 'credited': 'damage_contributors',
         'quest_domain': {'canary_storage': 'Storage.Quest.U11_40.CultsOfTibia.Life.Mission', 'raise_to_at_least': 8}})
+    sandking_fight(build, sandking)
 
     # Essence of Malice: five pillars guard five mini-bosses; the Essence appears after all five are killed.
     essence = build.items['essence_of_malice']
@@ -817,15 +850,153 @@ def azerus(build):
     build.entry(item, AZERUS, [27], 'approved_omission', None, 'The poff effect on each removed monster is cosmetic.')
 
 
+SANDKING = CULTS + 'creaturescripts_sandking.lua'
+SANDKING_MOVEMENT = CULTS + 'movements_sandking.lua'
+SANDKING_RETURN = (33099, 31859, 15)
+SANDKING_VORTICES = [(33095, 31854, 15), (33102, 31854, 15), (33095, 31864, 15), (33102, 31864, 15)]
+SANDKING_SPLITS = [(33097, 31857, 15), (33099, 31856, 15), (33102, 31857, 15)]
+VANISHES = 'THE SANDKING VANISHES INTO THE SAND AND HIS BROOD EMERGES!'
+
+
+def sandking_fight(build, item):
+    """SandkingThink, SandkingDeath and the corpse step-in: the vanish-and-brood cycle that advances the stage the credit
+    reads (CW2-2..4, owner answer Q3: broods spawn on free tiles)."""
+    encounter = item['encounter']
+    fake, brood, vortex = creature('The Sandking Fake'), creature('Sand Brood'), creature('Sand Vortex')
+    for role, name in (('sandking_fake', 'The Sandking Fake'), ('sandking_split', 'The Sandking Fake'),
+                       ('sand_brood', 'Sand Brood'), ('sand_vortex', 'Sand Vortex')):
+        build.participant(item, role, name)
+    encounter['state']['counters'].append({'name': 'broods_left', 'initial': 0})
+    encounter['state']['flags'].append({'name': 'real_sandking_called', 'initial': False})
+    encounter['state']['timers'] += [{'name': 'brood_wave', 'duration_ms': 5000, 'repeat': True},
+                                     {'name': 'brood_check', 'duration_ms': 5000, 'repeat': True}]
+    x, y, z = SANDKING_RETURN
+    encounter['anchors'] += (
+        [{'key': 'sandking_room', 'kind': 'area', 'description': 'The brood check area, Canary (33087, 31848, 15) to (33109, 31871, 15).'},
+         {'key': 'brood_area', 'kind': 'area', 'description': 'The brood tiles, Canary x 33092-33105, y 31853-31865, z 15.'},
+         {'key': 'sandking_return', 'kind': 'point', 'description': f'Where the Sandking reappears; Canary ({x}, {y}, {z}).'}]
+        + [{'key': f'vortex_{n}', 'kind': 'point', 'description': f'Sand vortex {n}; Canary {pos}.'}
+           for n, pos in enumerate(SANDKING_VORTICES, 1)]
+        + [{'key': f'split_{n}', 'kind': 'point', 'description': f'Sandking split {n}; Canary {pos}.'}
+           for n, pos in enumerate(SANDKING_SPLITS, 1)])
+    build.entry(item, CULTS_LEVERS, [480, 481], 'mapped', '/encounter/state/counters/0',
+                'The lever places the sandking fake (role sandking_fake, with SandkingThink) and sets the stage to 1.')
+    build.entry(item, SANDKING, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 'mapped', '/encounter/anchors/0',
+                'spawnSandBoss scans (33087, 31848, 15)-(33109, 31871, 15) for sand broods: the sandking_room anchor.')
+
+    def spawn(creature_ref, role, at, health='full'):
+        return {'kind': 'spawn', 'creature': creature_ref, 'role': role, 'count': 1, 'at': at, 'owner': 'none', 'health': health}
+
+    path = build.rule(item, {
+        'key': 'sandking_vanishes', 'trigger': {'kind': 'health_crossed', 'role': 'sandking_fake', 'percent': 95},
+        'conditions': [{'kind': 'counter_compare', 'counter': 'stage', 'op': '<=', 'value': 3}],
+        'actions': [{'kind': 'say', 'subject': {'role': 'sandking_fake'}, 'text': VANISHES, 'mode': 'say'},
+                    {'kind': 'remove', 'triggering': True}]
+                   + [spawn(vortex, 'sand_vortex', {'anchor': f'vortex_{n}'}) for n in range(1, 5)]
+                   + [spawn(brood, 'sand_brood', {'random_in': 'brood_area', 'free': True}),
+                      {'kind': 'counter', 'counter': 'broods_left', 'operation': 'set', 'value': 9},
+                      {'kind': 'timer', 'timer': 'brood_wave', 'operation': 'start'}]})
+    build.entry(item, SANDKING, [50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 99, 100, 102], 'mapped', path + '/trigger',
+                'SandkingThink checks on every think whether a creature named "the sandking" (the fake\'s monster name) is below '
+                '95% health: a health_crossed think check.')
+    build.entry(item, SANDKING, [59, 60], 'mapped', path + '/conditions/0', 'Only while the stage is at most 3.')
+    build.entry(item, SANDKING, [62, 63], 'mapped', path + '/actions/0',
+                'The fake says its line (TALKTYPE_MONSTER_SAY) and is removed.')
+    build.entry(item, SANDKING, list(range(64, 74)), 'mapped', path + '/actions/2',
+                'Four sand vortices appear on fixed tiles (vortex_1..4); their SandHealth registration is omitted below.')
+    build.entry(item, SANDKING, [74, 75], 'mapped', path + '/actions/6',
+                'spawnSandMonster("Sand Brood", 10) creates the first of ten broods now and the other nine every 5 s '
+                '(broods_left 9 and the brood_wave timer).')
+    path = build.rule(item, {
+        'key': 'brood_calls_end', 'trigger': {'kind': 'timer_elapsed', 'timer': 'brood_wave'},
+        'conditions': [{'kind': 'counter_compare', 'counter': 'broods_left', 'op': '==', 'value': 0}],
+        'actions': [{'kind': 'timer', 'timer': 'brood_wave', 'operation': 'stop'},
+                    {'kind': 'timer', 'timer': 'brood_check', 'operation': 'start'}]})
+    build.entry(item, SANDKING, [38, 39, 40, 41, 42], 'mapped', path,
+                'Once the tenth brood is called, the next call starts the brood check 5 s later instead. This rule reads '
+                'broods_left before the brood call rule below lowers it.')
+    path = build.rule(item, {
+        'key': 'brood_called', 'trigger': {'kind': 'timer_elapsed', 'timer': 'brood_wave'},
+        'conditions': [{'kind': 'counter_compare', 'counter': 'broods_left', 'op': '>=', 'value': 1}],
+        'actions': [spawn(brood, 'sand_brood', {'random_in': 'brood_area', 'free': True}),
+                    {'kind': 'counter', 'counter': 'broods_left', 'operation': 'add', 'value': -1}]})
+    build.entry(item, SANDKING, [43, 44], 'mapped', path + '/actions/0',
+                'A brood appears on a random tile of x 33092-33105, y 31853-31865. Owner answer Q3 (CW2-4): the tile is drawn '
+                'among the free tiles; Canary does not check the tile, and a failed creation stops the call chain.')
+    build.entry(item, SANDKING, [45, 46, 47, 48], 'mapped', path + '/actions/1', 'The next call follows 5 s later.')
+    path = build.rule(item, {
+        'key': 'sandking_remerges', 'trigger': {'kind': 'timer_elapsed', 'timer': 'brood_check'},
+        'conditions': [{'kind': 'creature_present', 'role': 'sand_brood', 'anchor': 'sandking_room', 'present': False}],
+        'actions': [{'kind': 'timer', 'timer': 'brood_check', 'operation': 'stop'},
+                    {'kind': 'remove', 'role': 'sand_vortex'},
+                    spawn(fake, 'sandking_fake', {'anchor': 'sandking_return'}),
+                    {'kind': 'say', 'subject': {'spawned': True},
+                     'text': 'THE BROOD RETREATS AND THE SANDKING REMERGES TO PROTECT HIS OFFSPRING!', 'mode': 'say'},
+                    {'kind': 'counter', 'counter': 'stage', 'operation': 'add', 'value': 1}]})
+    build.entry(item, SANDKING, [14, 15, 16, 17], 'mapped', path + '/trigger',
+                'While a brood is left the check repeats every 5 s (the repeating brood_check timer).')
+    build.entry(item, SANDKING, list(range(18, 28)), 'mapped', path + '/actions/1', 'Every sand vortex in the area is removed.')
+    build.entry(item, SANDKING, [29, 30, 31, 32, 33], 'mapped', path + '/actions/2',
+                'A new fake appears at (33099, 31859, 15). The stage is at most 3 here, so it always gets SandkingThink: '
+                'role sandking_fake.')
+    build.entry(item, SANDKING, [35, 36, 37], 'mapped', path + '/actions/3', 'The new fake says its line.')
+    build.entry(item, SANDKING, [34], 'mapped', path + '/actions/4', 'The stage rises by one.')
+    path = build.rule(item, {
+        'key': 'sandking_splits', 'trigger': {'kind': 'health_crossed', 'role': 'sandking_fake', 'percent': 50},
+        'conditions': [{'kind': 'counter_compare', 'counter': 'stage', 'op': '==', 'value': 4}],
+        'actions': [{'kind': 'say', 'subject': {'role': 'sandking_fake'}, 'text': VANISHES, 'mode': 'say'},
+                    {'kind': 'remove', 'triggering': True}]
+                   + [spawn(fake, 'sandking_split', {'anchor': f'split_{n}'}, {'percent': 50}) for n in range(1, 4)]
+                   + [{'kind': 'shared_life', 'role': 'sandking_split'}]})
+    build.entry(item, SANDKING, [76, 77, 78], 'mapped', path + '/trigger', 'At stage 4 the fake splits below 50% health.')
+    build.entry(item, SANDKING, [79, 80], 'mapped', path + '/actions/0', 'The fake says its line and is removed.')
+    build.entry(item, SANDKING, [81, 82, 83, 84, 85, 86, 87, 88, 89], 'mapped', path + '/actions/2',
+                'Three fakes appear at half health on fixed tiles (split_1..3).')
+    build.entry(item, SANDKING, [94, 95, 96, 97, 98], 'mapped', path + '/actions/5',
+                'beginSharedLife and SharedLife: the three split fakes share one life (D34).')
+    path = build.rule(item, {
+        'key': 'real_sandking_appears', 'trigger': {'kind': 'creature_died', 'role': 'sandking_split'},
+        'conditions': [{'kind': 'flag', 'flag': 'real_sandking_called', 'value': False},
+                       {'kind': 'counter_compare', 'counter': 'stage', 'op': '==', 'value': 4}],
+        'actions': [{'kind': 'flag', 'flag': 'real_sandking_called', 'value': True},
+                    spawn(creature('The Sandking'), 'the_sandking', {'anchor': 'sandking_return'}, {'percent': 50})]})
+    build.entry(item, SANDKING, [90, 91, 92, 93], 'mapped', path + '/conditions/0',
+                'Only the first split fake registers SandkingDeath, so the shared deaths bring one real Sandking (a flag).')
+    build.entry(item, SANDKING, [104, 105, 106, 107, 108, 121, 122], 'mapped', path + '/trigger',
+                'onDeath of a split fake while the stage is 4.')
+    build.entry(item, SANDKING, [123, 124], 'mapped', path + '/actions/1',
+                'The real Sandking appears at (33099, 31859, 15) with half health.')
+    path = build.rule(item, {
+        'key': 'sandking_stage_5', 'trigger': {'kind': 'creature_died', 'role': 'sandking_split'}, 'delay_ms': 2000,
+        'conditions': [], 'actions': [{'kind': 'counter', 'counter': 'stage', 'operation': 'set', 'value': 5}]})
+    build.entry(item, SANDKING, [125, 126, 127, 128, 130], 'mapped', path, '2 s later the stage becomes 5, which the credit reads.')
+    for role in ('sandking_fake', 'sandking_split', 'the_sandking'):
+        path = build.rule(item, {
+            'key': f'{role}_eats_a_brood_corpse', 'trigger': {'kind': 'stepped_on', 'role': role, 'corpse_of': 'sand_brood'},
+            'conditions': [],
+            'actions': [{'kind': 'heal', 'subject': {'role': role}, 'amount': {'min': 100, 'max': 1000}},
+                        {'kind': 'map_item', 'operation': 'remove', 'triggering': True}]})
+        build.entry(item, SANDKING, list(range(109, 121)), 'mapped', path + '/trigger',
+                    'A dying sand brood marks its corpse (action id 5595) 200 ms later: CW2-2 corpse_of the sand_brood role, '
+                    'at any decay stage.')
+        build.entry(item, SANDKING_MOVEMENT, list(range(1, 18)), 'mapped', path + '/actions',
+                    f'A creature named "the sandking" ({role}) stepping on the marked corpse removes it (CW2-3) and heals '
+                    '100-1000.')
+    build.entry(item, SANDKING, list(range(132, 155)), 'approved_omission', None,
+                'SandHealth never acts: heals return early and damage arrives negative, so its > 0 branches never run. Its '
+                'intended reflection is a D25 wiki check for later.')
+
+
 GORZINDEL = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_gorzindel.lua'
 GORZINDEL_LEVER = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/actions_gorzindel.lua'
+GORZINDEL_MOVEMENT = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/movements_gorzindel.lua'
 KNOWLEDGES = [('Stolen Knowledge of Armor', 2, 22), ('Stolen Knowledge of Summoning', 3, 23), ('Stolen Knowledge of Lifesteal', 4, 24),
               ('Stolen Knowledge of Spells', 5, 25), ('Stolen Knowledge of Healing', 6, 26)]
 
 
 def gorzindel(build):
     """gorzindelDeath and gorzindelHealth: Gorzindel is immune until the five stolen knowledges are dead; then the mean
-    minions vanish. The Stolen Tome of Portals opens a portal whose per-player room assignment stays unresolved."""
+    minions vanish. The Stolen Tome of Portals opens the knowledge-room portal (gorzindel_portal)."""
     item = build.get('gorzindel', 'The Secret Library: Gorzindel', 'instance_per_party')
     encounter = item['encounter']
     build.participant(item, 'gorzindel', 'Gorzindel', 'gorzindelHealth')
@@ -860,11 +1031,82 @@ def gorzindel(build):
     build.entry(item, GORZINDEL, [55, 57, 58, 59, 60, 63], 'mapped', path,
                 'gorzindelHealth (registered by the Gorzindel monster file) zeroes both damage parts of every hit while the '
                 'event stays registered; Gorzindel has no healing, so only damage is affected.')
-    build.participant(item, 'stolen_tome_of_portals', 'Stolen Tome of Portals')
-    build.entry(item, GORZINDEL, [38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 'unresolved_semantics', None,
-                'The Stolen Tome of Portals leaves a portal (item 1949, action 4952) on its tile and returns there after 10 s. '
-                'The portal sends each player who steps in to the next free knowledge room for 10 s '
-                '(movements_gorzindel.lua lines 1-38): a per-player room assignment outside the v1 vocabulary.')
+    gorzindel_portal(build, item)
+
+
+def gorzindel_portal(build, item):
+    """The Stolen Tome of Portals leaves a portal that sends each player to the first free knowledge room for 10 s (CW2-1,
+    owner answer Q2: rooms are per instance, reopen after 10 s in every case, and only players still in the instance
+    return)."""
+    encounter = item['encounter']
+    build.participant(item, 'stolen_tome_of_portals', 'Stolen Tome of Portals', 'gorzindelDeath')
+    lever = (build.canary / GORZINDEL_LEVER).read_text(encoding='utf-8').splitlines()
+    portal = tuple(map(int, re.search(POSITION, lever[26]).groups()))
+    encounter['anchors'] += [
+        {'key': 'portal_tile', 'kind': 'area', 'description': f'Exactly Canary {portal}: the tome\'s tile, where its portal appears.'},
+        {'key': 'library_middle', 'kind': 'point', 'description': 'The return point; Canary (32687, 32719, 10).'}]
+    build.entry(item, GORZINDEL_LEVER, [27], 'mapped', f'/encounter/anchors/{len(encounter["anchors"]) - 2}',
+                'The lever places the tome (speed 0, not pushable) on its tile, so the portal always appears there and a player '
+                'can only enter that tile through the portal.')
+    build.entry(item, GORZINDEL_MOVEMENT, [9], 'mapped', f'/encounter/anchors/{len(encounter["anchors"]) - 1}',
+                'middlePosition, where the delayed return sends the player.')
+    rooms = (build.canary / GORZINDEL_MOVEMENT).read_text(encoding='utf-8').splitlines()
+    for room in range(1, 6):
+        x, y, floor = map(int, re.search(POSITION, rooms[room]).groups())
+        encounter['anchors'].append({'key': f'knowledge_room_{room}', 'kind': 'point',
+                                     'description': f'Knowledge room {room}; Canary ({x}, {y}, {floor}).'})
+        encounter['state']['flags'].append({'name': f'room_{room}_busy', 'initial': False})
+        encounter['state']['timers'].append({'name': f'room_{room}_hold', 'duration_ms': 10000, 'repeat': False})
+        build.entry(item, GORZINDEL_MOVEMENT, [1, room + 1, 7], 'mapped', f'/encounter/anchors/{len(encounter["anchors"]) - 1}',
+                    f'tomesPosition[{room}] is knowledge room {room}; its open field is the room_{room}_busy flag, per instance '
+                    '(owner answer Q2).')
+    encounter['state']['flags'].append({'name': 'portal_assigned', 'initial': False})
+    portal_item = ref('Item', 'canary:item/1949')
+    build.define(item, portal_item)
+    path = build.rule(item, {
+        'key': 'stolen_tome_of_portals_opens_the_portal', 'trigger': {'kind': 'creature_died', 'role': 'stolen_tome_of_portals'},
+        'conditions': [], 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': portal_item, 'at': 'death_position',
+                                       'revert_after_ms': 10000}]})
+    build.entry(item, GORZINDEL, [38, 39, 40, 41, 42, 44, 45, 46, 47, 48, 49, 50], 'mapped', path + '/actions/0',
+                'The dying tome leaves item 1949 (action id 4952, the portal) on its tile; after 10 s the item is removed.')
+    path = build.rule(item, {
+        'key': 'stolen_tome_of_portals_returns', 'trigger': {'kind': 'creature_died', 'role': 'stolen_tome_of_portals'},
+        'delay_ms': 10000, 'conditions': [],
+        'actions': [{'kind': 'spawn', 'creature': creature('Stolen Tome of Portals'), 'role': 'stolen_tome_of_portals',
+                     'count': 1, 'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+    build.entry(item, GORZINDEL, [42, 43, 48], 'mapped', path + '/actions/0',
+                'After 10 s a new unowned tome with full health appears on the same tile.')
+    trigger = {'kind': 'area_entered', 'anchor': 'portal_tile', 'who': 'player'}
+    path = build.rule(item, {'key': 'portal_step_starts', 'trigger': trigger, 'conditions': [],
+                             'actions': [{'kind': 'flag', 'flag': 'portal_assigned', 'value': False}]})
+    build.entry(item, GORZINDEL_MOVEMENT, [11, 13, 14, 15, 16, 17, 18, 38, 39], 'mapped', path + '/trigger',
+                'onStepIn of action id 4952, the portal item, acts on players only.')
+    for room in range(1, 6):
+        path = build.rule(item, {
+            'key': f'portal_to_room_{room}', 'trigger': trigger,
+            'conditions': [{'kind': 'flag', 'flag': 'portal_assigned', 'value': False},
+                           {'kind': 'flag', 'flag': f'room_{room}_busy', 'value': False}],
+            'actions': [{'kind': 'teleport', 'who': {'triggering': True}, 'to': f'knowledge_room_{room}'},
+                        {'kind': 'flag', 'flag': f'room_{room}_busy', 'value': True},
+                        {'kind': 'flag', 'flag': 'portal_assigned', 'value': True},
+                        {'kind': 'timer', 'timer': f'room_{room}_hold', 'operation': 'start'}]})
+        build.entry(item, GORZINDEL_MOVEMENT, [20, 21, 22, 23, 31, 32], 'mapped', path,
+                    f'The first open room in index order takes the player: room {room} when no earlier room was free. The rules '
+                    'run in order and read the portal_assigned flag the earlier ones set.')
+    path = build.rule(item, {
+        'key': 'portal_return', 'trigger': trigger, 'delay_ms': 10000,
+        'conditions': [{'kind': 'in_anchor', 'subject': {'triggering': True}, 'anchor': 'knowledge_range'}],
+        'actions': [{'kind': 'teleport', 'who': {'triggering': True}, 'to': 'library_middle'}]})
+    build.entry(item, GORZINDEL_MOVEMENT, [24, 25, 26, 27, 30], 'mapped', path,
+                'After 10 s the player goes back to the middle. Owner answer Q2: only a player still in this instance and in '
+                'the library rooms is pulled back (Canary pulls any online player, even one who died and respawned).')
+    for room in range(1, 6):
+        path = build.rule(item, {'key': f'room_{room}_reopens', 'trigger': {'kind': 'timer_elapsed', 'timer': f'room_{room}_hold'},
+                                 'conditions': [], 'actions': [{'kind': 'flag', 'flag': f'room_{room}_busy', 'value': False}]})
+        build.entry(item, GORZINDEL_MOVEMENT, [24, 28, 29, 30], 'mapped', path,
+                    f'Room {room} reopens 10 s after it was taken. Owner answer Q2: in every case, per instance (Canary keeps a '
+                    'server-wide room busy forever when its player is gone).')
+
 
 HEART = 'data-otservbr-global/scripts/quests/heart_of_destruction/'
 HEART_MINION = HEART + 'creaturescripts_heart_minion_death.lua'

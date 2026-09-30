@@ -4,6 +4,7 @@
 //! constructs and revalidates reconnect authority; the runtime must submit the
 //! resulting request asynchronously and consume its completion as new input.
 
+pub mod account_achievement;
 pub mod admission_authority_guards;
 mod admission_journal;
 pub mod bestiary_progress;
@@ -18,6 +19,8 @@ pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
+pub mod item_fee_burn;
+pub mod item_fee_burn_audit;
 pub mod item_mint;
 pub mod item_mint_audit;
 pub mod item_transfer;
@@ -32,6 +35,29 @@ mod schema;
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod account_achievement_linkage {
+    use super::DurabilityRoot;
+    use super::account_achievement::{
+        AccountAchievement, AchievementCatalogueLookup, AchievementGrantError,
+        AchievementGrantOutcome, AchievementGrantRequest, AchievementSourceEvent,
+        FencedGrantingCharacter, record_achievement_grant,
+    };
+
+    #[test]
+    fn account_achievement_api_is_linked() {
+        let _ = std::mem::size_of::<AccountAchievement>();
+        let _ = std::mem::size_of::<AchievementCatalogueLookup>();
+        let _ = std::mem::size_of::<AchievementGrantError>();
+        let _ = std::mem::size_of::<AchievementGrantOutcome>();
+        let _ = std::mem::size_of::<AchievementGrantRequest>();
+        let _ = std::mem::size_of::<AchievementSourceEvent>();
+        let _ = FencedGrantingCharacter::after_fence;
+        let _ = record_achievement_grant;
+        let _ = DurabilityRoot::commit_test_achievement_grants;
+    }
+}
 
 #[cfg(test)]
 mod bestiary_progress_linkage {
@@ -235,6 +261,25 @@ mod item_decay_retire_linkage {
 }
 
 #[cfg(test)]
+mod item_fee_burn_linkage {
+    use super::item_fee_burn::{
+        BurnedCoinStack, CommittedFeeBurn, FeeBurnCause, FeeBurnError, FeeBurnOutcome,
+        FeeBurnRequest, burn_fee_in_transaction,
+    };
+
+    #[test]
+    fn item_fee_burn_api_is_linked() {
+        let _ = std::mem::size_of::<BurnedCoinStack>();
+        let _ = std::mem::size_of::<CommittedFeeBurn>();
+        let _ = std::mem::size_of::<FeeBurnCause>();
+        let _ = std::mem::size_of::<FeeBurnError>();
+        let _ = std::mem::size_of::<FeeBurnOutcome>();
+        let _ = std::mem::size_of::<FeeBurnRequest>();
+        let _ = burn_fee_in_transaction;
+    }
+}
+
+#[cfg(test)]
 mod reward_claim_mint_linkage {
     use super::DurabilityRoot;
     use super::reward_claim_mint::RewardClaimMintCandidate;
@@ -344,6 +389,7 @@ mod character_authority_linkage {
         let _ = std::mem::size_of::<ReconciledCharacterAuthority<'_, '_>>();
         let _ = CharacterAuthorityError::Rejected;
         let _ = CharacterAuthorityError::Conflict;
+        let _ = CharacterAuthorityError::NameUnavailable;
         let _ = |error: CharacterAuthorityError| match error {
             CharacterAuthorityError::Unavailable(inner) => Some(inner),
             _ => None,

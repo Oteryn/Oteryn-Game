@@ -885,7 +885,8 @@ async fn bootstrap_one(
         Ok(_) => "committed",
         Err(
             crate::durability::character_authority::CharacterAuthorityError::Rejected
-            | crate::durability::character_authority::CharacterAuthorityError::Conflict,
+            | crate::durability::character_authority::CharacterAuthorityError::Conflict
+            | crate::durability::character_authority::CharacterAuthorityError::NameUnavailable,
         ) => "rejected",
         Err(_) => "unavailable",
     }

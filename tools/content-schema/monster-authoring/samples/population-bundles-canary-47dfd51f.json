@@ -39,7 +39,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1606,
+  "bundles": 1609,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -887,6 +887,7 @@
     {"monster":"medusa","file":"magicals/medusa","sha256":"7d584c2d1e8fde82722db629dcae17853b5ce0e560e76e5fcd984ce90cc48c16"},
     {"monster":"mega_dragon","file":"dragons/mega_dragon","sha256":"85f93db7e76da44e6f40eb808590935f1b52bc0ee13859c076feb6a0b3a7c580"},
     {"monster":"megasylvan_yselda","file":"quests/adventures_of_galthen/megasylvan_yselda","sha256":"82efc376b27a7066472a6450b0bb464c227fe02be4454c75c268311a28f9fffc"},
+    {"monster":"melting_frozen_horror","file":"quests/forgotten_knowledge/bosses/melting_frozen_horror","sha256":"cc478a5c06d11bb2844574c19bb6c5a5695ff14d52993a2176a3f81ebaf41622"},
     {"monster":"memory_of_a_banshee","file":"event_creatures/memory_creatures/memory_of_a_banshee","sha256":"c1771a5cff257c3632460085397eaf2a83724cfcd07f1b5ca1d9ab959aa4789d"},
     {"monster":"memory_of_a_book","file":"event_creatures/memory_creatures/memory_of_a_book","sha256":"4ec7532751e032e81d16852540121bb82d484e6f0cc8b16607651c72aeb3ab95"},
     {"monster":"memory_of_a_carnisylvan","file":"event_creatures/memory_creatures/memory_of_a_carnisylvan","sha256":"77cebbe999cc4e2332adb06023bd0345bd7a2b4c0a5416e8d6ad05dcd651f9e2"},
@@ -1345,6 +1346,7 @@
     {"monster":"stolen_knowledge_of_spells","file":"quests/the_secret_library/stolen_knowledge_of_spells","sha256":"65961ad3e776c0d6d65a4fd4ec01dda98fa49660929c2dc159f168e7a8b35cf2"},
     {"monster":"stolen_knowledge_of_summoning","file":"quests/the_secret_library/stolen_knowledge_of_summoning","sha256":"cd08d132fdaa4e9f64746ea1eda5531da227a7a526429a3b0d8e8eabce167b0c"},
     {"monster":"stolen_soul","file":"quests/cults_of_tibia/bosses/summons/stolen_soul","sha256":"124db86f646179304c545f5b16c9f8e88862efb51e30d9bd7b488e4fbee759bc"},
+    {"monster":"stolen_tome_of_portals","file":"quests/the_secret_library/stolen_tome_of_portals","sha256":"d19cf7081b45bbc09547f33d5dfb0ff6f60cd4910b155b815a2079e2d5b8a940"},
     {"monster":"stone_devourer","file":"constructs/stone_devourer","sha256":"e1a3e93875de80e2ea86e11efc6f647a21c737adc620c05ac41f39d32a58f26f"},
     {"monster":"stone_golem","file":"constructs/stone_golem","sha256":"d70f17c8e0e6ea597e9820a84293e81a9ddee999b6d436f2c3c710c1020a375a"},
     {"monster":"stone_rhino","file":"mammals/stone_rhino","sha256":"c87a3dba277a2d19dc769e0e642fce30d5d128abee8c1423f0f6b34c969e31be"},
@@ -1451,6 +1453,7 @@
     {"monster":"the_red_knight","file":"quests/grave_danger/the_red_knight","sha256":"145758ffa53370b169c9ef19eb6b9618e294c5730787ba12da3bf5f393c6323e"},
     {"monster":"the_remorseless_corruptor","file":"quests/cults_of_tibia/bosses/the_remorseless_corruptor","sha256":"6487828cee3732d08f993d633da04ec527c0b0ba830d4a7b4d0ee29412794d15"},
     {"monster":"the_rootkraken","file":"bosses/the_rootkraken","sha256":"dd2ad07e8ebc6fcc80cc16ac2bc98cbb5e9455559d51b2a943e4feaff1ffe730"},
+    {"monster":"the_sandking","file":"quests/cults_of_tibia/bosses/the_sandking","sha256":"c31aceb61875c178e86081dbc2331cf908a68927f429bc385730518be53a940d"},
     {"monster":"the_sandking_fake","file":"quests/cults_of_tibia/bosses/the_sandking_fake","sha256":"6bf3b331056684e8813de412eede99bdfc4306a493a8e97be0b8dbc4b3924ab2"},
     {"monster":"the_scion_of_havoc","file":"quests/the_secret_library/the_scion_of_havoc","sha256":"6a0ebdea78457acf29177c9c1644d1e5f126ebb62316034fabfcb1fea01c64a3"},
     {"monster":"the_scourge_of_oblivion","file":"quests/the_secret_library/bosses/the_scourge_of_oblivion","sha256":"eb4e1edfe598dbf175142a0577026fcaba663b3ec221ee1fe092dec13268ff91"},

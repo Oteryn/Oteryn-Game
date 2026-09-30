@@ -123,7 +123,8 @@ Coins are exactly three definitions, with a closed worth table in gold units:
 
 Any other key is not a coin. Changing the table needs an amendment of this decision. An eligible
 input is a live stack of one of these keys, at the compatible definition revision, with state equal
-apart from quantity and `1 <= quantity <= 100`.
+apart from quantity and `1 <= quantity <= 100`. It has no instance state other than its quantity:
+its state is the definition's default state (review hardening).
 
 The owning source supplies the fee `F` in gold units, computed inside the same transaction from
 facts read after the `character_root` lock (for CharmUnassign, the rule owned by CHARM-6). `F >= 1`;
@@ -156,7 +157,8 @@ and not a bank exchange.
 
 D176 is the typed stack maximum of those three definitions (GAME-ITEM-01 §4.1, within
 `GAMEITEM01-STACK-QUANTITY-MAX`). The content write (`semantics.stack` known, 100) goes through
-the item-authoring route in GOLD-FEE-1a, citing this decision.
+the item-authoring route in GOLD-FEE-1b, citing this decision (§6: GOLD-FEE-1a admits only gold
+coins, whose stack maximum is not raised by it, so no change output exists there).
 
 ### 4.3 One atomic transaction (D177)
 
@@ -174,6 +176,12 @@ cause, `F`, and the change. The BURN and MINT lines are not a second receipt and
 key of their own. A replay of the same occurrence and binding returns the first outcome (Character
 change, burn and change together); a changed binding conflicts; the same occurrence can never burn
 twice.
+
+**Retry identity (review hardening).** The TransactionId also fixes two planned output identity
+slots, one platinum and one gold ItemInstanceId, before the first attempt. A retry after a known
+abort may rematerialize the burn set and the change counts from the then-current state, but reuses
+the same TransactionId and the same two slots; a slot the plan does not need stays unused. After an
+ambiguous commit, resolution is the occurrence replay above, never a new attempt.
 
 **Full gameplay fence.** The Character writer's complete fence and lock order, as in
 `commit_character_experience` and `commit_charm_command` (composition decision §3 rules 2-4): the
@@ -251,7 +259,9 @@ break them, and would widen the other shapes without their code.
 
 ## 5. DUR-03 amendment
 
-For the `FeeBurnCause` shape only, this decision supersedes:
+For the `FeeBurnCause` shape only, this decision supersedes the following. Besides the D3
+`DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of §4.4 (D174-D178); the
+DUR-03 §15 pointer says so.
 
 - §39.1 and the D3 paragraph of §39.3: "burn (outside the one named `DECAY_RETIRE` cause)" and
   "Every other retire cause (burn, …) stays excluded" — typed BURN under a `FeeBurnCause` is
@@ -274,9 +284,9 @@ advances the revision once, as for any Character semantic transaction.
 
 | Child | Scope | Depends on |
 |---|---|---|
-| GOLD-FEE-1a | Stack maximum 100 for the three coins (item authoring); the pure payment planner of §4.2 with its tests; the resource rows of §4.6 and the audit schema/registry | this decision accepted |
-| GOLD-FEE-1b | Migration 0023+ (or the next free number, D173): the in-transaction burn/change function composed by a fee source inside its fenced Character transaction; guards against a burn without a `FeeBurnCause` receipt; PostgreSQL tests | 1a |
-| CHARM-6 | Charm unassign (and later reset, by amendment) composing GOLD-FEE-1b | 1b, D170 |
+| GOLD-FEE-1a | Gold coins (`i3031`, worth 1) only: migration 0023 (D173) with the fee record, BURN lines and their composition guards; the in-transaction burn composed by a fee source inside its fenced Character transaction (change always 0, no MINT); the pure payment planner of §4.2 with its tests; the resource rows of §4.6 and the audit schema/registry; PostgreSQL tests | this decision accepted |
+| GOLD-FEE-1b | Stack maximum 100 for the three coins (`i3031`, `i3035`, `i3043`; the item-authoring content write of §4.2); platinum and crystal inputs; the change MINT of §4.2 step 4 with its guards and PostgreSQL tests | 1a; must land before CHARM-6 |
+| CHARM-6 | Charm unassign (and later reset, by amendment) composing the fee burn. Its migration replaces `game_item_fee_burn_consistency_guard` so a fee record requires the CharmUnassign receipt of the same occurrence, at the committed revision, bound to the record's TransactionId and fee `F` (1a accepts any Character receipt of that revision). CHARM-6 verifies the session-generation fence of the composed transaction | 1a, 1b, D170 |
 | Later | Bank ledger stage 2 (D174); nested bags as sources | own decisions |
 
 ## 7. Rejected options

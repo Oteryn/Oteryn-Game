@@ -174,13 +174,15 @@ pub enum OneItemOperationV1 {
     RewardClaimMint(super::reward_claim_mint_audit::OneItemRewardClaimMintV1),
     #[prost(message, tag = "5")]
     DecayRetire(super::item_decay_retire_audit::OneItemDecayRetireV1),
+    #[prost(message, tag = "6")]
+    FeeBurn(super::item_fee_burn_audit::OneItemFeeBurnV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5")]
+    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6")]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -528,7 +530,15 @@ fn mint_scope(mint: &OneItemMintV1) -> Result<(Vec<u8>, Vec<u8>), AuditError> {
 /// size before decode, canonical round trip, registered event binding,
 /// identity and digest widths and one-event membership.
 pub(super) fn decode_common_envelope(wire: &[u8]) -> Result<EventEnvelopeV1, AuditError> {
-    if wire.len() > RL07_ENVELOPE_BYTES_MAX {
+    decode_common_envelope_within(wire, RL07_ENVELOPE_BYTES_MAX)
+}
+
+/// [`decode_common_envelope`] under a shape's own registered envelope ceiling.
+pub(super) fn decode_common_envelope_within(
+    wire: &[u8],
+    envelope_bytes_max: usize,
+) -> Result<EventEnvelopeV1, AuditError> {
+    if wire.len() > envelope_bytes_max {
         return Err(AuditError::CapacityExceeded);
     }
     let value = EventEnvelopeV1::decode(wire).map_err(|_| AuditError::InvalidInput)?;
