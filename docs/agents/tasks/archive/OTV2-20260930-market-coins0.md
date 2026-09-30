@@ -44,8 +44,11 @@ owner answer Q2b; owner direction, 2026-09-30).
 - **Failure:** Platform down refuses only steps needing a new hold or claim
   (`COINS_UNAVAILABLE`); settlements wait. A daily reconciler compares holds with Platform's
   acknowledged snapshot net of pending outbox instructions; differences are corrected by
-  compensation only. Platform bounds SETTLE by hold, claim and caps, and retains keys,
-  tombstones and receipts 90 days and across restore.
+  compensation only, and only after Platform reports the instruction terminal (`APPLIED` or
+  `REJECTED`, `MKTCOIN0-DISPOSITION`). Platform bounds SETTLE by hold, claim and caps, and
+  retains keys, tombstones and receipts 90 days. Any restore crossing coin activity keeps coin
+  trading closed until a reviewed manual reconciliation (`MKTCOIN0-RESTORE`, owner-confirmed,
+  #162 Q9a).
 - **Gates:** same 2% Market fee (no new fee source); no Premium gate for coins; junior and
   same-Account refused; coin offers count toward the 100-offer limit.
 - **Wire:** capability `MARKET_COINS_V1` (number reserved on #162 at allocation), two results,
@@ -108,6 +111,16 @@ protocol review; the instruction payload privacy review.
   validators re-run PASS.
 - Owner confirmation A2 (2026-09-30, #162 5919339646): the C2 chargeback rule is confirmed (§5,
   §12, §13); validators re-run PASS.
+- Owner confirmation Q9a (2026-09-30, #162): `MKTCOIN0-RESTORE` is owner-confirmed, including
+  "a restore older than Platform's retention stays closed until the owner decides" (header, §5).
+- Codex round 5 (final batched round; #1412, 1 P1, 0 P2): 4149455120 P1 expired or cap-deferred
+  SETTLE needs a terminal fence before compensation: fixed. New `MKTCOIN0-DISPOSITION` (§5):
+  every instruction ends `APPLIED` or `REJECTED` (final, recorded by `instruction_id`, never
+  applied after rejection); `DEFERRED` never expires and a cap-deferred SETTLE ends only by a
+  Platform operator applying or rejecting it; `STATUS` reports each instruction's disposition;
+  the deliverer resends until a terminal disposition (`MKTCOIN0-RL-14` is now an escalation, not
+  a stop); compensation touching an instruction's effect starts only after it is terminal (§7).
+  Validators re-run PASS.
 
 ## Closeout
 
@@ -119,7 +132,7 @@ protocol review; the instruction payload privacy review.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
-last_progress: PR oteryn/oteryn-game#1412 opened; in review (Codex round-2 repair authored)
+last_progress: PR oteryn/oteryn-game#1412 in review (Codex round-5 final batched repair authored)
 status: completed
 branch: claude/arch-market-coins-0
 owner_action_required: null
