@@ -317,7 +317,11 @@ def rule_only_definition_keys(
     keys = set()
     for key in definition_keys:
         match = TIBIA_KEY.fullmatch(key)
-        if match and match.group(1) not in crystal_ids and int(match.group(1)) in current_ids:
+        if (
+            match
+            and match.group(1) not in crystal_ids
+            and int(match.group(1)) in current_ids
+        ):
             keys.add(key)
     return keys
 
