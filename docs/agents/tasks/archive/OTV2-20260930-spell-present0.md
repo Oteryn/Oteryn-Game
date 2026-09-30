@@ -69,7 +69,8 @@ determinism review.
 
 ## Owner questions
 
-- P1 (§14): the 15.30 client sound files and their redistribution rights; recommendation a.
+- P1 (§14): the 15.30 client sound files and their redistribution rights. Owner answer
+  (2026-09-30, #162): a, the owner confirms the rights and the sound files are included.
 
 ## Excluded scope
 
@@ -88,6 +89,8 @@ determinism review.
   carries a per-sync-unit decision ordinal and §9 ties break by it (refusal `POFF` included);
   §10 client offset RTT-adjusted from the FND-02 §17 liveness probes (`rtt_ms`), snapshot
   included, minimum-delay filter kept; validators PASS.
+- Owner answer applied (2026-09-30, #162): P1a, the 15.30 sound files are included (§12, the
+  PRESENT-CONTENT-1 and PRESENT-CLIENT-1 brief rows, §3 sound id check). Validators re-run PASS.
 
 ## Closeout
 
@@ -98,7 +101,7 @@ determinism review.
 last_progress: final authoring commit; archived before freeze
 status: completed
 branch: claude/arch-spell-present-0
-owner_action_required: "P1 (sound files)"
+owner_action_required: null
 blocker: null
 next_action: null
 ```

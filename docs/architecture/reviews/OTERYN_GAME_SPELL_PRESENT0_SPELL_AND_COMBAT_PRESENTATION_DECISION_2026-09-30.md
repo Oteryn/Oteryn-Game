@@ -2,8 +2,8 @@
 
 - Decision: `SPELLPRES0-SPELL-AND-COMBAT-PRESENTATION-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
-  combat and determinism) and protected integration. Owner question P1 (§12) is open; nothing
-  else waits on it.
+  combat and determinism) and protected integration. Owner question P1 (§14) is answered
+  (2026-09-30, #162): the 15.30 client sound files are included (§12).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction of 2026-09-30 (build now, full Tibia Global parity); the items
   left open by SPELL-D1 §10 ("exact rejection texts", "cast animations and effects"), CHAT-0 §3
@@ -14,7 +14,8 @@
   VIS-2 (capability 6, D85 identities, #1392); CHAT-0 §3 (say range) and §7 (the event-like domain
   pattern); ATTACK-0 §3-§4; CONDITIONS-0 §3.2 (ticks) and §7; MAP-WIRE-1 §7 (floors);
   FND-02 §15, §16 and §19; the client asset decision of 2026-09-27 with the owner supersession
-  of 2026-09-29; owner rule 5905825574 (Global parity)
+  of 2026-09-29 and the owner's sound rights confirmation of 2026-09-30 (P1a); owner rule
+  5905825574 (Global parity)
 - Amends, each pending on acceptance of SPELL-PRESENT-0, in this PR: SPELL-D1 §10 (pointer and the
   result `detail`, §8 here); CHAT-0 §3 (pointer); ATTACK-0 §3 (pointer).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
@@ -24,11 +25,11 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| PRESENT-CONTENT-1 | content lane | the binding tables from asset keys and sound cues to 15.30 client ids; creature `race`; the hit table of §5 as content (§3) | this decision |
+| PRESENT-CONTENT-1 | content lane | the 15.30 client sound files beside the other client assets, with the manifest (§12); the binding tables from asset keys and sound cues to 15.30 client ids; creature `race`; the hit table of §5 as content (§3) | this decision |
 | PRESENT-WIRE-1 | impl, protocol review | capability `PRESENTATION_V1`, domains `WORLD_PRESENTATION` and `ACTOR_COOLDOWNS`, the result `detail`, codecs, bounds and rows (§4, §7, §8, §9) | this decision; VIS-2 |
 | SPELL-PRESENT-1 | spell lane, combat review | server emission for casts: spell words, the refusal smoke, cooldown state, the result `detail` (§6-§8) | PRESENT-WIRE-1; PRESENT-CONTENT-1; SPELL-D4 composition |
 | COMBAT-PRESENT-1 | combat lane, combat and determinism review | emission from the Ability commit: impact, area, projectile and hit effects, damage, heal, mana and experience numbers, block effects, condition ticks, sound cues (§5) | PRESENT-WIRE-1; PRESENT-CONTENT-1; ATTACK-1; COND-1 for ticks |
-| PRESENT-CLIENT-1 | client lane (client owner) | drawing effects and projectiles, floating numbers, orange spell words, the cooldown bar, refusal texts, sound playback once assets exist (§10) | PRESENT-WIRE-1 |
+| PRESENT-CLIENT-1 | client lane (client owner) | drawing effects and projectiles, floating numbers, orange spell words, the cooldown bar, refusal texts, sound playback (§11, §12) | PRESENT-WIRE-1; PRESENT-CONTENT-1 for sound |
 
 Later, each with its own decision: parameter spells' words (`exura sio "name"`), rune use
 presentation, blood splashes and other volatile ground items, the analyser windows, durable
@@ -112,7 +113,8 @@ words, the effects, the numbers, the cooldowns and the refusal messages?
   provenance (the Canary 15.30 enum, S14 and S18). The content compiler rejects a key without an
   entry and an id that `appearances.dat` does not hold as an effect or a missile.
 - **Sound ids.** The same table maps each `canary.sound:<member>` to its client sound id. S18's
-  approved omissions stay silence.
+  approved omissions stay silence. The content compiler rejects a sound id that the committed
+  15.30 sound files do not hold.
 - **Race.** Creature definitions gain `race` (blood, venom, undead, fire, energy, ink and the
   other Canary races), from the Canary monster files with provenance. Players are blood.
 - **Hit table.** §5's colour and hit effect per damage type and race is content, not code.
@@ -291,13 +293,16 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
 - It builds the console line of a `value_text` ("A rat loses 5 hitpoints due to your attack.")
   from the actor names it knows; names on the wire are not decided here (§17).
 - It never infers damage, legality or cooldowns from events; state comes from the domains.
+- It plays the `sound` events from the committed 15.30 sound files (§12).
 
 ## 12. Sound
 
 - Sound is in scope, as in Global: the `sound` event carries the cast and impact cues content
   already has (S18) and `NO_DAMAGE` for blocks.
-- The 15.30 sound files are not in the repository (§2), so the client plays nothing until they
-  are (P1). The events cost one oneof member.
+- **Files** (owner P1a). The owner confirms the redistribution rights for the 15.30 client sound
+  files, so they are included: PRESENT-CONTENT-1 commits them beside the other client assets
+  (`content/assets/files/`) and adds them to the 15.30 asset manifest with provenance. The client
+  plays spell and combat sounds as in Global. The events cost one oneof member.
 
 ## 13. Rows (registered by PRESENT-WIRE-1 before implementation)
 
@@ -321,6 +326,9 @@ the owner's 2026-09-29 rights confirmation names only the files present then.
 - **b:** no sound files for now; the `sound` events are sent and the client stays silent until a
   later owner decision.
 
+Owner answer (2026-09-30, #162): a — the owner confirms the rights, so the sound files are
+included (§12).
+
 ## 15. Rejected options
 
 - **Sending effect text or asset keys on the wire.** Ids from the client's own `appearances.dat`
@@ -342,7 +350,7 @@ the owner's 2026-09-29 rights confirmation names only the files present then.
 - Damage, heal and experience numbers for other actors' fights, by observer kind.
 - Colours and hit effects by damage type and race; block, armour and immunity effects.
 - The source class, so the client's own-and-others effect filters work.
-- Sound in scope (P1 decides only the files).
+- Sound in scope, with the 15.30 sound files (P1a).
 
 ## 17. Decision test
 
@@ -351,7 +359,7 @@ the owner's 2026-09-29 rights confirmation names only the files present then.
 - **Minimum sufficient:** one event domain, one own-actor cooldown domain, one result field, one
   binding table and one content field.
 - **Superseding evidence:** measured batch bytes over budget (§9); an official statement of ranges
-  or colours; the owner's answer to P1.
+  or colours.
 - **Deliberately not decided:** actor names on the wire (VIS-2 has none; the console line waits
   for it); parameter spell words; rune use; blood splashes and other volatile ground items
   (MAP-WIRE-1 §4); the analyser windows; durable cooldowns (the manual freezes them offline;
