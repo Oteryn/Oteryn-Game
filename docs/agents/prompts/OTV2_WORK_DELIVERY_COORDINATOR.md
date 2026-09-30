@@ -171,10 +171,7 @@ These cut reading, writing and waiting; they change no authority, review or inte
   - Workers never post `@codex review` and never enable auto-merge or enqueue. Say so in every packet.
 - **Findings reach the writer.** Task sessions do not receive PR comments. Deliver a FIX to the session that writes the branch. If that session is idle or unreachable, archive it and start one new fix session as the single writer. Never write to the branch yourself while another writer holds it.
 - **Merge Queue grouping (D246).** The queue builds up to 5 PRs at once and removes only a failing one. Keep the content train serialized anyway: at most one derived-content PR (`content/manifest.json` or locks) in the queue at a time. Order dependent PRs so that a migration or registry prerequisite enters first.
-- **Enqueue readback.** After enabling auto-merge, confirm the PR is queued: a `merge_group` run appears, or a branch update is refused with "queued for merging". A PR whose `mergeable_state` is `clean` can report auto-merge as enabled without being queued, and a direct merge answers 405.
-  - If it is not queued, update the branch from `main` with a merge commit (never rebase).
-  - Then enable auto-merge again while the new head's CI runs.
-  - Check it again on the next sweep.
+- **Enqueue and readback.** Enqueue only through the route that *Integration* below names: the bound META native `merge-async` with the exact head in `sha` and `merge_action="merge_queue"`. Generic auto-merge, a direct merge and a branch update or no-op commit are never enqueue or retry substitutes. `mergeable_state: clean`, an auto-merge flag, a queue event or an accepted request is not proof of admission or integration: reconcile the request, then require the real `merge_group` `game-gate` and protected-`main` readback. With no proven route, record `BLOCKED_CAPABILITY_UNAVAILABLE`, keep the qualified head, and list the PR for the owner to enqueue.
 
 ## Architecture escalation
 
