@@ -127,8 +127,14 @@ How do two players exchange items safely?
 **Amendment (pending on acceptance of BAGS-0;
 `reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §9).**
 An offer may be a container tree of at most 100 items (BAGS-TRADE-1). The offer binds each item's
-id, definition, quantity and state; any change cancels, and the swap checks the binding under row
-locks. The main backpack itself stays refused.
+id, definition, quantity, state, immediate parent and entry ordinal; any change, a reparent or
+reorder included, cancels, and the swap checks the binding under row locks. The main backpack
+itself stays refused. Under `CONTAINER_TREE_V1` the §3 domain gives the recipient's session its
+own handles for each offered container and each container nested in it; they open read-only
+views only and become `STALE` on any offer change and when the trade ends. A swap with at least
+one tree uses the BAGS-0 §9 two-tree shape and its rows (`DUR03-RL-0x-TREE-TRADE`: 200 touched
+items, 2 participants, 4 location lines, at most 204 work units, both tree bindings in the receipt
+and event), which override the §6 two-item rows for that swap only.
 
 ## 5. Swap (TRADE-1, persistence)
 

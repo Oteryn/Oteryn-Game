@@ -14,7 +14,7 @@
   (corpse depth 1), the composition decision rules 1, 2 and 4, owner rule 5905825574
 - Amends, each pending on acceptance of BAGS-0 (#162 5912405163), in this PR: DUR-03 §10 (a
   paragraph at its end); B3 §4.5; ITEM-MOVE-WIRE-0 §4.4; ITEM-MOVE-WIRE-1 §4; ITEM-USE-0 §3;
-  DEPOT-0 §3; PLAYER-TRADE-0 §4; HOUSE-CUSTODY-0 §3.1. MAIL-0 is not edited (open PR, §9).
+  DEPOT-0 §3; PLAYER-TRADE-0 §4 (offers, wire handles, swap shape and rows); HOUSE-CUSTODY-0 §3.1. MAIL-0 is not edited (open PR, §9).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -183,7 +183,8 @@ drop it whole, with every item still in exactly one location?
     bytes. Its rate is `BAGS0-RL-04`, measured and registered by BAGS-WIRE-1.
 - **Reach.** A container in the character's own trees is always in reach. A container in a depot
   or Inbox tree opens only while that depot view is open (BAGS-DEPOT-1). A traded tree opens in
-  the trade view (BAGS-TRADE-1). Corpses keep domain 11 and depth 1.
+  the trade view (BAGS-TRADE-1), read-only, by a partner-facing handle (§9, trade handles).
+  Corpses keep domain 11 and depth 1.
 - **Handles.** Inner entries get handles when a view shows them (ITEM-MOVE-WIRE-0 §4.1: live while
   in a view, never reused). Live handles per session `ITEMV0-RL-03` is re-measured with 16 views of
   20 entries (at least 382).
@@ -272,9 +273,32 @@ Each item names the decision, its refusal today, the result and the child that b
   raise `MAIL0-RL-03` to a parcel tree within §3; MAIL-PARCEL-1 uses the §4 tree move.
 
 - **Trade binding.** A traded tree binds, per item, the ItemInstanceId, definition key and
-  revision, quantity and a state digest, hashed in ItemInstanceId order. Any change cancels the
+  revision, quantity, a state digest, and its topology: the immediate parent ItemInstanceId and
+  the entry ordinal (none for the root), hashed in ItemInstanceId order. So a reparent or reorder
+  inside the offered tree changes the binding like any other change. Any change cancels the
   trade before `TRANSFERRING` (PLAYER-TRADE-0 §4); the swap checks the binding under the §4.2
   locks. The receiver needs one free entry for the root.
+- **Trade handles** (BAGS-WIRE-1 with BAGS-TRADE-1; the PLAYER-TRADE-0 §3 wire amendment). Under
+  `CONTAINER_TREE_V1`, the `PLAYER_TRADE` domain gives each offered item that is a container, and
+  each container nested in it, a handle local to the recipient's GameSession (ITEM-MOVE-WIRE-0
+  §4.1 allocation: monotonic, never reused), issued when the partner's offer becomes visible to
+  that session. The offerer keeps its own handles. `OPEN` accepts a trade handle only
+  read-only: its view and the handles of its entries admit `OPEN`, `CLOSE` and `UP` (not above
+  the offered root) and are refused as a command 9 source or destination, a USE field 2 target
+  and every other command (`NOT_SUPPORTED`). Every trade handle of a trade, and every view opened
+  by one, becomes `STALE` on any change to either offer (which also cancels the trade) and when
+  the trade ends (`COMPLETED`, `CANCELLED` or any other close).
+- **Two-tree trade shape** (architect ruling R5, §13). One swap transaction moves both roots, each
+  by the §4.3 root shape, and locks and checks both trees under §4.2 (PLAYER-TRADE-0 §5 order,
+  every item of both trees in one ItemInstanceId order). Its bounds override the PLAYER-TRADE-0
+  two-item rows for a swap in which at least one offer is a tree: at most 200 touched items (two
+  trees of `BAGS0-RL-05`), 2 participants, 4 location lines (one removal and one placement per
+  root), and work units the sum of both sides by the §4.3 formula, 3 per root plus 1 per
+  descendant, so at most 2 × (3 + 99) = 204. The receipt records both tree bindings (count and
+  SHA-256 per side, §9 trade binding); the trade event is the PLAYER-TRADE-0 two-line event plus,
+  per side, one count and one 32 B binding digest, within the measured `DUR03-RL-07-TRADE` bound
+  (above it the shape returns for a new decision). A swap of two items without contents keeps the
+  PLAYER-TRADE-0 `2 / 6` shape.
 - **Depot and Inbox counts.** A tree move into a box or the Inbox counts every item of the tree;
   BAGS-DEPOT-1 widens the `DEPOT0-RL-01` guard and the Inbox counter by the tree count read in
   §4.3.
@@ -296,6 +320,10 @@ Each item names the decision, its refusal today, the result and the child that b
 | `DUR03-RL-05-TREE` container levels expanded | 8 |
 | `DUR03-RL-06-TREE-MOVE` participants / work units | 1 / 502 |
 | `DUR03-RL-07-TREE-MOVE` envelope and payload | one-item caps; adds a count and a 32 B hash |
+| `DUR03-RL-01-TREE-TRADE` touched items in one two-tree trade swap | 200 (2 roots moved, up to 198 locked and checked) |
+| `DUR03-RL-02-TREE-TRADE` location lines | 4 |
+| `DUR03-RL-06-TREE-TRADE` participants / work units | 2 / sum of both sides at 3 per root plus 1 per descendant, at most 204 |
+| `DUR03-RL-07-TREE-TRADE` envelope and payload | the `DUR03-RL-07-TRADE` event plus, per side, a count and a 32 B binding digest; within the measured `DUR03-RL-07-TRADE` bound (BAGS-TRADE-1) |
 | `DUR03-RL-01-TREE-RETIRE` one-item `DECAY_RETIRE` transactions per Ground tree at `WorldReset` | at most 500, post-order; each the one-item shape: 1 participant / 3 work units, one `OneItemTransactionV1` (BAGS-GROUND-1) |
 | `ITEMV0-RL-03` live handles per session | re-measured, at least 382 |
 | `CONTAINER_VIEWS` snapshot bytes | within FND-02 limits, measured; else `BAGS0-RL-03` falls |
@@ -352,6 +380,13 @@ audit shapes are reused; no new aggregate schema to qualify); b) one aggregate t
 500 items, which would need its own participants, work units, payload bound and event schema.
 **Ruled a).**
 
+**R5. A trade swap of two trees.** The manual allows a whole container per side; PLAYER-TRADE-0
+registers only a two-item swap. a) One swap transaction for both trees with its own override
+rows: 200 touched items, 2 participants, 4 location lines, 204 work units, both tree bindings in
+the receipt and event (recommended: one atomic swap as Global, bounded by `BAGS0-RL-05` per side,
+the accepted §4.3 root shape reused per side); b) two separate tree moves, which breaks the
+all-or-nothing trade. **Ruled a).**
+
 ## 14. Owner questions
 
 None. Every choice here is a Global-parity application or a bound under DUR-03 §28, which owner
@@ -372,7 +407,8 @@ rule 5905825574 gives to the architect.
 ## 16. Before-freeze checklist
 
 1. **Contract amendments:** DUR-03 §10; B3 §4.5; ITEM-MOVE-WIRE-0 §4.4; ITEM-MOVE-WIRE-1 §4;
-   ITEM-USE-0 §3; DEPOT-0 §3; PLAYER-TRADE-0 §4; HOUSE-CUSTODY-0 §3.1; each pending on
+   ITEM-USE-0 §3; DEPOT-0 §3; PLAYER-TRADE-0 §4 (offers, trade handles, the two-tree swap shape
+   and its rows); HOUSE-CUSTODY-0 §3.1; each pending on
    acceptance of BAGS-0. Capability, domain and command numbers are reserved at allocation.
 2. **Serialization:** rule 4's existing order (ITEM-MOVE-WIRE-1 §7.2): `character_root`, then all
    item rows in one ItemInstanceId order (moved roots and changed containers `FOR UPDATE`, the rest
@@ -382,4 +418,5 @@ rule 5905825574 gives to the architect.
 4. **Typed references:** handles on the wire; `Container {parent, ordinal}` in storage; no owner
    stored on descendants.
 5. **Wire:** §5, capability `CONTAINER_TREE_V1`.
-6. **Split work:** one root per move; at most 500 items read and locked; at most 8 levels.
+6. **Split work:** one root per move (two per trade swap, at most 200 items); at most 500 items
+   read and locked; at most 8 levels.
