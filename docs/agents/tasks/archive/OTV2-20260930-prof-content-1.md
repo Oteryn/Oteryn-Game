@@ -64,6 +64,13 @@ jira: null   # sync pending (coordinator batch)
   re-key the Magic Sword example to `oteryn:proficiency.tibia.p238`, and amend the crosswalk rule (the
   15.30 client source alone admits a definition; Canary/Crystal corroboration becomes optional).
 
+- **1d (branch `claude/prof-content-1d-item-schema`, stacked on 1c):** `item.schema.json` drops the inline
+  `levels`/`shaping` (`build_formal_schema.py`); the crosswalk rule is amended (15.30 client crosswalk
+  required and sufficient, admitted targets = committed `content/proficiencies/`; Canary/Crystal optional);
+  Magic Sword re-keyed to `oteryn:proficiency.tibia.p238`; wiki `perk1..7` dispose to `profile_binding`.
+  Architecture docs describing the inline profile (`OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md`,
+  `OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md`) are left to their owners.
+
 ## Decisions carried
 
 Owner, 2026-09-30 (recorded in `docs/agents/tasks/archive/OTV2-20260930-proficiency-authoring-schema.md`):
@@ -94,6 +101,13 @@ Threshold tables and the point table are progression rules, so they are not writ
 - Generator byte-identical; `validate_world_project_v2_to_tree.py` PASS (`proficiency_bindings=642`);
   `test_world_project_v2_to_tree.py` PASS (161 managed files); `validate_materialized_game_tree.py` 97/97;
   `item_key_references.py` PASS.
+
+## Validation (1d, local)
+
+- `build_formal_schema.py` regenerates byte-identically; `verify_formal_schema.py`: 247/247.
+- `test_engine_items.py` 594, `test_item_weapon_proficiency.py` OK, `item_weapon_proficiency.py --check` up to date,
+  `test_lower_promotion_packet.py` 55, `test_donor_census.py` 47, `test_client_appearance_census.py` 29,
+  `test_world_objects.py` 141, `validate_item_master_schema.py` PASS, ruff clean.
 
 ## Closeout
 
