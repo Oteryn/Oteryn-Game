@@ -152,6 +152,12 @@ and 20 entries); `ITEMV0-RL-02` entries in domain 11 (the corpse container capac
 `ITEMV0-RL-03` live handles per session; snapshot and delta bytes within the FND-02 limits. Items
 in domain 1 stay under D87's 256-entity ceiling.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §5).**
+Under capability `CONTAINER_TREE_V1`, nested containers open in a new domain of up to 16 views, with
+a view command (open, close, up) and handles for inner entries; command 9 gains the `CONTAINER
+{handle}` destination. Domain 9 and domain 11 keep their meaning; corpses stay at depth 1.
+
 ## 5. Move (ITEM-MOVE-1)
 
 | Kind | Id | Name | Content |

@@ -124,6 +124,12 @@ How do two players exchange items safely?
   before the session closes (bounded by the transaction timeout); a death is processed after the
   outcome, serialized on `character_root`. Either way the other side sees the outcome.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §9).**
+An offer may be a container tree of at most 100 items (BAGS-TRADE-1). The offer binds each item's
+id, definition, quantity and state; any change cancels, and the swap checks the binding under row
+locks. The main backpack itself stays refused.
+
 ## 5. Swap (TRADE-1, persistence)
 
 - **One transaction** moves both items or neither:

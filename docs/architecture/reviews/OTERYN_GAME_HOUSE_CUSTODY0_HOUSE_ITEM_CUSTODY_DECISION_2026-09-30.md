@@ -108,6 +108,12 @@ decision exists (D196).
   root need a later decision.
 - **Exclusivity.** A live item is in exactly one location family (§3.3).
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §9).**
+BAGS-0 supplies the tree shape. Admitting containers with contents under a house root stays an
+explicit follow-up for HOUSE-RUNTIME-0: contents count against `HOUSEOWN0-RL-14`, and a disposition
+step moves whole trees.
+
 ### 3.2 Reclaim provenance
 
 - Every transaction that makes an item's location `HouseInterior` also writes

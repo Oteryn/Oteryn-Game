@@ -99,6 +99,12 @@ How does a player eat and drink a potion?
 - **New dispositions** (only under `ITEM_USE_V1`): `REQUIREMENT_NOT_MET`, `EXHAUSTED`, `FULL`,
   `NO_TARGET`. The result stays at most 4 bytes, and the payload stays within 529 bytes.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §8).**
+Field 2 may name any entry of an open container view in the character's own trees. Field 5 searches
+breadth-first: the equipment slots, the main backpack's direct entries in display order, then each
+container level by level, closed bags included. The runtime search reads at most 509 items.
+
 ## 4. DUR-03 (ITEM-USE-1)
 
 ### 4.1 Shapes
