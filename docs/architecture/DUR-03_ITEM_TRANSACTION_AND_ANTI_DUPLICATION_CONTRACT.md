@@ -1235,6 +1235,9 @@ authority, conservation) is unchanged.
   which binds the cause, the fee and the change. The fence and lock order are the Character
   writer's (`CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1` §3 rules 2-4, with the expected
   `CharacterRevision`), then the backpack and its coin entries.
+  An item-only fee source (NPC BUY and NPC travel, NPC service amendment below) has no Character
+  change: its one record is its DUR-03 cause record, under the item writer's fence with the
+  `character_root` lock and no expected revision (gold fee decision §4.3 as amended).
 - **Cause (D178).** Closed `FeeBurnCause`. Variants: `CharmUnassign { charm, occurrence }`, and,
   with the NPC service amendment below, `NpcTrade(NpcTradeCause)` and `NpcTravel { npc, route,
   occurrence }`.
@@ -1262,19 +1265,20 @@ obligation is unchanged.
 - **Cause.** One closed `NpcTradeCause {npc, offer, side, occurrence}` covers every line of a BUY
   or SELL: the BUY coin burn as `FeeBurnCause::NpcTrade`, the SELL item burn as its sink, and every
   MINT as its source. One audit event carries it.
-- **Records and revision.** BUY and SELL fall under the composition decision §3 rule 1 and §3.1:
-  no `CharacterRevision` advance. Each writes one DUR-03 cause record keyed by (occurrence,
-  character) under the item writer's fence; for BUY this record, not a Character receipt, is the
-  fee source record (gold fee decision §4.3 as amended).
-- **Travel.** A Character transaction under D177: the Character receipt (`CharacterRevision` +1)
-  and a pending arrival, with `F = route price` burned under
-  `FeeBurnCause::NpcTravel {npc, route, occurrence}`; a price of 0 writes no fee lines.
+- **Records and revision.** BUY, SELL and travel fall under the composition decision §3 rule 1
+  and §3.1: no `CharacterRevision` advance. Each writes one DUR-03 cause record keyed by
+  (occurrence, character) under the item writer's fence (rules 2-5, with the `character_root`
+  lock); for BUY and travel this record, not a Character receipt, is the fee source record (gold
+  fee decision §4.3 as amended).
+- **Travel.** `F = route price` burned under `FeeBurnCause::NpcTravel {npc, route, occurrence}` (a
+  price of 0 writes no fee lines), plus one pending arrival row, an obligation outside the
+  revision chain like DEATH-0's pending respawn.
 - **Common.** The price is read from the trade or travel service at the bound content revision; a
   mismatch with the client's expected price rejects. Insufficient funds, no free entry or a stack
   above 100 rejects the whole transaction and writes nothing.
 - **Rows.** BUY `DUR03-RL-01` 23, `DUR03-RL-02` 23, `DUR03-RL-06` 23 participants / 66 work
-  units; SELL 4, 4, 4 participants. The rows, schema, the `0023` widening (fee source kinds and
-  the entry-removal proof) and field numbers are registered by NPC-TRADE-1 and NPC-TRAVEL-1, not
+  units; SELL 4, 4, 4 participants. The rows, schema, the `0023` widening (fee source kinds, the
+  root-advance requirement for an item-only source, and the entry-removal proof) and field numbers are registered by NPC-TRADE-1 and NPC-TRAVEL-1, not
   here.
 
 This amendment grants no runtime or DDL authority.

@@ -14,8 +14,8 @@
   `CHARACTER-GOLD-FEE-BOUNDARY-V1` (D174-D178), the Character and item composition decision
   (2026-09-27, §3 and §3.1), DUR-03 §39.3, ADR-0021 §4.3, FND-02 §15, `PREMIUM-ACTIVATION-V1`,
   DEATH-0 §3.4 (pending respawn)
-- Amends: DUR-03 §15 and §39.3; the gold fee decision §4.3 and §4.4; the NPC boundary status and
-  §15/§19 (all in this PR)
+- Amends (all in this PR): DUR-03 §15 and §39.3; the gold fee decision §4.3 and §4.4; the
+  Character and item composition decision §3.1; DEATH-0 §3.4; the NPC boundary status, §15 and §19
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -24,11 +24,11 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | NPC-CONTENT-1 | impl | Rust NPC, Dialogue, Trade and Travel families read from the content tree; offer and route classification and the validator rules of §3.4; generated minimal replies (§3.3) | this decision |
-| NPC-PLACE-1 | impl, content review | NPC placements generated from the Canary/Crystal NPC spawn data into the World Project, checked against the bundle (§3.2) | NPC-CONTENT-1; MAP-BUNDLE-1 |
+| NPC-PLACE-1 | impl, content review | NPC placements generated from the Canary/Crystal NPC spawn data into the World Project, and travel destinations mapped from the `global-target-2026-09-27` frame to the project frame, both checked against the bundle (§3.2) | NPC-CONTENT-1; MAP-BUNDLE-1 |
 | NPC-WIRE-1 | impl, protocol review | registry and proto rows of §4, codecs, limits, client views | NPC-CONTENT-1 |
 | NPC-TALK-1 | impl | conversation lifecycle and keyword matching in the channel runtime (§2.1), read-only trade window (boundary gate `NPC_DIALOGUE_TRADE_WIDGET_V1`) | NPC-WIRE-1; NPC-PLACE-1; MAP-CUTOVER-1 |
 | NPC-TRADE-1 | hard, persistence review | BUY and SELL (§5), migration, cause records (boundary gate `NPC_SINGLE_TRADE_COMMIT_V1`) | NPC-TALK-1; GOLD-FEE-1a (merged); GOLD-FEE-1b |
-| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), migration | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
+| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
 
 Every child keeps the boundary's rules: the client is not an authority, dialogue code never
 commits value, and AI owns no dialogue or trade state.
@@ -47,13 +47,14 @@ shapes are new?
   Value moves only through GAME-ITEM and DUR-03 (§12 there). It names two gates:
   `NPC_DIALOGUE_TRADE_WIDGET_V1`, then `NPC_SINGLE_TRADE_COMMIT_V1` (§19 there). It forbids NPC
   runtime allocation while unprotected (§19) and gates exact prices on target evidence (§15).
-- The content tree holds 1,094 NPCs, 707 Dialogue declarations, 322 trade services (10,723
+- The content tree holds 1,094 NPCs, 707 Dialogue declarations, 322 trade services (12,626
   offers; the largest has 757) and 56 travel services (198 routes; 12 have price 0). NPC records
   carry no position, and `content/world/placements` is `READY_UNPOPULATED`. NPC keys are
   `oteryn:npc.<slug>`, travel services `oteryn:service.travel.<slug>` (schema D4). Tibia NPC text
   is admitted as reference data (D9). No Rust NPC family exists yet.
-- Offers: 31 use a token currency (i22516, i22721) instead of gold; 141 carry `count` 500, 1,800
-  or 14,400; 31 sell prices exceed 1,009,999 gold.
+- Offers: 31 use a token currency (i22516, i22721) instead of gold; 440 carry a `count` above 100
+  (141 each of 500, 1,800 and 14,400, and 17 of 150, 200 or 250); 31 prices an NPC pays exceed
+  1,009,999 gold.
 - Gold is only physical coins in direct entries of the main backpack (D174, D175). GOLD-FEE-1a
   (merged, `0023`) implements the gold coin fee BURN and pins worth 1 and no change output; the
   platinum and crystal admission and their stack maximum 100 (D176) land with GOLD-FEE-1b.
@@ -89,9 +90,13 @@ shapes are new?
 ### 3.2 Placement (NPC-PLACE-1)
 
 - NPC positions come from the Canary/Crystal NPC spawn data, generated with provenance into the
-  World Project in the project frame, and compiled into the World Bundle (ADR-0021 §4.3).
-- An NPC whose position is not a walkable tile of the bundle is held; the rest of the World still
-  compiles. A travel route whose destination is not walkable is held the same way.
+  World Project in the project frame, and compiled into the World Bundle (ADR-0021 §4.3). Travel
+  destinations are stored in the `global-target-2026-09-27` frame today; NPC-PLACE-1 maps them to
+  the project frame.
+- A position outside the World bounds or floors fails compilation (ADR-0021 §4.3).
+- An in-bounds NPC position or travel destination that is not a walkable tile is held with a
+  diagnostic, and the rest of the World compiles. The held list is a production release gate, like
+  drafts (ADR-0021 §4.6).
 
 ### 3.3 Minimal replies (ruling answer 3b)
 
@@ -103,12 +108,15 @@ shapes are new?
 ### 3.4 Offer and route rules
 
 - An offer whose currency is not gold is held (the 31 token offers).
-- `count` on a stackable item is the quantity per purchase and must be 1 to 100. `count` on a
-  charged or fluid item is its sub-type or charges. Any other `count` (for example the 141 offers
-  above 100 today) holds the offer until classified.
+- `count` on a stackable item is the number of units in one purchase unit and must be 1 to 100
+  (default 1). `count` on a charged or fluid item is its sub-type or charges. Any other `count`
+  (for example the 440 offers above 100 today) holds the offer until classified.
+- `unit_price` is the price of one purchase unit.
 - A sell price above 1,009,999 gold (the most three coin stacks can hold) is held.
-- **Arbitrage rule.** For every item, the highest price any NPC pays for it must not exceed the
-  lowest price any NPC sells it for. A violating offer is held.
+- **Arbitrage rule.** Over the offers still admitted after the rules above, per item definition
+  and sub-type, and per single item unit (`unit_price / count`): an offer where an NPC pays more
+  than the lowest price any NPC sells for is held. Only the paying offers are held; the selling
+  offers stay. The rule holds nothing today.
 - A travel route loads when it has no gate or only a level and Premium gate. Quest-gated routes
   are held. A route price of 0 is free.
 
@@ -168,15 +176,17 @@ shapes are new?
 - Each writes one DUR-03 cause record keyed by (occurrence, character). It binds the NPC, the
   offer (catalogue revision and index), side, quantity, unit price, every burn and mint line, and
   the TransactionId. A replay returns the first outcome; a changed binding conflicts.
-- The fence and lock order are the item writer's (composition §3 rule 2, with the cause record in
-  place of the reward claim), then the main backpack and its entries.
+- The fence and lock order are the item writer's (composition §3 rules 2-5, with the cause record
+  in place of the reward claim), including `character_root FOR UPDATE` without an expected
+  revision, then the main backpack and its entries.
 - One TransactionId fixes the output identity slots before the first attempt (D177).
 
 ### 5.3 BUY
 
 - The gold fee plan of D175 with `F = unit_price x quantity`, burning coins and minting change,
-  plus one MINT of the bought item (one stack of the offer's count, or one non-stackable item with
-  its sub-type) into a new direct entry of the main backpack.
+  plus one MINT of the bought item into a new direct entry of the main backpack:
+  - a stackable item: one stack of `quantity x count` units, which must be 1 to 100;
+  - a non-stackable item: `quantity` must be 1; the item takes the offer's sub-type or charges.
 - `F` above 20,000,000 (the most 20 coin stacks can hold) is always insufficient funds.
 - Insufficient funds, no free entry after the burn and change, or more than 20 burn inputs
   rejects the whole transaction.
@@ -201,29 +211,39 @@ shapes are new?
 - One audit event per transaction (`DUR03-RL-07-EVENTS` 1) carries the cause and every line.
 - Rows (registered by NPC-TRADE-1):
   - BUY: `DUR03-RL-01` 23, `DUR03-RL-02` 23, `DUR03-RL-06` 23 participants / 66 work units;
-  - SELL: `DUR03-RL-01` 4, `DUR03-RL-02` 4, `DUR03-RL-06` 4 participants, work units measured.
+  - SELL: `DUR03-RL-01` 4, `DUR03-RL-02` 4, `DUR03-RL-06` 4 participants / at most 66 work units,
+    the exact value measured by NPC-TRADE-1.
 - A whole-item SELL retirement widens the `0023` entry-removal proof to that cause.
 
 ## 6. Travel (NPC-TRAVEL-1)
 
-- Travel changes Character state (a pending arrival), so it is a Character transaction under D177:
-  one Character receipt keyed by the occurrence, `CharacterRevision` +1 exactly once, the
-  Character writer's fence. `F = route price` is burned with the gold fee plan under
-  `FeeBurnCause::NpcTravel {npc, route, occurrence}`; a price of 0 writes no fee lines.
+- Travel is an item-only fee transaction plus one obligation row, like BUY: it does not advance
+  `CharacterRevision`. It writes one DUR-03 cause record keyed by (occurrence, character) under the
+  item writer's fence (composition §3 rules 2-5). `F = route price` is burned with the gold fee
+  plan under `FeeBurnCause::NpcTravel {npc, route, occurrence}`; a price of 0 writes no fee lines.
+- **Pending arrival.** The same transaction inserts `game_character_pending_arrivals` (primary
+  key `character_id`; occurrence, destination). Like DEATH-0's pending respawn (§3.4 there), it is
+  an obligation outside the revision chain (composition §3.1 as amended). The runtime then moves
+  the character, and the placement deletes the row under the same session fences in the same
+  transaction as the placement.
+- **After a crash** between the commit and the move, the next admission or recovery places the
+  character at the pending arrival and deletes the row, on the same path DEATH-1 builds for the
+  pending respawn.
 - **Eligibility,** checked in the same transaction from durable facts: level (`min_level`),
-  Premium (`PREMIUM-ACTIVATION-V1`) when the route requires it, no pending respawn and no pending
+  Premium (`PREMIUM-ACTIVATION-V1`) when the route requires it, and no pending respawn or pending
   arrival. The runtime also refuses travel while the character is in combat (logout-blocked), as
   in Tibia.
-- **Pending arrival.** The same transaction inserts `game_character_pending_arrivals`
-  (one row per Character, primary key `character_id`; occurrence, destination), mirroring DEATH-0's
-  pending respawn. The runtime then moves the character, and the placement deletes the row in its
-  own fenced transaction.
-- **After a crash** between the commit and the move, admission places the character at the
-  pending arrival and deletes the row, the same path DEATH-1 builds for the pending respawn. A
-  pending respawn and a pending arrival never coexist, because each refuses the other. An occupied
-  destination tile uses the Character contract's placement fallback.
-- The `0023` fee record gains the source kind `NpcTravel`, and the Character receipt chain guard
-  gains the travel receipt (a new migration).
+- **Death supersedes arrival.** A death is never refused because of travel. The death
+  transaction deletes a pending arrival of the same character in the same transaction (DEATH-0
+  §3.4 as amended); the fee stays spent, as a death after arriving would leave it.
+
+### 6.1 Placement fallback
+
+- When the arrival tile is not free at placement, the character is placed on the nearest free
+  walkable tile of the same floor within Chebyshev distance 3, in a fixed spiral order (north
+  first, clockwise). If none is free, the character is placed at the home temple of its home town
+  (the DEATH-0 respawn rule). NPC-TRAVEL-1 builds this rule; DEATH-1 uses the same rule for an
+  occupied respawn tile.
 
 ## 7. Price evidence (boundary §15 and §19)
 
@@ -247,6 +267,9 @@ production release, not an implementation gate.
   move.
 - **"Newest position-bearing receipt" as the admission position.** Without a consumed
   obligation, every later login would teleport the character again.
+- **Travel as a Character receipt with a revision advance.** The pending arrival is an obligation
+  like the pending respawn; an advance would need a new receipt kind in the chain guard for no
+  Character state.
 
 ## 9. Owner question
 
@@ -263,13 +286,14 @@ satisfied). The control plane assigns the D-number.
 
 - This PR moves the NPC boundary from `PROPOSED_FOR_PROTECTED_REVIEW` to accepted, with the
   amendments of §7 and this decision, when the PR passes its independent review and protected
-  integration. The boundary's §19 bar on allocating NPC runtime workers ends then.
+  integration. The boundary's §19 bar on allocating NPC runtime workers ends then (boundary §19
+  as amended).
 
 ## 11. Decision test
 
 - **Must decide now:** YES. Without it NPCs cannot be used in play (ruling answer 1a).
-- **Minimum sufficient:** two commands, two runtime domains, one capability, two item-only trade
-  shapes and one travel shape, each reusing the gold fee plan.
+- **Minimum sufficient:** two commands, two runtime domains, one capability and three item-only
+  shapes (BUY, SELL, travel) on the gold fee plan, plus one obligation row.
 - **Superseding evidence:** a Tibia-parity need for bank payment or stack merging, or dated target
   evidence contradicting an admitted price.
 - **Deliberately not decided:** quest-conditioned dialogue (answer 4b), quest-gated routes, token
@@ -278,11 +302,12 @@ satisfied). The control plane assigns the D-number.
 
 ## 12. Before-freeze checklist
 
-1. **Contract amendments:** DUR-03 §15 and §39.3, the gold fee decision §4.3 and §4.4, and the NPC
-   boundary are amended in this PR (owner answer Q1a).
-2. **Serialization:** the item writer's fence for trade, the Character writer's fence for travel.
-3. **Restart:** conversation state is runtime-local; trade cause records and the pending arrival
-   are durable.
+1. **Contract amendments:** DUR-03 §15 and §39.3, the gold fee decision §4.3 and §4.4, the
+   composition decision §3.1, DEATH-0 §3.4 and the NPC boundary are amended in this PR (owner
+   answer Q1a).
+2. **Serialization:** the item writer's fence with the `character_root` lock for every command.
+3. **Restart:** conversation state is runtime-local; cause records and the pending arrival are
+   durable.
 4. **Typed references:** NPC, offer (catalogue revision and index), route and occurrence.
 5. **Wire:** §4, capability-gated.
 6. **Split work:** every command is one transaction with one record.

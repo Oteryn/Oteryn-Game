@@ -374,6 +374,10 @@ This decision does not select:
 
 ## 19. Coordinator handoff
 
+**Amendment (NPC-0 §10).** This decision is accepted with NPC-0 on that PR's protected
+integration. From then on the bar below no longer applies, and #162 allocates the NPC-0 children
+(`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md`).
+
 While this decision is unprotected:
 
 - R8 evidence/readiness may continue read-only;

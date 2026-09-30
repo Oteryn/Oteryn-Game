@@ -193,6 +193,16 @@ UPDATE` with the expected `CharacterRevision`; then the domain rows: the fee sou
 the main backpack's container row and its coin entries. The cause's CharacterId must equal the
 fenced Character. A stale session generation, lease, scope or revision commits nothing.
 
+**Amendment (NPC-0, 2026-09-30): item-only fee sources.** An NPC BUY and an NPC travel fee
+(§4.4 as amended) have no Character change. For them the one receipt of this section is the
+source's DUR-03 cause record keyed by (occurrence, character); nothing advances
+`CharacterRevision` (Character and item composition decision §3 rule 1). The fence is the item
+writer's (composition §3 rules 2-5): the full session fence and `character_root FOR UPDATE`
+without an expected revision, then the source's rows, then the main backpack and its coin
+entries. One transaction still carries every line, one TransactionId fixes the output slots, and
+a replay of the same occurrence returns the first outcome. This is the architect's reading of D177
+for sources the owner admitted with Q1a (#162 5909366267).
+
 **Burn first with refund** (Q38 b) is rejected: it creates a window where gold is gone and the
 Character change is not made, and a compensation path.
 
@@ -215,10 +225,9 @@ FeeBurnCause = CharmUnassign { charm: CharmKey, occurrence: CharmCommandOccurren
 **Amendment (NPC-0, 2026-09-30, owner answer Q1a on #162 5909366267).** Two variants are added:
 `NpcTrade(NpcTradeCause {npc, offer, side, occurrence})` for the coins of an NPC BUY and
 `NpcTravel {npc, route, occurrence}` for an NPC travel fee
-(`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6). The §4.3 composition applies
-to travel unchanged. For an NPC BUY, the fee source is an item-only DUR-03 cause record keyed by
-(occurrence, character), under the Character and item composition decision §3 rule 1: no
-Character change, no `CharacterRevision` advance, the item writer's fence. NPC-TRADE-1 and
+(`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6). Both are item-only fee
+sources under the §4.3 amendment above: a DUR-03 cause record keyed by (occurrence, character),
+no `CharacterRevision` advance, the item writer's fence. NPC-TRADE-1 and
 NPC-TRAVEL-1 widen `0023` (fee source kinds, the root-advance requirement for an item-only source,
 and the entry-removal proof) in their own migrations.
 

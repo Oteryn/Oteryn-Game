@@ -22,6 +22,8 @@ owned_paths:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
   - docs/architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md
   - docs/architecture/OTERYN_FIRST_REFERENCE_NPC_SERVICE_BOUNDARY_2026-09-09.md
+  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_REVISION_ITEM_TRANSACTION_COMPOSITION_DECISION_2026-09-27.md
+  - docs/architecture/reviews/OTERYN_GAME_DEATH0_CHARACTER_DEATH_RECEIPT_DECISION_2026-09-28.md
   - docs/agents/tasks/archive/OTV2-20260930-npc0-npc-runtime-service.md
 public_contracts:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
@@ -40,12 +42,13 @@ packet (architect ruling on #162, 5909181928, answer 1a).
   pinned, validated input. NPCs without a Dialogue get generated minimal replies.
 - **Wire.** Capability 3 `NPC_SERVICE_V1`, command types 7 (talk) and 8 (trade), state domains 7
   (conversation) and 8 (trade window), all runtime-local (#162 5909366267).
-- **Value.** BUY and SELL are item-only transactions with one closed `NpcTradeCause` and a cause
-  record, no CharacterRevision advance. Travel is a Character transaction with a pending arrival.
-  All reuse the gold fee plan.
+- **Value.** BUY, SELL and travel are item-only transactions with a cause record and no
+  CharacterRevision advance, on the gold fee plan. Travel adds a pending arrival obligation, which
+  a death supersedes.
 - **Boundary.** The 2026-09-09 NPC boundary is accepted with this PR; its price evidence gate
   becomes a release parity gate (NPC-0 §7).
-- **Amendments.** DUR-03 §15 and §39.3, the gold fee decision §4.4, the NPC boundary. The owner
+- **Amendments.** DUR-03 §15 and §39.3, the gold fee decision §4.3 and §4.4, the composition
+  decision §3.1, DEATH-0 §3.4, the NPC boundary. The owner
   admitted NPC value sources (Q1a, "tak a", 2026-09-30, #162 5909366267), as D178 requires.
 - **Children.** NPC-CONTENT-1, NPC-PLACE-1, NPC-WIRE-1, NPC-TALK-1, NPC-TRADE-1, NPC-TRAVEL-1.
 
@@ -87,6 +90,10 @@ needs protocol review.
   hardening findings, all fixed before freeze (item-only trade without revision advance, full D178
   amendment, GOLD-FEE-1b and DEATH-1 dependencies, pending arrival, boundary acceptance and price
   ruling, content facts and offer rules, one trade cause, rows, wire rules).
+- Second pass on `0eed72b4`: 4 new material findings (D177 text, BUY quantity, death versus
+  arrival, compile rule) and 3 others, all fixed: item-only reading of D177 in the gold fee §4.3,
+  travel item-only with an obligation, death supersedes arrival, placement fallback, compile rule
+  aligned with ADR-0021, offer counts corrected.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
