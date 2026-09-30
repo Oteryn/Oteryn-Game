@@ -3,7 +3,7 @@
 - Decision: `GUILD0-GUILDS-AND-GUILDHALLS-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   economy, security and protocol) and protected integration. Owner questions G1 and G2 (§14) are
-  open; §3.2 and §7 apply their recommended answers as reversible assumptions.
+  answered a and a (verbatim record on #162 5917665342); §3.2 and §7 apply them.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30, verbatim: "mozesz sie tez zajac gildami bo blokuej mi
   to wdrozenie guildhalli do domkow"); it fills the guild lifecycle that EXP-HOUSES-01 §9 defers and
@@ -122,7 +122,7 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
   Account holds no leadership position; the name passes the `0022` character name rules, has at
   most 29 letters, and its `name_key` is free in the World among guilds (guild and character names
   are separate namespaces). The guild starts `FORMING` with `formation_deadline` = +3 days
-  (`GUILD0-RL-02`), the founder at level 1. **Premium** (assumption pending G1, answer a): not
+  (`GUILD0-RL-02`), the founder at level 1. **Premium** (owner answer G1 a): not
   required until PREM-1 delivers `premium_current`; from then on founding and every move into
   levels 1 and 2 require it (`NOT_PREMIUM`), and a lapse keeps the rank.
 - **Invite `{character}` / revoke.** By levels 1 and 2; the target is of the same World and not a
@@ -155,7 +155,7 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
   restores 4 clears it. A World job disbands a guild whose deficit is older than 14 days
   (`GUILD0-RL-04`).
 - The Premium rule (fewer than 5 Premium players among leader and vices for 14 days disbands) waits
-  for G1 and PREM-1: from then on a daily World job reads `premium_current` per leadership Account
+  for PREM-1 (G1 a): from then on a daily World job reads `premium_current` per leadership Account
   and keeps `premium_deficit_since` the same way.
 - Jobs follow HOUSE-OWN-0 §9: candidates without a lock, then locked and re-checked; at most
   `GUILD0-RL-09` (100) guilds per pass; idempotent per key.
@@ -258,7 +258,7 @@ bank balance (`GUILD_DISBAND_PAYOUT`, `TRANSFER`). It is value already owned, so
   `escrow_guild_gold` and `escrow_account_gold`; a guard keeps their sum equal to HOUSE-OWN-0's
   escrow rule. Raising the max draws the same way; lowering returns account gold first.
 - **Settlement.** The winner's price and rent burn from the guild part first, then the account
-  part (the house `FeeBurnCause` variants, under G2); the rest returns to each source. Releases
+  part (the house `FeeBurnCause` variants, owner answer G2 a); the rest returns to each source. Releases
   return each part to its own source. If the leader changed after the bid, the account part still
   returns to `funding_account_id`.
 
@@ -272,7 +272,7 @@ bank balance (`GUILD_DISBAND_PAYOUT`, `TRANSFER`). It is value already owned, so
   manual's open question the same way as the bid.
 - An insufficient total starts the grace; after it, eviction bans the **guild** from guildhall bids
   for 30 days (`game_guild_house_bans`); no Account is banned.
-- **Price and rent as gold sinks** (assumption pending G2, answer a): the H1 house variants cover
+- **Price and rent as gold sinks** (owner answer G2 a): the H1 house variants cover
   guildhalls.
 
 ### 7.2 Moving out
@@ -348,7 +348,7 @@ belongs to the house interior runtime, which admits only characters with house a
 | `GUILD0-RL-08` open invitations per guild | 500 |
 | `GUILD0-RL-09` guilds per job pass | 100 |
 | `GUILD0-RL-10` activity log window | 30 days |
-| `GUILD0-RL-11` Premium leaders and vices required | 5, after G1 and PREM-1 |
+| `GUILD0-RL-11` Premium leaders and vices required | 5, once PREM-1 delivers Premium (G1 a) |
 | Guild bank deposit or withdraw | 0 items, 2 value lines, 1 event |
 | Guildhall bid, raise or lower | 0 items, up to 4 value lines (two sources and two escrow parts), 1 event |
 | Guildhall rent charge | 0 items, up to 2 burn lines, 1 event |
@@ -373,7 +373,9 @@ guild bank rights; one guildhall per guild, bid from the guild bank then the lea
 ACL entries. Declared differences: immediate effect of changes and resignation; per-item reclaim
 on guildhall disposition; bounded members and invitations; the disband payout.
 
-## 14. Owner questions (open)
+## 14. Owner questions (answered)
+
+Owner answers, verbatim record on #162 5917665342: "1a 2a" (G1 a, G2 a).
 
 **G1. Guilds before Premium exists?** Tibia requires Premium to found a guild and to be leader or
 vice, and disbands a guild with fewer than 5 Premium leaders and vices; the Game has no Premium yet
@@ -390,7 +392,7 @@ from the guild bank first and then the leader's bank, as in Tibia (recommended);
 - **Must decide now:** YES. The owner asked for guilds because guildhalls block house work.
 - **Minimum sufficient:** one guild, rank, member, invitation and position table; one guild
   balance; guildhall rows in the existing property table; guild entries in the existing ACL lists.
-- **Superseding evidence:** owner answers; GUILD-WAR-0 may add war states; a Platform web view may
+- **Superseding evidence:** GUILD-WAR-0 may add war states; a Platform web view may
   move administration surfaces, not truth.
 - **Deliberately not decided:** guild wars, applications, autorank, board, events, leader election,
   name wildcards, Rested in guildhalls, the Platform web view.
