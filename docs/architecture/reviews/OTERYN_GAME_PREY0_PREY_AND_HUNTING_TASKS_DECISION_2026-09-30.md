@@ -120,6 +120,13 @@ admitted as value sources only by the owner?
 - **Preyable pool:** a Creature is preyable when it has a Bestiary block, positive XP, and no
   `prey: excluded` fact (new, boss and event exceptions). The pool is the active content
   generation's preyable Creatures in key order. Bosses have no Bestiary block, so they are out.
+- **Prey loot budget (ruling R4):** a preyable Creature's loot table has at most `PREY0-RL-16`
+  entries (8), so it plans in at most 16 RNG draws: half of `COMBAT01-LOOT-PLAN-ENTRIES` (16) and
+  `COMBAT01-LOOT-RNG-DRAWS` (32). The base roll and the improved-loot roll of §7 together fit the
+  existing D77 ceilings (16 entries, 16 items, 32 draws, `COMBAT01-LOOT-PLAN-BYTES`) with no
+  amendment. The content compiler checks it for every Creature that would be preyable and **fails
+  the compile closed** (`PREY_LOOT_TABLE_TOO_LARGE`, naming the Creature); it never drops the
+  Creature from the pool silently. Content that needs a larger table marks it `prey: excluded`.
 - `rulesets/progression/task-board/`: Bounty tiers (Bestiary difficulty per tier), kill counts,
   rewards and silver/gold chances; Weekly task tables; the shop catalogue. Each is
   `PARITY_PENDING` until captured.
@@ -135,8 +142,10 @@ admitted as value sources only by the owner?
 - `game_character_prey_resources`: CharacterId -> typed columns `prey_wildcards`,
   `bounty_reroll_tokens`, `bounty_points`, `hunting_task_points`, `soulseals`, each non-negative
   with its cap (§12). Typed columns, not a KV table (DUR-02 §13).
-- `game_character_prey_unlocks`: (CharacterId, unlock kind) for `PREY_SLOT_PERMANENT` and
-  `WEEKLY_TASK_EXPANSION`, with the source (Y2). Empty until the Store delivery contract exists.
+- `game_character_prey_unlocks`: (CharacterId, unlock kind, target) for `PREY_SLOT_PERMANENT`
+  with target slot 2 or 3, and `WEEKLY_TASK_EXPANSION` with target `NONE`, with the source (Y2).
+  Each (kind, target) is a separate write-once fact, so one purchase unlocks exactly one slot.
+  Empty until the Store delivery contract exists.
 - `game_character_prey_receipts`: one per revision for Prey and Task Board writes, keyed by the
   occurrence, binding the command, its drawn outcome and each balance change with its cause (§10).
 
@@ -150,7 +159,8 @@ admitted as value sources only by the owner?
 - Expected revision: a player command's binding excludes the revision, so a mismatch reloads the
   cursor and retries once (the quest and Bestiary rule, QUEST-STATE-0 §5.2).
 - Fence: the composition rule 2 fence for commands; the STARTER-BACKPACK-0 variant (the admitted
-  session's fence, no CommandRef) for server-originated writes (checkpoints, expiry, settlement).
+  session's fence, no CommandRef) for server-originated writes (initialization, checkpoints,
+  expiry, settlement).
 
 ## 5. Prey commands (PREY-1)
 
@@ -158,22 +168,32 @@ admitted as value sources only by the owner?
 
 - The Prey dialog opens only for a character with a vocation (it has left the starter island,
   A13; `PARITY_PENDING` for Dawnport specifics). Else `NOT_ELIGIBLE`.
-- Slot 1: every eligible character. Slot 2: Premium current at use, or `PREY_SLOT_PERMANENT`;
-  until PREM-1 is live, open to all (ruling R2). Slot 3: `PREY_SLOT_PERMANENT` only (Y2).
+- Slot 1: every eligible character. Slot 2: Premium current at use, or `PREY_SLOT_PERMANENT
+  {slot 2}`; until PREM-1 is live, open to all (ruling R2). Slot 3: `PREY_SLOT_PERMANENT {slot 3}`
+  only (Y2).
+- **Permanent slot claim (architect ruling, Global order):** a `PreyStoreClaim` for a permanent
+  slot binds its target slot in the claim and the receipt: the lowest of slots 2 and 3 that has no
+  `PREY_SLOT_PERMANENT` fact, chosen at claim time and stored. A claim when both facts exist is
+  refused `ALREADY_UNLOCKED` and writes nothing; the delivery stays unclaimed for Platform's refund
+  path (gap register §32). A replay returns the stored target.
 - A slot that loses its unlock (Premium lapses) keeps its durable row, applies no bonus, spends no
   time and refuses commands with `SLOT_LOCKED` until the unlock returns (`PARITY_PENDING`).
 
 ### 5.2 Commands
 
-Each is one sequencer write, keyed by its CommandRef. A refusal writes nothing.
+Each is one sequencer write, keyed by its CommandRef. A refusal writes nothing. Every command
+carries a `slot` (1 to `PREY0-RL-01`); the server validates it before any other check (out of
+range: `INVALID_SLOT`; not unlocked for this character now: `SLOT_LOCKED`; no row yet: §6.5) and
+binds it in the command binding and the receipt, so a replay under the same CommandRef with a
+different slot is a conflict, never a second write. Client focus never supplies the slot.
 
 | Command | Needs | Effect |
 |---|---|---|
-| `list_reroll` | `free_reroll_at` passed, else the fee (§5.3) | draws a new list (§6.1); a free use sets `free_reroll_at` = now + 20 h; an active bonus type and grade are kept for the next pick, the creature and time cleared |
-| `select {index}` | state `SELECTION`; index in the list | selected creature; if no bonus yet, draws type and grade (§6.2); time = 7,200 s; `ACTIVE` |
-| `select_any {creature}` | 5 wildcards; creature preyable | as `select`, from the whole pool |
-| `bonus_reroll` | `ACTIVE`; 1 wildcard | new type and grade (§6.2); time = 7,200 s |
-| `set_option {option}` | 1 wildcard held for `AUTO_REROLL`, 5 for `LOCK` | stores the option; nothing is spent until expiry |
+| `list_reroll {slot}` | `free_reroll_at` passed, else the fee (§5.3) | draws a new list (§6.1); a free use sets `free_reroll_at` = now + 20 h; an active bonus type and grade are kept for the next pick, the creature and time cleared |
+| `select {slot, index}` | state `SELECTION`; index in that slot's list | selected creature; if no bonus yet, draws type and grade (§6.2); time = 7,200 s; `ACTIVE` |
+| `select_any {slot, creature}` | 5 wildcards; creature preyable | as `select`, from the whole pool |
+| `bonus_reroll {slot}` | `ACTIVE`; 1 wildcard | new type and grade (§6.2); time = 7,200 s |
+| `set_option {slot, option}` | 1 wildcard held for `AUTO_REROLL`, 5 for `LOCK` | stores the option; nothing is spent until expiry |
 
 - A creature selected or listed in another slot of the character cannot be picked (`DUPLICATE`).
 - Wildcards are debited in the same receipt. Too few: `NOT_ENOUGH_WILDCARDS`.
@@ -193,8 +213,8 @@ Each is one sequencer write, keyed by its CommandRef. A refusal writes nothing.
 
 ### 6.1 List draw
 
-- Purpose `oteryn.prey.list.v1`, seeded by the command occurrence, or for an expiry redraw by
-  (CharacterId, slot, `slot_epoch`). The draw takes 9 distinct Creatures from the pool by the level
+- Purpose `oteryn.prey.list.v1`, seeded by the command occurrence, for an expiry redraw by
+  (CharacterId, slot, `slot_epoch`), or for the first list by (CharacterId, slot, `INIT`) (§6.5). The draw takes 9 distinct Creatures from the pool by the level
   bands of §3, excluding those listed or selected in the character's other slots.
 - A band with too few candidates is filled from the next band down, then up (`PARITY_PENDING`); a
   pool under 27 Creatures disables Prey on that content generation (Canary refuses under 36).
@@ -216,6 +236,13 @@ Each is one sequencer write, keyed by its CommandRef. A refusal writes nothing.
 - **Checkpoint:** consumed time is written in one receipt per character at most every
   `PREY0-RL-07` (300 s of hunting), and always before logout, channel transfer, any prey command
   and expiry. A crash loses at most that much consumption, in the player's favour (ruling R3).
+- **Checkpoint occurrence:** (GameSessionId, `checkpoint_seq`). GameSessionId is the admitted
+  session's durable, never-reused identity (the STARTER-BACKPACK-0 fence); `checkpoint_seq` starts
+  at 1 in each session and rises by 1 per checkpoint, and is stored in the receipt. Recovery reads
+  the highest stored `checkpoint_seq` of that session before the next checkpoint, so a restarted
+  runtime never reissues a used occurrence; a new session starts a new sequence under a new
+  GameSessionId. A replay of a stored occurrence returns its receipt; the same occurrence with a
+  different binding is a conflict and writes nothing.
 
 ### 6.4 Expiry
 
@@ -225,6 +252,18 @@ Each is one sequencer write, keyed by its CommandRef. A refusal writes nothing.
   - `LOCK` with at least 5 wildcards: debit 5, same creature and bonus, time 7,200 s;
   - otherwise (or too few wildcards): option cleared, bonus and creature erased, a new list drawn
     free (Canary), `SELECTION`, and a status message.
+
+### 6.5 First-list initialization
+
+- A slot has no row until it is initialized. At the first admission of the Character at which it
+  is Prey-eligible (§5.1) and a slot is unlocked with no row, one server-originated write per such
+  slot, keyed by (CharacterId, slot, `INIT`), creates the row in `SELECTION` with a list drawn by
+  §6.1, `slot_epoch` 1, no bonus, option `NONE` and `free_reroll_at` = now. A slot unlocked later
+  (Premium, a permanent claim) is initialized at the next admission the same way.
+- The occurrence is idempotent: a replay returns the stored row and list; an existing row is never
+  re-initialized, so a locked-then-unlocked slot keeps its row (§5.1). There is no migration
+  backfill and no first-read side effect; until initialized, the `PREY` snapshot shows the slot as
+  `LOCKED` or pending and every command on it is refused `SLOT_LOCKED`.
 
 ## 7. Effects (PREY-EFFECT-1)
 
@@ -239,8 +278,10 @@ Each is one sequencer write, keyed by its CommandRef. A refusal writes nothing.
   stays the pre-bonus value.
 - **Improved loot:** for the loot owner (D121) with the bonus on that Creature, a chance equal
   to the bonus percentage of one extra roll of the Creature's loot table into the same corpse,
-  purpose `oteryn.prey.loot.v1` from the death key; the extra entries count toward D77's 16 entries
-  per death (ruling R4).
+  purpose `oteryn.prey.loot.v1` from the death key (ruling R4). The §3 prey loot budget makes the
+  two-roll worst case (16 entries, 32 draws) fit the existing D77 ceilings; the planner still
+  checks them and refuses the whole plan closed on a breach, which is unreachable for compiled
+  content.
 
 ## 8. Task Board (TASKBOARD-1, TASKBOARD-DELIVERY-1, TASKSHOP-1)
 
@@ -302,9 +343,10 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 |---|---|---|---|
 | Prey command, wildcard debit | Character receipt | `PreyCommand {occurrence}` | +1 |
 | Gold list reroll | receipt + BURN (+ change MINT) | `FeeBurnCause::PreyListReroll` (Y1) | +1 |
-| Hunting-time checkpoint | Character receipt | `PreyTimeCheckpoint {character, seq}` | +1 |
+| Hunting-time checkpoint | Character receipt | `PreyTimeCheckpoint {GameSessionId, checkpoint_seq}` | +1 |
 | Expiry, auto reroll, lock | Character receipt | `PreyExpiry {slot, slot_epoch}` | +1 |
-| Wildcard credit, permanent unlock | Character receipt | `PreyStoreClaim {delivery}` (Y2) | +1 |
+| First-list initialization | Character receipt | `PreyInit {slot}` (§6.5) | +1 |
+| Wildcard credit, permanent unlock | Character receipt | `PreyStoreClaim {delivery}`, binding the target slot (Y2) | +1 |
 | Bounty and weekly commands | Character receipt | `TaskBoardCommand {occurrence}` | +1 |
 | Task kill credit | Character receipt | `TaskKill {death key}` | +1 |
 | Delivery | receipt + BURN | `TaskDeliveryCause` (Y3) | +1 |
@@ -325,8 +367,8 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
   time left, option, `free_reroll_at`, the paid reroll price; the resource balances. **`TASK_BOARD`
   domain:** bounty offers and task, weekly tasks and progress, shop offers. Names come from the
   client content export (CHARM-0 answer 8).
-- **`PREY_INTENT`** (§5.2) and **`TASK_BOARD_INTENT`** (§8). Results: `OK`, `NOT_ELIGIBLE`,
-  `SLOT_LOCKED`, `DUPLICATE`, `NOT_ENOUGH_WILDCARDS`, `FREE_REROLL_NOT_READY`,
+- **`PREY_INTENT`** (§5.2, each command with its `slot`) and **`TASK_BOARD_INTENT`** (§8).
+  Results: `OK`, `NOT_ELIGIBLE`, `INVALID_SLOT`, `SLOT_LOCKED`, `DUPLICATE`, `NOT_ENOUGH_WILDCARDS`, `FREE_REROLL_NOT_READY`,
   `INSUFFICIENT_FUNDS`, `NOT_ENOUGH_POINTS`, `NO_ROOM`, plus the common results.
 
 ## 12. Rows (registered by each child before implementation)
@@ -348,6 +390,7 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 | `PREY0-RL-13` preferred list | 32 Creatures (`PARITY_PENDING`) |
 | `PREY0-RL-14` balances | u32 each, 0 floor; points 10,000,000 cap (`PARITY_PENDING`) |
 | `PREY0-RL-15` delivery lines | at most 20 input stacks per delivery |
+| `PREY0-RL-16` preyable Creature loot table | at most 8 entries, 16 RNG draws per roll (half of D77's 16 and 32) |
 | Prey command | 0 items, 1 receipt, 1 event |
 | Gold list reroll | at most 20 inputs and 2 change outputs (D178) |
 | Shop purchase | at most 1 MINT item, 1 receipt, 1 event |
@@ -381,8 +424,9 @@ much bonus time (recommended: bounded, in the player's favour, as Tibia's rollba
 save); b) a write per hunting minute.
 
 **R4. Improved loot.** a) One extra loot roll at the bonus percentage chance, for the loot owner
-only, within D77 (recommended: the only sourced reading; party loot boosts wait for their own
-decision); b) scale every entry's chance.
+only, within D77 by a compile-time budget of 8 entries per preyable table (recommended: the only
+sourced reading, no ceiling amendment; party loot boosts wait for their own decision); b) scale
+every entry's chance.
 
 ## 15. Owner questions (value and commerce)
 
@@ -426,6 +470,7 @@ cosmetics only (no item MINT); c) defer the Task Board.
 3. **Restart:** slots, balances, tasks and unlocks are durable; the runtime copy is rebuilt at
    admission; at most `PREY0-RL-07` of hunting time is lost.
 4. **Typed references:** CharacterId, Creature and item keys, slot, `slot_epoch`, week, death key,
-   CommandRef, the Store delivery id.
+   CommandRef, the Store delivery id, GameSessionId with `checkpoint_seq`.
 5. **Wire:** §11, capability `PREY_V1`.
-6. **Determinism:** four named RNG purposes, each seeded by a durable occurrence; draws stored.
+6. **Determinism:** five named RNG purposes, each seeded by a durable occurrence; draws stored.
+7. **Content:** the prey loot budget (`PREY0-RL-16`) fails the content compile closed.
