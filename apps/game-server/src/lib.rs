@@ -66,6 +66,12 @@ mod achievement_catalogue;
 
 pub mod character_bootstrap_intent;
 pub mod character_recovery_fence;
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "CHAT-1a local chat rules await the CHAT_V1 wire and runtime of CHAT-1b"
+)]
+mod chat;
 pub mod content;
 pub mod domain;
 pub mod durability;
