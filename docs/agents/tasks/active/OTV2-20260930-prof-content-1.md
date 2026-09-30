@@ -48,7 +48,7 @@ jira: null   # sync pending (coordinator batch)
   (index + 3 shards). Keys `oteryn:proficiency.tibia.p<id>` are minted here. `Proficiency` is registered
   in project, manifest and lock, and `world_project_v2_to_tree.py` knows it, so its output stays
   byte-identical. No runtime loading.
-- **1b (branch `claude/prof-content-1b-proficiency-rust`, PR after #1328 merges; owner answer `a`):**
+- **1b (branch `claude/prof-content-1b-proficiency-rust`, PR #1339, stacked on #1328; owner answer `a`):**
   - `v2.rs` + `v2/proficiency.rs`: family `Proficiency`, declaration `Proficiency {identity, levels,
     fields}`, levels 1..7 of 1..3 typed perks (33 kinds, D199), values as exact ratios, perk order kept.
   - Item `proficiency` is `{profile_binding: ProficiencyRef, threshold_class}`; the inline
