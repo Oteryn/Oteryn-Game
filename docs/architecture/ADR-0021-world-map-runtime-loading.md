@@ -18,6 +18,8 @@
     retirement, superseding for those shapes the death-only MINT source sentence and the D3
     "only path" sentence;
   - `RESOURCE_LIMITS_REGISTRY.json`: four budget rows, in this PR.
+- Amended (§4.5, §4.6) by the architect ruling on #162 5910173902 (palette keys, zero-destination
+  teleports), pending on acceptance of ITEM-MOVE-WIRE-0.
 - The wire child MAP-WIRE-1 needs owner acceptance of its own contract candidate.
 - Runtime, migration, content and production authority: NONE. Each child in §5 needs its own
   #162 allocation.
@@ -249,7 +251,8 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
     to live Ground items on its tiles in each channel (HOUSE-CUSTODY-0 §3.5).
 - **Picking up a map-authored item** (DUR-03 §39.3 amendment).
   - **Eligible items.** A top-level entry that is pickupable, is not on a house tile, and has no
-    action, unique, door, depot or teleport binding, no contents, and no `text`, `description`,
+    action, unique, door, depot or teleport binding (including a dropped zero-destination
+    teleport), no contents, and no `text`, `description`,
     `charges` or other attribute that the ItemInstance state cannot represent. Everything else
     stays in place.
   - **Pickup.** A MINT into Ground at the item's current tile, of the whole origin entry, followed
@@ -278,8 +281,12 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
 
 ### 4.5 Keys (5a)
 
-- A palette key resolves only through the Item registry (A12 keys) or the Terrain family. Any
-  other key fails compilation.
+- A palette key resolves only through the Item registry (A12 keys) or a catalogue family
+  (Terrain or WorldObject). Any other key fails compilation. *Amendment (ruling 5910173902,
+  pending on acceptance of ITEM-MOVE-WIRE-0):* an
+  id with an Item record uses its Item key, and the compiler follows the Item's A12 §4.6 pointer
+  (`routed_to`) to its Terrain or WorldObject record; only an id without an Item record uses its
+  Terrain or WorldObject catalogue key directly.
 - **Provisional keys.** The five provisional donor keys are skipped with a diagnostic in a
   non-production bundle build. A production bundle build fails until they are resolved. "Testing
   or preproduction" here means the deployment environment gate used by D171 and D172. It is not
@@ -288,7 +295,12 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
   bundle. The runtime gives them no behaviour unless an admitted definition binds them explicitly,
   as `RewardClaim` placements (D39) or doors do.
 - **Teleports.** A `teleport` attribute must agree with its Transition.Teleport record.
-  Otherwise compilation fails.
+  Otherwise compilation fails. *Amendment (ruling 5910173902, pending on acceptance of
+  ITEM-MOVE-WIRE-0):* a `teleport` attribute whose
+  destination is (0,0,0) is not a teleport. The compiler drops it with a diagnostic; the tile keeps
+  its legacy `action`/`unique` binding, and the dropped attribute still excludes the entry from
+  map-item materialization (§4.4). The dropped list is a parity report before a production
+  release, not a release blocker.
 
 ### 4.6 Families, drafts and cut-over (6a)
 
@@ -299,7 +311,7 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
 - A production World accepts only a bundle with `build_class = production` (§4.2), so drafts and
   skipped provisional keys never reach it. The drafts are a release blocker, like D171 and D172.
 - The B3 tile house id must match the House family, as a teleport must match its Transition
-  record. Otherwise compilation fails.
+  record (except a zero-destination teleport, §4.5). Otherwise compilation fails.
 - `native_entry_room.json` stays a test fixture World.
 - There is no parallel legacy loader: the legacy path has no full map to compare. Equivalence is
   proved source to bundle to runtime (§4.8).

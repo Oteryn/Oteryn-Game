@@ -35,6 +35,17 @@ class SpellUnresolved(Exception):
     pass
 
 
+def match_windup(probe):
+    """SW-1 exact template: returns (caster effect constant, delay ms, the one recorded Combat) or raises SpellUnresolved."""
+    cast = re.fullmatch(WINDUP_CAST, spell_scripts.cast_body(probe.source) or '')
+    source = re.sub(r'\s+', ' ', re.sub(r'--[^\n]*', '', probe.source))
+    function = cast and re.search(WINDUP_FUNCTION.format(name=re.escape(cast.group(2))), source)
+    combats = list(probe.rec['combats'].values())
+    if not function or len(combats) != 1 or not re.search(rf'\blocal {function.group(2)} = Combat\(\)', source):
+        raise SpellUnresolved('onCastSpell is not the windup template')
+    return cast.group(1), int(cast.group(3)), combats[0]
+
+
 def probe_top_item_first_tile(probe, lua_spell, empty):
     """D18 `top_item_first_tile` (SW-2): the cast reads each tile of its floor once, columns west to east and each column
     north to south; with a listed item as the top visible thing of exactly one tile, it removes exactly that item and
@@ -134,7 +145,12 @@ RULES = {
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-09-27.json'
 BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
-PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile', 'area_damage_named_target')
+PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile', 'area_damage_named_target',
+                   'fear')
+# SW-1: a caster effect, then one Combat after a delay if the caster still exists (soulwars_fear.lua).
+WINDUP_CAST = r'creature:getPosition\(\):sendMagicEffect\((CONST_ME_\w+)\) addEvent\((\w+), (\d+), creature:getId\(\), var\) return true'
+WINDUP_FUNCTION = (r'local function {name}\((\w+), var\) local creature = Creature\(\1\) if not creature then return end '
+                   r'return (\w+):execute\(creature, var\) end')
 # src/utils/utils_definitions.hpp: engine item ids that spell scripts read as globals (probe world, SW-2).
 PROBE_ITEM_CONSTANTS = {'ITEM_MAGICWALL_SAFE': 10181, 'ITEM_MAGICWALL': 2128, 'ITEM_WILDGROWTH_SAFE': 10182, 'ITEM_WILDGROWTH': 2130}
 PATH_TRAIL = (r'local target = Creature\(var\.number\) if not target then return false end local creaturePos = creature:getPosition\(\) '
@@ -1383,6 +1399,8 @@ class Converter:
             try:
                 if pattern == 'conditional_summon':
                     self.probe_summon(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                elif pattern == 'fear':
+                    self.windup(probe, key, geometry, range_tiles, scratch, asset, notes)
                 elif pattern == 'path_trail_missile':
                     self.path_trail(probe, key, geometry, range_tiles, scratch, asset, notes)
                 elif pattern == 'heal_allies_in_area':
@@ -1644,6 +1662,19 @@ class Converter:
                 extra.append((f'-callback-{n}', {'operation': 'damage', 'damage_type': 'untyped', 'formula': ref('Formula', formula_key),
                                                  'affects': affects}))
         return extra
+
+    def windup(self, probe, key, geometry, range_tiles, deps, asset, notes):
+        """SW-1 `Ability.windup`: the caster effect at the cast, then one Combat after N ms if the caster still exists."""
+        if not geometry['needs_target']:
+            raise SpellUnresolved('the windup spell needs no target')
+        effect, delay, combat = match_windup(probe)
+        combat = self.spell_scripts._combat(probe.lua, combat)
+        if combat['callbacks'] or combat['area']:
+            raise SpellUnresolved('the windup combat has callbacks or an area')
+        self.combat_ability(key, combat, geometry, range_tiles, deps, asset, notes)
+        deps['abilities'][-1]['windup'] = {'delay_ms': delay, 'caster_asset_binding': asset(self.visual('@' + effect, 'effect')[0])}
+        notes.append(f'Template match: {effect} on the caster at the cast, then the combat after {delay} ms if the caster still '
+                     'exists. SW-1 (Q3 a): it hits the caster\'s target when the windup ends, not the one taken at the cast.')
 
     def path_trail(self, probe, key, geometry, range_tiles, deps, asset, notes):
         """The Canary single-target 'chain' template: a path trail effect, then one combat on the target."""
