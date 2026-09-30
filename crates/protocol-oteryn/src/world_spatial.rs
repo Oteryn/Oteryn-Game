@@ -17,7 +17,7 @@ pub const SNAPSHOT_TYPE_WORLD_SPATIAL_V1: u32 = 1;
 pub const MAX_STEP_INTENT_BYTES: usize = 4;
 pub const MAX_STEP_RESULT_BYTES: usize = 4;
 pub const MAX_WORLD_SPATIAL_PAYLOAD_BYTES: usize = 64;
-const CONTENT_GENERATION_BYTES: usize = 32;
+pub(crate) const CONTENT_GENERATION_BYTES: usize = 32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorldSpatialError {
@@ -54,7 +54,7 @@ pub struct WorldSpatialObservation {
     pub actor_position: ActorPosition,
 }
 
-fn push_varint(output: &mut Vec<u8>, mut value: u64) {
+pub(crate) fn push_varint(output: &mut Vec<u8>, mut value: u64) {
     while value >= 0x80 {
         output.push((value as u8 & 0x7f) | 0x80);
         value >>= 7;
@@ -62,7 +62,7 @@ fn push_varint(output: &mut Vec<u8>, mut value: u64) {
     output.push(value as u8);
 }
 
-fn push_tag(output: &mut Vec<u8>, field: u64, wire: u64) {
+pub(crate) fn push_tag(output: &mut Vec<u8>, field: u64, wire: u64) {
     push_varint(output, (field << 3) | wire);
 }
 
@@ -74,7 +74,7 @@ fn push_sint32(output: &mut Vec<u8>, field: u64, value: i32) {
     }
 }
 
-fn read_varint(input: &[u8], cursor: &mut usize) -> Result<u64, WorldSpatialError> {
+pub(crate) fn read_varint(input: &[u8], cursor: &mut usize) -> Result<u64, WorldSpatialError> {
     let mut value = 0_u64;
     for shift in (0..70).step_by(7) {
         let byte = *input.get(*cursor).ok_or(WorldSpatialError::Malformed)?;
@@ -90,7 +90,10 @@ fn read_varint(input: &[u8], cursor: &mut usize) -> Result<u64, WorldSpatialErro
     Err(WorldSpatialError::Malformed)
 }
 
-fn read_bytes<'a>(input: &'a [u8], cursor: &mut usize) -> Result<&'a [u8], WorldSpatialError> {
+pub(crate) fn read_bytes<'a>(
+    input: &'a [u8],
+    cursor: &mut usize,
+) -> Result<&'a [u8], WorldSpatialError> {
     let len =
         usize::try_from(read_varint(input, cursor)?).map_err(|_| WorldSpatialError::Malformed)?;
     let end = cursor
@@ -152,16 +155,17 @@ pub fn decode_step_result(payload: &[u8]) -> Result<StepDisposition, WorldSpatia
     }
 }
 
+pub(crate) fn encode_position(position: &ActorPosition) -> Vec<u8> {
+    let mut output = Vec::with_capacity(18);
+    push_sint32(&mut output, 1, position.x);
+    push_sint32(&mut output, 2, position.y);
+    push_sint32(&mut output, 3, i32::from(position.floor));
+    output
+}
+
 /// Encodes the domain-1 delta or snapshot payload (identical schemas, distinct registered types).
 pub fn encode_world_spatial(observation: &WorldSpatialObservation) -> Vec<u8> {
-    let mut position = Vec::with_capacity(18);
-    push_sint32(&mut position, 1, observation.actor_position.x);
-    push_sint32(&mut position, 2, observation.actor_position.y);
-    push_sint32(
-        &mut position,
-        3,
-        i32::from(observation.actor_position.floor),
-    );
+    let position = encode_position(&observation.actor_position);
     let mut output = Vec::with_capacity(CONTENT_GENERATION_BYTES + position.len() + 6);
     push_tag(&mut output, 1, 2);
     push_varint(&mut output, CONTENT_GENERATION_BYTES as u64);
@@ -177,7 +181,7 @@ fn decode_sint32(value: u64) -> Result<i32, WorldSpatialError> {
     Ok(((zigzag >> 1) as i32) ^ -((zigzag & 1) as i32))
 }
 
-fn decode_position(input: &[u8]) -> Result<ActorPosition, WorldSpatialError> {
+pub(crate) fn decode_position(input: &[u8]) -> Result<ActorPosition, WorldSpatialError> {
     let mut cursor = 0;
     let (mut x, mut y, mut floor) = (None, None, None);
     while cursor < input.len() {
@@ -390,6 +394,7 @@ mod tests {
         };
         assert_eq!(limit("MOVE-RL-02"), Some(1));
         assert_eq!(limit("MOVE-RL-03"), Some(1));
-        assert_eq!(limit("MOVE-RL-11"), Some(1));
+        // VIS-2 re-decided MOVE-RL-11 (D87): 256 entities per snapshot or delta.
+        assert_eq!(limit("MOVE-RL-11"), Some(256));
     }
 }
