@@ -4,7 +4,7 @@
 task_id: OTV2-20260930-char-build-1
 title: "CHAR-BUILD-1a Character build state storage, guards and admission verifier (migration 0030)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 issue: 162
@@ -55,6 +55,13 @@ CHAR-BUILD-1 is split (brief: ~500 hand-written lines). This PR is **CHAR-BUILD-
 the admission load, the binding, `req(L)` and checked saturating arithmetic, and the writer tests
 (replay, conflict, stale fence).
 
+## Closeout
+
+- PR: the one named in the #162 FREEZE_SHA entry. This record was archived in the PR's final
+  authoring commit (`docs/agents/tasks/archive/README.md`).
+- Size: 0030 is 703 lines, of which about 260 are the 0026 guard carried verbatim; the verifier
+  adds about 110 lines and the cases about 700. Split from 1b as the brief asks.
+
 ## Architecture and source of truth
 
 - `PROVEN`: A13 (D150, D151) §4.1, §4.2, §4.6; SKILLS-0 §3.1, §3.2, §3.6; #1271 5902863956
@@ -85,10 +92,10 @@ with its exact message or constraint and an unchanged snapshot. Writer fence cas
   `git diff --check`.
 
 ```yaml
-last_progress: migration 0030, verifier and cases green on PostgreSQL 17.6
-status: implementing
+last_progress: final authoring commit; archived before freeze
+status: completed
 branch: claude/char-build-1
 owner_action_required: null
 blocker: null
-next_action: archive the record in the final authoring commit, freeze, post FREEZE_SHA on #162
+next_action: null   # control plane: persistence review; then allocate CHAR-BUILD-1b
 ```
