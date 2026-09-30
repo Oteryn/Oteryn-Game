@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SNAPSHOT = ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json"
 FIELD_CENSUS = ROOT / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 LEGACY_REFERENCE = ROOT / "content/world/definitions/reference.json"
+# ITEM-ID-1b (A12): the snapshot and the staged packet are history naming retired Item keys;
+# the reference names Tibia keys, so a target is found through the append-only alias table.
+ITEM_ALIASES = ROOT / "content/items/aliases.json"
 STAGED = ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json"
 
 SCHEMA = "OTERYN_G4_ITEM_WAVE1_STAGED/v1"
@@ -103,7 +106,14 @@ def known_semantics(record: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, Any]) -> dict[str, Any]:
+def alias_targets(table: dict[str, Any]) -> dict[str, str]:
+    current: dict[str, dict[str, Any]] = {}
+    for entry in table["entries"]:
+        current[entry["key"]] = entry
+    return {key: entry["target"] for key, entry in current.items() if entry["state"] == "ALIAS"}
+
+
+def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, Any], aliases: dict[str, str]) -> dict[str, Any]:
     assignments = census["family_assignments"]
     by_key = {record["identity"]["key"]: record for record in legacy["records"]}
     items: list[dict[str, Any]] = []
@@ -113,8 +123,8 @@ def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, An
     for row in sorted(snapshot["rows"], key=lambda value: value["target"]["key"]):
         fields = row["fields"]
         key = row["target"]["key"]
-        record = by_key.get(key)
-        if record is None or record["identity"] != row["target"]:
+        record = by_key.get(aliases.get(key, ""))
+        if record is None or record["identity"] != {**row["target"], "key": aliases[key]}:
             raise StageError(f"TARGET_ABSENT:{key}")
         provenance = {"external_id": row["external_id"], "revision_id": row["revision_id"], "source_digest": row["source_digest"]}
 
@@ -298,6 +308,7 @@ def main() -> int:
         json.loads(snapshot_bytes),
         json.loads(FIELD_CENSUS.read_bytes()),
         json.loads(LEGACY_REFERENCE.read_bytes()),
+        alias_targets(json.loads(ITEM_ALIASES.read_bytes())),
     ))
     if args.check:
         if STAGED.read_bytes() != staged:

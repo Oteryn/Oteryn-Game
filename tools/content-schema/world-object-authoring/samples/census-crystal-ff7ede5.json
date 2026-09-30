@@ -32,69 +32,69 @@
     "digest_sha256": "89a76539d5254da846c3d420c71a71e11c2c12c0eeb1922dda717987abbcc465",
     "examples": {
       "Terrain:UNKNOWN": [
-        "oteryn:terrain.registry.i00000488",
-        "oteryn:terrain.registry.i00000489",
-        "oteryn:terrain.registry.i00000506"
+        "oteryn:terrain.tibia.i571",
+        "oteryn:terrain.tibia.i572",
+        "oteryn:terrain.tibia.i589"
       ],
       "Terrain:border": [
-        "oteryn:terrain.registry.i00000207",
-        "oteryn:terrain.registry.i00000208",
-        "oteryn:terrain.registry.i00000209"
+        "oteryn:terrain.tibia.i290",
+        "oteryn:terrain.tibia.i291",
+        "oteryn:terrain.tibia.i292"
       ],
       "Terrain:field": [
-        "oteryn:terrain.registry.i00001620",
-        "oteryn:terrain.registry.i00001621",
-        "oteryn:terrain.registry.i00002031"
+        "oteryn:terrain.tibia.i1716",
+        "oteryn:terrain.tibia.i1717",
+        "oteryn:terrain.tibia.i2127"
       ],
       "Terrain:ground": [
-        "oteryn:terrain.registry.i00000021",
-        "oteryn:terrain.registry.i00000022",
-        "oteryn:terrain.registry.i00000024"
+        "oteryn:terrain.tibia.i100",
+        "oteryn:terrain.tibia.i101",
+        "oteryn:terrain.tibia.i103"
       ],
       "Terrain:wall": [
-        "oteryn:terrain.registry.i00000151",
-        "oteryn:terrain.registry.i00000153",
-        "oteryn:terrain.registry.i00000159"
+        "oteryn:terrain.tibia.i230",
+        "oteryn:terrain.tibia.i232",
+        "oteryn:terrain.tibia.i240"
       ],
       "WorldObject:UNKNOWN": [
-        "oteryn:world-object.registry.i00000026",
-        "oteryn:world-object.registry.i00002022",
-        "oteryn:world-object.registry.i00002023"
+        "oteryn:world-object.tibia.i105",
+        "oteryn:world-object.tibia.i2118",
+        "oteryn:world-object.tibia.i2119"
       ],
       "WorldObject:bed": [
-        "oteryn:world-object.registry.i00000607",
-        "oteryn:world-object.registry.i00000608",
-        "oteryn:world-object.registry.i00000609"
+        "oteryn:world-object.tibia.i694",
+        "oteryn:world-object.tibia.i695",
+        "oteryn:world-object.tibia.i696"
       ],
       "WorldObject:corpse": [
-        "oteryn:world-object.registry.i00000032",
-        "oteryn:world-object.registry.i00000186",
-        "oteryn:world-object.registry.i00000187"
+        "oteryn:world-object.tibia.i111",
+        "oteryn:world-object.tibia.i269",
+        "oteryn:world-object.tibia.i270"
       ],
       "WorldObject:decoration": [
-        "oteryn:world-object.registry.i00000109",
-        "oteryn:world-object.registry.i00000110",
-        "oteryn:world-object.registry.i00000128"
+        "oteryn:world-object.tibia.i188",
+        "oteryn:world-object.tibia.i189",
+        "oteryn:world-object.tibia.i207"
       ],
       "WorldObject:door": [
-        "oteryn:world-object.registry.i00001532",
-        "oteryn:world-object.registry.i00001533",
-        "oteryn:world-object.registry.i00001534"
+        "oteryn:world-object.tibia.i1628",
+        "oteryn:world-object.tibia.i1629",
+        "oteryn:world-object.tibia.i1630"
       ],
       "WorldObject:ladder": [
-        "oteryn:world-object.registry.i00001852",
-        "oteryn:world-object.registry.i00001872",
-        "oteryn:world-object.registry.i00005385"
+        "oteryn:world-object.tibia.i1948",
+        "oteryn:world-object.tibia.i1968",
+        "oteryn:world-object.tibia.i5542"
       ],
       "WorldObject:object": [
-        "oteryn:world-object.registry.i00000035",
-        "oteryn:world-object.registry.i00000036",
-        "oteryn:world-object.registry.i00000053"
+        "oteryn:world-object.tibia.i114",
+        "oteryn:world-object.tibia.i115",
+        "oteryn:world-object.tibia.i132"
       ],
       "WorldObject:teleport": [
-        "oteryn:world-object.registry.i00000688",
-        "oteryn:world-object.registry.i00001660",
-        "oteryn:world-object.registry.i00001661"
+        "oteryn:world-object.tibia.i775",
+        "oteryn:world-object.tibia.i1756",
+        "oteryn:world-object.tibia.i1757"
       ]
     },
     "total": 21370
@@ -135,33 +135,33 @@
   "type_outside_family": {
     "Terrain:carpet": {
       "examples": [
-        "oteryn:terrain.registry.i00025266",
-        "oteryn:terrain.registry.i00033122",
-        "oteryn:terrain.registry.i00033429"
+        "oteryn:terrain.tibia.i26122",
+        "oteryn:terrain.tibia.i36496",
+        "oteryn:terrain.tibia.i36939"
       ],
       "items": 18
     },
     "Terrain:teleport": {
       "examples": [
-        "oteryn:terrain.registry.i00000433",
-        "oteryn:terrain.registry.i00000545",
-        "oteryn:terrain.registry.i00000788"
+        "oteryn:terrain.tibia.i516",
+        "oteryn:terrain.tibia.i628",
+        "oteryn:terrain.tibia.i878"
       ],
       "items": 11
     },
     "Terrain:trashholder": {
       "examples": [
-        "oteryn:terrain.registry.i00000539",
-        "oteryn:terrain.registry.i00000546",
-        "oteryn:terrain.registry.i00000547"
+        "oteryn:terrain.tibia.i622",
+        "oteryn:terrain.tibia.i629",
+        "oteryn:terrain.tibia.i630"
       ],
       "items": 106
     },
     "WorldObject:magicfield": {
       "examples": [
-        "oteryn:world-object.registry.i00000026",
-        "oteryn:world-object.registry.i00002022",
-        "oteryn:world-object.registry.i00002023"
+        "oteryn:world-object.tibia.i105",
+        "oteryn:world-object.tibia.i2118",
+        "oteryn:world-object.tibia.i2119"
       ],
       "items": 21
     }
@@ -200,18 +200,18 @@
   },
   "unknown_kind_examples": {
     "Terrain": [
-      "oteryn:terrain.registry.i00000488",
-      "oteryn:terrain.registry.i00000489",
-      "oteryn:terrain.registry.i00000506",
-      "oteryn:terrain.registry.i00000507",
-      "oteryn:terrain.registry.i00000508"
+      "oteryn:terrain.tibia.i571",
+      "oteryn:terrain.tibia.i572",
+      "oteryn:terrain.tibia.i589",
+      "oteryn:terrain.tibia.i590",
+      "oteryn:terrain.tibia.i591"
     ],
     "WorldObject": [
-      "oteryn:world-object.registry.i00000026",
-      "oteryn:world-object.registry.i00002022",
-      "oteryn:world-object.registry.i00002023",
-      "oteryn:world-object.registry.i00002024",
-      "oteryn:world-object.registry.i00002025"
+      "oteryn:world-object.tibia.i105",
+      "oteryn:world-object.tibia.i2118",
+      "oteryn:world-object.tibia.i2119",
+      "oteryn:world-object.tibia.i2120",
+      "oteryn:world-object.tibia.i2121"
     ]
   }
 }

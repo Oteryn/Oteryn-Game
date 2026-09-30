@@ -13,9 +13,9 @@ const BEHAVIOR: &str = "oteryn:behavior.npc.captain_bluebear";
 const TRADE: &str = "oteryn:service.trade.captain_bluebear";
 const TRAVEL: &str = "oteryn:service.travel.captain_bluebear";
 const DIALOGUE: &str = "oteryn:dialogue.captain_bluebear";
-const AXE: &str = "oteryn:item.registry.i00003155";
-const RUNE: &str = "oteryn:item.registry.i00003161";
-const TOKEN: &str = "oteryn:item.registry.i00021718";
+const AXE: &str = "oteryn:item.tibia.i3274";
+const RUNE: &str = "oteryn:item.tibia.i3281";
+const TOKEN: &str = "oteryn:item.tibia.i22516";
 const FRAME: &str = "global-target-2026-09-27";
 
 fn limits() -> ProjectEvidenceLimits {

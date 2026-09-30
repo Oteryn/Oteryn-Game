@@ -1,0 +1,101 @@
+{
+ "engine_divergence_counts": {
+  "entrance_not_next_to_house_tile": 10,
+  "name": 1,
+  "size_sqm": 812
+ },
+ "engine_divergence_examples": {
+  "entrance_not_next_to_house_tile": [
+   20203,
+   20314,
+   20315,
+   30206,
+   30502
+  ],
+  "name": [
+   [
+    10602,
+    "Harbour Street 4",
+    "Harbour Place 4"
+   ]
+  ],
+  "size_sqm": [
+   [
+    101,
+    89,
+    118
+   ],
+   [
+    102,
+    68,
+    89
+   ],
+   [
+    10001,
+    382,
+    289
+   ],
+   [
+    10002,
+    616,
+    627
+   ],
+   [
+    10003,
+    304,
+    317
+   ]
+  ]
+ },
+ "engine_town_ids": {
+  "10": "Ankrahmun",
+  "11": "Edron",
+  "12": "Farmine",
+  "13": "Darashia",
+  "14": "Liberty Bay",
+  "15": "Port Hope",
+  "16": "Svargrond",
+  "17": "Yalahar",
+  "18": "Gray Beach",
+  "20": "Rathleton",
+  "22": "Issavi",
+  "29": "Candia",
+  "30": "Silvertides",
+  "31": "Moonfall",
+  "5": "Ab'Dendriel",
+  "6": "Carlin",
+  "7": "Kazordoon",
+  "8": "Thais",
+  "9": "Venore"
+ },
+ "houses": 995,
+ "joined_by": "crystal clientid == client house id",
+ "kinds": {
+  "guildhall": 66,
+  "private_house": 878,
+  "shop": 51
+ },
+ "tiles": 117226,
+ "tiles_in_two_house_layouts": 2534,
+ "towns": {
+  "oteryn:content.area.city.ab_dendriel": 56,
+  "oteryn:content.area.city.ankrahmun": 120,
+  "oteryn:content.area.city.candia": 3,
+  "oteryn:content.area.city.carlin": 105,
+  "oteryn:content.area.city.darashia": 76,
+  "oteryn:content.area.city.edron": 135,
+  "oteryn:content.area.city.farmine": 2,
+  "oteryn:content.area.city.gray_beach": 1,
+  "oteryn:content.area.city.issavi": 9,
+  "oteryn:content.area.city.kazordoon": 59,
+  "oteryn:content.area.city.liberty_bay": 71,
+  "oteryn:content.area.city.moonfall": 2,
+  "oteryn:content.area.city.port_hope": 47,
+  "oteryn:content.area.city.rathleton": 18,
+  "oteryn:content.area.city.silvertides": 2,
+  "oteryn:content.area.city.svargrond": 62,
+  "oteryn:content.area.city.thais": 134,
+  "oteryn:content.area.city.venore": 70,
+  "oteryn:content.area.city.yalahar": 23
+ }
+}
