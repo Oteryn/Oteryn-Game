@@ -24,6 +24,8 @@ readonly COMPOSE_OVERLAY=tools/qualification/wp5_s3b/compose.override.yml
 # Must equal the harness constants (v7 identities and INTERPRETATION).
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
+# CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
+readonly INTENT_NAMES=("Qualification One" "Qualification Two")
 readonly INTERPRETATION=(s3b-profile-1 s3b-ruleset-1 s3b-content-1 s3b-starter-1)
 
 # WP5_QUALIFICATION selects the harness run inside the same topology:
@@ -164,7 +166,8 @@ cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
 index=0
 for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
   operation="${INTENT_OPERATIONS[$index]}"
-  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$WORLD_ID"'","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); exit($code);'
+  name="${INTENT_NAMES[$index]}"
+  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$WORLD_ID"'","--requested-name"=>"'"$name"'","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); exit($code);'
   index=$((index + 1))
 done
 evidence "platform_intents=issued count=2 path=operator_command ttl_seconds=300"

@@ -24,9 +24,10 @@ owned_paths:
   - apps/game-server/src/durability/character_authority.rs (+ mod.rs, node/serve.rs error variant)
   - apps/game-server/tests/character_authority_postgres.rs and tests/support/*_postgres_* root fixtures (name + v2 binding)
   - docs/contracts/CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md §6.1, §15
+  - tools/qualification/{wp5_s3b,node_boot}/run.sh (pass --requested-name)
   - docs/agents/tasks/archive/OTV2-20260930-char-name-1.md
 external_repositories:
-  - Oteryn/Oteryn-Platform: issuer must emit bootstrap intent contract_version 2 with requested_name (follow-up, see below)
+  - Oteryn/Oteryn-Platform#1428: issuer emits bootstrap intent contract_version 2 with requested_name (lockstep)
 jira: null   # sync pending (coordinator batch)
 ```
 
@@ -56,5 +57,6 @@ by the control plane.
 
 ## Follow-up / blocker
 
-Platform issuer change (contract version 2 + `requested_name`) is not in this PR: the session could not clone
-Oteryn-Platform. Until it lands, Game refuses Platform's version 1 intents (fail closed; no production impact).
+Platform side is Oteryn/Oteryn-Platform#1428. The Platform-backed lanes (S3-B, node boot, server seam) run the
+Platform commit pinned in `.github/workflows/*` (9147bfd3), which only speaks intent version 1, so they stay red
+until the pin moves to a Platform commit carrying #1428. Workflow paths need explicit owner authority.
