@@ -157,17 +157,16 @@
     {
       "coordination_id": "OTV2-20260929-N4P-NATIVE-GATEWAY-LOGIN",
       "contract_name": "oteryn-native-gateway-login-v1",
-      "status": "PENDING_CANONICAL_MERGE",
+      "status": "LOCKED",
       "canonical_repository": "Oteryn/Oteryn-Platform",
-      "canonical_commit": null,
-      "schema_revision": null,
-      "schema_sha256": null,
-      "pending_pull_request": 1420,
-      "pending_pull_request_repository": "Oteryn/Oteryn-Platform",
-      "pending_contract_path": "docs/contracts/OTERYN_V2_NATIVE_GATEWAY_LOGIN_CONTRACT.md",
-      "pending_head_commit": "892d640d7dbf5497811901d250d384b19e639556",
-      "pending_contract_file_sha256": "3e0e56f4536ba609144835115cb2a71b273e019511fe1727ece134c3f21066cd",
-      "pending_head_is_canonical": false,
+      "canonical_commit": "ed6c0d383ce25f87c1ea6799d403adeceac86310",
+      "schema_revision": 1,
+      "schema_sha256": "3e0e56f4536ba609144835115cb2a71b273e019511fe1727ece134c3f21066cd",
+      "canonical_contract_path": "docs/contracts/OTERYN_V2_NATIVE_GATEWAY_LOGIN_CONTRACT.md",
+      "source_pull_request": 1420,
+      "source_pull_request_repository": "Oteryn/Oteryn-Platform",
+      "merged_at": "2026-09-30T00:35:41Z",
+      "merged_head_commit": "4d3dad1cb89719329ee542794a1de212e31c134b",
       "contract_status": "CANDIDATE_ACCEPTANCE_BY_ARCHITECT_AND_OWNER_REQUIRED",
       "governing_issues": [
         "Oteryn/Oteryn-Platform#1419",
@@ -221,7 +220,7 @@
         "enable for internal test builds in testing or preproduction only (Q18a); production needs separate authority"
       ],
       "production_enabled": false,
-      "notes": "Pending evidence only: the PR head is not canonical. Q18a lets internal test builds enter without ADR-0020 N6 and N7; release still needs the full ADR-0020 section 7 entry."
+      "notes": "Canonical revision merged through Platform PR #1420 (merge commit ed6c0d38, file sha256 identical to the reviewed frozen head 892d640d). LOCKED pins that revision only: the contract text is still CANDIDATE and needs Game architect acceptance (rollout step 1); it grants no implementation, deployment or activation authority. Q18a lets internal test builds enter without ADR-0020 N6 and N7; release still needs the full ADR-0020 section 7 entry."
     }
   ]
 }
