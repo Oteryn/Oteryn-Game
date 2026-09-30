@@ -188,6 +188,14 @@ accepter by its terminal accept recorded in the cause, with its GameSessionId, l
 generations pinned at that accept. Both `character_root` rows are locked in `character_id` order,
 then the items in ItemInstanceId order. No `CharacterRevision` advances.
 
+**Amendment (STARTER-BACKPACK-0, 2026-09-30), pending on acceptance of STARTER-BACKPACK-0.** Rule 1
+also covers a starter grant (`OTERYN_GAME_STARTER_BACKPACK0_STARTER_GRANT_DECISION_2026-09-30.md`
+§5): the container-slot location it mints into and its `game_character_starter_grants` row, a
+DUR-03 cause record keyed by the Character. Rules 2 and 3 apply in a server-originated variant: the
+cause lock is the grant key (re-read after the `character_root` lock), and the fence is the admitted
+session's `CurrentCharacterItemFence` without a CommandRef, whose Character and World must equal the
+grant's; no synthetic CommandId is created. Rules 4-6 apply unchanged.
+
 ## 4. Rejected options
 
 - **Put every item transaction into the `CharacterRevision` chain** with a closed union of typed
