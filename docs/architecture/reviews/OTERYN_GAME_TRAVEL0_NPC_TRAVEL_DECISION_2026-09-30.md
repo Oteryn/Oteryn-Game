@@ -131,7 +131,10 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
 - **Validator rules** (compile time, a failure holds the route with a diagnostic):
   - destination in bounds, walkable in the active bundle, not a house tile, in the base scope
     (never an instance), and in the NPC's World (NPC-0 §3.2);
-  - `price` 0 to 1,000,000; `min_level` 0 to 2,000; the discount sum may exceed the price;
+  - `price` 0 to 1,000,000; `min_level` 0 to 2,000; each discount `amount` 1 to 1,000,000 (the
+    price cap); the route's aggregate discount sum, over all its entries, is computed at compile
+    time with checked unsigned 64-bit addition, and an overflow fails the route closed; the
+    discount sum may exceed the price;
   - gates and discount gates name known tracks (QUEST-GATE-0 §3.3);
   - keywords are canonical, non-empty and bounded (above), and disjoint across all routes of one
     travel service (NPC), so one keyword selects at most one route; a keyword violation fails the
@@ -147,7 +150,8 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
 ## 5. Price and discounts (NPC-TRAVEL-1)
 
 - **Fare.** `D` = sum of amounts of the discounts whose gate passes, in checked unsigned 64-bit
-  arithmetic. `F = price - D` if `D < price`, else `F = 0`: a saturating subtraction floored at 0,
+  arithmetic; the compile-time bounds (§4) keep it at most 4,000,000, so it cannot overflow at
+  runtime. `F = price - D` if `D < price`, else `F = 0`: a saturating subtraction floored at 0,
   so `F` is unsigned and never negative, and a discount sum above the price never underflows or
   rejects. A fare of 0 writes no fee lines (NPC-0 §6).
 - **Postman.** The Postman discount is 10 gold at the rank the Canary scripts read
@@ -174,8 +178,12 @@ writes nothing.
 1. **Conversation.** Open with this NPC, in talk range, alive, live session (NPC-0 §5.1).
 2. **Route.** Loaded and not held; the actor is in a channel scope (not an instance, §8).
 3. **Premium.** The route's `premium` flag, or a destination in a Premium area (PREM-3 region
-   flag): `premium_current` must be true (PREMIUM-DELIVERY-0 §6). Until NPC-TRAVEL-2 lands only
-   the route flag applies. Before Premium delivery: ruling T1 (§15).
+   flag). The check uses the PREMIUM-DELIVERY-0 §6 switch-over, as the Market and house gates do:
+   before PREM-1's activation record exists, the check is bypassed and the destination is open to
+   every character (ruling T1, §15); once the activation record exists, `premium_current` must
+   be true. Whether the activation record exists is read with the other step-3 facts, including
+   in the transaction re-check; an unreadable activation state refuses (fail closed). Until
+   NPC-TRAVEL-2 lands only the route flag applies.
 4. **Level.** `min_level`.
 5. **Quest gate.** The route `gate` (QUEST-GATE-0 §3.4).
 6. **Blocks.** A PZ block or a kill block (PARTY-PVP-0 §8.1) refuses: the ship is a protection
@@ -324,7 +332,8 @@ delivered, then Premium only, as the Market (Q3a) and houses (H2a) (recommended:
 playable now); b) Premium destinations stay closed until then. The answer also sets PREM-3's
 area entry by step or teleport before delivery, so every way in agrees. **Ruled a)**: the owner
 already answered the same question for the Market (Q3a) and houses (H2a); this applies those
-answers and asks nothing new.
+answers and asks nothing new. The end of the open period is PREM-1's activation record, the
+PREMIUM-DELIVERY-0 §6 switch-over (§6 step 3).
 
 D178 needs no question: D208 already admits travel fees, and discounts only lower that sink.
 
