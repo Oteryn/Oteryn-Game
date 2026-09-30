@@ -122,7 +122,9 @@ How does a player equip and unequip items, and drop and pick up items on the gro
 A container with contents may enter the empty container slot and may leave it as a tree to a
 destination whose BAGS-0 child admits it (Ground, a depot box). Unequip may target a nested
 container. The nine other slots still refuse containers. Dropping and picking up a tree is built by
-BAGS-GROUND-1.
+BAGS-GROUND-1. The §5 Ground counter (`ITEMMOVE1-RL-02`) then counts every item reachable from a
+Ground root, adjusted atomically by the tree's item count on drop and pickup and by one per item
+retirement.
 
 ## 5. Drop and pick up (ITEM-MOVE-2b)
 

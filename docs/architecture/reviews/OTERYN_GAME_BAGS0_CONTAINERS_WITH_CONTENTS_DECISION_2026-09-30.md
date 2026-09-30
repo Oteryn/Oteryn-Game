@@ -183,7 +183,14 @@ drop it whole, with every item still in exactly one location?
     bytes. Its rate is `BAGS0-RL-04`, measured and registered by BAGS-WIRE-1.
 - **Reach.** A container in the character's own trees is always in reach. A container in a depot
   or Inbox tree opens only while that depot view is open (BAGS-DEPOT-1). A traded tree opens in
-  the trade view (BAGS-TRADE-1), read-only, by a partner-facing handle (§9, trade handles).
+  the trade view (BAGS-TRADE-1), read-only, by a partner-facing handle (§9, trade handles). A
+  container on the Ground opens only while it is within reach of the character's existing
+  item-on-Ground reach (the ITEM-MOVE-WIRE-1 §5 pickup distance, same floor and channel), as a
+  view anchored to the Ground root; it is read-only as to contents until picked up except that an
+  entry may be moved out into the character's own trees under the same reach. The view goes `STALE`
+  when the character leaves reach, the tree is picked up, moved or retired, or the channel changes.
+  Looting a Ground container is otherwise unchanged; in-place editing on the Ground is a declared
+  difference deferred to BAGS-GROUND-1 (architect ruling R8, §13).
   Corpses keep domain 11 and depth 1.
 - **Handles.** Inner entries get handles when a view shows them (ITEM-MOVE-WIRE-0 §4.1: live while
   in a view, never reused). Live handles per session `ITEMV0-RL-03` is re-measured with 16 views of
@@ -245,7 +252,15 @@ Each item names the decision, its refusal today, the result and the child that b
 - **ITEM-MOVE-WIRE-1 §4 and §5** (containers in slots; dropping the main backpack): the container
   slot with contents is lifted (§6); the other nine slots stay refused. BAGS-1.
 - **ITEM-MOVE-WIRE-1 §5 and ADR-0021 D191** (Ground items without contents): lifted. A tree is
-  dropped and picked up whole; `ITEMMOVE1-RL-02` counts every item of a tree. `WorldReset` keeps
+  dropped and picked up whole. **Ground counter (architect ruling R6, §13).** Only a tree's root has
+  a Ground location row, but `ITEMMOVE1-RL-02` (20,000 per channel) and the ITEM-MOVE-WIRE-1 §5
+  counter count every item reachable from a Ground root: the counter equals the number of live
+  Ground roots plus all their live descendants, and the rebuild invariant is stated on that basis
+  (a rebuild walks each Ground root's tree). A drop adds the tree's item count, a pickup subtracts
+  it, and a per-item `WorldReset` retirement subtracts one, each in the same transaction and under
+  the same tile and counter row lock as the move or retirement (§4.2 order). A drop that would
+  exceed the ceiling is refused whole (`GROUND_FULL`); a counter is never adjusted by the root
+  alone. `WorldReset` keeps
   DUR-03 §39.3 step 3 unchanged in shape: each item of a Ground tree is retired by its own one-item
   `DECAY_RETIRE` transaction (one participant, three work units, one `OneItemTransactionV1` event,
   cause `WorldReset {world_id, reset_epoch, item_instance_id}`), in post-order: every descendant
@@ -272,6 +287,12 @@ Each item names the decision, its refusal today, the result and the child that b
 - **MAIL-0 §7, open** (10 children without contents): explicit follow-up. A MAIL-0 amendment may
   raise `MAIL0-RL-03` to a parcel tree within §3; MAIL-PARCEL-1 uses the §4 tree move.
 
+- **Trade restrictions.** Every item of an offered tree, the root and each descendant, must pass
+  the PLAYER-TRADE-0 `NOT_TRADEABLE` and binding restrictions (an untradeable or bound item makes
+  the whole offer refused `NOT_TRADEABLE`, naming no item). The check runs at offer time and again
+  under the swap row locks of §4.2 before `TRANSFERRING` commits; a descendant that has become
+  restricted cancels the trade. A restricted item is never carried to the counterparty by moving
+  its ancestor (architect ruling R7, §13).
 - **Trade binding.** A traded tree binds, per item, the ItemInstanceId, definition key and
   revision, quantity, a state digest, and its topology: the immediate parent ItemInstanceId and
   the entry ordinal (none for the root), hashed in ItemInstanceId order. So a reparent or reorder
@@ -386,6 +407,20 @@ rows: 200 touched items, 2 participants, 4 location lines, 204 work units, both 
 the receipt and event (recommended: one atomic swap as Global, bounded by `BAGS0-RL-05` per side,
 the accepted §4.3 root shape reused per side); b) two separate tree moves, which breaks the
 all-or-nothing trade. **Ruled a).**
+
+**R6. Ground counter with trees.** a) Count every item reachable from Ground roots, with atomic
+tree-count adjustments on drop, pickup and per-item retirement (recommended: keeps the 20,000
+ceiling meaningful and the counter/rebuild invariant exact); b) count roots only, which lets 500-item
+trees bypass the ceiling. **Ruled a).**
+
+**R7. Trade restrictions on descendants.** a) Every item of an offered tree passes the trade and
+binding restrictions, rechecked under the swap locks (recommended: fail closed); b) root only,
+which lets a restricted item cross inside a bag. **Ruled a).**
+
+**R8. Opening a container on the Ground.** a) Reach-bound read-only view anchored to the Ground root,
+closed by leaving reach or any tree change, with in-place editing a declared difference deferred to
+BAGS-GROUND-1 (recommended: smallest definition that keeps the parity path reachable); b) defer
+entirely. **Ruled a).**
 
 ## 14. Owner questions
 
