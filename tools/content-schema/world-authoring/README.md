@@ -95,8 +95,16 @@ data and fails closed on anything else (unknown field, wire type, framing, BMP s
   158 records), `parent_regions` (subregions only, sorted), `footprint` (209 subregions: floor,
   tight bounding box, `tile_count`, and the mask image path and sha256) and `cities`.
 - `cities` lists City Areas whose temple lies in a subregion's mask on the mask's floor (21 of
-  35 cities). A region lists the cities of its subregions. Temples on another floor than 7 (13
-  cities) and one temple outside every mask are not linked; a mask is proven for floor 7 only.
+  35 cities). A region lists the cities of its subregions. A mask is proven for floor 7 only.
+  For a temple on a floor other than 7, the candidate is the floor-7 position (x, y): the city
+  is linked only when that lies inside exactly one subregion mask, and the link is recorded in
+  the capture summary (`cities.projected`, method `temple_projected_to_floor_7`, 12 cities:
+  Ankrahmun, Darashia, Dawnport, Edron, Farmine, Gray Beach, Issavi, Kazordoon, Krailos,
+  Moonfall, Rathleton, Roshamuul). An ambiguous or outside projection stays unlinked
+  (Gnomprona, `projection_outside`). The temple outside every mask (Home) stays unlinked; the
+  summary records its nearest mask and Chebyshev distance (`cities.unlinked`, Greenshore, 66),
+  which is information only. The validator checks the projected links against the footprint
+  boxes and the unlinked list against the records (33 of 35 cities linked).
 - Not imported, counted in `samples/map-regions-capture-v1.json`: the meaning of area field 6
   (28 areas) and of the secondary names of field 7 (53 areas), the 1270 markers, the satellite
   and minimap images, the declared corner positions, the 228 subregions without a mask and
@@ -121,7 +129,8 @@ same pattern as the hunting places.
   - ambiguous: `Targuna` (a placeholder town sharing its temple with `Dawnport Tutorial`).
 - `convert_city_facts.py [--check]` rewrites the City shard and index offline (29 records
   enriched) and writes `samples/cities-capture-v1.json`. It is idempotent, so run it after
-  `convert_world_metadata.py` regenerates the plain records. The index gains `enrichment`
+  `convert_world_metadata.py` regenerates the plain records. That converter now applies this
+  enrichment itself whenever the committed snapshot exists, so both `--check` modes agree. The index gains `enrichment`
   (the pinned snapshot); its `source` stays the CrystalServer pin.
 - Added: a second binding `tibiawiki-fandom/page-id` (revision id); `source_facts`
   (`implemented`, cleaned `ruler` and `near` text, `npc_names_unmatched`, 29 records);

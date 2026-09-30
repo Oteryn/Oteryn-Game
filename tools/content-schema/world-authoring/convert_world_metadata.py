@@ -23,6 +23,7 @@ import otbm_reader
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
+CITY_SNAPSHOT = "imports/tibiawiki/cities/fandom-snapshot-v1.json"
 SUMMARY = HERE / "samples/source-capture-v1.json"
 ITEM_BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
 
@@ -389,6 +390,15 @@ def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
     tp_records, unbound = teleports(candidates, present, item_keys(), rejected)
     out = {}
     out.update(shard_files("Area.City", city_records))
+    snapshot = root / CITY_SNAPSHOT
+    if (
+        snapshot.is_file()
+    ):  # the committed TibiaWiki enrichment stays on regenerated records
+        import convert_city_facts
+
+        out.update(
+            convert_city_facts.build(snapshot.read_bytes(), root, plain=dict(out))
+        )
     out.update(shard_files("House", house_records))
     out.update(shard_files("Transition.Teleport", tp_records))
     summary = {

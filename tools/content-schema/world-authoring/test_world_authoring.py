@@ -213,7 +213,8 @@ class ConvertAndValidateTest(unittest.TestCase):
             "data-global/world/world.otbm": fixture_map(),
             "data-global/world/world-house.xml": HOUSE_XML,
         }
-        self.assertEqual(convert.build(blobs, self.root), self.out)
+        with tempfile.TemporaryDirectory() as empty:
+            self.assertEqual(convert.build(blobs, Path(empty)), self.out)
 
     def test_house_xml_must_match_map_house_tiles(self):
         blobs = {
@@ -1020,7 +1021,10 @@ class MapRegionEndToEndTest(unittest.TestCase):
                 "subregions_without_footprint": 1,
             },
         )
-        self.assertEqual(summary["cities"], {"linked": 1, "total": 1})
+        self.assertEqual(
+            summary["cities"],
+            {"linked": 1, "projected": [], "total": 1, "unlinked": []},
+        )
 
     def test_conversion_is_deterministic(self):
         self.assertEqual(regions.build(self.root), self.out)
@@ -1098,6 +1102,60 @@ class MapRegionEndToEndTest(unittest.TestCase):
         self.load(client_files(images=[image]))
         summary = json.loads(self.out[regions.SUMMARY])
         self.assertEqual(summary["not_imported"]["cities_outside_every_footprint"], 1)
+        self.assertEqual(self.errors(), [])
+
+    def move_temple(self, **fields):
+        path = self.root / "content/world/areas/cities/cities-00000-00000.json"
+        shard = json.loads(path.read_text())
+        shard["records"][0]["declaration"]["temple"].update(fields)
+        path.write_text(validate.canonical(shard), encoding="utf-8")
+        self.load(client_files())
+        return json.loads(self.out[regions.SUMMARY])["cities"]
+
+    def test_temple_off_floor_7_links_when_its_projection_hits_one_mask(self):
+        cities = self.move_temple(floor=5)
+        self.assertEqual(cities["linked"], 1)
+        self.assertEqual(cities["unlinked"], [])
+        self.assertEqual(
+            cities["projected"],
+            [
+                {
+                    "city": "oteryn:area.city.test_town",
+                    "method": "temple_projected_to_floor_7",
+                    "subregion": "oteryn:area.region.test_town_subregion",
+                }
+            ],
+        )
+        self.assertEqual(self.errors(), [])
+        summary = json.loads(self.out[regions.SUMMARY])
+        summary["cities"]["projected"] = []
+        write_files(self.root, {regions.SUMMARY: json.dumps(summary).encode()})
+        self.assertTrue(any("projection" in e for e in self.errors()))
+
+    def test_temple_off_floor_7_outside_every_mask_stays_unlinked(self):
+        cities = self.move_temple(floor=5, x=1010)
+        self.assertEqual(cities["linked"], 0)
+        self.assertEqual(cities["projected"], [])
+        self.assertEqual(
+            cities["unlinked"],
+            [{"city": "oteryn:area.city.test_town", "reason": "projection_outside"}],
+        )
+        self.assertEqual(self.errors(), [])
+
+    def test_floor_7_temple_outside_the_mask_records_nearest_mask_and_distance(self):
+        cities = self.move_temple(x=1010)
+        self.assertEqual(cities["linked"], 0)
+        self.assertEqual(
+            cities["unlinked"],
+            [
+                {
+                    "city": "oteryn:area.city.test_town",
+                    "distance": 6,
+                    "nearest_mask": "oteryn:area.region.test_town_subregion",
+                    "reason": "outside_every_mask",
+                }
+            ],
+        )
         self.assertEqual(self.errors(), [])
 
     def test_rejects_unknown_parent_and_parent_that_is_not_a_region(self):
@@ -1287,6 +1345,19 @@ class CityFactsTest(unittest.TestCase):
             {"implemented": 1, "npcs": 1, "source_facts": 1, "wiki_binding": 1},
         )
         self.assertEqual(summary["npc_names_linked"], 2)
+
+    def test_world_metadata_regeneration_keeps_the_city_enrichment(self):
+        blobs = {
+            "data-global/world/world.otbm": fixture_map(),
+            "data-global/world/world-house.xml": HOUSE_XML,
+        }
+        out = convert.build(blobs, self.root)
+        self.assertIn(cityfacts.SUMMARY, out)
+        for path, data in out.items():
+            if path.startswith("content/world/areas/cities/") or (
+                path == cityfacts.SUMMARY
+            ):
+                self.assertEqual((self.root / path).read_bytes(), data, path)
 
     def test_unparsable_version_stays_raw_only(self):
         add_cities(

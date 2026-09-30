@@ -25,6 +25,13 @@ REGION_SUMMARY = (
 )
 CITY_SUMMARY = "tools/content-schema/world-authoring/samples/cities-capture-v1.json"
 SNAPSHOT = "imports/tibiawiki/hunting-places/fandom-snapshot-v1.json"
+PROJECTION = "temple_projected_to_floor_7"
+PROJECTION_FLOOR = 7
+UNLINKED_REASONS = {
+    "outside_every_mask",
+    "projection_ambiguous",
+    "projection_outside",
+}
 CITY_SNAPSHOT = "imports/tibiawiki/cities/fandom-snapshot-v1.json"
 NPC_INDEX = "content/npcs/definitions/index.json"
 WIKI_NAMESPACE = "tibiawiki-fandom/page-id"
@@ -331,6 +338,10 @@ def regions(
     declarations = {
         r["declaration"]["identity"]["key"]: r["declaration"] for r in records
     }
+    projections = {}
+    for row in summary.get("cities", {}).get("projected", []):
+        projections.setdefault(row.get("city"), []).append(row.get("subregion"))
+    projected_links = []
     external_ids, children = set(), {}
     with_ = {"anchor": 0, "cities": 0, "footprint": 0, "parent_regions": 0}
     by_kind = {"region": 0, "subregion": 0}
@@ -394,8 +405,13 @@ def regions(
             errors.append(f"{key}: footprint image differs from the pinned file")
         for city in city_keys:
             temple = cities.get(city)
+            if temple is not None and temple["floor"] != footprint["floor"]:
+                projected_links.append((city, key))
             if temple is not None and not (
-                temple["floor"] == footprint["floor"]
+                (
+                    temple["floor"] == footprint["floor"]
+                    or key in projections.get(city, [])
+                )
                 and box[0] <= temple["x"] <= box[2]
                 and box[1] <= temple["y"] <= box[3]
             ):
@@ -412,10 +428,36 @@ def regions(
         if [ref["key"] for ref in declaration.get("cities", [])] != expected:
             errors.append(f"{key}: cities differ from the cities of its subregions")
     linked = {ref["key"] for d in declarations.values() for ref in d.get("cities", [])}
+    stated = summary.get("cities", {})
+    projected = stated.get("projected", [])
+    unlinked = stated.get("unlinked", [])
+    unlinked_keys = [row.get("city") for row in unlinked]
+    if (
+        sorted(projected_links)
+        != sorted((row.get("city"), row.get("subregion")) for row in projected)
+        or any(
+            row.get("method") != PROJECTION
+            or cities[row["city"]]["floor"] == PROJECTION_FLOOR
+            for row in projected
+            if row.get("city") in cities
+        )
+        or any(row.get("city") not in cities for row in projected + unlinked)
+        or len(unlinked_keys) != len(set(unlinked_keys))
+        or set(unlinked_keys) & linked
+        or (set(cities) - linked) != set(unlinked_keys)
+        or any(
+            row.get("reason") not in UNLINKED_REASONS
+            or ("nearest_mask" in row) != (row.get("reason") == "outside_every_mask")
+            or ("distance" in row) != ("nearest_mask" in row)
+            for row in unlinked
+        )
+    ):
+        errors.append("Area.Region: city projection or unlinked records differ")
     if (
         summary.get("records_with") != with_
         or summary.get("records_by_kind") != by_kind
-        or summary.get("cities") != {"linked": len(linked), "total": len(cities)}
+        or {k: stated.get(k) for k in ("linked", "total")}
+        != {"linked": len(linked), "total": len(cities)}
     ):
         errors.append("Area.Region: capture counts differ from the records")
 

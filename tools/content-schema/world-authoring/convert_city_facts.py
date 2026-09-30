@@ -131,10 +131,18 @@ def enrich(record: dict, row: dict, npcs: dict[str, str], counts: dict) -> dict:
     return {"declaration": declaration, "source_bindings": bindings}
 
 
-def build(snapshot_bytes: bytes, root: Path = ROOT) -> dict[str, bytes]:
+def build(
+    snapshot_bytes: bytes, root: Path = ROOT, plain: dict[str, bytes] | None = None
+) -> dict[str, bytes]:
+    """`plain` holds freshly generated City files (path -> bytes) read instead of the tree."""
     snapshot = load_snapshot(snapshot_bytes)
     directory = base.FAMILIES["Area.City"]["dir"]
-    index = json.loads((root / f"{directory}/index.json").read_text(encoding="utf-8"))
+
+    def read(path: str) -> dict:
+        data = plain[path] if plain and path in plain else (root / path).read_bytes()
+        return json.loads(data)
+
+    index = read(f"{directory}/index.json")
     rows = {row["title"]: row for row in snapshot["pages"]}
     unmatched = {row["name"]: row["reason"] for row in snapshot["unmatched"]}
     npcs = npc_names(root)
@@ -152,7 +160,7 @@ def build(snapshot_bytes: bytes, root: Path = ROOT) -> dict[str, bytes]:
     )
     out, seen = {}, set()
     for path in index["shards"]:
-        shard = json.loads((root / path).read_text(encoding="utf-8"))
+        shard = read(path)
         records = []
         for record in shard["records"]:
             name = record["declaration"]["name"]
