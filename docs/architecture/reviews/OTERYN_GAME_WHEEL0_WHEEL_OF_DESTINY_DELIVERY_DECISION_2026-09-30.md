@@ -2,8 +2,8 @@
 
 - Decision: `WHEEL0-WHEEL-OF-DESTINY-DELIVERY-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (Character
-  state, persistence, protocol) and protected integration. Owner question W1 (§12) is open; §6
-  applies its recommended answer as a reversible assumption.
+  state, persistence, protocol) and protected integration. Owner question W1 (§12) is answered a
+  (verbatim record on #162 5917665342); §6 applies it.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30, verbatim: "tak samo whel of destiny blokuje mi reszte
   spelli bo go nie ma"); the spell lane's audit (#162 5916978013: "4 ready reader refusals
@@ -31,7 +31,7 @@
 | W-1 | hard, persistence review | allocation tables, a new receipt kind, `commit_character_wheel` on CHAR-REV-SEQ-1, admission load, derivation into `WheelStages` (§4) | W-R; CHAR-REV-SEQ-1 |
 | W-2 | impl, protocol review | capability `WHEEL_V1`, `WHEEL_QUERY` and `WHEEL_INTENT` (§7) | W-1 |
 | W-FX-1 | hard, combat review | dedication perks (max health, max mana, capacity), non-spell conviction perks, passive revelation effects (§5.2) as stat and effect contributions | W-1; the vitals owner; CONDITIONS-0 for timed effects |
-| PREM-2 | as allocated (PREMIUM-ACTIVATION) | promotion state; its "progression readiness" dependency is satisfied (§6.2) | PREM-1 for the Premium read, or W1 answer a |
+| PREM-2 | as allocated (PREMIUM-ACTIVATION) | promotion state; its "progression readiness" dependency is satisfied (§6.2) | none for the Premium read until PREM-1 delivers it (W1 a) |
 | W-3 | client owner | the Wheel window | W-2 |
 
 Later, each with its own decision: gems, the Gem Atelier, vessels, fragments and mod grades
@@ -156,7 +156,7 @@ at each use: a lapse makes every stage and contribution 0 at once and keeps the 
 - **Promotion** is PREM-2's durable state. PREM-2's "progression readiness" dependency is #1143,
   completed; the same ruling answers STANCE-1's dependency (#162 5916023254). PREM-2 therefore
   depends only on PREM-1 for the Premium read, and on the vitals owner (P3b-2, merged) for soul.
-- **Premium** (assumption pending W1, answer a): until PREM-1 delivers `premium_current`, the
+- **Premium** (owner answer W1 a, a supersession of D70's Premium condition until delivery): until PREM-1 delivers `premium_current`, the
   Premium requirement of promotion (D70) and of the Wheel is not applied; from then on both apply,
   and a promotion bought before then is kept under the lapse rules of D73 and D76. This mirrors
   H2a for houses and G1 for guilds.
@@ -217,18 +217,20 @@ the town records' temple positions in the active bundle.
 
 Kept as in Tibia: unlock at 51 for promoted Premium characters, 1 point per level, 36 slices,
 adjacency, the three perk tiers, removal at a temple, suspension on lapse. Declared differences:
-unused points saturate at 0 on level loss (Canary underflows); the Premium rule waits under W1.
+unused points saturate at 0 on level loss (Canary underflows); the Premium rule waits until Premium is delivered (W1 a).
 
 ## 11. Decision test
 
 - **Must decide now:** YES. The owner reports the Wheel blocks the remaining spells.
 - **Minimum sufficient:** one cast-time input now; one allocation table pair and receipt; one
   replacement command; effects as contributions.
-- **Superseding evidence:** owner answer W1; WHEEL-GEM-0 adds gem bonuses to the domain sums.
+- **Superseding evidence:** WHEEL-GEM-0 adds gem bonuses to the domain sums.
 - **Deliberately not decided:** gems, vessels, fragments, mod grades, presets, scrolls, the client
   window.
 
-## 12. Owner question (open)
+## 12. Owner question (answered)
+
+Owner answer, verbatim record on #162 5917665342: "3a" (W1 a).
 
 **W1. Promotion and the Wheel before Premium exists?** Tibia requires Premium for promotion and
 for the Wheel, and the Game has no Premium yet (PREM-1 is in review). a) Not required until Premium

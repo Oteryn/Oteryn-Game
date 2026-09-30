@@ -91,6 +91,10 @@ PREM-2 (promotion benefits and soul), PREM-3 (areas), PREM-4 (spells), PREM-5 (N
 
 - Promotion is durable Character state: `promoted` plus provenance. It is bought once at a
   promotion NPC (level 20, 20,000 gp, Premium current) through the NPC service child.
+- **Amendment (pending on acceptance of WHEEL-0; `OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §6.2; owner answer W1 a,
+  #162 5917665342).** Until PREM-1 delivers `premium_current`, the Premium condition of the purchase and of
+  the benefits is not applied; from then on it applies, and a promotion bought before is kept
+  under D73 and D76. PREM-2's "progression readiness" dependency is #1143, completed.
 - A promotion **benefit** applies only while the durable `promoted` state is set and the
   account's Premium is current at the moment of use (D76, consumer contract §12). Each benefit is
   checked at its own authoritative point:
