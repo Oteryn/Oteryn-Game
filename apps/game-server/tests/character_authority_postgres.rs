@@ -222,6 +222,15 @@ struct Database {
 
 impl Database {
     async fn create(admin_url: String, test_name: &str) -> TestResult<Self> {
+        Self::create_at(admin_url, test_name, None).await
+    }
+
+    /// `through`: apply migrations only up to and including this version.
+    async fn create_at(
+        admin_url: String,
+        test_name: &str,
+        through: Option<i64>,
+    ) -> TestResult<Self> {
         if !admin_url.starts_with("postgresql://oteryn_test_admin:")
             || !admin_url.ends_with("@127.0.0.1:5432/postgres")
         {
@@ -250,7 +259,11 @@ impl Database {
             version, "170006",
             "canonical target requires PostgreSQL 17.6"
         );
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        let migrator = sqlx::migrate!("./migrations");
+        match through {
+            Some(version) => migrator.run_to(version, &mut connection).await?,
+            None => migrator.run(&mut connection).await?,
+        }
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -1977,6 +1990,74 @@ async fn name_matrix(database: &Database) -> TestResult {
     drop(fence);
     pool.close().await;
     std::fs::remove_dir_all(retained)?;
+    Ok(())
+}
+
+#[test]
+fn name_migration_refuses_a_store_that_already_holds_a_character() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create_at(admin, "name_preproduction", Some(21)).await?;
+            let result = name_migration_refusal(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+/// CHAR-NAME-1 preproduction-only assumption (§6.1): 0022 adds a NOT NULL name
+/// without a default, so on a store that already holds a Character root it
+/// refuses to apply and leaves the root and the migration history unchanged.
+async fn name_migration_refusal(database: &Database) -> TestResult {
+    let mut connection = sqlx::PgConnection::connect(&database.url).await?;
+    sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
+        .bind(id(40).as_slice())
+        .execute(&mut connection)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_roots VALUES \
+         (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+          1,1,'profile-1','ruleset-1','content-1','starter-1')",
+    )
+    .bind(id(41).as_slice())
+    .bind(id(40).as_slice())
+    .bind(id(42).as_slice())
+    .execute(&mut connection)
+    .await?;
+
+    let refused = sqlx::migrate!("./migrations").run(&mut connection).await;
+    let Err(sqlx::migrate::MigrateError::ExecuteMigration(error, 22)) = refused else {
+        return Err(format!("0022 must refuse a store with a Character: {refused:?}").into());
+    };
+    assert_eq!(
+        error
+            .as_database_error()
+            .and_then(|error| error.code())
+            .as_deref(),
+        Some("23502")
+    );
+
+    let roots: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_roots")
+        .fetch_one(&mut connection)
+        .await?;
+    assert_eq!(roots, 1);
+    let latest: i64 = sqlx::query_scalar("SELECT max(version) FROM _sqlx_migrations")
+        .fetch_one(&mut connection)
+        .await?;
+    assert_eq!(latest, 21);
+    let named: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM information_schema.columns \
+         WHERE table_name = 'game_character_roots' AND column_name = 'name')",
+    )
+    .fetch_one(&mut connection)
+    .await?;
+    assert!(!named);
+    connection.close().await?;
     Ok(())
 }
 

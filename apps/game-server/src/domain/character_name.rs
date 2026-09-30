@@ -4,7 +4,7 @@
 //! A name is 2..=29 ASCII letters in words joined by single spaces, with no leading or trailing
 //! space (tibia.com manual §starting 2.2.1: at most 29 characters, no digits, no special
 //! characters). The comparison key is the name in ASCII lower case with the spaces removed, and it
-//! is unique in one global namespace across every World. Migration 0021 enforces the same grammar
+//! is unique in one global namespace across every World. Migration 0022 enforces the same grammar
 //! and key in `game_character_is_name` and `game_character_name_key`.
 
 /// Naming policy revision these rules implement.

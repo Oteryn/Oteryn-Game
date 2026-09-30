@@ -5,7 +5,8 @@
 -- Scope of this migration:
 --   * `game_character_roots.name`: the current display name under naming policy revision 1
 --     (2..29 ASCII letters in words joined by single spaces), and `name_key`, its generated
---     comparison key (ASCII lower case without spaces). The name is immutable here: there is
+--     comparison key (ASCII lower case without spaces, lowered under the "C" collation so a
+--     database default collation such as Turkish cannot diverge from the Rust key). The name is immutable here: there is
 --     no rename yet, so the revision guard now also holds it equal;
 --   * `game_character_name_reservations`: one row per comparison key in one global namespace
 --     across every World. Inserting a root reserves its key in the same statement (definer
@@ -28,7 +29,7 @@ $$;
 
 CREATE FUNCTION game_character_name_key(value TEXT) RETURNS TEXT
 LANGUAGE sql IMMUTABLE STRICT AS $$
-    SELECT lower(replace(value, ' ', ''))
+    SELECT lower(replace(value, ' ', '') COLLATE "C")
 $$;
 
 ALTER TABLE game_character_roots

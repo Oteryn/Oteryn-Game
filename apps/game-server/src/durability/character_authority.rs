@@ -118,7 +118,7 @@ impl DurabilityRoot {
     /// equal the current Game-owned interpretation, which is resolved from the
     /// durable configuration inside this transaction, never from the caller.
     /// The requested name must be unreserved in the global namespace; the root
-    /// insert reserves its comparison key (migration 0021).
+    /// insert reserves its comparison key (migration 0022).
     /// An exact retry returns the committed result; changed reuse conflicts.
     pub async fn bootstrap_character(
         &self,

@@ -18,7 +18,7 @@ owner: "CHAR-NAME-1 hard worker (claude-code-session-01CAFRNutbD9G27BFGoBGBBd)"
 created_at: 2026-09-30
 updated_at: 2026-09-30
 owned_paths:
-  - apps/game-server/migrations/0021_character_name.sql
+  - apps/game-server/migrations/0022_character_name.sql
   - apps/game-server/src/domain/character_name.rs (+ mod.rs registration)
   - apps/game-server/src/character_bootstrap_intent.rs
   - apps/game-server/src/durability/character_authority.rs (+ mod.rs, node/serve.rs error variant)
@@ -35,13 +35,13 @@ jira: null   # sync pending (coordinator batch)
 
 1a repertoire (2..29 ASCII letters, single inner spaces); 2c key folds case and spaces; 3a one global namespace;
 4b released names blocked 30 days for everyone (ships with rename/delete); 5a `requested_name` in bootstrap intent
-contract version 2, lockstep with Platform. Stated assumption: existing Characters are preproduction only, so 0021
+contract version 2, lockstep with Platform. Stated assumption: existing Characters are preproduction only, so 0022
 fails closed on a store that holds any Character. Recorded in the boundary contract §6.1; D-number to be assigned
 by the control plane.
 
 ## Outcome
 
-- 0021: `game_character_roots.name` (+ generated `name_key`), `game_character_name_reservations` (PK `name_key`,
+- 0022: `game_character_roots.name` (+ generated `name_key`), `game_character_name_reservations` (PK `name_key`,
   immutable, no truncate), definer AFTER INSERT trigger reserving the key, revision guard now holds `name` equal,
   runtime EXECUTE on both CHECK/generated-column functions (PRIV-GUARD-1), no runtime write on reservations.
 - Bootstrap: name lock + reservation check before the intent floor, `CharacterAuthorityError::NameUnavailable`
