@@ -1271,8 +1271,10 @@ unchanged.
 
 - **BUY (item-only).** The gold fee plan with `F = unit price x quantity`, plus one MINT of the
   bought item (one stack, or one non-stackable item) into a new direct entry of the main backpack.
-- **SELL (item-only).** One BURN of `quantity x count` units from one live direct backpack entry
-  of the offer's item (no contents, default state apart from quantity), plus a MINT of
+- **SELL (item-only).** One BURN from one live direct backpack entry of the offer's item (no
+  contents, default state apart from quantity): `quantity x count` units of a stackable item, or,
+  with `quantity` 1, one whole non-stackable item, whose charges or sub-type equal the offer's
+  `count` for a charged or fluid item; plus a MINT of
   `unit price x quantity` gold as at most 3 fresh coin stacks (crystal, platinum, gold; each at most
   100) in new backpack entries, counted after the burn.
 - **Cause.** One closed `NpcTradeCause {npc, offer, side, occurrence}` covers every line of a BUY
@@ -1288,8 +1290,9 @@ unchanged.
   price of 0 writes no fee lines), plus one pending arrival row, an obligation outside the
   revision chain like DEATH-0's pending respawn.
 - **Common.** The price is read from the trade or travel service at the bound content revision; a
-  mismatch with the client's expected price rejects. Insufficient funds, no free entry or a stack
-  above 100 rejects the whole transaction and writes nothing.
+  mismatch with the client's expected price rejects. Insufficient funds, no free entry, a BUY stack
+  above the definition's `max_stack`, or a SELL coin stack above 100 rejects the whole transaction
+  and writes nothing.
 - **Rows.** BUY `DUR03-RL-01` 23, `DUR03-RL-02` 23, `DUR03-RL-06` 23 participants / 66 work
   units; SELL 4, 4, 4 participants / 9 work units. The rows, schema, the `0023` widening (fee source kinds, the
   root-advance requirement for an item-only source, and the entry-removal proof) and field numbers are registered by NPC-TRADE-1 and NPC-TRAVEL-1, not

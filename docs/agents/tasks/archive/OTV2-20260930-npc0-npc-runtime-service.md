@@ -102,6 +102,11 @@ needs protocol review.
   NpcTrade fee side BUY only; D208 cited; death receipt records the deleted arrival and the
   `commit_character_death` change; SELL 9 work units, free entries after the burn, stack maximum
   per definition.
+- Re-review of `d706dff6` (5910581433): FIX (small), 1 medium and 3 low findings, all answered in
+  one push: SELL of a charged or fluid item takes one whole item whose charges or sub-type equal
+  the offer's `count`; the DUR-03 "Common" bullet uses the definition's `max_stack` for BUY and 100
+  for SELL coin stacks; the stale D-number sentence is removed; the NPC-TRAVEL-1 brief includes the
+  death receipt's arrival-occurrence field.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

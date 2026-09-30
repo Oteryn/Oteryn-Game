@@ -28,7 +28,7 @@
 | NPC-WIRE-1 | impl, protocol review | registry and proto rows of §4, codecs, limits, client views | NPC-CONTENT-1 |
 | NPC-TALK-1 | impl | conversation lifecycle and keyword matching in the channel runtime (§2.1), read-only trade window (boundary gate `NPC_DIALOGUE_TRADE_WIDGET_V1`) | NPC-WIRE-1; NPC-PLACE-1; MAP-CUTOVER-1 |
 | NPC-TRADE-1 | hard, persistence review | BUY and SELL (§5), migration, cause records (boundary gate `NPC_SINGLE_TRADE_COMMIT_V1`) | NPC-TALK-1; GOLD-FEE-1a (merged); GOLD-FEE-1b |
-| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration, and the `commit_character_death` change (`durability/character_death.rs`) that deletes a pending arrival, locking it after `character_root` | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
+| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration, the `commit_character_death` change (`durability/character_death.rs`) that deletes a pending arrival, locking it after `character_root`, and the death receipt's new arrival-occurrence field | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
 
 Every child keeps the boundary's rules: the client is not an authority, dialogue code never
 commits value, and AI owns no dialogue or trade state.
@@ -202,9 +202,14 @@ shapes are new?
 
 ### 5.4 SELL
 
-- One BURN of `quantity x count` units (1 to the definition stack maximum) from one live direct
-  backpack entry of the offer's item (a whole non-stackable item with `quantity` 1, or part or all
-  of a stack). The item must have no contents and its default state apart from quantity.
+- **A stackable item:** one BURN of `quantity x count` units (1 to the definition stack maximum)
+  from one live direct backpack entry of the offer's item, part or all of a stack.
+- **A charged or fluid item:** `quantity` must be 1, and the BURN takes one whole item whose
+  charges or sub-type equal the offer's `count`. An item with other charges does not match the
+  offer.
+- **Any other non-stackable item:** `quantity` must be 1, and the BURN takes the whole item.
+- The item must have no contents and its default state apart from quantity (and, for a charged or
+  fluid item, the matched charges or sub-type).
 - A MINT of `V = unit_price x quantity` gold as fresh stacks in new backpack entries: `floor(V /
   10,000)` crystal, then platinum, then gold, each present only if positive and each at most 100.
 - Free entries are counted after the burn: a whole burn frees its entry. Too few free entries or a
@@ -291,7 +296,7 @@ b) buying and travel only; c) none now.
 
 **Owner answer D208 (2026-09-30, given directly in the architect session, recorded on #162
 5909366267 and numbered in 5909477417):** "tak a". Q1a: NPC buying, selling and travel are admitted as value sources (D178
-satisfied). The control plane assigns the D-number.
+satisfied).
 
 ## 10. Boundary acceptance
 
