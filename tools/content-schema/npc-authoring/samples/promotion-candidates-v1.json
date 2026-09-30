@@ -4190,7 +4190,19 @@
     },
     {
      "chosen": "canary",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 25000,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      }
+     ],
      "fact": "trade.51442",
+     "item_name": "blank imbuement scroll",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -4199,7 +4211,19 @@
     },
     {
      "chosen": "canary",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 30000,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      }
+     ],
      "fact": "trade.51443",
+     "item_name": "etcher",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -7006,6 +7030,7 @@
     {
      "chosen": "canary",
      "date": "2026-09-30",
+     "decision": "#162 5915795451",
      "fact": "definition.movement",
      "rule": "OWNER_REVIEW"
     },
@@ -17152,7 +17177,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -17161,7 +17204,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -22893,7 +22954,19 @@
     },
     {
      "chosen": "canary",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 5000,
+       "status": "CONFIRMED",
+       "wikis": [
+        "br",
+        "tibiopedia"
+       ]
+      }
+     ],
      "fact": "trade.125",
+     "item_name": "special flask",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "br",
@@ -26495,7 +26568,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -26504,7 +26595,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -34692,7 +34801,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -34701,7 +34828,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -57335,14 +57480,10 @@
    "arbitration": [
     {
      "chosen": "canary",
+     "date": "2026-09-30",
+     "decision": "#1358 5917959278",
      "fact": "definition.outfit",
-     "image": "File:Enpa-Deia Pema.gif",
-     "rule": "WIKI_IMAGE",
-     "scores": {
-      "canary": 62.56,
-      "crystal": 71.82
-     },
-     "sha1": "f3b2891090a2faf249a40a378ff87b3b65d5e9cc"
+     "rule": "OWNER_REVIEW"
     },
     {
      "chosen": "crystal",
@@ -58131,7 +58272,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -58140,7 +58299,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -65511,6 +65688,7 @@
     {
      "chosen": "canary",
      "date": "2026-09-30",
+     "decision": "#162 5915795451",
      "fact": "definition.movement",
      "rule": "OWNER_REVIEW"
     }
@@ -65578,7 +65756,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -65587,7 +65783,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -71493,7 +71707,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -71502,7 +71734,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -87708,7 +87958,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -87717,7 +87985,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -91299,7 +91585,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -91308,7 +91612,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -124766,7 +125088,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -124775,7 +125115,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -128586,7 +128944,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -128595,7 +128971,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -143569,6 +143963,7 @@
     {
      "chosen": "crystal",
      "date": "2026-09-30",
+     "decision": "#162 5915795451",
      "fact": "definition.movement",
      "rule": "OWNER_REVIEW"
     }
@@ -160987,7 +161382,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -160996,7 +161409,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -169415,7 +169846,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -169424,7 +169873,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -171839,7 +172306,28 @@
    "arbitration": [
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 85,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 25,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      }
+     ],
      "fact": "trade.3264",
+     "item_name": "sword",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -171853,7 +172341,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -171862,7 +172368,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -174084,7 +174608,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -174093,7 +174635,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -178568,7 +179128,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -178577,7 +179155,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -186667,6 +187263,7 @@
     {
      "chosen": "crystal",
      "date": "2026-09-30",
+     "decision": "#162 5915795451",
      "fact": "definition.outfit",
      "rule": "OWNER_REVIEW"
     }
@@ -201669,7 +202266,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -201678,7 +202293,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -205156,7 +205789,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -205165,7 +205816,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -207522,7 +208191,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -207531,7 +208218,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -217705,7 +218410,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 405,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 135,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50182",
+     "item_name": "nunchaku",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",
@@ -217714,7 +218437,25 @@
     },
     {
      "chosen": "crystal",
+     "directions": [
+      {
+       "direction": "SellToPlayer",
+       "price": 540,
+       "status": "CONFIRMED",
+       "wikis": [
+        "fandom",
+        "tibiopedia"
+       ]
+      },
+      {
+       "direction": "BuyFromPlayer",
+       "price": 180,
+       "stated_by": "crystal",
+       "status": "UNCONFIRMED"
+      }
+     ],
      "fact": "trade.50183",
+     "item_name": "sai",
      "rule": "WIKI_MAJORITY_ARBITER",
      "wikis": [
       "fandom",

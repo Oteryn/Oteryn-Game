@@ -119,16 +119,16 @@ DEFINITION_REVIEWED = {
         'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Ambassador Manop.gif',
                    'sha1': 'd1687add015f0258ef76549b74ae23a53e60e7d3', 'score': 3.29,
                    'colours': {'head': 2, 'body': 10, 'legs': 22, 'feet': 81}},
-        'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30'}},
+        'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30', 'decision': '#162 5915795451'}},
     'Enpa Rudra': {'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Enpa Rudra.gif',
                               'sha1': '82a635859c0aa2e635492ab2fecbf11ff962f80b', 'score': 31.63,
                               'colours': {'head': 2, 'body': 3, 'legs': 41, 'feet': 81}}},
-    'Enpa-Deia Pema': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Enpa-Deia Pema.gif',
-                                  'sha1': 'f3b2891090a2faf249a40a378ff87b3b65d5e9cc',
-                                  'scores': {'canary': 62.56, 'crystal': 71.82}}},
-    'Flickering Soul': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30'}},
-    'Omrabas': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30'}},
-    'Storkus': {'outfit': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30'}},
+    # both image fits score above 35, so the owner chose the Canary look (2a, #1358 5917959278)
+    'Enpa-Deia Pema': {'outfit': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30',
+                                  'decision': '#1358 5917959278'}},
+    'Flickering Soul': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30', 'decision': '#162 5915795451'}},
+    'Omrabas': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30', 'decision': '#162 5915795451'}},
+    'Storkus': {'outfit': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30', 'decision': '#162 5915795451'}},
     'Gareth': {'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Gareth.gif',
                           'sha1': '987161bfb6872869531d7d6a2e7b86383791d538', 'score': 30.15,
                           'colours': {'head': 41, 'body': 0, 'legs': 58, 'feet': 20}}},
@@ -177,7 +177,8 @@ SOURCE_UNCONFIRMED = {
 }
 # D16: outfit colours fitted to the TibiaWiki image of a single-source NPC whose Crystal colours are marked TODO
 # (render from the client sprites, per-region palette fit; a source colour stays where it fits as well, a region under
-# 30 visible pixels never changes); only fits scoring 35 or better are kept, the rest stay source_unconfirmed outfits
+# 30 visible pixels never changes); only fits scoring 35 or less (lower is better) are kept, the rest stay
+# source_unconfirmed outfits
 WIKI_IMAGE_FIT = {
     'Leonora': {'image': 'File:Leonora.gif', 'sha1': 'f8500a396c36de9fb4b36fa649c07df1fe5ecd6d', 'score': 19.06, 'colours': {'head': 95, 'body': 94, 'legs': 86, 'feet': 0}},
     'Raubritter Battler': {'image': 'File:Raubritter Battler.gif', 'sha1': '322276869e799d5ec801d55f79434b94c965c286', 'score': 12.76, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
@@ -495,10 +496,11 @@ class Builder:
         return row and {'family': 'Item', 'key': row['native_key'], 'revision': row['native_revision']}
 
     def majority_arbiter(self, name, key, present, fandom):
-        """D16: the source whose plain, ungated offer two of the three wikis confirm, with those wikis; else None (the
-        offer stays left out). A direction is confirmed when the wiki majority states the source's price there; no
-        direction may carry a price the majority contradicts; the source confirmed in the most directions wins, and a
-        tie between different offers decides nothing."""
+        """D16: the source whose plain, ungated offer two of the three wikis confirm, with those wikis and the status of
+        each priced direction; else None (the offer stays left out). A direction is confirmed when the wiki majority
+        states the source's price there; no direction may carry a price the majority contradicts; the source confirmed
+        in the most directions wins, and a tie between different offers decides nothing. The whole offer is admitted
+        (owner 1c, #1358 5917959278); a direction no majority confirms is UNCONFIRMED and names its stating source."""
         item = self.item_ref(key[0])
         if not self.tibiopedia_trade or item is None or key[1] or key[2] is not None:
             return None
@@ -507,7 +509,7 @@ class Builder:
         for source, offer in present.items():
             if offer['stock_gate']:
                 continue
-            confirmed, wikis = 0, set()
+            confirmed, wikis, directions = 0, set(), []
             for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
                 if price is None:
                     continue
@@ -516,15 +518,19 @@ class Builder:
                     break
                 if majority is not None:
                     confirmed, wikis = confirmed + 1, wikis | set(by)
+                    directions.append({'direction': direction, 'price': price, 'status': 'CONFIRMED', 'wikis': by})
+                else:
+                    directions.append({'direction': direction, 'price': price, 'status': 'UNCONFIRMED',
+                                       'stated_by': source})
             else:
                 if confirmed:
-                    ranked[source] = (confirmed, (offer['buy_price'], offer['sell_price']), sorted(wikis))
+                    ranked[source] = (confirmed, (offer['buy_price'], offer['sell_price']), sorted(wikis), directions)
         best = max((value[0] for value in ranked.values()), default=0)
         winners = {source: value for source, value in ranked.items() if value[0] == best}
         if not winners or len({value[1] for value in winners.values()}) != 1:
             return None
         chosen = sorted(winners)[0]
-        return chosen, winners[chosen][2]
+        return chosen, winners[chosen][2], winners[chosen][3]
 
     def merge_offers(self, bundles, name, arbitration, left_out):
         per_source = {source: source_offers(b) for source, b in bundles.items()}
@@ -547,8 +553,10 @@ class Builder:
                     chosen = sorted(agreeing)[0]
                     arbitration.append({'fact': label, 'rule': 'WIKI_ARBITER', 'chosen': chosen})
                 elif majority:
-                    chosen, wikis = majority
-                    arbitration.append({'fact': label, 'rule': 'WIKI_MAJORITY_ARBITER', 'chosen': chosen, 'wikis': wikis})
+                    chosen, wikis, directions = majority
+                    arbitration.append({'fact': label, 'rule': 'WIKI_MAJORITY_ARBITER', 'chosen': chosen, 'wikis': wikis,
+                                        'item_name': self.registry_names.get(self.item_ref(key[0])['key']),
+                                        'directions': directions})
                 else:
                     left_out.append({'fact': label, 'reason': 'OFFER_UNCONFIRMED' if len(present) == 1
                                      else 'OFFER_CONFLICT_WIKI_UNDECIDED'})

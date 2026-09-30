@@ -851,11 +851,30 @@ class PromotionValidatorTests(unittest.TestCase):
         present = {'crystal': offer}
         self.assertEqual(builder.majority_arbiter('Ahmet', (3483, None, None), present, {
             'fishing rod': {'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': None}}),
-            ('crystal', ['fandom', 'tibiopedia']))
+            ('crystal', ['fandom', 'tibiopedia'], [
+                {'direction': 'SellToPlayer', 'price': 150, 'status': 'CONFIRMED', 'wikis': ['fandom', 'tibiopedia']},
+                {'direction': 'BuyFromPlayer', 'price': 40, 'status': 'UNCONFIRMED', 'stated_by': 'crystal'}]))
         # a price the majority contradicts, or a gated offer, confirms nothing
         for changed in ({'buy_price': 120}, {'stock_gate': {'storage': 1}}):
             self.assertIsNone(builder.majority_arbiter('Ahmet', (3483, None, None), {'crystal': {**offer, **changed}}, {
                 'fishing rod': {'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': None}}))
+
+    def test_arbiter_rows_record_each_direction(self):
+        # owner 1c: the whole offer is admitted; each direction says whether the wiki majority confirms it
+        report = load_sample()
+        rows = [row for candidate in report['candidates'] for row in candidate.get('arbitration') or []
+                if row.get('rule') == 'WIKI_MAJORITY_ARBITER']
+        self.assertTrue(rows)
+        self.assertTrue(all(any(d['status'] == 'CONFIRMED' for d in row['directions']) for row in rows))
+        self.assertEqual(validate_promotion.arbiter_direction_errors('x', rows[0], rows[0]['chosen']), [])
+        broken = copy.deepcopy(rows[0])
+        broken['directions'][0]['status'] = 'UNCONFIRMED'
+        self.assertTrue(validate_promotion.arbiter_direction_errors('x', broken, broken['chosen']))
+
+    def test_image_fit_scores_are_at_most_35(self):
+        self.assertTrue(all(fit['score'] <= validate_promotion.WIKI_IMAGE_FIT_MAX_SCORE
+                            for fit in promotion_candidates.WIKI_IMAGE_FIT.values()))
+        self.assertEqual(promotion_candidates.DEFINITION_REVIEWED['Enpa-Deia Pema']['outfit']['rule'], 'OWNER_REVIEW')
 
     def test_wiki_item_alias(self):
         self.assertEqual(promotion_candidates.wiki_item('Straw Mat Foot Section'), 'straw bed foot section')

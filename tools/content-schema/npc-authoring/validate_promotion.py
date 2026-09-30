@@ -16,7 +16,9 @@ Semantic rules:
   stated non-negative integer prices, no two equal, at least one other than the offer's unit_price, and only on a
   plain source offer;
 - D16: 'D16' always; rule 'WIKI_MAJORITY_ARBITER' (with tibiopedia_facts_sha256) names a plain `trade.<item>`
-  offer, a provenance source and 2-3 sorted wikis; rules 'WIKI_IMAGE' / 'OWNER_REVIEW' are exactly the
+  offer, a provenance source, 2-3 sorted wikis, the registered item name and each priced direction's status
+  (CONFIRMED with its wikis, or UNCONFIRMED with the stating source; owner 1c), re-derived with the pinned facts;
+  a WIKI_IMAGE_FIT score is at most 35; rules 'WIKI_IMAGE' / 'OWNER_REVIEW' are exactly the
   DEFINITION_REVIEWED row of that NPC and field (`definition.<field>`), choosing one of two sources, and a row with
   `colours` (WIKI_IMAGE_FIT) puts those colours on the outfit; a single-source WIKI_IMAGE_FIT row is exactly the
   WIKI_IMAGE_FIT table entry and the outfit carries its colours; `source_unconfirmed` is the SOURCE_UNCONFIRMED row of
@@ -90,6 +92,7 @@ DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8', 'D11']
 PRICE_RULES = ('WIKI_PRICE', 'WIKI_MAJORITY_PRICE')  # D12, D13
 ITEM_RULES = PRICE_RULES + ('WIKI_OFFER',)  # rows that name an offer's registered Item
 WIKIS = {'fandom', 'br', 'tibiopedia'}
+WIKI_IMAGE_FIT_MAX_SCORE = 35  # D16(c): a fit scoring above this is not used
 WIKI_PRICE_FACT = re.compile(r'trade\.(\d+)(?:x(\d+))?(?:s(-?\d+))?\.(SellToPlayer|BuyFromPlayer)')
 
 
@@ -347,6 +350,8 @@ def candidate_errors(candidate, index):
             outfit = (candidate.get('presentation') or {}).get('outfit') or {}
             if row != {'fact': 'definition.outfit', 'rule': rule, 'chosen': 'crystal', **fit} or list(provenance) != ['crystal']:
                 errs.append(f"{alabel}: WIKI_IMAGE_FIT row is not the D16 fit of this single-source NPC")
+            elif not isinstance(fit.get('score'), (int, float)) or fit['score'] > WIKI_IMAGE_FIT_MAX_SCORE:
+                errs.append(f"{alabel}: WIKI_IMAGE_FIT score {fit.get('score')!r} is above {WIKI_IMAGE_FIT_MAX_SCORE} (D16)")
             elif any(outfit.get(region) != colour for region, colour in fit['colours'].items()):
                 errs.append(f"{alabel}: outfit colours are not the fitted wiki colours {fit['colours']!r}")
         elif rule in ('WIKI_IMAGE', 'OWNER_REVIEW', 'WIKI_IMAGE_FIT'):
@@ -354,6 +359,9 @@ def candidate_errors(candidate, index):
             reviewed = promotion_candidates.DEFINITION_REVIEWED.get(candidate.get('name'), {}).get(field)
             if reviewed is None or {k: v for k, v in row.items() if k != 'fact'} != reviewed:
                 errs.append(f"{alabel}: {rule} row is not the reviewed {field!r} decision for this NPC (D16)")
+            elif rule == 'WIKI_IMAGE_FIT' and (not isinstance(reviewed.get('score'), (int, float))
+                                               or reviewed['score'] > WIKI_IMAGE_FIT_MAX_SCORE):
+                errs.append(f"{alabel}: WIKI_IMAGE_FIT score {reviewed.get('score')!r} is above {WIKI_IMAGE_FIT_MAX_SCORE} (D16)")
             elif 'colours' in reviewed and any(((candidate.get('presentation') or {}).get('outfit') or {}).get(region)
                                                != colour for region, colour in reviewed['colours'].items()):
                 errs.append(f"{alabel}: outfit colours are not the fitted wiki colours {reviewed['colours']!r}")
@@ -368,6 +376,7 @@ def candidate_errors(candidate, index):
             if (not isinstance(wikis, list) or not 2 <= len(wikis) <= 3 or wikis != sorted(set(wikis))
                     or not set(wikis) <= WIKIS):
                 errs.append(f"{alabel}: wikis {wikis!r} are not 2-3 sorted wikis from fandom/br/tibiopedia")
+            errs += arbiter_direction_errors(alabel, row, chosen)
         elif rule == 'FAN_WIKI_CONFIRMED':
             wikis, pages = row.get('wikis'), row.get('pages')
             if fact != 'identity':
@@ -578,6 +587,36 @@ def item_name_errors(report, registry_names):
     return errs
 
 
+def arbiter_direction_errors(alabel, row, chosen):
+    """D16 (owner 1c): a WIKI_MAJORITY_ARBITER row names its registered item and the status of each priced direction,
+    in (SellToPlayer, BuyFromPlayer) order: CONFIRMED with the 2-3 wikis that state its price, or UNCONFIRMED with the
+    stating source; at least one direction is confirmed and the row's wikis are the confirming ones."""
+    directions = row.get('directions')
+    if not isinstance(row.get('item_name'), str) or not isinstance(directions, list) or not 1 <= len(directions) <= 2:
+        return [f"{alabel}: WIKI_MAJORITY_ARBITER needs item_name and 1-2 directions (D16)"]
+    errs, confirming = [], set()
+    order = [entry.get('direction') for entry in directions if isinstance(entry, dict)]
+    if order != [d for d in ('SellToPlayer', 'BuyFromPlayer') if d in order] or len(order) != len(directions):
+        errs.append(f"{alabel}: directions {order!r} are not distinct SellToPlayer/BuyFromPlayer in order")
+    for entry in directions:
+        if not isinstance(entry, dict) or not isinstance(entry.get('price'), int) or isinstance(entry.get('price'), bool):
+            errs.append(f"{alabel}: direction {entry!r} has no integer price")
+        elif entry.get('status') == 'CONFIRMED' and set(entry) == {'direction', 'price', 'status', 'wikis'}:
+            wikis = entry['wikis']
+            if not isinstance(wikis, list) or not 2 <= len(wikis) <= 3 or wikis != sorted(set(wikis)) or not set(wikis) <= WIKIS:
+                errs.append(f"{alabel}: confirmed {entry['direction']} wikis {wikis!r} are not 2-3 sorted wikis")
+            else:
+                confirming |= set(wikis)
+        elif entry.get('status') == 'UNCONFIRMED' and set(entry) == {'direction', 'price', 'status', 'stated_by'}:
+            if entry['stated_by'] != chosen:
+                errs.append(f"{alabel}: unconfirmed {entry['direction']} is stated by {entry['stated_by']!r}, not {chosen!r}")
+        else:
+            errs.append(f"{alabel}: direction {entry!r} is neither CONFIRMED with wikis nor UNCONFIRMED with stated_by")
+    if not errs and (not confirming or sorted(confirming) != row.get('wikis')):
+        errs.append(f"{alabel}: wikis {row.get('wikis')!r} are not the confirming wikis {sorted(confirming)!r}")
+    return errs
+
+
 def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, tibiopedia_bytes=None, item_map_bytes=None):
     """With the pinned inputs at hand (D12, and D13 with the Tibiopedia facts), using the same lookup the
     candidates were built with: every WIKI_PRICE row is the price Fandom and BR both state, every
@@ -624,6 +663,18 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, ti
             if (stated, rule, wikis) != (row.get('price'), row['rule'], row.get('wikis')):
                 errs.append(f"candidates[{index}]: {row['rule']} {row['fact']} price {row.get('price')!r} "
                             f"wikis {row.get('wikis')!r} != what the wikis state ({rule} {stated!r} {wikis!r})")
+        for row in candidate.get('arbitration') or []:
+            if row.get('rule') != 'WIKI_MAJORITY_ARBITER' or not tibiopedia_bytes:
+                continue
+            for entry in row.get('directions') or []:
+                if not isinstance(entry, dict):
+                    continue  # reported by errors()
+                price, wikis = builder.majority_price(name, entry.get('direction'), row.get('item_name'), fandom)
+                derived = ({'status': 'CONFIRMED', 'wikis': wikis} if price is not None and price == entry.get('price')
+                           else {'status': 'UNCONFIRMED'} if price is None else {'status': 'CONTRADICTED', 'price': price})
+                if derived != {k: v for k, v in entry.items() if k in derived}:
+                    errs.append(f"candidates[{index}]: WIKI_MAJORITY_ARBITER {row.get('fact')} {entry.get('direction')} "
+                                f"{entry.get('status')} != what the wikis state ({derived!r})")
         trade = candidate.get('trade_service') or {}
         if tibiopedia_bytes and item_map_bytes is not None and trade.get('currency') is None \
                 and name not in promotion_candidates.WIKI_SHOP_HELD:
