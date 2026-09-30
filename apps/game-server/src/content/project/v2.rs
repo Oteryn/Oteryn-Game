@@ -95,6 +95,8 @@ impl ProjectV2Family {
             DefinitionFamily::Formula => Self::Formula,
             DefinitionFamily::Loot => Self::Loot,
             DefinitionFamily::Behavior => Self::Behavior,
+            // `parse_family` never yields RewardClaim; its authoring home is `content/interactions/`.
+            DefinitionFamily::RewardClaim => Self::Interaction,
         })
     }
 }
@@ -1143,6 +1145,10 @@ pub struct ProjectV2ServiceOffer {
     /// Fluid or charge subtype of the offered Item.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sub_type: Option<u16>,
+    /// `PARITY_PENDING` (NPC authoring D15): the wikis dispute this source price and no two agree; the source price
+    /// stays until an official source settles it.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub parity_pending: bool,
 }
 
 impl ProjectV2ServiceOffer {

@@ -1,14 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://oteryn.dev/schemas/content/world-metadata/v1",
-  "title": "Oteryn world metadata authoring files v1 (City, HuntingPlace and Region Area, House, teleport Transition)",
-  "description": "Family index and shard files for world metadata. Static source facts only: house ownership, rent payment, ACL and inventory are runtime state and never appear here. Terrain, objects and placements are out of scope.",
+  "title": "Oteryn world metadata authoring files v1 (City, HuntingPlace and Region Area, teleport Transition)",
+  "description": "Family index and shard files for world metadata. Static source facts only. Houses are owned by the House catalogue (content/houses/, OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1). Terrain, objects and placements are out of scope.",
   "oneOf": [
     { "$ref": "#/$defs/family_index" },
     { "$ref": "#/$defs/city_shard" },
     { "$ref": "#/$defs/hunting_place_shard" },
     { "$ref": "#/$defs/region_shard" },
-    { "$ref": "#/$defs/house_shard" },
     { "$ref": "#/$defs/transition_shard" }
   ],
   "$defs": {
@@ -46,7 +45,7 @@
       "additionalProperties": false,
       "required": ["family", "key", "revision"],
       "properties": {
-        "family": { "enum": ["Area", "House", "Item", "NPC", "Transition"] },
+        "family": { "enum": ["Area", "Item", "NPC", "Transition"] },
         "key": { "$ref": "#/$defs/slug_key" },
         "revision": { "const": "definition-r1" }
       }
@@ -59,7 +58,7 @@
         "disposition": { "const": "EXACT" },
         "external_id": { "type": "string", "minLength": 1, "maxLength": 64 },
         "identity_namespace": {
-          "enum": ["crystalserver/town-id", "crystalserver/house-id", "crystalserver/map-item-position"]
+          "enum": ["crystalserver/town-id", "crystalserver/map-item-position"]
         },
         "source_key": { "const": "oteryn:source.crystalserver" },
         "source_revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
@@ -304,81 +303,6 @@
         }
       }
     },
-    "house_record": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["declaration", "source_bindings"],
-      "properties": {
-        "declaration": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "beds", "city", "declared_size", "doors", "entry", "footprint", "guildhall",
-            "identity", "kind", "name", "rent"
-          ],
-          "properties": {
-            "beds": { "type": "integer", "minimum": 0, "maximum": 1000 },
-            "city": {
-              "allOf": [
-                { "$ref": "#/$defs/reference" },
-                { "properties": { "family": { "const": "Area" } } }
-              ]
-            },
-            "declared_size": { "type": "integer", "minimum": 0, "maximum": 100000 },
-            "doors": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["door_id", "position"],
-                "properties": {
-                  "door_id": { "type": "integer", "minimum": 0, "maximum": 255 },
-                  "position": { "$ref": "#/$defs/position" }
-                }
-              }
-            },
-            "entry": { "$ref": "#/$defs/position" },
-            "footprint": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["coordinate_frame", "floors", "max_x", "max_y", "min_x", "min_y", "tile_count"],
-              "properties": {
-                "coordinate_frame": { "$ref": "#/$defs/coordinate_frame" },
-                "floors": {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["floor", "tiles"],
-                    "properties": {
-                      "floor": { "$ref": "#/$defs/floor" },
-                      "tiles": { "type": "integer", "minimum": 1 }
-                    }
-                  }
-                },
-                "max_x": { "$ref": "#/$defs/u16" },
-                "max_y": { "$ref": "#/$defs/u16" },
-                "min_x": { "$ref": "#/$defs/u16" },
-                "min_y": { "$ref": "#/$defs/u16" },
-                "tile_count": { "type": "integer", "minimum": 1 }
-              }
-            },
-            "guildhall": { "type": "boolean" },
-            "identity": {
-              "allOf": [
-                { "$ref": "#/$defs/identity" },
-                { "properties": { "key": { "pattern": "^oteryn:house\\.[a-z0-9]+(_[a-z0-9]+)*$" } } }
-              ]
-            },
-            "kind": { "const": "House" },
-            "name": { "type": "string", "minLength": 1, "maxLength": 64 },
-            "rent": { "type": "integer", "minimum": 0 }
-          }
-        },
-        "source_bindings": { "$ref": "#/$defs/source_bindings" }
-      }
-    },
     "transition_record": {
       "type": "object",
       "additionalProperties": false,
@@ -454,17 +378,6 @@
         "shard": { "$ref": "#/$defs/shard_header" }
       }
     },
-    "house_shard": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["family", "records", "schema", "shard"],
-      "properties": {
-        "family": { "const": "House" },
-        "records": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "$ref": "#/$defs/house_record" } },
-        "schema": { "const": "OTERYN_HOUSE_AUTHORING_SHARD/v1" },
-        "shard": { "$ref": "#/$defs/shard_header" }
-      }
-    },
     "transition_shard": {
       "type": "object",
       "additionalProperties": false,
@@ -507,7 +420,7 @@
             "source_key": { "const": "oteryn:source.tibiawiki" }
           }
         },
-        "family": { "enum": ["Area.City", "Area.HuntingPlace", "Area.Region", "House", "Transition.Teleport"] },
+        "family": { "enum": ["Area.City", "Area.HuntingPlace", "Area.Region", "Transition.Teleport"] },
         "generator": {
           "enum": [
             "tools/content-schema/world-authoring/convert_world_metadata.py",

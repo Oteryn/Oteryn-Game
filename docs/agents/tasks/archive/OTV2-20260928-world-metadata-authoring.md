@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260928-world-metadata-authoring
-title: Populate world metadata families (City, HuntingPlace and Region Area, House, teleport Transition)
+title: Populate world metadata families (City, HuntingPlace and Region Area, teleport Transition)
 mode: MIGRATE
 status: completed
 repository: Oteryn/Oteryn-Game
@@ -19,7 +19,6 @@ execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/world-authoring/
   - tools/content-schema/validate_materialized_game_tree.py
-  - content/houses/
   - content/world/areas/cities/
   - content/world/areas/hunting-places/
   - content/world/areas/regions/
@@ -41,17 +40,21 @@ jira: KAN-16
 
 This is step 1 of the owner's world-map plan: metadata first, then the full map import
 (terrain, objects, placements) after a measured storage-format decision, then TibiaWiki
-enrichment. Five families move from `READY_UNPOPULATED` to `POPULATED`:
+enrichment. Four families move from `READY_UNPOPULATED` to `POPULATED`:
 
 - `Area.City`: 35 records, 29 enriched from the English TibiaWiki (below);
 - `Area.HuntingPlace`: 445 records from the English TibiaWiki (Fandom), described below;
 - `Area.Region`: 465 records (28 regions, 437 subregions) from the official 15.30 client
   map file, described below;
-- `House`: 995 records;
 - `Transition.Teleport`: 872 records.
 
+The House family (995 records) this task first authored is superseded. HOUSES-5 (#1331)
+merged the official House catalogue in `content/houses/` under
+`OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1`, and the accepted-contract lane wins. This
+package no longer generates, validates or pins any House data or `world-house.xml`.
+
 The source is `zimbadev/crystalserver@00ce02a5` (`summer-update`, chosen by the owner):
-`world.otbm` and `world-house.xml`. It is sha256-pinned and `OtsHypothesisOnly`.
+`world.otbm`. It is sha256-pinned and `OtsHypothesisOnly`.
 
 `Area.HuntingPlace` comes from `Category:Hunting Places` of `tibia.fandom.com` (the
 Portuguese TibiaWiki is blocked for builds). `fandom_hunting_snapshot.py fetch` stores, per
@@ -110,7 +113,7 @@ reason (3 without a page, 2 hunting-place pages, `Targuna` ambiguous). NPC names
     directory with a legacy locator: `areas/cities/` and `transitions/`, not `worlds/`.
   - Legacy locator lookups therefore scan no new entries, and the legacy `TREE_SHA256` and
     directory-scan budget stay unchanged.
-  - `content/houses/` is outside the legacy root.
+  - `content/houses/` is outside the legacy root and owned by the House catalogue (#1331).
 - **PROVEN:** these files are not in `content/manifest.json`, which is generated only from
   the legacy package (`world_project_v2_to_tree.py`). Adding them there would break its
   round-trip validator.
@@ -123,13 +126,13 @@ reason (3 without a page, 2 hunting-place pages, `Targuna` ambiguous). NPC names
 
 ## Acceptance criteria
 
-- [x] `world-metadata.schema.json` (JSON Schema 2020-12, closed shapes) covers all three
+- [x] `world-metadata.schema.json` (JSON Schema 2020-12, closed shapes) covers the three
       families and their family index.
 - [x] `otbm_reader.py` streams OTBM and fails closed on any unknown item attribute.
 - [x] `convert_world_metadata.py` is sha256-pinned and deterministic, and has a `--check`
       mode.
 - [x] `validate_world_metadata.py` checks schema, shard contiguity, canonical bytes, stray
-      files, sorted unique keys, binding targets, house→city and teleport→Item references,
+      files, sorted unique keys, binding targets, city and teleport→Item references,
       and map extent.
 - [x] `test_world_authoring.py` runs synthetic OTBM fixtures through the reader,
       converter and validator.

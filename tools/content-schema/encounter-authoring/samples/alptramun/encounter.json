@@ -60,12 +60,7 @@
   "anchors": [],
   "phases": [],
   "state": {
-    "counters": [
-      {
-        "name": "dreams_killed",
-        "initial": 0
-      }
-    ],
+    "counters": [],
     "flags": [],
     "timers": []
   },
@@ -92,29 +87,7 @@
       ]
     },
     {
-      "key": "alptramun_resets_dreams",
-      "trigger": {
-        "kind": "creature_died",
-        "role": "alptramun"
-      },
-      "conditions": [
-        {
-          "kind": "has_master",
-          "role": "alptramun",
-          "value": false
-        }
-      ],
-      "actions": [
-        {
-          "kind": "counter",
-          "counter": "dreams_killed",
-          "operation": "set",
-          "value": 0
-        }
-      ]
-    },
-    {
-      "key": "unpleasant_dream_killed",
+      "key": "unpleasant_dream_replaced",
       "trigger": {
         "kind": "creature_died",
         "role": "unpleasant_dream"
@@ -124,31 +97,26 @@
           "kind": "has_master",
           "role": "unpleasant_dream",
           "value": false
-        },
-        {
-          "kind": "counter_compare",
-          "counter": "dreams_killed",
-          "op": ">=",
-          "value": 0
-        },
-        {
-          "kind": "counter_compare",
-          "counter": "dreams_killed",
-          "op": "<=",
-          "value": 9
         }
       ],
       "actions": [
         {
-          "kind": "counter",
-          "counter": "dreams_killed",
-          "operation": "add",
-          "value": 1
+          "kind": "spawn",
+          "role": "horrible_dream",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/horrible_dream",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
         }
       ]
     },
     {
-      "key": "horrible_dream_killed",
+      "key": "horrible_dream_replaced",
       "trigger": {
         "kind": "creature_died",
         "role": "horrible_dream"
@@ -158,31 +126,26 @@
           "kind": "has_master",
           "role": "horrible_dream",
           "value": false
-        },
-        {
-          "kind": "counter_compare",
-          "counter": "dreams_killed",
-          "op": ">=",
-          "value": 9
-        },
-        {
-          "kind": "counter_compare",
-          "counter": "dreams_killed",
-          "op": "<=",
-          "value": 18
         }
       ],
       "actions": [
         {
-          "kind": "counter",
-          "counter": "dreams_killed",
-          "operation": "add",
-          "value": 1
+          "kind": "spawn",
+          "role": "nightmarish_dream",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/nightmarish_dream",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
         }
       ]
     },
     {
-      "key": "nightmarish_dream_killed",
+      "key": "nightmarish_dream_replaced",
       "trigger": {
         "kind": "creature_died",
         "role": "nightmarish_dream"
@@ -192,31 +155,26 @@
           "kind": "has_master",
           "role": "nightmarish_dream",
           "value": false
-        },
-        {
-          "kind": "counter_compare",
-          "counter": "dreams_killed",
-          "op": ">=",
-          "value": 18
-        },
-        {
-          "kind": "counter_compare",
-          "counter": "dreams_killed",
-          "op": "<=",
-          "value": 27
         }
       ],
       "actions": [
         {
-          "kind": "counter",
-          "counter": "dreams_killed",
-          "operation": "add",
-          "value": 1
+          "kind": "spawn",
+          "role": "mind_wrecking_dream",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/mind_wrecking_dream",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
         }
       ]
     },
     {
-      "key": "mind_wrecking_dream_killed",
+      "key": "mind_wrecking_dream_replaced",
       "trigger": {
         "kind": "creature_died",
         "role": "mind_wrecking_dream"
@@ -226,26 +184,21 @@
           "kind": "has_master",
           "role": "mind_wrecking_dream",
           "value": false
-        },
-        {
-          "kind": "counter_compare",
-          "counter": "dreams_killed",
-          "op": ">=",
-          "value": 27
-        },
-        {
-          "kind": "counter_compare",
-          "counter": "dreams_killed",
-          "op": "<=",
-          "value": 36
         }
       ],
       "actions": [
         {
-          "kind": "counter",
-          "counter": "dreams_killed",
-          "operation": "add",
-          "value": 1
+          "kind": "spawn",
+          "role": "mind_wrecking_dream",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/mind_wrecking_dream",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
         }
       ]
     },

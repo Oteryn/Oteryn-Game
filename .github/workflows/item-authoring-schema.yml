@@ -5,14 +5,20 @@ on:
     paths:
       - tools/content-schema/item-authoring/**
       - tools/content-schema/world-object-authoring/**
+      - content/world/terrain/**
+      - content/world/objects/**
       - tools/content-schema/validate_item_master_schema.py
       - tools/content-schema/test_validate_item_master_schema.py
       - imports/tibiawiki/bindings/items.json
       - imports/crystalserver/bindings/items.json
+      - imports/crystalserver/facts/**
       - imports/tibiawiki/facts/items-family-fallback.json
+      - imports/tibiawiki/facts/items-stats.json
       - imports/tibiawiki/batches.json
       - imports/tibiawiki/sources.json
       - tools/content-census/item_wiki_family_capture.py
+      - tools/content-census/item_wiki_stats_capture.py
+      - tools/content-census/item_wiki_stats_capture_self_test.py
       - content/assets/files/appearances-*.dat
       - imports/official/appearance-membership/**
       - .github/workflows/item-authoring-schema.yml
@@ -71,6 +77,16 @@ jobs:
       - name: Donor census fixture tests
         run: python test_donor_census.py
 
+      - name: TibiaWiki Item stat snapshot self-test
+        working-directory: tools/content-census
+        run: python item_wiki_stats_capture_self_test.py
+
+      - name: Weapon proficiency tests and artifact drift
+        run: |
+          set -euo pipefail
+          python test_item_weapon_proficiency.py
+          python item_weapon_proficiency.py --check
+
       - name: Client appearance census fixture tests
         run: python test_client_appearance_census.py
 
@@ -125,6 +141,23 @@ jobs:
       - name: WorldObject and Terrain authoring tests
         working-directory: tools/content-schema/world-object-authoring
         run: python test_world_objects.py
+
+      - name: WorldObject and Terrain catalogue drift against pinned Crystal
+        working-directory: tools/content-schema/world-object-authoring
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/crystal-catalogue"
+          read -r REPO REV POOL < <(cd ../item-authoring && python -c '
+          from engine_items import ENGINES, DELIVERY_POOL_PATH
+          c = ENGINES["crystal"]
+          print(c["repository"], c["revision"], DELIVERY_POOL_PATH["crystal"])')
+          # The loader verifies every file against its pinned digest.
+          for path in data/items/items.xml data/items/appearances.dat "$POOL"; do
+            mkdir -p "$SRC/$(dirname "$path")"
+            curl -fsSL --retry 5 --retry-delay 2 \
+              "https://raw.githubusercontent.com/$REPO/$REV/$path" -o "$SRC/$path"
+          done
+          python build_catalogue.py --source "$SRC" --check
 
       - name: Item Master census
         working-directory: .

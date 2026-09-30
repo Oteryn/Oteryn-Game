@@ -16,10 +16,11 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 33567, "Mount": 252,
-    "Creature": 1463, "Presentation": 2557, "Behavior": 2557, "Loot": 1026, "Ability": 5841, "Effect": 4447, "Formula": 4761,
-    "NPC": 1094, "Dialogue": 707, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 58,
+    "Creature": 1476, "Presentation": 2578, "Behavior": 2578, "Loot": 1029, "Ability": 5886, "Effect": 4489, "Formula": 4806,
+    "NPC": 1102, "Dialogue": 715, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
+    "Proficiency": 443,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1463, "Encounter": 58, "NPC": 2344}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1476, "Encounter": 61, "NPC": 2352}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -41,10 +42,17 @@ assert "imports/canary/bindings/creatures.json" in paths
 assert "imports/tibiawiki/bindings/creatures.json" in paths
 assert all(not path.startswith("content/world/") for path in paths)
 
-assert manifest["families"]["NPC"] == {"records": 1094, "index": "content/npcs/definitions/index.json"}
-assert manifest["families"]["Dialogue"] == {"records": 707, "index": "content/dialogues/definitions/index.json"}
+assert manifest["families"]["NPC"] == {"records": 1102, "index": "content/npcs/definitions/index.json"}
+assert manifest["families"]["Dialogue"] == {"records": 715, "index": "content/dialogues/definitions/index.json"}
 assert manifest["families"]["Service.Trade"] == {"records": 322, "index": "content/services/trade/index.json"}
 assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "content/services/travel/index.json"}
+assert manifest["families"]["Charm"] == {"records": 25, "index": "content/charms/index.json"}
+assert "Charm" in project["migrated_families"] and "Charm" not in project["next_population_families"]
+assert any(path.startswith("content/charms/charms-") for path in paths) and "content/charms/index.json" in paths
+assert manifest["families"]["Proficiency"] == {"records": 443, "index": "content/proficiencies/index.json"}
+assert "Proficiency" in project["migrated_families"] and "Proficiency" not in project["next_population_families"]
+assert sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
+assert "content/proficiencies/index.json" in paths
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 

@@ -10,6 +10,8 @@ CLOSURE=ROOT/"docs/agents/evidence/OTV2-20260925-world-successor-tree-closure-v1
 LEGACY_ROOT="content/world/"
 WORLD_STATES={"READY_UNPOPULATED","LEGACY_COMPAT_PRESENT"}
 FAMILY_INDEX="OTERYN_FAMILY_INDEX/v1"
+# WO-2: the Terrain and WorldObject catalogues are populated beside the legacy package.
+POPULATED_WORLD_CATALOGUES={"content/world/terrain/","content/world/objects/"}
 class ValidationError(RuntimeError): pass
 def req(ok: bool, code: str)->None:
     if not ok: raise ValidationError(code)
@@ -75,8 +77,9 @@ def main()->int:
             else:
                 req(payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1",f"WORLD_MARKER_SCHEMA:{path}")
                 req(payload.get("kind")==node["kind"],f"KIND_MISMATCH:{path}")
-                req(payload.get("population_state") in WORLD_STATES,f"WORLD_MARKER_STATE:{path}")
-                req(local=={"index.json"}|locators,f"WORLD_STRAY_FILE:{path}")
+                req(payload.get("population_state") in WORLD_STATES|({"POPULATED"} if path in POPULATED_WORLD_CATALOGUES else set()),f"WORLD_MARKER_STATE:{path}")
+                catalogue={n for n in local if path in POPULATED_WORLD_CATALOGUES and n.startswith(rel.rstrip("/")+"-") and n.endswith(".json")}
+                req(local=={"index.json"}|locators|catalogue,f"WORLD_STRAY_FILE:{path}")
         if payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1":
             req(payload.get("path")==path,f"PATH_MISMATCH:{path}")
             req(payload.get("owner")==node["owner"],f"OWNER_MISMATCH:{path}")

@@ -14,9 +14,14 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 ITEM_SHARD_SIZE = 500
 ADMISSION_MAIN = "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c"
-REVISION = "tree-npc-crystal-supplement-r1"
+REVISION = "tree-npc-fan-wiki-parity-r1"
 FIELD_CENSUS = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enrichment-wave1-staged.json"
+# Charm is a static family authored under tools/content-schema/charm-authoring (`charm_authoring.py content`);
+# it has no legacy WorldProject source, so this generator only registers the committed family.
+CHARM_INDEX = "content/charms/index.json"
+# Proficiency likewise (tools/content-schema/proficiency-authoring, `proficiency_authoring.py content`).
+PROFICIENCY_INDEX = "content/proficiencies/index.json"
 # A12 (ITEM-ID-1): the staged packet is history naming retired Item keys; its targets are emitted
 # through the append-only alias table (content/items/aliases.json).
 ITEM_ALIASES = ROOT / "content" / "items" / "aliases.json"
@@ -303,7 +308,7 @@ def main() -> int:
     })
 
     npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
-    if len(npc_declarations) != 1094:
+    if len(npc_declarations) != 1102:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
@@ -383,7 +388,7 @@ def main() -> int:
     })
 
     dialogue_declarations = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
-    if len(dialogue_declarations) != 707:
+    if len(dialogue_declarations) != 715:
         raise RuntimeError(f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}")
 
     # No source bindings exist for Dialogue declarations (WorldProject/v2 NPC admission wave A).
@@ -451,6 +456,14 @@ def main() -> int:
     if sum(service_counts.values()) != len(service_records):
         raise RuntimeError(f"SERVICE_FIELD_SPLIT_MISMATCH:{service_counts}")
 
+    charm_index = load(ROOT / CHARM_INDEX)
+    if charm_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or charm_index.get("family") != "Charm":
+        raise RuntimeError("CHARM_INDEX_MISSING")
+    charm_count = charm_index["record_count"]
+    proficiency_index = load(ROOT / PROFICIENCY_INDEX)
+    if proficiency_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or proficiency_index.get("family") != "Proficiency":
+        raise RuntimeError("PROFICIENCY_INDEX_MISSING")
+    proficiency_count = proficiency_index["record_count"]
     creature_managed = [path for shards in creature_shards.values() for path in shards]
     creature_managed += [f"{node}index.json" for node, _ in CREATURE_FAMILIES.values()]
     service_managed = [path for shards in service_shards.values() for path in shards]
@@ -459,7 +472,8 @@ def main() -> int:
                       *creature_managed, *npc_shards, "content/npcs/definitions/index.json",
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",
-                      *service_managed, *outputs.keys()])
+                      *service_managed, CHARM_INDEX, *charm_index["shards"],
+                      PROFICIENCY_INDEX, *proficiency_index["shards"], *outputs.keys()])
     # A family that grows renames its last shard; drop the superseded shard files so every shard is managed.
     shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
     managed_set = set(managed)
@@ -476,6 +490,8 @@ def main() -> int:
         "families": {
             "Item": {"records": len(item_records), "index": "content/items/index.json"},
             "Mount": {"records": len(mount_rows), "index": "content/cosmetics/mounts/index.json"},
+            "Charm": {"records": charm_count, "index": CHARM_INDEX},
+            "Proficiency": {"records": proficiency_count, "index": PROFICIENCY_INDEX},
             **{family: {"records": creature_counts[family], "index": f"{node}index.json"}
                for family, (node, _) in CREATURE_FAMILIES.items()},
             "NPC": {"records": len(npc_rows), "index": "content/npcs/definitions/index.json"},
@@ -499,7 +515,7 @@ def main() -> int:
         },
         "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts,
                            "NPC": len(npc_rows), "Encounter": len(encounter_rows), "Dialogue": len(dialogue_rows),
-                           **service_counts},
+                           **service_counts, "Charm": charm_count, "Proficiency": proficiency_count},
         "item_authoring_counts": {"authoring": len(authoring_by_target), "taxonomy": len(taxonomy_rows), "relation_sources": len(relation_rows)},
         "source_binding_counts": {"Item": len(item_bindings), "Mount": len(mount_bindings), "Creature": len(creature_bindings),
                                    "NPC": len(npc_bindings), "Encounter": len(encounter_bindings)},
@@ -514,11 +530,12 @@ def main() -> int:
         "project_revision": REVISION,
         "manifest": "content/manifest.json",
         "content_lock": "content/content.lock.json",
-        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Encounter", "Dialogue", "Service"],
+        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Encounter", "Dialogue", "Service", "Charm",
+                             "Proficiency"],
         "legacy_compatibility_root": "content/world",
         "runtime_source": "legacy_until_separately_qualified",
         "next_population_families": [
-            "Quest", "Achievement", "Outfit", "Charm", "Area", "House", "WorldObject",
+            "Quest", "Achievement", "Outfit", "Area", "House", "WorldObject",
         ],
     })
     print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} encounters={len(encounter_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")

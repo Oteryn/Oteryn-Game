@@ -527,3 +527,134 @@ differs in 297 (mostly beam/wave lengths and single-target versus area), the eff
 665 (64 of them through the default hit effect; physical damage on a player shows blood) and
 differs in 278, and the missile id is equal in 293 and differs in 160. The scenes are drawings, so
 they are review evidence for a later owner decision, not an automatic D15 adoption (D18).
+
+## 10. Soul War group: monster-side extensions (SW-1, SW-2)
+
+- Status: **ACCEPTED** by the owner 2026-09-30 (answers in §13.6 of the encounter format, posted verbatim on #162;
+  the control plane assigns their D-numbers). Nothing here is implemented yet.
+- Companion: §13 of `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` holds the encounter-side mechanics of the same group
+  (SW-3..5), the owner questions (Q1-Q6) and the decision test for all five extensions.
+- Scope: the two registered spells that block Soul War hunting monsters, `soulwars fear` and `destroy magic walls`.
+- Evidence: Canary `47dfd51f` (paths below relative to that checkout); TibiaWiki at the 2026-09-27 cut (D15, D33).
+  The census numbers were re-derived by converting every monster file in memory with the `population_census.py` rules
+  and listing each monster's open manifest rows.
+
+| Spell | Census monsters | Extension |
+|---|---|---|
+| `soulwars fear` (D18 pattern `fear`) | 4: Bony Sea Devil, Turbulent Elemental, Goshnar's Spite, Hazardous Phantom | SW-1: `Ability.windup` |
+| `destroy magic walls` (pattern `remove_magic_walls`) | 5: Bony Sea Devil, Brachiodemon, Cloak of Terror, Many Faces, The Monster | SW-2: none; the existing `remove_items` `top_item_first_tile` plus two converter fixes |
+
+The plain `fear` spell (`data-otservbr-global/scripts/spells/monster/fear.lua:1-22`, one combat with a 3 s
+`CONDITION_FEARED`) already converts: Fungosaurus, Shrieking Cry-Stal and Doctor Marrow carry a `feared` condition
+Effect. So the condition itself exists; only the windup is missing.
+
+### 10.1 `soulwars fear`: SW-1, `Ability.windup`
+
+1. **Mechanic.** The caster shows a smoke effect, and 2 s later its target is feared for 3 s.
+2. **Canary behaviour** (`data-otservbr-global/scripts/spells/monster/soulwars_fear.lua`):
+   - Lines 1-6: one combat with the blue ghost effect and a `CONDITION_FEARED` of 3,000 ms.
+   - Lines 18-22: the cast sends `CONST_ME_GHOST_SMOKE` on the caster and schedules the combat 2,000 ms later with
+     the cast's target variant.
+   - Lines 10-16: the delayed combat runs only if the caster still exists. It hits the target taken at the cast. Range
+     and sight are checked only at the cast (`blockWalls`, `needTarget`, lines 26-27).
+   - The engine's fear rules apply as for every `feared` condition: a player immune to fear or already feared is not
+     feared again, and only (party members + 5) / 5 members of a party can be feared at once
+     (`src/creatures/combat/combat.cpp:1003-1029`, called at 1074).
+   - Users: `bony_sea_devil.lua:113` and `turbulent_elemental.lua:108` (interval 2 s, chance 1), `goshnars_spite.lua:105`
+     (chance 10), `undeads/hazardous_phantom.lua:95` (chance 2); Goshnar's Megalomania green and purple also cast it but
+     do not convert (quest configuration at load, §9).
+   - The reference-date wiki confirms the two effects and the delay: `Feared` (revision 1149698) says 2-3 s, and
+     `Soul War Quest/Spoiler` (revision 1134584, Ebb and Flow section) says 2 s. `Feared` adds: "If the creature
+     changes targets between these two effects, the new target will be feared." That differs from Canary; Q3 a of
+     §13.6 follows the wiki.
+3. **Extension SW-1.** An Ability may carry `windup: {delay_ms, caster_asset_binding}`.
+   - At the cast the usual checks run and the caster binding is shown on the caster's tile. After `delay_ms` the
+     Ability's effects run if the caster still exists. They hit the caster's target at that moment (Q3 a, the wiki),
+     not the target taken at the cast (Canary); with no target then, nothing happens.
+   - Allowed only on a single-target Ability (`needs_target: true`, no `area`, `variants`, `chain` or `encounter`).
+     That is all `soulwars fear` needs; a windup over an area is not decided here.
+   - The converter matches the script as one exact template, like `path_trail_missile` (§8.6): a caster
+     `sendMagicEffect`, then `addEvent(f, N, creature:getId(), var)` where `f` runs one Combat only if the caster
+     exists. The Combat converts as a P2 spell. Any other body stays unresolved.
+   - Fear movement (runtime obligation, from Gudii 3/6 and the wiki): a feared player never moves onto a field or
+     into a teleport; this belongs to the world rule for every `feared` condition, not to the Ability.
+   - Declined: a native `fear` behaviour (D13). The delay is the only non-data part, and it is plain data.
+4. **Authored JSON** (the shared Ability `canary:ability/spell/soulwars_fear`):
+   ```json
+   {"identity": {"key": "canary:ability/spell/soulwars_fear", "revision": "canary-47dfd51f"},
+    "kind": "spell", "range_tiles": 0, "needs_target": true, "needs_direction": false,
+    "windup": {"delay_ms": 2000, "caster_asset_binding": "canary.appearance:effect/ghost_smoke"},
+    "effects": [{"family": "Effect", "key": "canary:ability/spell/soulwars_fear/effect-condition-1", "revision": "canary-47dfd51f"}]}
+   ```
+   The Effect is the one `fear` already produces: `condition` `feared`, `fixed_duration`, 3,000 ms, impact
+   `canary.appearance:effect/blue_ghost`.
+5. **Validation and tests.**
+   - Schema (`build_formal_schema.py`): optional `windup` with `delay_ms` (integer, at least 1) and
+     `caster_asset_binding`. Semantic (`validate_monster.py`): `windup` only with `needs_target: true` and without
+     `area`, `variants`, `chain` and `encounter`.
+   - `verify_formal_schema.py`: one positive case and negative cases for a zero delay and for `windup` with `area`.
+   - `canary_batch.py`: the template match, and a negative check that a changed body stays unresolved.
+   - Rust: the Ability profile mirrors `windup`, with a focused positive and negative admission test.
+6. **Out of scope.** The fear runtime and the party rule (a world combat rule for every `feared` condition); which
+   monsters cast fear at all (Q4 a of §13.6: Canary's lists).
+
+### 10.2 `destroy magic walls`: SW-2, no schema extension
+
+1. **Mechanic.** The caster removes one magic wall or wild growth within two tiles.
+2. **Canary behaviour** (`data-otservbr-global/scripts/spells/monster/destroy_magic_walls.lua`):
+   - Lines 1-6: the ids are the engine constants `ITEM_MAGICWALL_SAFE`, `ITEM_MAGICWALL`, `ITEM_WILDGROWTH_SAFE` and
+     `ITEM_WILDGROWTH`: 10181, 2128, 10182 and 2130 (`src/utils/utils_definitions.hpp:596-602`).
+   - Lines 11-24: the 5x5 square around the caster is scanned column by column, west to east, each column north to
+     south. On the first tile whose top visible thing is one of the ids, that item is removed and the cast ends
+     (line 20).
+   - `Tile::getTopVisibleThing` returns a visible creature first, then the items (`src/items/tile.cpp:438-458`). A
+     creature cannot stand on these walls, so in practice the tile holds the wall.
+   - Line 19 sends `CONST_ME_POFF` on the caster's tile, not on the removed wall. The `spell:cooldown` of line 31 binds
+     player casters only; a monster casts it by its own entry (interval 1 s, chance 30 for all four Soul War users;
+     `the_monster.lua:91`, chance 50).
+   - The wiki lists the wall breaker for Brachiodemon, Branchy Crawler, Cloak of Terror and Many Faces (Many Faces in
+     its behaviour text). Canary gives it to Bony Sea Devil, not to Branchy Crawler; Q4 a keeps Canary's lists.
+3. **Extension.** None. D18 already has the data form: `remove_items` with `selection: top_item_first_tile`, and the
+   Rust profile has `TopItemFirstTile` (`apps/game-server/src/content/project/v2/creature.rs`). No admitted Ability
+   uses that selection yet. Two converter gaps keep the spell unresolved today (§8.6: "engine item constants the stubs
+   do not model"):
+   - the probe world gets the four `ITEM_*` constants with their engine values;
+   - `probe_remove_items` gets a second branch for `top_item_first_tile`: the stub's top visible item is set on one
+     tile at a time, and the branch requires one removal on exactly that tile, then no further tile read. Only then is
+     the Effect emitted.
+   - The schema text of `top_item_first_tile` says "the first tile" without an order. This design fixes the order as
+     Canary's scan: columns west to east, each column north to south, over the rows of the Ability area. It is a
+     clarification for a value no content uses yet.
+4. **Authored JSON** (the Effect of the shared Ability `canary:ability/spell/destroy_magic_walls`):
+   ```json
+   {"identity": {"key": "canary:ability/spell/destroy_magic_walls/effect-remove", "revision": "canary-47dfd51f"},
+    "operation": "remove_items",
+    "removed_items": {"items": [{"family": "Item", "key": "canary:item/10181", "revision": "canary-47dfd51f"},
+                                {"family": "Item", "key": "canary:item/2128", "revision": "canary-47dfd51f"},
+                                {"family": "Item", "key": "canary:item/10182", "revision": "canary-47dfd51f"},
+                                {"family": "Item", "key": "canary:item/2130", "revision": "canary-47dfd51f"}],
+                      "selection": "top_item_first_tile"},
+    "presentation": {"impact_asset_binding": "canary.appearance:effect/poff"}}
+   ```
+   The Ability has `area.matrix.north` of five rows `xxxxx` with the centre `C`, `range_tiles` 0 and no target. By the
+   existing convention (`anomaly break`) the impact binding shows on the removed wall's tile; Canary shows it on the
+   caster's. That is presentation only; Q4 a keeps the convention.
+5. **Validation and tests.** No schema change. `canary_batch.py` gains the constants and the probe branch, with a
+   negative probe (a script that removes more than one item) that stays unresolved. The schema description of
+   `top_item_first_tile` gains the scan order. The census must show the five monsters losing this row and no other
+   row changing.
+6. **Out of scope.** `anomaly break`, which already converts as `first_listed_per_tile`; the magic wall and wild
+   growth items themselves (Item domain).
+
+### 10.3 Creatures without a Canary file: owner answers (2026-09-30)
+
+- `samples/wiki-only-candidates-2026-09-30.json` lists the 64 client 15.30 creatures (`imports/cipsoft-staticdata`)
+  with no Canary file and no admission. It is committed as evidence.
+- 50 of them have a CrystalServer file at `00ce02a5` outside `summer_update_2026`. **They come through a widened
+  `crystal_batch.py`, with the reference-date wiki applied over the Crystal values as for every Canary monster
+  (answer c).** The remaining 14 are authored from the wiki (D44), which needs `wiki_authored.py` to take a table of
+  creatures instead of one.
+- **Ordinary monsters first (answer a).** By the preparation heuristic 37 are ordinary monsters; 26 quest, event
+  or raid creatures and 1 summon-like creature wait for their encounters. The kinds are confirmed at admission.
+- `wiki_only_candidates.py --check` reproduces the names and Crystal files from the staticdata and both pinned commit
+  trees; the sample records the staticdata digest and both commits.

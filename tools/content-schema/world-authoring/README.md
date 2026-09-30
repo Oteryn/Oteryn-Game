@@ -1,16 +1,16 @@
-# World metadata authoring (City, HuntingPlace and Region Area, House, teleport Transition)
+# World metadata authoring (City, HuntingPlace and Region Area, teleport Transition)
 
-This package is the first population of the world tree. It covers **metadata** only: towns,
-houses and teleports, plus hunting places from the English TibiaWiki. Terrain, map objects and placements (19.3 M tiles, 24.9 M items) are
+This package is the first population of the world tree. It covers **metadata** only: towns
+and teleports, plus hunting places from the English TibiaWiki. Terrain, map objects and placements (19.3 M tiles, 24.9 M items) are
 a later step. They need a physical storage format selected by measurement, and JSON is not
-that format.
+that format. Houses are not part of this package: the official House catalogue in
+`content/houses/` is owned by `OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1` (HOUSES-5).
 
 | Family | Path | Records | Shard schema |
 |---|---|---:|---|
 | `Area.City` | `content/world/areas/cities/` | 35 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Area.HuntingPlace` | `content/world/areas/hunting-places/` | 445 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Area.Region` | `content/world/areas/regions/` | 465 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
-| `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 
 Each directory has an `OTERYN_FAMILY_INDEX/v1` `index.json`, plus canonical JSON shards of
@@ -31,7 +31,6 @@ and `samples/source-capture-v1.json`:
 
 - `zimbadev/crystalserver`, branch `summer-update`, commit `00ce02a57ca5a12e48f32a3476e37471167e4c3f`.
 - `data-global/world/world.otbm`, gzip, OTBM v4, 35143×34812, floors 0–15.
-- `data-global/world/world-house.xml`.
 
 This source is migration evidence (`OtsHypothesisOnly`). Only normalized facts are
 committed. Map, sprite and asset bytes never are.
@@ -146,20 +145,14 @@ same pattern as the hunting places.
 ## What is imported and what is not
 
 Keys are stable across source updates: when the family files are already committed, the
-converter reuses the existing key for the same source id (`crystalserver/house-id`,
-`crystalserver/town-id`) even if the source renames the house or town, and only mints a slug
+converter reuses the existing key for the same source id (`crystalserver/town-id`)
+even if the source renames the town, and only mints a slug
 key for a new id (failing closed if it collides with any committed key). Teleport keys are
 position-based.
 
 - **City:** one record per OTBM town, holding the name and temple position. All 35 towns
   are kept as the source declares them, including `Dawnport Tutorial`, `Island of
   Destiny`, `Targuna` and `Home`. The English TibiaWiki adds facts, see "Cities" below.
-- **House:** holds identity, name, city, entry, rent, guildhall flag and beds from
-  `world-house.xml`. It also holds the footprint from OTBM house tiles (per-floor tile
-  counts, bounding box) and doors (`door_id` and position).
-  - `declared_size` (XML `size`) and `footprint.tile_count` (OTBM tiles) differ for 979 of
-    995 houses, so both are recorded.
-  - Ownership, rent payment, ACL and inventory are runtime state and never appear here.
 - **Teleport:** holds a from/to position, and the teleport `Item` resolved through
   `imports/crystalserver/bindings/items.json`. Only teleports whose destination is set,
   inside the map and on an existing tile are imported. The capture summary counts those

@@ -1,0 +1,825 @@
+// D39 PG cases: `interaction_chest_use::settle_chest_use` resolves the placed chest, the
+// RewardClaim that lists it (CHEST-CONTENT-1), its reward and the backpack facts from the
+// current Content generation, builds the GAME-INTERACTION
+// child occurrence and claims through CHEST-1's `freeze_reward_claim_mint`/
+// `commit_reward_claim_mint`. Reuses the B3-1 harness (`item_transfer_postgres_cases`).
+// Also covers the §17 intent binding of the chest, the §17.2 pending refusal and the
+// reconciliation of an ambiguous (frozen, uncommitted) claim.
+
+use crate::combat::DurabilitySession;
+use crate::combat_pickup::{GroundPickupRequest, PickupContentError, settle_ground_pickup};
+use crate::content::{
+    CanonicalReferencePlayableContent, ClientProjectionClass, ContentLockBinding, ContentLockEntry,
+    CoordinateFrameRef, DefinitionFamily, DefinitionRevisionRef, EvidenceBindingRef,
+    EvidenceDisposition, FootprintCell, FootprintRelation, LogicalCell, MapRevisionRef,
+    PackageManifestBinding, PlacementKey, PlacementRef, ProductionAtom, ProductionKey,
+    REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+    ReferenceDefinition, ReferenceDefinitionKind, ReferenceEquipmentPattern,
+    ReferenceEquipmentSlot, ReferenceItemContainer, ReferenceItemDefinition,
+    ReferenceItemDestination, ReferenceItemEquipment, ReferenceItemField,
+    ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStack,
+    ReferenceItemStackClass, ReferencePlayableContentSource, ReferenceRewardClaimDefinition,
+    RewardClaimItem, RewardClaimPlacement, Sha256HexDigest, SpatialAddress,
+    TypedDefinitionRef as ContentTypedDefinitionRef, link_reference_playable,
+};
+use crate::domain::CharacterId;
+use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_transfer::{
+    CurrentCharacterItemFence, ItemTransferDestination, ItemTransferOutcome,
+};
+use crate::durability::reward_claim_mint::{
+    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimRefusal,
+};
+use crate::foundation::{
+    CommandId, CommandRef, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
+};
+use crate::interaction::InteractionError;
+use crate::interaction_chest_use::{
+    ChestUseError, ChestUseOutcome, ChestUseRequest, chest_use_occurrence, prepare_chest_use,
+    resolve_chest, settle_chest_use,
+};
+use crate::item_transfer_postgres_cases::{
+    CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, id, runtime, scope,
+};
+use ReferenceItemField::{Known, Unknown};
+use std::collections::BTreeMap;
+
+const COIN: &str = "oteryn:chestuse.pg.coin";
+const BACKPACK: &str = "oteryn:chestuse.pg.backpack";
+const CHEST: &str = "oteryn:chestuse.pg.chest";
+const ABSENT: &str = "oteryn:chestuse.pg.absent-from-content";
+const CHEST_PLACEMENT: &str = "oteryn:chestuse.pg.placement.chest";
+/// A second chest sharing `CLAIM` with `CHEST_PLACEMENT`, with the same reward.
+const SECOND_CHEST_PLACEMENT: &str = "oteryn:chestuse.pg.placement.chest.second";
+const OTHER_CHEST_PLACEMENT: &str = "oteryn:chestuse.pg.placement.chest.other";
+const THIRD_CHEST_PLACEMENT: &str = "oteryn:chestuse.pg.placement.chest.third";
+/// An Item placement that no RewardClaim lists.
+const UNCLAIMED_CHEST_PLACEMENT: &str = "oteryn:chestuse.pg.placement.chest.unclaimed";
+const DOOR_PLACEMENT: &str = "oteryn:chestuse.pg.placement.door";
+const CLAIM: &str = "oteryn:chestuse.pg.claim.first";
+const OTHER_CLAIM: &str = "oteryn:chestuse.pg.claim.second";
+const THIRD_CLAIM: &str = "oteryn:chestuse.pg.claim.third";
+
+fn item(key: &str) -> TypedDefinitionRef {
+    TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: key.into(),
+        revision_ref: "definition-r1".into(),
+    }
+}
+
+fn content_typed(family: DefinitionFamily, key: &str) -> TestResult<ContentTypedDefinitionRef> {
+    Ok(ContentTypedDefinitionRef::new(
+        family,
+        ProductionKey::new(key)?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    ))
+}
+
+fn placement(
+    key: &str,
+    definition: ContentTypedDefinitionRef,
+    content: &CanonicalReferencePlayableContent,
+) -> TestResult<PlacementRef> {
+    let evidence = EvidenceBindingRef::new(
+        ProductionAtom::new("chest use PG manifest revision", "manifest-r0")?,
+        ProductionKey::new("oteryn:chestuse.pg.placement-source")?,
+        EvidenceDisposition::Unknown,
+    );
+    let members = vec![FootprintCell {
+        dx: 0,
+        dy: 0,
+        dz: 0,
+    }];
+    Ok(PlacementRef {
+        key: PlacementKey::new(key)?,
+        map_revision: MapRevisionRef::new("map-r1")?,
+        definition,
+        address: SpatialAddress {
+            world_id: content.world_id,
+            coordinate_frame: content.coordinate_frame.clone(),
+            cell: LogicalCell {
+                x: 100,
+                y: 200,
+                z: 7,
+            },
+            evidence: evidence.clone(),
+        },
+        presentation_footprint: FootprintRelation::Qualified {
+            members: members.clone(),
+            evidence: evidence.clone(),
+        },
+        collision_footprint: FootprintRelation::Qualified { members, evidence },
+        local_object_initial_state: None,
+        local_object_state_attributes: BTreeMap::new(),
+        local_object_revert_after_ms: BTreeMap::new(),
+        local_object_event_transitions: BTreeMap::new(),
+    })
+}
+
+/// Content with a stackable `COIN` (maximum 30), the D114-shaped `BACKPACK` (capacity 20,
+/// container-slot pattern), a `CHEST` item and three RewardClaims:
+/// - `CLAIM`: `CHEST_PLACEMENT` and `SECOND_CHEST_PLACEMENT`, 7 coins each;
+/// - `OTHER_CLAIM`: `OTHER_CHEST_PLACEMENT`, 1 coin;
+/// - `THIRD_CLAIM`: `THIRD_CHEST_PLACEMENT`, 1 coin.
+///
+/// The placements are those five chests (one unclaimed) and a `LocalObject` door. `ABSENT` is
+/// never a definition key.
+fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
+    let package_key = ProductionKey::new("oteryn:content.chest-use-pg")?;
+    let package_revision = ProductionAtom::new("chest use PG package revision", "pg-r1")?;
+    let package_manifest = PackageManifestBinding::new(
+        package_key.clone(),
+        package_revision.clone(),
+        ProductionAtom::new("chest use PG schema", "schema-v1")?,
+        ProductionAtom::new("chest use PG license", "license:project-owned-v1")?,
+        Sha256HexDigest::new("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")?,
+    );
+    let provenance = package_manifest.package_provenance_digest()?;
+    let content_lock = ContentLockBinding {
+        revision_digest_token: ProductionAtom::new("chest use PG content lock", "lock:pg-r1")?,
+        entries: vec![ContentLockEntry::exact(
+            package_key,
+            package_revision,
+            provenance,
+        )],
+    };
+    let plain = |stack_class, semantics| ReferenceItemDefinition {
+        physical_class: ReferenceItemPhysicalClass::Physical,
+        materializable: true,
+        stack_class,
+        legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
+        semantics,
+    };
+    let coin = plain(
+        ReferenceItemStackClass::StackCapable,
+        ReferenceItemSemantics {
+            stack: Known(ReferenceItemStack {
+                stackable: Known(true),
+                stack_max: Known(30),
+            }),
+            ..ReferenceItemSemantics::default()
+        },
+    );
+    let backpack = plain(
+        ReferenceItemStackClass::NonStackable,
+        ReferenceItemSemantics {
+            container: Known(ReferenceItemContainer {
+                capacity: Known(20),
+            }),
+            equipment: Known(ReferenceItemEquipment {
+                patterns: Known(vec![ReferenceEquipmentPattern {
+                    pattern_id: 1,
+                    primary_slot: Known(ReferenceEquipmentSlot::Container),
+                    additional_reserved_slots: Unknown,
+                    mutually_exclusive_groups: Unknown,
+                    vocations: Unknown,
+                    level: Unknown,
+                    compatibility_rule: Unknown,
+                }]),
+            }),
+            ..ReferenceItemSemantics::default()
+        },
+    );
+    let chest = plain(
+        ReferenceItemStackClass::NonStackable,
+        ReferenceItemSemantics::default(),
+    );
+    let definition = |key: &str, item: ReferenceItemDefinition| -> TestResult<_> {
+        Ok(ReferenceDefinition {
+            definition: content_typed(DefinitionFamily::Item, key)?,
+            kind: ReferenceDefinitionKind::Item(item),
+            client_projection: ClientProjectionClass::ClientSafe,
+        })
+    };
+    let reward_claim = |key: &str, chests: &[(&str, u32)]| -> TestResult<_> {
+        let placements = chests
+            .iter()
+            .map(|(chest, count)| -> TestResult<_> {
+                Ok(RewardClaimPlacement {
+                    placement: PlacementKey::new(chest)?,
+                    items: vec![RewardClaimItem {
+                        item: content_typed(DefinitionFamily::Item, COIN)?,
+                        count: *count,
+                    }],
+                })
+            })
+            .collect::<TestResult<Vec<_>>>()?;
+        Ok(ReferenceDefinition {
+            definition: content_typed(DefinitionFamily::RewardClaim, key)?,
+            kind: ReferenceDefinitionKind::RewardClaim(ReferenceRewardClaimDefinition {
+                placements,
+            }),
+            client_projection: ClientProjectionClass::ServerOnly,
+        })
+    };
+    let mut content = link_reference_playable(ReferencePlayableContentSource {
+        profile_revision: ProductionAtom::new(
+            "chest use PG profile",
+            REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+        )?,
+        capability_profile: ProductionAtom::new(
+            "chest use PG capability profile",
+            REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+        )?,
+        package_manifest,
+        content_lock,
+        world_id: WorldId::decode(&id(9))?,
+        coordinate_frame: CoordinateFrameRef::new("global-target-2026-09-27")?,
+        definitions: vec![
+            definition(COIN, coin)?,
+            definition(BACKPACK, backpack)?,
+            definition(CHEST, chest)?,
+            reward_claim(CLAIM, &[(CHEST_PLACEMENT, 7), (SECOND_CHEST_PLACEMENT, 7)])?,
+            reward_claim(OTHER_CLAIM, &[(OTHER_CHEST_PLACEMENT, 1)])?,
+            reward_claim(THIRD_CLAIM, &[(THIRD_CHEST_PLACEMENT, 1)])?,
+        ],
+        placements: vec![],
+        ordered_placements: vec![],
+        transitions: vec![],
+    })?;
+    // The world runtime binds placements after link (as `world_runtime` does); the chests and
+    // the door are added the same way.
+    let mut placements = Vec::new();
+    for chest in [
+        CHEST_PLACEMENT,
+        SECOND_CHEST_PLACEMENT,
+        OTHER_CHEST_PLACEMENT,
+        THIRD_CHEST_PLACEMENT,
+        UNCLAIMED_CHEST_PLACEMENT,
+    ] {
+        placements.push(placement(
+            chest,
+            content_typed(DefinitionFamily::Item, CHEST)?,
+            &content,
+        )?);
+    }
+    placements.push(placement(
+        DOOR_PLACEMENT,
+        content_typed(DefinitionFamily::LocalObject, "oteryn:chestuse.pg.door")?,
+        &content,
+    )?);
+    content.placements = placements;
+    Ok(content)
+}
+
+/// `content` with the reward of `chest` under its claim replaced, as a later Content revision
+/// (or a corrupt one) would carry it.
+fn with_reward(
+    content: &CanonicalReferencePlayableContent,
+    chest: &str,
+    item: ContentTypedDefinitionRef,
+    count: u32,
+) -> TestResult<CanonicalReferencePlayableContent> {
+    let mut changed = content.clone();
+    let chest = PlacementKey::new(chest)?;
+    let entry = changed
+        .definitions
+        .iter_mut()
+        .find_map(|definition| match &mut definition.kind {
+            ReferenceDefinitionKind::RewardClaim(claim) => claim
+                .placements
+                .iter_mut()
+                .find(|entry| entry.placement == chest),
+            _ => None,
+        })
+        .ok_or("chest is not listed under a claim")?;
+    entry.items = vec![RewardClaimItem { item, count }];
+    Ok(changed)
+}
+
+fn fence() -> TestResult<CurrentCharacterItemFence> {
+    Ok(CurrentCharacterItemFence {
+        character_id: CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
+        game_session_id: GameSessionId::decode(&id(SESSION)).map_err(debug)?,
+        connection_generation: ConnectionGeneration::new(1).map_err(debug)?,
+        character_lease_generation: 1,
+        runtime_scope: scope()?,
+        scope_ownership_generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
+    })
+}
+
+fn command(value: u64) -> TestResult<CommandRef> {
+    Ok(CommandRef::new(
+        GameSessionId::decode(&id(SESSION)).map_err(debug)?,
+        CommandId::new(value).map_err(debug)?,
+    ))
+}
+
+fn use_request(command: CommandRef, chest: &str) -> TestResult<ChestUseRequest> {
+    Ok(ChestUseRequest {
+        command,
+        chest: PlacementKey::new(chest)?,
+        content_revision: "content-1".into(),
+        ruleset_revision: "ruleset-1".into(),
+        sim_revision: "sim-1".into(),
+    })
+}
+
+async fn equip_backpack(
+    harness: &Harness,
+    session: &DurabilitySession<'_, '_, '_>,
+    content: &CanonicalReferencePlayableContent,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let backpack = harness.mint(authority, BACKPACK, 1).await?;
+    let equipped = settle_ground_pickup(
+        session,
+        content,
+        fence()?,
+        GroundPickupRequest {
+            command: command(900)?,
+            source_item_instance_id: backpack,
+            source_definition: item(BACKPACK),
+            destination: ItemTransferDestination::ContainerSlot,
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+        },
+    )
+    .await
+    .map_err(debug)?;
+    assert!(matches!(equipped, ItemTransferOutcome::Committed(_)));
+    Ok(())
+}
+
+async fn backpack_entries(
+    harness: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult<usize> {
+    Ok(harness
+        .root
+        .read_character_backpack(authority, fence()?.character_id)
+        .await
+        .map_err(debug)?
+        .map_or(0, |backpack| backpack.entries.len()))
+}
+
+async fn claim_rows(harness: &Harness) -> TestResult<i64> {
+    Ok(
+        sqlx::query_scalar("SELECT count(*) FROM game_reward_claims")
+            .fetch_one(&harness.pool)
+            .await?,
+    )
+}
+
+async fn reservation_rows(harness: &Harness) -> TestResult<i64> {
+    Ok(
+        sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_reservations")
+            .fetch_one(&harness.pool)
+            .await?,
+    )
+}
+
+fn refused_with(
+    outcome: &Result<ChestUseOutcome, ChestUseError>,
+    expected: RewardClaimRefusal,
+) -> bool {
+    matches!(
+        outcome,
+        Err(ChestUseError::Mint(RewardClaimMintError::Refused(reason))) if *reason == expected
+    )
+}
+
+fn committed(
+    outcome: &ChestUseOutcome,
+) -> TestResult<&crate::durability::reward_claim_mint::CommittedRewardClaimMint> {
+    match &outcome.mint {
+        RewardClaimMintOutcome::Committed(committed)
+        | RewardClaimMintOutcome::AlreadyCommitted(committed) => Ok(committed),
+    }
+}
+
+#[test]
+fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "chestuse").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let content = pg_content()?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+        equip_backpack(&harness, &session, &content, &authority).await?;
+
+        let request = use_request(command(1)?, CHEST_PLACEMENT)?;
+        let first = settle_chest_use(&session, &content, fence()?, request.clone())
+            .await
+            .map_err(debug)?;
+        assert!(matches!(first.mint, RewardClaimMintOutcome::Committed(_)));
+        let resolved = resolve_chest(&content, &request.chest).map_err(debug)?;
+        assert_eq!(resolved.claim.production_key, CLAIM);
+        assert_eq!(resolved.quantity, 7);
+        assert_eq!(first.child, chest_use_occurrence(&request, &resolved)?);
+        assert_eq!(first.child.ancestry_depth(), 1);
+        assert_eq!(committed(&first)?.quantity, 7);
+        assert_eq!(backpack_entries(&harness, &authority).await?, 1);
+        assert_eq!(claim_rows(&harness).await?, 1);
+
+        // §17.1: the same CommandRef returns its first outcome and the same child.
+        let replay = settle_chest_use(&session, &content, fence()?, request.clone())
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            replay.mint,
+            RewardClaimMintOutcome::AlreadyCommitted(_)
+        ));
+        assert_eq!(committed(&replay)?, committed(&first)?);
+        assert_eq!(replay.child, first.child);
+
+        // §17: a changed intent under the same CommandRef conflicts: here a later Content
+        // revision gives the chest 8 coins instead of 7.
+        let eight = with_reward(
+            &content,
+            CHEST_PLACEMENT,
+            content_typed(DefinitionFamily::Item, COIN)?,
+            8,
+        )?;
+        let conflict = settle_chest_use(&session, &eight, fence()?, request.clone()).await;
+        assert!(matches!(
+            conflict,
+            Err(ChestUseError::Mint(RewardClaimMintError::ConflictingCause))
+        ));
+        // §17 / D40: the chest is part of the intent. The same CommandRef on another chest of
+        // the same claim, with the same reward, conflicts; it never replays the first chest.
+        let other_chest = use_request(command(1)?, SECOND_CHEST_PLACEMENT)?;
+        let conflict = settle_chest_use(&session, &content, fence()?, other_chest).await;
+        assert!(
+            matches!(
+                conflict,
+                Err(ChestUseError::Mint(RewardClaimMintError::ConflictingCause))
+            ),
+            "{conflict:?}"
+        );
+
+        // Replay precondition: a replay recomputes the intent from the current Content. With
+        // the chest gone from Content it is refused before DUR-03 and writes nothing; the
+        // committed first outcome stays, and replays again once Content is restored.
+        let mut without_chest = content.clone();
+        without_chest
+            .placements
+            .retain(|placement| placement.key.as_str() != CHEST_PLACEMENT);
+        let gone = settle_chest_use(&session, &without_chest, fence()?, request.clone()).await;
+        assert!(
+            matches!(gone, Err(ChestUseError::ChestNotPlaced)),
+            "{gone:?}"
+        );
+        let restored = settle_chest_use(&session, &content, fence()?, request.clone())
+            .await
+            .map_err(debug)?;
+        assert_eq!(committed(&restored)?, committed(&first)?);
+        assert_eq!(claim_rows(&harness).await?, 1);
+        assert_eq!(backpack_entries(&harness, &authority).await?, 1);
+
+        // D42: a new command on the claimed `once` claim is refused with nothing written, on
+        // the same chest and on the other chest that shares the claim.
+        for chest in [CHEST_PLACEMENT, SECOND_CHEST_PLACEMENT] {
+            let again = settle_chest_use(
+                &session,
+                &content,
+                fence()?,
+                use_request(command(2)?, chest)?,
+            )
+            .await;
+            assert!(
+                refused_with(&again, RewardClaimRefusal::AlreadyClaimed),
+                "{chest}: {again:?}"
+            );
+        }
+
+        // A chest of another claim is another occurrence and takes the next entry.
+        let other = settle_chest_use(
+            &session,
+            &content,
+            fence()?,
+            use_request(command(3)?, OTHER_CHEST_PLACEMENT)?,
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(other.mint, RewardClaimMintOutcome::Committed(_)));
+        assert_ne!(other.child, first.child);
+        assert_eq!(backpack_entries(&harness, &authority).await?, 2);
+        assert_eq!(claim_rows(&harness).await?, 2);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn chest_use_is_refused_before_any_write() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "chestuserefused").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let content = pg_content()?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+
+        // No backpack equipped yet: refused as D80 NoMainBackpack, before freeze.
+        let no_backpack = settle_chest_use(
+            &session,
+            &content,
+            fence()?,
+            use_request(command(1)?, CHEST_PLACEMENT)?,
+        )
+        .await;
+        assert!(matches!(
+            no_backpack,
+            Err(ChestUseError::Mint(RewardClaimMintError::Refused(
+                RewardClaimRefusal::NoMainBackpack
+            )))
+        ));
+
+        equip_backpack(&harness, &session, &content, &authority).await?;
+        let absent_reward = with_reward(
+            &content,
+            CHEST_PLACEMENT,
+            content_typed(DefinitionFamily::Item, ABSENT)?,
+            1,
+        )?;
+        let loot_reward = with_reward(
+            &content,
+            CHEST_PLACEMENT,
+            content_typed(DefinitionFamily::Loot, COIN)?,
+            1,
+        )?;
+        let refusals = [
+            // §5.4: the server resolves the target; an unknown placement is refused.
+            (
+                use_request(command(2)?, "oteryn:chestuse.pg.placement.none")?,
+                &content,
+                "not placed",
+            ),
+            // A placement that is not an Item placement is not a chest.
+            (
+                use_request(command(3)?, DOOR_PLACEMENT)?,
+                &content,
+                "not an item",
+            ),
+            // An Item placement that no RewardClaim lists rewards nothing.
+            (
+                use_request(command(7)?, UNCLAIMED_CHEST_PLACEMENT)?,
+                &content,
+                "no claim",
+            ),
+            // The reward item's facts come from Content; an absent definition fails closed.
+            (
+                use_request(command(4)?, CHEST_PLACEMENT)?,
+                &absent_reward,
+                "reward absent",
+            ),
+            // A reward that names a non-Item definition fails closed.
+            (
+                use_request(command(5)?, CHEST_PLACEMENT)?,
+                &loot_reward,
+                "reward not an item",
+            ),
+            // §4.3/§5.7: the revisions are part of the child identity and must be present.
+            (
+                use_request(command(6)?, CHEST_PLACEMENT).map(|mut request| {
+                    request.content_revision = " ".into();
+                    request
+                })?,
+                &content,
+                "no revision",
+            ),
+        ];
+        for (request, content, label) in refusals {
+            let outcome = settle_chest_use(&session, content, fence()?, request).await;
+            let expected = match label {
+                "not placed" => matches!(outcome, Err(ChestUseError::ChestNotPlaced)),
+                "not an item" => matches!(outcome, Err(ChestUseError::ChestNotAnItem)),
+                "no claim" => matches!(outcome, Err(ChestUseError::ChestHasNoClaim)),
+                "reward absent" => matches!(
+                    outcome,
+                    Err(ChestUseError::Content(
+                        PickupContentError::DefinitionNotFound
+                    ))
+                ),
+                "reward not an item" => matches!(
+                    outcome,
+                    Err(ChestUseError::Content(PickupContentError::NotAnItem))
+                ),
+                _ => matches!(
+                    outcome,
+                    Err(ChestUseError::Identity(InteractionError::EmptySemanticKey))
+                ),
+            };
+            assert!(expected, "{label}: {outcome:?}");
+        }
+        assert_eq!(backpack_entries(&harness, &authority).await?, 0);
+        assert_eq!(claim_rows(&harness).await?, 0);
+        let reservations: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_reservations")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(reservations, 0);
+
+        // Nothing was written, so a refused command can still claim with its first intent.
+        let later = settle_chest_use(
+            &session,
+            &content,
+            fence()?,
+            use_request(command(1)?, CHEST_PLACEMENT)?,
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(later.mint, RewardClaimMintOutcome::Committed(_)));
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "chestusepending").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let content = pg_content()?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+        equip_backpack(&harness, &session, &content, &authority).await?;
+
+        // An ambiguous claim: CommandRef 1 is frozen (reserved) and its commit outcome is
+        // unknown to the caller.
+        let request = use_request(command(1)?, CHEST_PLACEMENT)?;
+        let (child, mint_request) =
+            prepare_chest_use(&session, &content, fence()?, request.clone())
+                .await
+                .map_err(debug)?;
+        let frozen = harness
+            .root
+            .freeze_reward_claim_mint(&authority, &harness.node, fence()?, mint_request)
+            .await
+            .map_err(debug)?;
+        let frozen_transaction = *frozen.transaction_id();
+        let frozen_item = *frozen.item_instance_id();
+        drop(frozen);
+        assert_eq!(reservation_rows(&harness).await?, 1);
+
+        // §17.2: while CommandRef 1 is pending, a new CommandRef for the same claim is
+        // refused with nothing written, on the same chest and on another one.
+        for chest in [CHEST_PLACEMENT, SECOND_CHEST_PLACEMENT] {
+            let blocked = settle_chest_use(
+                &session,
+                &content,
+                fence()?,
+                use_request(command(2)?, chest)?,
+            )
+            .await;
+            assert!(
+                refused_with(&blocked, RewardClaimRefusal::ClaimPending),
+                "{chest}: {blocked:?}"
+            );
+        }
+        assert_eq!(reservation_rows(&harness).await?, 1);
+        assert_eq!(claim_rows(&harness).await?, 0);
+
+        // The same request reconciles the ambiguous claim: it commits with the frozen
+        // identities, then replays as AlreadyCommitted. Exactly one claim row.
+        let settled = settle_chest_use(&session, &content, fence()?, request.clone())
+            .await
+            .map_err(debug)?;
+        let RewardClaimMintOutcome::Committed(ref first) = settled.mint else {
+            return Err(format!("expected Committed, got {:?}", settled.mint).into());
+        };
+        assert_eq!(first.transaction_id, frozen_transaction);
+        assert_eq!(first.item_instance_id, frozen_item);
+        assert_eq!(settled.child, child);
+        let replay = settle_chest_use(&session, &content, fence()?, request)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            replay.mint,
+            RewardClaimMintOutcome::AlreadyCommitted(first.clone())
+        );
+        assert_eq!(claim_rows(&harness).await?, 1);
+
+        // Once CommandRef 1 is terminal, the new CommandRef is refused as AlreadyClaimed.
+        let claimed = settle_chest_use(
+            &session,
+            &content,
+            fence()?,
+            use_request(command(2)?, CHEST_PLACEMENT)?,
+        )
+        .await;
+        assert!(
+            refused_with(&claimed, RewardClaimRefusal::AlreadyClaimed),
+            "{claimed:?}"
+        );
+
+        // A reservation that can no longer commit is not pending. (a) Its RL-08 budget is
+        // spent: three commits under a stale fence each charge one unit and are rejected.
+        let (_, other_request) = prepare_chest_use(
+            &session,
+            &content,
+            fence()?,
+            use_request(command(3)?, OTHER_CHEST_PLACEMENT)?,
+        )
+        .await
+        .map_err(debug)?;
+        let mut spent = harness
+            .root
+            .freeze_reward_claim_mint(&authority, &harness.node, fence()?, other_request)
+            .await
+            .map_err(debug)?;
+        let mut stale = fence()?;
+        stale.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        for _ in 0..3 {
+            let rejected = harness
+                .root
+                .commit_reward_claim_mint(&authority, &harness.node, stale, &mut spent)
+                .await;
+            assert!(
+                matches!(rejected, Err(RewardClaimMintError::AuthorityRejected)),
+                "{rejected:?}"
+            );
+        }
+        assert_eq!(spent.work_units_used(), 3);
+        let after_spent = settle_chest_use(
+            &session,
+            &content,
+            fence()?,
+            use_request(command(4)?, OTHER_CHEST_PLACEMENT)?,
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(
+            after_spent.mint,
+            RewardClaimMintOutcome::Committed(_)
+        ));
+
+        // (b) Its GameSession is not live: a reservation of this claim under a GameSession
+        // with no live session row does not block the current one.
+        sqlx::query(
+            "INSERT INTO game_reward_claim_mint_reservations(game_session_id, command_id, \
+               character_id, world_id, channel_id, claim_family, claim_production_key, \
+               claim_revision_ref, intent_binding, transaction_id, event_id, item_instance_id, \
+               occurred_at, work_units_used, reserved_at) \
+             VALUES (encode($1,'hex')::uuid, 1, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+               encode($3,'hex')::uuid, 'RewardClaim', $4, 'claim-r1', $5, \
+               encode($6,'hex')::uuid, encode($7,'hex')::uuid, encode($8,'hex')::uuid, 1, 0, 0)",
+        )
+        .bind(id(77).as_slice())
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(78).as_slice())
+        .bind(THIRD_CLAIM)
+        .bind(vec![2_u8; 33])
+        .bind(id(79).as_slice())
+        .bind(id(80).as_slice())
+        .bind(id(81).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        let after_dead_session = settle_chest_use(
+            &session,
+            &content,
+            fence()?,
+            use_request(command(5)?, THIRD_CHEST_PLACEMENT)?,
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(
+            after_dead_session.mint,
+            RewardClaimMintOutcome::Committed(_)
+        ));
+        assert_eq!(claim_rows(&harness).await?, 3);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}

@@ -170,6 +170,7 @@ fn offer(
         currency: None,
         count: None,
         sub_type: None,
+        parity_pending: false,
     }
 }
 
