@@ -1,0 +1,13 @@
+{
+  "identity": { "family": "Achievement", "key": "oteryn:achievement/allow_cookies", "revision": "1" },
+  "name": "Allow Cookies?",
+  "description": "With a perfectly harmless smile you fooled all of those wisecrackers into eating your exploding cookies. Consider a boy or girl scout outfit next time to make the trick even better.",
+  "grade": 1,
+  "points": 2,
+  "secret": false,
+  "premium": true,
+  "provenance": {
+    "staticdata": { "source_id": 60, "client_version": "15.30" },
+    "tibiawiki": { "pageid": 62411, "revid": 844031 }
+  }
+}

@@ -1,0 +1,57 @@
+name: Achievement Authoring Schema
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/achievement-authoring/**
+      - tools/content-schema/quest-authoring/ots_chests.py
+      - .github/workflows/achievement-authoring-schema.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  achievement-authoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/achievement-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Validator and slug-parity tests
+        run: |
+          set -euo pipefail
+          python validate_achievements.py synthetic-valid-achievement.json
+          python test_validate_achievements.py
+
+      - name: Ruff check and format
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ruff check tools/content-schema/achievement-authoring
+          ruff format --check tools/content-schema/achievement-authoring
+
+      - name: Verify the checkout stayed clean
+        if: ${{ always() }}
+        working-directory: .
+        run: test -z "$(git status --short --untracked-files=all)"

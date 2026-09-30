@@ -361,7 +361,7 @@ mod tests {
     /// A minimal `CanonicalReferencePlayableContent` with three Item definitions:
     /// - `COIN`: stackable, proven maximum 30.
     /// - `BACKPACK`: container capacity 20, a complete `container`-slot equip pattern (mirrors
-    ///   the D114 content record for `oteryn:item.registry.i00002752`).
+    ///   the D114 content record for `oteryn:item.tibia.i2854`).
     /// - `UNKNOWN_STACK`: identity-only, D82 fail-closed.
     fn fixture_content() -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>> {
         let package_key = ProductionKey::new("oteryn:content.pickup-demo")?;

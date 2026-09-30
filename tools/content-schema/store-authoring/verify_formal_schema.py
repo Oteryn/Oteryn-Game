@@ -22,7 +22,7 @@ def identity(key):
 def item_ref(n):
     return {
         "family": "Item",
-        "key": f"oteryn:item.registry.i{n:08d}",
+        "key": f"oteryn:item.tibia.i{n}",
         "revision": "definition-r1",
     }
 

@@ -21,7 +21,7 @@ Thais, 361 sqm, 17 beds, guildhall):
 | 3 | `restrictions` | free text, usually empty |
 | 4 | `rent_gold` | |
 | 5 | `beds` | |
-| 6 | `entrance` | x, y, z |
+| 6 | `entrance` | x, y, z; at or next to the layout centre, so a map marker rather than the door (see `tools/content-schema/house-authoring/`) |
 | 7 | `size_sqm` | |
 | 8 | `guildhall` | 0/1 |
 | 9 | `town` | |
@@ -31,8 +31,10 @@ Thais, 361 sqm, 17 beds, guildhall):
 floors) plus `cells`. Each cell lists `items` (client appearance ids; not Oteryn
 Item identities) and an optional `skip` count. Verified for all 995 houses:
 `len(cells) + sum(skip) == width*height*floors`, so `skip` is a run of empty
-tiles, and the script rejects any house where it does not hold. The mapping of
-cell order to x/y/z is not documented and is not derived here. Item sub-fields
+tiles, and the script rejects any house where it does not hold. Cell order is
+ascending z, then x, then y, with `skip` counting the empty positions after the
+cell; derived and verified against engine map House tiles in
+`tools/content-schema/house-authoring/otbm_tile_check.py`. Item sub-fields
 101 and 102 (rare) are kept verbatim as `item_extra_fields` hex.
 
 Regenerate or verify (inputs default to `content/assets/files/`):

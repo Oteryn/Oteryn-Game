@@ -12,7 +12,9 @@ if spec is None or spec.loader is None:
 stage = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(stage)
 
-TARGET = {"family": "Item", "key": "oteryn:item.registry.i00000001", "revision": "definition-r1"}
+TARGET = {"family": "Item", "key": "oteryn:item.registry.i00000021", "revision": "definition-r1"}
+# The snapshot names the retired key; the reference names its Tibia key (ITEM-ID-1b).
+ALIASES = {TARGET["key"]: "oteryn:item.tibia.i100"}
 CENSUS = {"family_assignments": {"Espadas": "weapon_melee"}}
 
 
@@ -27,15 +29,15 @@ def snapshot(fields, *, timestamp="2024-01-01T00:00:00Z", title="Test Sword"):
 
 
 def legacy(semantics=None, stack_class="Unknown"):
-    return {"records": [{"identity": TARGET, "stack_class": stack_class, "semantics": semantics or {}}]}
+    return {"records": [{"identity": {**TARGET, "key": ALIASES[TARGET["key"]]}, "stack_class": stack_class, "semantics": semantics or {}}]}
 
 
 def main() -> int:
     fields = {"type": value("Espada"), "imbuement": value(2), "stackable": value(True), "primarytype": value("Espadas"),
               "secondarytype": value(""), "classificacao": value("2"), "max_tier": value("2"), "enchantable": value("não"),
               "weight": value("42"), "hands": value("Uma")}
-    staged = stage.stage(snapshot(fields), CENSUS, legacy())
-    assert stage.canonical_bytes(staged) == stage.canonical_bytes(stage.stage(snapshot(fields), CENSUS, legacy())), "not deterministic"
+    staged = stage.stage(snapshot(fields), CENSUS, legacy(), ALIASES)
+    assert stage.canonical_bytes(staged) == stage.canonical_bytes(stage.stage(snapshot(fields), CENSUS, legacy(), ALIASES)), "not deterministic"
     item = staged["items"][0]
     assert [fact["field_path"] for fact in item["facts"]] == ["imbuement.slot_count", "weapon.weapon_type"], item["facts"]
     assert item["authoring"]["taxonomy"] == {"primary": "Espadas"}
@@ -45,20 +47,20 @@ def main() -> int:
     reasons = {(entry["source_parameter"], entry["reason"]) for entry in staged["unknown_report"]}
     assert ("stackable", "STACK_MAX") in reasons and ("weight", "TYPED_WEIGHT_UNIT") in reasons and ("hands", "SLOT_SEMANTICS") in reasons
 
-    stacked = stage.stage(snapshot({"stackable": value(False)}), CENSUS, legacy(stack_class="StackCapable"))
+    stacked = stage.stage(snapshot({"stackable": value(False)}), CENSUS, legacy(stack_class="StackCapable"), ALIASES)
     assert stacked["items"][0]["facts"] == [] and stacked["counts"]["unknown_preserved"] >= 1
 
-    late = stage.stage(snapshot(fields, timestamp="2026-08-01T00:00:00Z"), CENSUS, legacy())
+    late = stage.stage(snapshot(fields, timestamp="2026-08-01T00:00:00Z"), CENSUS, legacy(), ALIASES)
     assert late["items"] == [] and late["rejected"][0]["reason"] == "REVISION_AFTER_TARGET_CUT"
-    renamed = stage.stage(snapshot({**fields, "name": value("Other")}), CENSUS, legacy())
+    renamed = stage.stage(snapshot({**fields, "name": value("Other")}), CENSUS, legacy(), ALIASES)
     assert renamed["rejected"][0]["reason"] == "NAME_TITLE_DISAGREE"
 
-    unknown_family = stage.stage(snapshot({"primarytype": value("Armas de Arremesso")}), CENSUS, legacy())
+    unknown_family = stage.stage(snapshot({"primarytype": value("Armas de Arremesso")}), CENSUS, legacy(), ALIASES)
     assert unknown_family["items"][0]["family_profile"] is None
 
     conflicting = legacy({"imbuement": {"state": "KNOWN", "value": {"slot_count": {"state": "KNOWN", "value": 3}}}})
     try:
-        stage.stage(snapshot(fields), CENSUS, conflicting)
+        stage.stage(snapshot(fields), CENSUS, conflicting, ALIASES)
     except stage.StageError as exc:
         assert str(exc).startswith("CONFLICTS:"), exc
     else:
