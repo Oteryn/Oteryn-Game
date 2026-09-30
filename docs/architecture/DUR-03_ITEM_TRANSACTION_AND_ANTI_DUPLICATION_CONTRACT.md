@@ -316,7 +316,9 @@ and stores no owner; the owner is the root's location. A tree has depth at most 
 items. Moving a container is one TRANSFER of the root; the descendants are locked `FOR SHARE` and
 checked, never moved, and the receipt binds their count and a hash. For these shapes only, it
 supersedes the §39.1 exclusion of nested containers and sets container expansion to 8 levels
-(`DUR03-RL-05-TREE`). Every other obligation is unchanged.
+(`DUR03-RL-05-TREE`). §39.3 step 3 keeps its one-item `DECAY_RETIRE` shape for a Ground tree:
+one transaction per item, in post-order (every descendant before its parent, the root last), which
+extends the D3 order to depth 8. Every other obligation is unchanged.
 
 ## 11. Item lifecycle and identity transitions
 

@@ -126,15 +126,20 @@ drop it whole, with every item still in exactly one location?
 
 ### 4.2 Locks
 
-- **Owner lock first.** A write anywhere in a tree takes the lock of the root's owner first, as
-  rule 4 already says for each family: `character_root` for the backpack, depot and Inbox trees
-  (the Inbox counter row for deliveries, MARKET-0 §5), the tile row for Ground. The writer finds
-  the root by the parent walk and checks the walk again after the lock; a changed walk retries
-  within `DUR03-RL-08`.
-- **Row locks.** A placement into or removal from a container takes `FOR UPDATE` on that
-  container's item row. A tree move takes `FOR SHARE` on every item of the moved tree in
-  ItemInstanceId order, after the owner locks. So any concurrent placement, removal or state change
-  inside the tree conflicts with the move in the database, not only in the runtime (DUR-03 §29).
+- **One lock order: rule 4 as already amended, unchanged.** BAGS-0 adds no lock order and no
+  composition amendment. A write anywhere in a tree takes the locks in the order rule 4 already
+  fixes for its families (composition decision §4, the DEPOT-0, Market and ITEM-MOVE-WIRE-1
+  amendments; ITEM-MOVE-WIRE-1 §7.2): `character_root` first; then every item row in one
+  ItemInstanceId order; then the container-slot row; then the Ground tile row and the per-channel
+  counter (Ground), or the Inbox counters by CharacterId (MARKET-0 §5). The Ground tile row is
+  never taken before an item row. The writer finds the root by the parent walk before locking and
+  checks the walk again after the item locks; a changed walk retries within `DUR03-RL-08`.
+- **Row locks inside the item step.** The item step takes, in the same single ItemInstanceId
+  order: `FOR UPDATE` on each moved root and on each container whose entries change (a placement
+  or removal), and `FOR SHARE` on every other item of a moved tree. So any concurrent placement,
+  removal or state change inside the tree conflicts with the move in the database, not only in the
+  runtime (DUR-03 §29), and competing pickups, drops and moves of the same tree and tile take their
+  locks in the same order.
 
 ### 4.3 The tree move
 
@@ -239,8 +244,14 @@ Each item names the decision, its refusal today, the result and the child that b
 - **ITEM-MOVE-WIRE-1 §4 and §5** (containers in slots; dropping the main backpack): the container
   slot with contents is lifted (§6); the other nine slots stay refused. BAGS-1.
 - **ITEM-MOVE-WIRE-1 §5 and ADR-0021 D191** (Ground items without contents): lifted. A tree is
-  dropped and picked up whole; `WorldReset` retires a whole tree in one transaction (DUR-03 §10),
-  at most 500 items; `ITEMMOVE1-RL-02` counts every item of a tree. BAGS-GROUND-1.
+  dropped and picked up whole; `ITEMMOVE1-RL-02` counts every item of a tree. `WorldReset` keeps
+  DUR-03 §39.3 step 3 unchanged in shape: each item of a Ground tree is retired by its own one-item
+  `DECAY_RETIRE` transaction (one participant, three work units, one `OneItemTransactionV1` event,
+  cause `WorldReset {world_id, reset_epoch, item_instance_id}`), in post-order: every descendant
+  before its parent, the root last. This generalizes the D3 order (entries first, then the root) to
+  depth 8; a container is never retired while it has a live entry (DUR-03 §10). At most 500 such
+  transactions per tree (`DUR03-RL-01-TREE-RETIRE`); a crash resumes by the per-item retirement
+  uniqueness. There is no aggregate tree retirement (architect ruling R4, §13). BAGS-GROUND-1.
 - **DEPOT-0 §3** (only items without contents): lifted. A tree sits in a box, every item counts
   against the depot limit (the manual and Canary count contents), and a bag in a box opens
   anchored to the depot view. BAGS-DEPOT-1.
@@ -285,7 +296,7 @@ Each item names the decision, its refusal today, the result and the child that b
 | `DUR03-RL-05-TREE` container levels expanded | 8 |
 | `DUR03-RL-06-TREE-MOVE` participants / work units | 1 / 502 |
 | `DUR03-RL-07-TREE-MOVE` envelope and payload | one-item caps; adds a count and a 32 B hash |
-| `DUR03-RL-01-TREE-RETIRE` items retired with a Ground tree | 500 (BAGS-GROUND-1) |
+| `DUR03-RL-01-TREE-RETIRE` one-item `DECAY_RETIRE` transactions per Ground tree at `WorldReset` | at most 500, post-order; each the one-item shape: 1 participant / 3 work units, one `OneItemTransactionV1` (BAGS-GROUND-1) |
 | `ITEMV0-RL-03` live handles per session | re-measured, at least 382 |
 | `CONTAINER_VIEWS` snapshot bytes | within FND-02 limits, measured; else `BAGS0-RL-03` falls |
 
@@ -335,6 +346,12 @@ deep placement, one bounded check); b) Canary's fall-through. **Ruled a)**, `PAR
 **R3. Views after reconnect.** a) Close all; the client may reopen (recommended: the view set is
 runtime state and FND-02 resume stays unchanged); b) carry views in resume state. **Ruled a).**
 
+**R4. Retiring a Ground tree at `WorldReset`.** a) Keep DUR-03 §39.3: one bounded one-item
+`DECAY_RETIRE` per item, in post-order (recommended: the accepted participant, work-unit, event and
+audit shapes are reused; no new aggregate schema to qualify); b) one aggregate transaction of up to
+500 items, which would need its own participants, work units, payload bound and event schema.
+**Ruled a).**
+
 ## 14. Owner questions
 
 None. Every choice here is a Global-parity application or a bound under DUR-03 §28, which owner
@@ -357,8 +374,10 @@ rule 5905825574 gives to the architect.
 1. **Contract amendments:** DUR-03 §10; B3 §4.5; ITEM-MOVE-WIRE-0 §4.4; ITEM-MOVE-WIRE-1 §4;
    ITEM-USE-0 §3; DEPOT-0 §3; PLAYER-TRADE-0 §4; HOUSE-CUSTODY-0 §3.1; each pending on
    acceptance of BAGS-0. Capability, domain and command numbers are reserved at allocation.
-2. **Serialization:** owner lock first (rule 4), then `FOR SHARE` on the moved tree in
-   ItemInstanceId order; placements lock the parent container row; replay by CommandRef.
+2. **Serialization:** rule 4's existing order (ITEM-MOVE-WIRE-1 §7.2): `character_root`, then all
+   item rows in one ItemInstanceId order (moved roots and changed containers `FOR UPDATE`, the rest
+   of a moved tree `FOR SHARE`), then the container-slot row, then the Ground tile row and counter;
+   `WorldReset` retires a tree per item in post-order (§9); replay by CommandRef.
 3. **Restart:** items and entries are durable; views, handles and hotkey searches are runtime.
 4. **Typed references:** handles on the wire; `Container {parent, ordinal}` in storage; no owner
    stored on descendants.
