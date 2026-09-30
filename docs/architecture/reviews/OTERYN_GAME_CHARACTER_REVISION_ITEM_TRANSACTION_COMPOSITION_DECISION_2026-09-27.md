@@ -227,7 +227,6 @@ receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: a
 `game_character_quest_obligations` row written by a reward-claim transaction: an obligation outside
 the revision chain, like the pending arrival; the claim still advances no `CharacterRevision`.
 
-
 ## 6. Handback
 
 ```yaml

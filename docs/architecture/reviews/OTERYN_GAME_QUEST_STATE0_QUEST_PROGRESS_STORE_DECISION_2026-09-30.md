@@ -22,7 +22,8 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| QUEST-STATE-1 | hard, persistence review | the track, quest-state, receipt, obligation and account-completion tables; the sixth receipt kind in the consistency guard; a new migration extending the `0012` claim guards for obligation rows; the transition writer (§3-§6) | this decision |
+| CHAR-REV-SEQ-1 | hard, persistence and concurrency review | the per-Character revision sequencer of §5.2: one revision-advancing write in flight per Character, the revision cursor, and the existing XP, death, Bestiary and charm callers moved onto it | this decision |
+| QUEST-STATE-1 | hard, persistence review | the track, quest-state, receipt, obligation and account-completion tables; the sixth receipt kind in the consistency guard; a new migration extending the `0012` claim guards for obligation rows; the transition writer (§3-§6) | this decision; CHAR-REV-SEQ-1 |
 | QUEST-PRED-1 | impl | the read-only predicate API over the session's track copy (§7) | QUEST-STATE-1 |
 | QUEST-CONTENT-1 | content lane | `Quest` and `Interaction` as data-only families (ruling A2): track keys with owner quest, initial value and bounds; transitions with closed effect kinds; the 111 gap-free `reward_only` quests first | this decision |
 | CHEST-RANDOM-1 | CHEST lane, hard | the deterministic `random_one_of` draw and its column on the claim (§8) | this decision |
@@ -118,12 +119,19 @@ Where does a character's quest progress live, and how does it change safely?
   exactly one receipt per revision.
 - **Expected revision, as its siblings.** Like the XP, death, Bestiary and charm writers
   (`character_progression.rs`, `death_reward.rs`), the quest writer checks the fence's
-  `expected_character_revision` and returns `CharacterRevisionMismatch` otherwise. The runtime keeps
-  one revision cursor per Character and advances it after every committed receipt of any kind. In a
-  creature-death composition, quest transitions run **after** XP and Bestiary and take the revision
-  those committed (the `bestiary_expected_revision` pattern). On a mismatch the runtime reloads the
-  cursor and retries the same request; the binding excludes the revision, so a retry replays or
-  commits once.
+  `expected_character_revision` and returns `CharacterRevisionMismatch` otherwise.
+- **One write in flight per Character (new requirement, CHAR-REV-SEQ-1).** Nothing on `main` keeps
+  a revision cursor in production today. The owning channel runtime gets one sequencer per
+  Character: every revision-advancing write (XP, death, Bestiary, charm, monk state save, quest) is
+  submitted to it, it runs one at a time, and it holds the revision cursor, advanced after each
+  committed receipt. A composition holds the slot for its whole chain: in a creature death, XP,
+  then Bestiary, then quest transitions, each taking the revision the previous one committed (the
+  `bestiary_expected_revision` pattern). An NPC reply, a USE or an obligation waits for the slot, so
+  it can never commit between XP and Bestiary.
+- **Mismatch.** With the sequencer, a mismatch means another writer bypassed it. A quest request's
+  binding excludes the revision, so the runtime reloads the cursor and retries it once (replay or
+  one commit). The XP binding includes the revision (`character_progression.rs:817`), so an XP or
+  Bestiary mismatch is not retried: it fails closed and is reported as a defect.
 
 ### 5.3 Fence and locks
 
@@ -145,7 +153,10 @@ Where does a character's quest progress live, and how does it change safely?
 - The runtime then requests the transition with that obligation as its cause. The committing
   transition deletes the row in its own transaction, and a guard allows that delete only together
   with the receipt that names the obligation. A validation refusal sets the row to `REFUSED`
-  (terminal, with its result code, kept for audit); nothing is lost and nothing is retried.
+  (terminal, with its result code, kept for audit); nothing is lost and nothing is retried. The
+  exception is `REVISION_MISMATCH` (§6): the row becomes `WAITING_MIGRATION`, is not retried, still
+  counts toward `QUESTSTATE0-RL-07`, and returns to pending when a DUR-04 migration for that quest
+  lands, so that progress is not lost.
 - Pending obligations are requested again at admission and after a failed attempt within the
   session (backoff, at most once a minute). A claim that would make more than `QUESTSTATE0-RL-07`
   (64) pending obligations for the character is refused before anything is written
@@ -175,7 +186,10 @@ Where does a character's quest progress live, and how does it change safely?
 - `random_one_of` draws from `HMAC-SHA256(world_draw_key, u16 length || claim_key ||
   character_id (16 bytes) || cycle_ordinal (u64 big-endian))`: the first 8 bytes as an unsigned
   integer, by rejection sampling onto the option count. `world_draw_key` is a per-World server
-  secret, so players cannot predict which character would draw which option. `cycle_ordinal` is 0
+  secret, so players cannot predict which character would draw which option. It is never in the
+  repository; provisioning it needs separate secret authority. It rotates only at a planned world
+  reset; a draw not yet claimed then may give another option, which is acceptable because nothing
+  shown before the claim (a full-backpack refusal names no option) reveals the earlier one. `cycle_ordinal` is 0
   for a once-only claim (all of `0012`); the D42 cooldown decision owns it for repeatable claims.
 - The seed has no command occurrence, so a retry after a refusal (for example a full backpack,
   D41) draws the same option: no re-roll. The claim row records the index. This refines ruling A7's

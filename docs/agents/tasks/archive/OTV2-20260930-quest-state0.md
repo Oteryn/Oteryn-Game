@@ -86,6 +86,11 @@ No code, migration or content change is made.
   this PR and a new migration extending the `0012` guards; the HMAC draw seed with a fixed encoding
   and the `cycle_ordinal` owner; `character_id` in the receipt key; database time for `SET_NOW`;
   the `0022` citation; in-session obligation retries.
+- Re-review of `7721e001` (#1373 5914805819: 1 MEDIUM, 3 LOW), answered in one push: one
+  revision-advancing write in flight per Character through a runtime sequencer, built by the new
+  child CHAR-REV-SEQ-1, with XP and Bestiary mismatches failing closed; `WAITING_MIGRATION` instead
+  of terminal refusal for `REVISION_MISMATCH`; `world_draw_key` outside the repository, its secret
+  authority and rotation at resets; the double blank line.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
