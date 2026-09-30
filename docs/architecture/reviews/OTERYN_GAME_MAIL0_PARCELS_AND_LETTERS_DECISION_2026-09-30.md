@@ -298,7 +298,8 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   CharacterId, the recipient, the outcome and, when delivered, the MINT line. No text.
 - **First kind: the rent warning.** HOUSE-1's step that sets `grace_until` also mints
   `HouseRentWarning`, whose `occurrence_key` is (HouseId, rent period), so a retry mints nothing
-  twice.
+  twice. It takes §6's recipient root, item and Inbox counter locks in HOUSE-OWN-0 §9's order
+  (its MAIL-0 amendment) and raises the Inbox counter in the same transaction.
 - System letters are never refused by the mail ceiling; at most one per house and period bounds
   them (the HOUSE-OWN-0 §7 rule for deliveries).
 - Until MAIL-SYSTEM-1 ships, the login warning of HOUSE-OWN-0 §5 stays.
@@ -396,8 +397,8 @@ always shown (§5). MAIL-WIRE-1 registers both results.
 
 ## 16. Before-freeze checklist
 
-1. **Contract amendments:** DUR-03 §38, MARKET-0 §5, HOUSE-OWN-0 §5, CHAT-0 §5 and the composition
-   decision, each written "pending on acceptance of MAIL-0" in this PR.
+1. **Contract amendments:** DUR-03 §38, MARKET-0 §5, HOUSE-OWN-0 §5 and §9, CHAT-0 §5 and the
+   composition decision, each written "pending on acceptance of MAIL-0" in this PR.
 2. **Serialization:** one transaction per posting; §6's lock order; the recipient's
    `character_root` `FOR SHARE` lock and its Inbox counter row lock.
 3. **Restart:** operations, texts and Inbox entries are durable; replay by occurrence.

@@ -262,6 +262,17 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
 - **Conformance** (EXP-HOUSES-01 §25): HOUSE-1's tests cover scenarios 5-8, 10, 11, 19-21, 23-25,
   28, 34, 35, 40 and 43; the rest belong to the runtime, Residence and Bazaar decisions.
 
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §6, §10).** The
+rent step that sets `grace_until` and mints the rent warning letter (§5 amendment) is an Inbox
+delivery and takes MAIL-0 §6's recipient locks inside this section's order: after the operation
+occurrence, the `game_mail_system_letters` row (`HouseRentWarning`, (HouseId, rent period)); in
+the Character roots position, the owner's `character_root` `FOR SHARE`, checked as MAIL-0 §6 says
+(a failed check records `RECIPIENT_UNAVAILABLE` and mints nothing; the rent step still commits);
+after the ban row, the minted item by its ItemInstanceId and then the owner's Inbox counter row,
+which the step raises by one (`committed` = Inbox entries + reservations, MARKET-0 §5; never
+refused, MAIL-0 §10); then the balance rows. A rent step and a disposition step thus take the
+Inbox counter in the same position.
+
 ## 10. Access list (HOUSE-ACL-1)
 
 - `game_house_acl_entries`: (house, role `SUBOWNER` or `GUEST`, CharacterId) and (house, door
