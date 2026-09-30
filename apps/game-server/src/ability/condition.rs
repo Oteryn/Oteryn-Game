@@ -404,11 +404,13 @@ impl<S: Clone> ConditionStore<S> {
             .map_or(0, |instance| instance.speed_delta)
     }
 
-    /// One application at admission (§3, §3.1, §6.1).
+    /// One application at admission (§3, §3.1, §6.1). The provenance is frozen here (§3.2): the
+    /// definition key and revision are always those of `definition`, never a caller's copy.
     pub(crate) fn apply(
         &mut self,
         definition: &ConditionDefinition,
-        provenance: ConditionProvenance<S>,
+        source: Option<S>,
+        source_kind: ConditionSourceKind,
         immunities: &[ConditionType],
         facts: &ApplicationFacts<'_>,
     ) -> Result<Applied, ConditionRefusal> {
@@ -418,11 +420,11 @@ impl<S: Clone> ConditionStore<S> {
         if immunities.contains(&condition_type) {
             return Err(ConditionRefusal::Immune);
         }
-        let pve_source_blocked = provenance.source_kind == ConditionSourceKind::Player
+        let pve_source_blocked = source_kind == ConditionSourceKind::Player
             && facts.source_reentry_protected
             && !facts.target_is_player;
-        let pve_target_blocked = provenance.source_kind == ConditionSourceKind::Creature
-            && facts.target_reentry_protected;
+        let pve_target_blocked =
+            source_kind == ConditionSourceKind::Creature && facts.target_reentry_protected;
         if pve_source_blocked || pve_target_blocked {
             return Err(ConditionRefusal::ReentryProtected);
         }
@@ -443,7 +445,12 @@ impl<S: Clone> ConditionStore<S> {
         };
         let mut instance = ConditionInstance {
             definition: definition.clone(),
-            provenance,
+            provenance: ConditionProvenance {
+                source,
+                source_kind,
+                definition_key: definition.key.clone(),
+                definition_revision: definition.revision,
+            },
             sequence: self.next_sequence,
             ends_at: None,
             next_tick_at: None,

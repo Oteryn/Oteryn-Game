@@ -78,7 +78,7 @@ fn apply(
     kind: ConditionSourceKind,
     facts: &ApplicationFacts<'_>,
 ) -> Result<Applied, ConditionRefusal> {
-    store.apply(definition, provenance(9, kind, definition), &[], facts)
+    store.apply(definition, Some(9), kind, &[], facts)
 }
 
 fn damage_amount(tick: &ConditionTick<u32>) -> (u32, bool) {
@@ -263,7 +263,8 @@ fn a_damage_over_time_replaces_only_a_strictly_smaller_remaining_total_except_fr
     let applied = store
         .apply(
             &field,
-            provenance(77, ConditionSourceKind::Field, &field),
+            Some(77),
+            ConditionSourceKind::Field,
             &[],
             &facts(MS, &root),
         )
@@ -388,7 +389,8 @@ fn admission_refuses_immunity_cleanse_immunity_reentry_protection_and_the_instan
     assert_eq!(
         store.apply(
             &poison,
-            provenance(1, ConditionSourceKind::Creature, &poison),
+            Some(1),
+            ConditionSourceKind::Creature,
             &immune,
             &facts(0, &root)
         ),
@@ -400,7 +402,8 @@ fn admission_refuses_immunity_cleanse_immunity_reentry_protection_and_the_instan
         store
             .apply(
                 &haste,
-                provenance(1, ConditionSourceKind::SelfUse, &haste),
+                Some(1),
+                ConditionSourceKind::SelfUse,
                 &[ConditionType::Paralysis],
                 &facts(0, &root)
             )
@@ -717,7 +720,8 @@ fn the_last_tick_of_an_instance_carries_its_frozen_provenance() {
     store
         .apply(
             &poison,
-            provenance(42, ConditionSourceKind::Creature, &poison),
+            Some(42),
+            ConditionSourceKind::Creature,
             &[],
             &facts(0, &root),
         )
@@ -728,4 +732,35 @@ fn the_last_tick_of_an_instance_carries_its_frozen_provenance() {
         ticks[0].provenance,
         provenance(42, ConditionSourceKind::Creature, &poison)
     );
+}
+
+#[test]
+fn the_frozen_provenance_names_the_admitted_definition() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let poison = ConditionDefinition::new(
+        "cond.poison.strong",
+        7,
+        ConditionValues::DamageOverTime {
+            element: DotElement::Poison,
+            total_min: 10,
+            total_max: 10,
+            per_tick: 10,
+            interval_ms: 2_000,
+            delayed: true,
+        },
+    )
+    .unwrap();
+    store
+        .apply(
+            &poison,
+            Some(5),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts(0, &root),
+        )
+        .unwrap();
+    let ticks = store.take_due(2_000 * MS, TickFacts::default());
+    assert_eq!(ticks[0].provenance.definition_key, "cond.poison.strong");
+    assert_eq!(ticks[0].provenance.definition_revision, 7);
 }
