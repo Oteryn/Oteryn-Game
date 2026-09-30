@@ -212,6 +212,16 @@ FeeBurnCause = CharmUnassign { charm: CharmKey, occurrence: CharmCommandOccurren
 - The fee amount, discounts and eligibility belong to the source (CHARM-6 for CharmUnassign);
   DUR-03 only conserves the value.
 
+**Amendment (NPC-0, 2026-09-30, owner answer Q1a on #162 5909366267).** Two variants are added:
+`NpcTrade(NpcTradeCause {npc, offer, side, occurrence})` for the coins of an NPC BUY and
+`NpcTravel {npc, route, occurrence}` for an NPC travel fee
+(`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6). The §4.3 composition applies
+to travel unchanged. For an NPC BUY, the fee source is an item-only DUR-03 cause record keyed by
+(occurrence, character), under the Character and item composition decision §3 rule 1: no
+Character change, no `CharacterRevision` advance, the item writer's fence. NPC-TRADE-1 and
+NPC-TRAVEL-1 widen `0023` (fee source kinds, the root-advance requirement for an item-only source,
+and the entry-removal proof) in their own migrations.
+
 ### 4.5 Audit evidence
 
 One event per logical transaction (`DUR03-RL-07-EVENTS` = 1), one closed aggregate with the §39

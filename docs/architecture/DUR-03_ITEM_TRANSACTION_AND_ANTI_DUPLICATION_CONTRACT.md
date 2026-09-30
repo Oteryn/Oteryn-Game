@@ -368,7 +368,7 @@ Silent row deletion, `quantity=0` live state or disappearance during recovery is
 
 Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of the
 gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC service amendment in
-§39.3, the closed `NpcServiceCause::Sell`.
+§39.3, the closed `NpcTradeCause` of a SELL.
 
 ## 16. Transform semantics
 
@@ -1235,7 +1235,9 @@ authority, conservation) is unchanged.
   which binds the cause, the fee and the change. The fence and lock order are the Character
   writer's (`CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1` §3 rules 2-4, with the expected
   `CharacterRevision`), then the backpack and its coin entries.
-- **Cause (D178).** Closed `FeeBurnCause`; the only variant is `CharmUnassign { charm, occurrence }`.
+- **Cause (D178).** Closed `FeeBurnCause`. Variants: `CharmUnassign { charm, occurrence }`, and,
+  with the NPC service amendment below, `NpcTrade(NpcTradeCause)` and `NpcTravel { npc, route,
+  occurrence }`.
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
 - **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends
@@ -1249,26 +1251,31 @@ authority, conservation) is unchanged.
 **NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
 (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes
 built on the gold fee amendment above. The owner admitted NPC buying, selling and travel as value
-sources on 2026-09-30 (decision §9, Q1a), as D178 requires. Every other §39 obligation is unchanged.
+sources on 2026-09-30 (decision §9, Q1a; #162 5909366267), as D178 requires. Every other §39
+obligation is unchanged.
 
-- **BUY.** The gold fee plan with `F = unit price x quantity` under
-  `FeeBurnCause::NpcBuy {npc, offer, occurrence}`, plus one MINT of the bought item (one stack, or
-  one non-stackable item) into a new direct entry of the main backpack under
-  `NpcServiceCause::Buy {npc, offer, occurrence}`.
-- **SELL.** One BURN of `quantity` units from one live direct backpack entry of the offer's item
-  (no contents, default state apart from quantity), plus a MINT of the price as at most 3 fresh
-  coin stacks (crystal, platinum, gold; each at most 100) in new backpack entries, both under
-  `NpcServiceCause::Sell {npc, offer, occurrence}`.
-- **Travel.** The gold fee plan with `F = route price` under
-  `FeeBurnCause::NpcTravel {npc, route, occurrence}`; the Character receipt records the
-  destination.
-- **Composition.** As D177: one transaction, one TransactionId with fixed output slots, one
-  Character receipt keyed by the command occurrence (`CharacterRevision` +1 exactly once), the
-  Character writer's fence and lock order. The price is read from the trade or travel service at
-  the bound content revision; a mismatch with the client's expected price rejects. Insufficient
-  funds, no free entry or a stack above 100 rejects the whole transaction and writes nothing.
-- **Rows.** BUY `DUR03-RL-01` 23 (20 burn inputs, 2 change outputs, 1 bought item); SELL 4. The
-  rows, schema and field numbers are registered by NPC-TRADE-1 and NPC-TRAVEL-1, not here.
+- **BUY (item-only).** The gold fee plan with `F = unit price x quantity`, plus one MINT of the
+  bought item (one stack, or one non-stackable item) into a new direct entry of the main backpack.
+- **SELL (item-only).** One BURN of `quantity` units from one live direct backpack entry of the
+  offer's item (no contents, default state apart from quantity), plus a MINT of the price as at
+  most 3 fresh coin stacks (crystal, platinum, gold; each at most 100) in new backpack entries.
+- **Cause.** One closed `NpcTradeCause {npc, offer, side, occurrence}` covers every line of a BUY
+  or SELL: the BUY coin burn as `FeeBurnCause::NpcTrade`, the SELL item burn as its sink, and every
+  MINT as its source. One audit event carries it.
+- **Records and revision.** BUY and SELL fall under the composition decision §3 rule 1 and §3.1:
+  no `CharacterRevision` advance. Each writes one DUR-03 cause record keyed by (occurrence,
+  character) under the item writer's fence; for BUY this record, not a Character receipt, is the
+  fee source record (gold fee decision §4.3 as amended).
+- **Travel.** A Character transaction under D177: the Character receipt (`CharacterRevision` +1)
+  and a pending arrival, with `F = route price` burned under
+  `FeeBurnCause::NpcTravel {npc, route, occurrence}`; a price of 0 writes no fee lines.
+- **Common.** The price is read from the trade or travel service at the bound content revision; a
+  mismatch with the client's expected price rejects. Insufficient funds, no free entry or a stack
+  above 100 rejects the whole transaction and writes nothing.
+- **Rows.** BUY `DUR03-RL-01` 23, `DUR03-RL-02` 23, `DUR03-RL-06` 23 participants / 66 work
+  units; SELL 4, 4, 4 participants. The rows, schema, the `0023` widening (fee source kinds and
+  the entry-removal proof) and field numbers are registered by NPC-TRADE-1 and NPC-TRAVEL-1, not
+  here.
 
 This amendment grants no runtime or DDL authority.
 

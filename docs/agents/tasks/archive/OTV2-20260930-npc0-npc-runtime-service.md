@@ -20,6 +20,8 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
+  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md
+  - docs/architecture/OTERYN_FIRST_REFERENCE_NPC_SERVICE_BOUNDARY_2026-09-09.md
   - docs/agents/tasks/archive/OTV2-20260930-npc0-npc-runtime-service.md
 public_contracts:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
@@ -37,12 +39,15 @@ packet (architect ruling on #162, 5909181928, answer 1a).
 - **Content.** The runtime reads the generated NPC, Dialogue, Trade and Travel records as a
   pinned, validated input. NPCs without a Dialogue get generated minimal replies.
 - **Wire.** Capability 3 `NPC_SERVICE_V1`, command types 7 (talk) and 8 (trade), state domains 7
-  (conversation) and 8 (trade window), all runtime-local.
-- **Value.** BUY, SELL and travel reuse the gold fee plan (D174-D177) with closed causes, one
-  transaction and one Character receipt each. Travel records a durable destination.
-- **DUR-03 amendment.** §15 and §39.3. The owner admitted NPC value sources (Q1a, "tak a",
-  2026-09-30), as D178 requires.
-- **Children.** NPC-CONTENT-1, NPC-WIRE-1, NPC-TALK-1, NPC-TRADE-1, NPC-TRAVEL-1.
+  (conversation) and 8 (trade window), all runtime-local (#162 5909366267).
+- **Value.** BUY and SELL are item-only transactions with one closed `NpcTradeCause` and a cause
+  record, no CharacterRevision advance. Travel is a Character transaction with a pending arrival.
+  All reuse the gold fee plan.
+- **Boundary.** The 2026-09-09 NPC boundary is accepted with this PR; its price evidence gate
+  becomes a release parity gate (NPC-0 §7).
+- **Amendments.** DUR-03 §15 and §39.3, the gold fee decision §4.4, the NPC boundary. The owner
+  admitted NPC value sources (Q1a, "tak a", 2026-09-30, #162 5909366267), as D178 requires.
+- **Children.** NPC-CONTENT-1, NPC-PLACE-1, NPC-WIRE-1, NPC-TALK-1, NPC-TRADE-1, NPC-TRAVEL-1.
 
 No code, migration or content change is made.
 
@@ -78,6 +83,10 @@ needs protocol review.
 ## Closeout
 
 - PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- Self-review (`oteryn-hard-worker`, read-only) on `edec015c`: 5 material, 2 evidence gaps, 4
+  hardening findings, all fixed before freeze (item-only trade without revision advance, full D178
+  amendment, GOLD-FEE-1b and DEATH-1 dependencies, pending arrival, boundary acceptance and price
+  ruling, content facts and offer rules, one trade cause, rows, wire rules).
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
