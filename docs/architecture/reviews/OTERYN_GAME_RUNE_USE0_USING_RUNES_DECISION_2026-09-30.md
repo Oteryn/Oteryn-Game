@@ -198,16 +198,36 @@ The DUR-03 burn commits (§5). A known abort releases every hold: nothing was pa
   protection zone is refused) thus holds for every victim, not only for the target or centre tile
   checked at PREPARE (§8 step 5). If no eligible creature or tile remains, the cast is still cast
   (below). Non-aggressive runes are not filtered.
-- **Area split (`RUNEUSE0-C5`).** The frozen cast is one occurrence; `SPELL-RL-02` (2 effects)
-  bounds each plan, not the victim count. An area cast is therefore not one plan with one effect
-  per victim. At application the owner lane derives one single-target sub-plan per eligible
-  creature (at most 2 effects each), in a fixed order: the tile order of the authored area, then
-  the creature id. Sub-occurrence `k` is keyed by the CommandRef and `k` and uses the drawn
-  magnitude frozen for it at PREPARE. All sub-plans and the holds settle in the one owner mutation,
-  so a replay of the CommandRef returns the same outcome and never applies a sub-plan twice. The
-  victims are capped by `RUNEUSE0-RL-08` (at most 50 per cast, alarm at 80%); over the cap the
-  first 50 in that order are hit and the rest are not, fail-closed and never a plan rejection.
-  Architect ruling R4 (§15).
+- **Area split (`RUNEUSE0-C5`).** `SPELL-RL-02` (2 effects) bounds each plan, not the victim
+  count, so an area cast is not one plan with one effect per victim. At application the owner
+  lane derives one single-target sub-plan per eligible creature (at most 2 effects each), in a
+  fixed order: the tile order of the authored area, then the creature id. Sub-plan `k` uses the
+  drawn magnitude frozen for draw `k` of the occurrence stream at PREPARE.
+- **Sub-plan identity (`RUNEUSE0-C6`).** Each sub-plan is its own root occurrence for the existing
+  writer, with no batch API. Its `AbilityOccurrenceId` is derived deterministically from the cast
+  and `k` (the cast's CommandRef-derived occurrence id, then `/victim/`, then `k` in decimal, a
+  valid identifier atom), so `AbilityEngine::commit` keys sub-plan `k` apart from every other
+  sub-plan of the cast, and its effect ordinals stay 0-1 (`EffectPlan::sub_occurrence`). In the
+  channel owner the damage receipt lives in the victim's own slot under the existing attributed
+  key (character, session, sequence, sub-ordinal); one creature is in at most one sub-plan of a
+  cast, so the keys never meet. This is the GAME-ABILITY-01 rule for repeated application: each
+  one is "an explicit bounded deterministic occurrence or sub-occurrence under the same
+  GAME-ABILITY pipeline" (cast, channel and commit baseline, repeated occurrences). The owner lane
+  commits sub-plans 0 to n-1 in order and then settles the holds, all in one owner-lane turn, so
+  no other command sees a half-applied cast. A replay of the CommandRef derives the same
+  identities and plans: the writer returns `applied: false` for a sub-plan already committed and
+  applies one not yet committed, so every victim is hit exactly once; a different plan under a
+  derived identity is `OccurrencePlanConflict` and applies nothing (fail closed). A sub-plan the
+  writer refuses leaves that victim unhit and does not stop the others; a committed sub-plan is
+  never undone (GAME-ABILITY-01: no silent undo of committed consequences).
+- **Victim cap (`RUNEUSE0-RL-08`, owner-decided).** Each rune's cap is 2 × the number of tiles in
+  its authored area (a single-target rune: 1 tile, cap 2). The absolute ceiling is **74**: 2 × 37,
+  the largest authored rune area in the reference data (the radius-3 circle of Great Fireball,
+  Avalanche, Stone Shower and Thunderstorm, 37 tiles in both the Canary `99902524` and the Crystal
+  `ff7ede5` census). RUNE-CONTENT-1 content validation rejects a rune whose cap would exceed 74
+  (an authored area above 37 tiles); the rune stays blocked. Over its cap the first N creatures
+  in the fixed order are hit and the rest are not, fail-closed and never a plan rejection. Alarm
+  at 80% of the rune's cap. Owner decision R4 (#162, 2026-09-30, §15).
 - **A cast that lands on nobody is still cast.** The unit is spent and the cooldowns stand. This
   is the one declared difference from Global. Tibia checks and applies at one instant; here the
   application follows by the commit time (`RUNEUSE0-RL-03`). Architect ruling R1 (§15).
@@ -385,7 +405,7 @@ at allocation.
 | `DUR03-RL-01-CONJURE` touched items | 2 |
 | `DUR03-RL-02-RUNE`, `-CONJURE` location/custody lines | rune 1, conjure 2 (the touched items); a cap above the generic row sends the shape back |
 | `DUR03-RL-06-RUNE-PARTICIPANTS`, `-CONJURE-PARTICIPANTS` | rune 1, conjure 2 (the default maximum is 1, so the conjure shape is suffixed) |
-| `DUR03-RL-06-RUNE-EFFECT-WORK-UNITS`, `-CONJURE-EFFECT-WORK-UNITS` | rune 1 (the burn), conjure 3 (burn, mint, receipt); registered by the child, measured; a value above this sends the shape back |
+| `DUR03-RL-06-RUNE-EFFECT-WORK-UNITS`, `-CONJURE-EFFECT-WORK-UNITS` | counted as the registry does (participant plus its effects; the receipt is not a work unit): rune 3 (a partial burn is 2, participant + quantity; a terminal burn is 3, participant + removal + retirement); conjure 5 (terminal reagent burn 3, plus the output 2: participant + placement into a fresh entry, or participant + quantity into a compatible stack). Boundary tests max and max + 1 (rune 3 and 4, conjure 5 and 6). The rune transaction burns one unit and carries no victim, so the 74-victim ceiling (`RUNEUSE0-RL-08`) adds no DUR-03 work: 3 is the bound at the ceiling. A value above this sends the shape back |
 | `RUNEUSE0-RL-01` rune uses or conjures in flight per actor | 1 (the rune slot, beside ITEM-USE-0's) |
 | `RUNEUSE0-RL-02` rune and conjure commits per channel per second, database p99 | measured before RUNE-1 ships |
 | `RUNEUSE0-RL-03` PREPARE to PRIMARY COMMIT, p99 | measured by RUNE-1; the ambiguity bound stays `ITEMUSE0-RL-04` (2,000 ms) |
@@ -393,7 +413,7 @@ at allocation.
 | `RUNEUSE0-RL-05` fields per tile | 1 |
 | `RUNEUSE0-RL-06` fields per channel | 20,000, alarm at 80%; a creation over it makes no field |
 | `RUNEUSE0-RL-07` fields created by one cast | the largest authored area, at most 25 |
-| `RUNEUSE0-RL-08` victims hit by one area cast | 50, alarm at 80%; over it the rest are not hit |
+| `RUNEUSE0-RL-08` victims hit by one area cast | per rune 2 × its authored area in tiles; absolute ceiling 74 (2 × 37), checked by RUNE-CONTENT-1 validation; alarm at 80% of the rune's cap; over it the first N in the fixed order are hit and the rest are not. Runtime work at the ceiling: at most 74 sub-plans and 148 effects (2 each) per cast, in one owner-lane turn. Owner-decided (R4) |
 
 ## 13. Rejected options
 
@@ -447,11 +467,16 @@ Rejected: finalizing holds on the ambiguity bound (charges for an aborted mint) 
 them on the bound (a free mint). DUR-02 durable vitals move the debit into the same transaction.
 
 **R4. Area runes against the two-effect plan cap.** `SPELL-RL-02` bounds one plan. a) Split into
-ordered single-target sub-plans in one owner mutation, capped at 50 victims (recommended: no cap
-change to the accepted spell contract, replay-safe, fail-closed); b) raise the plan cap: a change
-to an accepted limit for one carrier; c) one plan per victim with its own commit: a cast could
-half-apply. **Ruled a)** (`RUNEUSE0-C5`, §6.3). The 50 is the architect's bound, registered
-by RUNE-CAST-1. Owner question: is 50 victims per cast acceptable?
+ordered single-target sub-plans, each its own derived root occurrence (CommandRef-derived id and
+`k`) committed through the existing writer in one owner-lane turn (recommended: no change to the
+accepted spell contract or the writer, replay-safe, fail-closed); b) raise the plan cap: a change
+to an accepted limit for one carrier; c) the same sub-plans committed over separate owner turns:
+other commands would see a half-applied cast; d) a new atomic batch commit API: new pipeline
+machinery for one carrier. **Ruled a)** (`RUNEUSE0-C5`, `RUNEUSE0-C6`, §6.3).
+**Victim cap: owner-decided** (#162, 2026-09-30). Each rune's cap is 2 × the tiles of its
+authored area, with an absolute ceiling of 74 (2 × 37, the largest authored rune area in the
+reference data) enforced by content validation; over the cap the first N in the fixed order are
+hit; alarm at 80% (`RUNEUSE0-RL-08`). It replaces the architect's flat 50 per cast.
 
 **R3. Fields for a client without the field schema.** The current VIS-2 schema has no field kind,
 and a client rejects an unknown kind. a) Omit fields for that session (recommended: the accepted
@@ -488,4 +513,5 @@ c) send them as `GROUND_ITEM`: misrepresents a non-item as value (D38). **Ruled 
    `WORLD_SPATIAL_FIELDS`, else omitted (`RUNEUSE0-C4`). Both capability numbers are reserved at
    allocation.
 6. **Split work:** one unit per use; one reagent unit and one result stack per conjure; at most
-   25 fields per cast.
+   25 fields per cast; per area cast at most the rune's victim cap (ceiling 74) sub-plans, each its
+   own derived root occurrence (`RUNEUSE0-C6`).
