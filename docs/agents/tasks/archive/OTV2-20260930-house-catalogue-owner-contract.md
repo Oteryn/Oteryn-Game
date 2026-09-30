@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/tender-mendel-06tjg2
 issue: 162
 lane_id: content population (house authoring schema)
-pr: null   # recorded in the FREEZE_SHA packet
+pr: 1317
 base_sha: 7d9eb4a1
 head_sha: null
 final_head_sha: null
@@ -52,6 +52,13 @@ Worlds. It authorizes neither population nor runtime; population is the next cha
 1a prepare this contract; 2a populate `content/houses/` right after acceptance; 3b keep the TibiaWiki BR
 comparison as the README summary and the capture workflow, no committed facts file. Follow-up the same day:
 1a open the PR; 2a shops are ordinary physical houses; 3b confirmed.
+
+## Review round 1 (`5f809f2b`, FIX)
+
+- §4 aligned with ADR-0021 D193/D194 and HOUSE-CUSTODY-0 §3.6 (bundle-only runtime source, activation at a
+  planned reset, target-check preflight); §5 step 4 requires HOUSE-CUSTODY-0/1 and states D196.
+- #1160 and #1170: their House catalogue part is superseded (contract §3).
+- Owner answers posted verbatim on #162 for numbering; README aligned with 3b.
 
 ## Validation (local)
 

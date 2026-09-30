@@ -6,6 +6,9 @@
 - Issue: #162; lane `HOUSES`
 - Implements: the static-content side of `EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md` (ACCEPTED); it adds no
   housing semantics and changes none.
+- Aligned with (candidates, #1315): ADR-0021 world map runtime loading (D193, D194, D196) and
+  HOUSE-CUSTODY-0 house item custody (§3.1, §3.5, §3.6). If either changes before acceptance, this
+  contract follows it.
 - Evidence: `imports/cipsoft-staticdata/houses/` (995 client 15.30 records, HOUSES-1),
   `tools/content-schema/house-authoring/` (schema, validator, converter and cross-source reports, HOUSES-2 and
   HOUSES-3)
@@ -76,19 +79,30 @@ The catalogue is populated in a separate content change, not by this contract:
 - The one door in two layouts (East Lane 1a/1b) belongs to East Lane 1a (`SHARED_DOOR_OWNERS`); any new one stops
   the conversion until it is decided.
 - TibiaWiki BR and CrystalServer values that differ from the client are reported, never used.
+- Earlier population attempts from CrystalServer `world-house.xml` (#1160, #1170) use engine keys and a
+  `door_id` model that conflict with §2.1, §2.2 and this section; their House catalogue part is superseded by
+  this contract.
 
 ## 4. Revisions against live Worlds
 
-A World pins a catalogue revision. A new catalogue revision reaches a World only through an explicit
-content update of that World:
+The runtime reads House tiles and doors only from the House family compiled into the World Bundle, never from
+`content/houses/` directly (ADR-0021 D193, §4.6); the B3 tile house id must match the House family or compilation
+fails. A World therefore pins a catalogue revision through its active bundle, and a new catalogue revision reaches a
+World only in a new bundle, which activates only at a planned world reset (D194, §4.7):
 
 1. Text, rent amount, bed count, marker or restriction changes of a House are ordinary revisions.
-2. A revision that changes the `tiles` or `doors` of a House that is allocated, in auction or holds housing
-   content in that World is a housing lifecycle change: it is applied only under the full housing-content fence
-   and value-safe settlement of `EXP-HOUSES-01` §14.7 and §19, never as a silent content swap.
-3. Retiring a House that is allocated, in auction or holds content in a World first settles it under the same
-   rules; a retired House is never offered at auction again.
+2. A revision that changes the `tiles` or `doors` of a House, or retires a House, activates only at a planned reset
+   and must pass the HOUSE-CUSTODY-0 §3.6 target check: every live `HouseInterior` row's `(house_key, position)`
+   must be a tile of the same House in the target bundle. A removed House, a re-keyed House, a removed tile or a
+   tile moved to another House fails it; the preflight aborts the reset cleanly, and a failure at the step-4
+   recheck is cleared only by an `EXP-HOUSES-01` §14.7 evacuation. Settlement of an allocated or auctioned House
+   follows `EXP-HOUSES-01` §14.7 and §19, never a silent content swap.
+3. A retired House is never offered at auction again.
 4. A new House enters a World vacant and is allocated through the public auction (`EXP-HOUSES-01` §11).
+5. Shared wall tiles are never House tiles for custody (HOUSE-CUSTODY-0 §3.1): no item custody attaches to them.
+
+Until a House has an owner, its tiles are ordinary map tiles and Ground items on them are retired at the reset like
+any other Ground item (D196; HOUSE-CUSTODY-0 §3.5).
 
 ## 5. Delivery order
 
@@ -96,6 +110,9 @@ content update of that World:
 2. Catalogue population in `content/houses/` under §3, with its own review of the reported divergences.
 3. City `Area` records for the `town` references.
 4. Housing persistence and runtime under `EXP-HOUSES-01` §29, each with its own authorization and review.
+   Prerequisites: HOUSE-CUSTODY-0 accepted and HOUSE-CUSTODY-1 (the `HouseInterior` storage slice) landed. Until
+   then no House may become ownable or auctionable, and Ground items on House tiles are retired at every planned
+   reset (D196).
 
 ## 6. Not decided
 
