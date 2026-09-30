@@ -62,16 +62,21 @@ CREATE TABLE game_item_house_reclaim_provenance (
 CREATE INDEX game_item_house_reclaim_provenance_subject
     ON game_item_house_reclaim_provenance (reclaim_subject_character_id);
 
--- A HouseInterior row commits only with its provenance: checked when the row
--- is inserted and when a provenance is deleted or re-pointed.
+-- A HouseInterior row commits only with its provenance, checked when the row
+-- is inserted. A provenance is deleted only when its item leaves the house
+-- (§3.2): a delete while the item still has a house row at commit fails, so a
+-- delete and reinsert cannot replace the subject or bypass the update guard.
 CREATE FUNCTION game_item_house_interior_provenance_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
-DECLARE
-    v_item UUID := CASE WHEN TG_OP = 'DELETE' THEN OLD.item_instance_id
-                        ELSE NEW.item_instance_id END;
 BEGIN
-    IF EXISTS (SELECT 1 FROM game_item_house_interior_locations h
-                WHERE h.item_instance_id = v_item
+    IF TG_OP = 'DELETE' THEN
+        IF EXISTS (SELECT 1 FROM game_item_house_interior_locations h
+                    WHERE h.item_instance_id = OLD.item_instance_id) THEN
+            RAISE EXCEPTION 'HousingReclaimProvenance is deleted only when its item leaves the house'
+                USING ERRCODE = '23514';
+        END IF;
+    ELSIF EXISTS (SELECT 1 FROM game_item_house_interior_locations h
+                WHERE h.item_instance_id = NEW.item_instance_id
                   AND NOT EXISTS (SELECT 1 FROM game_item_house_reclaim_provenance p
                                    WHERE p.item_instance_id = h.item_instance_id
                                      AND p.world_id = h.world_id

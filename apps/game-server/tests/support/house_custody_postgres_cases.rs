@@ -405,6 +405,26 @@ fn house_location_and_provenance_are_one_to_one() -> TestResult {
         .await?;
         assert!(message(tx.commit().await)?.contains("HousingReclaimProvenance"));
 
+        // Nor can it be deleted and reinserted while the item stays, with the
+        // same subject or another one: only the update guard changes it.
+        let other = {
+            let mut tx = connection.begin().await?;
+            let other = seed_character(&mut tx, &world).await?;
+            tx.commit().await?;
+            other
+        };
+        for subject in [&character, &other] {
+            let mut tx = connection.begin().await?;
+            sqlx::query(
+                "DELETE FROM game_item_house_reclaim_provenance WHERE item_instance_id = $1::uuid",
+            )
+            .bind(&items[0])
+            .execute(&mut *tx)
+            .await?;
+            insert_provenance(&mut tx, &world, &items[0], HOUSE, subject).await?;
+            assert!(message(tx.commit().await)?.contains("only when its item leaves the house"));
+        }
+
         // The provenance names its row's placement transaction: another one
         // fails at commit.
         let mut tx = connection.begin().await?;

@@ -44,7 +44,7 @@ only, per the HOUSE-CUSTODY-0 implementation brief:
   item); first-slice subject `reclaim_subject_character_id` with an FK to `game_character_roots`
   `ON DELETE RESTRICT` (EXP-HOUSES-01 §15); a deferred FK to the location row of the same house
   and the same placement transaction, and a deferred constraint trigger for the other direction
-  (row inserted, provenance deleted). An UPDATE bumps the revision by one and names a new
+  (row inserted); a provenance is deleted only when its item leaves the house. An UPDATE bumps the revision by one and names a new
   placement transaction, which the FK binds to the replacing row (a same-house move).
 - `game_item_location_exclusive` / `game_item_location_exclusivity_guard` (§3.3): one deferred
   guard on `game_item_instances` and the five location tables. A live item has exactly one row,
@@ -83,6 +83,9 @@ set, so `0025` needs no renumber.
 
 - Codex P2 4149092379 on `d88a8a1f` (provenance not bound to the placement transaction):
   accepted and repaired in the next candidate (FK, trigger, update guard, three cases).
+- Codex P2 4149559640 on `1c6de1de` (a delete and reinsert of the provenance bypasses the update
+  guard): accepted and repaired in the next candidate. A provenance delete now fails at commit
+  while its item still has a house row; two cases (same and other subject) and one mutation.
 
 ## Closeout
 
