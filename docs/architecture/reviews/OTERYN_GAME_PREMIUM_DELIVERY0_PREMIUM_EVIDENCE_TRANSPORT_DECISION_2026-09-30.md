@@ -31,6 +31,11 @@
 | PREM-1 | Oteryn-Game | the consumer fence and classification (consumer contract §6-§8), the snapshot client of §3 with a test producer, the surface policies of PREMIUM-ACTIVATION §4.1, and one `premium_current(account)` read for gameplay | this decision; PREMIUM-ACTIVATION-V1 accepted |
 | PREM-2..5 | Oteryn-Game | as PREMIUM-ACTIVATION §5 | PREM-1 |
 
+**Amendment (pending on acceptance of WHEEL-0; `OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §6.2; owner answer W1 a,
+#162 5917665342).** The PREM-2..5 row reads: PREM-3, PREM-4 and the Premium blessing service of
+PREM-5 depend on PREM-1; PREM-2 and the promotion service of PREM-5 do not, as amended in
+PREMIUM-ACTIVATION §5.
+
 PREM-1 and PREM-P run in parallel: PREM-1 tests against a test producer that serves §4 exactly;
 the two meet in one cross-repository end-to-end test before activation (consumer contract §22).
 

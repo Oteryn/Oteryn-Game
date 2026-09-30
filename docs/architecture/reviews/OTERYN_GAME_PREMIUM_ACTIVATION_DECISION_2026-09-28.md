@@ -159,6 +159,13 @@ apply the Premium gate to cosmetics.
 | PREM-4 | Premium spell cast check (§4.6) | Game | PREM-1; spell P3b-2 |
 | PREM-5 | Promotion and Premium blessing NPC services | Game | NPC service owner; PREM-2 |
 
+**Amendment (pending on acceptance of WHEEL-0; `OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §6.2; owner answer W1 a,
+#162 5917665342).** PREM-2 depends on progression readiness (#1143, completed) and spell P3b-2
+vitals, not on PREM-1; the promotion service of PREM-5 depends on the NPC service owner and PREM-2,
+not on PREM-1. Whichever of PREM-1 and PREM-2 (PREM-5 for the purchase) lands later wires
+`premium_current` into the promotion purchase and benefits (§4.2) before Premium is recorded as
+delivered. PREM-3, PREM-4 and the Premium blessing service of PREM-5 keep their PREM-1 dependency.
+
 ## 6. Rejected options
 
 - **A Game-side "everyone is Premium" switch.** The owner chose the real mechanism (D69).

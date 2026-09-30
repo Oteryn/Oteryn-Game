@@ -18,7 +18,8 @@
   §4.2 and D70-D76; PREMIUM-DELIVERY-0 (`premium_current`); the Tibia manual `characters.md` §5.1.7;
   owner rule 5905825574 (Global parity)
 - Amends, pending on acceptance of WHEEL-0, in this PR: the Wheel state contract candidate §3.5,
-  §5 and §6 (pointers).
+  §5 and §6 (pointers); PREMIUM-ACTIVATION §4.2 and §5 (the PREM-2 and PREM-5 rows); PREMIUM-DELIVERY-0
+  implementation brief (the PREM-2..5 row) (§6.2).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -31,7 +32,7 @@
 | W-1 | hard, persistence review | allocation tables, a new receipt kind, `commit_character_wheel` on CHAR-REV-SEQ-1, admission load, derivation into `WheelStages` (§4) | W-R; CHAR-REV-SEQ-1 |
 | W-2 | impl, protocol review | capability `WHEEL_V1`, `WHEEL_QUERY` and `WHEEL_INTENT` (§7) | W-1 |
 | W-FX-1 | hard, combat review | dedication perks (max health, max mana, capacity), non-spell conviction perks, passive revelation effects (§5.2) as stat and effect contributions | W-1; the vitals owner; CONDITIONS-0 for timed effects |
-| PREM-2 | as allocated (PREMIUM-ACTIVATION) | promotion state; its "progression readiness" dependency is satisfied (§6.2) | none for the Premium read until PREM-1 delivers it (W1 a) |
+| PREM-2 | as allocated (PREMIUM-ACTIVATION) | promotion state; its "progression readiness" dependency is satisfied (§6.2) | #1143 (completed); spell P3b-2 vitals (merged); not PREM-1 (W1 a, §6.2) |
 | W-3 | client owner | the Wheel window | W-2 |
 
 Later, each with its own decision: gems, the Gem Atelier, vessels, fragments and mod grades
@@ -97,17 +98,45 @@ what order is it built?
 The state candidate §3.2-§3.4 is binding; this section fixes its physical shape.
 
 - **Tables** (the next free migration at allocation):
-  - `game_character_wheel_state`: `character_id` (primary key), `ruleset_revision`,
-    `wheel_revision` (starts at 0, +1 per change), `allocated_total`;
+  - `game_character_wheel_state`: `character_id` (primary key), `wheel_ruleset_revision`,
+    `wheel_revision` (starts at 0, +1 per change), `allocated_total`, `committed_character_revision`,
+    `last_wheel_occurrence_id`;
   - `game_character_wheel_slots`: (`character_id`, slot 1..36, points > 0); a missing slot is 0;
-  - `game_character_wheel_receipts`: one per change: occurrence, SHA-256 request binding, the
-    CharacterRevision it advanced, the before and after `wheel_revision`, the before and after slot
-    vectors (36 small integers each), the ruleset revision.
-- **Guards** (deferred): `allocated_total` equals the sum of the slots; each slot is within its
-  capacity under the stored ruleset revision (a ruleset table the W-R child loads); the latest
-  receipt's after vector equals the stored slots.
+  - `game_character_wheel_receipts`: one immutable row per change, unique on (`character_id`,
+    occurrence), on (`character_id`, `original_character_revision`), on (`character_id`,
+    `committed_character_revision`) and on (`character_id`, `after_wheel_revision`). It carries:
+    - **the common CharacterRevision receipt envelope**, exactly the chain columns of the `0020`
+      receipts that QUEST-STATE-0 §5.1 also adopts: `original_character_revision`,
+      `committed_character_revision` (= original + 1), `level_before`, `level_after` (= before),
+      `experience_before`, `experience_after` (= before), the eight interpretation revisions
+      (`profile_revision`, `ruleset_revision`, `content_revision`, `simulation_revision`,
+      `evidence_revision`, `declaration_revision`, `policy_revision`, `reward_revision`) and
+      `committed_at`;
+    - **the Wheel columns:** occurrence, SHA-256 binding of the request only, `before_wheel_revision`,
+      `after_wheel_revision` (= before + 1), the before and after slot vectors (36 small integers
+      each), and `wheel_ruleset_revision`. The Wheel ruleset revision is its own column and is never
+      written into the envelope's `ruleset_revision`, which stays the progression interpretation
+      revision.
+  - `wheel_ruleset_revision` is the physical column of the state candidate's `ruleset_revision`. A
+    migration of an allocation to a new Wheel ruleset revision (state candidate §3.2.1) is itself a
+    change on the CHAR-REV-SEQ-1 sequencer with one Wheel receipt, so the row tip below always holds.
+- **Guards** (deferred), on the model of the stance and Bestiary arms of `0020`:
+  - `allocated_total` equals the sum of the slots; each slot is within its capacity under
+    `wheel_ruleset_revision` (a ruleset table the W-R child loads);
+  - **full chain:** ordered by `committed_character_revision`, the first receipt has
+    `before_wheel_revision` 0 and an all-zero before vector, and every later receipt's
+    `before_wheel_revision` and before vector equal its predecessor's `after_wheel_revision` and after
+    vector; every receipt has `after_wheel_revision = before_wheel_revision + 1`;
+  - **row tip:** the state row's `wheel_revision`, `wheel_ruleset_revision`,
+    `committed_character_revision` and `last_wheel_occurrence_id` equal the latest receipt's
+    `after_wheel_revision`, `wheel_ruleset_revision`, `committed_character_revision` and occurrence,
+    and the stored slots equal its after vector;
+  - a state or slot row with no receipt, or a receipt with no state row, is inconsistent;
+  - a violation raises `23514`, as the other arms.
 - **Receipt kind.** A new CharacterRevision receipt kind next to those CHAR-REV-SEQ-1 lists; the
-  consistency guard gains its arm. Whichever of W-1 and the other guard rewriters lands later carries every arm (the
+  consistency guard gains its arm in the cross-kind chain with the envelope columns above (exactly
+  one receipt per revision; each receipt's level and experience before equal its predecessor's
+  after, of whatever kind), plus the Wheel full-chain and row-tip arm above. Whichever of W-1 and the other guard rewriters lands later carries every arm (the
   #162 guard serialization rule).
 - **Writer.** `commit_character_wheel` runs on the CHAR-REV-SEQ-1 sequencer: session fence and
   `character_root` FOR UPDATE (composition rule 2), then the wheel rows. The request carries the
@@ -117,8 +146,18 @@ The state candidate §3.2-§3.4 is binding; this section fixes its physical shap
 - **Validation** at commit, all against the stored ruleset: eligibility (§6), capacities, the sum
   at most the available points, the adjacency and minimum-point rules for every non-zero slot, and
   every decrease only at a temple (§7.3). A rejected change writes nothing.
-- **Load.** Admission loads the state into the runtime actor and derives `WheelStages`; a
-  committed change refreshes it after commit. No row means every slot 0.
+- **Load.** Admission loads the allocation into the runtime actor; a committed change refreshes the
+  allocation after commit. No row means every slot 0. The actor caches the allocation only, never
+  an eligibility result.
+- **Cast snapshot (WHEEL0-EL-1).** `WheelStages` is produced when the cast snapshot is built, from
+  the cached allocation and the eligibility read at that moment (§6.1): the character's current
+  vocation, current level, current `promoted` state and, once PREM-1 delivers it,
+  `premium_current(account)`. Any failing condition yields all-zero `WheelStages` for that cast; a
+  cached stage from admission or from the last allocation commit is never reused. A level loss, a
+  vocation change or a mid-session Premium lapse therefore takes effect at the next cast without a
+  relog or an allocation change, and a restoration does likewise. The W-FX-1 contributions (§5.2)
+  follow the same rule at their own authoritative points (each vitals, capacity, regeneration or
+  damage step), as the promotion benefits do under D76.
 - **Level loss** keeps the allocation (state candidate §3.3).
 
 ## 5. Ruleset and effects
@@ -149,13 +188,22 @@ has no migration; later ones follow the state candidate §3.2.1.
 ### 6.1 Rule
 
 A vocation, level above 50, promotion, and Premium (the state candidate §3.5; the manual). Checked
-at each use: a lapse makes every stage and contribution 0 at once and keeps the allocation.
+at each use, never cached (WHEEL0-EL-1, §4): a lapse makes every stage and contribution 0 at once and
+keeps the allocation.
 
 ### 6.2 Dependencies
 
 - **Promotion** is PREM-2's durable state. PREM-2's "progression readiness" dependency is #1143,
-  completed; the same ruling answers STANCE-1's dependency (#162 5916023254). PREM-2 therefore
-  depends only on PREM-1 for the Premium read, and on the vitals owner (P3b-2, merged) for soul.
+  completed; the same ruling answers STANCE-1's dependency (#162 5916023254).
+- **PREM-2 does not depend on PREM-1 (architect ruling applying W1 a).** PREM-2 depends on #1143
+  (completed) and the vitals owner (P3b-2, merged) for soul; the promotion purchase of PREM-5
+  depends on PREM-2 and the NPC service owner. Neither waits for PREM-1: before PREM-1, the Premium
+  condition is not applied (next rule). Whichever of PREM-1 and PREM-2 (or PREM-5 for the purchase)
+  lands later wires `premium_current` into the promotion purchase, the promotion benefits and the
+  Wheel eligibility (WHEEL0-EL-1), and that change is merged before PREM-1's activation record names
+  Premium as delivered. PREM-3, PREM-4 and the Premium blessing service of PREM-5 keep their PREM-1
+  dependency. PREMIUM-ACTIVATION §5 and the PREMIUM-DELIVERY-0 implementation brief carry this as a
+  pending amendment (§13).
 - **Premium** (owner answer W1 a, a supersession of D70's Premium condition until delivery): until PREM-1 delivers `premium_current`, the
   Premium requirement of promotion (D70) and of the Wheel is not applied; from then on both apply,
   and a promotion bought before then is kept under the lapse rules of D73 and D76. This mirrors
@@ -240,9 +288,11 @@ b) keep the requirement: revelation spells wait for Premium.
 
 ## 13. Before-freeze checklist
 
-1. **Contract amendments:** the Wheel state candidate §3.5, §5 and §6 pointers, written "pending
-   on acceptance of WHEEL-0".
-2. **Serialization:** W-1 on the CHAR-REV-SEQ-1 sequencer; composition rule 2 fence first.
+1. **Contract amendments:** the Wheel state candidate §3.5, §5 and §6 pointers; PREMIUM-ACTIVATION
+   §4.2 and §5 (PREM-2 and PREM-5 rows); the PREMIUM-DELIVERY-0 implementation brief (PREM-2..5 row);
+   each written "pending on acceptance of WHEEL-0".
+2. **Serialization:** W-1 on the CHAR-REV-SEQ-1 sequencer; composition rule 2 fence first; the
+   Wheel receipt carries the common envelope and the full-chain and row-tip guards (§4).
 3. **Restart:** receipts keyed by occurrence; replays return the first outcome.
 4. **Typed references:** CharacterId, slot index, ruleset revision, occurrence.
 5. **Wire:** §7, capability `WHEEL_V1`.
