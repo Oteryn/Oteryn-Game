@@ -7,9 +7,9 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/prof-content-1-proficiency-definitions
+branch: claude/prof-content-1b-proficiency-rust
 issue: 162
-pr: 1328
+pr: 1339   # #1328 (1a) merged as 1852a69; the task continues in #1339 (1b), #1341 (1c), #1342 (1d)
 base_sha: null   # stacked on #1327 (claude/inspiring-lamport-nc623x) until it merges
 head_sha: null
 final_head_sha: null
