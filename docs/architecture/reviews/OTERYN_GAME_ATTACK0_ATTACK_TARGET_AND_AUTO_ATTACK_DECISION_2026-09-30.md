@@ -18,7 +18,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| ATTACK-WIRE-1 | impl, protocol review | command types 10 and 11, state domain 10 (§3), codecs, limits, client target selection and fight-mode buttons | VIS-2 (MOVE-RL-11 is still a candidate); the protocol numbers re-checked at allocation |
+| ATTACK-WIRE-1 | impl, protocol review | two command types (11 and 12 proposed, reserved at allocation), state domain 10 (§3), codecs, limits, client target selection and fight-mode buttons | VIS-2 (MOVE-RL-11 is still a candidate); the protocol numbers re-checked at allocation |
 | ATTACK-1 | hard (combat), combat review | the attack-target owner, the auto-attack timer and the in-fight deadline (§4); player fist and melee attacks and creature melee attacks as GAME-ABILITY-01 abilities (§5) | ATTACK-WIRE-1; GAME-AI-01 runtime wiring (creatures that exist and choose a target) |
 | SPELL-TARGET-1 | spell lane | the spell Target Resolver: `ATTACK_TARGET` resolves to the §4 target, and single-target damage spells stop being rejected (`spell/cast.rs`) | ATTACK-1 |
 | ATTACK-PARITY-1 | impl | the parity fixtures of §6 against the TibiaPal damage calculator | ATTACK-1 |
@@ -126,6 +126,12 @@ does a hit do?
   combat/PZ/logout locks"); a player cannot escape the logout block by reconnecting. Only the attack
   target is cleared on reconnect and transfer: it is a client selection, not a lock, and clearing
   it stops swings without shortening any block. The client sets it again.
+- **Re-entry protection** (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`, owner-accepted):
+  after a valid re-entry from an unexpected loss of control (not a graceful logout), the character
+  has 4 s of PvE protection. During it, `ATTACK_TARGET_INTENT` with a target is refused
+  (`REJECTED`, not buffered), the protected character makes no auto-attack swing, and no monster
+  starts or makes a new attack on it (§4 validity). The in-fight deadline is not reset by it, and
+  committed damage still resolves.
 - Damage stays visible through the target's health percentage in domain 1 (D85). A dedicated
   combat-effects view (numbers, animations) is a later wire decision.
 - Limits (ATTACK-WIRE-1 registers them): `ATTACK0-RL-01` target changes per second,
@@ -148,7 +154,7 @@ does a hit do?
   shortens the next interval. Nothing else deals auto-attack damage.
 - **Cooldowns.** The attack interval is independent of spell and spell-group cooldowns.
 - **Validity.** Visible, a creature, alive, on the same floor, adjacent (1 tile), neither actor in
-  a protection zone. Out of range, the swing waits. A dead or vanished target clears the target.
+  a protection zone, the attacker not under re-entry protection (§3). Out of range, the swing waits. A dead or vanished target clears the target.
 - **Weapon.** First slice: fists, and melee weapons once ITEM-MOVE-WIRE-1 admits equipping. A
   distance weapon, throwing weapon, wand or rod in the hand is treated as no weapon for
   auto-attack until its own decision (see the brief).

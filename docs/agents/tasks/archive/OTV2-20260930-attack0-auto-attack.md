@@ -82,12 +82,16 @@ No code, migration or content change is made.
   attacker protection zone; in-fight deadline owner; all charm hooks and independent cooldown;
   SPELL-TARGET-1 split out; dependencies and protocol reservations stated).
 - Protocol ledger update (#162 5912405163): capability 5 is `DEPOT_V1`; this decision's capability
-  number is reserved at allocation, and command type 11 is requested.
+  number is reserved at allocation, and command types 11 and 12 are proposed, reserved at allocation.
 - Independent review of `7bc9540b` (5911720221, re-review 5912825872): FIX, 1 medium and 3 low,
   all answered: the in-fight deadline and flag survive a same-GameSession reconnect (FND-ID-01),
   only the target is cleared; TibiaPal cited by 5905825574 and 5905851791; the next deadline
   counts from execution time; domain 10 confirmed; command types at allocation because 10 went to
   `ACCOUNT_ACHIEVEMENTS_QUERY`.
+- Independent review of `4b3b248c` (5913351420): FIX, 2 medium and 1 low, all answered: the brief
+  row names command types 11 and 12 at allocation; the owner-accepted 4 s PvE re-entry protection
+  (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`) applied to targeting, swings and
+  creature attacks; this record's command-type line.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
