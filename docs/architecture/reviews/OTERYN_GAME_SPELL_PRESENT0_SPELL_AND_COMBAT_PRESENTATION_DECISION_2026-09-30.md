@@ -123,7 +123,10 @@ words, the effects, the numbers, the cooldowns and the refusal messages?
 - **Domain `WORLD_PRESENTATION`**, the CHAT-0 §7 pattern. Its snapshot is empty. Delta type 1 is
   one batch of events for one sync unit. A replacement snapshot drops everything not yet sent.
 - **Events are presentation, not state.** They are derived from outcomes the owner has already
-  committed (or, for a refusal, decided). They never draw from a SIM RNG purpose, never change
+  committed (or, for a refusal, decided). **Decision ordinal.** Every decision the owner makes in
+  a sync unit, a committed outcome or a refusal, is assigned a per-sync-unit decision ordinal when
+  it is decided, in the authoritative order in which the owner decides it (FND-03 order), and
+  every event it emits carries that ordinal. They never draw from a SIM RNG purpose, never change
   state, are never stored, logged as state or replayed. Dropping every event changes no game
   outcome; clients keep the truth from domain 1, `ACTOR_VITALS` and `ACTOR_COOLDOWNS`.
 - **Same sync unit.** An event is published in the sync unit of the change it presents: a damage
@@ -235,9 +238,9 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
   entries.
 - **Overflow.** Beyond it, the server keeps the observer's own events (its casts, its received
   damage and heals) first, then the nearest by the D87 order, and drops the rest. Ties, including
-  events with no entity identity (`magic_effect`, `sound`), break by the authoritative order of
-  the committed outcome in the sync unit, then by the event's emission ordinal within that
-  outcome; this total order never depends on insertion or container iteration order, so the same
+  events with no entity identity (`magic_effect`, `sound`) and refusal smoke (`POFF`, §6), break
+  by the decision ordinal of the decision that emitted them (§4: a committed outcome or a
+  refusal), then by the event's emission ordinal within that decision; this total order never depends on insertion or container iteration order, so the same
   outcomes keep the same events on every server and every run. No marker: the events are
   presentation (§4).
 - **Slow clients.** When a session's egress already holds `SPELLPRES0-RL-07` (2) undelivered
@@ -261,14 +264,22 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
   to the channel runtime, so a snapshot re-expresses every expiry on the new runtime's clock.
 - **Delta** at each PRIMARY COMMIT that starts or changes a cooldown (a cast, a later reduction):
   the changed entries. Expiry sends nothing.
-- **Client countdown.** On each snapshot or delta the client records `offset = server_now_ms -
-  local_receipt_ms` from its own monotonic clock; a snapshot resets the estimate and a delta keeps
-  the larger offset, the one with the least delivery delay. It shows `remaining = max(0,
-  expires_at_ms - (local_now_ms + offset))` and drops an entry at 0. The residual error is at
-  most the least observed one-way delay, and the bar still never decides legality.
+- **Round-trip estimate.** The server measures the session's RTT from its own FND-02 §17
+  `LivenessProbe`/`LivenessAck` pairs (probe send to ack receipt, both on the server's monotonic
+  clock; no client timestamp is used, FND-02 §17) and carries its current smoothed estimate
+  `rtt_ms` in each snapshot and delta beside `server_now_ms`. No new message or probe is added;
+  before the first ack of the connection generation `rtt_ms` is 0.
+- **Client countdown.** On each snapshot or delta the client takes the RTT-adjusted sample
+  `offset = server_now_ms - (local_receipt_ms - rtt_ms / 2)` from its own monotonic clock,
+  crediting half the round trip as delivery delay. A snapshot (a new runtime clock) resets the
+  estimate to its own RTT-adjusted sample, so the initial sample already accounts for delivery
+  delay; a later sample keeps the larger offset, the one with the least delivery delay (minimum
+  delay filter). It shows `remaining = max(0, expires_at_ms - (local_now_ms + offset))` and drops
+  an entry at 0. The residual error is the path asymmetry plus egress queueing after encoding,
+  reduced by the filter, and the bar still never decides legality.
 - Bounds: at most `SPELLPRES0-RL-04` entries (`SPELL-RL-04` plus 16 group slots) of at most
   `SPELLPRES0-RL-05` (16 bytes) each; `expires_at_ms` stays within 6 varint bytes (2^42 ms) and
-  `server_now_ms` is per message, outside the entry bound.
+  `server_now_ms` and `rtt_ms` are per message, outside the entry bound.
 - The client draws the bar of `interface.md` §3.8 and never decides legality: `COOLING_DOWN`
   still comes from the server.
 

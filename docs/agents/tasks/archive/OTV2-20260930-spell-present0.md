@@ -84,6 +84,10 @@ determinism review.
 - Codex round-1 repair (#1406): §9 overflow gains a total tie-break order (outcome commit order,
   then emission ordinal); §10 cooldowns carry an absolute `expires_at_ms` with `server_now_ms`
   and a defined client countdown clamped at 0.
+- Codex round-2 repair (#1406): §4 every decision in the sync unit, committed outcome or refusal,
+  carries a per-sync-unit decision ordinal and §9 ties break by it (refusal `POFF` included);
+  §10 client offset RTT-adjusted from the FND-02 §17 liveness probes (`rtt_ms`), snapshot
+  included, minimum-delay filter kept; validators PASS.
 
 ## Closeout
 
