@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1477, "Presentation": 2571, "Behavior": 2571, "Loot": 1030, "Ability": 5890, "Effect": 4492, "Formula": 4809,
+    "Creature": 1477, "Presentation": 2579, "Behavior": 2579, "Loot": 1030, "Ability": 5890, "Effect": 4492, "Formula": 4809,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
@@ -23,11 +23,11 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1094
-NPC_BINDING_COUNT = 2344
+NPC_COUNT = 1102
+NPC_BINDING_COUNT = 2352
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 61
-DIALOGUE_COUNT = 707
+DIALOGUE_COUNT = 715
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}

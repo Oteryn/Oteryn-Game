@@ -3,6 +3,7 @@ mutated copies of it.
 
 Usage: python -m unittest test_promotion.py
 """
+import copy
 import hashlib
 import json
 import unittest
@@ -763,6 +764,77 @@ class PromotionValidatorTests(unittest.TestCase):
         self.assertEqual(len(promotion_candidates.SUPPLEMENT_HELD), 13)
         self.assertFalse(promotion_candidates.SUPPLEMENT_ADMITTED & set(promotion_candidates.SUPPLEMENT_HELD))
 
+
+    # -- D15: Tibiopedia or BR confirms a single-source NPC; a disputed price stays, pending ---------
+
+    def fan_builder(self, tibiopedia_names=('Somebody Else',), br_pages=()):
+        empty = {'SellToPlayer': {}, 'BuyFromPlayer': {}}
+        tibiopedia = {'pages': [{'title': f'NPC: {name}', 'name': name, 'url': f'https://tibiopedia.pl/npcs/{name}',
+                                 'sha256': 'a' * 64, 'trades': empty} for name in tibiopedia_names]}
+        br = {'pages': [{'title': name, 'name': name, 'pageid': 7, 'revid': 8, 'removed': removed, 'trades': empty}
+                        for name, removed in br_pages]}
+        return promotion_candidates.Builder({'npcs': [], 'trade': {}}, {'records': []}, br, tibiopedia, {})
+
+    def test_fan_wiki_confirms_a_single_source_npc(self):
+        placed = {'crystal': make_bundle('Weary Lion Knight', placements=[make_placement(100, 100, 7)])}
+        record = self.fan_builder(['Weary Lion Knight'], [('Weary Lion Knight', '')]).candidate(placed)
+        self.assertIn({'fact': 'identity', 'rule': 'FAN_WIKI_CONFIRMED', 'chosen': 'br', 'wikis': ['br', 'tibiopedia'],
+                       'pages': {'br': {'pageid': 7, 'revid': 8}, 'tibiopedia': {
+                           'url': 'https://tibiopedia.pl/npcs/Weary Lion Knight', 'sha256': 'a' * 64}}},
+                      record['arbitration'])
+        self.assertIsNone(record['wiki'])
+        # with no source placement it is admitted with no placements, as D8 does for Fandom
+        record = self.fan_builder(['Weary Lion Knight']).candidate({'crystal': make_bundle('Weary Lion Knight')})
+        self.assertEqual((record['placements'], record['arbitration'][0]['wikis']), ([], ['tibiopedia']))
+        # a BR page recording the NPC as removed confirms nothing; no page at all leaves it held
+        for builder in (self.fan_builder(br_pages=[('Weary Lion Knight', '15.20')]), self.fan_builder()):
+            self.assertIsNone(builder.candidate(placed))
+            self.assertEqual(builder.held[-1]['reason'], 'SINGLE_SOURCE_NOT_ON_WIKI')
+
+    def test_fan_wiki_confirmed_row_shape(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Weary Lion Knight')
+        row = next(r for r in candidate['arbitration'] if r['rule'] == 'FAN_WIKI_CONFIRMED')
+        self.assertEqual(validate_promotion.errors(report), [])
+        for field, value in (('wikis', ['fandom']), ('chosen', 'br'), ('pages', {}), ('fact', 'placements')):
+            broken = copy.deepcopy(report)
+            bad = next(r for r in find_candidate(broken, 'Weary Lion Knight')['arbitration'] if r == row)
+            bad[field] = value
+            self.assertTrue(validate_promotion.errors(broken), field)
+        broken = copy.deepcopy(report)
+        find_candidate(broken, 'Weary Lion Knight')['wiki'] = {'pageid': 1, 'revid': 1}
+        self.assertTrue(validate_promotion.errors(broken))
+
+    def test_disputed_price_stays_pending(self):
+        # no two wikis agree and one states another price: the source price stays, with the stated prices
+        for fandom, br, tibiopedia, pending in ((10, [], [40], {'fandom': 10, 'tibiopedia': 40}),
+                                                (None, [], [30], {'tibiopedia': 30}),
+                                                (150, [120], [100], {'br': 120, 'fandom': 150, 'tibiopedia': 100})):
+            offers, arbitration = self.price_builder(fandom, br, tibiopedia)
+            self.assertEqual((offers[0]['unit_price'], offers[0].get('parity_pending'), arbitration), (40, pending, []))
+        # a majority settles the price, every wiki agrees with the source, no wiki speaks, or the offer is a fluid
+        for fandom, br, tibiopedia, sub_type in ((150, [], [150], None), (40, [], [40], None),
+                                                 (None, [], [], None), (10, [], [30], 2)):
+            offers, _ = self.price_builder(fandom, br, tibiopedia, sub_type=sub_type)
+            self.assertNotIn('parity_pending', offers[0])
+
+    def test_parity_pending_shape(self):
+        report = load_sample()
+        offer = next(o for c in report['candidates'] for o in ((c.get('trade_service') or {}).get('offers') or [])
+                     if 'parity_pending' in o)
+        for value in ({}, {'fandom': offer['unit_price']}, {'wiki': 1}, {'fandom': 1, 'tibiopedia': 1}, True):
+            broken = copy.deepcopy(report)
+            next(o for c in broken['candidates'] for o in ((c.get('trade_service') or {}).get('offers') or [])
+                 if o == offer)['parity_pending'] = value
+            self.assertTrue(validate_promotion.errors(broken), value)
+
+    def test_wiki_offer_names_count_pinned_item_map_keys_only(self):
+        # since ITEM-ID-1b a retired key and the Tibia id definition it aliases to share one name
+        builder = promotion_candidates.Builder(
+            {'npcs': [], 'trade': {}},
+            {'records': [{'source_item_id': 3003, 'native_key': 'oteryn:item.registry.i1', 'native_revision': 'r1'}]},
+            None, None, {'oteryn:item.registry.i1': 'rope', 'oteryn:item.tibia.i3003': 'rope'})
+        self.assertEqual(builder.registry_keys, {'rope': 'oteryn:item.registry.i1'})
 
 if __name__ == '__main__':
     unittest.main()
