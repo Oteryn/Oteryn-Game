@@ -1,0 +1,217 @@
+# ATTACK-0 Attack target and auto-attack
+
+- Decision: `ATTACK0-ATTACK-TARGET-AND-AUTO-ATTACK-V1`
+- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol and
+  combat) and protected integration.
+- Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
+- Answers: the architect programme plan (#162 5910870596, M1): a player cannot attack today
+  (`spell/cast.rs`: "No attack-target owner exists yet")
+- Builds on: GAME-ABILITY-01 (one ability and effect pipeline, sole damage authority; whole gate
+  §4 occurrence identity and §8.1 catch-up), VSL-COMBAT-01 (death, loot, XP), MOVE-RL-11 (D84-D87 visibility, VIS-2), SPELL-D7 (the
+  `ATTACK_TARGET` intent), CHARM-0 (D186 hooks), PROFICIENCY-0, A13 (vocation and magic
+  level), GAME-CHAR-01 Stage B decision 10 (parity gates), owner rule 5905825574 (an official
+  source governs; owner-trusted fan sources are allowed)
+- Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
+- `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
+
+## Implementation brief
+
+| Child | Worker | Builds | Depends on |
+|---|---|---|---|
+| ATTACK-WIRE-1 | impl, protocol review | command types 10 and 11, state domain 10 (§3), codecs, limits, client target selection and fight-mode buttons | VIS-2 (MOVE-RL-11 is still a candidate); the protocol numbers re-checked at allocation |
+| ATTACK-1 | hard (combat), combat review | the attack-target owner, the auto-attack timer and the in-fight deadline (§4); player fist and melee attacks and creature melee attacks as GAME-ABILITY-01 abilities (§5) | ATTACK-WIRE-1; GAME-AI-01 runtime wiring (creatures that exist and choose a target) |
+| SPELL-TARGET-1 | spell lane | the spell Target Resolver: `ATTACK_TARGET` resolves to the §4 target, and single-target damage spells stop being rejected (`spell/cast.rs`) | ATTACK-1 |
+| ATTACK-PARITY-1 | impl | the parity fixtures of §6 against the TibiaPal damage calculator | ATTACK-1 |
+
+Later, each with its own decision or amendment: distance and throwing weapons (ammunition use
+needs a DUR-03 burn cause), wands and rods (mana cost), chase movement, PvP (PARTY-PVP-0).
+
+## 1. Question
+
+How does a player pick a target and hit it, how does a creature hit back, and how much damage
+does a hit do?
+
+## 2. Facts
+
+**PROVEN**
+
+- GAME-ABILITY-01 is the only damage authority; a second combat engine is not allowed.
+  VSL-COMBAT-01 already turns a creature death into loot and XP. Its §5 and the whole gate §4
+  require every hit to have a stable parent occurrence identity; charm rolls take a
+  (`GameplayDecisionRoot`, `DecisionOccurrenceId`) (`charm_effects.rs`).
+- Whole gate §8.1: every repeating gameplay timer declares a catch-up policy, and damage may not
+  use `SKIP_TO_LATEST`.
+- GA-XD-02 puts item consumption under DUR-03. DUR-03 §15 admits only the fee burn cause and
+  `DECAY_RETIRE`, so using up ammunition has no DUR-03 shape today.
+- No command sets an attack target, and the runtime holds none. The spell `ATTACK_TARGET` intent
+  resolves to "no target", and the missing Target Resolver rejects damage and foreign-target
+  effects (`spell/cast.rs`).
+- GAME-AI-01 is `PROPOSED`; its targeting is evidence-gated, and no creature attack path exists in
+  code.
+- D85 gives creatures a visible identity (runtime actor id and generation, health percentage) in
+  domain 1. It reaches the client only through VIS-2, which is not built; MOVE-RL-11 is a
+  candidate.
+- The spell formula engine (`spell/formula.rs`) already evaluates `player_expression` trees over
+  `level`, `attack_skill`, `attack_value`, `attack_factor`, `shielding_skill` and
+  `shield_defense`, with the official 13.05 level curve (equal to `level / 5` up to level 500).
+- The charm hooks are five (`charm_effects.rs`): among them AttackDamageCalculation before the
+  commit, AttackHit, CommittedHit (kills) and the incoming creature attack and hit hooks.
+- The Tibia manual (`docs/reference/tibia-manual/combat.md` §5.3.1, §5.3.12.c): a fixed attack
+  cadence, one target at a time, at most two blockable attackers per round, and a logout block of
+  60 s after fighting. It gives no formula.
+- A13 makes vocation and magic level durable; SKILLS-0 (PR #1346, a candidate) adds the weapon
+  skills.
+- Protocol numbers: `main` registers command types 1-3 and domains 1-3. #162 reserves capabilities
+  1-2 (5907282001), command types 7-8, domains 7-8 and capability 3 (5909366267), and command
+  type 9, domains 9 and 11 and capability 4 with domain 10 released (5910888594, PR #1344, not
+  merged). The next free are command type 10, domain 10 and capability 5.
+
+**OTS_HYPOTHESIS_ONLY** (Canary `04b83b51`, for the formulas of §5)
+
+- Attack interval 2,000 ms for every vocation (`vocations.xml:3-123`; rate divisor
+  `vocation.cpp:365-367`). A missed interval is never replayed (`player.cpp:3991`, `lastAttack`).
+- Fight-mode attack factor: offensive 1.0, balanced 0.75, defensive 0.5 (`player.cpp:840-851`).
+- Maximum melee damage `0.085 x factor x attack x skill + level / 5` (`weapons.cpp:94-100`); the
+  hit is `normal_random(min, max)`, a truncated normal with mean 0.5 and deviation 0.25 of the span
+  (`tools.cpp:466-475`), then multiplied by the melee damage multiplier and damage modifier, with an
+  elemental split (`weapons.cpp:210-216`). Fists use attack value 7 (`:226`).
+- Defence `(shielding / 4 + 2.23) x defence x modeFactor x scaling x vocationDefence`, scaling
+  0.16 with a shield, 0.146 with weapon defence, 0.15 with fists; skill 0 gives 1 or 2; fist defence
+  7 (`player.cpp:776-818`). The mode factor depends on the time since the last attack
+  (`:853-872`). It is applied as `uniform_random(defence / 2, defence)` (`creature.cpp:966-967`).
+- Blocking is time-based: one block per 1,000 ms, capped at 2, used up per blocked hit
+  (`creature.cpp:141-145, 961-963`).
+- Armor removes `uniform_random(armor / 2, armor - (armor % 2 + 1))` when armor > 3, and 1 when it
+  is 1 to 3 (`creature.cpp:976-982`).
+- Creature melee maximum damage `getMaxMeleeDamage` (`weapons.cpp:88-91`) from the monster's
+  attack and skill.
+- An attacker standing in a protection zone cannot attack (`combat.cpp:327-329`).
+- The in-fight (logout block) condition lasts 60 s, refreshed by hits dealt or taken
+  (`player.cpp:4487-4503, 6518-6525`; config `pzLocked`).
+
+**Owner-trusted fan source**
+
+- The TibiaPal damage calculator, which the owner tested and trusts (#162, 2026-09-29), is the
+  parity oracle for these formulas.
+
+## 3. Wire (ATTACK-WIRE-1)
+
+| Kind | Id | Name | Content |
+|---|---|---|---|
+| capability | 5 | `ATTACK_V1` | gates everything below |
+| command type | 10 | `ATTACK_TARGET_INTENT` | `{target: {actor_id, generation} or none}`; none stops attacking |
+| command type | 11 | `FIGHT_MODES_INTENT` | `{fight_mode: OFFENSIVE, BALANCED or DEFENSIVE; chase: STAND or CHASE; secure: bool}` |
+| state domain | 10 | `ACTOR_COMBAT_STATE` | the own actor's current target (or none), fight mode, chase, secure and in-fight flag |
+
+- The numbers are #162 reservations; ATTACK-WIRE-1 re-checks them at allocation.
+- The target is the D85 identity of a creature visible to the session (VIS-2). A target that is
+  not visible, not a creature, or in a protection zone is refused, and so is any target while the
+  attacker stands in a protection zone.
+- **First slice: creatures only.** Attacking a player is refused until PARTY-PVP-0 decides PvP
+  rules; `secure` is carried now and has no effect until then.
+- **Chase** is carried now and has no effect in the first slice: every actor acts as STAND. Chase
+  needs server-driven player movement, which has no owner yet.
+- Fight modes are runtime-only, as in Tibia, where the client sends them at login: the defaults
+  are balanced, stand and secure on.
+- Domain 10 is owned by the channel runtime; its revision is monotonic per GameSession (FND-02
+  §15), with a snapshot at every admission, reconnect and channel transfer. The target is cleared
+  on reconnect and transfer.
+- Damage stays visible through the target's health percentage in domain 1 (D85). A dedicated
+  combat-effects view (numbers, animations) is a later wire decision.
+- Limits (ATTACK-WIRE-1 registers them): `ATTACK0-RL-01` target changes per second,
+  `ATTACK0-RL-02` fight-mode changes per second.
+
+## 4. Runtime (ATTACK-1)
+
+- **Owner.** The channel runtime holds one attack target and the fight modes per actor. Setting a
+  target is a runtime action; it writes nothing durable.
+- **Swing occurrence.** Each swing is a timer occurrence of the attack-target owner, keyed by
+  (runtime scope, attacker actor id and generation, swing sequence). Its lineage is the CommandRef
+  that set the target. The swing binds the formula content revision and the SIM profile. Its RNG
+  purposes are closed: `hit_chance` (reserved for distance), `damage_draw`, `defence_draw` and
+  `armor_draw`. Charm rolls take the swing as their `DecisionOccurrenceId`.
+- **Timer.** Every attack interval (2,000 ms) while the target is valid, the actor swings once
+  through the GAME-ABILITY-01 pipeline as one typed ability, `AutoAttack`. Catch-up policy
+  `DEADLINE_STATE`: at most one swing per due deadline, never a backlog, as Canary never replays
+  a missed interval. Nothing else deals auto-attack damage.
+- **Cooldowns.** The attack interval is independent of spell and spell-group cooldowns.
+- **Validity.** Visible, a creature, alive, on the same floor, adjacent (1 tile), neither actor in
+  a protection zone. Out of range, the swing waits. A dead or vanished target clears the target.
+- **Weapon.** First slice: fists, and melee weapons once ITEM-MOVE-WIRE-1 admits equipping. A
+  distance weapon, throwing weapon, wand or rod in the hand is treated as no weapon for
+  auto-attack until its own decision (see the brief).
+- **Skills.** Until CHAR-BUILD-1 and SKILLS-0 ship, every character fights with the starting
+  skill 10. Once they ship, the attack reads the live skill and reports one try per swing to the
+  build-state training of SKILLS-0.
+- **Creatures hit back.** ATTACK-1 also gives a creature a melee `AutoAttack` against its target
+  on the same timer rules, through the same pipeline, with the incoming creature attack and hit
+  charm hooks. Target choice stays with GAME-AI-01; this decision only supplies the attack.
+- **Charm hooks.** AttackDamageCalculation before the damage commits (critical hits),
+  AttackHit after it, and CommittedHit for kills (PROFICIENCY and charms). The incoming hooks run
+  for creature attacks.
+- **In-fight deadline (logout block).** ATTACK-1 keeps one runtime-actor-local deadline: 60 s
+  after the last hit dealt or taken (`ATTACK0-RL-03`, registered by ATTACK-1; manual §5.3.12.c). While it runs:
+  - a logout command is refused, and FND-ID-01 sees the blocker;
+  - a closed client does not remove the actor: the actor stays in the world until the deadline
+    passes, and then ends as at logout;
+  - domain 10 shows the flag.
+  The 15-minute block after a player kill belongs to PARTY-PVP-0.
+- **Durability.** Creature health and the actor's own health are runtime state. Only a creature
+  death (VSL-COMBAT-01) and a character death (DEATH-1) become durable. Fists and melee consume
+  nothing, so no DUR-03 shape is involved in this slice.
+
+## 5. Formulas (ATTACK-1)
+
+- The formulas of §2 (Canary) are authored as `player_expression` trees for the existing spell
+  formula engine (`spell/formula.rs`) and one small content table of constants (fight factors,
+  defence scaling, the fist values, the block cadence). No new formula engine is built.
+- The level term is the engine's official 13.05 curve, which equals Canary's `level / 5` up to
+  level 500.
+- Divergences are resolved toward the TibiaPal calculator, and toward an official CipSoft source
+  where one exists. Every value carries `PARITY_PENDING` until ATTACK-PARITY-1 matches it.
+- Creature defence and armor use the same formulas with the creature's content values; creature
+  attacks use `getMaxMeleeDamage`.
+- Blocking: the time-based block budget of §2 (one per 1,000 ms, at most 2), which is the manual's
+  "two attackers per round"; hits beyond the budget meet armor only.
+- Critical hits, leech and elemental splits come from charms, imbuements and proficiency, not
+  from this decision.
+
+## 6. Parity (ATTACK-PARITY-1)
+
+- Fixtures compare the formula table with the TibiaPal calculator for each vocation, level bands
+  (8, 50, 100, 300, 600, 1000), skills (10, 50, 100, 120), fight modes, fists and one weapon per
+  melee class.
+- A mismatch above the calculator's rounding keeps `PARITY_PENDING` and is reported on #162.
+
+## 7. Rejected options
+
+- **A combat engine outside GAME-ABILITY-01.** The accepted gate forbids it.
+- **Durable fight modes.** Tibia sends them from the client; storing them adds a Character write
+  per click.
+- **PvP in the first slice.** It needs skull and protection rules (PARTY-PVP-0).
+- **Distance weapons in the first slice.** Ammunition use needs a DUR-03 burn cause first.
+- **A new formula engine.** The spell engine already has the inputs and the level curve.
+- **Replaying missed swings.** Neither Canary nor Tibia does it, and it would burst damage after a
+  stall.
+
+## 8. Decision test
+
+- **Must decide now:** YES. Without it the M1 milestone (walk, see, fight, loot) has no fight in
+  either direction.
+- **Minimum sufficient:** two commands, one runtime domain, one ability for players and
+  creatures, formulas on the existing engine.
+- **Superseding evidence:** an official formula, or TibiaPal disagreeing with Canary.
+- **Deliberately not decided:** PvP, chase movement, distance weapons and ammunition, wands and
+  rods, combat effect animations and damage numbers, critical and leech values, exercise weapons,
+  creature spells and distance attacks, and equipment itself (ITEM-MOVE-WIRE-1).
+
+## 9. Before-freeze checklist
+
+1. **Contract amendments:** none. SPELL-D7's `ATTACK_TARGET` resolves to the §4 target through
+   SPELL-TARGET-1.
+2. **Serialization:** runtime-only, inside the channel owner's tick; one occurrence per swing.
+3. **Restart:** the target, fight modes and in-fight deadline are runtime state and reset on
+   reconnect.
+4. **Typed references:** the target is the D85 identity; weapons are A12 keys.
+5. **Wire:** §3, capability-gated.
+6. **Split work:** one swing per due deadline, one ability invocation per swing.
