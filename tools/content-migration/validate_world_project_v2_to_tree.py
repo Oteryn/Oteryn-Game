@@ -32,6 +32,7 @@ DIALOGUE_COUNT = 707
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
 PROFICIENCY_COUNT = 443
+PROFICIENCY_BINDING_COUNT = 642
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
@@ -433,13 +434,22 @@ def main() -> int:
         require(shard["family"] == "Proficiency" and shard["shard"]["count"] == len(shard["records"]), "PROFICIENCY_SHARD")
         proficiency_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
     require(len(proficiency_keys) == PROFICIENCY_COUNT, "PROFICIENCY_IDENTITY_UNIQUENESS")
+    proficiency_bindings = load(ROOT / "content" / "proficiencies" / "bindings.json")
+    binding_rows = proficiency_bindings["records"]
+    require(proficiency_bindings["record_count"] == len(binding_rows) == PROFICIENCY_BINDING_COUNT,
+            "PROFICIENCY_BINDING_COUNT")
+    item_keys = {definition["identity"]["key"] for definition in migrated_items}
+    require(len({row["item"]["key"] for row in binding_rows}) == len(binding_rows), "PROFICIENCY_BINDING_UNIQUENESS")
+    require(all(row["item"]["key"] in item_keys and row["profile_binding"]["key"] in proficiency_keys
+                and row["threshold_class"] in {"standard", "knight", "crossbow"} for row in binding_rows),
+            "PROFICIENCY_BINDING_REFERENCES")
     print(
         "PASS items=33567 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "
         f"encounter_records={encounter_records} charm_records={CHARM_COUNT} "
-        f"proficiency_records={PROFICIENCY_COUNT}"
+        f"proficiency_records={PROFICIENCY_COUNT} proficiency_bindings={PROFICIENCY_BINDING_COUNT}"
     )
     return 0
 

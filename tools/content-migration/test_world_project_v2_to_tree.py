@@ -52,7 +52,7 @@ assert any(path.startswith("content/charms/charms-") for path in paths) and "con
 assert manifest["families"]["Proficiency"] == {"records": 443, "index": "content/proficiencies/index.json"}
 assert "Proficiency" in project["migrated_families"] and "Proficiency" not in project["next_population_families"]
 assert sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
-assert "content/proficiencies/index.json" in paths
+assert "content/proficiencies/index.json" in paths and "content/proficiencies/bindings.json" in paths
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 

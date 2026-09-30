@@ -22,6 +22,7 @@ WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enric
 CHARM_INDEX = "content/charms/index.json"
 # Proficiency likewise (tools/content-schema/proficiency-authoring, `proficiency_authoring.py content`).
 PROFICIENCY_INDEX = "content/proficiencies/index.json"
+PROFICIENCY_BINDINGS = "content/proficiencies/bindings.json"
 # A12 (ITEM-ID-1): the staged packet is history naming retired Item keys; its targets are emitted
 # through the append-only alias table (content/items/aliases.json).
 ITEM_ALIASES = ROOT / "content" / "items" / "aliases.json"
@@ -473,7 +474,8 @@ def main() -> int:
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",
                       *service_managed, CHARM_INDEX, *charm_index["shards"],
-                      PROFICIENCY_INDEX, *proficiency_index["shards"], *outputs.keys()])
+                      PROFICIENCY_INDEX, *proficiency_index["shards"], PROFICIENCY_BINDINGS,
+                      *outputs.keys()])
     # A family that grows renames its last shard; drop the superseded shard files so every shard is managed.
     shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
     managed_set = set(managed)

@@ -17,7 +17,7 @@ None of these is modelled here. `build`, `validate` and the tests write only und
 |---|---|
 | `proficiency.schema.json` | One catalogue (`OTERYN_PROFICIENCY_AUTHORING_CATALOGUE/v1`), JSON Schema 2020-12, closed shapes. A definition has `identity {family: Proficiency, key, revision}`, `name`, `source` (client id, raw `Version`, record digest) and 1-7 `levels`, each with 1-3 `perks`. A perk is a `oneOf` over 33 closed kinds, one per source `Type` code. |
 | `proficiency_authoring.py` | `build` promotes the staged 15.30 definitions with the D199 code map and rejects any unmapped code or key set; `build --check` diffs a rebuild against the committed candidate. `validate` runs the schema and the semantic rules. |
-| `proficiency_authoring.py content` | Writes (`--check` verifies) `content/proficiencies/index.json` (`OTERYN_FAMILY_INDEX/v1`) and three shards of 150 (`OTERYN_PROFICIENCY_SHARD/v1`, one `definition` per record, identity `{key, revision}`), and registers `Proficiency` in `content/project.json` (`migrated_families`), `content/manifest.json` (`families`, `managed_files`) and `content/content.lock.json` (`family_counts`). Threshold tables stay in the catalogue: they are progression rules and go to `rulesets/progression/weapon-proficiency/` with PROF-2. |
+| `proficiency_authoring.py content` | Writes (`--check` verifies) `content/proficiencies/index.json` (`OTERYN_FAMILY_INDEX/v1`) and three shards of 150 (`OTERYN_PROFICIENCY_SHARD/v1`, one `definition` per record, identity `{key, revision}`), and registers `Proficiency` in `content/project.json` (`migrated_families`), `content/manifest.json` (`families`, `managed_files`) and `content/content.lock.json` (`family_counts`). Threshold tables stay in the catalogue: they are progression rules and go to `rulesets/progression/weapon-proficiency/` with PROF-2. It also writes `content/proficiencies/bindings.json` (PROF-CONTENT-1c, below). |
 | `test_proficiency_authoring.py` | No-network tests: perk encoding and its rejections, the committed build, one negative case per rule. |
 | `samples/proficiencies-candidate.json` | The candidate catalogue: 443 definitions, 3,671 perks, all 33 kinds. One definition per line. |
 
@@ -99,6 +99,24 @@ Canary `04b83b5` (`src/creatures/players/components/weapon_proficiency.*`) and C
 - Each threshold table strictly increases.
 - Against staging: the same id set, the same record digests, and every perk decodes back to its
   staged source perk exactly.
+
+## Weapon bindings (PROF-CONTENT-1c)
+
+`content/proficiencies/bindings.json` (`OTERYN_PROFICIENCY_ITEM_BINDINGS/v1`) gives each weapon its
+Proficiency definition and threshold class: `{item: ItemRef, profile_binding: ProficiencyRef,
+threshold_class}`, sorted by Item key. It is the content form of the Item `proficiency` binding of
+WorldProject v2 (PROF-CONTENT-1b). `content/world` stays unmodified.
+
+- **Source:** the ITEM-PROF-1 bindings (`item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json`,
+  pinned by SHA-256), from the 15.30 client (flags field 61, inferred).
+- **Threshold class:** `item_weapon_proficiency.py` applies the rule (D197, D198, D200) to each binding
+  when content is built; the Item Authoring Schema CI drift-checks it (`--check`).
+- **Result:** 642 weapons bound: 461 standard, 146 knight, 35 crossbow.
+- **Not bound:**
+  - 1 weapon whose class is `unknown` (ink sword 51666);
+  - 23 client objects with no Item definition.
+
+  Both are only counted (`excluded`), and they get no proficiency.
 
 ## Content population
 
