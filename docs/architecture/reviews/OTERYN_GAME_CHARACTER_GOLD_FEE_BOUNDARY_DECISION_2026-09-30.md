@@ -222,8 +222,9 @@ FeeBurnCause = CharmUnassign { charm: CharmKey, occurrence: CharmCommandOccurren
 - The fee amount, discounts and eligibility belong to the source (CHARM-6 for CharmUnassign);
   DUR-03 only conserves the value.
 
-**Amendment (NPC-0, 2026-09-30, owner answer Q1a on #162 5909366267).** Two variants are added:
-`NpcTrade(NpcTradeCause {npc, offer, side, occurrence})` for the coins of an NPC BUY and
+**Amendment (NPC-0, 2026-09-30, owner decision D208, Q1a on #162 5909366267).** Two variants are added:
+`NpcTrade(NpcTradeCause {npc, offer, side, occurrence})` for the coins of an NPC BUY (its `side`
+is always BUY) and
 `NpcTravel {npc, route, occurrence}` for an NPC travel fee
 (`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6). Both are item-only fee
 sources under the §4.3 amendment above: a DUR-03 cause record keyed by (occurrence, character),
@@ -248,7 +249,8 @@ evidence:
 The schema (a new closed operation of the native item transaction family), field numbers and
 registry entries are not defined here; GOLD-FEE-1 registers them under the §39.2 non-candidate,
 no-`_fixture` conditions. Burn stays excluded for every cause other than `CorpseDecay`
-(`DECAY_RETIRE`) and the `FeeBurnCause` variants.
+(`DECAY_RETIRE`), the `FeeBurnCause` variants and, with the NPC-0 amendment (D208), the SELL sink
+`NpcTradeCause`.
 
 ### 4.6 Resource rows
 

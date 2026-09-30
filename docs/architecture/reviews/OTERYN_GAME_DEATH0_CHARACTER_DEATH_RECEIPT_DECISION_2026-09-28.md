@@ -116,7 +116,9 @@ without weakening that chain?
 - A second death cannot commit while a pending respawn exists (the character is not playable).
 - **Amendment (NPC-0, 2026-09-30).** A death is never refused because of NPC travel. The death
   transaction deletes a pending arrival of the same character
-  (`game_character_pending_arrivals`) in the same transaction; the respawn supersedes it. An
+  (`game_character_pending_arrivals`) in the same transaction, locking it after `character_root`,
+  and the death receipt records the deleted arrival's occurrence; the respawn supersedes it.
+  NPC-TRAVEL-1 makes this change in `commit_character_death`. An
   occupied respawn tile uses the placement fallback of NPC-0 §6.1.
 - Persisting a general Character position for ordinary logins remains a separate lane.
 

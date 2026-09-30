@@ -732,7 +732,8 @@ non-item accounts, nested containers or additional custody families. (The B3
 amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
 amendment in §39.3 admits typed BURN of up to 20 coin stacks with up to 2 change MINTs, composed
-with a Character change in one transaction.) Unsupported
+with a Character change in one transaction; the NPC service amendment in §39.3 admits the NPC BUY,
+SELL and travel shapes.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -1254,17 +1255,30 @@ authority, conservation) is unchanged.
 **NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
 (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes
 built on the gold fee amendment above. The owner admitted NPC buying, selling and travel as value
-sources on 2026-09-30 (decision §9, Q1a; #162 5909366267), as D178 requires. Every other §39
-obligation is unchanged.
+sources on 2026-09-30 (D208; decision §9, Q1a; #162 5909366267), as D178 requires. For these shapes
+only, it supersedes:
+- the §39.3 statements that every MINT descends from a committed creature-death output and that a
+  MINT establishes typed Ground custody before a separate TRANSFER (the bought item and the SELL
+  coins are minted straight into new backpack entries);
+- the §39.1 exclusion of burn and of multiple touched items (the pointer list in §39.1 names this
+  amendment);
+- the gold fee decision's limit of change outputs to platinum and gold (a SELL mints crystal
+  coins too) and its §4.5 sentence that burn stays excluded outside `CorpseDecay` and the
+  `FeeBurnCause` variants (a SELL item burn is sunk by `NpcTradeCause`).
+
+Every other §39 obligation (fences, evidence, idempotency, current authority, conservation) is
+unchanged.
 
 - **BUY (item-only).** The gold fee plan with `F = unit price x quantity`, plus one MINT of the
   bought item (one stack, or one non-stackable item) into a new direct entry of the main backpack.
-- **SELL (item-only).** One BURN of `quantity` units from one live direct backpack entry of the
-  offer's item (no contents, default state apart from quantity), plus a MINT of the price as at
-  most 3 fresh coin stacks (crystal, platinum, gold; each at most 100) in new backpack entries.
+- **SELL (item-only).** One BURN of `quantity x count` units from one live direct backpack entry
+  of the offer's item (no contents, default state apart from quantity), plus a MINT of
+  `unit price x quantity` gold as at most 3 fresh coin stacks (crystal, platinum, gold; each at most
+  100) in new backpack entries, counted after the burn.
 - **Cause.** One closed `NpcTradeCause {npc, offer, side, occurrence}` covers every line of a BUY
-  or SELL: the BUY coin burn as `FeeBurnCause::NpcTrade`, the SELL item burn as its sink, and every
-  MINT as its source. One audit event carries it.
+  or SELL: the BUY coin burn as `FeeBurnCause::NpcTrade` (side always BUY), the SELL item burn as
+  its sink, and every MINT as its source. The occurrence is issued by the runtime, bound 1:1 to the
+  command's CommandRef. One audit event carries it.
 - **Records and revision.** BUY, SELL and travel fall under the composition decision §3 rule 1
   and §3.1: no `CharacterRevision` advance. Each writes one DUR-03 cause record keyed by
   (occurrence, character) under the item writer's fence (rules 2-5, with the `character_root`
@@ -1277,7 +1291,7 @@ obligation is unchanged.
   mismatch with the client's expected price rejects. Insufficient funds, no free entry or a stack
   above 100 rejects the whole transaction and writes nothing.
 - **Rows.** BUY `DUR03-RL-01` 23, `DUR03-RL-02` 23, `DUR03-RL-06` 23 participants / 66 work
-  units; SELL 4, 4, 4 participants. The rows, schema, the `0023` widening (fee source kinds, the
+  units; SELL 4, 4, 4 participants / 9 work units. The rows, schema, the `0023` widening (fee source kinds, the
   root-advance requirement for an item-only source, and the entry-removal proof) and field numbers are registered by NPC-TRADE-1 and NPC-TRAVEL-1, not
   here.
 

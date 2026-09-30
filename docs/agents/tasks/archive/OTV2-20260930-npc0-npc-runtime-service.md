@@ -49,7 +49,7 @@ packet (architect ruling on #162, 5909181928, answer 1a).
   becomes a release parity gate (NPC-0 §7).
 - **Amendments.** DUR-03 §15 and §39.3, the gold fee decision §4.3 and §4.4, the composition
   decision §3.1, DEATH-0 §3.4, the NPC boundary. The owner
-  admitted NPC value sources (Q1a, "tak a", 2026-09-30, #162 5909366267), as D178 requires.
+  admitted NPC value sources (D208: Q1a, "tak a", 2026-09-30, #162 5909366267), as D178 requires.
 - **Children.** NPC-CONTENT-1, NPC-PLACE-1, NPC-WIRE-1, NPC-TALK-1, NPC-TRADE-1, NPC-TRAVEL-1.
 
 No code, migration or content change is made.
@@ -96,6 +96,12 @@ needs protocol review.
   aligned with ADR-0021, offer counts corrected.
 - Repair after freeze `9f9e06de` (found by the ITEM-MOVE-WIRE-0 review): domain revisions are
   monotonic per GameSession across reconnect (FND-02 §13.3, §15), not reset per connection.
+- Independent review of `e3b08d77` (5910189478): FIX with 1 high, 3 medium, 4 low findings, all
+  answered in one push: SELL burns `quantity x count`; explicit supersession list in DUR-03 and the
+  gold fee §4.5; runtime-issued occurrence bound to the CommandRef; stale check only before send;
+  NpcTrade fee side BUY only; D208 cited; death receipt records the deleted arrival and the
+  `commit_character_death` change; SELL 9 work units, free entries after the burn, stack maximum
+  per definition.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

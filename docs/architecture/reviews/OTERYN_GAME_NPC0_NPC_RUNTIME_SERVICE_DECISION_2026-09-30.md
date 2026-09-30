@@ -28,7 +28,7 @@
 | NPC-WIRE-1 | impl, protocol review | registry and proto rows of §4, codecs, limits, client views | NPC-CONTENT-1 |
 | NPC-TALK-1 | impl | conversation lifecycle and keyword matching in the channel runtime (§2.1), read-only trade window (boundary gate `NPC_DIALOGUE_TRADE_WIDGET_V1`) | NPC-WIRE-1; NPC-PLACE-1; MAP-CUTOVER-1 |
 | NPC-TRADE-1 | hard, persistence review | BUY and SELL (§5), migration, cause records (boundary gate `NPC_SINGLE_TRADE_COMMIT_V1`) | NPC-TALK-1; GOLD-FEE-1a (merged); GOLD-FEE-1b |
-| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
+| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration, and the `commit_character_death` change (`durability/character_death.rs`) that deletes a pending arrival, locking it after `character_root` | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
 
 Every child keeps the boundary's rules: the client is not an authority, dialogue code never
 commits value, and AI owns no dialogue or trade state.
@@ -141,8 +141,10 @@ shapes are new?
   continues across a reconnect (`gameplay_transport/connection.rs`, `resume.rs`). Every
   admission, reconnect and channel transfer sends a new snapshot at a revision above any the
   session has seen. Reconnect or transfer closes the conversation, and that snapshot is empty
-  (boundary §7). A command reserved before a reconnect and executed after it resolves against the
-  current conversation; a mismatch rejects as stale (FND-02 §13.3).
+  (boundary §7). A command reserved before a reconnect is checked for staleness (conversation,
+  catalogue revision, price) only before its transaction is sent. Once sent, or with an ambiguous
+  outcome, it resolves by occurrence replay first and is never rejected as stale afterwards
+  (FND-02 §13.3, composition §3 rule 3).
 - A client without capability 3 never receives domains 7 and 8, and a command 7 or 8 from it is
   refused as unsupported.
 - **Limits** (measured and registered by NPC-WIRE-1): `NPC0-RL-01` talk text bytes, `NPC0-RL-02`
@@ -166,7 +168,10 @@ shapes are new?
   catalogue revision. The client's `catalogue_revision` and `expected_unit_price` are only stale
   checks: a mismatch rejects and re-projects the window.
 - The character must be in an open conversation with that NPC, within talk range, under a live
-  session. Every command carries one occurrence (UUIDv7).
+  session.
+- **Occurrence.** The runtime issues one occurrence (UUIDv7) per command, bound 1:1 to its FND-02
+  CommandRef: command 8 for a trade, and the confirming command 7 for travel. It keys the cause
+  record and is reused on every retry of that command.
 - `unit_price x quantity` is computed in checked unsigned 64-bit arithmetic.
 - Weight is not checked (B3 D81). The bank (stage 2), the Gold Pouch and ground overflow are out
   of scope: a result that does not fit the backpack is rejected and writes nothing.
@@ -188,7 +193,8 @@ shapes are new?
 
 - The gold fee plan of D175 with `F = unit_price x quantity`, burning coins and minting change,
   plus one MINT of the bought item into a new direct entry of the main backpack:
-  - a stackable item: one stack of `quantity x count` units, which must be 1 to 100;
+  - a stackable item: one stack of `quantity x count` units, which must be 1 to the item's
+    definition stack maximum (at most 100);
   - a non-stackable item: `quantity` must be 1; the item takes the offer's sub-type or charges.
 - `F` above 20,000,000 (the most 20 coin stacks can hold) is always insufficient funds.
 - Insufficient funds, no free entry after the burn and change, or more than 20 burn inputs
@@ -196,26 +202,27 @@ shapes are new?
 
 ### 5.4 SELL
 
-- One BURN of `quantity` units from one live direct backpack entry of the offer's item (a whole
-  non-stackable item, or part or all of a stack). The item must have no contents and its default
-  state apart from quantity.
+- One BURN of `quantity x count` units (1 to the definition stack maximum) from one live direct
+  backpack entry of the offer's item (a whole non-stackable item with `quantity` 1, or part or all
+  of a stack). The item must have no contents and its default state apart from quantity.
 - A MINT of `V = unit_price x quantity` gold as fresh stacks in new backpack entries: `floor(V /
   10,000)` crystal, then platinum, then gold, each present only if positive and each at most 100.
-- No free entries or a stack above 100 rejects the whole transaction.
+- Free entries are counted after the burn: a whole burn frees its entry. Too few free entries or a
+  stack above 100 rejects the whole transaction.
 
 ### 5.5 Causes and evidence
 
 - One closed cause covers every line of a trade transaction:
   `NpcTradeCause {npc, offer, side: BUY or SELL, occurrence}`.
-  - BUY: the coin burn uses `FeeBurnCause::NpcTrade(NpcTradeCause)`; the change MINT and the item
-    MINT use `NpcTradeCause` as their MINT source.
+  - BUY: the coin burn uses `FeeBurnCause::NpcTrade(NpcTradeCause)`, whose `side` is always BUY
+    (a SELL cause in that variant is invalid); the change MINT and the item MINT use
+    `NpcTradeCause` as their MINT source.
   - SELL: the item BURN uses `NpcTradeCause` as its burn sink; the coin MINT uses it as its MINT
     source.
 - One audit event per transaction (`DUR03-RL-07-EVENTS` 1) carries the cause and every line.
 - Rows (registered by NPC-TRADE-1):
   - BUY: `DUR03-RL-01` 23, `DUR03-RL-02` 23, `DUR03-RL-06` 23 participants / 66 work units;
-  - SELL: `DUR03-RL-01` 4, `DUR03-RL-02` 4, `DUR03-RL-06` 4 participants / at most 66 work units,
-    the exact value measured by NPC-TRADE-1.
+  - SELL: `DUR03-RL-01` 4, `DUR03-RL-02` 4, `DUR03-RL-06` 4 participants / 9 work units.
 - A whole-item SELL retirement widens the `0023` entry-removal proof to that cause.
 
 ## 6. Travel (NPC-TRAVEL-1)
@@ -237,8 +244,9 @@ shapes are new?
   arrival. The runtime also refuses travel while the character is in combat (logout-blocked), as
   in Tibia.
 - **Death supersedes arrival.** A death is never refused because of travel. The death
-  transaction deletes a pending arrival of the same character in the same transaction (DEATH-0
-  §3.4 as amended); the fee stays spent, as a death after arriving would leave it.
+  transaction deletes a pending arrival of the same character in the same transaction and records
+  the deleted arrival's occurrence in the death receipt (DEATH-0 §3.4 as amended); the fee stays
+  spent, as a death after arriving would leave it.
 
 ### 6.1 Placement fallback
 
@@ -281,8 +289,8 @@ D178 requires an owner decision for every new fee source.
 **Q1. Admit NPC trade and NPC travel as value sources?** a) Yes, as in Tibia (recommended);
 b) buying and travel only; c) none now.
 
-**Owner answer (2026-09-30, given directly in the architect session, recorded on #162
-5909366267):** "tak a". Q1a: NPC buying, selling and travel are admitted as value sources (D178
+**Owner answer D208 (2026-09-30, given directly in the architect session, recorded on #162
+5909366267 and numbered in 5909477417):** "tak a". Q1a: NPC buying, selling and travel are admitted as value sources (D178
 satisfied). The control plane assigns the D-number.
 
 ## 10. Boundary acceptance
