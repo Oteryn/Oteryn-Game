@@ -826,3 +826,76 @@ fn the_query_pages_by_64_rows() -> TestResult {
         Ok(())
     })
 }
+
+/// Owner decision 2026-09-30 (display contract §4.3): a fact under a key the
+/// catalogue lacks, seeded by the admin role as a historical fact because the
+/// fenced grant path refuses an absent key, is an integrity fault. The answer
+/// is `ACCOUNT_DATA_INTEGRITY` (the code and nothing else on the wire), with
+/// one error-level operator event naming the account, the key and the
+/// request; the account's valid fact is not shown in its place.
+#[test]
+fn a_fact_under_a_key_absent_from_the_catalogue_is_an_integrity_fault() -> TestResult {
+    use crate::achievement_catalogue::{
+        AccountAchievementsPageError, AccountAchievementsRequest, integrity_fault_event,
+    };
+    use oteryn_protocol_oteryn::{
+        CommandResultView, CommandStatus, FoundationProtocolError, decode_command_result,
+        decode_wire_envelope, encode_command_error_result,
+    };
+    const ABSENT: &str = "oteryn:achievement/not_in_the_catalogue";
+    run("query_integrity", async |harness, root| {
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+        granted(
+            root.commit_test_achievement_grants(
+                &authority,
+                &harness.node,
+                fence(1)?,
+                vec![earnable(COOKIES, 60)],
+            )
+            .await
+            .map_err(debug)?,
+        )?;
+        insert_fact(harness, ACCOUNT, CHARACTER, ABSENT, 1, 9).await?;
+        let catalogue = catalogue()?;
+        let facts = read_facts(root, &authority, ACCOUNT).await?;
+        assert_eq!(facts.len(), 2);
+        let request = AccountAchievementsRequest {
+            account_id: id(ACCOUNT),
+            page: 0,
+            game_session_id: id(50),
+            command_id: 12,
+        };
+        let mut events = Vec::new();
+        let answer = catalogue.answer_account_achievements(&facts, &request, &mut |line| {
+            events.push(line.to_owned());
+        });
+        assert_eq!(
+            answer,
+            Err(AccountAchievementsPageError::UnknownKey(ABSENT.into()))
+        );
+        let Err(error) = answer else {
+            return Err("the integrity fault fails closed".into());
+        };
+        let code = error.protocol_error().ok_or("a registered code")?;
+        assert_eq!(code, FoundationProtocolError::AccountDataIntegrity);
+        assert_eq!(code.code(), 1050);
+        assert_eq!(events, [integrity_fault_event(&request, ABSENT)]);
+        assert!(events[0].starts_with("event=account_achievement_integrity_fault level=error "));
+        assert!(events[0].contains(&format!("achievement_key=\"{ABSENT}\"")));
+        assert!(events[0].ends_with(" command_id=12"));
+        // The client receives REJECTED with the code only: no row, no key.
+        let wire = encode_command_error_result(4, 9, request.command_id, code).map_err(debug)?;
+        let envelope = decode_wire_envelope(&wire).map_err(debug)?;
+        assert_eq!(
+            decode_command_result(envelope.payload()).map_err(debug)?,
+            CommandResultView {
+                command_id: 12,
+                status: CommandStatus::Rejected,
+                error_code: 1050,
+                payload: &[],
+            }
+        );
+        Ok(())
+    })
+}

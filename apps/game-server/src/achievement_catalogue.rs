@@ -18,6 +18,7 @@
 
 use std::collections::BTreeMap;
 
+use oteryn_protocol_oteryn::FoundationProtocolError;
 use oteryn_protocol_oteryn::account_achievements::{
     ACCOUNT_ACHIEVEMENTS_PAGE_ROWS, AccountAchievementRow, AccountAchievementsResult,
 };
@@ -79,11 +80,60 @@ struct Entry {
 
 /// The display read failed closed (display contract §4.3): a fact whose key the catalogue lacks
 /// is a server integrity error, never skipped, because a skip would understate the points.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum AccountAchievementsPageError {
-    UnknownKey,
+    /// A fact under this key, which the catalogue lacks.
+    UnknownKey(String),
     /// The fact count or the point total does not fit `uint32`.
     Overflow,
+}
+
+impl AccountAchievementsPageError {
+    /// The registered operation-terminal error of the reply (owner decision 2026-09-30): an
+    /// unknown key is `ACCOUNT_DATA_INTEGRITY`, which tells the client only that its account data
+    /// needs support; an overflow stays a plain `REJECTED`.
+    pub(crate) const fn protocol_error(&self) -> Option<FoundationProtocolError> {
+        match self {
+            Self::UnknownKey(_) => Some(FoundationProtocolError::AccountDataIntegrity),
+            Self::Overflow => None,
+        }
+    }
+}
+
+/// One `ACCOUNT_ACHIEVEMENTS_QUERY` as the server answers it: the session's own account (display
+/// contract §4.1), the page, and the request's correlation (FND-02 §20), which only the operator
+/// event of an integrity fault uses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct AccountAchievementsRequest {
+    pub(crate) account_id: [u8; 16],
+    pub(crate) page: u32,
+    pub(crate) game_session_id: [u8; 16],
+    pub(crate) command_id: u64,
+}
+
+/// The operator event of an Achievement integrity fault (owner decision 2026-09-30): one
+/// error-level line with the account, the offending key and the request (GameSessionId and
+/// CommandId), and nothing else. The key is quoted and escaped, so stored text cannot break the
+/// line.
+pub(crate) fn integrity_fault_event(request: &AccountAchievementsRequest, key: &str) -> String {
+    format!(
+        "event=account_achievement_integrity_fault level=error account_id={} achievement_key={key:?} game_session_id={} command_id={}",
+        uuid(&request.account_id),
+        uuid(&request.game_session_id),
+        request.command_id
+    )
+}
+
+/// Canonical lowercase UUID text of 16 bytes.
+fn uuid(bytes: &[u8; 16]) -> String {
+    let mut text = String::with_capacity(36);
+    for (index, byte) in bytes.iter().enumerate() {
+        if matches!(index, 4 | 6 | 8 | 10) {
+            text.push('-');
+        }
+        text.push_str(&format!("{byte:02x}"));
+    }
+    text
 }
 
 /// The catalogue could not be loaded; the server refuses readiness.
@@ -217,10 +267,9 @@ impl AchievementCatalogue {
         let mut rows = Vec::with_capacity(facts.len());
         let mut total_points = 0_u32;
         for fact in facts {
-            let entry = self
-                .entries
-                .get(&fact.achievement_key)
-                .ok_or(AccountAchievementsPageError::UnknownKey)?;
+            let entry = self.entries.get(&fact.achievement_key).ok_or_else(|| {
+                AccountAchievementsPageError::UnknownKey(fact.achievement_key.clone())
+            })?;
             let points = if entry.retired { 0 } else { entry.points };
             total_points = total_points
                 .checked_add(points)
@@ -257,6 +306,23 @@ impl AchievementCatalogue {
             has_more,
             rows: rows.split_off(start),
         })
+    }
+
+    /// The server's answer to `request` over the account's `facts`: its page, or the failure.
+    /// An unknown key is an integrity fault (owner decision 2026-09-30): the operator learns of it
+    /// through one [`integrity_fault_event`] passed to `log`, the client only through the reply's
+    /// [`AccountAchievementsPageError::protocol_error`].
+    pub(crate) fn answer_account_achievements(
+        &self,
+        facts: &[EarnedAchievement],
+        request: &AccountAchievementsRequest,
+        log: &mut dyn FnMut(&str),
+    ) -> Result<AccountAchievementsResult, AccountAchievementsPageError> {
+        let answer = self.account_achievements_page(facts, request.page);
+        if let Err(AccountAchievementsPageError::UnknownKey(key)) = &answer {
+            log(&integrity_fault_event(request, key));
+        }
+        answer
     }
 }
 
@@ -503,7 +569,67 @@ mod tests {
         // A fact under a key the catalogue lacks fails closed instead of being skipped (§4.3).
         assert_eq!(
             catalogue.account_achievements_page(&[fact("beta", 1), fact("absent", 2)], 0),
-            Err(AccountAchievementsPageError::UnknownKey)
+            Err(AccountAchievementsPageError::UnknownKey(
+                "oteryn:achievement/absent".into()
+            ))
+        );
+        Ok(())
+    }
+
+    /// Owner decision 2026-09-30: an unknown key answers `ACCOUNT_DATA_INTEGRITY` and emits one
+    /// error-level operator event with the account, the key and the request, and nothing else; a
+    /// valid page and an overflow emit none, and an overflow carries no code.
+    #[test]
+    fn an_unknown_key_is_an_integrity_fault_with_one_operator_event() -> TestResult {
+        let catalogue =
+            AchievementCatalogue::from_shards(&[&shard(&display("beta", "Beta", 2, 3, false, ""))])
+                .map_err(|error| format!("{error:?}"))?;
+        let mut account_id = [0_u8; 16];
+        account_id[0] = 0xab;
+        account_id[15] = 0x01;
+        let request = AccountAchievementsRequest {
+            account_id,
+            page: 0,
+            game_session_id: [0x5e; 16],
+            command_id: 42,
+        };
+        let mut events = Vec::new();
+        let answer = catalogue.answer_account_achievements(
+            &[fact("beta", 1), fact("gone\"\n", 2)],
+            &request,
+            &mut |line| events.push(line.to_owned()),
+        );
+        assert_eq!(
+            answer,
+            Err(AccountAchievementsPageError::UnknownKey(
+                "oteryn:achievement/gone\"\n".into()
+            ))
+        );
+        assert_eq!(
+            answer.map_err(|error| error.protocol_error()),
+            Err(Some(FoundationProtocolError::AccountDataIntegrity))
+        );
+        assert_eq!(
+            events,
+            [concat!(
+                "event=account_achievement_integrity_fault level=error ",
+                "account_id=ab000000-0000-0000-0000-000000000001 ",
+                r#"achievement_key="oteryn:achievement/gone\"\n" "#,
+                "game_session_id=5e5e5e5e-5e5e-5e5e-5e5e-5e5e5e5e5e5e command_id=42"
+            )]
+        );
+        // A valid page logs nothing.
+        events.clear();
+        assert!(
+            catalogue
+                .answer_account_achievements(&[fact("beta", 1)], &request, &mut |line| events
+                    .push(line.to_owned()))
+                .is_ok()
+        );
+        assert!(events.is_empty());
+        assert_eq!(
+            AccountAchievementsPageError::Overflow.protocol_error(),
+            None
         );
         Ok(())
     }

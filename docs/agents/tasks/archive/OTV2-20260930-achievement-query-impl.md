@@ -25,7 +25,9 @@ owned_paths:
   - crates/protocol-oteryn/src/account_achievements.rs
   - crates/protocol-oteryn/src/lib.rs
   - docs/agents/tasks/active/OTV2-20260930-achievement-query-impl.md
-  # (b) claude/achievement-query-server, stacked on (a)
+  # (b) claude/achievement-query-server, stacked on (a); the integrity-fault repair (owner
+  # decision 2026-09-30) also touches the (a) paths crates/protocol-oteryn/src/lib.rs and
+  # docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (the new error code)
   - apps/game-server/src/achievement_catalogue.rs
   - apps/game-server/src/durability/account_achievement.rs
   - apps/game-server/src/gameplay_transport/connection.rs
@@ -79,8 +81,32 @@ rownolegle 1 2 3", item 1). Split by the 500-line batch rule into two stacked PR
   - Dispatch in `serve_admitted` beside command types 1-3: the account is the admitted controller's
     (`ControllerBinding.account_id`, from the character authority record at admission), never the payload's.
     A page is `ACCEPTED`; a row over its byte bounds is `REJECTED` with `PAYLOAD_LIMIT_EXCEEDED` (1009); a
-    malformed query, no controller, storage failure or an integrity fault is `REJECTED` with no payload.
+    fact under a key the catalogue lacks is `REJECTED` with `ACCOUNT_DATA_INTEGRITY` (1050) and one operator
+    event (see *Owner decision: integrity fault*); a malformed query, no controller, a storage failure, a
+    malformed row or a count overflow is `REJECTED` with no payload and no code.
   - The catalogue is passed to the gameplay seam (`GameplaySeamOwners.achievements`) from `serve`.
+
+## Owner decision: integrity fault
+
+Owner decision 2026-09-30, in session ("zrob oba", do both). An account fact under a key the runtime catalogue
+lacks cannot occur (keys are never removed; display contract §4.3). If it does:
+
+- **(a) Operator visibility.** The server writes one structured stderr event line, the node's existing
+  facility (OPS-NODE-BOOT-01 D6, `oteryn-game-server event=... key=value`):
+  `event=account_achievement_integrity_fault level=error account_id=<uuid> achievement_key="<key>"
+  game_session_id=<uuid> command_id=<n>`. The key is quoted and escaped; nothing else is logged. The request
+  identifier is the CommandId with its GameSessionId (FND-02 §20 correlation). The repository has no metrics
+  facility (no counter, Prometheus or tracing crate), so no counter was added. The event goes through a `log`
+  sink passed to `AchievementCatalogue::answer_account_achievements`, which the tests observe.
+- **(b) Registered code.** `1050 ACCOUNT_DATA_INTEGRITY`, category `INTERNAL_UNAVAILABLE`
+  (`FOUNDATION_ERROR_VOCABULARY.md`), disposition `OPERATION_TERMINAL`: the registry entry, the
+  `FoundationProtocolError::AccountDataIntegrity` variant, and a new test binding every crate code to the
+  registry. 1050 opens the next free decade (1001-1010 frame/envelope, 1020-1022 commands, 1030-1033 state,
+  1040-1041 bootstrap); the lead reserves it on #162. The reply is `REJECTED` with the code and no payload, so
+  the client learns only that its account data needs support. The byte-bound case stays on 1009 and a
+  storage failure stays a plain `REJECTED`.
+- The display contract §4.3 already says "an operation-terminal error"; naming 1050 there is a one-line
+  follow-up for the contract owner, not part of this task.
 
 ## High-risk authority/recovery qualification
 
@@ -102,7 +128,15 @@ from a per-world subset": the runtime has no per-world catalogue subset, so ther
 ## Validation
 
 - (a): `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-protocol-oteryn --all-targets -- -D
-  warnings`; `cargo test --locked -p oteryn-protocol-oteryn` (86 passed).
+  warnings`; `cargo test --locked -p oteryn-protocol-oteryn` (86 passed; 87 with the integrity-fault repair).
+- Integrity-fault repair on (b): `cargo test --locked -p oteryn-game-server --lib` 1163 passed, 2 ignored;
+  PostgreSQL 17.6 `account_achievement_postgres` 703, `character_authority_postgres` 885, `chest_use_postgres`
+  764 passed; `cargo test --locked -p oteryn-dev-client` 32 passed (registry consumer). Mutation evidence, each
+  reverted: removing the `log` call fails the catalogue and reply unit tests and the PostgreSQL case
+  `a_fact_under_a_key_absent_from_the_catalogue_is_an_integrity_fault`; mapping the unknown key to no code
+  (plain `REJECTED`) fails the same three; encoding `Terminal` as a plain `REJECTED` in the transport fails
+  `account_achievements_query_reads_only_the_controller_account`; a registry disposition drift fails
+  `error_codes_match_the_registry`.
 - (b): `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo test --locked -p
   oteryn-game-server --lib` (1162 passed, 2 ignored); PostgreSQL 17.6: `account_achievement_postgres` 701
   passed, `character_authority_postgres` 883 passed, `chest_use_postgres` 763 passed.
@@ -129,7 +163,8 @@ head.
 ## Context checkpoint
 
 ```yaml
-last_progress: (a) and (b) authored, validated locally and pushed
+last_progress: (a) and (b) authored, validated locally and pushed; (b) integrity-fault repair (owner decision
+  2026-09-30) authored, validated and pushed
 status: completed
 next_action: lane lead opens both PRs and requests review on the frozen heads
 ```

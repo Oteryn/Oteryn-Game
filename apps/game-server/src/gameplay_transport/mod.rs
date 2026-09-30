@@ -12,6 +12,7 @@ mod tcp_tls;
 pub(crate) mod world_object;
 pub(crate) mod world_spatial;
 
+use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::content::NativeEntryMovementCells;
 use crate::domain;
 use crate::durability::DurabilityRoot;
@@ -26,6 +27,7 @@ use crate::durability::fresh_admission::{
 };
 use crate::durability::fresh_admission_composition::FreshAdmissionSubject;
 use crate::durability::runtime_scope_assignment::{AssignmentState, NodeIncarnationProof};
+use crate::foundation::FoundationProtocolError;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1, FreshAdmissionClaimTransitionV1,
 };
@@ -577,24 +579,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 /// Display contract §3.3, §4: the page of `facts`, encoded. A fact under a key the catalogue
-/// lacks is an integrity fault and a malformed row a server fault (`REJECTED`, no rows); a row
-/// over its byte bounds fails closed with `PAYLOAD_LIMIT_EXCEEDED`. Nothing is truncated.
+/// lacks is an integrity fault: one operator event through `log` and `ACCOUNT_DATA_INTEGRITY`
+/// (owner decision 2026-09-30). A malformed row or an overflow is a server fault (`REJECTED`, no
+/// rows, no code); a row over its byte bounds fails closed with `PAYLOAD_LIMIT_EXCEEDED`. Nothing
+/// is truncated.
 fn account_achievements_reply(
     catalogue: &crate::achievement_catalogue::AchievementCatalogue,
     facts: &[crate::durability::account_achievement::EarnedAchievement],
-    page: u32,
+    request: &AccountAchievementsRequest,
+    log: &mut dyn FnMut(&str),
 ) -> AccountAchievementsReply {
     use oteryn_protocol_oteryn::account_achievements::{
         AccountAchievementsError, encode_account_achievements_result,
     };
-    let Ok(result) = catalogue.account_achievements_page(facts, page) else {
-        return AccountAchievementsReply::Rejected;
+    let result = match catalogue.answer_account_achievements(facts, request, log) {
+        Ok(result) => result,
+        Err(error) => {
+            return error.protocol_error().map_or(
+                AccountAchievementsReply::Rejected,
+                AccountAchievementsReply::Terminal,
+            );
+        }
     };
     match encode_account_achievements_result(&result) {
         Ok(payload) => AccountAchievementsReply::Page(payload),
-        Err(AccountAchievementsError::LimitExceeded) => AccountAchievementsReply::LimitExceeded,
+        Err(AccountAchievementsError::LimitExceeded) => {
+            AccountAchievementsReply::Terminal(FoundationProtocolError::PayloadLimitExceeded)
+        }
         Err(AccountAchievementsError::Malformed) => AccountAchievementsReply::Rejected,
     }
+}
+
+/// One structured stderr event line for the operator, as the node's own events are written
+/// (OPS-NODE-BOOT-01 D6).
+fn operator_event(line: &str) {
+    eprintln!("oteryn-game-server {line}");
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
@@ -831,16 +850,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// catalogue's size is read and the page build refuses it.
     async fn account_achievements(
         &self,
-        account_id: [u8; 16],
-        page: u32,
+        request: AccountAchievementsRequest,
     ) -> AccountAchievementsReply {
         let limit = self.achievements.len().saturating_add(1);
         match self
             .root
-            .read_account_achievements(self.character, account_id, limit)
+            .read_account_achievements(self.character, request.account_id, limit)
             .await
         {
-            Ok(facts) => account_achievements_reply(self.achievements, &facts, page),
+            Ok(facts) => {
+                account_achievements_reply(self.achievements, &facts, &request, &mut operator_event)
+            }
             Err(_) => AccountAchievementsReply::Rejected,
         }
     }
@@ -1620,8 +1640,9 @@ mod tests {
     ];
 
     /// Display contract §3.3, §4.3: a valid page encodes; a row over its byte bounds fails closed
-    /// as `LimitExceeded` (then `PAYLOAD_LIMIT_EXCEEDED`); an unknown key or a malformed row is
-    /// `REJECTED`. Nothing is truncated or skipped.
+    /// with `PAYLOAD_LIMIT_EXCEEDED`; an unknown key with `ACCOUNT_DATA_INTEGRITY` and one operator
+    /// event (owner decision 2026-09-30); a malformed row is a plain `REJECTED`. Nothing is
+    /// truncated or skipped, and only the integrity fault logs.
     #[test]
     fn account_achievements_reply_encodes_or_fails_closed() -> Result<(), Box<dyn Error>> {
         use crate::achievement_catalogue::AchievementCatalogue;
@@ -1649,8 +1670,21 @@ mod tests {
                 })
                 .collect()
         };
-        let AccountAchievementsReply::Page(payload) =
-            account_achievements_reply(&catalogue, &facts(&["fits"]), 0)
+        let request = |page| AccountAchievementsRequest {
+            account_id: [0x11; 16],
+            page,
+            game_session_id: [0x22; 16],
+            command_id: 9,
+        };
+        let reply = |catalogue: &AchievementCatalogue, slugs: &[&str], page| {
+            let mut events = Vec::new();
+            let reply =
+                account_achievements_reply(catalogue, &facts(slugs), &request(page), &mut |line| {
+                    events.push(line.to_owned())
+                });
+            (reply, events)
+        };
+        let (AccountAchievementsReply::Page(payload), events) = reply(&catalogue, &["fits"], 0)
         else {
             return Err("a valid page encodes".into());
         };
@@ -1660,20 +1694,34 @@ mod tests {
             (page.total_points, page.fact_count, page.rows.len()),
             (2, 1, 1)
         );
-        for (slugs, expected) in [
+        assert!(events.is_empty());
+        let integrity_event = crate::achievement_catalogue::integrity_fault_event(
+            &request(0),
+            "oteryn:achievement/absent",
+        );
+        for (slugs, expected, logged) in [
             (
                 &["fits", "long"][..],
-                AccountAchievementsReply::LimitExceeded,
+                AccountAchievementsReply::Terminal(FoundationProtocolError::PayloadLimitExceeded),
+                &[][..],
             ),
             (
                 &["fits", "gradeless"][..],
                 AccountAchievementsReply::Rejected,
+                &[][..],
             ),
-            (&["fits", "absent"][..], AccountAchievementsReply::Rejected),
+            (
+                &["fits", "absent"][..],
+                AccountAchievementsReply::Terminal(FoundationProtocolError::AccountDataIntegrity),
+                &[integrity_event.as_str()][..],
+            ),
         ] {
             assert_eq!(
-                account_achievements_reply(&catalogue, &facts(slugs), 0),
-                expected,
+                reply(&catalogue, slugs, 0),
+                (
+                    expected,
+                    logged.iter().map(|line| (*line).to_owned()).collect()
+                ),
                 "{slugs:?}"
             );
         }
@@ -1690,12 +1738,12 @@ mod tests {
         let mut slugs: Vec<&str> = many.iter().map(String::as_str).collect();
         slugs.push("long");
         assert!(matches!(
-            account_achievements_reply(&catalogue, &facts(&slugs), 0),
+            reply(&catalogue, &slugs, 0).0,
             AccountAchievementsReply::Page(_)
         ));
         assert_eq!(
-            account_achievements_reply(&catalogue, &facts(&slugs), 1),
-            AccountAchievementsReply::LimitExceeded
+            reply(&catalogue, &slugs, 1).0,
+            AccountAchievementsReply::Terminal(FoundationProtocolError::PayloadLimitExceeded)
         );
         Ok(())
     }

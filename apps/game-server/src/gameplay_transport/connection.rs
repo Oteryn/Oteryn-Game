@@ -29,6 +29,7 @@ use super::world_spatial::{
     StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_result,
     encode_world_spatial,
 };
+use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
@@ -249,13 +250,12 @@ pub(crate) trait FreshAdmissionAuthority {
         async { SpellCastOutcome::rejected() }
     }
 
-    /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of `account_id`'s earned facts (display contract
-    /// §4). The transport passes the account of the admitted controller, never one from the
-    /// payload.
+    /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of the request's account's earned facts (display
+    /// contract §4). The transport passes the account of the admitted controller, never one from
+    /// the payload, with the session and CommandId of the request.
     fn account_achievements(
         &self,
-        _account_id: [u8; 16],
-        _page: u32,
+        _request: AccountAchievementsRequest,
     ) -> impl Future<Output = AccountAchievementsReply> {
         async { AccountAchievementsReply::Rejected }
     }
@@ -294,9 +294,12 @@ pub(crate) trait FreshAdmissionAuthority {
 pub(crate) enum AccountAchievementsReply {
     /// The encoded `AccountAchievementsResult` of the page.
     Page(Vec<u8>),
-    /// The reply would exceed its bounds: `REJECTED` with `PAYLOAD_LIMIT_EXCEEDED`, no rows.
-    LimitExceeded,
-    /// No readable account or storage, or a server integrity fault: `REJECTED`, no rows.
+    /// `REJECTED` with this registered operation-terminal code and no rows (FND-02 §18):
+    /// `PAYLOAD_LIMIT_EXCEEDED` for a reply over its bounds, `ACCOUNT_DATA_INTEGRITY` for a fact
+    /// under a key the catalogue lacks.
+    Terminal(FoundationProtocolError),
+    /// No controller, a malformed query, unreadable storage or a malformed row: `REJECTED`, no
+    /// rows, no code.
     Rejected,
 }
 
@@ -810,7 +813,12 @@ where
             ) {
                 (Ok(query), Some(controller)) => Dispatch::Achievements(
                     authority
-                        .account_achievements(controller.account_id, query.page)
+                        .account_achievements(AccountAchievementsRequest {
+                            account_id: controller.account_id,
+                            page: query.page,
+                            game_session_id: *admitted.game_session_id.as_bytes(),
+                            command_id: command.command_id,
+                        })
                         .await,
                 ),
                 _ => Dispatch::Achievements(AccountAchievementsReply::Rejected),
@@ -856,30 +864,24 @@ where
                 (CommandStatus::Accepted, payload.clone())
             }
             Dispatch::Achievements(
-                AccountAchievementsReply::LimitExceeded | AccountAchievementsReply::Rejected,
+                AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,
             )
             | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         };
-        let result = if matches!(
-            dispatch,
-            Dispatch::Achievements(AccountAchievementsReply::LimitExceeded)
-        ) {
-            // Display contract §3.3: fail closed with the registered operation-terminal error.
-            encode_command_error_result(
-                generation,
-                sequence,
-                command.command_id,
-                FoundationProtocolError::PayloadLimitExceeded,
-            )
-        } else {
-            encode_command_result(
-                generation,
-                sequence,
-                command.command_id,
-                status,
-                &result_payload,
-            )
-        };
+        let result =
+            if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error)) = &dispatch {
+                // Display contract §3.3, §4.3: fail closed with the registered operation-terminal
+                // error and nothing else.
+                encode_command_error_result(generation, sequence, command.command_id, *error)
+            } else {
+                encode_command_result(
+                    generation,
+                    sequence,
+                    command.command_id,
+                    status,
+                    &result_payload,
+                )
+            };
         let Ok(result) = result else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
@@ -2437,7 +2439,7 @@ mod tests {
     /// A fixture authority for `ACCOUNT_ACHIEVEMENTS_QUERY` dispatch: every call is recorded and
     /// answered with one canned reply.
     struct AchievementsAuthority {
-        calls: RefCell<Vec<([u8; 16], u32)>>,
+        calls: RefCell<Vec<AccountAchievementsRequest>>,
         reply: AccountAchievementsReply,
     }
 
@@ -2455,10 +2457,9 @@ mod tests {
 
         async fn account_achievements(
             &self,
-            account_id: [u8; 16],
-            page: u32,
+            request: AccountAchievementsRequest,
         ) -> AccountAchievementsReply {
-            self.calls.borrow_mut().push((account_id, page));
+            self.calls.borrow_mut().push(request);
             self.reply.clone()
         }
     }
@@ -2476,12 +2477,19 @@ mod tests {
     }
 
     /// Display contract §4: the query reads the admitted controller's account, never one from the
-    /// payload; a malformed query or a session without a controller is REJECTED without a read,
-    /// and an over-bound reply is REJECTED with `PAYLOAD_LIMIT_EXCEEDED` and no rows.
+    /// payload; a malformed query or a session without a controller is REJECTED without a read;
+    /// an over-bound reply is REJECTED with `PAYLOAD_LIMIT_EXCEEDED` and an integrity fault with
+    /// `ACCOUNT_DATA_INTEGRITY` (owner decision 2026-09-30), each with no rows.
     #[test]
     fn account_achievements_query_reads_only_the_controller_account() -> Result<(), Box<dyn Error>>
     {
         const ACCOUNT: [u8; 16] = uuid_v7(0x55);
+        let request = |page, command_id| AccountAchievementsRequest {
+            account_id: ACCOUNT,
+            page,
+            game_session_id: SESSION,
+            command_id,
+        };
         run(async {
             let world_id = WorldId::decode(&WORLD)?;
             let channel_id = ChannelId::decode(&CHANNEL)?;
@@ -2525,7 +2533,7 @@ mod tests {
                 encode_command_result(ADMITTED_GENERATION, 2, 2, CommandStatus::Rejected, &[])?,
             ]);
             assert_eq!(frames, expected);
-            assert_eq!(*authority.calls.borrow(), [(ACCOUNT, 3)]);
+            assert_eq!(*authority.calls.borrow(), [request(3, 1)]);
 
             // No controller binding: no account to read.
             let (_end, frames) =
@@ -2542,22 +2550,28 @@ mod tests {
             );
             assert_eq!(authority.calls.borrow().len(), 1);
 
-            let over = AchievementsAuthority {
-                calls: RefCell::new(Vec::new()),
-                reply: AccountAchievementsReply::LimitExceeded,
-            };
-            let (_end, frames) =
-                drive_session(&over, session(controller), &[achievements_command(1, &[])]).await?;
-            assert_eq!(
-                frames.last(),
-                Some(&encode_command_error_result(
-                    ADMITTED_GENERATION,
-                    1,
-                    1,
-                    FoundationProtocolError::PayloadLimitExceeded
-                )?)
-            );
-            assert_eq!(*over.calls.borrow(), [(ACCOUNT, 0)]);
+            for error in [
+                FoundationProtocolError::PayloadLimitExceeded,
+                FoundationProtocolError::AccountDataIntegrity,
+            ] {
+                let failing = AchievementsAuthority {
+                    calls: RefCell::new(Vec::new()),
+                    reply: AccountAchievementsReply::Terminal(error),
+                };
+                let (_end, frames) = drive_session(
+                    &failing,
+                    session(controller),
+                    &[achievements_command(1, &[])],
+                )
+                .await?;
+                let terminal = encode_command_error_result(ADMITTED_GENERATION, 1, 1, error)?;
+                assert_ne!(
+                    terminal,
+                    encode_command_result(ADMITTED_GENERATION, 1, 1, CommandStatus::Rejected, &[])?
+                );
+                assert_eq!(frames.last(), Some(&terminal), "{error:?}");
+                assert_eq!(*failing.calls.borrow(), [request(0, 1)]);
+            }
             Ok(())
         })
     }
