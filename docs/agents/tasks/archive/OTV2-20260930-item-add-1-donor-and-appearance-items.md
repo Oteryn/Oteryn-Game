@@ -47,6 +47,7 @@ owned_paths:
   - docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json   # regenerated after merging #1336
   - apps/game-server/src/content/item_stats_promotion.rs   # packet sha and counts
   - tools/content-schema/item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json   # regenerated
+  - imports/tibiawiki/{facts/items-stats.json,sources.json,batches.json}   # #1325 key rule re-applied (--rekey)
 public_contracts: []
 depends_on:
   - "docs/architecture/reviews/OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md"
@@ -82,6 +83,9 @@ new Items:
 - The weapon proficiency sample (`item-weapon-proficiency-15-30-7fea90ec.json`) finds an Item
   definition for 22 more bindings (`bindings_without_item_definition` 23 → 1). No binding
   changed.
+- The TibiaWiki stat snapshot is re-keyed offline (`item_wiki_stats_capture.py --rekey`, #1325
+  key rule): records of ids that are now Items take their Item key. Observations are unchanged;
+  `snapshot_sha256` becomes `5fc20ff7…a2d6` in `sources.json` and `batches.json`.
 
 ## Owner decisions (2026-09-30, via the coordinating session)
 
