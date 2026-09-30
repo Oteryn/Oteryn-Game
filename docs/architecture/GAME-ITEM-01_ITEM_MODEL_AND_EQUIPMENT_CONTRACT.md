@@ -362,6 +362,8 @@ non-item currency/value ledger
 
 This separation prevents one item abstraction from becoming the universal economy data model.
 
+> **Pointer (2026-09-30).** `CHARACTER-GOLD-FEE-BOUNDARY-V1` (owner decisions D174-D178, `reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md`) models gold, platinum and crystal coins (`oteryn:item.tibia.i3031`, `i3035`, `i3043`; worth 1, 100 and 10,000 gold) as physical currency items with a definition stack maximum of 100 (D176, §4.1). A server fee debits them from the character's backpack in stage 1 (DUR-03 §39.3 "Gold fee amendment"). The bank balance remains non-item value for a later economy contract (D174 stage 2).
+
 ## 10. Definition revision and compatibility
 
 Each authoritative ItemInstance must be interpretable under an explicit compatible item-definition context.
