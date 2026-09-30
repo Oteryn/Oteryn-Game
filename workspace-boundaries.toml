@@ -9,7 +9,7 @@ tool = ["oteryn-architecture-check","oteryn-synthetic-asset-compiler","oteryn-de
 forbidden_package_fragments = ["canary","protocol-core","transport","game-session","session-lease","persistence"]
 
 [edges]
-oteryn-client = ["oteryn-client-runtime","oteryn-diagnostics","oteryn-foundation","oteryn-identity","oteryn-input-actions","oteryn-input-platform","oteryn-placeholder-assets","oteryn-platform-client","oteryn-platform-contracts","oteryn-renderer"]
+oteryn-client = ["oteryn-client-runtime","oteryn-diagnostics","oteryn-foundation","oteryn-identity","oteryn-input-actions","oteryn-input-platform","oteryn-placeholder-assets","oteryn-platform-client","oteryn-platform-contracts","oteryn-renderer","oteryn-session"]
 oteryn-game-server = ["oteryn-foundation","oteryn-protocol-oteryn","oteryn-simulation-determinism"]
 oteryn-foundation = []
 oteryn-simulation-determinism = []
