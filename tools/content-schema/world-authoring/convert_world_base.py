@@ -763,6 +763,18 @@ def build(
         images = draft.decode_images(blobs)
         scan = draft.Scanner(images)
         otbm_reader.read_tiles(blobs[OTBM], scan)
+        # a tile a fill fragment holds is real data: the draft keeps clear of it
+        claimed: set[tuple[int, int, int]] = set()
+        for row in FILL:
+            raw = blobs.get(fill_key(row))
+            if raw is not None:
+                otbm_reader.read_tiles(
+                    raw,
+                    lambda x, y, z, *_rest: (
+                        z in draft.FLOORS and claimed.add((x, y, z))
+                    ),
+                )
+        scan.claim(claimed)
         land = land or minimap_land()
         draft_plan = draft.plan_draft(scan, images, land, ground_ids()[0])
         if plan and set(plan.replace) & set(draft_plan.replace):

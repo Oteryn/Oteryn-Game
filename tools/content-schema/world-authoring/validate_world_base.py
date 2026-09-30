@@ -313,7 +313,7 @@ DRAFT_KEYS = {
     "tiles_replaced_by_floor",
     "unresolved_entrances",
 }
-DRAFT_ROW_KEYS = {"class", "colour", "ground", "item", "mapped", "samples"}
+DRAFT_ROW_KEYS = {"class", "colour", "floor", "ground", "item", "mapped", "samples"}
 
 
 def check_draft(index: dict, summary: dict, errors: list[str]) -> None:
@@ -349,8 +349,12 @@ def draft_counts(record: dict, summary: dict) -> list[str]:
     ]:
         problems.append("areas differ from the pin")
         return problems
+    pinned = {a["name"]: {str(z) for z in a["floors"]} for a in draft.AREAS}
     for area in record["areas"]:
-        if set(area) != {"bbox", "floors", "name"} or set(area["floors"]) != set(added):
+        if (
+            set(area) != {"bbox", "floors", "name"}
+            or set(area["floors"]) != pinned[area["name"]]
+        ):
             problems.append(f"area {area['name']} floors differ from the pin")
             continue
         for floor, row in area["floors"].items():
@@ -374,7 +378,7 @@ def draft_counts(record: dict, summary: dict) -> list[str]:
                 problems.append(
                     f"floor {floor} explored pixels differ from their parts"
                 )
-            if floor != str(draft.OFFICIAL_FLOOR) and row["no_official_land"]:
+            if int(floor) > draft.OFFICIAL_MAX_FLOOR and row["no_official_land"]:
                 problems.append(f"floor {floor} skips tiles on the official minimap")
             added[floor] += row["added"]
             replaced[floor] += row["replaced"]
@@ -394,7 +398,7 @@ def draft_counts(record: dict, summary: dict) -> list[str]:
         problems.append("replaced_items_added is below tiles_replaced")
     mapping = record["mapping"]
     rows = mapping["rows"]
-    keys = [(r["colour"], r["class"]) for r in rows]
+    keys = [(r["floor"], r["colour"], r["class"]) for r in rows]
     if (
         set(mapping) != {"mapped", "min_samples", "rows", "unmapped"}
         or mapping["min_samples"] != draft.MIN_SAMPLES
@@ -408,13 +412,13 @@ def draft_counts(record: dict, summary: dict) -> list[str]:
             row["ground"] is not None
         ):
             problems.append(
-                f"mapping row {row['colour']} {row['class']} breaks the sample rule"
+                f"mapping row {row['floor']} {row['colour']} {row['class']} breaks the sample rule"
             )
         if row["class"] not in ("walkable", "blocked") or (
             row["class"] == "walkable" and row["item"] is not None
         ):
             problems.append(
-                f"mapping row {row['colour']} {row['class']} has a wrong class"
+                f"mapping row {row['floor']} {row['colour']} {row['class']} has a wrong class"
             )
         if row["colour"] == "#" + draft.MARKER.hex():
             problems.append("the marker colour is mapped")

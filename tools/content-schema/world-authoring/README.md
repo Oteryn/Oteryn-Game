@@ -136,7 +136,7 @@ map or the wiki changes.
   2,080 tile water-bounded floor-14 component). Not imported: Dwacatra (its floor-13/14
   pockets are void-bounded, no enclosure), Travora (no map tile),
   Redbone Castle (inside Draconia), Isle of Merriment (test server only). Temple of Light is an
-  event-only island record since the minimap draft gave it map tiles (5,821 tiles, floor 7).
+  event-only island record (5,821 tiles, floor 7) because the wiki marks it an event place (`wiki_status` event); the flag comes from the wiki, not from the map, and is correct.
 - **Newhaven** is one island of two components. The wiki coordinate (city temple) lies on a
   50 tile temple islet; the island itself is the 9,189 tile component west of it. Ground
   between them is water (no bridge, pier or dock), and the owner states they are joined by a
@@ -466,7 +466,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   items minus the replacement's `items_added` plus its `items_removed`. The validator
   checks the record against the pin (floors, member, at most the tiles the fill skipped per
   floor); `--check` recomputes the count. The islands family follows: the Blue Valley
-  footprint grows from 9,522 to 10,427 tiles.
+  footprint grows from 9,522 to 10,427 tiles (15,612 with the minimap draft).
   The index `source.fill` pins the archive and member; the summary `fill` records the rule,
   counts per floor and skipped tiles. `totals` and `tiles_by_floor` include the fill;
   `totals` minus the fill equals the pinned `world.otbm` totals (19,325,129 tiles,
@@ -505,9 +505,9 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   client assets, the fragment from the pinned archive). Underground validity rests on the
   file being the official summer-2025 update placed under official surface; the official
   minimap cannot check floors 8-15.
-  Still to draw (no source): Blue Valley north-east, east and south blocks, Great
-  Expedition Island and Wharf (Temple of Light: minimap draft below), Marapur/Thalassara floors 2-6, Nargor floors
-  4-6, Upper Roshamuul floor 6, Great Expedition floors 3-6.
+  The gaps no source fills (Blue Valley north-east, east and south blocks, Great Expedition
+  Island and Wharf, Marapur/Thalassara floors 2-6, Nargor floors 4-6, Upper Roshamuul floor 6,
+  Temple of Light) are drafted from the minimap below, needing detail work.
 - **Edron underground rework** (owner decision 1a; `edron_rework.py`, the `edron` object of
   the summary and `source.edron` of the index; evidence class **reference-derived**). The
   base and the summer file disagree on the Edron caves, so the player-recorded real-Tibia
@@ -560,27 +560,40 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   pinned tibiamaps minimap (the files of the Edron rework plus `floor-06/07-map.png` and
   `-path.png`, sha256 in `minimap_draft.py`, read from `--tibiamaps-root`, not committed).
   **It is a rough draft: correct shape and walkability, generic ground, no borders,
-  decorations, doors or furniture.** The first area is `temple-of-light` (x31912-32027,
-  y31979-32099, floors 6 and 7). `source.minimap_draft` and `draft.areas` name every area
+  decorations, doors or furniture.** Each area is a named entry of `AREAS` with a
+  committed bbox and floor set (list below). `source.minimap_draft` and `draft.areas` name every area
   and its bbox, so a draft can be removed or replaced as a whole when a real source appears.
-  - **Colour mapping, learned:** over the whole base map on floors 6 and 7 (outside the
-    drafted areas) each base tile is paired with the map-image colour at its position. The
+  - **Colour mapping, learned:** over the whole base map on each floor of 2-7 (outside the
+    drafted areas; every floor has its own table, roofs and upper floors differ) each base tile is paired with the map-image colour at its position. The
     path image gives the class (grey pixel walkable, other explored pixel blocked). Per
-    (colour, class): the most frequent ground id; for blocked also the most frequent single
+    (floor, colour, class): the most frequent ground id; for blocked also the most frequent single
     top item (none if that is most frequent). Fewer than 50 samples means unmapped, the
-    pixel is skipped and counted. The table (colour, class, ground, item, samples) is
+    pixel is skipped and counted. The table (floor, colour, class, ground, item, samples) is
     `draft.mapping.rows` in the summary. Yellow is the floor-change colour and never mapped.
   - **Rule:** a position of the bbox is drafted where the map image is coloured (not black)
     and the base has no tile or a plain water tile (water ground only, no house or zone;
-    the flags are kept). Floor 7 also needs the official 15.30 minimap ZZ07 to show land,
-    unless the mapped ground is water. A base tile that is not plain water is never replaced.
+    the flags are kept). Floors 0-7 also need the official 15.30 minimap of that ZZ to show land,
+    unless the mapped ground is water (then the base water stays). A tile of a `maps.7z`
+    fill fragment counts as a base tile. An area (or floor) where under 5% of its tibiamaps
+    pixels would be drafted is skipped and reported. A base tile that is not plain water is never replaced.
     Yellow pixels are **not** turned into items; they are listed in
     `draft.unresolved_entrances`.
-  - **Result (Temple of Light):** floor 7 5,832 plain-water tiles replaced (5,519 walkable,
-    313 blocked; 7,841 water pixels over base water unchanged; no base land existed there);
-    floor 6 469 tiles added (189 walkable, 280 blocked). 26 colour rows mapped, 0 unmapped, 8
-    unresolved entrances (1 on floor 6, 7 on floor 7). Totals and counts per floor are
-    validated (`validate_world_base.py`, `test_minimap_draft.py`).
+  - **Drafted areas (committed bbox and floors in `minimap_draft.AREAS`; tiles added, on
+    plain water replaced):** `temple-of-light` x31912-32027 y31979-32099: f6 469, f7 5,832.
+    `great-expedition-island` x33883-33986 y30983-31093: f3 317, f4 218, f5 356, f6 400, f7
+    5,454. `great-expedition-wharf` x32190-32253 y32475-32530: f7 1,644 (107 pixels without
+    official land skipped). `blue-valley` x33504-33658 y31374-31541: f4 763 (+1), f5 1,114, f6
+    2,712, f7 5,575. `marapur-thalassara` x34112-34242 y32443-32626: f2 922, f3 1,736, f4
+    2,817, f5 4,085, f6 4,652 (+14). `nargor` x31898-31941 y32834-32902: f4 273, f5 515, f6
+    728. `upper-roshamuul` x33613-33717 y32261-32357: f6 901. Total 22,978 tiles added and
+    18,520 plain-water tiles replaced (24,112 items added); no area fell under the 5% skip
+    limit (lowest share of drafted tibiamaps pixels 21.4%, Blue Valley f7). 130 colour rows
+    mapped, 18 unmapped (under 50 samples on their floor), 18 unresolved entrances (15 on
+    floor 7, 3 on floor 6). **The drawing list is drafted, not done: it needs detail work**
+    (borders, decorations, doors, furniture, floor changes). Blue Valley, Marapur/Thalassara,
+    Nargor and Upper Roshamuul keep every base and fill tile; only the missing ones are drafted.
+    Totals and counts per floor are validated (`validate_world_base.py`,
+    `test_minimap_draft.py`).
 - **Not imported / deferred:** `access.otbm`, `asura_resp.otbm`, `boss_rooms_-_part_2.otbm`
   and `final.otbm` of `data-global/world/15.30/` are unreferenced local-coordinate drafts (x
   about 945-1173, y about 999-1096, floors 5-7, 17,801 tiles, absent from the base). No

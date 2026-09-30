@@ -43,7 +43,7 @@ jira: KAN-16
 
 Step 3 of the owner's world-map plan: the whole base map of `world.otbm` in
 `zimbadev/crystalserver@00ce02a5` (`summer-update`) becomes `WorldPlacement.Base`:
-19,325,129 tiles and 24,925,845 items on floors 0-15 (plus 19,893 `maps.7z` fill, 5,519 Edron and 469 draft tiles),
+19,325,129 tiles and 24,925,845 items on floors 0-15 (plus 19,893 `maps.7z` fill, 5,519 Edron and 22,978 draft tiles),
 in 1,208 region files
 (`OTERYN_WORLD_REGION_B3/v1`, about 21.6 MB) plus a 2.5 MB `index.json`. The source is
 sha256-pinned and `OtsHypothesisOnly`.
@@ -122,25 +122,24 @@ sha256-pinned and `OtsHypothesisOnly`.
       ground is land and the 15.30 minimap ZZ07 shows land: 905 tiles (896 inside the Blue
       Valley box), capture summary `replace`, validated and tested; the island footprint
       grows to 10,427 tiles. Nothing else is replaced.
-      Still to draw: Blue Valley NE/E/S blocks, Great Expedition Island and
-      Wharf, Marapur/Thalassara floors 2-6, Nargor floors 4-6, Upper Roshamuul floor 6,
-      Great Expedition floors 3-6.
-- [x] Temple of Light minimap draft (owner decision 2a, rough draft, reference-derived): no
-      source has the island, so `minimap_draft.py` drafts x31912-32027, y31979-32099 floors 6-7
-      from the pinned tibiamaps floor 6/7 images (shape and walkability, generic ground, no
-      borders, decorations, doors or furniture). The colour to ground table is learned from
-      the base (26 rows, min 50 samples, 0 unmapped); floor 7 needs official minimap land.
-      Floor 7 replaces 5,832 plain water tiles, floor 6 adds 469; 8 yellow markers are listed
-      as `unresolved_entrances`, no item invented. Summary `draft`, index
-      `source.minimap_draft`; the island family gains Temple of Light (event-only, 5,821 tiles).
+      The remaining gaps are drafted by the minimap draft below.
+- [x] Minimap draft of every remaining gap (owner decision 2a, then approval for all gaps;
+      rough draft, reference-derived): `minimap_draft.py` holds seven named `AREAS` (Temple of
+      Light, Great Expedition Island and Wharf, Blue Valley, Marapur/Thalassara, Nargor, Upper
+      Roshamuul) with committed bbox and floors, drafted from the pinned tibiamaps floor 2-7
+      images (shape and walkability, generic ground, no borders, decorations, doors or
+      furniture). Per-floor learned colour table (130 mapped, 18 unmapped rows); floors 0-7 need
+      official minimap land; only missing or plain-water tiles, fill tiles count as base.
+      22,978 tiles added, 18,520 replaced (counts per floor in README and summary); none under
+      the 5% skip limit. 18 yellow markers are `unresolved_entrances`. Blue Valley island
+      15,612 tiles. Temple of Light is event-only because the wiki marks it an event place, not
+      the map: converter right. The drawing list is drafted and needs detail work.
 - [x] Edron underground (owner decision 1a, reference-derived): floors 9 and 10 of the box
       are imported from the summer file and repaired with the player-recorded real-Tibia
       minimap (tibiamaps/tibia-map-data, sha256-pinned in `source.edron`, read from
-      `--tibiamaps-root`, not committed; `edron_rework.py`). Rule 1 (floor 10): 3,982 filled,
-      699 replaced, 423 kept. Rule 2: floor 9 761 added, 4 replaced, 379 rock; floor 10 262
-      added, 3 replaced, 135 rock. Rule 3: 15 markers, 10 `unresolved_entrances`, none
-      invented; floor 10 is not reachable from the surface. Totals 5,519 tiles added, 706
-      replaced. `test_edron_rework.py` and the validator pass.
+      `--tibiamaps-root`; `edron_rework.py`). Floor 10: 3,982 filled, 699 replaced; floors 9
+      and 10 repaired; 15 markers, 10 `unresolved_entrances`, none invented. Totals 5,519
+      tiles added, 706 replaced. `test_edron_rework.py` and the validator pass.
 - [x] `Terrain` holds one record (`oteryn:terrain.a<id>`) per appearance-only palette id
       that the official 15.30 client `appearances-2dfa943b….dat` declares (owner-confirmed
       redistribution), from `convert_terrain.py --check` and `client_appearance_reader.py`.

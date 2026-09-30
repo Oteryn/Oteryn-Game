@@ -87,12 +87,12 @@ class MappingTest(unittest.TestCase):
 
     def test_the_table_is_learned_from_the_base_tiles(self):
         table = self.table()
-        grass = table[(GRASS, "walkable")]
+        grass = table[(7, GRASS, "walkable")]
         self.assertEqual(
             (grass["ground"], grass["item"], grass["samples"], grass["mapped"]),
             (GRASS_GROUND, None, 60, True),
         )
-        rock = table[(ROCK_COLOUR, "blocked")]
+        rock = table[(7, ROCK_COLOUR, "blocked")]
         self.assertEqual(
             (rock["ground"], rock["item"], rock["samples"]), (ROCK_GROUND, WALL, 55)
         )
@@ -102,14 +102,14 @@ class MappingTest(unittest.TestCase):
         for i in range(60):
             pixels[(7, MX + i, LY)] = (ROCK_COLOUR, PATH_YELLOW)
             tiles[(MX + i, LY, 7)] = tile(ROCK_GROUND, *([WALL] if i < 20 else []))
-        rock = draft.learn(scan_of(pixels, tiles))[(ROCK_COLOUR, "blocked")]
+        rock = draft.learn(scan_of(pixels, tiles))[(7, ROCK_COLOUR, "blocked")]
         self.assertIsNone(rock["item"])
 
     def test_a_colour_below_the_minimum_is_unmapped_and_markers_are_not_learned(self):
         table = self.table()
-        red = table[(RED, "walkable")]
+        red = table[(6, RED, "walkable")]
         self.assertEqual((red["samples"], red["mapped"]), (49, False))
-        self.assertFalse(any(key[0] in (YELLOW, BLACK) for key in table))
+        self.assertFalse(any(key[1] in (YELLOW, BLACK) for key in table))
 
     def test_the_walkable_class_never_takes_an_item(self):
         pixels, tiles = {}, {}
@@ -117,7 +117,7 @@ class MappingTest(unittest.TestCase):
             pixels[(7, MX + i, LY)] = (GRASS, GREY)
             tiles[(MX + i, LY, 7)] = tile(GRASS_GROUND, TREE)
         self.assertIsNone(
-            draft.learn(scan_of(pixels, tiles))[(GRASS, "walkable")]["item"]
+            draft.learn(scan_of(pixels, tiles))[(7, GRASS, "walkable")]["item"]
         )
 
     def test_tiles_inside_the_drafted_area_are_not_samples(self):
@@ -150,6 +150,9 @@ class PlanTest(unittest.TestCase):
             for j in range(3):
                 pixels[(7, LX + j, LY + i)] = (colour, path)
                 tiles[(LX + j, LY + i, 7)] = tile(*ids)
+        for j in range(3):  # floor 6 has its own table
+            pixels[(6, LX + j, LY)] = (GRASS, GREY)
+            tiles[(LX + j, LY, 6)] = tile(GRASS_GROUND)
         return pixels, tiles
 
     def plan(self, pixels, tiles, land=lambda *_: True):
@@ -208,27 +211,30 @@ class PlanTest(unittest.TestCase):
         plan = self.plan(pixels, {})
         self.assertEqual(list(plan.add), [(X0 + 1, Y0, 7)])
         self.assertEqual(self.row(plan)["unmapped"], 1)
-        row = plan.table[(RED, "walkable")]
+        row = plan.table[(7, RED, "walkable")]
         self.assertEqual(
             (row["mapped"], row["samples"], row["ground"]), (False, 0, None)
         )
 
-    def test_floor_seven_needs_official_land_except_for_water(self):
+    def test_every_floor_needs_official_land_except_for_water(self):
         pixels = {
             (7, X0, Y0): (GRASS, GREY),
             (7, X0 + 1, Y0): (GRASS, GREY),
             (7, X0 + 2, Y0): (WATER_COLOUR, PATH_YELLOW),
             (6, X0, Y0): (GRASS, GREY),
+            (6, X0 + 1, Y0): (GRASS, GREY),
         }
-        plan = self.plan(pixels, {}, land=lambda x, y, z: x == X0 + 1)
+        plan = self.plan(
+            pixels, {}, land=lambda x, y, z: (z, x) in ((7, X0 + 1), (6, X0))
+        )
         self.assertEqual(
             sorted(plan.add),
             [(X0, Y0, 6), (X0 + 1, Y0, 7), (X0 + 2, Y0, 7)],
         )
         self.assertEqual(plan.add[(X0 + 2, Y0, 7)], tile(WATER))
         self.assertEqual(self.row(plan)["no_official_land"], 1)
-        self.assertEqual(self.row(plan, 6)["no_official_land"], 0)
-        self.assertEqual(dict(plan.on_official_land), {7: 1, 6: 0})
+        self.assertEqual(self.row(plan, 6)["no_official_land"], 1)
+        self.assertEqual(dict(plan.on_official_land), {7: 1, 6: 1})
 
     def test_water_over_water_is_no_change(self):
         pixels = {(7, X0, Y0): (WATER_COLOUR, PATH_YELLOW)}
@@ -285,6 +291,8 @@ class BuildAndValidateTest(unittest.TestCase):
         ):
             for j in range(3):
                 pixels[(7, LX + j, LY + i)] = (colour, path)
+        for j in range(3):  # floor 6 has its own table
+            pixels[(6, LX + j, LY)] = (GRASS, GREY)
         pixels[(7, X0, Y0)] = (GRASS, GREY)  # added
         pixels[(7, X0 + 1, Y0)] = (GRASS, GREY)  # no official land
         pixels[(7, X0 + 2, Y0)] = (GRASS, GREY)  # replaces plain water
@@ -320,6 +328,8 @@ class BuildAndValidateTest(unittest.TestCase):
         for i, ids in enumerate([(GRASS_GROUND,), (ROCK_GROUND, WALL), (WATER,)]):
             for j in range(3):
                 tiles[(LX + j, LY + i, 7)] = ids
+        for j in range(3):
+            tiles[(LX + j, LY, 6)] = (GRASS_GROUND,)
         tiles[(X0 + 2, Y0, 7)] = (WATER,)
         tiles[(X0 + 3, Y0, 7)] = (SAND,)
         return tiles
@@ -374,9 +384,9 @@ class BuildAndValidateTest(unittest.TestCase):
         index = json.loads(out[validate.INDEX])
         self.assertEqual(index["source"]["minimap_draft"], draft.PIN)
         self.assertEqual(summary["source"], index["source"])
-        # the base file has 11 tiles with 14 items
-        world = {"items": 14, "tiles": 11}
-        self.assertEqual(index["totals"]["tiles"], 14)
+        # the base file has 14 tiles with 17 items
+        world = {"items": 17, "tiles": 14}
+        self.assertEqual(index["totals"]["tiles"], 17)
         self.assertEqual(convert.world_otbm_totals(index["totals"], summary), world)
         root = self.install(out)
         self.assertEqual(validate.validate(root, workers=1), [])
@@ -421,6 +431,7 @@ class BuildAndValidateTest(unittest.TestCase):
                 {
                     "class": "walkable",
                     "colour": "#ffff00",
+                    "floor": 7,
                     "ground": 1,
                     "item": None,
                     "mapped": True,

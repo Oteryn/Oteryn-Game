@@ -1,27 +1,29 @@
 #!/usr/bin/env python3
 """Minimap-based draft of map areas that no source has (owner decision 2a), a rough draft.
 
-The base map has no tiles for some real areas (first one: the Temple of Light island,
-`AREAS`) and no OTBM file of the pinned sources holds them. The player-recorded real-Tibia
+The base map has no tiles for some real areas (see `AREAS`) and no OTBM file of the pinned sources holds them. The player-recorded real-Tibia
 minimap (github.com/tibiamaps/tibia-map-data, `floor-NN-map.png` and `floor-NN-path.png`,
 one pixel per tile, frame of `bounds.json`, pinned by sha256) gives the shape and the
 walkability. The draft gives each drafted tile a generic ground: correct shape and
 walkability, no borders, decorations, doors or furniture.
 
-Colour mapping (learned, never written by hand): over the whole base map on `FLOORS`, outside
-the drafted areas, every base tile is paired with the tibiamaps map colour at its position. The path image gives the
-class: a grey pixel (`red == green == blue`) is walkable, any other explored pixel is
-blocked. For each (colour, class) the table holds the most frequent ground id, for a
-blocked class also its most frequent single top item (the last item above the ground, or none
-when that is the most frequent outcome). A (colour, class) with fewer than `MIN_SAMPLES`
-samples is unmapped: its pixels are skipped and counted. Yellow (`#ffff00`) is the
-floor-change marker colour and never enters the table.
+Colour mapping (learned per floor, never written by hand): over the whole base map on
+`FLOORS`, outside the drafted areas, every base tile is paired with the tibiamaps map colour
+at its position; each floor has its own table because roofs and building floors differ. The
+path image gives the class: a grey pixel (`red == green == blue`) is walkable, any other
+explored pixel is blocked. For each (floor, colour, class) the table holds the most frequent
+ground id, for a blocked class also its most frequent single top item (the last item above
+the ground, or none when that is the most frequent outcome). A (floor, colour, class) with
+fewer than `MIN_SAMPLES` samples is unmapped: its pixels are skipped and counted. Yellow
+(`#ffff00`) is the floor-change marker colour and never enters the table.
 
-Draft rule, per area, floor of `FLOORS` and position of the bbox: the map image is coloured
+Draft rule, per area, floor of the area and position of the bbox: the map image is coloured
 (not black, explored) and the base has no tile there or a plain water tile (water ground
-only, no house or zone). On floor 7 the official 15.30 client minimap must also show land
-there, unless the mapped ground is water. A base tile that is not plain water is never
-replaced. A yellow pixel is not turned into an item; it is listed in `unresolved_entrances`.
+only, no house or zone). On floors 0-7 the official 15.30 client minimap must also show land
+there, unless the mapped ground is water (then the base water stays). A base tile that is not
+plain water is never replaced, and a tile of a fill fragment (`maps.7z`) counts as a base
+tile. A yellow pixel is not turned into an item; it is listed in
+`unresolved_entrances`. `AREAS` lists the named areas with their committed bbox and floors.
 """
 
 from __future__ import annotations
@@ -36,19 +38,82 @@ import edron_rework as edron
 from convert_world_metadata import ConvertError
 
 NAME = "minimap-draft"
-FLOORS = (6, 7)
-OFFICIAL_FLOOR = 7
+FLOORS = (2, 3, 4, 5, 6, 7)
+OFFICIAL_MAX_FLOOR = 7
 MIN_SAMPLES = 50
+CLAIMED = (0, None, (), [(0, 0, None)])  # a tile of a fill fragment, no water
 BLACK = b"\x00\x00\x00"
 MARKER = b"\xff\xff\x00"
 AREAS = [
     {
         "bbox": [31912, 31979, 32027, 32099],
-        "floors": list(FLOORS),
+        "floors": [6, 7],
         "name": "temple-of-light",
-    }
+    },
+    {
+        "bbox": [33883, 30983, 33986, 31093],
+        "floors": [3, 4, 5, 6, 7],
+        "name": "great-expedition-island",
+    },
+    {
+        "bbox": [32190, 32475, 32253, 32530],
+        "floors": [7],
+        "name": "great-expedition-wharf",
+    },
+    {
+        "bbox": [33504, 31374, 33658, 31541],
+        "floors": [4, 5, 6, 7],
+        "name": "blue-valley",
+    },
+    {
+        "bbox": [34112, 32443, 34242, 32626],
+        "floors": [2, 3, 4, 5, 6],
+        "name": "marapur-thalassara",
+    },
+    {
+        "bbox": [31898, 32834, 31941, 32902],
+        "floors": [4, 5, 6],
+        "name": "nargor",
+    },
+    {
+        "bbox": [33613, 32261, 33717, 32357],
+        "floors": [6],
+        "name": "upper-roshamuul",
+    },
 ]
 DRAFT_FILES = [
+    (
+        "floor-02-map.png",
+        "61a946fbaf164f11314877bf4c8ab260d6a0381d6102f86d25f13be764bda1f0",
+    ),
+    (
+        "floor-02-path.png",
+        "86684aa901ddcf540a21248919c55514643217b6e0189f74edb2eb191fa068fa",
+    ),
+    (
+        "floor-03-map.png",
+        "8255c12dae7018ef138867cdd2447ce4bb0b62df317304708cf3bf61a322b2cd",
+    ),
+    (
+        "floor-03-path.png",
+        "74274ad89c642399a93a1027d177331c6947980d790531be603f40d37201f08e",
+    ),
+    (
+        "floor-04-map.png",
+        "01078a234eb3836175b5ddfeccbdf78afb7236c51a68ec1d4c6cb9f6efc8cd84",
+    ),
+    (
+        "floor-04-path.png",
+        "d8d21a78217e81d452073f76358efe438dfe36aba7028abf5880e368116923ab",
+    ),
+    (
+        "floor-05-map.png",
+        "cce4a235190c2b4ca43b7180bce6c2c8fbe4602ffe1e49fe989ebba1fca2971b",
+    ),
+    (
+        "floor-05-path.png",
+        "8a5634bca78060b0831b4688f47af955ca836f0d5bbbe227a67f75479478e93b",
+    ),
     (
         "floor-06-map.png",
         "8d88bbcd64e75b71a13e70b9f86ddf7dcb0abb53af327e0ea37ca1edb34a6349",
@@ -73,27 +138,27 @@ RULE_TEXT = {
         "rough draft: a tile is drafted where the tibiamaps map image is coloured and the base "
         "has no tile or a plain water tile; correct shape and walkability, generic ground, no "
         "borders, decorations, doors or furniture; a base tile that is not plain water is "
-        "never replaced"
+        "never replaced, and a tile of a fill fragment counts as a base tile"
     ),
     "floor_change_markers": (
         "yellow map pixels are floor-change markers, listed as unresolved entrances and never "
         "turned into items"
     ),
     "mapping": (
-        "per (map colour, path class) over the whole base map on floors 6 and 7 outside the "
+        "per (floor, map colour, path class) over the whole base map on that floor outside the "
         "drafted areas: the most frequent ground id, for a blocked class also the most frequent "
         "single top item; fewer than min_samples samples is unmapped and skipped"
     ),
     "official_minimap": (
-        "floor 7 also needs the official 15.30 client minimap to show land, unless the mapped "
-        "ground is water"
+        "on floors 0-7 a tile also needs the official 15.30 client minimap to show land, unless "
+        "the mapped ground is water"
     ),
 }
 # The pin of the index `source.minimap_draft` and the capture summary.
 PIN = {
     "areas": AREAS,
     "min_samples": MIN_SAMPLES,
-    "official_minimap_floor": OFFICIAL_FLOOR,
+    "official_minimap_max_floor": OFFICIAL_MAX_FLOOR,
     "rule": RULE_TEXT,
     "tibiamaps": {
         **edron.PIN["tibiamaps"],
@@ -195,7 +260,7 @@ def in_area(area: dict, x: int, y: int) -> bool:
 
 
 class Scanner:
-    """One pass over the base tiles: the colour samples of `FLOORS` and the tiles of the areas."""
+    """One pass over the base tiles: the per-floor colour samples of `FLOORS` and the tiles of the areas."""
 
     def __init__(self, images: Images, areas=AREAS):
         self.images, self.areas = images, areas
@@ -213,11 +278,17 @@ class Scanner:
         pixel = self.images.at(z, x, y)
         if pixel is None or not items or pixel[0] in (BLACK, MARKER):
             return
-        key = (pixel[0], path_class(pixel[1]))
+        key = (z, pixel[0], path_class(pixel[1]))
         ground = items[0][0]
         self.grounds.setdefault(key, Counter())[ground] += 1
         top = items[-1][0] if len(items) > 1 and items[-1][1] == 0 else None
         self.tops.setdefault((*key, ground), Counter())[top] += 1
+
+    def claim(self, positions) -> None:
+        """Mark the positions of fill fragments inside an area: never drafted, never replaced."""
+        for x, y, z in positions:
+            if any(z in a["floors"] and in_area(a, x, y) for a in self.areas):
+                self.tiles[(x, y, z)] = CLAIMED
 
 
 def best(counter: Counter):
@@ -225,16 +296,17 @@ def best(counter: Counter):
 
 
 def learn(scan: Scanner) -> dict[tuple, dict]:
-    """`{(rgb, class): row}` of every sampled (colour, class); `row["mapped"]` needs samples."""
+    """`{(floor, rgb, class): row}` of every sampled (colour, class); `row["mapped"]` needs samples."""
     table = {}
     for key, counter in scan.grounds.items():
         ground = best(counter)
         samples = sum(counter.values())
-        item = best(scan.tops[(*key, ground)]) if key[1] == "blocked" else None
+        item = best(scan.tops[(*key, ground)]) if key[2] == "blocked" else None
+        mapped = samples >= MIN_SAMPLES
         table[key] = {
-            "ground": ground,
-            "item": item,
-            "mapped": samples >= MIN_SAMPLES,
+            "ground": ground if mapped else None,
+            "item": item if mapped else None,
+            "mapped": mapped,
             "samples": samples,
         }
     return table
@@ -291,14 +363,14 @@ def plan_draft(scan: Scanner, images: Images, land, water: set[int]) -> Plan:
                         plan.entrances.append([x, y, z])
                         continue
                     klass = path_class(pixel[1])
-                    key = (pixel[0], klass)
+                    key = (z, pixel[0], klass)
                     row = plan.table.get(key)
                     if row is None or not row["mapped"]:
                         stat["unmapped"] += 1
                         unseen.setdefault(key, 0)
                         continue
                     is_water = row["ground"] in water
-                    if z == OFFICIAL_FLOOR and not is_water and not land(x, y, z):
+                    if z <= OFFICIAL_MAX_FLOOR and not is_water and not land(x, y, z):
                         stat["no_official_land"] += 1
                         continue
                     if is_water and base is not None:
@@ -341,14 +413,15 @@ def summarize(plan: Plan, items_added: int) -> dict:
     replaced = Counter(p[2] for p in plan.replace)
     rows = [
         {
-            "class": key[1],
-            "colour": hexcolour(key[0]),
+            "class": key[2],
+            "colour": hexcolour(key[1]),
+            "floor": key[0],
             "ground": row["ground"],
             "item": row["item"],
             "mapped": row["mapped"],
             "samples": row["samples"],
         }
-        for key, row in sorted(plan.table.items(), key=lambda kv: (kv[0][0], kv[0][1]))
+        for key, row in sorted(plan.table.items(), key=lambda kv: kv[0])
     ]
     return {
         "applied": True,
