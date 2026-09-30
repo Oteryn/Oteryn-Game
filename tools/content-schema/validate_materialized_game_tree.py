@@ -38,8 +38,6 @@ def world_successor_files(dirs: list[dict])->list[str]:
         payload=json.loads((ROOT/LEGACY_ROOT/marker).read_text(encoding="utf-8"))
         if payload.get("schema")==FAMILY_INDEX:
             files|={shard[len(LEGACY_ROOT):] for shard in payload["shards"]}
-    for path in POPULATED_WORLD_CATALOGUES:
-        files|={n[len(LEGACY_ROOT):] for n in catalogue_shards(path)}
     return sorted(files)
 def catalogue_shards(path: str)->list[str]:
     return sorted(path+f.name for f in (ROOT/path).iterdir() if CATALOGUE_SHARD.match(f.name))
