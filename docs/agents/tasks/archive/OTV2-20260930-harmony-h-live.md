@@ -4,13 +4,13 @@
 task_id: OTV2-20260930-harmony-h-live
 title: Monk Harmony and Serene in the live runtime actor, Harmony admission (SPELL-D8 H-live, SP-HARMONY-GATE folded in)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1386
 allocation_comment: "#162 5910691466 (point 3, H-live; SP-HARMONY-GATE folded in)"
 base_branch: main
-branch: claude/nifty-goldberg-omhdpr
+branch: claude/eager-pasteur-eobvo3   # owner answer 1a (#162 5914928258)
 base_sha: aeb13cf
 head_sha: null   # a commit cannot hold its own SHA; exact head is in the FREEZE_SHA packet
 owner: "Oteryn: spell state" (Claude Code)
@@ -34,6 +34,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/monk_save.rs
   - apps/game-server/tests/character_authority_postgres.rs
   - docs/agents/tasks/active/OTV2-20260930-harmony-h-live.md
+  - docs/agents/tasks/archive/OTV2-20260930-harmony-h-live.md
 public_contracts: []
 owning_contract: docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md §8.2 (SPELL-D8)
 depends_on: ["H-1 #1360 (migration 0026, durability::monk_state)", "H-2 #1243 (spell::harmony)"]
@@ -46,6 +47,8 @@ jira: null   # sync pending (coordinator batch)
 
 - Owner decisions: D209 (the Serene flag is not durable), Q1=b (the remaining forced Serene time is durable), DEATH-1
   Harmony 0 at death (H-1, in `commit_character_death` and the 0026 guard).
+- Owner answer 6a (in session, 2026-09-30): Harmony builders and spenders are admitted before Virtue Healing
+  (§A.2 step 5) exists; Virtue Healing follows as its own task.
 - Carried LOWs of the #1360 KEEP review (5913880920): a negative PG case for a death transition that keeps Harmony,
   the rejecting rule named by its message, and a restart between save and load.
 
@@ -76,4 +79,9 @@ jira: null   # sync pending (coordinator batch)
 
 ## Closeout
 
-Pending: PR, freeze, independent review. The final authoring commit moves this record to `archive/`.
+- PR: #1386 from `claude/eager-pasteur-eobvo3`; the exact frozen head is in the FREEZE_SHA packet on #162.
+- Merge commit/result: squash merge of the H-live PR.
+- Review: independent persistence/authority review on the frozen head (control plane only); pending at freeze.
+- Follow-ups (not in this PR): Virtue Healing (§A.2 step 5); `commit_fill` / `commit_focus_serenity` callers once
+  Focus spells are authored; `spell.schema.json` description and native-behaviours §A.2 still say "fails closed";
+  any future 0025 replacing `game_character_progression_consistency_guard` must carry the 0026 monk arms.
