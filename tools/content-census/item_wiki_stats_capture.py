@@ -15,8 +15,10 @@ Values stay the wiki's own strings (`"+3"`, `"2%"`, `"club fighting +4"`); typin
 the promotion lowering's job, which records both. Several pages may list the same id; each
 is kept as its own observation, ordered by page id, so disagreement stays visible.
 
-Records are keyed by the A12 Tibia Item key `oteryn:item.tibia.i<id>`. `snapshot_sha256`
-digests the canonical records, as in the family fallback snapshot.
+Records are keyed by the decimal Tibia item id, not by an Item key: many ids are map
+geometry, client-only or D149-removed and have no Item record, so the join to
+`oteryn:item.tibia.i<id>` (A12) is the lowering's job. `snapshot_sha256` digests the
+canonical records, as in the family fallback snapshot.
 
 Usage:
     python item_wiki_stats_capture.py [--cache RAW.json] [--output PATH]
@@ -182,7 +184,7 @@ def build_records(pages):
         if not seen["fields"]:
             continue
         for item_id in ids:
-            key = f"oteryn:item.tibia.i{item_id}"
+            key = str(item_id)
             records.setdefault(key, {"item_id": item_id, "observations": []})
             records[key]["observations"].append(seen)
     for record in records.values():

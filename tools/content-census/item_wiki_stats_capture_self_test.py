@@ -43,7 +43,7 @@ def test_parser_keeps_only_admitted_stats():
     assert fields["attrib"] == "club fighting +4, {{Link|magic level}} +1", fields
     assert fields["notes"].startswith("Part of"), fields
     records, report = capture.build_records({"Soulcrusher": page(PAGE)})
-    record = records["oteryn:item.tibia.i34086"]
+    record = records["34086"]
     stats = record["observations"][0]["fields"]
     assert set(stats) <= set(capture.STAT_PARAMS), stats
     assert "notes" not in stats and "droppedby" not in stats and "name" not in stats
@@ -64,8 +64,8 @@ def test_multi_id_bad_id_and_no_infobox():
             "Plain": page("no infobox here", page_id=4),
         }
     )
-    assert list(records) == ["oteryn:item.tibia.i100", "oteryn:item.tibia.i101"]
-    ids = [row["page_id"] for row in records["oteryn:item.tibia.i100"]["observations"]]
+    assert list(records) == ["100", "101"]
+    ids = [row["page_id"] for row in records["100"]["observations"]]
     assert ids == [1, 2], ids
     assert report["bad_itemid"] == ["Junk"] and report["no_infobox"] == 1, report
     assert report["multi_page_ids"] == 2, report
@@ -90,12 +90,12 @@ def test_committed_snapshot_is_consistent():
     assert digest == document["snapshot_sha256"], "snapshot digest"
     assert list(records) == sorted(records), "records are written in key order"
     for key, record in records.items():
-        assert key == f"oteryn:item.tibia.i{record['item_id']}", key
+        assert key == str(record["item_id"]), key
         pages = [row["page_id"] for row in record["observations"]]
         assert pages == sorted(pages) and len(set(pages)) == len(pages), key
         for row in record["observations"]:
             assert row["fields"] and set(row["fields"]) <= set(capture.STAT_PARAMS), key
-    soulcrusher = records["oteryn:item.tibia.i34086"]["observations"][0]["fields"]
+    soulcrusher = records["34086"]["observations"][0]["fields"]
     assert soulcrusher["levelrequired"] == "400" and soulcrusher["hpleech_am"] == "2%"
     return len(records)
 
