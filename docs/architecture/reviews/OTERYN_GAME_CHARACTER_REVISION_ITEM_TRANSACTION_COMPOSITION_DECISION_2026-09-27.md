@@ -187,6 +187,14 @@ pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transact
   transactions carry no XP, so it would change D42's meaning. DUR-03 §39.3 declines it. A genuine
   XP award that happens to share a transaction with item effects is a different case (§3.6).
 
+**Amendment (DEPOT-0, 2026-09-30), pending on acceptance of DEPOT-0.** Once DEPOT-0 is accepted,
+rule 1 also covers `CharacterDepot` locations of the acting
+character (`OTERYN_GAME_DEPOT0_CHARACTER_DEPOT_DECISION_2026-09-30.md` §7.2): an item-only
+transaction between its backpack and its depot does not advance `CharacterRevision`. No runtime
+scope owns the depot, so rule 2's DUR-03 §32 binding does not apply.
+Rule 4's lock order: `character_root`, then the items in ItemInstanceId order, then the
+container-slot row.
+
 ## 5. Decision test
 
 - **Must decide now?** YES. It blocks step 2 of the reward-chest order of work (DUR-03 and
@@ -206,6 +214,13 @@ pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transact
   - TRANSFER admission itself;
   - resource limits;
   - protocol, client and production.
+
+**Amendment (BANK-0, 2026-09-30), pending on acceptance of BANK-0.** Once BANK-0 is accepted,
+rule 1 also covers bank operations, ledger entries and coin
+lines (`OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md` §7.2): those of the acting character's (Account, World) and a transfer's counterpart
+entry on another Account. They are DUR-03 value records keyed by the bank operation, not Character
+receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: after
+`character_root`, the main backpack, its coin entries, then the balance rows in `account_id` order.
 
 ## 6. Handback
 

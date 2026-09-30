@@ -175,6 +175,8 @@ shapes are new?
 - `unit_price x quantity` is computed in checked unsigned 64-bit arithmetic.
 - Weight is not checked (B3 D81). The bank (stage 2), the Gold Pouch and ground overflow are out
   of scope: a result that does not fit the backpack is rejected and writes nothing.
+  *Amendment (BANK-FEE-0, pending on acceptance):* the bank is now in scope for BUY and travel fees: coins first, then
+  the bank (`OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`).
 
 ### 5.2 Records and revision
 
@@ -197,6 +199,7 @@ shapes are new?
     definition stack maximum (at most 100);
   - a non-stackable item: `quantity` must be 1; the item takes the offer's sub-type or charges.
 - `F` above 20,000,000 (the most 20 coin stacks can hold) is always insufficient funds.
+  *Amendment (BANK-FEE-0, pending on acceptance):* with the bank part, `F` is bounded by the coins plus the balance.
 - Insufficient funds, no free entry after the burn and change, or more than 20 burn inputs
   rejects the whole transaction.
 
@@ -315,6 +318,8 @@ satisfied).
 - **Deliberately not decided:** quest-conditioned dialogue (answer 4b), quest-gated routes, token
   currencies, the bank, spells, blessings and promotion services, NPC movement schedules, and
   localization.
+  *Amendment (BANK-FEE-0, pending on acceptance):* bank payment of BUY and travel fees is now decided
+  (`OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`); banker services are BANK-0.
 
 ## 12. Before-freeze checklist
 

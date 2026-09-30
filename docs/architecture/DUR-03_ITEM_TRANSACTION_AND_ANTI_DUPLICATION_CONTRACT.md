@@ -176,6 +176,21 @@ presentation ownership
 
 remain separate. Possession, CharacterId equality, binding or custody does not grant mutation authority.
 
+**Amendment (DEPOT-0, 2026-09-30), pending on acceptance of DEPOT-0.**
+`reviews/OTERYN_GAME_DEPOT0_CHARACTER_DEPOT_DECISION_2026-09-30.md`, once accepted, admits the
+second custody family:
+
+```text
+CharacterDepot { character_id: CharacterId, box: 1..17, ordinal: NUMERIC(20) }
+```
+
+Character + World scope, no channel and no runtime scope; the 17 boxes are fixed compartments, not
+items. Its DEPOT-1 child admits two one-item TRANSFER shapes, superseding the §39.1 and §39.3
+source and destination limits for them only: a main backpack direct entry into a box, and a depot entry
+out to the main backpack's container slot or a new direct entry (no merge). Corpse and Ground
+sources are refused. The table joins the
+HOUSE-CUSTODY-0 item-level exclusivity guard.
+
 ## 6. Runtime simulation authority versus durable recoverability
 
 ChannelRuntime/InstanceRuntime may own immediate ground/corpse/transient-item simulation under FND-03. DUR-03 preserves that owner while requiring durable value safety.
@@ -437,6 +452,20 @@ For each asset:
 - retry/ambiguous commit follows TransactionId/OperationId contract.
 
 Exact SQL scalar/business policy is deferred.
+
+**Amendment (BANK-0, 2026-09-30), pending on acceptance of BANK-0.**
+`reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md` §5, once accepted, names
+the first non-item asset: bank gold, an
+integer balance per (Account, World) with an immutable ledger, converted to and from coins by the
+gold fee worth table. Its BANK-1 child admits, for these shapes only: a deposit (coin inputs and up
+to two change outputs as `CONVERSION` lines, and one credit `CONVERSION` value line), a withdrawal
+(one debit `CONVERSION` value line and up to three coin `CONVERSION` outputs) and a transfer (two
+`TRANSFER` value lines between two accounts, no item), under the closed causes
+`BankConversionCause` and `BankTransferCause`. They supersede, for these shapes only, the §39.1
+exclusions of non-item accounts, multiple touched items, burn and MINT combined with other lines;
+they contain no BURN or MINT, so §15 is unchanged. Each is one transaction with one TransactionId,
+replayed by its operation occurrence, with one bank event carrying its item and value lines.
+`DUR03-RL-03` stays 0 for every existing shape.
 
 ## 19. World-scope conservation
 
@@ -1251,6 +1280,15 @@ authority, conservation) is unchanged.
   and envelope measured within the ANL ceilings, other rows unchanged. The rows, schema and field
   numbers are registered by GOLD-FEE-1, not here.
 
+
+**Bank fee amendment (BANK-FEE-0), pending on acceptance of BANK-FEE-0.**
+`reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`, once accepted, admits a bank part for the
+fee shapes above, for those shapes only: it supersedes the §39.1 exclusion of non-item accounts; the
+conservation becomes `burned - change + bank_debit = F`; a non-junior payer whose coins are worth
+less than `F` burns every eligible coin whole with no change and pays `F - T` from its bank balance
+(BANK-0) instead of being rejected; the bank part is one `FEE_DEBIT` value line of class BURN
+under the fee's own `FeeBurnCause` (§15, §18), counted by `DUR03-RL-03-FEE`; `DUR03-RL-03` stays 0
+for coin-only fees; a fee paid wholly from the bank has no burn line.
 
 **NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
 (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes

@@ -41,6 +41,9 @@ pub mod foundation;
 pub mod native_admission_source;
 
 #[allow(dead_code, unused_imports)]
+#[path = "../src/achievement_catalogue.rs"]
+pub mod achievement_catalogue;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/interaction/mod.rs"]
 pub mod interaction;
 #[allow(dead_code, unused_imports)]
