@@ -1,4 +1,4 @@
-"""Tests for item_weapon_proficiency (ITEM-PROF-1). Run with `python test_item_weapon_proficiency.py`."""
+"""Tests for item_weapon_proficiency (ITEM-PROF-1, ITEM-PROF-1b). Run with `python test_item_weapon_proficiency.py`."""
 
 import json
 import unittest
@@ -25,6 +25,17 @@ class ThresholdClassTests(unittest.TestCase):
         )
         self.assertEqual(iwp.threshold_class("Amber 2H Crossbow", None), "unknown")
 
+    def test_ranged_without_ammunition_uses_wiki_secondarytype(self):
+        replica = "Replica Mayhem Distance"
+        self.assertEqual(
+            iwp.threshold_class(replica, None, None, "Crossbows"), "crossbow"
+        )
+        self.assertEqual(iwp.threshold_class(replica, None, None, "Bows"), "standard")
+        # ammunition evidence decides first
+        self.assertEqual(
+            iwp.threshold_class("Generic 2H Distance", "bolt", None, None), "crossbow"
+        )
+
     def test_knight_only_for_knight_restricted_melee(self):
         sword = "Sword 1H Crimson Sword"
         self.assertEqual(iwp.threshold_class(sword, None, "Knights"), "knight")
@@ -36,6 +47,40 @@ class ThresholdClassTests(unittest.TestCase):
         self.assertEqual(
             iwp.threshold_class("Grand Sanguine 2H Axe", None, "Knights"), "knight"
         )
+
+    def test_unrestricted_melee_is_standard(self):
+        self.assertEqual(
+            iwp.threshold_class("Generic 1H Sword Class 1", None, "unrestricted"),
+            "standard",
+        )
+        self.assertEqual(
+            iwp.threshold_class("Sword 1H Bright Sword", None, "None"), "standard"
+        )
+        self.assertEqual(
+            iwp.threshold_class("Axe 1H X", None, "Knight;true, Elite Knight"),
+            "knight",
+        )
+
+    def test_vocation_evidence_source_order(self):
+        weapon = {"name": "x", "weapon": True, "vocation": []}
+        knight = {"name": "x", "weapon": True, "vocation": ["Knight;true"]}
+        proven = iwp.vocation_evidence({"vocrequired": ["knights"]}, weapon)
+        self.assertEqual((proven["basis"], proven["value"]), ("PROVEN", "knights"))
+        derived = iwp.vocation_evidence({}, knight)
+        self.assertEqual(
+            (derived["basis"], derived["value"]), ("DERIVED", "Knight;true")
+        )
+        free = iwp.vocation_evidence({}, weapon)
+        self.assertEqual((free["basis"], free["value"]), ("DERIVED", "unrestricted"))
+        for wiki, crystal in (
+            ({}, None),
+            ({}, {"name": "x", "weapon": False, "vocation": []}),
+            ({"vocrequired": ["knights", "paladins"]}, knight),
+        ):
+            evidence = iwp.vocation_evidence(wiki, crystal)
+            self.assertEqual(evidence["basis"], "UNKNOWN")
+            self.assertNotIn("value", evidence)
+            self.assertTrue(evidence["reason"])
 
     def test_other_weapons_are_standard(self):
         self.assertEqual(iwp.threshold_class("Wand 1H Wand of Decay"), "standard")
@@ -75,15 +120,31 @@ class ArtifactTests(unittest.TestCase):
             by_id[3350]["threshold_class"], "standard"
         )  # bow, same profile
         self.assertEqual(by_id[5803]["threshold_class"], "crossbow")  # arbalest
-        self.assertEqual(by_id[26004]["threshold_class"], "unknown")  # replica crossbow
-        self.assertEqual(by_id[26067]["threshold_class"], "unknown")
+        # replica crossbow / bow: TibiaWiki secondarytype
+        self.assertEqual(by_id[26004]["threshold_class"], "crossbow")
+        self.assertEqual(by_id[26067]["threshold_class"], "crossbow")
+        self.assertEqual(by_id[26001]["threshold_class"], "standard")
+        self.assertEqual(by_id[53227]["threshold_class"], "crossbow")  # moonsilver
         self.assertEqual(by_id[3265]["threshold_class"], "knight")  # two handed sword
+        # short sword: no TibiaWiki vocrequired, unrestricted Crystal weapon (DERIVED)
+        self.assertEqual(by_id[3294]["threshold_class"], "standard")
         self.assertEqual(
-            by_id[3294]["threshold_class"], "unknown"
-        )  # short sword, no vocation evidence
+            by_id[3294]["threshold_evidence"]["vocation"]["basis"], "DERIVED"
+        )
+        # ink sword: no evidence in either source stays unknown with a reason
+        ink = by_id[51666]
+        self.assertEqual(ink["threshold_class"], "unknown")
+        self.assertEqual(ink["threshold_evidence"]["vocation"]["basis"], "UNKNOWN")
         counts = self.document["counts"]["bindings_by_threshold_class"]
         self.assertEqual(sum(counts.values()), iwp.EXPECTED_BINDINGS)
-        self.assertEqual(set(counts), set(iwp.CLASSES))
+        self.assertEqual(
+            counts, {"crossbow": 37, "knight": 158, "standard": 470, "unknown": 1}
+        )
+        for binding in self.document["bindings"]:
+            vocation = binding["threshold_evidence"]["vocation"]
+            self.assertIn(vocation["basis"], {"PROVEN", "DERIVED", "UNKNOWN"})
+            if vocation["basis"] == "UNKNOWN":
+                self.assertNotIn("value", vocation)
 
     def test_perk_mapping_covers_every_raw_value(self):
         mapping = self.document["perk_mapping"]
