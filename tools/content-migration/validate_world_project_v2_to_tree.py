@@ -339,13 +339,13 @@ def main() -> int:
         "legacy_mutated": False,
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
-    require(lock["family_counts"] == {"Item": 33567, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
+    require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
-    require(item_index["record_count"] == 33567 and len(item_index["shards"]) == 68, "ITEM_INDEX")
+    require(item_index["record_count"] == 34031 and len(item_index["shards"]) == 69, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 
     migrated_items: list[Any] = []
@@ -373,7 +373,7 @@ def main() -> int:
         expected_start = payload["shard"]["end"] + 1
 
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
-    require(migrated_items == legacy_items and expected_start == 33567, "ITEM_DEFINITION_ROUNDTRIP")
+    require(migrated_items == legacy_items and expected_start == 34031, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -405,7 +405,7 @@ def main() -> int:
     require(canonical_sorted(item_bindings) == canonical_sorted(legacy_item_bindings), "ITEM_BINDING_ROUNDTRIP")
     require(canonical_sorted(mount_bindings) == canonical_sorted(legacy_mount_bindings), "MOUNT_BINDING_ROUNDTRIP")
 
-    require(len({target_id(row["identity"]) for row in migrated_items}) == 33567, "ITEM_IDENTITY_UNIQUENESS")
+    require(len({target_id(row["identity"]) for row in migrated_items}) == 34031, "ITEM_IDENTITY_UNIQUENESS")
     require(len({
         ("Mount", row["identity"]["key"], row["identity"]["revision"])
         for row in migrated_mounts
@@ -447,7 +447,7 @@ def main() -> int:
         reward_claim_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
     require(len(reward_claim_keys) == REWARD_CLAIM_COUNT, "REWARD_CLAIM_IDENTITY_UNIQUENESS")
     print(
-        "PASS items=33567 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
+        "PASS items=34031 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "

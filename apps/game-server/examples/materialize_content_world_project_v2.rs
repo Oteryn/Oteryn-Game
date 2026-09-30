@@ -5,19 +5,21 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
-    CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_FULL_ITEM_REVISION, CandidateValue,
-    CanonicalProjectDocuments, ImportBatch, ProjectDraft, ProjectEvidenceLimits,
-    ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2Declaration,
-    ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass,
-    ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile,
-    ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
+    CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
+    CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_FULL_ITEM_REVISION,
+    CandidateValue, CanonicalProjectDocuments, DefinitionIdentityDocument, ImportBatch,
+    ItemStackDocument, ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord,
+    ProjectV2AuthoringProfile, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft,
+    ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity,
+    ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
+    ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
     ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
-    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
-    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
+    ProjectionDocument, R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField,
+    ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
-    item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule},
-    protected_r7_p04_gold_coin_item_family_import,
+    item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
+    protected_cw2_b1_donor_identity_epoch_2_import, protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -27,9 +29,34 @@ const B1_EVIDENCE: &[u8] = include_bytes!(
 );
 const DOCUMENT_COUNT: usize = 11;
 const ITEM_KEY_ALIASES: &[u8] = include_bytes!("../../../content/items/aliases.json");
-/// A12: 38,157 protected Item records less the 4,590 D149 records.
-const ITEM_TIBIA_KEYS: usize = 33_567;
+/// A12: 38,157 protected Item records less the 4,590 D149 records, plus the 404 donor epoch-2
+/// records (ITEM-ADD-1, owner decision 1a), all re-keyed by the §4.1 switch.
+const ITEM_TIBIA_KEYS: usize = 33_567 + CW2_B1_DONOR_EPOCH2_MINTED_COUNT;
 const ITEM_D149_REMOVED: usize = 4_590;
+/// B1b donor identity epoch 2 inputs, the same digest-pinned bytes its importer admits.
+const DONOR_EPOCH2_CENSUS: &[u8] = include_bytes!(
+    "../../../tools/content-schema/item-authoring/samples/donor-census-crystal-summer-update-00ce02a5.json"
+);
+const DONOR_EPOCH2_CROSSWALK: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json"
+);
+/// ITEM-ADD-1 (owner decision 2a): ids defined in no pinned items.xml whose CipSoft appearance is
+/// current in the newest admitted client. Each gets the A12 §4.1 key and no semantics beyond it.
+const APPEARANCE_ONLY_ITEM_IDS: [u64; 60] = [
+    21887, 35384, 35388, 35600, 35846, 36929, 39949, 40522, 43666, 43762, 43771, 43778, 43779,
+    43780, 43781, 43782, 43946, 43947, 43959, 44048, 44432, 44433, 44447, 44664, 44665, 44666,
+    44667, 44668, 44669, 44670, 44671, 44684, 44685, 44686, 44687, 44709, 44713, 44717, 48108,
+    48112, 48271, 48349, 48353, 48366, 48382, 48403, 48404, 48405, 48406, 48414, 48416, 49124,
+    51276, 51302, 51560, 53197, 53199, 53201, 53203, 53205,
+];
+const ITEM_KEYS: usize = ITEM_TIBIA_KEYS + APPEARANCE_ONLY_ITEM_IDS.len();
+const ADMITTED_APPEARANCES: &[u8] =
+    include_bytes!("../../../imports/official/appearance-membership/admitted.json");
+const ADMITTED_APPEARANCES_SHA256: &str =
+    "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718";
+const NEWEST_APPEARANCE_MANIFEST: &[u8] = include_bytes!(
+    "../../../imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json"
+);
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 const ITEM_SELECTED: &[u8] =
@@ -145,7 +172,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 11,
+        max_import_records: 12,
         max_reimport_states: ENCOUNTER_COUNT,
     }
 }
@@ -1648,6 +1675,64 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
     })
 }
 
+/// ITEM-ADD-1 (owner decision 2a): one identity-only Item per appearance-only id.
+///
+/// Each id must be current (in the newest admitted CipSoft manifest, A12 §4.1), outside every
+/// source id the CW2-B1 and donor epoch-2 imports know, and not yet a record. The record carries
+/// what the CipSoft appearance proves and nothing more: no materialization, no stack class and no
+/// semantics.
+fn appearance_only_items(
+    source_ids: &BTreeMap<String, u64>,
+    canonical: &BTreeSet<String>,
+) -> Result<Vec<ProjectReferenceRecord>, Box<dyn std::error::Error>> {
+    if hex_sha256(ADMITTED_APPEARANCES) != ADMITTED_APPEARANCES_SHA256 {
+        return Err("admitted appearance set digest drifted".into());
+    }
+    let admitted: Value = serde_json::from_slice(ADMITTED_APPEARANCES)?;
+    let newest = admitted["files"]
+        .as_array()
+        .and_then(|files| files.last())
+        .ok_or("admitted appearance set has no manifest")?;
+    if admitted["newest"] != "client-15.30"
+        || newest["label"] != admitted["newest"]
+        || newest["manifest_sha256"].as_str() != Some(&hex_sha256(NEWEST_APPEARANCE_MANIFEST))
+    {
+        return Err("newest admitted appearance manifest drifted".into());
+    }
+    let manifest: Value = serde_json::from_slice(NEWEST_APPEARANCE_MANIFEST)?;
+    let current = manifest["entries"]
+        .as_array()
+        .ok_or("appearance manifest entries")?
+        .iter()
+        .map(|entry| entry[0].as_u64().ok_or("appearance manifest id"))
+        .collect::<Result<BTreeSet<_>, _>>()?;
+    let known_source_ids = source_ids.values().copied().collect::<BTreeSet<_>>();
+    let mut records = Vec::with_capacity(APPEARANCE_ONLY_ITEM_IDS.len());
+    for pair in APPEARANCE_ONLY_ITEM_IDS.windows(2) {
+        if pair[0] >= pair[1] {
+            return Err("appearance-only ids are not strictly ascending".into());
+        }
+    }
+    for id in APPEARANCE_ONLY_ITEM_IDS {
+        let key = tibia_item_key(id).ok_or("appearance-only id has no Tibia key")?;
+        if !current.contains(&id) || known_source_ids.contains(&id) || canonical.contains(&key) {
+            return Err(format!("appearance-only id {id} is not a new current CipSoft id").into());
+        }
+        records.push(ProjectReferenceRecord::Item {
+            identity: DefinitionIdentityDocument {
+                family: "Item".to_owned(),
+                key,
+                revision: CW2_B1_FULL_ITEM_REVISION.to_owned(),
+            },
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: false,
+            stack_class: ItemStackDocument::Unknown,
+            semantics: Default::default(),
+        });
+    }
+    Ok(records)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
     let promoted = protected_r7_p04_gold_coin_item_family_import(
@@ -1659,7 +1744,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut provenance = promoted.family.batch;
     // The historical key of every Item record and its CW2-B1 source id: the §4.1 rule input.
-    let item_source_ids = provenance
+    let mut item_source_ids = provenance
         .candidates
         .iter()
         .map(|candidate| {
@@ -1678,6 +1763,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     provenance.candidates.clear();
     provenance.reimport_states.clear();
+    // ITEM-ADD-1 (owner decision 1a): the whole B1b donor epoch 2 through its own importer.
+    let donor = protected_cw2_b1_donor_identity_epoch_2_import(
+        B1_EVIDENCE,
+        DONOR_EPOCH2_CENSUS,
+        DONOR_EPOCH2_CROSSWALK,
+    )?;
+    if donor.records.len() != CW2_B1_DONOR_EPOCH2_MINTED_COUNT
+        || donor.allocation_digest_sha256 != CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256
+    {
+        return Err("donor epoch 2 Item family drifted".into());
+    }
+    for candidate in &donor.batch.candidates {
+        let key = candidate
+            .candidate_target
+            .strip_suffix(&format!("@{CW2_B1_DONOR_EPOCH2_REVISION}"))
+            .ok_or("donor epoch 2 Item candidate target drifted")?;
+        let source_id = candidate
+            .source_numeric_id
+            .ok_or("donor epoch 2 Item candidate source id missing")?;
+        if item_source_ids.insert(key.to_owned(), source_id).is_some() {
+            return Err("donor epoch 2 Item key collides with an earlier key".into());
+        }
+    }
+    if item_source_ids.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT + CW2_B1_DONOR_EPOCH2_MINTED_COUNT {
+        return Err("donor epoch 2 Item source id closure drifted".into());
+    }
+    let mut donor_provenance = donor.batch;
+    donor_provenance.candidates.clear();
+    donor_provenance.reimport_states.clear();
     let source = ProjectV2Source {
         key: "oteryn:source.crystalserver".to_owned(),
         import_batch_id: provenance.batch_id.clone(),
@@ -1745,6 +1859,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         bindings: npc_bindings,
     } = populate_npcs()?;
     records.extend(npc_records);
+    records.extend(donor.records);
     declarations.extend(npc_declarations);
     authoring_profiles.extend(npc_profiles);
     bindings.extend(npc_bindings);
@@ -1759,6 +1874,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             records,
             imports: vec![
                 provenance,
+                donor_provenance,
                 wiki_import,
                 wave1_import,
                 mount_import,
@@ -1802,14 +1918,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         return Err(format!("Item key switch drifted: {switch:?}").into());
     }
+    // ITEM-ADD-1 (owner decision 2a): §4.1 keys need no alias entry, so they join after the switch.
+    let canonical = draft
+        .core
+        .records
+        .iter()
+        .filter_map(|record| match record {
+            ProjectReferenceRecord::Item { identity, .. } => Some(identity.key.clone()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    let appearance_only = appearance_only_items(&item_source_ids, &canonical)?;
+    draft.core.records.extend(appearance_only);
+    let item_keys = draft
+        .core
+        .records
+        .iter()
+        .filter(|record| matches!(record, ProjectReferenceRecord::Item { .. }))
+        .count();
+    if item_keys != ITEM_KEYS {
+        return Err(format!("Item record count drifted: {item_keys}").into());
+    }
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={ITEM_TIBIA_KEYS} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
-        promoted.promoted_items, promoted.promoted_fields
+        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        APPEARANCE_ONLY_ITEM_IDS.len(),
+        promoted.promoted_items,
+        promoted.promoted_fields
     );
     Ok(())
 }
