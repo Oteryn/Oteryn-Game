@@ -9,9 +9,9 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 1364
 allocation: "#162 5909237761 (part 2); scope ruling 5911004459; owner answer a (tree-first) 5912009064"
-base_sha: 0cc80913
+base_sha: 5dcfb724
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
