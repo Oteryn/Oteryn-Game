@@ -5,6 +5,10 @@ on:
     paths:
       - tools/content-schema/proficiency-authoring/**
       - imports/cipsoft-staticdata/proficiencies/**
+      - content/proficiencies/**
+      - content/project.json
+      - content/manifest.json
+      - content/content.lock.json
       - tools/content-schema/item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json
       - .github/workflows/proficiency-authoring-schema.yml
   workflow_dispatch:
