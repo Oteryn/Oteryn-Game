@@ -2,7 +2,7 @@
 """Validate Achievement catalogue records (OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1 §2).
 
 Usage: python validate_achievements.py RECORDS.json [RECORDS.json ...]
-Each file holds one record or a list of records; all files together form one catalogue, so keys must be
+Each file holds one record, a list of records or a catalogue shard ({"family": "Achievement", "records": [...]}); all files together form one catalogue, so keys must be
 unique across them. The key is checked for format only: it is allocated once (allocate_key) and kept. Prints one JSON report; the exit code is 1 when a record is invalid.
 """
 
@@ -79,6 +79,8 @@ def load(paths: list[Path]) -> list[dict]:
     records = []
     for path in paths:
         data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data.get("family") == "Achievement":
+            data = data["records"]
         records += data if isinstance(data, list) else [data]
     return records
 

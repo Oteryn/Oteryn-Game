@@ -798,6 +798,10 @@ the same.
 3. The Rust typed profile and its tests (slice 3 of the admission design).
 4. Restaging under E4. Melting Frozen Horror then stays deferred behind the dragon egg.
 
+Steps 2-4 are **done** in `OTV2-20260929-cw2-encounter-transcriptions`: 82 of 83 manifests resolve (Ferumbras Mortal
+Shell remains), the census resolves 1560 monsters (was 1557), and the restage admits Alptramun, Gorzindel and The
+Sandking (61 encounters, 1476 creatures). Melting Frozen Horror waits for the Dragon Egg.
+
 Each step is its own owned slice.
 
 ### 12.6 Owner questions and answers (deviations and product choices only)

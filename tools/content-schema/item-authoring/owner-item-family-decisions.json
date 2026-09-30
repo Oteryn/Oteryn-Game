@@ -1214,6 +1214,33 @@
         "facts": "no wiki page found",
         "wiki_url": null
       }
+    },
+    "oteryn:item.tibia.i54262": {
+      "name": "key",
+      "profile": "quest_item",
+      "reason": "Q13d disputed row decided by the owner (D165 25 (alternative option), 2026-09-30, #162): key -> quest_item. Reverification evidence: No itemid wiki page ('Key' redirects to 'Keys' class page); client usable/multiuse/take with no description. The reason itself leaves the quest link unproven and names quest_item.",
+      "source": {
+        "facts": "No itemid wiki page ('Key' redirects to 'Keys' class page); client usable/multiuse/take with no description. The reason itself leaves the quest link unproven and names quest_item.",
+        "wiki_url": null
+      }
+    },
+    "oteryn:item.tibia.i23547": {
+      "name": "arena certificate",
+      "profile": "quest_item",
+      "reason": "Q13d disputed row decided by the owner (D165 25 (alternative option), 2026-09-30, #162): arena certificate -> quest_item. Reverification evidence: No wiki page for 23547; sibling 'Arena Certificates' (23548) is an immobile 'Utilities' board. Client usable + lenshelp 1112, description 'An arena certificate', no write flag. Readable paper is a guess.",
+      "source": {
+        "facts": "No wiki page for 23547; sibling 'Arena Certificates' (23548) is an immobile 'Utilities' board. Client usable + lenshelp 1112, description 'An arena certificate', no write flag. Readable paper is a guess.",
+        "wiki_url": "https://tibia.fandom.com/wiki/Arena_Certificates"
+      }
+    },
+    "oteryn:item.tibia.i21212": {
+      "name": "the ashes of a device",
+      "profile": "quest_item",
+      "reason": "Q13d disputed row decided by the owner (D165 25 (alternative option), 2026-09-30, #162): the ashes of a device -> quest_item. Reverification evidence: No wiki page; client description 'It seems this device has just disintegrated', take only. Only an analogy supports trash, and the reason names quest_item as an alternative.",
+      "source": {
+        "facts": "No wiki page; client description 'It seems this device has just disintegrated', take only. Only an analogy supports trash, and the reason names quest_item as an alternative.",
+        "wiki_url": null
+      }
     }
   },
   "schema": "OTERYN_ITEM_OWNER_FAMILY_DECISIONS/v1"

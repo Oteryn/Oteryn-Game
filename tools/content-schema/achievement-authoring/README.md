@@ -2,7 +2,7 @@
 
 Schema and validator for the Achievement catalogue of
 [`OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1.md`](../../../docs/architecture/OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1.md) §2.
-It writes nothing under `content/`: populating `content/achievements/` is a separate step (contract §5).
+`build_catalogue.py` writes the catalogue in `content/achievements/` (contract §5, step 2).
 
 | File | Purpose |
 |---|---|
@@ -10,10 +10,13 @@ It writes nothing under `content/`: populating `content/achievements/` is a sepa
 | `validate_achievements.py` | JSON Schema plus the rules it cannot state: points lie in the grade's range (1-3, 4-6, 7-9, 10) or are 0 for a retired record, keys are unique across all given files. The key is checked for format only: `allocate_key(name)` gives the key of a new record, and later revisions keep it when the name changes (contract §2.1). |
 | `synthetic-valid-achievement.json` | A valid record (Allow Cookies?). |
 | `test_validate_achievements.py` | No-network tests, including slug parity with `quest-authoring/ots_chests.py`; run in CI by `.github/workflows/achievement-authoring-schema.yml`. |
+| `build_catalogue.py` | Builds `content/achievements/achievements-*.json` from the staticdata and TibiaWiki observations and `owner_resolutions.json` (contract §2.2); keys are allocated once and kept on rebuild. `--check` regenerates byte-identically. |
+| `owner_resolutions.json` | The owner's 2026-09-29 resolutions of the join anomalies: overrides and exclusions. |
 | `requirements.txt`, `requirements-dev.txt` | Pinned `jsonschema`, `referencing` and `ruff` for CI. |
 
 ```sh
-python validate_achievements.py RECORDS.json [...]   # one record or a list per file
+python validate_achievements.py RECORDS.json [...]   # a record, a list or a catalogue shard per file
+python build_catalogue.py [--check]                  # write or verify content/achievements/
 python test_validate_achievements.py
 ```
 

@@ -137,24 +137,33 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 2,
-      "source_lines": [
-        87
-      ],
-      "status": "mapped",
-      "resolution": "The Dream Scar lever starts the Alptramun fight with AlptramunSummonsKilled at 0.",
-      "destination": "/encounter/state/counters/0"
-    },
-    {
       "source_index": 1,
       "source_lines": [
         117,
         118,
         119
       ],
+      "status": "approved_omission",
+      "resolution": "The death of Alptramun resets AlptramunSummonsKilled. The counter is read only by alptramun_summon.lua, which nothing casts; the owner chose the global replacement instead (Q1, format §12.1)."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        87
+      ],
+      "status": "approved_omission",
+      "resolution": "The lever sets AlptramunSummonsKilled to 0; the counter is superseded by the global replacement (Q1)."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        22,
+        23,
+        24
+      ],
       "status": "mapped",
-      "resolution": "The death of Alptramun sets AlptramunSummonsKilled back to 0.",
-      "destination": "/encounter/rules/1/actions/0"
+      "resolution": "The lever places two unmastered unpleasant dreams with Alptramun: the initial dreams (entry placement, Q1).",
+      "destination": "/encounter/participants/1/creatures"
     },
     {
       "source_index": 3,
@@ -166,57 +175,6 @@
       "destination": "/encounter/participants/1/creatures"
     },
     {
-      "source_index": 1,
-      "source_lines": [
-        92,
-        93,
-        94,
-        95
-      ],
-      "status": "mapped",
-      "resolution": "Returns without effect for a creature with a master.",
-      "destination": "/encounter/rules/2/conditions/0"
-    },
-    {
-      "source_index": 1,
-      "source_lines": [
-        67,
-        68,
-        69,
-        70,
-        71,
-        72,
-        73,
-        74,
-        75,
-        76,
-        77,
-        78,
-        79,
-        80,
-        81,
-        82,
-        83,
-        84,
-        85,
-        86,
-        87,
-        88,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130,
-        131
-      ],
-      "status": "mapped",
-      "resolution": "The death of an unmastered unpleasant dream raises AlptramunSummonsKilled by one while it is within 0-9.",
-      "destination": "/encounter/rules/2/actions/0"
-    },
-    {
       "source_index": 4,
       "source_lines": [
         24
@@ -226,57 +184,6 @@
       "destination": "/encounter/participants/2/creatures"
     },
     {
-      "source_index": 1,
-      "source_lines": [
-        92,
-        93,
-        94,
-        95
-      ],
-      "status": "mapped",
-      "resolution": "Returns without effect for a creature with a master.",
-      "destination": "/encounter/rules/3/conditions/0"
-    },
-    {
-      "source_index": 1,
-      "source_lines": [
-        67,
-        68,
-        69,
-        70,
-        71,
-        72,
-        73,
-        74,
-        75,
-        76,
-        77,
-        78,
-        79,
-        80,
-        81,
-        82,
-        83,
-        84,
-        85,
-        86,
-        87,
-        88,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130,
-        131
-      ],
-      "status": "mapped",
-      "resolution": "The death of an unmastered horrible dream raises AlptramunSummonsKilled by one while it is within 9-18.",
-      "destination": "/encounter/rules/3/actions/0"
-    },
-    {
       "source_index": 5,
       "source_lines": [
         24
@@ -284,57 +191,6 @@
       "status": "mapped",
       "resolution": "Nightmarish Dream is the nightmarish_dream participant; its file registers dreamCourtsDeath.",
       "destination": "/encounter/participants/3/creatures"
-    },
-    {
-      "source_index": 1,
-      "source_lines": [
-        92,
-        93,
-        94,
-        95
-      ],
-      "status": "mapped",
-      "resolution": "Returns without effect for a creature with a master.",
-      "destination": "/encounter/rules/4/conditions/0"
-    },
-    {
-      "source_index": 1,
-      "source_lines": [
-        67,
-        68,
-        69,
-        70,
-        71,
-        72,
-        73,
-        74,
-        75,
-        76,
-        77,
-        78,
-        79,
-        80,
-        81,
-        82,
-        83,
-        84,
-        85,
-        86,
-        87,
-        88,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130,
-        131
-      ],
-      "status": "mapped",
-      "resolution": "The death of an unmastered nightmarish dream raises AlptramunSummonsKilled by one while it is within 18-27.",
-      "destination": "/encounter/rules/4/actions/0"
     },
     {
       "source_index": 6,
@@ -354,8 +210,100 @@
         95
       ],
       "status": "mapped",
-      "resolution": "Returns without effect for a creature with a master.",
-      "destination": "/encounter/rules/5/conditions/0"
+      "resolution": "Returns without effect for a creature with a master: summoned copies never trigger a replacement.",
+      "destination": "/encounter/rules/1/conditions/0"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "Owner answer Q1 (format §12.1, global over Canary): a killed unpleasant dream is replaced at once by the next tier, a horrible dream, capped at tier 4, unowned with full health. The tier order is the config order of alptramun_summon.lua.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        92,
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a creature with a master: summoned copies never trigger a replacement.",
+      "destination": "/encounter/rules/2/conditions/0"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "Owner answer Q1 (format §12.1, global over Canary): a killed horrible dream is replaced at once by the next tier, a nightmarish dream, capped at tier 4, unowned with full health. The tier order is the config order of alptramun_summon.lua.",
+      "destination": "/encounter/rules/2/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        92,
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a creature with a master: summoned copies never trigger a replacement.",
+      "destination": "/encounter/rules/3/conditions/0"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "Owner answer Q1 (format §12.1, global over Canary): a killed nightmarish dream is replaced at once by the next tier, a mind-wrecking dream, capped at tier 4, unowned with full health. The tier order is the config order of alptramun_summon.lua.",
+      "destination": "/encounter/rules/3/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        92,
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a creature with a master: summoned copies never trigger a replacement.",
+      "destination": "/encounter/rules/4/conditions/0"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "Owner answer Q1 (format §12.1, global over Canary): a killed mind-wrecking dream is replaced at once by the next tier, a mind-wrecking dream, capped at tier 4, unowned with full health. The tier order is the config order of alptramun_summon.lua.",
+      "destination": "/encounter/rules/4/actions/0"
     },
     {
       "source_index": 1,
@@ -392,9 +340,8 @@
         130,
         131
       ],
-      "status": "mapped",
-      "resolution": "The death of an unmastered mind-wrecking dream raises AlptramunSummonsKilled by one while it is within 27-36.",
-      "destination": "/encounter/rules/5/actions/0"
+      "status": "approved_omission",
+      "resolution": "The death of an unmastered dream raises AlptramunSummonsKilled within its band. Nothing reads the counter once the never-cast summon spell is omitted, so the counter is superseded by the replacement rules (Q1)."
     },
     {
       "source_index": 7,
@@ -406,12 +353,6 @@
         5,
         6,
         7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
         14,
         15,
         16,
@@ -459,8 +400,8 @@
         58,
         59
       ],
-      "status": "unresolved_semantics",
-      "resolution": "The escalation that reads the counter: alptramun_summon.lua summons 1-4 dreams (up to 5 summons, as Alptramun's summons) whose type rises with AlptramunSummonsKilled in bands of nine. No Canary monster casts this spell (it is not in Alptramun's attacks or defenses), and summoned dreams have a master, so this script would not count them. The reference-date wiki says Alptramun \"will initially appear with several summons. These summons, when killed, will be replaced by even stronger summons\" without numbers; defining that ability (an ability_cast rule, D29) needs its exact rule from the owner or further evidence."
+      "status": "approved_omission",
+      "resolution": "The alptramun summon spell is registered, but no monster casts it (Alptramun's attacks and defenses do not list it), and dreams it summoned would have a master, which the counter skips. Superseded by the global replacement (owner answer Q1, format §12.1)."
     },
     {
       "source_index": 0,
@@ -494,7 +435,7 @@
       ],
       "status": "mapped",
       "resolution": "onHealthChange of Alptramun: primary death damage heals it by that amount and deals none; the secondary part is unchanged.",
-      "destination": "/encounter/rules/6"
+      "destination": "/encounter/rules/5"
     },
     {
       "source_index": 8,
@@ -505,7 +446,7 @@
       ],
       "status": "mapped",
       "resolution": "The same handler for heals; a heal is never typed as damage, so it passes unchanged.",
-      "destination": "/encounter/rules/7"
+      "destination": "/encounter/rules/6"
     }
   ],
   "outcome_evidence": [

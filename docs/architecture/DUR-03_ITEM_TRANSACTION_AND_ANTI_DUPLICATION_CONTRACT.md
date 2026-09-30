@@ -344,6 +344,9 @@ Burn/destruction identifies affected item/quantity/asset, typed sink/cause, surv
 
 Silent row deletion, `quantity=0` live state or disappearance during recovery is not a valid sink.
 
+The first admitted burn sink is the closed `FeeBurnCause` of the gold fee amendment in §39.3
+(owner decisions D174-D178).
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy
@@ -702,7 +705,9 @@ existing stack, multiple touched items, quantity redistribution, burn (outside
 the one named `DECAY_RETIRE` cause above), transform,
 non-item accounts, nested containers or additional custody families. (The B3
 amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
-the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`.) Unsupported
+the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
+amendment in §39.3 admits typed BURN of up to 20 coin stacks with up to 2 change MINTs, composed
+with a Character change in one transaction.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -1179,6 +1184,41 @@ conservation) is unchanged.
 
 Every other §39 obligation is unchanged. Pointer notes are added to §39.1, §39.2 and §5.2.
 
+**Gold fee amendment (D174-D178).** `CHARACTER-GOLD-FEE-BOUNDARY-V1` (owner decisions D174-D178,
+`reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md` §4-§5) admits one fee
+shape and, for it only, supersedes the §39.1 and D3 exclusions of burn, multiple touched items and
+a MINT committed with other lines, and the DUR-02 schema packet §7.5 hold on a path changing both
+Character and items. Every other §39 obligation (fences, cause, evidence, idempotency, current
+authority, conservation) is unchanged.
+
+- **Source (D174, stage 1).** Live coin stacks in direct entries of the character's equipped main
+  backpack (B3). No Ground, nested bag, depot or bank source; a bank ledger needs its own economy
+  contract, and `DUR03-RL-03` stays 0.
+- **Coins (D175, D176).** Exactly `oteryn:item.tibia.i3031` (gold, worth 1), `i3035` (platinum,
+  100) and `i3043` (crystal, 10,000), each with stack maximum 100. The source supplies the fee in
+  gold units. The deterministic plan (decision §4.2) burns inputs by worth ascending, then display
+  order; at most the last input is partly burned. Change `C` is minted back as at most 2 fresh
+  stacks in new backpack entries, `floor(C / 100)` platinum and `C mod 100` gold (D175; the
+  control-plane interpretation in decision §2 reads Q39's "+1 change output" as a wording error).
+  Fewer free entries than change outputs after the burn, insufficient funds, or more than 20
+  inputs rejects the whole transaction and writes nothing. Conservation: burned worth minus change
+  equals the fee.
+- **Composition (D177).** One transaction commits the fee source's Character change and receipt
+  (`CharacterRevision` +1 exactly once), every BURN line, the change MINTs and the audit event, or
+  none. One TransactionId; one receipt, the source's Character receipt keyed by its occurrence,
+  which binds the cause, the fee and the change. The fence and lock order are the Character
+  writer's (`CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1` §3 rules 2-4, with the expected
+  `CharacterRevision`), then the backpack and its coin entries.
+- **Cause (D178).** Closed `FeeBurnCause`; the only variant is `CharmUnassign { charm, occurrence }`.
+  No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
+  the decision.
+- **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends
+  `RETIRED` with no location), each change MINT (absent before), cause, fee, conservation summary,
+  WorldId, scope, Character revision and fence references. Fee-shape rows: `DUR03-RL-01` 22,
+  `DUR03-RL-02` 22, `DUR03-RL-06` 22 participants / 64 work units, `DUR03-RL-07-EVENTS` 1, payload
+  and envelope measured within the ANL ceilings, other rows unchanged. The rows, schema and field
+  numbers are registered by GOLD-FEE-1, not here.
+
 **Expected bindings versus current authority.** The immutable MINT/TRANSFER
 candidate binds expected item definition/state, source occurrence, WorldId,
 ChannelId, content/map/runtime context, destination and safe fence references.
@@ -1211,7 +1251,10 @@ receipt is invented for inventory work, and 0009 is unchanged. That decision
 settles only the global-revision composition: destination position, capacity
 and TRANSFER admission stay with their owners, and TRANSFER remains closed until
 they are accepted and proven. MINT does not touch Character state and is not
-blocked by this destination question.
+blocked by this destination question. The gold fee amendment above (D177) admits one
+transaction that combines a Character change with BURN and change-MINT lines: the Character
+part advances `CharacterRevision` once with its receipt, and the item lines add no advance.
+Composition §3.6 (an XP award sharing a transaction with item effects) is unchanged.
 
 **Decision test.** Must decide now: **YES** for definition/state, source, and
 actual Ground bindings, so native MINT cannot inherit synthetic fixture
