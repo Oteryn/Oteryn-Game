@@ -48,8 +48,8 @@ the part WHEEL-0 deferred. It integrates after WHEEL-0.
   revelation mastery adds domain points; each Grade IV mod adds a Wheel point.
 - **Wire:** capability `WHEEL_GEM_V1` (requires `WHEEL_V1`), `ATELIER_QUERY`, `ATELIER_INTENT`,
   and a vessel field on `WHEEL_INTENT`; numbers reserved on #162 at allocation.
-- **Owner questions** (open): G1 the Atelier gold fees (D178); G2 fragment and gem value sources
-  (D208).
+- **Owner questions** (answered 2026-09-30): G1 a) the reveal, domain switch and grade up fees
+  (D178); G2 b) dismantling, crushing and the 8 free initial gems as value sources (D208).
 
 No code, migration or content change is made.
 
@@ -70,7 +70,7 @@ combat review; GEM-WIRE-1 protocol review; GEM-R content review.
 - [ ] Decision on an exact frozen head with passing validators.
 - [ ] Independent exact-head review (Character state, persistence, economy, protocol, combat).
 - [ ] Protected Merge Queue integration after WHEEL-0.
-- [ ] Owner answers to G1 and G2 recorded on #162 before GEM-1 is allocated.
+- [x] Owner answers to G1 and G2 recorded on #162 (2026-09-30).
 
 ## Excluded scope
 
@@ -88,6 +88,9 @@ combat review; GEM-WIRE-1 protocol review; GEM-R content review.
 - Codex round-2 repair (PR #1414, 1 finding): replay resolves the receipt by occurrence first
   and returns the outcome under its bound ruleset revision (`WHEELGEM0-RP`, §5.2, §5.3, §6);
   validators re-run PASS.
+- Owner answers (2026-09-30, #162): G1 a) (all three Atelier gold fees, as in Tibia) and G2 b)
+  (dismantling, crushing and the 8 free initial gems, as in Tibia) made binding; the initial gems
+  modelled as one idempotent `GEM_INIT` Atelier write (`WHEELGEM0-INIT`, `WHEELGEM0-RL-12`).
 
 ## Closeout
 
@@ -100,7 +103,7 @@ combat review; GEM-WIRE-1 protocol review; GEM-R content review.
 last_progress: draft authored; awaiting architect review and publication
 status: completed
 branch: claude/arch-wheel-gem-0
-owner_action_required: "G1: Atelier gold fees; G2: fragment and gem value sources"
+owner_action_required: null
 blocker: null
-next_action: "architect reviews, commits, opens the PR after WHEEL-0 and posts G1 and G2 to the owner"
+next_action: "architect freezes the head with the owner answers and requests review"
 ```

@@ -3,7 +3,8 @@
 - Decision: `WHEEL-GEM0-GEM-ATELIER-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (Character
   state, persistence, economy, protocol and combat) and protected integration. It extends WHEEL-0
-  and integrates after it. Owner questions G1 and G2 (§13) are open.
+  and integrates after it. Owner questions G1 and G2 (§13) are answered (G1 a, G2 b; owner,
+  2026-09-30, #162) and binding.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner direction of 2026-09-30 (build now, full Tibia Global parity) and WHEEL-0's
   deferral of gems, the Gem Atelier, vessels, fragments and mod grades to WHEEL-GEM-0
@@ -16,7 +17,7 @@
   (named RNG purposes); GAME-ABILITY-01 hooks; ITEM-USE-0; owner rule 5905825574 (Global parity)
 - Amends, pending on acceptance of WHEEL-GEM-0, in this PR: the Wheel state candidate §5 (pointer).
   WHEEL-0 §4 and §7, DUR-03 §15 and §39.3, and the gold fee decision §4.4 are amended by the
-  children named in §11, after WHEEL-0 integrates and the owner answers G1 and G2.
+  children named in §11, after WHEEL-0 integrates.
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -26,11 +27,11 @@
 |---|---|---|---|
 | GEM-R | impl, content review | the gem ruleset: families, mod catalogues, values per grade, resonance slots, fees, yields, grade costs; validator; revision migration rule (§4, §5.3) | W-R |
 | GEM-CONTENT-1 | content lane | gem and fragment item facts (stack of 100), the vocation family of each gem item, loot rows for bosses, the jewelry NPC offers check (§3) | none |
-| GEM-1 | hard, persistence and economy review | the Atelier tables, a new receipt kind, `commit_character_atelier` on CHAR-REV-SEQ-1; reveal, dismantle, switch domain, lock, grade up; the causes and their DUR-03 and gold fee amendments (§5-§8) | W-1; GEM-R; GOLD-FEE-2; G1; G2 |
+| GEM-1 | hard, persistence and economy review | the Atelier tables, a new receipt kind, `commit_character_atelier` on CHAR-REV-SEQ-1; the initial gems; reveal, dismantle, switch domain, lock, grade up; the causes and their DUR-03 and gold fee amendments (§5-§8) | W-1; GEM-R; GOLD-FEE-2 |
 | GEM-VESSEL-1 | hard, persistence review | the vessel table in `commit_character_wheel`, the Wheel receipt extension (§9) | W-1; GEM-1 |
 | GEM-WIRE-1 | impl, protocol review | capability `WHEEL_GEM_V1`, `ATELIER_QUERY`, `ATELIER_INTENT`, the vessel field of `WHEEL_INTENT` (§10) | W-2; GEM-1; GEM-VESSEL-1 |
 | GEM-FX-1 | hard, combat review | mod effects through the W-FX-1 contribution and the ability hooks; resonance; revelation mastery; Grade IV points (§9.3) | W-FX-1; GEM-VESSEL-1 |
-| GEM-CRUSH-1 | impl, persistence review | crushing an unrevealed gem with a crusher (§8) | GEM-1; ITEM-USE-0's item-target arm; G2 |
+| GEM-CRUSH-1 | impl, persistence review | crushing an unrevealed gem with a crusher (§8) | GEM-1; ITEM-USE-0's item-target arm |
 | W-3 | client owner | the Atelier and Fragment Workshop tabs of the Wheel window | GEM-WIRE-1 |
 
 Later, each with its own decision: gem drops from fiendish creatures (the Forge fiendish registry,
@@ -226,10 +227,24 @@ revision on the gem or grade row it writes.
   mod from the vocation's list (greater). The outputs are written in the receipt; a replay returns
   them and never draws again. A replay returns the outcome under the revision bound in its
   receipt (`WHEELGEM0-RP`, §5.2); only a new occurrence draws under the current revision.
-- **Fees (D178, owner question G1).** `FeeBurnCause` gains `GemReveal {gem_id, occurrence}`,
-  `GemSwitchDomain {gem_id, occurrence}` and `GemGradeUp {kind, mod, to_grade, occurrence}`, only
-  if G1 admits them. Values are ruleset data; the first revision takes Canary's (§2) as
+- **Fees (D178, owner answer G1 a).** `FeeBurnCause` gains `GemReveal {gem_id, occurrence}`,
+  `GemSwitchDomain {gem_id, occurrence}` and `GemGradeUp {kind, mod, to_grade, occurrence}`, all
+  three admitted as in Tibia. Values are ruleset data; the first revision takes Canary's (§2) as
   `PARITY_PENDING`. Large fees fall to the bank part (BANK-FEE-0); short is `NOT_ENOUGH_GOLD`.
+- **Initial gems (owner answer G2 b, `WHEELGEM0-INIT`).** As in Global (Canary `addInitialGems`,
+  §2; the official detail `PARITY_PENDING`), each character receives 8 revealed gems of its
+  vocation's family: one lesser and one regular gem per domain. One server-originated Atelier write
+  keyed by (CharacterId, `GEM_INIT`), on CHAR-REV-SEQ-1 under the admitted session's fence (the
+  STARTER-BACKPACK-0 variant, no CommandRef), is written at the first admission at which the
+  character is Wheel-eligible (WHEEL-0 §6) with no `GEM_INIT` receipt or, for a session that
+  becomes eligible while online, before its first `ATELIER_QUERY` or Atelier command. A read never
+  writes. It inserts the 8 gem rows (8 planned gem ids) with no item line and no fee; the domain is
+  fixed per gem, not drawn, and the mods are drawn under `gem_initial`, seeded as `WHEELGEM0-RNG`,
+  in domain order, lesser before regular: basic mod 1 from the slot-1 list and, for the regular
+  gem, basic mod 2 compatible with it. One Atelier receipt, one CharacterRevision advance. A replay
+  returns the stored gems; it is written once per character, never again after dismantling or a
+  lapse of eligibility. Until it exists, every Atelier command is refused `NOT_ELIGIBLE` and writes
+  nothing.
 
 ## 7. Dismantle, switch domain, lock (GEM-1)
 
@@ -239,7 +254,8 @@ revision on the gem or grade row it writes.
   stack with room or a fresh entry planned in the transaction (§11.3); else `NO_ROOM`, nothing
   written. The count is drawn under `gem_dismantle`, seeded as `WHEELGEM0-RNG` (§6), from the
   manual's revealed ranges (lesser 1-3,
-  regular 2-5 lesser fragments; greater 1-3 greater fragments). A new value source: G2.
+  regular 2-5 lesser fragments; greater 1-3 greater fragments). A value source admitted by
+  owner answer G2 b.
 - **Switch domain** `{gem_id}`: refused if `LOCKED`, `IN_VESSEL` (architect ruling R2) or
   `RULESET_MIGRATION_PENDING`; fee
   `GemSwitchDomain`; the domain moves one step clockwise.
@@ -258,7 +274,7 @@ revision on the gem or grade row it writes.
 - **Crushing (GEM-CRUSH-1).** A crusher used on an unrevealed gem is an item-only transaction
   (composition rule 1): one gem unit BURN, one crusher charge (STATE_MUTATION, retiring at 0), one
   fragment MINT under `GemAtelierCause::Crush {occurrence}`, drawn under `gem_crush`, seeded as
-  `WHEELGEM0-RNG` (§6), from the manual's unrevealed ranges. It waits for ITEM-USE-0's item target. A new value source: G2. The
+  `WHEELGEM0-RNG` (§6), from the manual's unrevealed ranges. It waits for ITEM-USE-0's item target. A value source admitted by owner answer G2 b. The
   amber crusher is a Store item and is not decided here.
 
 ## 9. Vessels and effects
@@ -316,12 +332,13 @@ at 3 (greater).
 | Dismantle: fragments | MINT | +1 with the row delete | `GemAtelierCause::Dismantle` (G2) |
 | Grade up: fragments | BURN | +1 with the grade row | `GemAtelierCause::GradeUp` |
 | Switch domain, lock | none (Character) | +1 | Atelier receipt |
+| Initial gems | none (Character) | +1 | Atelier receipt `GEM_INIT` (G2) |
 | Vessel change | none (Character) | +1 (Wheel receipt) | Wheel receipt |
 | Crush: gem, crusher charge, fragments | BURN, STATE_MUTATION, MINT | none (rule 1) | `GemAtelierCause::Crush` (G2) |
 | Drops, NPC fragment sale | existing | none | D3 loot; `NpcTrade` |
 
 `GemAtelierCause` is closed. GEM-1 writes the DUR-03 §15 and §39.3 amendment and the gold
-fee §4.4 variants after G1 and G2; GEM-CRUSH-1 adds `Crush`. GEM-VESSEL-1 writes the WHEEL-0 §4 and §7
+fee §4.4 variants admitted by G1 and G2; GEM-CRUSH-1 adds `Crush`. GEM-VESSEL-1 writes the WHEEL-0 §4 and §7
 pointers once WHEEL-0 is on `main`. This PR edits none of them.
 
 ## 12. Rows (registered by the children before implementation)
@@ -336,11 +353,12 @@ pointers once WHEEL-0 is on `main`. This PR edits none of them.
 | `WHEELGEM0-RL-06` reveal and switch touched items | 22 (20 backpack entries + 2 change) |
 | `WHEELGEM0-RL-07` dismantle and crush touched items | 1 and 3 |
 | `WHEELGEM0-RL-08` grade up touched items | 22 |
-| `WHEELGEM0-RL-09` Atelier receipt | 2 gem rows or 2 grade rows, RNG outputs, fixed fields |
+| `WHEELGEM0-RL-09` Atelier receipt | 2 gem rows or 2 grade rows (8 gem rows for `GEM_INIT`), RNG outputs, fixed fields |
 | `WHEELGEM0-RL-10` Atelier changes in flight per character | 1 (CHAR-REV-SEQ-1) |
 | `WHEELGEM0-RL-11` fragments per dismantle | 1-5 (manual ranges) |
+| `WHEELGEM0-RL-12` initial gems per character | 8, once (1 lesser and 1 regular per domain) |
 
-## 13. Owner questions (open; fee and value questions under D178 and D208)
+## 13. Owner questions (answered 2026-09-30; fee and value questions under D178 and D208)
 
 **G1. Gold fees of the Gem Atelier (D178).** Three new fee sources: revealing a gem (125,000,
 1,000,000, 6,000,000 by size), switching its domain (125,000, 250,000, 500,000) and grading a mod
@@ -348,12 +366,16 @@ up (2 to 75 million a grade). These are the reference server's values; the manua
 a) Admit all three as in Tibia, with these values until official ones are sourced (recommended:
 without the reveal fee no gem can be used, and these are the gold sinks the Wheel is balanced on);
 b) admit reveal and grade up only, no domain switch; c) no gold fees: gems reveal for free.
+Owner answer (2026-09-30, #162): a — as in Tibia: the reveal, domain switch and grade upgrade fees
+are all admitted.
 
 **G2. New value sources of fragments and gems (D208).** Dismantling a revealed gem and crushing an
 unrevealed gem create fragments; the reference server also gives every character 8 free revealed
 gems. a) Admit dismantling and crushing as in Tibia, no free gems until an official source is found
 (recommended: the manual names dismantling and crushing, not free gems); b) admit all three;
 c) no new source: fragments only from NPCs and trade.
+Owner answer (2026-09-30, #162): b — as in Tibia: dismantling, crushing and the 8 free initial
+gems are all admitted (§6 `WHEELGEM0-INIT`).
 
 ## 14. Rejected options
 
@@ -373,7 +395,8 @@ c) no new source: fragments only from NPCs and trade.
 
 **Kept:** three sizes with 1-3 mods; vocation-locked reveal; tradeable unrevealed and bound revealed
 gems; domain switch; lock; four vessels with resonance; dismantle refusals and yields; grades I-IV
-shared per mod type with lesser and greater fragments; +1 point per Grade IV mod; Momentum.
+shared per mod type with lesser and greater fragments; +1 point per Grade IV mod; Momentum; the 8
+initial gems.
 
 **Architect rulings:**
 - **R1.** Vessel changes are allowed anywhere while eligible (Canary; the manual names no place).
@@ -382,7 +405,8 @@ shared per mod type with lesser and greater fragments; +1 point per Grade IV mod
   vessel; refusing keeps the vessel check true without a silent unplace.
 
 **Declared differences (`PARITY_PENDING`):** gems and fragments are found in main backpack direct
-entries only; the 250 gem cap; any catalogue mod can be graded; no favourite flag.
+entries only; the 250 gem cap; any catalogue mod can be graded; no favourite flag; the initial
+gems' timing and mod draw (Canary).
 
 ## 16. Decision test
 
@@ -392,7 +416,7 @@ entries only; the 250 gem cap; any catalogue mod can be graded; no favourite fla
   closed item cause, three fee variants, one vessel table in the existing Wheel writer, one
   capability; items, loot, NPC trade, fees and the effect path are reused.
 - **Superseding evidence:** official reveal, switch and grade values; a Global gem cap; the
-  starter gems; where vessels may change.
+  official starter gem detail; where vessels may change.
 - **Deliberately not decided:** fiendish drops, the amber crusher, presets, vocation change.
 
 ## 17. Before-freeze checklist
@@ -407,4 +431,4 @@ entries only; the 250 gem cap; any catalogue mod can be graded; no favourite fla
    closed (`WHEELGEM0-RV`).
 4. **Typed references:** CharacterId, gem id, mod keys, ruleset revision, occurrence, TransactionId.
 5. **Wire:** §10, capability `WHEEL_GEM_V1`, numbers reserved on #162 at allocation.
-6. **Owner:** G1 and G2 answered and recorded on #162 before GEM-1 is allocated.
+6. **Owner:** G1 a) and G2 b) answered and recorded on #162 (2026-09-30).
