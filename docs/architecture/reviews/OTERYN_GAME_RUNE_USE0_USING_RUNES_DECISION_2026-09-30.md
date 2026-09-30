@@ -30,12 +30,14 @@
 | RUNE-1 | hard, persistence review | the `ItemUseCause::Rune` burn and its audit, the rune slot, holds and ambiguity (§5, §7) | ITEM-USE-1; RUNE-WIRE-1 |
 | RUNE-CAST-1 | spell lane, combat review | rune resolution, the frozen cast and its application through the ability pipeline; the 18 direct runes of §9 (§6, §8) | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1 |
 | RUNE-CONJ-1 | hard, persistence, combat and protocol review | the `ConjureCause` BURN and MINT with the receipt-recorded mana and soul debit, the holds, two cast dispositions under `RUNE_USE_V1` (§10) | RUNE-1; the instant cast composition (SPELL-D4) |
-| FIELD-1 | hard (combat), combat review | the runtime field overlay, `create_item`, decay, step-in conditions, blocking walls (§11) | COND-1; RUNE-CAST-1 |
-| FIELD-WIRE-1 | impl, protocol review | capability `WORLD_SPATIAL_FIELDS`, the `FIELD` kind in a new `world_spatial_v1` schema revision (§11.4) | VIS-2; FIELD-1 |
+| FIELD-1 | hard (combat), combat review | the runtime field overlay, `create_item`, decay, step-in conditions on creatures; no field that affects or blocks a player (§11, `RUNEUSE0-C7`) | COND-1; RUNE-CAST-1 |
+| FIELD-WIRE-1 | impl, protocol review | capability `WORLD_SPATIAL_FIELDS`, the `FIELD` kind in a new `world_spatial_v1` schema revision, the runtime field identity and its delta rules (§11.4) | VIS-2; FIELD-1 |
 
 Later, each with its own decision: runes against players (PARTY-PVP-0, which also owns the 10 s
 login rule and the PZ block), the six native-behaviour runes of §9, conjuring ammunition and food
-(a `ConjureCause` MINT without a reagent), nested bags for hotkeys, the Tibiadrome.
+(a `ConjureCause` MINT without a reagent), nested bags for hotkeys, the Tibiadrome, and fields
+that affect or block players (Magic Wall, Wild Growth, creature-made fields; PvP fields with
+PARTY-PVP-0), which first need an FND-04 gameplay-admission rule (`RUNEUSE0-C7`, R5).
 
 ## 1. Question
 
@@ -119,7 +121,8 @@ exactly once and only for a cast that happens?
 
 - **Capability `RUNE_USE_V1`**, which requires `ITEM_USE_V1`; its number is reserved on #162 at
   allocation. Without it a rune is `NOTHING_TO_USE`, and the new arm and dispositions are not
-  sent. It also gates conjuring and the two conjure dispositions (§10).
+  sent. It also gates conjuring and the two conjure dispositions (§10). A field rune also needs
+  `WORLD_SPATIAL_FIELDS` (§11.4, `RUNEUSE0-C7`).
 - **The used rune:** field 2 (a handle to a main backpack direct entry, and to an equipped item
   after ITEM-MOVE-2a) or field 5 (the hotkey form, resolved as ITEM-USE-0 §3). The client never
   opens a container to use a rune.
@@ -295,8 +298,8 @@ checks it like any other.
 |---|---|---|
 | Direct damage and healing (18, ready) | Avalanche, Explosion, Fireball, Great Fireball, Heavy Magic Missile, Holy Missile, Icicle, Light Magic Missile, Lightest Magic Missile, Lightest Missile, Light Stone Shower, Stalagmite, Stone Shower, Sudden Death, Thunderstorm, Intense Healing, Ultimate Healing, Antidote | RUNE-CAST-1 |
 | Condition (1, ready) | Soulfire | RUNE-CAST-1; COND-1 |
-| Fields (9, ready) | Fire, Energy and Poison Field; Fire, Energy and Poison Wall; Firebomb, Energybomb, Poison Bomb | FIELD-1 |
-| Blocking objects (2, blocked) | Magic Wall, Wild Growth | FIELD-1 and the D.6.1 `create_item` extension |
+| Fields (9, ready) | Fire, Energy and Poison Field; Fire, Energy and Poison Wall; Firebomb, Energybomb, Poison Bomb | FIELD-1; FIELD-WIRE-1 (the caster's `WORLD_SPATIAL_FIELDS`, `RUNEUSE0-C7`) |
+| Blocking objects (2, blocked) | Magic Wall, Wild Growth | a later decision with an FND-04 gameplay-admission rule (`RUNEUSE0-C7`, R5); then FIELD-1 and the D.6.1 `create_item` extension |
 | Native behaviours (6, blocked) | Animate Dead, Chameleon, Convince Creature, Desintegrate, Destroy Field, Paralyze | each key's own child (S27) |
 
 - Lightest Missile and Light Stone Shower lost their conjuring spells (S25); their rune items stay
@@ -371,12 +374,13 @@ checks it like any other.
 - Stepping on or standing on a damage field applies its condition through CONDITIONS-0 §3.1 (a
   field always replaces; same-element ticks are not used up), with the field's provenance, so
   kill credit follows the caster.
-- In the first slice a player-made field affects creatures only; its effect on players,
-  including the caster, follows the world type and PARTY-PVP-0. Creature-made fields affect
-  players.
-- Magic Wall blocks movement, projectiles and sight; Wild Growth blocks movement only (D.6.1).
-  Movement, pathing and the line-of-sight query read the overlay. Monsters that destroy walls use
-  SW-2 `remove_items`.
+- A player-made field affects creatures only. Its effect on players, including the caster,
+  follows the world type in a later decision (PARTY-PVP-0). This decision creates no
+  creature-made field (`RUNEUSE0-C7`).
+- Magic Wall (blocks movement, projectiles and sight) and Wild Growth (blocks movement only,
+  D.6.1) are not in this decision (`RUNEUSE0-C7`). Their later decision makes movement, pathing
+  and the line-of-sight query read the overlay; monsters that destroy walls use SW-2
+  `remove_items`.
 
 ### 11.4 Visibility (FIELD-WIRE-1)
 
@@ -395,7 +399,40 @@ at allocation.
 - **Without the capability** fields are omitted: no field entity, no type 3 payload, and the type
   2 stream is exactly as today. The field still acts in the simulation (§11.3); its effect on a
   creature is presented only through the existing condition and damage presentation. Architect
-  ruling R3 (§15).
+  ruling R3 (§15). This is safe only because of `RUNEUSE0-C7`.
+- **No invisible field hazard (`RUNEUSE0-C7`).** FND-02 §9 admits an optional capability only
+  where an older peer can safely continue without it, so no field may touch a player who cannot
+  see it:
+  - A field rune (the Fields group of §9, and Magic Wall and Wild Growth when they land) is used
+    only by a session that negotiated `WORLD_SPATIAL_FIELDS`, so a caster always sees its fields.
+    Without it the rune is `NOTHING_TO_USE` at PREPARE step 1, before any hold, reservation or
+    burn, as a rune without `RUNE_USE_V1` (§4). `RUNE_USE_V1` itself does not require the field
+    capability: RUNE-WIRE-1 would then wait for FIELD-WIRE-1, which waits for FIELD-1,
+    RUNE-CAST-1 and RUNE-1 (a cycle), and the other runes do not need it.
+  - No field affects or blocks a player character in this decision. A player-made field affects
+    creatures only (§11.3), no creature-made field is created, and Magic Wall and Wild Growth,
+    the only blocking objects, stay blocked (§9). No player takes damage from an unseen tile or is
+    blocked by an unseen wall, and player movement, pathing and line of sight do not read the
+    overlay.
+  - Fields that affect or block players wait for a later decision (with PARTY-PVP-0 for PvP
+    fields). That decision first needs an accepted gameplay-admission rule, owned by FND-04, that
+    refuses a session without `WORLD_SPATIAL_FIELDS` on any channel where such a field can exist.
+    This decision does not invent that admission refusal. Architect ruling R5 (§15).
+- **Field identity and deltas.** Each field has a runtime field identity: 16 bytes, non-nil,
+  derived deterministically (name-based) from the creating cast's occurrence id and the tile's
+  index in the authored area, and never reused in the channel's runtime life. A replay derives the
+  same identity, and the overlay creates no field whose identity already exists. The identity
+  fills the entry's `identity`; `generation` is 0, as for corpses and ground items. A channel
+  restart clears the overlay (§11.1), and no field identity survives it. FIELD-WIRE-1 fixes the
+  derivation function and the field kind's entry rules (field 8 the definition, no field 9) in
+  the type 3 schema. Deltas:
+  - creation is an `enter`;
+  - a decay step to the next definition of its chain, on the same tile, keeps the identity and is
+    an `update` with the new definition;
+  - expiry or removal is a `leave`;
+  - a replacement on the same tile (`RUNEUSE0-RL-05`) is a `leave` of the old identity and an
+    `enter` of the new one in the same delta. The identities differ, so an identity still appears
+    at most once per delta.
 
 ## 12. Rows (registered by each child before implementation)
 
@@ -412,7 +449,7 @@ at allocation.
 | `RUNEUSE0-RL-04` `USE_INTENT` payload with the position arm | at most 529 bytes, measured by RUNE-WIRE-1 |
 | `RUNEUSE0-RL-05` fields per tile | 1 |
 | `RUNEUSE0-RL-06` fields per channel | 20,000, alarm at 80%; a creation over it makes no field |
-| `RUNEUSE0-RL-07` fields created by one cast | the largest authored area, at most 25 |
+| `RUNEUSE0-RL-07` fields created by one cast | per rune, the tiles of its authored field area; absolute ceiling **12**, the Energy Wall diagonal area, the largest field-rune area in the Canary `47dfd51f` and Crystal `ff7ede5` census (`spell-census-canary-47dfd51f-crystal-ff7ede5.json`: bombs 9, Fire and Poison Wall 9 diagonal and 5 straight, Energy Wall 12 and 7), checked by RUNE-CONTENT-1 validation; a field rune above it stays blocked. At most 12 field identities per cast |
 | `RUNEUSE0-RL-08` victims hit by one area cast | per rune 2 × its authored area in tiles; absolute ceiling 74 (2 × 37), checked by RUNE-CONTENT-1 validation; alarm at 80% of the rune's cap; over it the first N in the fixed order are hit and the rest are not. Runtime work at the ceiling: at most 74 sub-plans and 148 effects (2 each) per cast, in one owner-lane turn. Owner-decided (R4) |
 
 ## 13. Rejected options
@@ -436,7 +473,8 @@ at allocation.
 **Global parity kept:** single-use runes in stacks of 100; conjuring one blank rune into several;
 level and magic level gates; use-with on a creature, a tile or self, from a hotkey without opening
 a container; shared cooldown groups with instant spells; offensive runes refused in a protection
-zone, and harming no creature standing in one (`RUNEUSE0-C3`); fields that burn, poison, shock, block and decay; healing runes on self and own summons.
+zone, and harming no creature standing in one (`RUNEUSE0-C3`); fields that burn, poison, shock
+and decay on creatures; healing runes on self and own summons.
 
 **Declared differences:**
 - A rune whose target dies or leaves within the commit time is spent (§6.3, R1).
@@ -444,7 +482,10 @@ zone, and harming no creature standing in one (`RUNEUSE0-C3`); fields that burn,
 - Hotkeys search only main backpack direct entries (`PARITY_PENDING`, as ITEM-USE-0).
 - Conjuring with no room, field on a PZ tile, and one field per tile are `PARITY_PENDING`.
 - Fields vanish at a channel restart, not only at server save.
-- A session without `WORLD_SPATIAL_FIELDS` does not see fields (§11.4, R3).
+- A session without `WORLD_SPATIAL_FIELDS` does not see fields and cannot use a field rune
+  (§11.4, R3, R5).
+- Fields that affect or block players (Magic Wall, Wild Growth, creature-made fields) wait for a
+  later decision with an FND-04 gameplay-admission rule (`RUNEUSE0-C7`, R5).
 
 ## 15. Architect ruling (owner rule 5905825574)
 
@@ -483,7 +524,19 @@ and a client rejects an unknown kind. a) Omit fields for that session (recommend
 type 2 stream is unchanged and nothing undecodable is sent); b) present them through a magic
 effect: no such presentation contract exists yet, so it would be a new wire surface in any case;
 c) send them as `GROUND_ITEM`: misrepresents a non-item as value (D38). **Ruled a)**, gated by
-`RUNEUSE0-C4` (§11.4).
+`RUNEUSE0-C4` (§11.4), and safe only with R5.
+
+**R5. Fields a session cannot see.** Omitting fields (R3) would let a session take damage from an
+unseen field or be blocked by an unseen wall. a) Require `WORLD_SPATIAL_FIELDS` to use a field
+rune, and keep every field that affects or blocks a player out of this decision until an FND-04
+gameplay-admission rule refuses a session without the capability on a channel where such a field
+can exist (recommended: fail-closed, no new authority invented here; the nine creature-only field
+runes still ship); b) refuse admission here: FND-04 owns admission and has no such refusal code,
+so this decision would invent one; c) make `RUNE_USE_V1` require `WORLD_SPATIAL_FIELDS`: a
+dependency cycle between RUNE-WIRE-1 and FIELD-WIRE-1, and it does not protect sessions without
+runes; d) let fields ignore a player without the capability: a downgraded client would walk
+through walls. **Ruled a)** (`RUNEUSE0-C7`, §11.4). Magic Wall and Wild Growth were already
+blocked; they now also wait for that rule.
 
 ## 16. Decision test
 
@@ -495,7 +548,8 @@ c) send them as `GROUND_ITEM`: misrepresents a non-item as value (D38). **Ruled 
 - **Superseding evidence:** official Global values for reach, fields per tile and
   conjuring with no room.
 - **Deliberately not decided:** PvP runes, native-behaviour runes, conjuring ammunition and food,
-  nested bags, the Tibiadrome, magic-level training from mana spent.
+  nested bags, the Tibiadrome, magic-level training from mana spent, fields that affect or block
+  players (`RUNEUSE0-C7`).
 
 ## 17. Before-freeze checklist
 
@@ -510,8 +564,9 @@ c) send them as `GROUND_ITEM`: misrepresents a non-item as value (D38). **Ruled 
    `ProductionKey` in audit.
 5. **Wire:** §4, capability `RUNE_USE_V1`; the two conjure dispositions under it, else
    `NOT_AVAILABLE` (§10, `RUNEUSE0-C1`); §11.4 at FIELD-WIRE-1, field entities only under
-   `WORLD_SPATIAL_FIELDS`, else omitted (`RUNEUSE0-C4`). Both capability numbers are reserved at
-   allocation.
+   `WORLD_SPATIAL_FIELDS`, else omitted (`RUNEUSE0-C4`); a field rune needs that capability and
+   no field affects or blocks a player (`RUNEUSE0-C7`); a stable field identity with enter,
+   update and leave rules. Both capability numbers are reserved at allocation.
 6. **Split work:** one unit per use; one reagent unit and one result stack per conjure; at most
-   25 fields per cast; per area cast at most the rune's victim cap (ceiling 74) sub-plans, each its
-   own derived root occurrence (`RUNEUSE0-C6`).
+   the rune's field area (ceiling 12) fields per cast; per area cast at most the rune's victim
+   cap (ceiling 74) sub-plans, each its own derived root occurrence (`RUNEUSE0-C6`).
