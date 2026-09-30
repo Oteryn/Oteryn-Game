@@ -13,7 +13,8 @@
   capability 3); CHAR-NAME (`0022`, one global name namespace); migrations `0001`-`0003` (session
   state, runtime scope assignment); PREMIUM-DELIVERY-0 (PR #1369, `premium_current`); owner rule
   5905825574 (Global parity)
-- Amends: nothing. SPELL-D1 stays as it is (§3).
+- Amends: nothing. SPELL-D1 stays as it is: a muted cast answers its existing
+  `SPELL_CAST_DISPOSITION_REJECTED` ("ineligible actor"), so no new disposition is needed (§6).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -74,8 +75,9 @@ How do players talk to each other: nearby, privately, and to the whole World?
   players in range on the speaker's channel, with the ranges and floor rules of §2 (Canary).
 - Yell is upper-cased, has a 30 s cooldown and is refused at level 1.
 - **Spells are not parsed from chat.** SPELL-D1 stays: the client recognises spell words the player
-  types and sends command 3 instead of a chat line, so the player experience matches Tibia. The
-  spell's own presentation shows the words to spectators when the cast succeeds.
+  types and sends command 3 instead of a chat line, so the player experience matches Tibia.
+  Showing a successful cast's words to spectators is left to a later spell presentation decision;
+  until then spectators see the cast's effect only (`SpellBook::spoken` has no production caller).
 - **NPC greeting.** When the speaker's client has capability 3, a `say` whose text contains, as a
   word, a greeting of an NPC within that NPC's talk range (`CHAT0-RL-08`, 4 tiles until NPC-0 fixes
   its own) also starts that NPC's conversation, as command 7 would. With several NPCs in range, the
@@ -93,28 +95,45 @@ How do players talk to each other: nearby, privately, and to the whole World?
 - **Relay.** One PostgreSQL `LISTEN`/`NOTIFY` channel per World (`oteryn_chat_<world_id>`),
   listened to by every node serving that World. It needs no new process. `NOTIFY` is sent outside
   any durable transaction (autocommit), so chat never serializes game commits.
-- **Security.** Every payload is sealed with AES-256-GCM under a per-World relay key held by the
-  game nodes as an environment secret, with the channel name as associated data. Other database
-  roles that can `LISTEN` see only ciphertext; a line that fails to open is dropped and counted. The
-  payload travels only as ciphertext, so the database log parameter settings cannot expose text;
-  CHAT-2 still requires `log_parameter_max_length = 0` on the chat connection as a precondition.
+- **Security.** Every payload is sealed with AES-256-GCM:
+  - each World has its own relay key, held by the game nodes as an environment secret; no key
+    material is in the repository;
+  - the nonce is 96 random bits per line, because many nodes share one key;
+  - the payload names its `key_id` in clear; the associated data is the channel name and the
+    `key_id`;
+  - rotation: a new key is added, nodes send with the newest and open with any key of the last
+    `CHAT0-RL-12` (24 hours), then the old key is removed;
+  - other database roles that can `LISTEN` see only ciphertext; a line that fails to open is dropped
+    and counted. `log_parameter_max_length = 0` on the chat connection is a CHAT-2 precondition.
+- **Replay.** The sealed plaintext carries a random 128-bit `message_id` and the sender's
+  `sent_at` (database time). Each node drops a line older than `CHAT0-RL-13` (30 s) or whose
+  `message_id` it saw in that window (a bounded de-duplication set per World), so a captured line
+  cannot be sent again.
+- **Trust boundary.** Every node of the World opens every private message, recipient CharacterId
+  included, and delivers only its own sessions' lines: the game nodes of one World are one trust
+  boundary.
 - **Delivery is at most once.** A node whose listener is not connected is not ready for chat: it
   refuses room and private messages (`CHAT_UNAVAILABLE`) until it listens again. Lines sent while a
   listener was down are lost, as in-memory Tibia chat is on a crash; the sender's `OK` means "sent".
   The cluster `NOTIFY` queue use is watched (`CHAT0-RL-09`); above it chat is refused, not games.
 - **Private message** `{recipient_name, text}`: the name resolves by `name_key` (`0022`). The
-  recipient is online when it has a session row of this World in state 1 or 2 and is not in ghost
-  mode; otherwise, or when the name belongs to another World, the answer is `NOT_ONLINE`, so the
+  recipient is online only when it has a session row of this World in state 2 (active); a
+  recipient disconnected in grace (state 1) is `NOT_ONLINE`, so no line is lost silently. Oteryn has
+  no ghost mode. Otherwise, or when the name belongs to another World, the answer is `NOT_ONLINE`, so the
   reply never reveals where a name exists. A private message to oneself is `REJECTED`. The line
   goes to the World channel keyed by the recipient CharacterId; the node holding that session
   delivers it; no row is written. The sender sees "Message sent" parity through `OK`.
 - **World rooms:** World Chat, English Chat, Help and Advertising (a vocation needed, one message per
   2 minutes, `CHAT0-RL-10`). A room line goes to the World channel; each node delivers it to its
   sessions that opened the room.
-- **Payload:** a closed JSON message (kind, room or recipient CharacterId, sender name, text, server
-  time), at most 2,048 bytes sealed (`CHAT0-RL-06`).
-- **Privacy:** text is never written to a table or to ordinary logs (FND-02 §20); retained replay
-  (§7) holds it in memory only.
+- **Payload:** a fixed binary layout, not JSON, so nothing is escaped. Plaintext: kind (1 byte),
+  `message_id` (16), `sent_at` (8), room (1) or recipient CharacterId (16), sender name
+  (length-prefixed, at most 120 bytes), text (length-prefixed, at most 1,020 bytes): at most 1,187
+  bytes. Sealed: `key_id` (1) + nonce (12) + ciphertext + tag (16): at most 1,216 bytes. The `NOTIFY`
+  text is its standard base64: at most 1,624 bytes, under `CHAT0-RL-06` (2,048) and `NOTIFY`'s
+  8,000. A line that would exceed it is `REJECTED` before sending, never truncated or split.
+- **Privacy:** text is never written to a table or to ordinary logs (FND-02 §20); the per-session
+  egress queue (§7) holds lines in memory only, and nothing is replayed from storage.
 
 ## 6. Spam control and gates (CHAT-1; durable row CHAT-2)
 
@@ -127,8 +146,12 @@ How do players talk to each other: nearby, privately, and to the whole World?
   reads the same mute.
 - **Durable mute.** `game_character_chat_mutes` (CharacterId, the last 16 offence times, muted
   until) is written through one SECURITY DEFINER function that checks the session fence (the
-  composition decision rule 2 checks, no revision advance). It survives relog and channel changes.
-  If the write fails, the in-memory mute still applies and the write is retried.
+  composition decision rule 2 checks, no revision advance). It is read at admission, reconnect and
+  channel transfer, so it survives relog and channel changes. While a mute's write has not
+  committed, the character is refused all chat and casts (fail closed) and the write is retried; the
+  session's teardown writes it before the session closes.
+- A muted cast answers SPELL-D1's existing `SPELL_CAST_DISPOSITION_REJECTED`; chat answers
+  `MUTED {seconds}`.
 - **Gates:** yell and the World, English and Advertising rooms need level 20 until Premium is
   delivered, then level 20 or `premium_current`; private messages need level 3.
 
@@ -166,6 +189,8 @@ How do players talk to each other: nearby, privately, and to the whole World?
 | `CHAT0-RL-09` cluster `NOTIFY` queue use | refuse chat above 50% |
 | `CHAT0-RL-10` Advertising interval | 2 minutes |
 | `CHAT0-RL-11` undelivered lines per session | 64 |
+| `CHAT0-RL-12` relay key overlap | 24 hours |
+| `CHAT0-RL-13` relay line freshness and de-duplication window | 30 s |
 
 ## 9. Rejected options
 
