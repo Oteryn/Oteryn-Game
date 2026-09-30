@@ -200,8 +200,10 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
   (`SPELLPRES0-RL-06`), whether or not they hold `CHAT_V1`.
 - **Refusal smoke.** A refused cast sends the caster its result (§8) and emits `POFF` at the
   caster's tile to every spectator who sees it (§7), following Canary's check order. No smoke:
-  an aggressive spell in a protection zone, a rune's cooldown, and `REJECTED` (stale index, server
-  fault, ineligible actor). A muted cast (CHAT-0 §6) is `REJECTED` with `detail` `MUTED` and no
+  an aggressive spell in a protection zone, a rune's cooldown, and `REJECTED` for a stale index,
+  server fault or ineligible actor. A missing required weapon or shield (`WeaponRequired`,
+  `ShieldRequired`, both mapped to `REJECTED` by the core) is an ordinary cast check and does
+  emit `POFF`; the `detail` (§8), not the disposition, tells the two classes apart. A muted cast (CHAT-0 §6) is `REJECTED` with `detail` `MUTED` and no
   smoke, like Canary's refusals that come before the spell checks (`spells.cpp:503-506`).
 - `SpellBook::spoken` stays without a production caller: spells are still cast by index
   (SPELL-D1, CHAT-0 §3).
@@ -223,7 +225,7 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
 
 - `WorldActorSpellCastResultV1` gains `detail` (field 2), a closed enum sent only to sessions
   holding `PRESENTATION_V1`: `NOT_LEARNED`, `VOCATION`, `PREMIUM`, `NEEDS_WEAPON`,
-  `PROTECTION_ZONE`, `GO_UPSTAIRS`, `GO_DOWNSTAIRS`, `OUT_OF_RANGE`, `NOT_REACHABLE`,
+  `NEEDS_SHIELD`, `PROTECTION_ZONE`, `GO_UPSTAIRS`, `GO_DOWNSTAIRS`, `OUT_OF_RANGE`, `NOT_REACHABLE`,
   `ONLY_CREATURES`, `NOT_ENOUGH_ROOM`, `MUTED`. Both fields are one-byte varints, so the result
   stays within 4 bytes; a peer without the capability never sees field 2.
 - The disposition stays the outcome; `detail` only picks the text. The client holds the texts:
@@ -270,12 +272,17 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
   `LivenessProbe`/`LivenessAck` pairs (probe send to ack receipt, both on the server's monotonic
   clock; no client timestamp is used, FND-02 §17) and carries its current smoothed estimate
   `rtt_ms` in each snapshot and delta beside `server_now_ms`. No new message or probe is added;
-  before the first ack of the connection generation `rtt_ms` is 0.
+  before the first ack of the connection generation `rtt_ms` is 0 and
+  the message is marked `rtt_estimated = false`. When that first ack arrives, the server sends one
+  corrective delta that repeats every running entry (same `expires_at_ms`) with the measured
+  `rtt_ms` and `rtt_estimated = true`, so a snapshot sent before the first ack is corrected within
+  one round trip and a restored cooldown never lingers for the whole delivery delay.
 - **Client countdown.** On each snapshot or delta the client takes the RTT-adjusted sample
   `offset = server_now_ms - (local_receipt_ms - rtt_ms / 2)` from its own monotonic clock,
   crediting half the round trip as delivery delay. A snapshot (a new runtime clock) resets the
   estimate to its own RTT-adjusted sample, so the initial sample already accounts for delivery
-  delay; a later sample keeps the larger offset, the one with the least delivery delay (minimum
+  delay (a sample marked `rtt_estimated = false` is provisional and is replaced, not filtered, by
+  the first `rtt_estimated = true` sample); a later sample keeps the larger offset, the one with the least delivery delay (minimum
   delay filter). It shows `remaining = max(0, expires_at_ms - (local_now_ms + offset))` and drops
   an entry at 0. The residual error is the path asymmetry plus egress queueing after encoding,
   reduced by the filter, and the bar still never decides legality.

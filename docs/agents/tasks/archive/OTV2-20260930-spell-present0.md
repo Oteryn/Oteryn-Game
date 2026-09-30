@@ -89,6 +89,10 @@ determinism review.
   carries a per-sync-unit decision ordinal and §9 ties break by it (refusal `POFF` included);
   §10 client offset RTT-adjusted from the FND-02 §17 liveness probes (`rtt_ms`), snapshot
   included, minimum-delay filter kept; validators PASS.
+- Codex round 3 (#1406, 0 P1, 3 P2): §6 missing weapon or shield emits `POFF` (only protection
+  zone, rune cooldown and stale/fault/ineligible `REJECTED` stay smokeless); §8 adds `NEEDS_SHIELD`;
+  §10 pre-ack `rtt_ms` 0 is flagged `rtt_estimated = false` and corrected by one delta at the first
+  liveness ack. Validators PASS.
 - Owner answer applied (2026-09-30, #162): P1a, the 15.30 sound files are included (§12, the
   PRESENT-CONTENT-1 and PRESENT-CLIENT-1 brief rows, §3 sound id check). Validators re-run PASS.
 
