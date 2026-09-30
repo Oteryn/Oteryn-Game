@@ -525,6 +525,43 @@ class TibiamapsFilesTest(unittest.TestCase):
             edron.decode_tibiamaps(blobs)
 
 
+class FloorChangeKindsTest(unittest.TestCase):
+    def write(self, root, directory, stem, records):
+        path = Path(root) / directory
+        path.mkdir(parents=True)
+        (path / f"{stem}00000-00000.json").write_text(json.dumps({"records": records}))
+
+    def test_kinds_come_from_the_catalogue_facts_items_and_rope_spots(self):
+        def record(key, state, value=None):
+            fact = {"state": state, **({"value": value} if value else {})}
+            return {"identity": {"key": key}, "floor_change": fact}
+
+        with tempfile.TemporaryDirectory() as root:
+            self.write(
+                root,
+                "content/world/terrain",
+                "terrain-",
+                [
+                    record("oteryn:terrain.tibia.i10", "KNOWN", "down"),
+                    record("oteryn:terrain.tibia.i11", "UNKNOWN"),
+                ],
+            )
+            self.write(
+                root,
+                "content/world/objects",
+                "objects-",
+                [
+                    record("oteryn:world-object.tibia.i20", "KNOWN", "southalt"),
+                ],
+            )
+            kinds = edron.floor_change_kinds(Path(root))
+        self.assertEqual(kinds[10], "down")
+        self.assertEqual(kinds[20], "up_south_alt")
+        self.assertNotIn(11, kinds)
+        self.assertEqual(kinds[386], "rope")
+        self.assertEqual(kinds[53431], "up_north")
+
+
 if __name__ == "__main__":
     unittest.main()
     sys.exit(0)

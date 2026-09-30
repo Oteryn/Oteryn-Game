@@ -20,9 +20,7 @@ owned_paths:
   - tools/content-schema/world-authoring/
   - content/world/placements/
   - content/world/worlds/
-  - content/world/objects/
   - content/world/areas/islands/
-  - content/world/terrain/
   - imports/tibiawiki/islands/
   - tools/content-schema/validate_materialized_game_tree.py
   - .gitattributes
@@ -55,12 +53,15 @@ sha256-pinned and `OtsHypothesisOnly`.
   order: `{key, source_item_id, provisional}`.
   - A bound id (`imports/crystalserver/bindings/items.json`, `ots/item_server_id`) takes its
     binding target key, registry or named, with `provisional: false`.
-  - An appearance-only id (declared by the official client, not by `items.xml`) takes the
-    `oteryn:terrain.a<id>` key of its `Terrain` record with `provisional: false` (5,949 ids).
-  - Any other id takes `donor:crystalserver@00ce02a5:item/<id>` with `provisional: true`
-    (45 `items.xml` ids, 40 bound to an undefined Item key, and id 99).
-  - **Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
-    appearance-only ids -> Terrain (world).**
+  - A12 section 4.6 alignment (WO-2 #1319 @907ed0f0, owner order: #1319 merges first, then this PR
+    regenerates): order Terrain catalogue key `oteryn:terrain.tibia.i<id>` (7,576 palette
+    entries), else WorldObject catalogue key `oteryn:world-object.tibia.i<id>` (7,699), else
+    the Item binding target with an Item record (4,714), else the provisional donor key.
+  - Any other id takes `donor:crystalserver@00ce02a5:item/<id>` with `provisional: true`:
+    5,995 entries (5,949 appearance-only ids with a client appearance, id 99, 45 `items.xml`
+    ids of which 40 are bound to an undefined Item key).
+  - This PR writes neither `content/world/terrain/` nor `content/world/objects/`: they are
+    the WO-2 catalogues; the earlier own `Terrain` and `WorldObject.FloorChange` families are removed.
   - Item identity work later rewrites palette entries only. Region files do not change.
 - **Format:** measured before selection (about 22 MB versus 3.25 GB as JSON sectors). Spec
   in the `world_region_codec.py` docstring.
@@ -89,12 +90,11 @@ sha256-pinned and `OtsHypothesisOnly`.
       exactly one shard); the repository test scan budget grows by exactly that entry.
       `validate_world_record.py` checks every placement extent, City, House, teleport and
       hunting place position against the bounds and floors.
-- [x] `WorldObject.FloorChange` holds one record per items.xml item type with a
-      `floorchange` attribute (447 types: 194 `down`, 73 `up_north`, 52 `up_south`,
-      50 `up_east`, 69 `up_west`, 5 `up_south_alt`, 4 `up_east_alt`), keyed from the palette
-      item key, with the engine mapping documented and `occurrences_on_base_map` counted
-      from the region files (329 types, 26,935 occurrences). Ladders up, rope spots, sewer
-      grates and tool holes are scripted uses and are listed as excluded, not invented.
+- [x] Floor changes have no family here: the WO-2 catalogues carry the `floorchange` value as the
+      `floor_change` fact (444 of 447 item types: 158 Terrain, 286 WorldObject; 166, 167 and 53431
+      stay Items and are listed in `edron_rework.py`). The base capture summary keeps the counts
+      (`floor_changes`: 331 types on the map, 28,160 occurrences). Ladders up, rope spots, sewer
+      grates and tool holes are scripted uses and are not invented.
 - [x] `Area.Island` holds only islands the base map confirms (owner rule): 60 records
       (56 island, 3 archipelago, 1 continent; 3 event-only; 1 underground) computed by
       `convert_islands.py --check` from the committed region files, the pinned TibiaWiki
@@ -116,7 +116,7 @@ sha256-pinned and `OtsHypothesisOnly`.
       4-connected component except the Edron underground (box x33274-33456, y31786-31884,
       floors 8-12; reworked by the next item), floors 0-7 only where the official 15.30
       minimap shows land. 16,928 tiles, 19,667 items (floors 2-6 151, floor 8 1,913, 9 5,678,
-      10 584, 11 611, 12 169, 13 3,608, 14 3,619, 15 595), 6 palette and 6 `Terrain` entries.
+      10 584, 11 611, 12 169, 13 3,608, 14 3,619, 15 595), 6 provisional palette entries.
 - [x] Blue Valley floor 7 (owner decision 1a): the `replace` rule of the same pin swaps a
       base tile for the fragment tile only where the base ground is water, the fragment
       ground is land and the 15.30 minimap ZZ07 shows land: 905 tiles (896 inside the Blue
@@ -140,16 +140,12 @@ sha256-pinned and `OtsHypothesisOnly`.
       `--tibiamaps-root`; `edron_rework.py`). Floor 10: 3,982 filled, 699 replaced; floors 9
       and 10 repaired; 15 markers, 10 `unresolved_entrances`, none invented. Totals 5,519
       tiles added, 706 replaced. `test_edron_rework.py` and the validator pass.
-- [x] `Terrain` holds one record (`oteryn:terrain.a<id>`) per appearance-only palette id
-      that the official 15.30 client `appearances-2dfa943b….dat` declares (owner-confirmed
-      redistribution), from `convert_terrain.py --check` and `client_appearance_reader.py`.
-      Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
-      appearance-only ids -> Terrain (world). Fields come only from the appearance (`class`,
-      `flags`, `speed`, `name`, `automap_color`, occurrences). Client ids equal server ids.
-      The palette switched those keys from `donor:` to Terrain keys (region files
-      byte-identical; provisional remain: `items.xml` ids for B1b and id 99).
-      G4 fix: undefined Item key stays provisional (floor changes 0->1).
-      `validate_terrain.py`, `validate_world_base.py` and `test_terrain.py` pass.
+- [x] Appearance-only ids (declared by the official 15.30 client `appearances-2dfa943b....dat`, not by
+      `items.xml`) stay provisional, since no A12 family covers them. `samples/appearance-only-ids-v1.json`
+      lists 5,949 of them with class and occurrences as evidence for the WO lane
+      (`convert_appearance_only_ids.py --check`). The palette regenerated on the accepted
+      keys with region files byte-identical; `validate_world_base.py` requires every
+      non-provisional key to exist in its family.
 - [x] Required checks pass on the frozen PR head; merge commit: squash merge of #1170.
 
 ## Excluded scope
@@ -170,10 +166,10 @@ sha256-pinned and `OtsHypothesisOnly`.
 - `convert_world_base.py --check` against the pinned checkout is byte-identical.
 - `convert_world_record.py --check`, `validate_world_record.py` and `test_world_record.py`
   pass.
-- `convert_floor_changes.py --check` (pinned checkout), `validate_floor_changes.py` and
-  `test_floor_changes.py` pass.
 - `convert_islands.py --check`, `validate_islands.py` and `test_islands.py` pass.
-- `convert_terrain.py --check`, `validate_terrain.py` and `test_terrain.py` pass.
+- `convert_appearance_only_ids.py --check` (pinned checkout) passes.
+- `tools/content-census/item_key_references.py` fails on `main` itself (991 dangling keys in
+  `imports/tibiawiki/facts/items-stats.json`); this branch adds none.
 - `validate_world_base.py` passes; `test_world_base.py` and `test_world_authoring.py` pass.
 - `ruff check` and `ruff format --check` pass from the repository root.
 - `validate_materialized_game_tree.py`, `validate_governance.py` and

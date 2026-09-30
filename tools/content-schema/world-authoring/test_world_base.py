@@ -261,6 +261,9 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.assertEqual(summary["item_attributes"], {"door": 1, "teleport": 2})
         self.assertEqual(summary["rejected_items"], {"unsupported_attributes": 0})
         self.assertEqual(
+            summary["floor_changes"], {"by_kind": {}, "item_types": 0, "occurrences": 0}
+        )
+        self.assertEqual(
             summary["palette"],
             {
                 "entries": 3,
@@ -270,7 +273,11 @@ class ConvertAndValidateTest(unittest.TestCase):
                     "in_items_xml": {"entries": 0, "occurrences": 0},
                     "occurrences": 2,
                 },
-                "terrain": {"entries": 0, "occurrences": 0},
+                "families": {
+                    "item": {"entries": 2, "occurrences": 2},
+                    "terrain": {"entries": 0, "occurrences": 0},
+                    "world_object": {"entries": 0, "occurrences": 0},
+                },
             },
         )
         z, rx, ry, sectors = codec.decode_region(self.region.read_bytes())
@@ -646,7 +653,10 @@ class ConvertAndValidateTest(unittest.TestCase):
         )
         key = convert.fill_key(row)
         rows = [convert.FILL[0], row]
-        land = lambda x, y, z: (x, y, z) == (1022, 1022, 7)
+
+        def land(x, y, z):
+            return (x, y, z) == (1022, 1022, 7)
+
         with (
             mock.patch.object(convert, "FILL", rows),
             mock.patch.object(validate, "FILL", rows),
@@ -727,7 +737,9 @@ class ConvertAndValidateTest(unittest.TestCase):
 
     def test_validator_rejects_an_item_key_without_a_definition(self):
         write_definitions(self.root, ITEMS_BY_SERVER_ID, skip={REGISTRY})
-        self.assertTrue(any("not an Item binding target" in e for e in self.errors()))
+        self.assertTrue(
+            any("nor an Item key with a record" in e for e in self.errors())
+        )
         out = convert.build(self.blobs, ITEMS_BY_SERVER_ID, defined={GOLD, "oteryn:x"})
         for path, data in out.items():
             (self.root / path).write_bytes(data)
@@ -876,8 +888,8 @@ class ConvertAndValidateTest(unittest.TestCase):
         for edit, expected in (
             (unused, "no item uses"),
             (out_of_range, "palette indexes outside"),
-            (provisional_but_bound, "has a binding"),
-            (wrong_binding, "not an Item binding target"),
+            (provisional_but_bound, "has a family key"),
+            (wrong_binding, "nor an Item key with a record"),
             (wrong_revision, "provisional key must be"),
             (retired_but_used, "retired palette entries an item still uses"),
             (retired_not_true, "malformed entry"),
@@ -891,82 +903,123 @@ class ConvertAndValidateTest(unittest.TestCase):
                 self.write_index(json.loads(self.out[validate.INDEX]))
         self.assertEqual(self.errors(), [])
 
-    TERRAIN_KEY = "oteryn:terrain.a001949"
+    def test_appearance_class_follows_one_ordered_flag_rule(self):
+        import convert_appearance_only_ids as appearance_only
 
-    def write_terrain(self, root, keys):
-        """A minimal committed Terrain family: one record and binding per appearance id."""
-        records = [
+        rule = appearance_only.appearance_class
+        self.assertEqual(rule(frozenset({"bank", "clip", "unpass"})), "ground")
+        self.assertEqual(rule(frozenset({"clip", "unpass"})), "border")
+        self.assertEqual(rule(frozenset({"unpass", "unmove"})), "blocking")
+        self.assertEqual(rule(frozenset({"unmove"})), "decoration")
+        self.assertEqual(rule(frozenset()), "decoration")
+
+    def test_floor_change_summary_counts_kinds_present_on_the_map(self):
+        kinds = {100: "down", 101: "down", 102: "up_north", 103: "rope"}
+        counts = convert.Counter({100: 3, 102: 2, 999: 5})
+        self.assertEqual(
+            convert.floor_change_summary(kinds, counts),
             {
-                "declaration": {"identity": {"key": key}},
-                "source_bindings": [
-                    {
-                        "identity_namespace": convert.TERRAIN_NAMESPACE,
-                        "external_id": str(appearance_id),
-                        "target": {"key": key},
-                    }
-                ],
-            }
-            for appearance_id, key in sorted(keys.items())
-        ]
-        directory = root / convert.TERRAIN_DIRECTORY
-        directory.mkdir(parents=True, exist_ok=True)
-        shard = f"{convert.TERRAIN_DIRECTORY}/terrain-00000-00000.json"
-        (root / shard).write_text(json.dumps({"records": records}))
-        (directory / "index.json").write_text(json.dumps({"shards": [shard]}))
+                "by_kind": {
+                    "down": {"item_types": 1, "occurrences": 3},
+                    "up_north": {"item_types": 1, "occurrences": 2},
+                },
+                "item_types": 2,
+                "occurrences": 5,
+            },
+        )
 
-    def test_appearance_only_ids_take_their_terrain_key(self):
+    TERRAIN_KEY = "oteryn:terrain.tibia.i1949"
+    OBJECT_KEY = "oteryn:world-object.tibia.i1949"
+
+    def write_catalogue(self, root, family, keys):
+        """A minimal committed A12 section 4.6 catalogue: one record per Tibia id."""
+        directory, stem, _prefix = convert.CATALOGUES[family]
+        records = [{"identity": {"key": key}} for _id, key in sorted(keys.items())]
+        (root / directory).mkdir(parents=True, exist_ok=True)
+        (root / f"{directory}/{stem}00000-00000.json").write_text(
+            json.dumps({"records": records})
+        )
+
+    def test_palette_resolution_order_is_terrain_object_item_provisional(self):
+        terrain, objects = {1949: self.TERRAIN_KEY}, {1949: self.OBJECT_KEY}
+        both = self.palette_of(
+            convert.build(
+                self.blobs, ITEMS_BY_SERVER_ID, terrain=terrain, world_object=objects
+            )
+        )
+        self.assertEqual(both[2]["key"], self.TERRAIN_KEY)
+        only_object = self.palette_of(
+            convert.build(self.blobs, ITEMS_BY_SERVER_ID, world_object=objects)
+        )
+        self.assertEqual(only_object[2]["key"], self.OBJECT_KEY)
+        # an Item-bound id that a catalogue also routes takes the catalogue key
+        routed = self.palette_of(
+            convert.build(
+                self.blobs,
+                ITEMS_BY_SERVER_ID,
+                terrain={100: "oteryn:terrain.tibia.i100"},
+            )
+        )
+        self.assertEqual(routed[0]["key"], "oteryn:terrain.tibia.i100")
+        self.assertFalse(routed[0]["provisional"])
+        # an id no family covers stays provisional
+        self.assertTrue(self.palette_of(self.out)[2]["provisional"])
+
+    def test_catalogue_ids_take_their_family_key(self):
         terrain = {1949: self.TERRAIN_KEY}
         out = convert.build(self.blobs, ITEMS_BY_SERVER_ID, terrain=terrain)
-        palette = self.palette_of(out)
         self.assertEqual(
-            palette[2],
+            self.palette_of(out)[2],
             {"key": self.TERRAIN_KEY, "provisional": False, "source_item_id": 1949},
         )
         summary = self.summary(out)["palette"]
-        self.assertEqual(summary["terrain"], {"entries": 1, "occurrences": 2})
+        self.assertEqual(
+            summary["families"]["terrain"], {"entries": 1, "occurrences": 2}
+        )
         self.assertEqual(summary["provisional"]["entries"], 0)
         # Only `index.json` and the summary change: region files keep their bytes.
         region = f"{validate.DIRECTORY}/region-z07-x003-y003.b3"
         self.assertEqual(out[region], self.out[region])
         root = self.install(out)
-        self.write_terrain(root, terrain)
+        self.write_catalogue(root, "terrain", terrain)
         self.assertEqual(validate.validate(root), [])
         self.assertEqual(convert.terrain_keys(root), terrain)
+        self.assertEqual(convert.world_object_keys(root), {})
 
-    def test_terrain_key_must_belong_to_a_terrain_record_of_that_id(self):
+    def test_palette_key_must_belong_to_a_catalogue_record_of_that_id(self):
         out = convert.build(
             self.blobs, ITEMS_BY_SERVER_ID, terrain={1949: self.TERRAIN_KEY}
         )
         root = self.install(out)
-        # no Terrain family: the key is neither an Item binding nor a Terrain key
-        errors = validate.validate(root)
-        self.assertTrue(any("not an Item binding target" in e for e in errors), errors)
-        # a record of another id, or a key that does not spell its id
-        self.write_terrain(root, {1949: "oteryn:terrain.a000001"})
-        errors = validate.validate(root)
-        self.assertTrue(any("differs from its id" in e for e in errors), errors)
-        self.write_terrain(root, {1950: "oteryn:terrain.a001950"})
-        errors = validate.validate(root)
-        self.assertTrue(any("not an Item binding target" in e for e in errors), errors)
-
-    def test_an_id_cannot_be_an_item_and_a_terrain_id(self):
-        with self.assertRaises(convert.ConvertError):
-            convert.build(
-                self.blobs, ITEMS_BY_SERVER_ID, terrain={100: "oteryn:terrain.a000100"}
-            )
-        out = convert.build(self.blobs, ITEMS_BY_SERVER_ID)
-        root = self.install(out)
-        self.write_terrain(root, {100: "oteryn:terrain.a000100"})
+        # no catalogue: the key is neither a catalogue key nor an Item binding
         errors = validate.validate(root)
         self.assertTrue(
-            any("both an Item and a Terrain id" in e for e in errors), errors
+            any("nor an Item key with a record" in e for e in errors), errors
         )
-
-    def test_provisional_id_with_a_terrain_record_is_rejected(self):
-        root = self.install(self.out)
-        self.write_terrain(root, {1949: self.TERRAIN_KEY})
+        # the catalogue routes the id to a different family
+        self.write_catalogue(root, "world_object", {1949: self.OBJECT_KEY})
         errors = validate.validate(root)
-        self.assertTrue(any("has a binding" in e for e in errors), errors)
+        self.assertTrue(any("must use" in e for e in errors), errors)
+        self.write_catalogue(root, "terrain", {1949: self.TERRAIN_KEY})
+        self.assertEqual(validate.validate(root), [])
+
+    def test_a_routed_item_bound_id_must_use_the_catalogue_key(self):
+        root = self.install(self.out)
+        self.write_catalogue(root, "terrain", {100: "oteryn:terrain.tibia.i100"})
+        errors = validate.validate(root)
+        self.assertTrue(any("id 100 must use" in e for e in errors), errors)
+
+    def test_provisional_id_with_a_catalogue_record_is_rejected(self):
+        root = self.install(self.out)
+        self.write_catalogue(root, "terrain", {1949: self.TERRAIN_KEY})
+        errors = validate.validate(root)
+        self.assertTrue(any("has a family key" in e for e in errors), errors)
+
+    def test_a_catalogue_key_must_spell_its_family_and_id(self):
+        root = self.install(self.out)
+        self.write_catalogue(root, "terrain", {1949: "oteryn:terrain.a001949"})
+        with self.assertRaises(convert.ConvertError):
+            convert.terrain_keys(root)
 
     def install(self, out):
         """Write a build into a fresh temp root and return it."""
@@ -1053,11 +1106,13 @@ class ConvertAndValidateTest(unittest.TestCase):
 
     def test_bindings_change_makes_a_registry_entry_stale(self):
         self.write_bindings(bindings_for([(100, GOLD), (1234, GOLD.upper())]))
-        self.assertTrue(any("not an Item binding target" in e for e in self.errors()))
+        self.assertTrue(
+            any("nor an Item key with a record" in e for e in self.errors())
+        )
         self.write_bindings(
             bindings_for([(100, GOLD), (1234, REGISTRY), (1949, "a:b")])
         )
-        self.assertTrue(any("has a binding" in e for e in self.errors()))
+        self.assertTrue(any("has a family key" in e for e in self.errors()))
 
     def test_summary_palette_counts_are_checked(self):
         path = self.root / validate.SUMMARY

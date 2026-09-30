@@ -7,8 +7,10 @@ item, an index into the ``palette`` of index.json. The palette holds one entry p
 map server item id and is append-only: a fresh build orders entries by ascending id, and a
 build over a committed palette keeps every entry at its index, appends new ids at the end
 in ascending id order and flags an entry the map no longer uses ``"retired": true``. An id
-bound in the item bindings resolves to its binding target key, an appearance-only id that the
-committed Terrain family covers to its `oteryn:terrain.a<id>` key. Any other id gets a
+routed by A12 section 4.6 (WO-0 D93/D94) resolves to the committed Terrain catalogue key
+(`oteryn:terrain.tibia.i<id>`), else to the committed WorldObject catalogue key
+(`oteryn:world-object.tibia.i<id>`), else, when bound in the item bindings to an Item key that
+has an Item record, to that Item key. Any other id, including every appearance-only id, gets a
 provisional donor key. The conversion fails closed on an item or tile attribute it does
 not carry.
 
@@ -61,9 +63,17 @@ GENERATOR = "tools/content-schema/world-authoring/convert_world_base.py"
 PINNED_TOTALS = {"items": 24925845, "tiles": 19325129}
 ITEM_NAMESPACE = "ots/item_server_id"
 DONOR_PREFIX = f"donor:crystalserver@{metadata.SOURCE['revision'][:8]}:item/"
-TERRAIN_DIRECTORY = "content/world/terrain"
-TERRAIN_NAMESPACE = "tibia-client/appearance-id"
-TERRAIN_KEY_PREFIX = "oteryn:terrain.a"
+# A12 section 4.6 catalogues (WO-2): key = family prefix + Tibia id, no number is allocated.
+CATALOGUES = {
+    "terrain": ("content/world/terrain", "terrain-", "oteryn:terrain.tibia.i"),
+    "world_object": (
+        "content/world/objects",
+        "objects-",
+        "oteryn:world-object.tibia.i",
+    ),
+}
+TERRAIN_KEY_PREFIX = CATALOGUES["terrain"][2]
+WORLD_OBJECT_KEY_PREFIX = CATALOGUES["world_object"][2]
 
 MAPS_ARCHIVE = "data-global/world/maps.7z"
 # Fragment maps inside `maps.7z` that fill tiles the base map lacks. Absolute Tibia
@@ -182,28 +192,56 @@ def bound_keys(bindings: bytes, defined: set[str] | None = None) -> dict[int, st
     return keys
 
 
+def catalogue_records(family: str, root: Path = ROOT):
+    """Every record of a committed A12 section 4.6 catalogue: ``(Tibia id, record)``."""
+    directory, stem, prefix = CATALOGUES[family]
+    for path in sorted((root / directory).glob(f"{stem}*.json")):
+        for record in json.loads(path.read_text(encoding="utf-8"))["records"]:
+            key = record["identity"]["key"]
+            if not key.startswith(prefix) or not key[len(prefix) :].isdigit():
+                raise ConvertError(
+                    f"{path.name}: {key!r} is not a {family} catalogue key"
+                )
+            yield int(key[len(prefix) :]), record
+
+
+def catalogue_keys(family: str, root: Path = ROOT) -> dict[int, str]:
+    """``{Tibia id: key}`` of a committed catalogue (``terrain`` or ``world_object``)."""
+    return {i: r["identity"]["key"] for i, r in catalogue_records(family, root)}
+
+
 def terrain_keys(root: Path = ROOT) -> dict[int, str]:
-    """``{appearance id: Terrain key}`` of the committed Terrain family (empty until populated)."""
-    path = root / TERRAIN_DIRECTORY / "index.json"
-    index = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
-    keys: dict[int, str] = {}
-    for shard in index.get("shards", []):
-        for record in json.loads((root / shard).read_text(encoding="utf-8"))["records"]:
-            for row in record["source_bindings"]:
-                if row["identity_namespace"] == TERRAIN_NAMESPACE:
-                    keys[int(row["external_id"])] = row["target"]["key"]
-    return keys
+    return catalogue_keys("terrain", root)
+
+
+def world_object_keys(root: Path = ROOT) -> dict[int, str]:
+    return catalogue_keys("world_object", root)
+
+
+def key_family(key: str, provisional: bool) -> str:
+    """``terrain``, ``world_object``, ``item`` or ``provisional`` for a palette key."""
+    if provisional:
+        return "provisional"
+    if key.startswith(TERRAIN_KEY_PREFIX):
+        return "terrain"
+    if key.startswith(WORLD_OBJECT_KEY_PREFIX):
+        return "world_object"
+    return "item"
 
 
 def palette_entry(
-    server_id: int, bound: dict[int, str], terrain: dict[int, str] | None = None
+    server_id: int,
+    bound: dict[int, str],
+    terrain: dict[int, str] | None = None,
+    world_object: dict[int, str] | None = None,
 ) -> dict:
-    """Item binding key, else Terrain key (appearance-only ids), else the provisional donor key."""
-    item_key = bound.get(server_id)
-    terrain_key = (terrain or {}).get(server_id)
-    if item_key and terrain_key:
-        raise ConvertError(f"server id {server_id} is both an Item and a Terrain id")
-    key = item_key or terrain_key
+    """Terrain catalogue key, else WorldObject catalogue key, else Item key (with an Item
+    record), else the provisional donor key (A12 section 4.6)."""
+    key = (
+        (terrain or {}).get(server_id)
+        or (world_object or {}).get(server_id)
+        or bound.get(server_id)
+    )
     return {
         "key": key or donor_key(server_id),
         "provisional": key is None,
@@ -216,6 +254,7 @@ def build_palette(
     occurrences: Counter,
     previous: list[dict] | None = None,
     terrain: dict[int, str] | None = None,
+    world_object: dict[int, str] | None = None,
 ) -> list[dict]:
     """The append-only palette.
 
@@ -231,12 +270,12 @@ def build_palette(
         if server_id in seen:
             raise ConvertError(f"committed palette lists server id {server_id} twice")
         seen.add(server_id)
-        entry = palette_entry(server_id, bound, terrain)
+        entry = palette_entry(server_id, bound, terrain, world_object)
         if server_id not in occurrences:
             entry["retired"] = True
         palette.append(entry)
     palette.extend(
-        palette_entry(server_id, bound, terrain)
+        palette_entry(server_id, bound, terrain, world_object)
         for server_id in sorted(occurrences)
         if server_id not in seen
     )
@@ -692,6 +731,23 @@ def fill_summary(row: dict, raw: bytes, stats: dict) -> dict:
     return summary
 
 
+def floor_change_summary(kinds: dict[int, str] | None, occurrences: Counter) -> dict:
+    """Floor-change item types on the map by kind (`kinds` from `edron.floor_change_kinds`:
+    the A12 section 4.6 catalogue `floor_change` facts, three Item ids and the rope spots).
+    Occurrences count every item on the map, container contents included."""
+    by_kind: dict[str, dict] = {}
+    for server_id, kind in sorted((kinds or {}).items()):
+        if occurrences[server_id]:
+            row = by_kind.setdefault(kind, {"item_types": 0, "occurrences": 0})
+            row["item_types"] += 1
+            row["occurrences"] += occurrences[server_id]
+    return {
+        "by_kind": by_kind,
+        "item_types": sum(r["item_types"] for r in by_kind.values()),
+        "occurrences": sum(r["occurrences"] for r in by_kind.values()),
+    }
+
+
 def edron_summary(plan, tibiamaps, sets, overrider, items_added) -> dict:
     counts = {
         "items_added": 0,
@@ -723,6 +779,7 @@ def build(
     bindings: bytes | None = None,
     previous: list[dict] | None = None,
     terrain: dict[int, str] | None = None,
+    world_object: dict[int, str] | None = None,
     land=None,
     tibiamaps=None,
     blocking: set[int] | None = None,
@@ -732,7 +789,7 @@ def build(
 ) -> dict[str, bytes]:
     """Build every output; `defined` is the set of Item keys with a definition (a binding to
     any other key leaves its id provisional; default: every binding target counts); `previous` is the committed palette to extend, if any and
-    `terrain` the committed Terrain keys of appearance-only ids and `land` the minimap land
+    `terrain` and `world_object` the committed catalogue keys and `land` the minimap land
     test of a partial fill (default: the committed 15.30 minimap). The Edron rework runs when
     `tibiamaps` (decoded, default: the pinned files among `blobs`) is available, with the
     `blocking` ids and floor-change `kinds` of the committed assets and objects."""
@@ -834,15 +891,18 @@ def build(
         source["edron"] = edron.PIN
     if draft_plan:
         source["minimap_draft"] = draft.PIN
-    palette = build_palette(bound, collector.occurrences, previous, terrain)
+    palette = build_palette(
+        bound, collector.occurrences, previous, terrain, world_object
+    )
     collector.remap({row["source_item_id"]: i for i, row in enumerate(palette)})
     declared = items_xml_ids(blobs[ITEMS_XML])
     provisional = {"appearance_only": [0, 0], "in_items_xml": [0, 0]}
-    terrain_entries = terrain_occurrences = 0
+    families = {name: [0, 0] for name in ("terrain", "world_object", "item")}
     for row in palette:
-        if row["key"].startswith(TERRAIN_KEY_PREFIX):
-            terrain_entries += 1
-            terrain_occurrences += collector.occurrences[row["source_item_id"]]
+        family = key_family(row["key"], row["provisional"])
+        if family in families:
+            families[family][0] += 1
+            families[family][1] += collector.occurrences[row["source_item_id"]]
         if row["provisional"]:
             kind = (
                 "in_items_xml"
@@ -940,12 +1000,13 @@ def build(
                 },
                 "occurrences": sum(v[1] for v in provisional.values()),
             },
-            "terrain": {
-                "entries": terrain_entries,
-                "occurrences": terrain_occurrences,
+            "families": {
+                name: {"entries": v[0], "occurrences": v[1]}
+                for name, v in families.items()
             },
         },
         "rejected_items": {"unsupported_attributes": len(collector.unsupported)},
+        "floor_changes": floor_change_summary(kinds, collector.occurrences),
         "edron": edron_summary(
             plan, tibiamaps, (blocking, kinds, yellow), overrider, edron_items
         ),
@@ -1055,6 +1116,7 @@ def main() -> int:
             read_source(args.crystal_root, args.tibiamaps_root),
             previous=committed_palette(),
             terrain=terrain_keys(),
+            world_object=world_object_keys(),
             defined=defined_item_keys(),
         )
         totals = json.loads(out[f"{DIRECTORY}/index.json"])["totals"]

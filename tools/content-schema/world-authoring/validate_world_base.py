@@ -28,9 +28,8 @@ from convert_world_base import (
     ITEM_NAMESPACE,
     PINNED_TOTALS,
     REPLACE_RULE,
-    TERRAIN_DIRECTORY,
-    TERRAIN_KEY_PREFIX,
-    TERRAIN_NAMESPACE,
+    catalogue_keys,
+    key_family,
     defined_item_keys,
     world_otbm_totals,
 )
@@ -580,31 +579,11 @@ def edron_counts(rework: dict, summary: dict) -> list[str]:
     return problems
 
 
-def terrain_bindings(root: Path, errors: list[str]) -> dict[int, set[str]]:
-    """``{appearance id: Terrain keys}`` from the committed Terrain family, if populated.
-
-    A Terrain key is `oteryn:terrain.a` plus the appearance id in six digits, so the source
-    id a palette entry names is the id in the key and in the record's binding.
-    """
-    path = f"{TERRAIN_DIRECTORY}/index.json"
-    index = load(root, path, strict=False) if (root / path).is_file() else {}
-    found: dict[int, set[str]] = {}
-    for shard in index.get("shards", []):
-        for record in load(root, shard, strict=False)["records"]:
-            for row in record["source_bindings"]:
-                if row["identity_namespace"] != TERRAIN_NAMESPACE:
-                    continue
-                appearance_id, key = int(row["external_id"]), row["target"]["key"]
-                if key != f"{TERRAIN_KEY_PREFIX}{appearance_id:06d}":
-                    errors.append(f"{shard}: terrain key {key!r} differs from its id")
-                found.setdefault(appearance_id, set()).add(key)
-    return found
-
-
 def check_palette(
     palette,
     bound: dict[int, set[str]],
-    terrain: dict[int, set[str]],
+    terrain: dict[int, str],
+    world_object: dict[int, str],
     errors: list[str],
 ) -> bool:
     """Check the palette in isolation; returns False when it cannot be indexed."""
@@ -635,22 +614,28 @@ def check_palette(
         if key in keys:
             errors.append(f"{where}: key {key!r} is listed twice")
         keys.add(key)
+        # A12 section 4.6 precedence: Terrain catalogue, WorldObject catalogue, Item key
+        # with an Item record, else the provisional donor key.
         if row["provisional"]:
             if key != f"{DONOR_PREFIX}{server_id}":
                 errors.append(
                     f"{where}: provisional key must be {DONOR_PREFIX}{server_id}"
                 )
-            if server_id in bound or server_id in terrain:
-                errors.append(f"{where}: provisional id {server_id} has a binding")
-        elif key not in bound.get(server_id, ()) and key not in terrain.get(
-            server_id, ()
-        ):
+            if server_id in bound or server_id in terrain or server_id in world_object:
+                errors.append(f"{where}: provisional id {server_id} has a family key")
+        elif server_id in terrain:
+            if key != terrain[server_id]:
+                errors.append(f"{where}: id {server_id} must use {terrain[server_id]}")
+        elif server_id in world_object:
+            if key != world_object[server_id]:
+                errors.append(
+                    f"{where}: id {server_id} must use {world_object[server_id]}"
+                )
+        elif key not in bound.get(server_id, ()):
             errors.append(
-                f"{where}: key {key!r} is not an Item binding target or a Terrain "
-                f"key of server id {server_id}"
+                f"{where}: key {key!r} is not a Terrain or WorldObject catalogue key, "
+                f"nor an Item key with a record, of server id {server_id}"
             )
-        if server_id in bound and server_id in terrain:
-            errors.append(f"{where}: id {server_id} is both an Item and a Terrain id")
     return len(errors) == start
 
 
@@ -673,28 +658,29 @@ def check_palette_use(
         )
     if sum(used.values()) != items:
         errors.append(f"{INDEX}: palette occurrences differ from the item total")
-    entries = occurrences = terrain_entries = terrain_occurrences = 0
+    entries = occurrences = 0
+    families = {name: [0, 0] for name in ("terrain", "world_object", "item")}
     for i, row in enumerate(palette):
         if row["provisional"]:
             entries += 1
             occurrences += used[i]
-        if row["key"].startswith(TERRAIN_KEY_PREFIX):
-            terrain_entries += 1
-            terrain_occurrences += used[i]
+        family = key_family(row["key"], row["provisional"])
+        if family in families:
+            families[family][0] += 1
+            families[family][1] += used[i]
     recorded = summary.get("palette")
     provisional = recorded.get("provisional") if isinstance(recorded, dict) else None
     if not isinstance(provisional, dict) or set(recorded) != {
         "entries",
+        "families",
         "provisional",
-        "terrain",
     }:
-        errors.append(f"{SUMMARY}: palette must hold entries, provisional and terrain")
+        errors.append(f"{SUMMARY}: palette must hold entries, families and provisional")
         return
-    if recorded["terrain"] != {
-        "entries": terrain_entries,
-        "occurrences": terrain_occurrences,
+    if recorded["families"] != {
+        name: {"entries": v[0], "occurrences": v[1]} for name, v in families.items()
     }:
-        errors.append(f"{SUMMARY}: palette.terrain differs from the decoded palette")
+        errors.append(f"{SUMMARY}: palette.families differs from the decoded palette")
     if recorded["entries"] != len(palette):
         errors.append(f"{SUMMARY}: palette.entries differs from the index palette")
     if (provisional.get("entries"), provisional.get("occurrences")) != (
@@ -775,9 +761,10 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
             and row["target"]["key"] in defined
         ):
             bound.setdefault(int(row["external_id"]), set()).add(row["target"]["key"])
-    terrain = terrain_bindings(root, errors)
+    terrain = catalogue_keys("terrain", root)
+    world_object = catalogue_keys("world_object", root)
     palette = index["palette"]
-    if not check_palette(palette, bound, terrain, errors):
+    if not check_palette(palette, bound, terrain, world_object, errors):
         return errors
     extent = (summary["map"]["width"], summary["map"]["height"])
     args = (str(root), extent, len(palette))
@@ -828,6 +815,21 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
         errors.append(f"{SUMMARY}: item_attributes differs from the decoded items")
     if summary.get("schema") != "OTERYN_WORLD_BASE_SOURCE_CAPTURE/v1":
         errors.append(f"{SUMMARY}: wrong schema")
+    changes = summary.get("floor_changes")
+    if not isinstance(changes, dict) or set(changes) != {
+        "by_kind",
+        "item_types",
+        "occurrences",
+    }:
+        errors.append(f"{SUMMARY}: floor_changes is malformed")
+    else:
+        rows = list(changes["by_kind"].values())
+        if (
+            sum(r["item_types"] for r in rows) != changes["item_types"]
+            or sum(r["occurrences"] for r in rows) != changes["occurrences"]
+            or set(changes["by_kind"]) - set(edron.STEPS) - {"down"}
+        ):
+            errors.append(f"{SUMMARY}: floor_changes does not add up")
     if summary.get("rejected_items") != {"unsupported_attributes": 0}:
         errors.append(f"{SUMMARY}: rejected_items must be unsupported_attributes 0")
     info = summary.get("codec", {})

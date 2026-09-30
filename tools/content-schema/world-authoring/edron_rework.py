@@ -53,6 +53,19 @@ BASE_FLOORS = REACH_FLOORS
 SUMMER_FLOORS = (9, 10)
 YELLOW_AUTOMAP = 210
 ROPE_SPOTS = {386: "rope", 21965: "rope"}
+# The A12 section 4.6 catalogues carry the `floorchange` direction as their `floor_change` fact
+# (items.xml value -> kind). Three ids that declare it stay Items (not routed to Terrain or
+# WorldObject), so they are listed here.
+CATALOGUE_FLOOR_CHANGE = {
+    "down": "down",
+    "north": "up_north",
+    "south": "up_south",
+    "east": "up_east",
+    "west": "up_west",
+    "southalt": "up_south_alt",
+    "eastalt": "up_east_alt",
+}
+ITEM_FLOOR_CHANGES = {166: "down", 167: "down", 53431: "up_north"}
 STEPS = {
     "up_north": (0, -1),
     "up_south": (0, 1),
@@ -222,12 +235,17 @@ def appearance_ids(root: Path = ROOT) -> tuple[set[int], set[int]]:
 
 
 def floor_change_kinds(root: Path = ROOT) -> dict[int, str]:
-    """`{item id: kind}` of the committed FloorChange records plus the rope spots."""
-    kinds = dict(ROPE_SPOTS)
-    for path in sorted((root / "content/world/objects").glob("floor-changes-*.json")):
-        for record in json.loads(path.read_text(encoding="utf-8"))["records"]:
-            declaration = record["declaration"]
-            kinds[declaration["source_item_id"]] = declaration["floor_change"]
+    """`{Tibia id: kind}` of the catalogue floor-change facts, the Item ids and the rope spots."""
+    import convert_world_base as world_base
+
+    kinds = {**ITEM_FLOOR_CHANGES, **ROPE_SPOTS}
+    for family in ("terrain", "world_object"):
+        for tibia_id, record in world_base.catalogue_records(family, root):
+            fact = record["floor_change"]
+            if fact["state"] == "KNOWN":
+                if fact["value"] not in CATALOGUE_FLOOR_CHANGE:
+                    raise ConvertError(f"unknown floor change {fact['value']!r}")
+                kinds[tibia_id] = CATALOGUE_FLOOR_CHANGE[fact["value"]]
     unknown = set(kinds.values()) - set(STEPS) - {"down"}
     if unknown:
         raise ConvertError(f"unknown floor change kinds {sorted(unknown)}")

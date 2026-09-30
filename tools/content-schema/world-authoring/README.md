@@ -12,10 +12,15 @@ format selected by measurement (see "Base map (step 3)" below).
 | `Area.Island` | `content/world/areas/islands/` | 59 | `OTERYN_AREA_AUTHORING_SHARD/v1` (`island.schema.json`) |
 | `Area.Region` | `content/world/areas/regions/` | 465 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
-| `Terrain` | `content/world/terrain/` | 5,949 | `OTERYN_TERRAIN_AUTHORING_SHARD/v1` (`terrain-appearance.schema.json`) |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 | `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
-| `WorldObject.FloorChange` | `content/world/objects/` | 447 | `OTERYN_WORLD_OBJECT_AUTHORING_SHARD/v1` (`floor-change.schema.json`) |
+
+`content/world/terrain/` (8,548 Terrain records, `oteryn:terrain.tibia.i<id>`) and
+`content/world/objects/` (12,782 WorldObject records, `oteryn:world-object.tibia.i<id>`) are not
+written here: they are the A12 section 4.6 catalogues of WO-2
+(`../world-object-authoring/`, `build_catalogue.py`, WO-0 D93/D94) and this tooling only reads
+them. This package used to carry its own `Terrain` family (`oteryn:terrain.a<id>`) and a
+`WorldObject.FloorChange` family; both are removed in favour of the catalogues.
 
 Each directory has an `OTERYN_FAMILY_INDEX/v1` `index.json`, plus canonical JSON shards of
 500 records named `<stem>-<start>-<end>.json`. Every family index, shard and record shape
@@ -264,7 +269,7 @@ position-based.
   - 5 with a destination on an absent tile.
 - **Not here yet:**
   - floor changes that are scripted `use` actions (ladders up, rope spots, sewer grates,
-    shovel and pick holes): see "Floor-change objects".
+    shovel and pick holes): see "Floor changes".
   - streets; islands the map does not confirm (see "Islands"); per-place skills, loot and experience ratings of hunting places.
   - the 18 editor waypoints.
   - the `data-global/world/15.30/` fragment maps.
@@ -309,56 +314,25 @@ repository test's directory-scan budget grows by exactly the one added entry
   `to` and hunting place position to lie inside the bounds on a declared floor. Base map
   tiles are inside by that equality.
 
-## Floor-change objects
+## Floor changes
 
-`content/world/objects/` holds `WorldObject.FloorChange`: one record per item type that the
-pinned `data/items/items.xml` declares with a `floorchange` attribute (stairs, ramps, holes,
-trapdoors). `convert_floor_changes.py --crystal-root ... [--check]` needs the pinned
-checkout (its `items.xml` sha256 is the pin already used by `convert_world_base.py`) and the
-committed base map, and writes the shard `floor-changes-00000-00446.json`, the index and
-`samples/floor-changes-capture-v1.json`.
+There is no floor-change family. The WO-2 catalogues carry the `items.xml` `floorchange` value as the
+`floor_change` fact of each Terrain and WorldObject record (`north`, `south`, `east`, `west`,
+`southalt`, `eastalt`, `down`): 444 of the 447 item types that declare it are in the catalogues
+(158 Terrain, 286 WorldObject). The other three (166 and 167 `wooden coffin`, 53431 `stone stairs`)
+stay Items; `edron_rework.ITEM_FLOOR_CHANGES` lists them. `edron_rework.floor_change_kinds()` maps the
+catalogue values to the kinds below and adds the two rope spots (386, 21965).
 
-- **Key:** `oteryn:world_object.floor_change.<item key without "oteryn:item.", every
-  non-alphanumeric run as "_">`, for example
-  `oteryn:world_object.floor_change.registry_i00000087`. The item key is resolved as in the
-  base map palette: the `ots/item_server_id` binding target that has an Item record in
-  `content/items/definitions`, else the provisional donor
-  `donor:crystalserver@00ce02a5:item/<id>` (key `..floor_change.donor_<id>`,
-  `provisional_item: true`). 446 of the 447 types resolve to an Item key today; 53431 is bound
-  to an Item key that has no definition yet, so it is provisional (1 provisional_item). Ranges (`fromid`/`toid`) expand
-  to one record per id.
-- **Fields:** `floor_change`, the `item` reference, the items.xml `name`,
-  `source_item_id`, and `occurrences_on_base_map`. It counts top-level tile items in the
-  region files (a floor-change item inside a container is not a floor change) and is `0`
-  for the 118 types the map does not use.
-- **`floor_change` mapping** (engine: `TileStatesMap` in `item_parse.hpp`, destination in
-  `Tile::queryDestination`, `src/items/tile.cpp`, both at the pinned revision):
+| catalogue value | kind | Engine meaning (`Tile::queryDestination`, `src/items/tile.cpp`) |
+|---|---|---|
+| `down` | `down` | one floor down |
+| `north` / `south` / `east` / `west` | `up_north` / `up_south` / `up_east` / `up_west` | one floor up, one tile north (`y - 1`), south (`y + 1`), east (`x + 1`), west (`x - 1`) |
+| `southalt` / `eastalt` | `up_south_alt` / `up_east_alt` | one floor up, two tiles south (`y + 2`) or east (`x + 2`) |
 
-  | items.xml | `floor_change` | Engine meaning |
-  |---|---|---|
-  | `down` | `down` | one floor down; the arrival tile is shifted by the ramp flags of the lower tile |
-  | `north` | `up_north` | one floor up, one tile north (`y - 1`) |
-  | `south` | `up_south` | one floor up, one tile south (`y + 1`) |
-  | `east` | `up_east` | one floor up, one tile east (`x + 1`) |
-  | `west` | `up_west` | one floor up, one tile west (`x - 1`) |
-  | `southalt` | `up_south_alt` | one floor up, two tiles south (`y + 2`) |
-  | `eastalt` | `up_east_alt` | one floor up, two tiles east (`x + 2`) |
-
-  The converter fails closed on any other value, a second `floorchange` on one item, a
-  missing name, or an id that items.xml declares in two nodes.
-- **Counts** (see the capture summary): 194 `down`, 73 `up_north`, 52 `up_south`,
-  50 `up_east`, 69 `up_west`, 5 `up_south_alt`, 4 `up_east_alt`; 329 of the 447 types
-  occur on the map, 26,935 occurrences in all (fills included).
-- **Excluded:** ladders that go up, rope spots, sewer grates and shovel or pick holes are
-  scripted `use` actions (or runtime terrain changes), not static item attributes, so they
-  are listed in the capture summary and not invented here. Item types named `ramp`,
-  `stairs` or `ladder` that carry no `floorchange` attribute are decorative or scripted and
-  are not records either. Teleports stay in `Transition.Teleport`.
-- `validate_floor_changes.py` checks the schema and canonical bytes, the pinned source and
-  the item bindings digest, key derivation, that each item key is a bound Item (or the
-  donor key of an unbound id) and equals the base map palette key, sorted unique keys, no
-  stray file, and recounts every `occurrences_on_base_map` and the summary from the region
-  files (about 15 s on four cores).
+The base capture summary (`floor_changes`) counts the kinds on the map: 331 item types, 28,160
+occurrences (container contents included, rope spots and fills included). Ladders that go up, rope
+spots, sewer grates and shovel or pick holes are scripted `use` actions in the server, not
+`floorchange` attributes, and are not invented here. Teleports stay in `Transition.Teleport`.
 
 ## Commands
 
@@ -369,9 +343,6 @@ python test_world_authoring.py             # synthetic OTBM and wiki fixtures, c
 python convert_world_record.py --check     # World record from the committed base map (offline)
 python validate_world_record.py            # World record and positions inside its bounds
 python test_world_record.py                # World converter, validator, worlds/ tree exception
-python validate_floor_changes.py           # WorldObject.FloorChange incl. recount on the base map
-python test_floor_changes.py               # floor-change converter and validator fixtures
-# Needs the pinned crystalserver checkout: python convert_floor_changes.py --crystal-root ... [--check]
 python convert_city_facts.py --check       # offline, from the committed city snapshot
 python convert_hunting_places.py --check   # offline, from the committed TibiaWiki snapshot
 python convert_islands.py --check          # offline, from the snapshot, the base map and the City Areas
@@ -414,35 +385,38 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   index into `palette` in `index.json`. The palette holds the distinct server item
   ids the map uses (and any retired ones) as `{"key", "source_item_id", "provisional"}`. A fresh build orders it by
   ascending id, and the palette is then **append-only** (see below):
-  - an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) to a
+  - else an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) to a
     key that has an Item record in `content/items/definitions` takes that target key, either `oteryn:item.registry.iNNNNNNNN` or a named key such
     as `oteryn:item.currency.gold_coin`, with `provisional: false`;
-  - an appearance-only id (the official client declares it, `items.xml` does not) that the
-    committed Terrain family covers takes that record's `oteryn:terrain.a<id>` key with
-    `provisional: false` (see "Terrain" below);
+  - an id that a WO-2 catalogue routes (A12 section 4.6) takes the catalogue key with
+    `provisional: false`: `oteryn:terrain.tibia.i<id>` if the Terrain catalogue has it, else
+    `oteryn:world-object.tibia.i<id>`. This wins over an Item binding of the same id;
   - any other id takes `donor:crystalserver@00ce02a5:item/<id>` (the donor-census key
     form) with `provisional: true`. This covers ids that `items.xml` declares but no Item
     binding covers yet, ids bound to an Item key without a definition (the A12 section 5 rule
     forbids such a key in `content/`) and ids no source declares; the item agent's B1b
     registry step admits the first two.
 
-  **Ownership rule:** ids present in `items.xml` -> Item registry (item agent, B1b);
-  appearance-only ids -> Terrain (world). An id is never both.
+  **Resolution order (A12 section 4.6):** Terrain catalogue, WorldObject catalogue, Item key with
+  an Item record, else the provisional donor key. Appearance-only ids (the official client
+  declares them, `items.xml` does not) have no record in any family and stay provisional; they
+  are listed in `samples/appearance-only-ids-v1.json` (see "Appearance-only ids").
 
   An entry the map stops using is never removed: it is flagged `"retired": true`, which is
   allowed only while no region references it.
 
-  Identity work (admitting the provisional items, the Terrain identity path) rewrites
-  palette entries in `index.json` only. The 22 MB of region files do not change. The
-  capture summary counts provisional entries and occurrences, split into ids that
-  `items.xml` declares at the pinned revision and appearance-only ids, and the Terrain-keyed
-  entries. Current counts: 25,984 palette entries; 5,949 Terrain keys (760,248
-  occurrences); 46 provisional (54,555 occurrences): 45 ids that `items.xml` declares (40 of them
-  bound to an Item key without a definition, 54,530 occurrences) and id 99, which neither
-  `items.xml` nor the client declares.
-  `validate_world_base.py` accepts a non-provisional key that is an Item binding target with an Item record or
-  a Terrain key of that palette id (`oteryn:terrain.a` plus the id in six digits, bound in
-  the Terrain family), and rejects an id that is both.
+  Identity work (admitting provisional items, extending the catalogues) rewrites palette entries in
+  `index.json` only. The 22 MB of region files do not change. The capture summary counts palette
+  entries and occurrences per family (`palette.families`: terrain, world_object, item) and the
+  provisional ones, split into ids that `items.xml` declares at the pinned revision and
+  appearance-only ids. Current counts: 25,984 palette entries; 7,576 Terrain keys (17,119,916
+  occurrences); 7,699 WorldObject keys (1,304,021); 4,714 Item keys (5,744,591); 5,995 provisional
+  (814,803 occurrences): 5,950 appearance-only (760,257; 5,949 with a client appearance plus id 99,
+  which neither `items.xml` nor the client declares) and 45 ids that `items.xml` declares
+  (54,546, 40 of them bound to an Item key without a definition).
+  `validate_world_base.py` requires every non-provisional key to exist in its family: the key of
+  the Terrain catalogue record of that id, else of the WorldObject catalogue record, else an Item
+  binding target with an Item record; a provisional id must have none of them.
   The converter still fails closed, and never guesses, on an item or tile attribute
   outside the carried set.
 - **Fill from `maps.7z`** (owner-approved, fill-only): `data-global/world/maps.7z` at the pinned
@@ -455,7 +429,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   zone or teleport destination is refused (none is; existing tiles that have them are
   skipped like any existing tile). Items map to keys like the base import: an
   id `items.xml` declares takes its Item binding or the provisional donor key, an
-  appearance-only id its Terrain key once the Terrain family covers it; ids first used by
+  appearance-only id stays provisional; ids first used by
   the fill are appended at the end of the palette. Result (capture summary `fill`):
   2,965 tiles and 3,364 items added: floor 2 118, floor 3 219, floor 4 685, floor 5 918,
   floor 6 1,025, floor 7 0, floor 1 0; 19,837 fragment tiles skipped as already present.
@@ -512,7 +486,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
     A tile with a house, zone or teleport destination is still refused; a teleport item
     whose destination is unset (0, 0, 0) leads nowhere and is carried (4 tiles, floor 14).
   Total 16,928 tiles and 19,667 items added; 6 new palette entries (append-only), all
-  appearance-only, with 6 new `Terrain` records (5,948 in all). The summary `fill.sources[1]`
+  appearance-only and provisional. The summary `fill.sources[1]`
   holds the counts per floor, `selection` (components and tiles excluded or without land)
   and `tiles_not_selected`; `--check` reproduces it (the minimap is read from the committed
   client assets, the fragment from the pinned archive). Underground validity rests on the
@@ -552,8 +526,8 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   - **Rule 3 (entrances, report only):** a yellow pixel of the map image on floors 9-11 is a
     floor-change marker, unless the tile carries a yellow-automap item that is no floor change
     (yellow ground) or the pixel lies in a yellow area of more than 2 pixels (ground colour).
-    A marker is connected if the final map has a floor-change item (FloorChange record ids
-    plus the rope spots 386 and 21965) at that position or at the same (x, y) one floor above
+    A marker is connected if the final map has a floor-change item (catalogue `floor_change` facts,
+    the three Item ids and the rope spots 386 and 21965) at that position or at the same (x, y) one floor above
     or below. Otherwise the position is listed in `unresolved_entrances`; **no item is
     invented**. Result: 15 markers (floor 9 5, floor 10 3, floor 11 7), 5 connected, 10
     unresolved. The summary also records the reachability of floor 10 (BFS over walkable
@@ -655,57 +629,27 @@ The validator requires unique ids and keys, every non-retired entry referenced a
 retired entry unreferenced. Oteryn edits authored on top of the base map will later need a
 separate patch layer that survives a regeneration. That layer is not implemented.
 
-## Terrain (official client appearances)
+## Appearance-only ids
 
-`Terrain` (`content/world/terrain/`, owner Terrain) gives a permanent identity to every
-**appearance-only** id of the base map palette: an id that the official Tibia 15.30 client
-declares in `content/assets/files/appearances-<sha256>.dat` (owner-confirmed redistribution,
-sha256 checked against `imports/official/client-assets/15.30/manifest.json`) and that the
-pinned CrystalServer `items.xml` does not declare. Ownership rule: **ids present in
-`items.xml` -> Item registry (item agent, B1b); appearance-only ids -> Terrain (world)**.
-Terrain is not the D93 `oteryn:terrain.registry.iNNNNNNNN` space of the routed Item ids
-(`tools/content-schema/world-object-authoring/`, WO-2); those ids are in `items.xml` and stay
-Item business.
+An appearance-only id is a base map palette id that the official Tibia 15.30 client declares in
+`content/assets/files/appearances-<sha256>.dat` (sha256 checked against
+`imports/official/client-assets/15.30/manifest.json`) and that the pinned CrystalServer `items.xml`
+does not declare. It has no Item and no A12 section 4.6 catalogue record, so its palette key is the
+provisional donor key. `samples/appearance-only-ids-v1.json` lists them as evidence for the WO lane
+to extend the catalogue: 5,949 ids (id 99 has no appearance), 760,248 occurrences on the base map,
+each row with the id, `class`, occurrences, `speed` (bank waypoints, ground only) and `name`
+(7 rows).
 
+- **Class rule** (first match on the client flags): `bank` -> `ground`; else `clip` -> `border`;
+  else `unpass` -> `blocking`; else `decoration`. Counts: ground 740, border 1,534, blocking 2,614,
+  decoration 1,061. There is no `liquid` class: the client declares no flag for water or lava ground.
 - **Reader:** `client_appearance_reader.py` decodes the raw protobuf with the framing of
-  `client_map_reader.py` (fails closed on malformed frames, repeated ids, non boolean flags,
-  unsupported wire types). Only object appearances (field 1) and, per object, the id, name
-  and the flags `bank` (1, with waypoints = ground speed), `clip` (2), `unpass` (13),
-  `unmove` (14) and `automap` (30, colour) are read; frame groups and every other flag are
-  skipped. The reader agrees with the item agent's `engine_items` decode on all 43,516 objects
-  (max id 55,117).
-- **Client ids equal server ids (checked):** in the pinned `items.xml` 33,978 ids also have a
-  client appearance. Of the 8,411 with a client name, 8,037 (95.6%) equal the items.xml name
-  (gold coin 3031, platinum coin 3035, the rest are renames such as `ring of the count` ->
-  `the ring of the count`, or generic names like `weapon of carving`). The ground evidence
-  agrees: the water and lava ids of the island ground classes (501) all have appearances,
-  ids named `grass` carry bank speed 150 most often, `stone wall` ids are `unpass` (913 of
-  934) and water ground is `unpass`. No id is shifted.
-- **Records:** one per appearance-only palette id that has an appearance: 5,949 (id 99 has
-  none and stays provisional). Key `oteryn:terrain.a<id, six digits>`, fields only from the
-  appearance: `appearance_id`, `class`, `flags` (the subset of `bank`, `clip`, `unmove`,
-  `unpass` the appearance sets), `speed` (bank waypoints, ground only), `name` (7 records),
-  `automap_color` (2,946), `occurrences_on_base_map` (top-level tile items over the region
-  files, container contents excluded). Binding: namespace `tibia-client/appearance-id`,
-  source `oteryn:source.tibia_client`, source revision the sha256 of the appearances file.
-- **Class rule** (first match): `bank` -> `ground`; else `clip` -> `border`; else `unpass`
-  -> `blocking`; else `decoration`. No `liquid` class: the client flag `liquidpool` (liquid
-  splash decals) occurs on none of these ids, `liquidcontainer` (drinkable containers) on
-  three that are not ground, and water or lava ground has no flag of its own (it is `bank`
-  or `clip`, usually `unpass`).
-- **Counts** (capture summary): ground 740, border 1,534, blocking 2,613, decoration 1,061;
-  760,247 occurrences on the base map (fills included).
-- **Generation order:** `convert_terrain.py --crystal-root PATH` derives the set (palette
-  ids with no Item binding, not declared by `items.xml`, known to the client) and writes the
-  records; `convert_world_base.py --crystal-root PATH` then switches those palette keys (only
-  `index.json` and the summary change, region files stay byte-identical); the offline
-  `convert_terrain.py --check` takes the set from the Terrain-keyed palette entries.
-  `validate_terrain.py` re-decodes the appearances, recounts occurrences over the regions
-  (about 20 s) and checks every palette mapping.
+  `client_map_reader.py` (fails closed on malformed frames, repeated ids, non boolean flags and
+  unsupported wire types). It reads the id, name and the flags `bank` (with waypoints), `clip`,
+  `unpass`, `unmove` and `automap` (colour). `edron_rework.py` also uses it for walkability.
+- `convert_appearance_only_ids.py --crystal-root PATH [--check]` writes the list from the committed
+  palette, the region files and the appearances file.
 
 ```bash
-python convert_terrain.py --check           # committed family and capture, offline
-python validate_terrain.py                  # committed family: appearances, palette, recount
-python test_terrain.py                      # reader, converter and validator fixtures
-python convert_terrain.py --crystal-root /path/to/crystalserver [--check]   # derive the set
+python convert_appearance_only_ids.py --crystal-root /path/to/crystalserver [--check]
 ```

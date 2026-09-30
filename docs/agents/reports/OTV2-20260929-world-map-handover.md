@@ -119,3 +119,15 @@ The owner asked for a handover to the next agent. State at handover:
 - Before each push run the package `test_*.py` and `validate_*.py`,
   `validate_materialized_game_tree.py`, `tools/agents/validate_governance.py`, and, for
   placements, the Rust `content_world_project_repository` test.
+
+## A12 section 4.6 alignment (after WO-2, #1319)
+
+- The base palette uses the WO-2 catalogue keys: Terrain `oteryn:terrain.tibia.i<id>` (7,576 entries),
+  WorldObject `oteryn:world-object.tibia.i<id>` (7,699), Item keys with a record (4,714); 5,995 stay
+  provisional. This branch no longer writes `content/world/terrain/` or `content/world/objects/` and
+  has no own Terrain or FloorChange family.
+- For the WO lane: `tools/content-schema/world-authoring/samples/appearance-only-ids-v1.json` lists the
+  5,949 appearance-only ids (client class, occurrences, speed) that no catalogue covers, and three ids
+  with a `floorchange` value stay Items (166, 167, 53431).
+- `tools/content-census/item_key_references.py` fails on `main` itself (991 dangling keys in
+  `imports/tibiawiki/facts/items-stats.json`), independent of this work.
