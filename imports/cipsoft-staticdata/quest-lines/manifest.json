@@ -1,0 +1,22 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "QuestLine",
+  "files": [
+    {
+      "path": "quest-lines-00000-00101.json",
+      "records": 102,
+      "sha256": "a30646107aa4165816101b36ec4fab60d1a8134e6dc3189202767a566c64604d"
+    }
+  ],
+  "identity_namespace": "cipsoft/staticdata/quest_line_id",
+  "inputs": {
+    "staticdata": {
+      "file": "content/assets/files/staticdata-62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128.dat",
+      "sha256": "62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128"
+    }
+  },
+  "record_count": 102,
+  "schema": "OTERYN_CIPSOFT_STATICDATA_QUESTLINE_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_STATICDATA"
+}

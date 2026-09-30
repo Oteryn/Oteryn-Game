@@ -270,6 +270,17 @@ pub(crate) mod tests {
         max_soul: 100,
     };
 
+    /// Test only: no damage owner exists yet, so a wounded actor is staged by writing its health.
+    pub(crate) fn wound(
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        health: u32,
+    ) {
+        let index = states.index(actor, session).expect("present");
+        states.actors[index].2.set_health_for_test(health);
+    }
+
     /// `exura` (index 3 of the canonical V1 book) with no target.
     pub(crate) fn exura() -> SpellCastIntent {
         SpellCastIntent {
