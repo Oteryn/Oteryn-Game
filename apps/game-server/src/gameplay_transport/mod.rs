@@ -1493,11 +1493,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(character_id) =
                     domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
                 else {
-                    return FirstEntryOutcome::RefusedUnavailable;
+                    return (FirstEntryOutcome::RefusedUnavailable, None);
                 };
                 match self.load_monk_state(character_id).await {
                     Some(values) => values,
-                    None => return FirstEntryOutcome::RefusedUnavailable,
+                    None => return (FirstEntryOutcome::RefusedUnavailable, None),
                 }
             }
             None => (0, 0),

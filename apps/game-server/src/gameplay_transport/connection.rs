@@ -2390,6 +2390,7 @@ mod tests {
                 first_entry: FirstEntryOutcome::Positioned,
                 controller: None,
                 continuity: SessionContinuity::FRESH,
+                item_fence: None,
             };
             let vitals_payload = encode_actor_vitals(&SERENE_VITALS).map_err(|_| "vitals")?;
             let mut expected: Vec<Vec<u8>> = encode_single_chunk_snapshot(
