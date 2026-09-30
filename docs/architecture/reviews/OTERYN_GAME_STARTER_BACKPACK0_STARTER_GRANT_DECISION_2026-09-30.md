@@ -21,11 +21,11 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| STARTER-1 | hard, persistence and security review | the grant table, guards and audit operation of §5-§6 in a new migration, and the writer called after fresh admission | this decision; the C2 fence plumbing (`CurrentCharacterItemFence` in `AdmittedSession`); STARTER-CONTENT-1 |
+| STARTER-1 | hard, persistence and security review | the grant table, guards and audit operation of §5-§6 in a new migration, the writer called after fresh admission and resume, and the chest hand-off of §4.1 with its end-to-end test | this decision; the C2 fence plumbing (`CurrentCharacterItemFence` in `AdmittedSession`); STARTER-CONTENT-1 |
 | STARTER-CONTENT-1 | content lane | the backpack `oteryn:item.tibia.i2854` made admissible (materializable, non-stackable, container-slot equippable, capacity 20) and the `StarterKit` record of §4 in the starter template of the current creation revision | this decision |
 
-C2 (`claude/chest-c2-entry-room`) lands before STARTER-1 as ruled (Q3 a): production answers
-`NoMainBackpack` until STARTER-1 is live.
+C2 (`claude/chest-c2-entry-room`, #1388) lands before STARTER-1 as ruled (Q3 a): production answers
+`NoMainBackpack` until STARTER-1 is live, and STARTER-1 takes over C2's injected backpack (§4.1).
 
 ## 1. Question
 
@@ -79,8 +79,9 @@ legal destination (D80)?
 - **STARTER-1:** a separate, item-only DUR-03 writer that realizes the Character's **own** starter
   template (the one named by its root's `starter_template_revision`) once per template item,
   forever. Attempt 1 runs right after the fresh-admission commit and before the session becomes
-  input-eligible. Every Character, including those created before STARTER-1, gets its grant at its
-  next fresh admission; no backfill migration.
+  input-eligible. Every Character bound to a starter template revision that holds the backpack
+  record (§4.2), including those created before STARTER-1, gets its grant at its next fresh
+  admission; no backfill migration.
 
 ## 4. The template
 
@@ -92,8 +93,33 @@ legal destination (D80)?
   World's current content revision, and records that revision in the grant row. A record that fails
   admission (definition not admissible, not container-slot equippable, unknown revision) makes the
   grant fail closed; admission is unaffected.
-- A later record (for example the verified Dawnport kit) is a new key; each key is granted once,
-  and no key is ever re-granted.
+- Each key is granted once, and no key is ever re-granted.
+
+### 4.1 The chest resolves the granted backpack
+
+C2's chest resolves the equipped backpack's definition in its Channel runtime content
+(`chest_use.rs` `prepare_chest_use`), into which C2 injects `oteryn:item/entry-backpack` at
+`oteryn:rev/entry-chest-r1`. That content does not hold `oteryn:item.tibia.i2854`, so after a grant
+the chest would refuse with a content error instead of `NoMainBackpack`. **STARTER-1 owns the
+hand-off:** it removes the injected `entry-backpack` definition and makes the chest's runtime
+content carry `oteryn:item.tibia.i2854` at the revision the `StarterKit` record names (from
+STARTER-CONTENT-1's admitted data), so the grant and the chest resolve one definition. Its
+acceptance test runs the whole path on one Character: fresh admission, grant, chest `USE`, reward
+in the granted backpack.
+
+### 4.2 Which revision holds the record
+
+- **Clarification of Stage B §6.2 (pending on acceptance of STARTER-BACKPACK-0).** A starter
+  template revision is defined by its records. While a bound revision has no records it defines no
+  starter state, so authoring its first records defines it rather than changing it. Once a revision
+  has records they are fixed: no record is added, changed or removed.
+- Today no starter template revision has records: every revision configured in
+  `game_character_interpretations` (`0005:117-124`) and bound on a root is empty. STARTER-CONTENT-1
+  authors the `oteryn:starter.main_backpack` record as the first and only record of every
+  configured revision, so every existing Character gets the backpack at its next fresh admission.
+- A later record (for example the verified Dawnport kit) goes into a new revision, configured for
+  new creations only. Characters bound to an older revision get nothing new, as in Tibia, where a
+  character keeps the starting kit it was created with.
 
 ## 5. The grant (STARTER-1)
 
@@ -143,12 +169,16 @@ legal destination (D80)?
 - **No revision advance.** The grant is item-only: no `CharacterRevision` advance and no root,
   progression or receipt row (composition rule 1, amended in this PR).
 
-### 5.4 Retry and races
+### 5.4 Retry, resume and races
 
 - A transient failure leaves no row; admission is unaffected (item destinations already refuse
   without a backpack). One retry runs within the session after `STARTER0-RL-03` (5 s), alongside
   gameplay, serialized by the `character_root` lock and the slot primary key; later attempts wait
   for the next fresh admission.
+- **Resume.** A resume of the same GameSession (FND-02 §13.3) is not a fresh admission. If no grant
+  row exists for a key and the session's one retry is unspent, the retry runs right after the resume
+  commits, under the resumed session's current generations; otherwise the key waits for the next
+  fresh admission.
 - If a player's own shape-1 TRANSFER into the empty slot commits first, the grant records a
   permanent `SKIPPED_SLOT_OCCUPIED`.
 
@@ -158,6 +188,14 @@ legal destination (D80)?
 - Today the item cannot leave the slot (§2), so creating Characters to farm backpacks yields
   nothing. DEATH-3 (item loss) and every ITEM-MOVE child that lets the slot item leave must account
   for this item source in their own value review.
+
+### 5.6 Deletion and erasure
+
+- Grant rows hold only typed identifiers (Character, World, template key, revisions, ItemInstanceId,
+  fence references), no personal data. They live as long as the Character's root and its other
+  insert-only receipts. No Character deletion or erasure writer exists on `main`; the decision that
+  adds one owns the grant table together with those receipts, and must list it (its immutable and
+  no-truncate triggers mean only that decision's migration can remove rows).
 
 ## 6. DUR-03 and composition amendments (in this PR, pending)
 
@@ -188,6 +226,8 @@ legal destination (D80)?
 - **Reading the template from the World's current content.** A Character's starter state is bound
   at creation (Stage B §6.2).
 - **Re-grant when the slot is empty.** It would be a repeatable free item source.
+- **Adding records to a revision that already has records.** It would change the starter state of
+  Characters already created with it (§4.2).
 - **A synthetic CommandRef for the grant.** It would invent client authority for a server action.
 
 ## 9. Decision test
@@ -201,7 +241,8 @@ legal destination (D80)?
 
 ## 10. Before-freeze checklist
 
-1. **Contract amendments:** DUR-03 and the composition decision, pending on acceptance (§6).
+1. **Contract amendments:** DUR-03 and the composition decision, pending on acceptance (§6); the
+   Stage B §6.2 clarification of §4.2.
 2. **Serialization:** one grant row per (Character, template key), under the `character_root` lock.
 3. **Restart:** the grant row makes every retry replay; no partial state exists.
 4. **Typed references:** CharacterId, template key, starter template revision, item definition key

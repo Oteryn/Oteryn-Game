@@ -84,6 +84,11 @@ starter inventory as template content.
   variant with no CommandRef; attempt order, in-session retry and the TRANSFER race; the grant-key
   re-read and 23505 as replay; wording on MINT causes, A13, item loss today, the owner question
   (dropped: Stage B covers it), rows and the §39.1 parenthetical.
+- Review of `ea8f4455` (#1387 5915953626: 2 MEDIUM, 1 LOW), answered in one push: STARTER-1 owns
+  the chest hand-off (§4.1: the chest's runtime content carries i2854 in place of C2's injected
+  backpack, with an end-to-end test); a Stage B §6.2 clarification (§4.2: an empty bound revision
+  gets its first records, then records are fixed; later kits go into a new revision); resume
+  (§5.4); deletion and erasure (§5.6).
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
