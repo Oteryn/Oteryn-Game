@@ -2,13 +2,18 @@
 
 - Date: 2026-09-29; revised 2026-09-30 after the independent protocol review of `a7ceccaa` (PR #1301) and owner
   decisions D168 to D170
-- Status: **IDs ACCEPTED by the protocol owner** (Sol ruling, #162 comment 5907282001): capability 1
-  `BESTIARY_CHARMS_V1`, command types 4 and 5, state domains 4 and 5, bounds 21504 and 488 bytes, and
-  `CHARM5-RL-01` to `CHARM5-RL-05`. The charms bound is now 490 bytes (§3); Sol must acknowledge that change on
-  #162 before the registry PR. Nothing is registered yet (§8).
-- Authority: none. This document changes no protocol or resource registry, proto file, DDL, content or production
-  state. The codecs that implement it (`crates/protocol-oteryn/src/{bestiary,charm}.rs`) are not reachable from any
-  session or connection until the IDs are registered.
+- Status: **ACCEPTED and REGISTERED.** The protocol owner accepted the IDs (Sol ruling, #162 comment
+  5907282001): capability 1 `BESTIARY_CHARMS_V1`, command types 4 and 5, state domains 4 and 5, bound 21504
+  bytes for the Bestiary view, and `CHARM5-RL-01` to `CHARM5-RL-05`. Sol acknowledged the charms bound of 490
+  bytes (`assignment_slot_limit`, D169) and ruled a per-charm `effect_active` into the view (#162 comment
+  5913269950, owner D235); with it the measured bound is **554 bytes**. Registration PR: CHARM-5-REG
+  (`OTV2-20260930-charm-5-reg`), which is Sol's acknowledgement of the 554-byte bound.
+- Schema: the messages of §3 now live in `docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto`, which is
+  authoritative; §3 keeps only the behaviour notes.
+- Authority: this document records the accepted design. The registries and the proto file are authoritative for
+  IDs, bounds and messages. The codecs (`crates/protocol-oteryn/src/{bestiary,charm}.rs`) are not reachable from
+  any session or connection until composition (CHARM-5-COMP), and the server does not offer capability 1 before
+  CHARM-6 (D170).
 - Task: `OTV2-20260929-charm5-protocol-client` (#162).
 - Parent: CHARM-0 decision packet
   (`docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md`, PR #1295):
@@ -38,10 +43,10 @@ charm release is gated on CHARM-6 (§8).
 Out of scope: unassign and reset (CHARM-6), Charm Upgrade, the Store expansion, Bosstiary, creature names or descriptions on the wire,
 and every rule decision (CHARM-2 and CHARM-3 own them).
 
-## 2. Proposed IDs, identifiers and limits
+## 2. IDs, identifiers and limits
 
-The protocol owner assigned these IDs in the Sol ruling (#162 comment 5907282001). They are registered only by the
-acceptance PR, which also checks that they are still free (§8).
+The protocol owner assigned these IDs in the Sol ruling (#162 comment 5907282001). They are registered by CHARM-5-REG,
+whose registry test checks that each is registered once, under these names (§8).
 
 | ID | Name | Kind | Payload | Result |
 |---|---|---|---|---|
@@ -72,7 +77,7 @@ Identifiers:
   the client only through a new connection, whose snapshots of domains 4 and 5 are re-derived. Hot content reload
   inside one connection is out of scope.
 
-Proposed resource limits (for `RESOURCE_LIMITS_REGISTRY.json` on acceptance):
+Resource limits (registered in `RESOURCE_LIMITS_REGISTRY.json` by CHARM-5-REG):
 
 | ID | Resource | Hard maximum | Reason |
 |---|---|---|---|
@@ -84,26 +89,11 @@ Proposed resource limits (for `RESOURCE_LIMITS_REGISTRY.json` on acceptance):
 
 ## 3. Schema
 
-Proposed file on acceptance: `docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto` (not created).
+The message definitions are in `docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto` (CHARM-5-REG).
 
 ### 3.1 Bestiary view
 
-```proto
-// One race of the character's Bestiary. Only races with at least one credited kill appear.
-message BestiaryRaceProgressV1 {
-  uint32 race = 1;            // race index, 1..=1024
-  uint32 kill_count = 2;      // 1..=final_threshold: counters saturate there (CHARM-0 §4.1)
-  uint32 first_threshold = 3; // 1 <= first < second < final <= 100000
-  uint32 second_threshold = 4;
-  uint32 final_threshold = 5;
-}
-
-// StateDelta.payload of domain 4 delta type 1 and StateDomainSnapshot.payload of snapshot type 1.
-// At most 21504 bytes: 1024 entries of at most 21 bytes each.
-message BestiaryViewV1 {
-  repeated BestiaryRaceProgressV1 races = 1; // strictly ascending by race, at most 1024
-}
-```
+Messages: `BestiaryRaceProgressV1` and `BestiaryViewV1` (at most 21504 bytes) in `v1/charm_bestiary_v1.proto`.
 
 - The **snapshot** is the full set of counted races. A **delta** upserts only the listed races and leaves the others
   unchanged. Counters never decrease in this version, so a delta never removes a race.
@@ -113,31 +103,7 @@ message BestiaryViewV1 {
 
 ### 3.2 Charm view
 
-```proto
-enum CharmKind {
-  CHARM_KIND_UNSPECIFIED = 0;
-  CHARM_KIND_MAJOR = 1; // stages cost Charm Points
-  CHARM_KIND_MINOR = 2; // stages cost Minor Charm Echoes
-}
-
-message CharmStateV1 {
-  uint32 charm = 1;           // charm index, 1..=32
-  CharmKind kind = 2;
-  uint32 unlocked_stage = 3;  // 0 (locked) to 3
-  uint32 assigned_race = 4;   // race index; 0 = unassigned; only when unlocked_stage >= 1
-  uint32 next_stage_cost = 5; // in the kind's currency; 0 exactly when unlocked_stage == 3
-}
-
-// StateDelta.payload of domain 5 delta type 1 and StateDomainSnapshot.payload of snapshot type 1.
-// At most 490 bytes (Sol accepted 488 before the slot limit; the 490 needs Sol's acknowledgement on #162): 32 entries of at most 15 bytes, two balances of at most 4 bytes, and the slot
-// limit of at most 2 bytes.
-message CharmViewV1 {
-  repeated CharmStateV1 charms = 1;      // strictly ascending by charm, at most 32
-  uint32 charm_points_available = 2;     // derived, never stored; at most 1000000
-  uint32 minor_charm_echoes_available = 3; // derived, never stored; at most 1000000
-  uint32 assignment_slot_limit = 4;      // D169: 2 free, 6 Premium; 0 = no limit (Charm Expansion); at most 32
-}
-```
+Messages: `CharmKind`, `CharmStateV1` and `CharmViewV1` (at most 554 bytes) in `v1/charm_bestiary_v1.proto`.
 
 - The view is small, so **every delta replaces the whole view**.
 - The balances are derived by CHARM-3 (earned minus spent, CHARM-0 §4.2 and §7 answer 2a). The wire carries only
@@ -150,31 +116,15 @@ message CharmViewV1 {
   slots in use are the charms with `assigned_race != 0`, so they are not sent; sending them too would only add a way
   for the two to disagree. The view does not require the slots in use to be within the limit, because a lapsed
   Premium can leave more charms assigned than the free limit.
+- **Effect active (Sol ruling 5913269950, owner D235).** Each `CharmStateV1` carries `bool effect_active = 6`: whether
+  the server applies the charm's effect today. The server derives it from the charm's definition: `false` while
+  CHARM-4 names a `CharmMissingSystem` for the effect. The client cannot know which systems exist on the server;
+  it shows such a charm as "not yet active" and still lets the player unlock and assign it. The field costs at
+  most 2 bytes per entry, so the view bound is 32 × 17 + 8 + 2 = **554 bytes**.
 
 ### 3.3 Unlock the next stage
 
-```proto
-// ClientCommand.payload of command type 4. At most 8 bytes (canonical worst case 4).
-message CharmUnlockStageIntentV1 {
-  uint32 charm = 1;          // charm index, 1..=32
-  uint32 expected_stage = 2; // the stage the client saw, 0..=2; the command unlocks expected_stage + 1
-}
-
-enum CharmUnlockDisposition {
-  CHARM_UNLOCK_DISPOSITION_UNSPECIFIED = 0;
-  CHARM_UNLOCK_DISPOSITION_UNLOCKED = 1;
-  CHARM_UNLOCK_DISPOSITION_NOT_ENOUGH_CHARM_POINTS = 2;
-  CHARM_UNLOCK_DISPOSITION_NOT_ENOUGH_MINOR_CHARM_ECHOES = 3;
-  CHARM_UNLOCK_DISPOSITION_STAGE_MISMATCH = 4; // not at expected_stage: stale view, or already at stage 3
-  CHARM_UNLOCK_DISPOSITION_UNKNOWN_CHARM = 5;  // no charm has this index in the loaded content generation
-  CHARM_UNLOCK_DISPOSITION_REJECTED = 6;       // malformed intent, ineligible actor, lost fence, unavailable
-}
-
-// CommandResult.payload of command type 4: outcome only. At most 4 bytes.
-message CharmUnlockStageResultV1 {
-  CharmUnlockDisposition disposition = 1;
-}
-```
+Messages: `CharmUnlockStageIntentV1` (at most 8 bytes), `CharmUnlockDisposition` and `CharmUnlockStageResultV1` (at most 4 bytes) in `v1/charm_bestiary_v1.proto`.
 
 `expected_stage` lets the server refuse a command sent from a stale view. It is a check by the port before the
 commit, not a guarantee under the Character root lock: CHARM-3's `UnlockNextStage` carries no expected stage, and
@@ -189,31 +139,7 @@ command identity (§5), so CHARM-3 returns the retained `AlreadyCommitted` outco
 
 ### 3.4 Assign a charm to a race
 
-```proto
-// ClientCommand.payload of command type 5. At most 8 bytes (canonical worst case 5).
-message CharmAssignIntentV1 {
-  uint32 charm = 1; // charm index, 1..=32
-  uint32 race = 2;  // race index, 1..=1024
-}
-
-enum CharmAssignDisposition {
-  CHARM_ASSIGN_DISPOSITION_UNSPECIFIED = 0;
-  CHARM_ASSIGN_DISPOSITION_ASSIGNED = 1;
-  CHARM_ASSIGN_DISPOSITION_CHARM_LOCKED = 2;       // unlocked_stage == 0
-  CHARM_ASSIGN_DISPOSITION_ALREADY_ASSIGNED = 3;   // the charm holds a race; no unassign in this version
-  CHARM_ASSIGN_DISPOSITION_RACE_STAGE_TOO_LOW = 4; // major: complete entry; minor: stage 2 (CHARM-0 §4.2)
-  CHARM_ASSIGN_DISPOSITION_RACE_CHARM_LIMIT = 5;   // the race holds as many charms as the rule allows
-  CHARM_ASSIGN_DISPOSITION_UNKNOWN_CHARM = 6;
-  CHARM_ASSIGN_DISPOSITION_UNKNOWN_RACE = 7;
-  CHARM_ASSIGN_DISPOSITION_REJECTED = 8;           // malformed intent, ineligible actor, lost fence, unavailable
-  CHARM_ASSIGN_DISPOSITION_ASSIGNMENT_SLOTS_FULL = 9; // every assignment slot is in use (D169)
-}
-
-// CommandResult.payload of command type 5: outcome only. At most 4 bytes.
-message CharmAssignResultV1 {
-  CharmAssignDisposition disposition = 1;
-}
-```
+Messages: `CharmAssignIntentV1` (at most 8 bytes), `CharmAssignDisposition` and `CharmAssignResultV1` (at most 4 bytes) in `v1/charm_bestiary_v1.proto`.
 
 - `ALREADY_ASSIGNED` covers re-assigning a charm to the same race too. Moving an assigned charm needs the CHARM-6
   unassign (D170), which is not part of this proposal.
@@ -294,6 +220,8 @@ Recorded in the CHARM-0 packet §8 (PR #1295); decision-register numbers are ass
 | 11. Wire identifiers | **a** | Race and charm indices follow SPELL-D1 (§2): 1-based and derived per content generation. They are never stored; durable state keeps the Creature and charm keys. A display-name change moves no index. An added or removed race moves indices only in a new content generation, which both peers derive again. |
 
 ## 8. On acceptance
+
+Steps 1 and 2 are done by CHARM-5-REG (`OTV2-20260930-charm-5-reg`). Step 3 is CHARM-5-COMP.
 
 1. Register the command types and domains the protocol owner assigns in `PROTOCOL_OTERYN_V1_REGISTRY.json` with the
    byte bounds of §3, capability 1 `BESTIARY_CHARMS_V1` of §2, and `CHARM5-RL-01` to `CHARM5-RL-05` in

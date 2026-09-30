@@ -41,7 +41,18 @@
     {"id": 13, "name": "SnapshotCommit", "direction": "SERVER_TO_CLIENT", "phase": "POST_ADMISSION", "sequencing": "NONE"},
     {"id": 14, "name": "ProtocolError", "direction": "SERVER_TO_CLIENT", "phase": "ANY", "sequencing": "NONE"}
   ],
-  "capabilities": [],
+  "capabilities": [
+    {
+      "id": 1,
+      "name": "BESTIARY_CHARMS_V1",
+      "owner_decision": "CHARM-5 wire, CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 (Sol protocol acceptance #162 5907282001; CharmViewV1 bound and effect_active: Sol ruling #162 5913269950, owner D235)",
+      "owner": "Character Authority",
+      "command_types": [4, 5],
+      "state_domains": [4, 5],
+      "offered": false,
+      "offer_gate": "D170: the server does not offer this capability before CHARM-6 (unassign and reset) ships. Without it selected, domains 4 and 5 are never sent and command types 4 and 5 are refused as unsupported."
+    }
+  ],
   "command_types": [
     {
       "id": 1,
@@ -68,6 +79,26 @@
       "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#WorldActorSpellCastIntentV1",
       "result_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#WorldActorSpellCastResultV1",
       "max_payload_bytes": 32,
+      "max_result_payload_bytes": 4
+    },
+    {
+      "id": 4,
+      "name": "CHARM_UNLOCK_STAGE_INTENT",
+      "owner_decision": "CHARM-5 wire, CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 (Sol protocol acceptance #162 5907282001; CharmViewV1 bound and effect_active: Sol ruling #162 5913269950, owner D235)",
+      "capability": 1,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmUnlockStageIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmUnlockStageResultV1",
+      "max_payload_bytes": 8,
+      "max_result_payload_bytes": 4
+    },
+    {
+      "id": 5,
+      "name": "CHARM_ASSIGN_INTENT",
+      "owner_decision": "CHARM-5 wire, CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 (Sol protocol acceptance #162 5907282001; CharmViewV1 bound and effect_active: Sol ruling #162 5913269950, owner D235)",
+      "capability": 1,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmAssignIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmAssignResultV1",
+      "max_payload_bytes": 8,
       "max_result_payload_bytes": 4
     }
   ],
@@ -135,6 +166,54 @@
           "name": "ACTOR_VITALS_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#ActorVitalsV1",
           "max_payload_bytes": 32
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "CHARACTER_BESTIARY",
+      "owner_decision": "CHARM-5 wire, CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 (Sol protocol acceptance #162 5907282001; CharmViewV1 bound and effect_active: Sol ruling #162 5913269950, owner D235)",
+      "owner": "Character Authority",
+      "capability": 1,
+      "revision": "the CharacterRevision of the durable commit that last changed this domain's view; every admission, reconnect, resume and transfer starts with a full snapshot",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "CHARACTER_BESTIARY_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#BestiaryViewV1",
+          "max_payload_bytes": 21504
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "CHARACTER_BESTIARY_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#BestiaryViewV1",
+          "max_payload_bytes": 21504
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "CHARACTER_CHARMS",
+      "owner_decision": "CHARM-5 wire, CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 (Sol protocol acceptance #162 5907282001; CharmViewV1 bound and effect_active: Sol ruling #162 5913269950, owner D235)",
+      "owner": "Character Authority",
+      "capability": 1,
+      "revision": "the CharacterRevision of the durable commit that last changed this domain's view; every admission, reconnect, resume and transfer starts with a full snapshot",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "CHARACTER_CHARMS_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmViewV1",
+          "max_payload_bytes": 554
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "CHARACTER_CHARMS_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmViewV1",
+          "max_payload_bytes": 554
         }
       ]
     }
