@@ -134,6 +134,9 @@ does a hit do?
   committed damage still resolves.
 - Damage stays visible through the target's health percentage in domain 1 (D85). A dedicated
   combat-effects view (numbers, animations) is a later wire decision.
+  **Amendment (pending on acceptance of SPELL-PRESENT-0; `OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md` §4,
+  §5).** That view is the `WORLD_PRESENTATION` domain: hit, block and armour effects and damage
+  numbers from each committed swing, emitted by COMBAT-PRESENT-1.
 - Limits (ATTACK-WIRE-1 registers them): `ATTACK0-RL-01` target changes per second,
   `ATTACK0-RL-02` fight-mode changes per second.
 

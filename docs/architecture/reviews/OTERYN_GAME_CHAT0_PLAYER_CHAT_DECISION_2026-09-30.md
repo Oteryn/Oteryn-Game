@@ -78,6 +78,9 @@ How do players talk to each other: nearby, privately, and to the whole World?
   types and sends command 3 instead of a chat line, so the player experience matches Tibia.
   Showing a successful cast's words to spectators is left to a later spell presentation decision;
   until then spectators see the cast's effect only (`SpellBook::spoken` has no production caller).
+  **Amendment (pending on acceptance of SPELL-PRESENT-0; `OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md` §6).**
+  A successful cast's words reach players in the `say` range as a presentation event carrying the
+  spell index, not as a `CHAT` line; `SpellBook::spoken` keeps no production caller.
 - **NPC greeting.** When the speaker's client has capability 3, a `say` whose text contains, as a
   word, a greeting of an NPC within that NPC's talk range (`CHAT0-RL-08`, 4 tiles until NPC-0 fixes
   its own) also starts that NPC's conversation, as command 7 would. With several NPCs in range, the
