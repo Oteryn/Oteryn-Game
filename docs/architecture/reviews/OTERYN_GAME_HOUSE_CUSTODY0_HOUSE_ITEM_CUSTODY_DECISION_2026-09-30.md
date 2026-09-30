@@ -190,6 +190,13 @@ which fixes the fence and scope schema. HOUSE-CUSTODY-1 builds none of it.
 | House interior runtime | Fence and scope schema (decided there; §3.4 is direction), a new migration altering the `0003`/`0006` tables, writer, transfer shapes | HOUSE-CUSTODY-1; EXP-HOUSES-01 runtime decision |
 | House ownership and ACL | Opens §3.5, decides the Ground-on-house-tiles gate | house interior runtime |
 
+> **Pointer (pending on acceptance of HOUSE-OWN-0, #162 5912405163).** When HOUSE-OWN-0
+> (`OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md`) is accepted, it decides the
+> ownership and ACL row: its HOUSE-1 child keeps this order (it depends on the house interior
+> runtime child), answers the Ground-on-house-tiles gate (its §8: a house-tile guard on Ground
+> rows and a settlement check), and opens §3.5 only through SECURITY DEFINER disposition
+> functions.
+
 ## 5. Rejected options
 
 - **House items as Ground with an exemption flag.** Ground is channel-scoped, while house items

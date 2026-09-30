@@ -982,6 +982,15 @@ A future implementation must prove at least:
 
 Whole-gate acceptance does **not** freeze:
 
+> **Pointer (pending on acceptance of HOUSE-OWN-0, #162 5912405163).** When HOUSE-OWN-0
+> (`reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md`) is accepted, it sets
+> the first values for ordinary physical houses: a 7-day auction from the first bid, a 1-gold
+> increment, a 15-minute anti-sniping extension, the catalogue rent every 30 days in advance, a
+> 7-day grace, a 30-day eviction ban per Account and World, a 1-30 day move-out notice, at most
+> 256 bidders per auction, no reserve price and eligibility level 20. Its owner questions H1 (price
+> and rent as D178 sinks) and H2 (houses before Premium exists; until answered, §10 holds and
+> bidding fails closed) are open. This section keeps the values tunable.
+
 ### Auction / rent / economy numbers
 
 - rent amount/formula/cadence;
