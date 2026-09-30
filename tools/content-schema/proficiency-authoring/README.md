@@ -82,6 +82,10 @@ Canary `04b83b5` (`src/creatures/players/components/weapon_proficiency.*`) and C
   influence bonus. Canary and Crystal have the same base values. Canary has no influence bonus. Crystal
   gives a flat ×1.1 for any number of influence stacks and 1,500 for soulpit bosses, which the wiki does
   not list. The manual's 1-175 per kill and 1,000 per boss predate that revision.
+  **Owner decision (2026-09-30):** the wiki table is admitted as Reference evidence for the point table,
+  which lifts that PROFICIENCY-0 §4.5 parity gate; the Canary and Crystal values are not used. Soulpit
+  bosses give nothing until evidenced. Multi-player credit follows the wiki (every damage contributor, as
+  Bestiary). The ruleset lane (PROF-2) encodes it in `rulesets/progression/weapon-proficiency/`.
 - **Shaping** is in neither engine.
 
 ## Rules (`validate`)

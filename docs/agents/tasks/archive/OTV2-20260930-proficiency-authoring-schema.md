@@ -48,10 +48,22 @@ or runtime code, and no identity is registered; that stays with PROF-CONTENT-1.
   Its share token (`p` per-level index, `-1` unassigned; `s` shaped perks with rank) is Character state
   and shaping, not content, so it is not modelled.
 
+## Owner decisions (in session, 2026-09-30)
+
+1. Thresholds are catalogue-level tables per class, not per definition, because D197/D198/D200 choose
+   the class per weapon binding (as Canary does). This refines PROFICIENCY-0 §4.1.
+2. A weapon's threshold class comes from one rule, applied when content is built; the result is written
+   to the Item binding and checked in CI; `unknown` gets no proficiency; exceptions need a cited
+   override. PROF-CONTENT-1 implements it.
+3. The point table is TibiaWiki `Weapon_Proficiency` revid 1192598 (base by Bestiary difficulty,
+   +10% per influence stack, ×2.5 fiendish, bosses 500/5,000/15,000), admitted as Reference evidence.
+   This lifts that PROFICIENCY-0 §4.5 parity gate. Canary/Crystal values are not used; soulpit bosses
+   give nothing until evidenced. PROF-2 encodes it. The PROFICIENCY-0 document is amended by its owner
+   lane, not here.
+4. This schema ships as its own PR; PROF-CONTENT-1 follows separately.
+
 ## Assumptions (reversible, listed for review)
 
-- Thresholds are catalogue-level tables per class, not per definition, because D197/D198/D200 choose the
-  class per weapon binding. This refines PROFICIENCY-0 §4.1.
 - Revision `definition-r1` for every definition, as for Charms.
 
 ## Validation
@@ -59,6 +71,7 @@ or runtime code, and no identity is registered; that stays with PROF-CONTENT-1.
 - `python proficiency_authoring.py build --check`: up to date.
 - `python proficiency_authoring.py validate samples/proficiencies-candidate.json`: valid.
 - `python test_proficiency_authoring.py`: 4 tests pass.
+- Canary `04b83b5` and Crystal `96d13ef` read for cross-checking (README, `OtsHypothesisOnly`).
 - `ruff check .` and `ruff format --check .`: clean.
 
 ## Closeout
