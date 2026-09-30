@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-quest-state-0
-pr: "exact PR in the #162 FREEZE_SHA entry"
+pr: "#1373"
 base_sha: de1a6226
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -20,6 +20,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md
   - docs/agents/tasks/archive/OTV2-20260930-quest-state0.md
+  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_REVISION_ITEM_TRANSACTION_COMPOSITION_DECISION_2026-09-27.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -78,6 +79,13 @@ No code, migration or content change is made.
   initial values, own-quest tracks and declared bounds, a request-only binding, the profile family
   and D45 gates, and the §28/§4.6 rows. Its two owner questions (re-roll, text edits in the hash)
   were architect matters and are ruled in §8 and §6.
+- Review of `5b2af5b1` (#1373 5913876402: 1 HIGH, 4 MEDIUM, 4 LOW), all answered in one push: the
+  expected revision like the sibling writers, with a per-Character runtime cursor and quest after XP
+  and Bestiary in a kill composition; the pinned revision and hash on the receipt; bounded
+  obligations with a terminal `REFUSED` state and a guarded delete; composition rule 1 amended in
+  this PR and a new migration extending the `0012` guards; the HMAC draw seed with a fixed encoding
+  and the `cycle_ordinal` owner; `character_id` in the receipt key; database time for `SET_NOW`;
+  the `0022` citation; in-session obligation retries.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

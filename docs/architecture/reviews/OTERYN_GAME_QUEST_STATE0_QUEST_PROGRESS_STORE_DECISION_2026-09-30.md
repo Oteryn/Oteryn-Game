@@ -10,10 +10,11 @@
   quest-owned cooldown tracks); the account progress decision (D44-D49; §4.1 P2 revision pinning;
   D45 `AccountQuestCompletion`, D46); the reward chest decisions (D39-D42); the composition decision
   §3 (rule 1 and its NPC-0 obligation-row amendment); migrations `0009`, `0012`, `0016`, `0017`,
-  `0019`, `0020` (the CharacterRevision receipt chain and its current guard); NPC-0 §5.1; ADR-0010
+  `0019`, `0020` (the CharacterRevision receipt chain and its current consistency guard), `0022`
+  (which replaced the root revision guard); NPC-0 §5.1; ADR-0010
   (World product profiles); DUR-02 §4.1 and §4.6; FND-02 §13.3
-- Amends: nothing yet. The quest format §3.2 and §7 gain a pointer when this is accepted
-  (QUEST-STATE-1 writes it).
+- Amends, pending on acceptance of QUEST-STATE-0: the composition decision rule 1 (obligation rows,
+  written in this PR). The quest format §3.2 and §7 gain a pointer with QUEST-STATE-1.
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -21,7 +22,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| QUEST-STATE-1 | hard, persistence review | the track, quest-state, receipt, obligation and account-completion tables, the sixth receipt kind in the consistency guard, the transition writer (§3-§6) | this decision |
+| QUEST-STATE-1 | hard, persistence review | the track, quest-state, receipt, obligation and account-completion tables; the sixth receipt kind in the consistency guard; a new migration extending the `0012` claim guards for obligation rows; the transition writer (§3-§6) | this decision |
 | QUEST-PRED-1 | impl | the read-only predicate API over the session's track copy (§7) | QUEST-STATE-1 |
 | QUEST-CONTENT-1 | content lane | `Quest` and `Interaction` as data-only families (ruling A2): track keys with owner quest, initial value and bounds; transitions with closed effect kinds; the 111 gap-free `reward_only` quests first | this decision |
 | CHEST-RANDOM-1 | CHEST lane, hard | the deterministic `random_one_of` draw and its column on the claim (§8) | this decision |
@@ -82,7 +83,8 @@ Where does a character's quest progress live, and how does it change safely?
   - `from`: `any`, `=`, `!=`, `<`, `<=`, `>`, `>=`, `in [a, b]`, or `elapsed >= s` (now minus the
     value, in seconds);
   - `effect`: `SET v`, `ADD n` (checked `i64`), or `SET_NOW` (server Unix time), each within the
-    track's `[min, max]`.
+    track's `[min, max]`. `SET_NOW` and `elapsed` use the database transaction time (`now()`), never
+    a node clock.
 - The 35 `computed: expression` effects have no kind yet: each needs a closed kind added by
   amendment, and until then its transition is `NOT_SUPPORTED`.
 - A transition may carry `completes: true`, which completes its quest (§3).
@@ -99,7 +101,9 @@ Where does a character's quest progress live, and how does it change safely?
 ### 5.1 Receipt
 
 - `game_character_quest_receipts`: one immutable row per committed transition, keyed by
-  **(cause occurrence, transition_key)**, so one kill or reply may move several quests. It holds a
+  **(character_id, cause occurrence, transition_key)**, so one kill or reply may move several
+  quests and several characters. It also records the quest's pinned content revision and
+  `definition_hash` (ruling A1, #707 P2). It holds a
   SHA-256 binding of the **request only** (character, transition key, cause), and separately the
   effects' before and after values.
 - The chain columns are those of the `0020` receipts: original and committed CharacterRevision,
@@ -112,10 +116,14 @@ Where does a character's quest progress live, and how does it change safely?
   advances `game_character_roots` and `game_character_progression_state` together, as the charm
   writer does. QUEST-STATE-1 replaces the `0020` consistency guard to admit a **sixth** receipt kind,
   exactly one receipt per revision.
-- **No expected revision.** The quest writer takes no revision from its caller: it reads the root
-  revision under the `character_root` lock, and `from` under lock is its validation. So a quest
-  write and an XP or Bestiary write from the same kill serialize on `character_root` in either
-  order, with no `CharacterRevisionMismatch` and no retry.
+- **Expected revision, as its siblings.** Like the XP, death, Bestiary and charm writers
+  (`character_progression.rs`, `death_reward.rs`), the quest writer checks the fence's
+  `expected_character_revision` and returns `CharacterRevisionMismatch` otherwise. The runtime keeps
+  one revision cursor per Character and advances it after every committed receipt of any kind. In a
+  creature-death composition, quest transitions run **after** XP and Bestiary and take the revision
+  those committed (the `bestiary_expected_revision` pattern). On a mismatch the runtime reloads the
+  cursor and retries the same request; the binding excludes the revision, so a retry replays or
+  commits once.
 
 ### 5.3 Fence and locks
 
@@ -130,12 +138,21 @@ Where does a character's quest progress live, and how does it change safely?
 
 - A chest that both gives items and advances a quest does not share one transaction: the claim
   stays item-only (composition rule 1; DUR-03 §39.3 unchanged). The claim transaction also writes a
-  `game_character_quest_obligations` row (character, claim occurrence, transition key), an
-  obligation outside the revision chain like NPC-0's pending arrival.
-- The runtime then requests the transition with that obligation as its cause, and the transition
-  deletes the row in its own transaction. At admission, pending obligations are requested again
-  before play. A refused transition leaves the row and logs it; nothing is lost.
-- `0012` gains the obligation row as an allowed companion of the claim (QUEST-STATE-1).
+  `game_character_quest_obligations` row (character, claim occurrence, transition key, state
+  `PENDING`), an obligation outside the revision chain like NPC-0's pending arrival. The claim does
+  not lock quest tracks, so the items may be given while the quest step is later refused: that is
+  accepted by design, since the claim is the reward and the step only records progress.
+- The runtime then requests the transition with that obligation as its cause. The committing
+  transition deletes the row in its own transaction, and a guard allows that delete only together
+  with the receipt that names the obligation. A validation refusal sets the row to `REFUSED`
+  (terminal, with its result code, kept for audit); nothing is lost and nothing is retried.
+- Pending obligations are requested again at admission and after a failed attempt within the
+  session (backoff, at most once a minute). A claim that would make more than `QUESTSTATE0-RL-07`
+  (64) pending obligations for the character is refused before anything is written
+  (`OBLIGATIONS_FULL`).
+- The claim guards of `0012` are extended by a **new** QUEST-STATE-1 migration (not by editing
+  `0012`), to allow the obligation row as a companion of the claim; composition rule 1 is amended
+  to cover obligation rows (written in this PR).
 
 ## 6. Revision pinning (QUEST-STATE-1)
 
@@ -155,11 +172,14 @@ Where does a character's quest progress live, and how does it change safely?
 
 ## 8. Random rewards (CHEST-RANDOM-1, ruling A7)
 
-- `random_one_of` draws from `SHA-256(claim_key || character_id || cycle_ordinal)`: the first 8
-  bytes as an unsigned integer, by rejection sampling onto the option count. The seed has no
-  command occurrence, so a retry after a refusal (for example a full backpack, D41) draws the same
-  option: no re-roll. The claim row records the index. This is an architect ruling; the reference
-  servers draw again on each attempt.
+- `random_one_of` draws from `HMAC-SHA256(world_draw_key, u16 length || claim_key ||
+  character_id (16 bytes) || cycle_ordinal (u64 big-endian))`: the first 8 bytes as an unsigned
+  integer, by rejection sampling onto the option count. `world_draw_key` is a per-World server
+  secret, so players cannot predict which character would draw which option. `cycle_ordinal` is 0
+  for a once-only claim (all of `0012`); the D42 cooldown decision owns it for repeatable claims.
+- The seed has no command occurrence, so a retry after a refusal (for example a full backpack,
+  D41) draws the same option: no re-roll. The claim row records the index. This refines ruling A7's
+  "claim occurrence" wording (5913269950); the reference servers draw again on each attempt.
 
 ## 9. Rows (registered by QUEST-STATE-1)
 

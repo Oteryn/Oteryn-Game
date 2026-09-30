@@ -171,6 +171,11 @@ row (`game_character_pending_arrivals`), an obligation outside the revision chai
 pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transactions under rules
 1-6 (`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6).
 
+**Quest obligation amendment (pending on acceptance of QUEST-STATE-0, #1373;
+`OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md` §5.4).** Rule 1 also covers a
+`game_character_quest_obligations` row written by a reward-claim transaction: an obligation outside
+the revision chain, like the pending arrival; the claim still advances no `CharacterRevision`.
+
 ## 4. Rejected options
 
 - **Put every item transaction into the `CharacterRevision` chain** with a closed union of typed
