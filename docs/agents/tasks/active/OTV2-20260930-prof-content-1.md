@@ -7,10 +7,10 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/prof-content-1-proficiency-definitions
+branch: claude/prof-content-1b-proficiency-rust
 issue: 162
-pr: 1328
-base_sha: null   # stacked on #1327 (claude/inspiring-lamport-nc623x) until it merges
+pr: 1339
+base_sha: 1852a69   # #1327 and #1328 merged; 1b-1d stacked
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -28,9 +28,9 @@ owned_paths:
   - tools/content-migration/validate_world_project_v2_to_tree.py
   - tools/content-migration/test_world_project_v2_to_tree.py
   - docs/agents/tasks/active/OTV2-20260930-prof-content-1.md
-  # 1b adds: apps/game-server/src/content/project/v2.rs, the DefinitionFamily in
-  # apps/game-server/src/content/reference_playable.rs, apps/game-server/tests/content_world_project_v2.rs,
-  # tools/content-schema/item-authoring/** (PROFICIENCY-0 brief)
+  # 1b: apps/game-server/src/content/project/v2.rs, apps/game-server/src/content/project/v2/proficiency.rs,
+  # apps/game-server/tests/content_world_project_v2.rs
+  # 1c: tools/content-schema/item-authoring/** (after #1326)
 public_contracts: []
 depends_on:
   - "#1327 (proficiency authoring schema)"
@@ -44,14 +44,20 @@ jira: null   # sync pending (coordinator batch)
 
 ## Outcome (target)
 
-- **1a (this branch):** `content/proficiencies/` holds the 443 definitions from the #1327 candidate
+- **1a (#1328, merged as `1852a69`):** `content/proficiencies/` holds the 443 definitions from the #1327 candidate
   (index + 3 shards). Keys `oteryn:proficiency.tibia.p<id>` are minted here. `Proficiency` is registered
   in project, manifest and lock, and `world_project_v2_to_tree.py` knows it, so its output stays
   byte-identical. No runtime loading.
-- **1b (next PR):**
-  - Items carry `proficiency.profile_binding` only. The inline `levels`/`shaping` are removed from
-    `item.schema.json` and `ProjectV2WeaponProficiencyProfile`, and the Rust definition family is
-    added.
+- **1b (branch `claude/prof-content-1b-proficiency-rust`, PR #1339, stacked on #1328; owner answer `a`):**
+  - `v2.rs` + `v2/proficiency.rs`: family `Proficiency`, declaration `Proficiency {identity, levels,
+    fields}`, levels 1..7 of 1..3 typed perks (33 kinds, D199), values as exact ratios, perk order kept.
+  - Item `proficiency` is `{profile_binding: ProficiencyRef, threshold_class}`; the inline
+    `levels`/`shaping` (`ProjectV2PerkShaping`) are removed.
+  - Tests: the item round trip, one negative case per rule, and all 443 `content/proficiencies/`
+    definitions lowered to typed declarations and validated.
+- **1c (after #1326, which derives the threshold class per binding, merges):**
+  - Items carry `proficiency.profile_binding` and the threshold class. The inline `levels`/`shaping`
+    are removed from `item.schema.json` (`build_formal_schema.py`).
   - The threshold class comes from the rule (owner decision 2 in the #1327 record).
   - The crosswalk-rule amendment and the coverage report.
 
@@ -73,3 +79,8 @@ Threshold tables and the point table are progression rules, so they are not writ
 - `test_world_project_v2_to_tree.py`: PASS (160 managed files).
 - `validate_materialized_game_tree.py`: 97/97.
 - `test_classify_content_routing.py`: PASS.
+
+## Validation (1b, local)
+
+- `cargo test -p oteryn-game-server`: 13,765 passed, 0 failed (55 suites). `content_world_project_v2`: 18.
+- `cargo fmt --all -- --check`: clean. `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: clean.

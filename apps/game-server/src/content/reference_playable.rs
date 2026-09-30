@@ -2331,17 +2331,47 @@ fn validate_definition_references(
         }
         ReferenceDefinitionKind::RewardClaim(claim) => {
             for item in claim.placements.iter().flat_map(|entry| &entry.items) {
-                resolve_expected_definition(
+                let target = resolve_expected_definition(
                     definitions,
                     &item.item,
                     DefinitionFamily::Item,
                     "reference-playable reward claim item must target Item",
                 )?;
+                validate_reward_claim_count(target, item.count)?;
             }
             Ok(())
         }
         _ => Ok(()),
     }
+}
+
+/// A reward count must fit the Item's known stack facts: one for a non-stackable Item, and no
+/// more than a known stack maximum. Unknown facts are left to the MINT admission, which fails
+/// closed on them (D82).
+fn validate_reward_claim_count(
+    target: &ReferenceDefinition,
+    count: u32,
+) -> Result<(), ContentError> {
+    let ReferenceDefinitionKind::Item(item) = &target.kind else {
+        return Ok(());
+    };
+    let over = match item.stack_class {
+        ReferenceItemStackClass::NonStackable => count != 1,
+        ReferenceItemStackClass::StackCapable => match &item.semantics.stack {
+            ReferenceItemField::Known(stack) => match stack.stack_max {
+                ReferenceItemField::Known(maximum) => count > u32::from(maximum),
+                _ => false,
+            },
+            _ => false,
+        },
+        ReferenceItemStackClass::Unknown => false,
+    };
+    if over {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim count exceeds the Item's stack",
+        ));
+    }
+    Ok(())
 }
 
 /// D38 W1b: fail-closed both directions. A `LocalObject` placement must carry an authored

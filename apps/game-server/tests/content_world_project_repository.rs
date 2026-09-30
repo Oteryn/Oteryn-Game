@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "86bae49aa8610c68571eda5df380cb09022b51f013395307072f3e26ff338d88",
+        "2c069ded1885a05fd9aace5a4560a0bf3214a69d175a223d9365d02b10379b5d",
     ),
     (
         "definitions/declarations.json",
-        14_954_067,
-        "209a3f6035dd39d2840c4511847bbc14e76c58af81f0d00518b373b6fb74ea72",
+        14_960_389,
+        "3c060e5d8b028c55a27e292dbce357767c3b2afe35a8fe4b01879f7959543ede",
     ),
     (
         "definitions/reference.json",
-        22_195_455,
-        "08e8c341e72ab1455c98d4634e5a695bb80ce697f88bc7b9f0adfd9ba69900a2",
+        22_202_458,
+        "b14f74ab6e24acef17833597746668a764c925387c84d57715183584b1e7587e",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1937,
-        "cfc7ef3607d63e85f76f8ca8375da96ca8cc67a052c1e7f83a15c49cc88b3eda",
+        1_937,
+        "b8ba7d7095a423b18a0c381f9b30da116f0159df67606b8e371da8eee133f28a",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "b10941378979efee83a5f44c18163b7e5f81ab61ffc7a82a73bff18c3992ffe0",
+        "68ae11fcbea6f8a7a36de086b922c7cb1c55ed452673b38659f42a563c7d06f2",
     ),
     (
         "provenance/imports.json",
         32_476,
-        "f24033613cae1b0785eefe3760020ec0fe48a9025215367980a25429e88b22a4",
+        "d05b18a4e7168f335c29a5ca81e359f797935ef261f7a51a140cf4742876a195",
     ),
     (
         "provenance/sources.json",
-        1_301_466,
-        "5b582b20ec11e6d4478d3d4a831535c09b5c9c482a6eb87dd12922caf595183d",
+        1_301_759,
+        "f62790a68c2e12f03cf82cec5dd1f91d7f7fc33a7dbe31d0c33267f05ecbffa6",
     ),
     (
         "worlds/world.json",
@@ -81,22 +81,27 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
-/// WO-2 catalogue shards beside the legacy package: `(directory, shard prefix)`. Their
-/// bytes are pinned by `build_catalogue.py --check`, not by this package inventory.
-const WORLD_CATALOGUE_SHARDS: [(&str, &str); 2] =
-    [("terrain/", "terrain-"), ("objects/", "objects-")];
+/// WO-2 and Area catalogue shards beside the legacy package: `(directory, shard prefix)`.
+/// Their bytes are pinned by `build_catalogue.py --check` and `build_areas.py build --check`,
+/// not by this package inventory.
+const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
+    ("terrain/", "terrain-"),
+    ("objects/", "objects-"),
+    ("areas/cities/", "areas-"),
+    ("areas/regions/", "areas-"),
+];
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a049fdbf7564be67cca215df69d85d604d112f6f714795831163b34fb71cc1e7";
+const TREE_SHA256: &str = "ae136bdd9dcff58eb33e0ccc72fdcf2d461f847acf6e85318f0808d6776f9650";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
 const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1476;
-const CREATURE_RECORDS: usize = 20638;
-const CREATURE_PROFILES: usize = 19693;
+const CREATURES: usize = 1477;
+const CREATURE_RECORDS: usize = 20652;
+const CREATURE_PROFILES: usize = 19706;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1102;
 const NPC_RECORDS: usize = 2204;
