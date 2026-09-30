@@ -67,7 +67,11 @@ CHECKS = (
     ["python3", "tools/content-census/item_key_references.py"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
-    ["python3", "tools/content-schema/item-authoring/item_weapon_proficiency.py", "--check"],
+    [
+        "python3",
+        "tools/content-schema/item-authoring/item_weapon_proficiency.py",
+        "--check",
+    ],
     ["python3", "tools/content-census/g4_item_crystal_binding_generator.py", "--check"],
     [
         "cargo",
@@ -88,20 +92,40 @@ def run(command: list[str]) -> None:
 
 
 def git(*args: str) -> str:
+    """Run git and fail closed: any error stops the script instead of reading as "nothing"."""
     result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
-    return result.stdout if result.returncode == 0 else ""
+    if result.returncode != 0:
+        raise SystemExit(f"git {' '.join(args)} failed: {result.stderr.strip()}")
+    return result.stdout
+
+
+def show(stage: str, path: str) -> str | None:
+    """The file at an index stage (":1:", ":2:", ":3:") or "HEAD:"; None when it has none."""
+    if stage == "HEAD:":
+        present = bool(git("ls-tree", "HEAD", "--", path))
+    else:
+        entries = (
+            entry.partition("\t")
+            for entry in git("ls-files", "-z", "--stage", "--", path).split("\0")
+        )
+        present = any(
+            name == path and info.split()[2] == stage.strip(":")
+            for info, _, name in entries
+        )
+    return git("show", f"{stage}{path}") if present else None
 
 
 def derived_paths() -> set[str]:
     """Every path the steps below write: the managed files of both merge sides, and the rest."""
     managed = set()
     for stage in (":2:", ":3:", "HEAD:", ""):
-        spec = f"{stage}content/manifest.json"
         text = (
-            git("show", spec)
+            show(stage, "content/manifest.json")
             if stage
             else (ROOT / "content/manifest.json").read_text(encoding="utf-8")
         )
+        if text is None:
+            continue  # no merge in progress, so that stage does not exist
         try:
             managed.update(row["path"] for row in json.loads(text)["managed_files"])
         except ValueError:
@@ -120,7 +144,7 @@ def needs_person(path: str, derived: set[str]) -> bool:
 
 
 def resolve_conflicts() -> list[str]:
-    conflicted = git("diff", "--name-only", "--diff-filter=U").split()
+    conflicted = git("diff", "--name-only", "--diff-filter=U").splitlines()
     derived = derived_paths()
     manual = [path for path in conflicted if needs_person(path, derived)]
     # Check everything before writing anything, so a stop leaves the merge untouched.
@@ -137,10 +161,10 @@ def resolve_conflicts() -> list[str]:
     for path in conflicted:
         if path == PIN_PATH:
             merge_pin_test(write=True)
-        elif git("show", f":3:{path}"):
+        elif show(":3:", path) is not None:
             # Fully derived: either side parses, and the steps below overwrite it exactly.
             run(["git", "checkout", "--theirs", "--", path])
-        elif git("show", f":2:{path}"):
+        elif show(":2:", path) is not None:
             run(["git", "checkout", "--ours", "--", path])
         else:
             (ROOT / path).unlink(missing_ok=True)
@@ -165,7 +189,7 @@ def merge_pin_test(*, write: bool) -> bool:
                 if m.group(1)
                 else f"{m.group(4)}{'0' * 64}{m.group(5)}"
             ),
-            git("show", f"{stage}{PIN_PATH}"),
+            show(stage, PIN_PATH) or "",
         )
 
     with tempfile.TemporaryDirectory() as temp:
@@ -292,7 +316,7 @@ def main() -> int:
             path
             for path in git(
                 "ls-files", "--modified", "--others", "--exclude-standard"
-            ).split()
+            ).splitlines()
             if path in derived
         ]
         run(["git", "add", "-A", "--", *sorted(set(conflicted) | set(changed))])

@@ -83,6 +83,10 @@ Removing them would weaken protection, so the script re-pins them instead.
   `content/world` and the Rust pins; other Item-derived artifacts and hand-written count pins may
   need a manual edit.
 - **LOW.** The coordinator paragraph follows Amendment 01 §5 and STOP_WRITES.
+- **P1 (Codex, `ee359e5f`).** `git()` treated a failed command as empty output, so a failed
+  conflict listing read as "no conflicts" and regeneration went ahead. Any git failure now stops
+  the script. Missing merge stages are detected with `ls-files --stage` / `ls-tree`, and a fixture
+  test with a corrupt index proves `--resolve` exits non-zero without running or writing anything.
 
 ## Evidence
 
