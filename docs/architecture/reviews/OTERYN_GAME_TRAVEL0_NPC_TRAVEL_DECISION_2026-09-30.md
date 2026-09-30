@@ -126,6 +126,9 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
     `TRAVEL0-RL-07` bytes; a route has 1 to `TRAVEL0-RL-08` keywords, no duplicates;
   - `gate`: optional, a QUEST-GATE-0 condition (at most `QUESTGATE0-RL-01` predicates);
   - `discounts`: at most `TRAVEL0-RL-04` entries `{key, gate, amount}`, `amount` in gold, positive.
+    Each `key` is canonical (ASCII case-folded, one whole token without whitespace or control
+    characters), non-empty, at most `TRAVEL0-RL-07` bytes and unique within its route, so the
+    cause record's applied-key list names exactly the authored entries that were summed;
 - **Kinds.** Ships, carpets and other transport NPCs (ferrymen, the Rapanaio boats, the Buddel
   rafts) are the same route shape. The vehicle only changes the reply template text.
 - **Validator rules** (compile time, a failure holds the route with a diagnostic):
@@ -135,6 +138,8 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
     price cap); the route's aggregate discount sum, over all its entries, is computed at compile
     time with checked unsigned 64-bit addition, and an overflow fails the route closed; the
     discount sum may exceed the price;
+  - discount keys are canonical, non-empty, bounded and unique within each route (above); a
+    duplicate or malformed key holds the route, never merged or deduplicated at runtime;
   - gates and discount gates name known tracks (QUEST-GATE-0 §3.3);
   - keywords are canonical, non-empty and bounded (above), and disjoint across all routes of one
     travel service (NPC), so one keyword selects at most one route; a keyword violation fails the
@@ -168,7 +173,10 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
 ## 6. Eligibility and refusals
 
 Checked in this order. Steps 1-7 run in the talk runtime before the confirmation and again when
-`yes` arrives; steps 3-6, 8 and 9 are re-read in the transaction from durable facts. Step 6 is
+`yes` arrives; steps 3-6, 8 and 9 are re-read in the transaction from durable facts (step 8 there
+`checks the durable pending respawn and pending arrival only: the hold this invocation itself placed
+at §7.1 is the expected one and never refuses its own commit; any other hold cannot exist, because
+there is one hold per actor). Step 6 is
 re-verified there because combat goes on during the travel hold (§7.1): a PZ block or kill block
 gained between the request and the commit refuses with the same step-6 refusal cause, writes
 nothing and releases the hold. PARTY-PVP-0 exposes both blocks as facts that transaction reads
@@ -191,7 +199,8 @@ writes nothing.
    (ruling R2). Until PARTY-PVP-0 lands no block refuses.
 7. **Cooldown.** `TRAVEL0-RL-03` (3 s, `PARITY_PENDING`) since this character's last arrival;
    checked before any payment, unlike Canary.
-8. **Obligations.** No pending respawn, no pending arrival, no travel hold (§7.1).
+8. **Obligations.** No pending respawn, no pending arrival, no travel hold (§7.1). In the
+   transaction re-check the travel hold is excluded: only the durable obligations are re-read.
 9. **Funds.** `F` from coins, then the bank (BANK-FEE-0 §5); insufficient funds refuses.
 
 A summon or convinced creature never refuses travel; it stays behind and is removed (ruling R3).
@@ -241,9 +250,13 @@ release consumes an arrival whose actor has arrived, before its last-position wr
 
 ### 7.5 Ambiguous commit
 
-After `TRAVEL0-RL-02` (2,000 ms) the hold is released and the conversation's invocation stays
-pending until reconciliation by occurrence replay (FND-02 §13.3). A commit known late still
-relocates, because the obligation is durable. A late abort pays nothing. Logout and channel
+After `TRAVEL0-RL-02` (2,000 ms) the outcome is ambiguous: the invocation stays pending until
+reconciliation by occurrence replay (FND-02 §13.3), and **the hold is kept** (architect ruling,
+fail closed): the actor stays frozen, so its position revision cannot advance past the one
+captured at the hold (§7.3) and a late commit can still place and consume the arrival. The hold
+is released only at a known outcome: a commit places the actor and consumes the arrival (§7.3,
+§7.4); an abort releases it and pays nothing. The 2,000 ms bound raises the ambiguity alert and
+the long-hold metric, it does not release the hold. Logout and channel
 transfer wait for the outcome and the consume, within the same bound.
 
 ## 8. Channel and World
@@ -274,7 +287,7 @@ domain (`PARITY_PENDING`).
 | Row | Value |
 |---|---|
 | `TRAVEL0-RL-01` travel holds per actor | 1 (the conversation's pending invocation) |
-| `TRAVEL0-RL-02` hold to known outcome, ambiguity bound | 2,000 ms; p99 measured by NPC-TRAVEL-1 |
+| `TRAVEL0-RL-02` hold to known outcome, ambiguity alert bound | 2,000 ms; p99 measured by NPC-TRAVEL-1 |
 | `TRAVEL0-RL-03` re-travel cooldown | 3 s, `PARITY_PENDING` |
 | `TRAVEL0-RL-04` discounts per route | 4 |
 | `TRAVEL0-RL-05` routes per travel service | 32 (content today: 11) |
@@ -303,7 +316,8 @@ shape; a trip that never changes World.
 
 **Declared differences:**
 - No stacking on the arrival tile; the spiral fallback instead (R1).
-- The travel hold freezes walking for about one commit (`TRAVEL0-RL-02`).
+- The travel hold freezes walking for about one commit (`TRAVEL0-RL-02`); an ambiguous commit
+  keeps it until reconciliation.
 - Cooldown value, Postman rank and the teleport effect are `PARITY_PENDING`.
 - `kick`, the ore-wagon ticket and Travora are not built (§14 R1, §16).
 
