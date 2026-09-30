@@ -1,7 +1,8 @@
 //! World Project to server World Bundle compilation (ADR-0021 §4.2-§4.6).
 //!
 //! The placements are checked against the Transition.Teleport and House families
-//! ([`crate::project`]); [`parity`] reports every teleport and house disagreement at once.
+//! ([`crate::project`]); [`parity`] reports every teleport and house disagreement at once, and
+//! [`equivalence`] proves a compiled bundle tile by tile against its source.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -68,10 +69,12 @@ enum Teleport {
 }
 
 fn teleport(families: &Families, from: LegacyPosition, to: LegacyPosition) -> Teleport {
+    // A record from this tile decides first: a (0,0,0) attribute on a Transition tile is a
+    // mismatch, never a silent drop.
     match families.teleports.get(&from) {
-        _ if to == (0, 0, 0) => Teleport::ZeroDestination,
         Some(record) if *record == to => Teleport::Matched,
         Some(_) => Teleport::Mismatch,
+        None if to == (0, 0, 0) => Teleport::ZeroDestination,
         None => Teleport::NoRecord,
     }
 }
@@ -362,4 +365,119 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
         diagnostics: state.diagnostics,
         dropped_teleports: state.dropped,
     })
+}
+
+/// What [`equivalence`] compared.
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct Equivalence {
+    pub tiles: usize,
+    pub entries: usize,
+    /// Source entries left out as provisional, container contents included.
+    pub skipped_entries: usize,
+    pub dropped_teleports: usize,
+}
+
+/// Proves `bundle` equal to its source `regions` tile by tile (ADR-0021 §4.6, §4.8), derived
+/// from the bundle's own manifest rather than the compiler state: every source tile is at its
+/// native position with the same flags, house and zones, and every entry keeps its depth,
+/// attributes and palette key, except the rules of the format document: a subtree under a
+/// `skipped_provisional_keys` key is left out, a (0,0,0) teleport is dropped, and a teleport
+/// floor is native. The bundle holds no other tile.
+pub fn equivalence(
+    regions: &[Vec<u8>],
+    palette: &[String],
+    bundle: &[u8],
+) -> Result<Equivalence, Error> {
+    let read = bundle::read(bundle)?;
+    let differs = |what: String| Err(Error::Format(format!("equivalence: {what}")));
+    let skipped: BTreeSet<&str> = read
+        .manifest
+        .skipped_provisional_keys
+        .iter()
+        .map(String::as_str)
+        .collect();
+    let (mut report, mut budget) = (Equivalence::default(), bundle::BUNDLE_BUDGET);
+    let mut seen = BTreeSet::new();
+    for data in regions {
+        let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        let floor = native_floor(region.z)?;
+        for (sx, sy, tiles) in region.sectors {
+            let at = (floor, sy, sx);
+            if !seen.insert(at) {
+                return differs(format!("sector {at:?} given twice"));
+            }
+            let found = read
+                .sectors
+                .binary_search_by_key(&at, |s| (s.floor, s.sy, s.sx));
+            let compiled = found.map_or(&[][..], |i| &read.sectors[i].tiles[..]);
+            if compiled.len() != tiles.len() {
+                return differs(format!("sector {at:?} has another tile count"));
+            }
+            for (source, tile) in tiles.iter().zip(compiled) {
+                let expected = source_entries(source, palette, &skipped, &mut report)?;
+                let got: Vec<_> = tile
+                    .items
+                    .iter()
+                    .map(|item| {
+                        let key = read.manifest.palette.get(item.palette as usize);
+                        (
+                            key.map(|entry| entry.key.as_str()),
+                            item.depth,
+                            item.attrs.clone(),
+                        )
+                    })
+                    .collect();
+                let place = |t: &Tile| (t.x, t.y, t.flags, t.house, t.zones.clone());
+                if place(source) != place(tile) || got != expected {
+                    let (x, y) = (source.x, source.y);
+                    return differs(format!("tile ({x}, {y}, {floor}) differs from its source"));
+                }
+                report.tiles += 1;
+                report.entries += got.len();
+            }
+        }
+    }
+    let total: usize = read.sectors.iter().map(|s| s.tiles.len()).sum();
+    if total != report.tiles {
+        return differs(format!(
+            "{} bundle tiles have no source",
+            total - report.tiles
+        ));
+    }
+    Ok(report)
+}
+
+type Entry<'a> = (Option<&'a str>, u8, crate::sector::Attrs);
+
+/// The entries a source tile compiles to under the format rules [`equivalence`] names.
+fn source_entries<'a>(
+    tile: &Tile,
+    palette: &'a [String],
+    skipped: &BTreeSet<&str>,
+    report: &mut Equivalence,
+) -> Result<Vec<Entry<'a>>, Error> {
+    let mut items = Vec::with_capacity(tile.items.len());
+    let mut skip_below: Option<u8> = None;
+    for item in &tile.items {
+        if skip_below.is_some_and(|depth| item.depth <= depth) {
+            skip_below = None;
+        }
+        let key = palette.get(item.palette as usize).map(String::as_str);
+        if skip_below.is_some() || key.is_some_and(|key| skipped.contains(key)) {
+            skip_below = skip_below.or(Some(item.depth));
+            report.skipped_entries += 1;
+            continue;
+        }
+        let mut attrs = item.attrs.clone();
+        attrs.teleport = match attrs.teleport {
+            Some((0, 0, 0)) => {
+                report.dropped_teleports += 1;
+                None
+            }
+            Some((x, y, z)) => Some((x, y, native_floor(z)? as u8)),
+            None => None,
+        };
+        items.push((key, item.depth, attrs));
+    }
+    Ok(items)
 }

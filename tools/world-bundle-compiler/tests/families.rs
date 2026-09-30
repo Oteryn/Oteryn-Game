@@ -5,7 +5,9 @@ use std::error::Error as StdError;
 
 use oteryn_world_bundle_compiler::Error;
 use oteryn_world_bundle_compiler::bundle::{self, BuildClass, Extent, Family, Identity};
-use oteryn_world_bundle_compiler::compile::{Input, KeyResolver, Resolution, compile, parity};
+use oteryn_world_bundle_compiler::compile::{
+    Input, KeyResolver, Resolution, compile, equivalence, parity,
+};
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
 
@@ -163,6 +165,12 @@ fn teleports_and_houses_disagreeing_with_their_families_fail() -> TestResult {
     let mut unused = families();
     unused.teleports.insert((7, 7, 7), (9, 9, 6));
     assert!(family(build(map(), &unused)));
+    // A (0,0,0) attribute on a tile that has a Transition record is a mismatch, not a drop.
+    let zero_on_record = vec![tile(3, 1, 0, vec![item(0, 0, Some((0, 0, 0)))])];
+    assert!(family(build(zero_on_record.clone(), &families())));
+    let report = parity(&[region(zero_on_record)?], &families())?;
+    assert!(report.zero_destination.is_empty());
+    assert_eq!(report.mismatched, [((3, 1, 7), (0, 0, 0))]);
     // A house id the House family does not have.
     let mut no_house = families();
     no_house.houses.clear();
@@ -221,5 +229,27 @@ fn family_shards_load_in_the_native_frame_and_fail_closed() -> TestResult {
         r#"{"source":{"minimap_draft":{"areas":[{"name":"nargor"},{"name":"nargor"}]}}}"#,
     )?;
     assert!(project::draft_areas(&twice).is_err());
+    Ok(())
+}
+
+#[test]
+fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
+    let regions = [region(map())?];
+    let compiled = build(map(), &families())?;
+    let proof = equivalence(&regions, &keys(), &compiled.bytes)?;
+    // The provisional entry and its content, a dropped teleport, are left out.
+    assert_eq!((proof.tiles, proof.dropped_teleports), (4, 2));
+    assert_eq!((proof.entries, proof.skipped_entries), (5, 2));
+    // Another source, or a palette that names other keys, is not equivalent.
+    let mut other = map();
+    other[0].flags = 1;
+    assert!(equivalence(&[region(other)?], &keys(), &compiled.bytes).is_err());
+    let swapped: Vec<String> = ["item:bag", "item:teleport", "donor:99"]
+        .map(String::from)
+        .to_vec();
+    assert!(equivalence(&regions, &swapped, &compiled.bytes).is_err());
+    let mut fewer = map();
+    fewer.pop();
+    assert!(equivalence(&[region(fewer)?], &keys(), &compiled.bytes).is_err());
     Ok(())
 }
