@@ -90,6 +90,10 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 - Codex round-1 repair (PR #1402, 5 P1): durable PvP block deadlines, leader succession and
   leader-only party end, shared-XP remote members excluded, invite block/privacy check, `PartyView`
   full refresh and bounded staleness; validators re-run PASS.
+- Codex round-2 repair (PR #1402, 4 P1, 2 P2): durable party check before PvP legality and
+  `top_damage_party_id`, invite consent serialized on `character_root`, durable PvP ledger
+  snapshot, channel-visibility setting, Leave under the full combat lock, invitee cap and
+  invitation expiry; validators re-run PASS.
 
 ## Closeout
 

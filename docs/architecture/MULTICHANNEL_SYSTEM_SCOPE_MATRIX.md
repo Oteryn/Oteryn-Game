@@ -109,7 +109,7 @@ switch; shared experience, party loot and party buffs count only members on the 
 members on another channel are excluded, not failing participants. Combat lock is the logout
 block, the PZ block and the 15-minute kill block; their PvP deadlines and the white skull are
 written ahead durably in the PvP state row and restored at admission, so a crash or readmission
-never shortens them. Skull and frag state are the PvP state, unjustified point and revenge mark
+never shortens them; the PvP damage ledger's contributors are written ahead the same way. Skull and frag state are the PvP state, unjustified point and revenge mark
 tables. The World PvP type is a
 ruleset field.
 
