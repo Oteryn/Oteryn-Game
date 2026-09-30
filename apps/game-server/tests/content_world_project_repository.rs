@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "3689791ba6efc88197a6f478223a425599f67ccabff2f29945963d095d1bb066",
+        "0c1b4c1dd345a59171020e519e3064b50d072da3145d36f5898e234a064e4d69",
     ),
     (
         "definitions/declarations.json",
-        14_938_464,
-        "4b13f55ec1cc2f3985c47de27e265a069cca3729e6cd675e874be2bf01be0756",
+        14_954_067,
+        "209a3f6035dd39d2840c4511847bbc14e76c58af81f0d00518b373b6fb74ea72",
     ),
     (
         "definitions/reference.json",
-        21_316_331,
-        "2aeef18975a6d2e07bae8322ae886b1246b3e6c18ef7c72975f998a5aeafc048",
+        21_318_979,
+        "b2c7998f949f4f3b2dc02db9d40e20fa6dfe7e92ae74814547e21f66f9757d34",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "9bad2c17c819472ba9076b772614699b836af4ab9b82fb3c2104348d67d6539f",
+        "ad96a50485b5cbb7950b62b65fbfc53537d3a2f47e077cbabe50e222cdc54924",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "e124fbcc70899b09f2d909b8967a3925a2d53c2c21d4a5a9c8f1e28f474ab975",
+        "69b980f014e5c31267357c78da04373d2a7211ad19bcff3e7ec4afc323371741",
     ),
     (
         "provenance/imports.json",
         32_476,
-        "d91343f3e0bbc2d053b272ac59df4856e18ae720987c788d14dc3c11afa35c11",
+        "f24033613cae1b0785eefe3760020ec0fe48a9025215367980a25429e88b22a4",
     ),
     (
         "provenance/sources.json",
-        1_299_026,
-        "c384023117ceb182e8b48f8ed800de85be6fac5527f3a6f22bf29179580a9f7c",
+        1_301_466,
+        "5b582b20ec11e6d4478d3d4a831535c09b5c9c482a6eb87dd12922caf595183d",
     ),
     (
         "worlds/world.json",
@@ -81,10 +81,14 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
+/// WO-2 catalogue shards beside the legacy package: `(directory, shard prefix)`. Their
+/// bytes are pinned by `build_catalogue.py --check`, not by this package inventory.
+const WORLD_CATALOGUE_SHARDS: [(&str, &str); 2] =
+    [("terrain/", "terrain-"), ("objects/", "objects-")];
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "317f66009654b7950a303aee8127aeb79afaec10826f735a5f9ad31f78dd4d4b";
+const TREE_SHA256: &str = "70fcb35d9b822c3e22755ea475d4852aee71f6eaf3c37e3352895b39082f132c";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
 const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
@@ -94,11 +98,11 @@ const CREATURES: usize = 1476;
 const CREATURE_RECORDS: usize = 20638;
 const CREATURE_PROFILES: usize = 19693;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1094;
-const NPC_RECORDS: usize = 2188;
-const NPC_DECLARATIONS: usize = 2179;
-const NPC_DIALOGUES: usize = 707;
-const NPC_BINDINGS: usize = 2344;
+const NPCS: usize = 1102;
+const NPC_RECORDS: usize = 2204;
+const NPC_DECLARATIONS: usize = 2195;
+const NPC_DIALOGUES: usize = 715;
+const NPC_BINDINGS: usize = 2352;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -233,6 +237,22 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     let root = project_root();
     let mut files = Vec::new();
     collect_files(&root, &root, &mut files);
+    let (catalogue_shards, files): (Vec<_>, Vec<_>) = files.into_iter().partition(|locator| {
+        WORLD_CATALOGUE_SHARDS.iter().any(|(directory, prefix)| {
+            locator
+                .strip_prefix(directory)
+                .and_then(|name| name.strip_prefix(prefix))
+                .is_some_and(|name| !name.contains('/') && name.ends_with(".json"))
+        })
+    });
+    for (directory, prefix) in WORLD_CATALOGUE_SHARDS {
+        assert!(
+            catalogue_shards
+                .iter()
+                .any(|locator| locator.starts_with(&format!("{directory}{prefix}"))),
+            "{directory} catalogue is populated"
+        );
+    }
     let (mut markers, mut actual): (Vec<_>, Vec<_>) = files
         .into_iter()
         .partition(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()));
@@ -278,7 +298,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r7");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r8");
     assert_eq!(project.imports().len(), 11);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -602,7 +622,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(v2.sources[10].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[9];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r7");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r8");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[8].key, v2.sources[5].key);
     assert_eq!(v2.sources[8].import_batch_id, npc_import.batch_id);
@@ -957,11 +977,15 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         assert_eq!(payload["path"], path);
         assert_eq!(payload["kind"], node["kind"], "{path}");
         assert_eq!(payload["owner"], node["owner"], "{path}");
+        let populated_catalogue = WORLD_CATALOGUE_SHARDS
+            .iter()
+            .any(|(directory, _)| *directory == locator);
         assert!(
-            matches!(
-                payload["population_state"].as_str(),
-                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT")
-            ),
+            match payload["population_state"].as_str() {
+                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT") => true,
+                Some("POPULATED") => populated_catalogue,
+                _ => false,
+            },
             "{path}"
         );
         world_markers.push(format!("{locator}index.json"));

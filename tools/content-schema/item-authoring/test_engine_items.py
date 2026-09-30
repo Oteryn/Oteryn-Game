@@ -3783,6 +3783,30 @@ def test_empty_client_object_route_never_outranks_owner_table():
     check(item["family_profile_basis"] == "owner_name_rule", item)
 
 
+def test_wo2c_carpet_and_magic_field_routes_only_for_unresolved_geometry():
+    route = engine_items.immovable_non_item_route
+    unmove = {"flags.unmove": True, "flags.clip": True}
+    check(
+        route(unmove, {"type": "carpet"}) == ("WorldObject", "fixed_carpet"),
+        "a fixed carpet is a WorldObject decoration (WO-2c 5a)",
+    )
+    check(
+        route({"flags.unmove": True}, {"type": "magicfield"})
+        == ("Terrain", "magic_field"),
+        "a magic field is Terrain (WO-2c 3a)",
+    )
+    check(
+        route({"flags.unmove": True, "flags.bank": True}, {"type": "magicfield"})
+        == ("Terrain", "ground_or_border"),
+        "a banked field keeps its ground route",
+    )
+    check(route({}, {"type": "carpet"}) is None, "a movable carpet is not geometry")
+    check(
+        route({"flags.unmove": True}) == ("WorldObject", "immovable_unclassified"),
+        "attrs stay optional",
+    )
+
+
 def main():
     tests = [
         test_lf_and_crlf_text_fixtures_byte_identical,
@@ -3891,6 +3915,7 @@ def main():
         test_empty_client_object_routes_appearance_placeholder_slot,
         test_empty_client_object_route_requires_zero_flags,
         test_empty_client_object_route_never_outranks_owner_table,
+        test_wo2c_carpet_and_magic_field_routes_only_for_unresolved_geometry,
     ]
     for test in tests:
         test()

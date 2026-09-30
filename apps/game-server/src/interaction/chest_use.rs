@@ -231,6 +231,9 @@ pub(crate) async fn prepare_chest_use(
         content_revision: request.content_revision,
         ruleset_revision: request.ruleset_revision,
         sim_revision: request.sim_revision,
+        // The chest placement carries no achievement yet: resolving one needs
+        // the achievement catalogue lookup, which D39 does not have.
+        achievement: None,
     };
     Ok((child, mint_request))
 }

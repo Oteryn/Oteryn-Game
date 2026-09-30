@@ -71,6 +71,15 @@ Merge rules:
   revision. The files listed in `SUPPLEMENT_HELD` (a placeholder outfit, dialogue Crystal wrote itself, or not an
   NPC on the wiki) are held `SUPPLEMENT_HELD`. The report records the revision and the digest of the supplement
   bundles it read;
+- D15 (with the Tibiopedia facts; architect ruling 2026-09-30 on #162, answers 5a and 6b):
+  - a single-source NPC that TibiaWiki Fandom does not know under any name rule above is admitted when Tibiopedia
+    or TibiaWiki BR (a page not marked removed) has a page under its name; the row records `{"fact": "identity",
+    "rule": "FAN_WIKI_CONFIRMED", "chosen": <first confirming wiki>, "wikis": [...], "pages": {<wiki>: <page>}}`
+    (Tibiopedia url and page SHA-256, BR page id and revision); with no source placement it is admitted with no
+    placements, as D8 WIKI_CONFIRMED does for Fandom. Without such a page it stays held SINGLE_SOURCE_NOT_ON_WIKI;
+  - an admitted plain source offer whose price no two wikis settle, while some wiki states a different explicit
+    price, keeps the source price and carries `"parity_pending": {<wiki>: <stated price>}` (the prices the wikis
+    state); an official source settles it later;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -97,7 +106,8 @@ POSITION_RANK = {'MATCH': 0, 'NEAR': 1, 'MISMATCH': 2}
 LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
 WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
-                           'WIKI_CONFIRMED', 'WIKI_PRICE', 'WIKI_MAJORITY_PRICE', 'WIKI_OFFER')  # kept in the output
+                           'WIKI_CONFIRMED', 'WIKI_PRICE', 'WIKI_MAJORITY_PRICE', 'WIKI_OFFER',
+                           'FAN_WIKI_CONFIRMED')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
@@ -277,7 +287,7 @@ def source_offers(bundle):
 class Builder:
     def __init__(self, snapshot, item_map, br_facts=None, tibiopedia_facts=None, registry_names=None):
         # D12: TibiaWiki BR trade lists by folded NPC title/name, then direction, then folded item name
-        self.br_trade = {}
+        self.br_trade, self.br_pages = {}, {}
         for page in (br_facts or {}).get('pages', []):
             trades = {}
             for direction, items in page['trades'].items():
@@ -286,14 +296,18 @@ class Builder:
                     trades[direction].setdefault(fold(item), []).extend(prices)
             for label in (page['title'], page['name']):
                 self.br_trade.setdefault(fold(label), trades)
+                if not page.get('removed') and 'pageid' in page:  # D15: a BR page confirms an NPC unless removed
+                    self.br_pages.setdefault(fold(label), {'pageid': page['pageid'], 'revid': page['revid']})
         # D13: Tibiopedia trade lists, keyed the same way (its page name is the title without "NPC: ")
-        self.tibiopedia_trade = {}
+        self.tibiopedia_trade, self.tibiopedia_pages = {}, {}
         for page in (tibiopedia_facts or {}).get('pages', []):
             trades = {direction: {fold(item): prices for item, prices in items.items()}
                       for direction, items in page['trades'].items()}
             for label in (page['name'], page['title']):
                 if label:
                     self.tibiopedia_trade.setdefault(fold(label), trades)
+                    if 'url' in page:
+                        self.tibiopedia_pages.setdefault(fold(label), {'url': page['url'], 'sha256': page['sha256']})
         self.wiki_npcs = snapshot['npcs']
         self.wiki = build_wiki_index(self.wiki_npcs)
         self.wiki_trade = snapshot.get('trade', {})
@@ -301,10 +315,13 @@ class Builder:
         self.source_ids = {row['native_key']: row['source_item_id'] for row in item_map['records']}
         # D13 looks each offer up under its registered Item name (folded), by Item key
         self.registry_names = registry_names or {}
-        # D13 offers: a wiki item name names a registered Item only when exactly one Item has that name
+        # D13 offers: a wiki item name names a registered Item only when exactly one Item has that name. Only the
+        # keys of the pinned item map count: since ITEM-ID-1b a retired key and the definition it aliases to share
+        # one name, and the pinned packets name the retired key
         by_name = defaultdict(list)
         for key, item_name in self.registry_names.items():
-            by_name[item_name].append(key)
+            if key in self.source_ids:
+                by_name[item_name].append(key)
         self.registry_keys = {item_name: keys[0] for item_name, keys in by_name.items() if len(keys) == 1}
         self.held, self.stats = [], Counter()
 
@@ -443,6 +460,9 @@ class Builder:
                 if price is not None:
                     offers.append({'item': item, 'source_item_id': key[0], 'direction': direction, 'unit_price': price,
                                    'count': offer['count'], 'sub_type': offer['sub_type']})
+                    disputed = self.disputed_prices(name, direction, item_name, wiki, price) if plain else None
+                    if disputed:
+                        offers[-1]['parity_pending'] = disputed
         return offers
 
     def stated_prices(self, npc_name, direction, item_name, fandom):
@@ -461,6 +481,24 @@ class Builder:
             if len(prices) == 1 and None not in prices:
                 stated[wiki] = prices.pop()
         return stated
+
+    def fan_wiki_pages(self, name):
+        """D15: the Tibiopedia and TibiaWiki BR pages that confirm an NPC Fandom does not know, by wiki."""
+        if not self.tibiopedia_trade:
+            return {}
+        pages = {'br': self.br_pages.get(fold(name)), 'tibiopedia': self.tibiopedia_pages.get(fold(name))}
+        return {wiki: page for wiki, page in pages.items() if page}
+
+    def disputed_prices(self, npc_name, direction, item_name, fandom, price):
+        """D15: the wiki prices of a plain offer no two wikis settle while some wiki states a price other than the
+        source's, else None (the source price stays, pending an official source)."""
+        if not self.tibiopedia_trade:
+            return None
+        stated = self.stated_prices(npc_name, direction, item_name, fandom)
+        values = list(stated.values())
+        if any(values.count(value) >= 2 for value in values) or all(value == price for value in values):
+            return None
+        return dict(sorted(stated.items()))
 
     def wiki_price(self, npc_name, direction, item_name, fandom):
         """D12: the price both wikis state for this offer, or None when either is silent or they disagree."""
@@ -545,7 +583,11 @@ class Builder:
                     wiki = fuzzy[0]
                     arbitration.append({'fact': 'identity', 'rule': 'WIKI_SPELLING', 'chosen': 'wiki'})
             if wiki is None:
-                return self.hold(name, sources, 'SINGLE_SOURCE_NOT_ON_WIKI')
+                pages = self.fan_wiki_pages(name)
+                if not pages:
+                    return self.hold(name, sources, 'SINGLE_SOURCE_NOT_ON_WIKI')
+                arbitration.append({'fact': 'identity', 'rule': 'FAN_WIKI_CONFIRMED', 'chosen': sorted(pages)[0],
+                                    'wikis': sorted(pages), 'pages': pages})
         definition, conflicts = self.merge_definition(bundles, arbitration)
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))
@@ -573,7 +615,8 @@ class Builder:
                 # position) but has no position to promote either; the definition is still admitted,
                 # with no placements at all.
                 arbitration.append({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'})
-            else:
+            elif not any(row['rule'] == 'FAN_WIKI_CONFIRMED' for row in arbitration):
+                # D15: an NPC Tibiopedia or BR confirms is admitted with no placements, as D8 does for Fandom
                 return self.hold(name, sources, 'UNPLACED')
         key_slug = slug(name)
         if not key_slug:  # a punctuation-only name has no slug; it needs a hand-chosen key
@@ -671,7 +714,8 @@ def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_fac
     report = {
         'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY',
         'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else [])
-        + (['D13'] if tibiopedia_bytes else []) + (['D14'] if supplement_digest else []),
+        + (['D13'] if tibiopedia_bytes else []) + (['D14'] if supplement_digest else [])
+        + (['D15'] if tibiopedia_bytes else []),
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         **({'br_facts_sha256': hashlib.sha256(br_facts_bytes).hexdigest()} if br_facts_bytes else {}),

@@ -1501,12 +1501,23 @@ def non_item_route(xml_record, attrs, flags, item_id=None):
 GROUND_OR_BORDER_FLAGS = ("flags.bank", "flags.fullbank", "flags.clip")
 
 
-def immovable_non_item_route(flags):
-    """Return (owner, reason) for an unmove=true entry with no resolved family; else None."""
+def immovable_non_item_route(flags, attrs=None):
+    """Return (owner, reason) for an unmove=true entry with no resolved family; else None.
+
+    Owner decisions WO-2c (2026-09-30), for such unresolved map geometry only (a carpet
+    or field that resolves an Item family stays an Item): a fixed carpet is a WorldObject
+    decoration (5a), and a magic field (fire, energy and poison fields, magic wall,
+    traps) is Terrain `field` (3a).
+    """
     if not flags.get("flags.unmove"):
         return None
+    type_value = (attrs or {}).get("type")
+    if type_value == "carpet":
+        return "WorldObject", "fixed_carpet"
     if any(flags.get(flag) for flag in GROUND_OR_BORDER_FLAGS):
         return "Terrain", "ground_or_border"
+    if type_value == "magicfield":
+        return "Terrain", "magic_field"
     return "WorldObject", "immovable_unclassified"
 
 
@@ -2472,7 +2483,7 @@ def convert_item(sources, item_id):
     family_profile_evidence = None
     availability = None
     if family_profile is None:
-        immovable_route = immovable_non_item_route(flags)
+        immovable_route = immovable_non_item_route(flags, attrs)
         if immovable_route is not None:
             owner, reason = immovable_route
             return (
