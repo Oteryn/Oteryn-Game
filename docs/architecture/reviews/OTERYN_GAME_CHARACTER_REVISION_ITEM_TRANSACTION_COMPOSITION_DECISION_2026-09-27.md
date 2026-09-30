@@ -261,6 +261,17 @@ remaining_unknowns:
 next_action: "#162 validates this exact head, routes the required independent review and integrates it through the governed Merge Queue."
 ```
 
+**Market amendment (pending on acceptance of MARKET-0, #162 5912405163;
+`OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md`).** When MARKET-0 is accepted, rule 1
+also covers Market escrow, Inbox and offer records: a market transaction advances no
+`CharacterRevision`. Rule 2 fences only the acting Character of a player command; a
+counterparty's Inbox, escrow and bank balance change without its fence, because no runtime owns
+them, and its Inbox counter row lock takes the place of its `character_root` lock. Matching and
+expiry steps have no acting Character: they take the recovery fence and admission relations only.
+Rule 4's lock order becomes: `character_root`, the ware's book row, the offers by `offer_id`, the
+items by ItemInstanceId, the container-slot row, the Inbox counters by CharacterId, then the balance
+rows by `account_id`.
+
 ## 7. Protected integration
 
 - PR #1033, frozen head `88351368710f9c03f5835b945013874caa99d9fa`.
