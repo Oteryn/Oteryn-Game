@@ -4,12 +4,12 @@
 task_id: OTV2-20260930-item-sem-2-item-stats
 title: ITEM-SEM-2 Item stats (requirements, elements, leech, skills, slots, classification, weight) into content
 mode: IMPLEMENT
-status: implementing
+status: completed   # 2a merged via #1324; 2b/2c are separate allocations
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/item-sem-2   # owner 1a (2026-09-30): own branch while #1319 waits for review
 issue: 162
-pr: null   # per part, recorded in the FREEZE_SHA packets on #162
+pr: 1324   # 2a, squash merge 9ca2bfd2
 base_sha: 54c9ca18
 owner: owner-directed Claude Code session, claim #162 comment 5907977795
 created_at: 2026-09-30
@@ -21,7 +21,7 @@ owned_paths:   # ITEM-SEM-2a
   - imports/tibiawiki/facts/items-stats.json
   - imports/tibiawiki/sources.json
   - imports/tibiawiki/batches.json
-  - docs/agents/tasks/active/OTV2-20260930-item-sem-2-item-stats.md
+  - docs/agents/tasks/archive/OTV2-20260930-item-sem-2-item-stats.md
   - .github/workflows/item-authoring-schema.yml   # owner 2a: self-test step and triggers
 public_contracts:
   - DUR04-REFERENCE-ITEM-PROFILE-V1 (re-derived in 2b)
@@ -63,3 +63,10 @@ silent and never where it disagrees.
 - 1a: ITEM-SEM-2 is pushed on its own branch, `claude/item-sem-2`, while #1319 waits for review.
 - 2a: the workflow edit is authorized: `item-authoring-schema.yml` runs `item_wiki_stats_capture_self_test.py` and
   triggers on the snapshot and the capture tool. The authorization covers that change only.
+
+## Closeout
+
+- 2a merged to `main` as the squash merge of #1324 (`9ca2bfd2`) before its independent review findings (#1324 comment
+  5908347499) were fixed; `item_key_references.py` then reported 991 `DANGLING_KEY` errors on `main`.
+- The findings are fixed by `OTV2-20260930-item-sem-2a-fixup` (key rule, attribution), which archives this record.
+- 2b (promotion lowering v2) and 2c (forge classification) are not started and need their own allocation.

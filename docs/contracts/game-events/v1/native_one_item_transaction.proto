@@ -39,6 +39,13 @@ package oteryn.events.v1;
 // a corpse decays as N+1 such one-item events (each entry, then the corpse
 // once no live entry remains), never one multi-item event. It is server
 // originated: no CommandRef, session or causation exists for it.
+// The gold fee BURN (operation tag 6, GOLD-FEE-1a; DUR-03 §39.3 gold fee
+// amendment, decision CHARACTER-GOLD-FEE-BOUNDARY-V1 §4.5, D174-D178) burns up
+// to 20 coin stacks in direct entries of the equipped main backpack under the
+// closed FeeBurnCause, in the fee source's Character transaction. It has its
+// own rows DUR03-RL-01/-02/-06/-07-FEE-BURN (payload <= 24,181 B, EventEnvelope
+// <= 24,495 B). GOLD-FEE-1a admits gold coins only, so there is no change;
+// GOLD-FEE-1b adds the change MINT fields.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -49,6 +56,7 @@ message OneItemTransactionV1 {
     OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
     OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 only (see above)
     OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay only (see above)
+    OneItemFeeBurnV1 fee_burn = 6; // gold fee BURN only (see above)
   }
 }
 
@@ -238,4 +246,40 @@ message OneItemDecayRetireV1 {
   // Safe fence reference: the retiring owner's runtime-scope ownership
   // generation (non-zero); it may be later than the corpse's own generation.
   uint64 runtime_scope_ownership_generation = 6;
+}
+
+// Closed FeeBurnCause (decision §4.4): one variant per admitted fee source.
+message OneItemCharmUnassignV1 {
+  string charm_key = 1; // oteryn:charm.<name>, <= 128 B
+  bytes occurrence = 2; // the unassign command occurrence, 16-byte UUIDv7
+}
+message OneItemFeeBurnCauseV1 {
+  oneof cause {
+    OneItemCharmUnassignV1 charm_unassign = 1;
+  }
+}
+
+// One BURN line: a live coin stack in a direct entry of the main backpack.
+message OneItemFeeBurnLineV1 {
+  OneItemStateV1 before = 1; // LIVE, 1..100 units of one coin definition
+  // Same identity, World and definition: RETIRED with quantity 0 and no
+  // location (whole burn), or LIVE with fewer units in the same entry (partial
+  // burn, the last line only).
+  OneItemStateV1 after = 2;
+  uint64 placement_ordinal = 3; // the entry before the burn, non-zero
+}
+
+// Gold fee BURN transaction (GOLD-FEE-1a). Lines are in burn order: worth
+// ascending, then display order (highest placement ordinal first).
+message OneItemFeeBurnV1 {
+  OneItemFeeBurnCauseV1 cause = 1;
+  uint64 fee_gold_units = 2;    // 1..20,000,000
+  uint64 burned_gold_units = 3; // conservation summary: equals the fee (no change in 1a)
+  bytes character_id = 4;       // 16-byte UUIDv7
+  uint64 committed_character_revision = 5; // the fee source's committed revision (>= 2)
+  bytes world_id = 6;
+  bytes channel_id = 7;
+  uint64 runtime_scope_ownership_generation = 8; // non-zero
+  bytes backpack_item_instance_id = 9; // parent of every line's entry
+  repeated OneItemFeeBurnLineV1 lines = 10; // 1..20
 }

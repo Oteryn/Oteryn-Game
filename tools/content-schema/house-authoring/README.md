@@ -1,5 +1,9 @@
 # House authoring schema candidate v1
 
+Owner contract (candidate): [`OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1.md`](../../../docs/architecture/OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1.md),
+under the accepted housing architecture
+[`EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md`](../../../docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md).
+
 Static House definitions for `content/houses/` (owner `House/Area` in
 [`OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md`](../../../docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md)).
 CANDIDATE only: not a WorldProject/v2 contract, not runtime activation, and
@@ -56,7 +60,8 @@ discovers the infobox parameters instead of assuming them, joins by the paramete
 values are client house ids, and reports agreement per field plus disagreement examples.
 A local run against four Fandom pages joined on `houseid` and agreed on rent, size and
 beds (4/4), which supports the official `size_sqm` over the engine value. The snapshot
-stays a CI artifact; the facts file may be committed from it.
+stays a CI artifact; no facts file is committed (owner decision 3b, 2026-09-30):
+this section is the summary.
 
 First runner capture (head `a6900ccb`, artifact
 `house-tibiawiki-br-snapshot-a6900ccbed77168436e8c2d6b86350c8e8f20c5f`): 963 pages with an
@@ -128,4 +133,5 @@ CipSoft renames the House: the record keeps the key and updates `name` and
 
 1. House key: slug of the official name. 2. Town: city `Area` ref. 3. `entrance`: engine
 entry tile. 4. Next: House tiles from the official layout, verified against the engine map
-(done here), then the TibiaWiki BR capture (workflow here; facts to commit after its first run).
+(done here), then the TibiaWiki BR capture (workflow and summary here;
+no committed facts file, owner decision 3b of 2026-09-30).
