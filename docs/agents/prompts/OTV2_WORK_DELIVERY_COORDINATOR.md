@@ -51,6 +51,8 @@ Never publish ordinary work through ad-hoc low-level Git Data reconstruction, an
 
 Protected `main` moving is first a read-only reconciliation event. Keep a published head when accepted requirements do not need source reconciliation, and let the Merge Queue qualify the `merge_group` against current `main`. Merge up (normal, non-force) only for a real source/contract conflict, a dependency whose bytes must exist in the candidate before its validation, or a repository without Merge Queue that has a strict-base requirement. Never merge up just to refresh a base, retrigger CI or manufacture newer evidence.
 
+A conflict only in derived content (`content/world`, the content tree and registry, and the Rust package pins) is not a decision. After `git merge origin/main`, run `python3 tools/content-migration/regenerate_content.py --resolve`: it resolves those files, regenerates them and runs the content checks. It stops and lists any other conflicted path, and that path needs a person. Serialize work that writes derived content: one such candidate in flight at a time, the next one starting from current `main`.
+
 ## Dispatching workers
 
 Dispatch one bounded, coherent task per worker, in parallel only when paths and custody are disjoint. Each worker gets only this packet:
