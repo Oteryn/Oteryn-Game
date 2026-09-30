@@ -96,6 +96,12 @@ review.
   (`RL-11` stays the 2,000 ms ambiguity bound); checkpoint-specific `DUR03-RL-06` participant (1)
   and effect-work-unit (10) ceilings registered with max+1 rejection; the 10-items-per-checkpoint
   cap recorded as owner-confirmed (#162 comment 5919525206).
+- Codex round 5 (final batched round, #1415, 2 P1): 4149452753 fixed: the checkpoint
+  `DUR03-RL-06` rows count one participant per touched ItemInstance, as the registry does: 10
+  participants (max+1 11) and 40 effect work units, 10 × (1 + 3 row mutations) (max+1 41) (§15);
+  4149452756 fixed: Apply, Clear, ScrollCreate and ScrollApply occurrences bind the content,
+  ruleset and SIM profile revisions at reservation, with the §10 terminal `REVISION_CHANGED`
+  behavior; the IMBUE wire result and the DUR-03 §39.3 amendment name it (§6, §7, §14, §21).
 - Owner answers (2026-09-30, #162): I1 a) (all imbuing and forge gold fees at Global prices,
   D178) and I2 a) (dust, slivers and the conversions as in Global, D208) made binding in the
   decision and the gold fee §4.4 amendment.

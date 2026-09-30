@@ -214,8 +214,22 @@ counts. Items already carried stay carried when capacity falls (Global).
 
 - One transaction per operation, one TransactionId, one receipt keyed by (occurrence, character).
   A replay returns the first outcome. Nothing is spent before the state is written.
+- **Revision binding (SIM-DETERMINISM-01 §5; DUR-03 stable intent):** every caller occurrence
+  (Apply, Clear, and IMBUE-SCROLL-1's ScrollCreate and ScrollApply, §7) binds its
+  behavior-affecting revision set when it is reserved, exactly as a forge occurrence (§10): the
+  content revision (imbuement definition, materials and counts, fee, slot rules, access
+  predicates, effect values), the ruleset revision and the
+  `SimulationDeterminismProfileRevision`. The set is part of the request binding and stored in
+  the receipt; the imbuement row's revision (§4.1) is the bound content revision. A retry of the
+  same occurrence, including after a known non-committed abort, evaluates only under that set; if
+  the active set differs, the retry is refused `REVISION_CHANGED`, persisted as the occurrence's
+  receipt-only terminal record under the §10 rules (no material, fee, scroll or row line; every
+  later replay returns the same rejection; an unknown terminal write stays refused until
+  reconciliation, `IMBFORGE0-RL-11`). Checkpoint and Expire are non-caller writes on an existing
+  row and bind nothing new.
 - **DUR-03 amendment (IMBUE-1):** §15 admits `ImbueCause` as a burn sink; §39.3 admits the four
-  shapes (at most 3 material stacks per record, `DUR03-RL-01-IMBUE`). This decision states the
+  shapes (at most 3 material stacks per record, `DUR03-RL-01-IMBUE`) and the receipt-only
+  `REVISION_CHANGED` terminal record (IMBUE-SCROLL-1 adds the scroll shapes). This decision states the
   need; IMBUE-1 writes the text with its migration.
 - **Fees (I1):** `FeeBurnCause::Imbue {item, slot, imbuement, occurrence}`,
   `ImbueClear {item, slot, occurrence}` and `ImbueScroll {scroll, imbuement, occurrence}` are
@@ -234,6 +248,8 @@ counts. Items already carried stay carried when capacity falls (Global).
 - Applying a scroll is a use-with on the target item: BURN of one scroll unit and the row insert
   (`ImbueCause::ScrollApply`), with no fee and no access predicate beyond the item's slots:
   applying a completed scroll stays unrestricted (no quest, no Premium).
+- `ScrollCreate` and `ScrollApply` occurrences bind their revision set at reservation and refuse a
+  retry under a different active set with the terminal `REVISION_CHANGED` (§6).
 - The etcher clears without a shrine; its charges are `PARITY_PENDING` until IMBUE-SCROLL-1.
 
 ## 8. Item tier (FORGE-1)
@@ -349,7 +365,7 @@ The chance per tier is content (Canary quadratic; `PARITY_PENDING`). Only equipp
   reserved on #162 at allocation. Without one, its shrine or forge answers `NOTHING_TO_USE`.
 - IMBUE: open (item handle), apply (slot, imbuement index), clear (slot), scroll create; results
   `OK`, `REQUIREMENT_NOT_MET`, `MATERIALS_MISSING`, `INSUFFICIENT_FUNDS`, `SLOT_OCCUPIED`,
-  `NOT_ALLOWED`; the tracker (equipped imbuements and remaining time) as a state domain entry.
+  `NOT_ALLOWED`, `REVISION_CHANGED` (§6, terminal for the occurrence); the tracker (equipped imbuements and remaining time) as a state domain entry.
 - FORGE: fusion, transfer (with convergence and core flags), conversion kind; results with
   success and bonus, or `REVISION_CHANGED` (§10, terminal for the occurrence); history paged; the dust balance and limit in the resource balance.
 - Item views gain tier and the imbuement summary. Each wire child measures its payloads.
@@ -371,8 +387,8 @@ The chance per tier is content (Canary quadratic; `PARITY_PENDING`). Only equipp
 | `IMBFORGE0-RL-08` dust limit | 100-225 |
 | `IMBFORGE0-RL-09` fiendish creatures per channel | content, `PARITY_PENDING` (Canary 4) |
 | `IMBFORGE0-RL-13` items touched per checkpoint transaction | 10 (Global's ten equipment slots; 3 rows each, no materials or fee; owner-confirmed on #162, comment 5919525206); `DUR03-RL-01-IMBUE-CHECKPOINT` registers it, IMBUE-RT-1 proves the bound and the max+1 (11) rejection |
-| `DUR03-RL-06-IMBUE-CHECKPOINT-PARTICIPANTS` | 1 (the Character; item-only, no counterparty); max+1 (2) rejected by IMBUE-RT-1 |
-| `DUR03-RL-06-IMBUE-CHECKPOINT-EFFECT-WORK-UNITS` | 10 (one per touched item; no DUR-03 event is emitted, the ceiling bounds the batch); max+1 (11) rejected by IMBUE-RT-1; other shapes' `DUR03-RL-06` rows unchanged |
+| `DUR03-RL-06-IMBUE-CHECKPOINT-PARTICIPANTS` | 10: one participant per touched ItemInstance, as `DUR03-RL-06-PARTICIPANTS` counts participants (the Character is the actor, not a participant); max (10) accepted, max+1 (11) rejected by IMBUE-RT-1 |
+| `DUR03-RL-06-IMBUE-CHECKPOINT-EFFECT-WORK-UNITS` | 40: per item its participant plus at most 3 imbuement-row mutations (`IMBFORGE0-RL-01`), 10 × (1 + 3), as `DUR03-RL-06-EFFECT-WORK-UNITS` counts a participant plus its effects; no DUR-03 event is emitted, the ceiling bounds the batch; max (40) accepted, max+1 (41) rejected by IMBUE-RT-1. IMBUE-1, IMBUE-SCROLL-1 and FORGE-1 register their own shapes' `DUR03-RL-06` rows by the same counting, with their `DUR03-RL-01` rows |
 | `IMBFORGE0-RL-10` influenced creatures per channel | content, `PARITY_PENDING` (Canary 300) |
 | `IMBFORGE0-RL-11` operation ambiguity bound | 2,000 ms (as `ITEMUSE0-RL-04`) |
 | `IMBFORGE0-RL-12` forge history rows per character | 1,000, oldest dropped |
@@ -443,8 +459,8 @@ conversions.
 1. **Contract amendments:** MARKET-0 §3.1 and the gold fee §4.4 here; DUR-03 §15, §17, §18,
    §39.3 and composition rule 1 by IMBUE-1 and FORGE-1. Capability numbers at allocation.
 2. **Serialization:** one shrine or forge operation per actor; one transaction per operation;
-   rule 2 fence; rule 4 root lock, then the dust row; replay by occurrence under its bound
-   revision set, `REVISION_CHANGED` persisted as a terminal receipt (§10); a failed imbuement checkpoint suspends ticking and effects (§4.3).
+   rule 2 fence; rule 4 root lock, then the dust row; every imbuing, scroll and forge occurrence
+   replays under its bound revision set, `REVISION_CHANGED` persisted as a terminal receipt (§6, §10); a failed imbuement checkpoint suspends ticking and effects (§4.3).
 3. **Restart:** tier, imbuements and dust are durable; ticking, influenced and fiendish state
    are runtime; at most one checkpoint of time returns.
 4. **Typed references and wire:** item handles, definition and imbuement keys, `ProductionKey`
