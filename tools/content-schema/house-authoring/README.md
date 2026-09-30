@@ -23,7 +23,7 @@ themselves are world placements in `content/world/placements/`.
 | `name` | client staticdata f2 | whitespace-normalized; verbatim in `provenance.source_name` |
 | `kind` | client f8 / f10 | `private_house` \| `guildhall` \| `shop`; exclusive in all 995 houses |
 | `town` | client f9 | `Area` ref `oteryn:content.area.city.<slug>`; every town is a city Area in `content/world/areas/cities/` (`../area-authoring/`) |
-| `entrance` | CrystalServer `entryx/y/z` | engine entry tile in front of the door (next to a House tile for 975 houses); the client does not ship it |
+| `entrance` | CrystalServer `entryx/y/z` | engine entry tile, final (owner 1a, 2026-09-30): in front of an outer door for 949 houses, the other 46 go to the base-map walkability check; the client does not ship it |
 | `map_marker` | client f6 | staged as `entrance` by HOUSES-1, but it sits at or next to the footprint centre (328 exact, rest ±1 tile), so it is not the door |
 | `size_sqm`, `beds`, `rent_gold` | client f7, f5, f4 | official values win over the engine |
 | `entry_restriction` | client f3 | structured form of the only observed text, "Only Sorcerers can enter." (3 houses) |
@@ -83,9 +83,9 @@ not exist.
 | `house.schema.json` | JSON Schema 2020-12, closed shapes |
 | `validate_houses.py` | schema plus semantic checks: key family, unique key/source id/engine id/name, marker inside footprint, name normalization, restriction text ↔ structured form, shop naming |
 | `verify_formal_schema.py` | positive/negative cases; regenerates `synthetic-valid-house.json` |
-| `otbm_tile_check.py` | local-only: pinned `world.otbm` House tiles and doors → `samples/otbm-tile-check.json` (cell order and door evidence) |
+| `otbm_tile_check.py` | local-only: pinned `world.otbm` House tiles, doors and bed items → `samples/otbm-tile-check.json` (cell order, door and bed evidence) |
 | `wiki_br_houses.py` | TibiaWiki BR `fetch` / `facts` / `compare` / `self-test` |
-| `convert_houses.py` | `extract-crystal`: pinned `world-house.xml` → `samples/crystal-world-house-00ce02a5.json`; `extract-door-items`: pinned `items.xml` → `samples/crystal-door-item-ids-00ce02a5.json`; `convert`: joins it with `imports/cipsoft-staticdata/houses/` (digest-checked), validates all 995 houses, writes `samples/conversion-report.json` |
+| `convert_houses.py` | `extract-crystal`: pinned `world-house.xml` → `samples/crystal-world-house-00ce02a5.json`; `extract-door-items` / `extract-bed-items`: pinned `items.xml` → `samples/crystal-door-item-ids-00ce02a5.json` / `crystal-bed-item-ids-00ce02a5.json`; `convert`: joins it with `imports/cipsoft-staticdata/houses/` (digest-checked), validates all 995 houses, writes `samples/conversion-report.json` |
 | `build_catalogue.py` | builds `content/houses/houses-*.json` (995 records, shards of 500) from `convert`, keeps the key and revision of every committed record by `provenance.source_id`, validates the whole catalogue; `--check` regenerates it byte for byte |
 
 ```text
@@ -131,7 +131,15 @@ official layout has no bed items, and bed positions come with the world map plac
 precedence. `build_catalogue.py` is the only writer: a rebuild keeps every committed key
 and revision, so a later client rename changes `name`, never the key. The divergences
 reported for review are in `samples/conversion-report.json` (engine `size` for 812 houses,
-one engine name, 27 entrances not next to a door, 10 not next to a House tile).
+one engine name, 27 entrances not next to a door, 10 not next to a House tile, and the 46
+`entrance_not_in_front_of_an_outer_door`).
+
+The catalogue is complete (owner direction 2026-09-30, contract §5): `entrance` stays the
+engine entry tile, and the 46 houses above go to the walkability check when the base map
+is compiled (MAP-BUNDLE). `beds` stays the official count: the client layout has no
+furniture, and the engine map has two bed items per bed for 911 houses; the other 84 are
+`bed_divergence_source_id_beds_engine_bed_items` in `samples/otbm-tile-check.json`, for
+the base-map owner, because bed items are base-map placements.
 
 ## Identity stability
 
