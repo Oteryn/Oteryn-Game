@@ -3,7 +3,8 @@
 
 `extract-crystal` reads a pinned CrystalServer world-house.xml into the committed
 compact sample; `extract-door-items` reads the door item ids (`type="door"`) of the
-pinned CrystalServer items.xml, because the client does not mark doors; `convert`
+pinned CrystalServer items.xml, because the client does not mark doors, and
+`extract-bed-items` its bed item ids (`type="bed"`) for the bed cross-check; `convert`
 joins them 1:1 with the client houses (engine clientid == client house id), validates
 the result and writes the conversion report. Official client values win; engine
 divergences are reported, never merged.
@@ -31,6 +32,7 @@ CRYSTAL_SAMPLE = ROOT / "samples" / "crystal-world-house-00ce02a5.json"
 REPORT = ROOT / "samples" / "conversion-report.json"
 ITEMS_XML_SHA256 = "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
 DOOR_ITEMS = ROOT / "samples" / "crystal-door-item-ids-00ce02a5.json"
+BED_ITEMS = ROOT / "samples" / "crystal-bed-item-ids-00ce02a5.json"
 # A door that is in two House layouts belongs to exactly one House. Only one exists in
 # 15.30; the engine map puts it on East Lane 1a (source id 20801). Any other shared door
 # stops the conversion until it is decided here.
@@ -104,6 +106,11 @@ def extract_crystal(xml_bytes: bytes) -> dict:
 
 
 def extract_door_items(xml_bytes: bytes) -> dict:
+    return extract_type_items(xml_bytes, "door")
+
+
+def extract_type_items(xml_bytes: bytes, kind: str) -> dict:
+    """Item ids of one engine item `type` (`door`, `bed`) in the pinned items.xml."""
     if sha256(xml_bytes) != ITEMS_XML_SHA256:
         raise ValueError("items.xml digest mismatch")
     ids = set()
@@ -111,7 +118,7 @@ def extract_door_items(xml_bytes: bytes) -> dict:
         kinds = [
             a.get("value") for a in node.findall("attribute") if a.get("key") == "type"
         ]
-        if kinds != ["door"]:
+        if kinds != [kind]:
             continue
         if node.get("id"):
             ids.add(int(node.get("id")))
@@ -123,7 +130,7 @@ def extract_door_items(xml_bytes: bytes) -> dict:
         "path": "data/items/items.xml",
         "revision": CRYSTAL_REVISION,
         "sha256": ITEMS_XML_SHA256,
-        "door_item_ids": sorted(ids),
+        f"{kind}_item_ids": sorted(ids),
     }
 
 
@@ -277,6 +284,21 @@ def convert(
     shared = sorted(d for d, n in door_houses.items() if n > 1)
     if shared:
         raise ValueError(f"doors in two House layouts need an owner: {shared}")
+    # The engine entrance is final (owner decision 1a, 2026-09-30); report the houses whose
+    # entrance is not the tile in front of an outer door (a door neighbour outside every
+    # House layout) for the walkability check on the base map (MAP-BUNDLE).
+    all_tiles = {tuple(t) for h in houses for t in h["tiles"]}
+    not_in_front = []
+    for house in houses:
+        fronts = {
+            (x + dx, y + dy, z)
+            for x, y, z in house["doors"]
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+            if (x + dx, y + dy, z) not in all_tiles
+        }
+        entrance = tuple(house["entrance"][a] for a in "xyz")
+        if entrance not in fronts:
+            not_in_front.append(house["provenance"]["source_id"])
     catalog = {"schema": "OTERYN_HOUSE_AUTHORING/candidate-1", "houses": houses}
     report = {
         "houses": len(houses),
@@ -292,6 +314,7 @@ def convert(
         },
         "kinds": dict(sorted(Counter(h["kind"] for h in houses).items())),
         "engine_divergence_counts": dict(sorted(divergence.items())),
+        "entrance_not_in_front_of_an_outer_door": sorted(not_in_front),
         "engine_divergence_examples": {k: v[:5] for k, v in sorted(examples.items())},
         "engine_town_ids": {str(k): v for k, v in sorted(towns.items())},
         "towns": dict(sorted(Counter(h["town"]["key"] for h in houses).items())),
@@ -318,6 +341,14 @@ def main(argv=None) -> int:
         help="crystalserver@00ce02a5 data/items/items.xml",
     )
     doors.add_argument("--check", action="store_true")
+    beds = sub.add_parser("extract-bed-items")
+    beds.add_argument(
+        "--items-xml",
+        type=Path,
+        required=True,
+        help="crystalserver@00ce02a5 data/items/items.xml",
+    )
+    beds.add_argument("--check", action="store_true")
     run = sub.add_parser("convert")
     run.add_argument("--out", type=Path, help="write the candidate catalog here")
     run.add_argument(
@@ -344,6 +375,15 @@ def main(argv=None) -> int:
             print(f"{DOOR_ITEMS.name}: {'ok' if ok else 'differs'}")
             return 0 if ok else 1
         DOOR_ITEMS.write_text(text, encoding="utf-8")
+        return 0
+
+    if args.command == "extract-bed-items":
+        text = dump(extract_type_items(args.items_xml.read_bytes(), "bed"))
+        if args.check:
+            ok = BED_ITEMS.read_text(encoding="utf-8") == text
+            print(f"{BED_ITEMS.name}: {'ok' if ok else 'differs'}")
+            return 0 if ok else 1
+        BED_ITEMS.write_text(text, encoding="utf-8")
         return 0
 
     crystal = json.loads(CRYSTAL_SAMPLE.read_text(encoding="utf-8"))

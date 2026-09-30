@@ -153,6 +153,16 @@ How does such a transaction relate to the global `CharacterRevision`?
      advances the revision with its receipt, and §3.1 covers the item part. This decision does
      not require or allocate such a combined transaction.
 
+**Amendment (CHAR-POSITION-0, 2026-09-30): Character runtime-state projections, pending on
+acceptance of CHAR-POSITION-0.** Once accepted: a Character runtime-state projection is a mutable
+row that mirrors runtime state for the next admission and
+carries no semantic value: first, the last position
+(`OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md` §3.2). It does not advance
+`CharacterRevision` and writes no root, progression or receipt row. It takes rule 2's session
+checks without a cause lock or replay, and no rule 4 root lock, because it reads no inventory,
+occupancy or claim. Its own decision fixes its write order. Any other projection needs its own
+decision under rule 6.
+
 ### 3.1 Amendment (2026-09-28): B3 and reward chest locations
 
 The B3 decision (`OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md`,
