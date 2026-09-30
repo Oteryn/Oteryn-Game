@@ -2,6 +2,7 @@
 
 pub mod appearance;
 pub mod bestiary;
+pub mod charm;
 pub mod death;
 pub mod equipment;
 pub mod premium;
