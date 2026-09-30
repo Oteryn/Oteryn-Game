@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-market-coins-0
-pr: "the PR named in the #162 FREEZE_SHA entry"
+pr: 1412  # oteryn/oteryn-game#1412
 base_sha: "origin/main at branch creation"
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -91,20 +91,25 @@ protocol review; the instruction payload privacy review.
 - Codex round-1 repair (PR #1412, 4 findings): reconciliation nets pending outbox instructions;
   discriminated ware key amends MARKET-0 §4 and §7; Platform settlement fence with CLAIM-bound
   destinations and SETTLE caps; key, tombstone and receipt retention and restore rule.
+- Codex round-2 repair (PR #1412, 3 findings): ABORT carries the exact unused amount and a
+  settlement watermark, and Platform defers it behind that key's SETTLEs (`MKTCOIN0-ABORT-ORDER`);
+  typed SETTLE sides `maker_offer_id` and `taker_operation_id` with PLACE/ACCEPT bindings
+  (`MKTCOIN0-SETTLE-SIDES`); task record PR and closeout state.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: oteryn/oteryn-game#1412 (opened; in review). Exact frozen head: the #162 FREEZE_SHA entry.
+  Merge commit/result: squash merge of #1412.
 - Amendments follow the control-plane rule (#162 5912405163): pending on acceptance. Amended:
   MARKET-0 §3.1, §4, §7 and §10, the Store catalog owner decision (follow-up 1). The Platform Wallet
   contract change is an external dependency (MKTCOIN-P), not edited here.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
-last_progress: draft authored; awaiting architect review and publication
+last_progress: PR oteryn/oteryn-game#1412 opened; in review (Codex round-2 repair authored)
 status: completed
 branch: claude/arch-market-coins-0
 owner_action_required: "C1-C3: coin identity, transferable and chargeback rule, activation"
 blocker: null
-next_action: "architect reviews, commits, opens the PR and posts C1-C3 to the owner"
+next_action: "#162 freezes the repaired head of #1412, validates it and routes independent review; C1-C3 go to the owner through the control plane"
 ```

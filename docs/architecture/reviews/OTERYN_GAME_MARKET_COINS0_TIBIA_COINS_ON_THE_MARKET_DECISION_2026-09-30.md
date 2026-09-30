@@ -137,9 +137,11 @@ the Game database and the coins live in Platform, with no double spend and no co
 - **Cancel, expiry, `CREDIT_HELD`:** a sell offer's remaining coins are released by one RELEASE
   instruction in the same Game transaction (no item bound makes it wait for the next step, as
   MARKET-0 §6 does for items); a buy offer returns gold as MARKET-0 and queues ABORT of its
-  claim.
+  claim with the exact unused amount and its settlement watermark (`MKTCOIN0-ABORT-ORDER`, §5).
 - **Guard:** for a coin sell offer, `hold_amount = remaining + coins_settled + coins_released`,
-  and `coins_released > 0` only in an ended state.
+  and `coins_released > 0` only in an ended state; for a coin buy offer, `claim_amount = remaining
+  + coins_settled + coins_aborted`, and `coins_aborted > 0` only in an ended state, equal to its
+  ABORT's `cancelled_amount` (§5).
 - **Delivery:** bought coins reach the buyer's Platform balance when Platform applies SETTLE, as
   transferable coins (Canary; Global `PARITY_PENDING`; C2).
 
@@ -152,11 +154,11 @@ key; the same key with other content is an integrity conflict.
 
 | Call | Effect on Platform | Refusals |
 |---|---|---|
-| `HOLD {hold_key, account, amount, world, offer_id, operation, issued_at}` | moves `amount` transferable coins to a hold owned by Game's Market, bound to the coin sell offer `offer_id` or, for an accept, to the accepted buy offer | `NOT_ENOUGH_COINS`, `ACCOUNT_BLOCKED`, `ABORTED_KEY`, `STALE_REQUEST` |
-| `CLAIM {claim_key, account, amount, world, offer_id, operation, issued_at}` | records that `account` may receive up to `amount` coins, bound to its coin buy offer `offer_id` or, for an accept, to the accepted sell offer; moves no coins | `ACCOUNT_BLOCKED`, `ABORTED_KEY`, `STALE_REQUEST` |
-| `SETTLE {instruction_id, hold_key, claim_key, sell_offer_id, buy_offer_id, to_account, amount}` | moves coins from the hold to `to_account`, transferable | integrity faults only (the settlement fence below); over `MKTCOIN0-RL-11` it is deferred, not applied |
+| `HOLD {hold_key, account, amount, world, offer_id, operation, binding, issued_at}` | moves `amount` transferable coins to a hold owned by Game's Market, bound to (`offer_id`, `operation`, `binding`): `PLACE` for the coin sell offer `offer_id` placed by `operation`, `ACCEPT` for the accept `operation` of the buy offer `offer_id` | `NOT_ENOUGH_COINS`, `ACCOUNT_BLOCKED`, `ABORTED_KEY`, `STALE_REQUEST` |
+| `CLAIM {claim_key, account, amount, world, offer_id, operation, binding, issued_at}` | records that `account` may receive up to `amount` coins, bound as HOLD: `PLACE` for its coin buy offer `offer_id`, `ACCEPT` for the accept `operation` of the sell offer `offer_id`; moves no coins | `ACCOUNT_BLOCKED`, `ABORTED_KEY`, `STALE_REQUEST` |
+| `SETTLE {instruction_id, hold_key, claim_key, maker_offer_id, taker_operation_id, to_account, amount}` | moves coins from the hold to `to_account`, transferable | integrity faults only (the settlement fence below); over `MKTCOIN0-RL-11` it is deferred, not applied |
 | `RELEASE {instruction_id, hold_key, amount}` | returns coins from the hold to its account | only an integrity fault |
-| `ABORT {hold_key or claim_key}` | releases an unused hold, ends a claim's unused part, or records a tombstone so a late `HOLD` or `CLAIM` with that key is refused | none |
+| `ABORT {instruction_id, hold_key or claim_key, cancelled_amount, settle_count, settle_sum}` | after the key's `settle_count` SETTLEs are applied (`MKTCOIN0-ABORT-ORDER`), releases exactly `cancelled_amount` of a hold or ends exactly `cancelled_amount` of a claim, or records a tombstone so a late `HOLD` or `CLAIM` with that key is refused | an integrity fault only (`MKTCOIN0-ABORT-ORDER`); before its watermark it is deferred, not applied |
 | `STATUS {hold_key, instruction_ids}` | the hold's amount, settled, released, state, a recall flag, and which of the named instruction ids (at most 16 per call) Platform has applied | none |
 | `BALANCE {account}` | total and transferable coins, for display only | unavailable |
 
@@ -168,13 +170,39 @@ key; the same key with other content is an integrity conflict.
   a SETTLE only when every check holds, else refuses it as an integrity fault, moves nothing and
   alarms: the hold and the claim exist and are open, in the same World; `amount` is at most the
   hold's remaining coins (`amount - settled - released`) and at most the claim's remaining
-  coins; `to_account` is the claim's account and differs from the hold's account;
-  `sell_offer_id` and `buy_offer_id` are the offers the hold and the claim were bound to at HOLD
-  and CLAIM (one of them is the accepted offer for an accept). Game never names a destination
+  coins; `to_account` is the claim's account and differs from the hold's account; and the
+  offer fields match the bindings (next rule). Game never names a destination
   Platform has not bound: the buyer is registered by its own CLAIM before any fill can pay it.
   Platform also caps SETTLE volume per destination Account and per World per 24 h
   (`MKTCOIN0-RL-11`); a SETTLE over the cap is deferred and alarmed, not applied, until an
   operator clears it, and the deliverer keeps retrying.
+- **SETTLE offer fields (`MKTCOIN0-SETTLE-SIDES`, architect ruling).** Both fields are always
+  present and typed; neither is ever empty or a stand-in: `maker_offer_id` is a `MarketOfferId`,
+  the resting offer of the fill; `taker_operation_id` is a `MarketOperationId` (the taking Market
+  operation's occurrence, §6.1), never a `MarketOfferId`. The fence requires, of the hold and the
+  claim, that one (the maker key) is bound `PLACE` to `maker_offer_id`, and the other (the taker
+  key) is bound with `operation = taker_operation_id` and either:
+  - `ACCEPT` with `offer_id = maker_offer_id` (a direct accept: accepting a sell offer, the taker
+    key is the accepter's claim; accepting a buy offer, it is the accepter's hold); or
+  - `PLACE` to a different offer on the other side of the same coin book (a matching step: the
+    taker key is the pending offer's own hold or claim, and `taker_operation_id` is the operation
+    that placed it).
+
+  Any other combination, a `binding` outside the closed list {`PLACE`, `ACCEPT`}, or a missing
+  field is an integrity fault.
+- **ABORT ordering (`MKTCOIN0-ABORT-ORDER`, architect ruling: fail closed).** Platform applies
+  instructions for one key in this order: every SETTLE naming it before its ABORT. Game computes
+  the ABORT in the transaction that ends the key: `settle_count` and `settle_sum` are the number
+  and coin sum of the SETTLE instructions Game has committed naming that key, and
+  `cancelled_amount` is the key's amount minus `settle_sum` (minus the coins released, for a
+  hold), the exact unused amount; Game issues no instruction for a key after its ABORT. Platform
+  defers the ABORT until it has applied exactly `settle_count` SETTLEs for the key totalling
+  `settle_sum`, then applies it only if `cancelled_amount` equals the key's unused amount; any
+  difference, more SETTLEs than `settle_count`, or a nonzero watermark on an unknown key is an
+  integrity fault that moves nothing and alarms; Game's reconciler reports it as
+  `MARKET_COIN_MISMATCH`. An ABORT of an unknown
+  key with a zero watermark records the tombstone. A deferred ABORT is reported by `STATUS` and is
+  pending, not a mismatch (§7).
 - **Defence in depth against a compromised Game server:** the service identity can only HOLD,
   CLAIM, SETTLE, RELEASE, ABORT and read; it can never credit coins without a hold and a claim.
   Platform caps HOLD and CLAIM volume per Account and per World per 24 h (`MKTCOIN0-RL-10`),
@@ -232,8 +260,9 @@ refused CLAIM can only be `ACCOUNT_BLOCKED`, which ends the operation `FAILED`.
   that decides them (transactional outbox); the fill or cancel is final at that commit.
 - A deliverer sends them at least once with backoff (`MKTCOIN0-RL-04`) until Platform
   acknowledges, for at most `MKTCOIN0-RL-14` (§5 key retention); Platform applies each once by
-  `instruction_id`. Order does not matter: amounts are explicit and every one is bounded by the
-  hold and the claim.
+  `instruction_id`. SETTLE and RELEASE may arrive in any order: amounts are explicit and every one
+  is bounded by the hold and the claim. An ABORT is the one ordered instruction: Platform defers it
+  behind the SETTLEs of its watermark (`MKTCOIN0-ABORT-ORDER`, §5).
 - A replay of a player command returns the first outcome (MARKET-0 §4); the hold key and
   instruction ids come from the occurrence, so a retry never holds or settles twice.
 
@@ -376,12 +405,14 @@ paid coins exist anywhere.
    external dependency (MKTCOIN-P), not edited here. The capability number is reserved at
    allocation.
 2. **Serialization:** MARKET-0's book lock and lock order; the operation row lock decides commit
-   or abort; one HOLD in flight per Account; Platform's settlement fence (§5).
+   or abort; one HOLD in flight per Account; Platform's settlement fence and ABORT ordering by
+   settlement watermark (§5).
 3. **Restart:** operations, offers and instructions are durable; the deliverer and reconciler
    resume; Platform applies each key once and keeps keys, tombstones and receipts through
    `MKTCOIN0-RL-12` and across restore (§5).
 4. **Typed references:** `MarketOfferId`, AccountId, WorldId, the ware key, hold key, claim key,
    instruction id,
-   operation occurrence, TransactionId.
+   operation occurrence (`MarketOperationId`, the SETTLE `taker_operation_id`), the binding kind,
+   TransactionId.
 5. **Wire:** §8, capability `MARKET_COINS_V1`.
 6. **Split work:** 0 items per coin transaction; at most 3 gold lines and 2 coin instructions.
