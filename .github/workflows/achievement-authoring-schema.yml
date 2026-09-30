@@ -5,6 +5,9 @@ on:
     paths:
       - tools/content-schema/achievement-authoring/**
       - tools/content-schema/quest-authoring/ots_chests.py
+      - content/achievements/**
+      - imports/cipsoft-staticdata/achievements/**
+      - imports/tibiawiki/achievements/**
       - .github/workflows/achievement-authoring-schema.yml
   workflow_dispatch:
 
@@ -43,6 +46,7 @@ jobs:
           set -euo pipefail
           python validate_achievements.py synthetic-valid-achievement.json
           python test_validate_achievements.py
+          python build_catalogue.py --check
 
       - name: Ruff check and format
         working-directory: .

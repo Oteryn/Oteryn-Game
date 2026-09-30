@@ -107,6 +107,86 @@
           }
         ]
       }
+    },
+    {
+      "key": "portal_tile",
+      "kind": "area",
+      "description": "Exactly Canary (32688, 32715, 10): the tome's tile, where its portal appears.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32688,
+              32688
+            ],
+            "y": [
+              32715,
+              32715
+            ],
+            "floor": 10
+          }
+        ]
+      }
+    },
+    {
+      "key": "library_middle",
+      "kind": "point",
+      "description": "The return point; Canary (32687, 32719, 10).",
+      "location": {
+        "x": 32687,
+        "y": 32719,
+        "floor": 10
+      }
+    },
+    {
+      "key": "knowledge_room_1",
+      "kind": "point",
+      "description": "Knowledge room 1; Canary (32687, 32707, 10).",
+      "location": {
+        "x": 32687,
+        "y": 32707,
+        "floor": 10
+      }
+    },
+    {
+      "key": "knowledge_room_2",
+      "kind": "point",
+      "description": "Knowledge room 2; Canary (32698, 32715, 10).",
+      "location": {
+        "x": 32698,
+        "y": 32715,
+        "floor": 10
+      }
+    },
+    {
+      "key": "knowledge_room_3",
+      "kind": "point",
+      "description": "Knowledge room 3; Canary (32693, 32729, 10).",
+      "location": {
+        "x": 32693,
+        "y": 32729,
+        "floor": 10
+      }
+    },
+    {
+      "key": "knowledge_room_4",
+      "kind": "point",
+      "description": "Knowledge room 4; Canary (32681, 32729, 10).",
+      "location": {
+        "x": 32681,
+        "y": 32729,
+        "floor": 10
+      }
+    },
+    {
+      "key": "knowledge_room_5",
+      "kind": "point",
+      "description": "Knowledge room 5; Canary (32676, 32715, 10).",
+      "location": {
+        "x": 32676,
+        "y": 32715,
+        "floor": 10
+      }
     }
   ],
   "phases": [],
@@ -116,9 +196,59 @@
       {
         "name": "gorzindel_immune",
         "initial": true
+      },
+      {
+        "name": "room_1_busy",
+        "initial": false
+      },
+      {
+        "name": "room_2_busy",
+        "initial": false
+      },
+      {
+        "name": "room_3_busy",
+        "initial": false
+      },
+      {
+        "name": "room_4_busy",
+        "initial": false
+      },
+      {
+        "name": "room_5_busy",
+        "initial": false
+      },
+      {
+        "name": "portal_assigned",
+        "initial": false
       }
     ],
-    "timers": []
+    "timers": [
+      {
+        "name": "room_1_hold",
+        "duration_ms": 10000,
+        "repeat": false
+      },
+      {
+        "name": "room_2_hold",
+        "duration_ms": 10000,
+        "repeat": false
+      },
+      {
+        "name": "room_3_hold",
+        "duration_ms": 10000,
+        "repeat": false
+      },
+      {
+        "name": "room_4_hold",
+        "duration_ms": 10000,
+        "repeat": false
+      },
+      {
+        "name": "room_5_hold",
+        "duration_ms": 10000,
+        "repeat": false
+      }
+    ]
   },
   "rules": [
     {
@@ -397,6 +527,389 @@
           "multiplier_percent": 0,
           "sources": "any",
           "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "stolen_tome_of_portals_opens_the_portal",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "stolen_tome_of_portals"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "create",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "at": "death_position",
+          "revert_after_ms": 10000
+        }
+      ]
+    },
+    {
+      "key": "stolen_tome_of_portals_returns",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "stolen_tome_of_portals"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/stolen_tome_of_portals",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "stolen_tome_of_portals",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "portal_step_starts",
+      "trigger": {
+        "kind": "area_entered",
+        "anchor": "portal_tile",
+        "who": "player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "portal_to_room_1",
+      "trigger": {
+        "kind": "area_entered",
+        "anchor": "portal_tile",
+        "who": "player"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "room_1_busy",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": "knowledge_room_1"
+        },
+        {
+          "kind": "flag",
+          "flag": "room_1_busy",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "room_1_hold",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "portal_to_room_2",
+      "trigger": {
+        "kind": "area_entered",
+        "anchor": "portal_tile",
+        "who": "player"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "room_2_busy",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": "knowledge_room_2"
+        },
+        {
+          "kind": "flag",
+          "flag": "room_2_busy",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "room_2_hold",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "portal_to_room_3",
+      "trigger": {
+        "kind": "area_entered",
+        "anchor": "portal_tile",
+        "who": "player"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "room_3_busy",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": "knowledge_room_3"
+        },
+        {
+          "kind": "flag",
+          "flag": "room_3_busy",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "room_3_hold",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "portal_to_room_4",
+      "trigger": {
+        "kind": "area_entered",
+        "anchor": "portal_tile",
+        "who": "player"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "room_4_busy",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": "knowledge_room_4"
+        },
+        {
+          "kind": "flag",
+          "flag": "room_4_busy",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "room_4_hold",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "portal_to_room_5",
+      "trigger": {
+        "kind": "area_entered",
+        "anchor": "portal_tile",
+        "who": "player"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "room_5_busy",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": "knowledge_room_5"
+        },
+        {
+          "kind": "flag",
+          "flag": "room_5_busy",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "portal_assigned",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "room_5_hold",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "portal_return",
+      "trigger": {
+        "kind": "area_entered",
+        "anchor": "portal_tile",
+        "who": "player"
+      },
+      "delay_ms": 10000,
+      "conditions": [
+        {
+          "kind": "in_anchor",
+          "subject": {
+            "triggering": true
+          },
+          "anchor": "knowledge_range"
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": "library_middle"
+        }
+      ]
+    },
+    {
+      "key": "room_1_reopens",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "room_1_hold"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "room_1_busy",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "room_2_reopens",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "room_2_hold"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "room_2_busy",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "room_3_reopens",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "room_3_hold"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "room_3_busy",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "room_4_reopens",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "room_4_hold"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "room_4_busy",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "room_5_reopens",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "room_5_hold"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "room_5_busy",
+          "value": false
         }
       ]
     }

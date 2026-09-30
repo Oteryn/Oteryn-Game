@@ -2111,3 +2111,9 @@ mod reward_claim_mint_postgres_cases;
 mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
+
+// ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
+// focused standalone target through the same protected lane, on the CHARM-2
+// harness included above.
+#[path = "support/account_achievement_postgres_cases.rs"]
+mod account_achievement_postgres_cases;

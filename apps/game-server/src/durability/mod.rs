@@ -4,6 +4,7 @@
 //! constructs and revalidates reconnect authority; the runtime must submit the
 //! resulting request asynchronously and consume its completion as new input.
 
+pub mod account_achievement;
 pub mod admission_authority_guards;
 mod admission_journal;
 pub mod bestiary_progress;
@@ -32,6 +33,29 @@ mod schema;
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod account_achievement_linkage {
+    use super::DurabilityRoot;
+    use super::account_achievement::{
+        AccountAchievement, AchievementCatalogueLookup, AchievementGrantError,
+        AchievementGrantOutcome, AchievementGrantRequest, AchievementSourceEvent,
+        FencedGrantingCharacter, record_achievement_grant,
+    };
+
+    #[test]
+    fn account_achievement_api_is_linked() {
+        let _ = std::mem::size_of::<AccountAchievement>();
+        let _ = std::mem::size_of::<AchievementCatalogueLookup>();
+        let _ = std::mem::size_of::<AchievementGrantError>();
+        let _ = std::mem::size_of::<AchievementGrantOutcome>();
+        let _ = std::mem::size_of::<AchievementGrantRequest>();
+        let _ = std::mem::size_of::<AchievementSourceEvent>();
+        let _ = FencedGrantingCharacter::after_fence;
+        let _ = record_achievement_grant;
+        let _ = DurabilityRoot::commit_test_achievement_grants;
+    }
+}
 
 #[cfg(test)]
 mod bestiary_progress_linkage {
