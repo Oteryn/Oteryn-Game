@@ -52,8 +52,8 @@ None of these is modelled here. `build`, `validate` and the tests write only und
 - **Threshold class of a weapon (owner, 2026-09-30):** one rule, applied when content is built, not
   hand-written per Item: bolt ammunition gives crossbow; a sword, axe or club that knights may use
   gives knight; anything else gives standard (D197, D198, D200, as Canary does). The result is written
-  to the Item's `proficiency.client_binding.threshold_class`. CI checks that the written class matches
-  the rule. Missing Item facts give `unknown`, and an `unknown` weapon gets no proficiency. An
+  to the weapon's row in `content/proficiencies/bindings.json` (`threshold_class`). CI checks that the
+  written class matches the rule. Missing Item facts give `unknown`, and an `unknown` weapon gets no proficiency. An
   exception needs an explicit override with a cited source. PROF-CONTENT-1 implements this.
 - **Not modelled:** shaping (reshape, rank 0-10, refine, Lunar Ascension Orb) and its costs, deferred
   to PROFICIENCY-1; the point table; shared progress across weapons.
@@ -110,7 +110,8 @@ WorldProject v2 (PROF-CONTENT-1b). `content/world` stays unmodified.
 - **Source:** the ITEM-PROF-1 bindings (`item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json`,
   pinned by SHA-256), from the 15.30 client (flags field 61, inferred).
 - **Threshold class:** `item_weapon_proficiency.py` applies the rule (D197, D198, D200) to each binding
-  when content is built; the Item Authoring Schema CI drift-checks it (`--check`).
+  when content is built and writes it to `content/proficiencies/bindings.json`; the Item Authoring
+  Schema CI drift-checks it (`--check`).
 - **Result:** 642 weapons bound: 461 standard, 146 knight, 35 crossbow.
 - **Not bound:**
   - 1 weapon whose class is `unknown` (ink sword 51666);
