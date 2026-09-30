@@ -1308,6 +1308,19 @@ less than `F` burns every eligible coin whole with no change and pays `F - T` fr
 under the fee's own `FeeBurnCause` (§15, §18), counted by `DUR03-RL-03-FEE`; `DUR03-RL-03` stays 0
 for coin-only fees; a fee paid wholly from the bank has no burn line.
 
+**House amendment (HOUSE-OWN-0), pending on acceptance of HOUSE-OWN-0 (#1368).** The owner
+admitted the house auction price and rent as sinks paid from the bank (D238, #162 5913348961), as
+D178 requires. `reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md` §4-§9 adds
+the `FeeBurnCause` variants `HousePrice {house, auction}` and `HouseRent {house, period}`, each one
+`BURN` value line on the owner's (Account, World) bank balance with no item line; bid escrow is
+§18 non-item value in custody, moved by `TRANSFER` value lines; house disposition moves items
+from `HouseInterior` to `CharacterInbox` as one-item `TRANSFER` lines, up to 100 items from one
+source to many destinations per step. For those shapes only, it supersedes the §39.1 exclusions of
+non-item accounts, multiple touched items and burn combined with other lines, and the §39.1 and
+§39.3 source and destination limits, within the HOUSE-OWN-0 §12 rows (100 touched items per step;
+`DUR03-RL-03-HOUSE`: at most 200 value lines, each ledger entry and each escrow change counting as
+one). Every other obligation is unchanged.
+
 **NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
 (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes
 built on the gold fee amendment above. The owner admitted NPC buying, selling and travel as value
