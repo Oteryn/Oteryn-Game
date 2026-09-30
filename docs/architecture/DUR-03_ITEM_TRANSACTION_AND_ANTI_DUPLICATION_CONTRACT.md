@@ -437,6 +437,18 @@ For each asset:
 
 Exact SQL scalar/business policy is deferred.
 
+**Amendment (BANK-0, 2026-09-30).** `reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md` §5 names the first non-item asset: bank gold, an
+integer balance per (Account, World) with an immutable ledger, converted to and from coins by the
+gold fee worth table. Its BANK-1 child admits, for these shapes only: a deposit (coin inputs and up
+to two change outputs as `CONVERSION` lines, and one credit `CONVERSION` value line), a withdrawal
+(one debit `CONVERSION` value line and up to three coin `CONVERSION` outputs) and a transfer (two
+`TRANSFER` value lines between two accounts, no item), under the closed causes
+`BankConversionCause` and `BankTransferCause`. They supersede, for these shapes only, the §39.1
+exclusions of non-item accounts, multiple touched items, burn and MINT combined with other lines;
+they contain no BURN or MINT, so §15 is unchanged. Each is one transaction with one TransactionId,
+replayed by its operation occurrence, with one bank event carrying its item and value lines.
+`DUR03-RL-03` stays 0 for every existing shape.
+
 ## 19. World-scope conservation
 
 - each live ItemInstance stays within one WorldId value scope by default;
