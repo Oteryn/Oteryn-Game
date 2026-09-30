@@ -1844,6 +1844,24 @@
           ],
           "description": "D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight when clear_sight); without one the cast fails and nothing happens."
         },
+        "windup": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "delay_ms": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "caster_asset_binding": {
+              "$ref": "#/$defs/assetBinding"
+            }
+          },
+          "required": [
+            "delay_ms",
+            "caster_asset_binding"
+          ],
+          "description": "SW-1: at the cast the caster binding shows on the caster tile; after delay_ms the effects run, if the caster still exists, on its target at that moment (none: nothing happens). Only with needs_target and without area, variants, chain and encounter."
+        },
         "chain": {
           "type": "object",
           "additionalProperties": false,
