@@ -72,8 +72,15 @@ The catalogue is populated in a separate content change, not by this contract:
 
 - All fields except `entrance`: the official client 15.30 files (`staticdata`, `staticmapdata`). The owner's
   in-game check (2026-09-29, five houses in three towns) matched the client, not TibiaWiki or CrystalServer.
-- `entrance`: CrystalServer `world-house.xml` (owner decision 3a, 2026-09-29), until it is derived from the
-  official layout. It is next to a door for 968 of 995 houses; the rest are listed in the conversion report.
+- `entrance`: CrystalServer `world-house.xml` (owner decision 3a, 2026-09-29), final (owner decision 1a,
+  2026-09-30). The client ships no tiles outside a House layout, so walkability cannot be derived from it, and the
+  base map the runtime loads (ADR-0021) is the same engine map. It is the tile in front of an outer door for 949
+  of 995 houses; the other 46 are listed in the conversion report
+  (`entrance_not_in_front_of_an_outer_door`) for the walkability check when the base map is compiled
+  (MAP-BUNDLE).
+- `beds`: the official count, final (owner decision 2a, 2026-09-30). The client layout carries no furniture;
+  bed items are base-map placements. The engine map has two bed items per official bed for 911 of 995 houses;
+  the other 84 are listed in `samples/otbm-tile-check.json` for the base-map owner.
 - Door item classification: CrystalServer `items.xml` `type="door"` ids, under the recorded assumption that
   engine item ids equal client appearance ids (HOUSES-3).
 - The one door in two layouts (East Lane 1a/1b) belongs to East Lane 1a (`SHARED_DOOR_OWNERS`); any new one stops
@@ -108,15 +115,17 @@ any other Ground item (D196; HOUSE-CUSTODY-0 §3.5).
 
 1. This contract (this change).
 2. Catalogue population in `content/houses/` under §3, with its own review of the reported divergences.
-3. City `Area` records for the `town` references.
+3. City `Area` records for the `town` references (#1353).
 4. Housing persistence and runtime under `EXP-HOUSES-01` §29, each with its own authorization and review.
    Prerequisites: HOUSE-CUSTODY-0 accepted and HOUSE-CUSTODY-1 (the `HouseInterior` storage slice) landed. Until
    then no House may become ownable or auctionable, and Ground items on House tiles are retired at every planned
    reset (D196).
 
+Steps 1-3 are done: the static House catalogue is complete (owner direction 3a, 2026-09-30). A later catalogue
+change is a revision under §4.
+
 ## 6. Not decided
 
 - Physical schema, migration and the `HouseId` representation.
-- Deriving `entrance` from the official layout.
-- Bed and door item placements (world placements) and a bed-count check against them.
+- Bed and door item placements: base-map content (ADR-0021 MAP-* children), checked against §3 there.
 - Residence templates, Guildhouse lifecycle and all numbers deferred by `EXP-HOUSES-01` §26.
