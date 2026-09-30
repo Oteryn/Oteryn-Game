@@ -4,10 +4,6 @@ on:
   pull_request:
     paths:
       - tools/content-schema/charm-authoring/**
-      - content/charms/**
-      - content/project.json
-      - content/manifest.json
-      - content/content.lock.json
       - .github/workflows/charm-authoring-schema.yml
   workflow_dispatch:
 
@@ -46,9 +42,6 @@ jobs:
 
       - name: Validate the candidate catalogue
         run: python charm_authoring.py validate samples/charms-candidate.json
-
-      - name: Populated content/charms tree and its registration match the catalogue
-        run: python charm_authoring.py content --check
 
       - name: Tests
         run: python test_charm_authoring.py

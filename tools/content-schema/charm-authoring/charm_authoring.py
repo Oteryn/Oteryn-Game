@@ -602,7 +602,6 @@ def registered(project: dict, manifest: dict, lock: dict, count: int) -> tuple:
     }
     manifest["managed_files"] = [{"path": p} for p in sorted(paths)]
     lock["family_counts"][FAMILY] = count
-    lock.pop("static_family_counts", None)  # interim key of the first population
     return project, manifest, lock
 
 
