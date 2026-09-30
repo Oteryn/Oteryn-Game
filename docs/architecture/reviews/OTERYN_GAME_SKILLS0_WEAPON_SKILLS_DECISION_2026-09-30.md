@@ -21,6 +21,14 @@
 - **W2b** (training) accumulates skill tries next to mana spent (§3.4), with the formula table of
   §3.5, and converts progress at the vocation choice (§3.3).
 - **DEATH skill loss** joins the A13 "DEATH ML loss" child (§3.6).
+- **CHAR-BUILD-1 carries the #1271 follow-ups** (#162 5902863956), extended to the skill columns:
+  - F1: start from the latest merged consistency guard, keeping every arm;
+  - F2: if the eight-family CHECK uses a helper function, grant its runtime EXECUTE and add a
+    `SET ROLE` insert test;
+  - F3: build receipts join the successor query;
+  - F4: named integrity-verifier checks for skill chain continuity and for the death receipt's
+    skill fields.
+  Its PostgreSQL target is aggregated into a target CI runs (PG-COVERAGE-1).
 
 ## 1. Question
 
@@ -51,7 +59,9 @@ take?
   - none: 1.5, 2.0, 2.0, 2.0, 2.0, 1.5, 1.1 (`:7-13`);
   - knight: 1.1 fist, 1.1 club, sword and axe, 1.4 distance (`:55-59`);
   - elite knight swaps fist and distance, 1.4 and 1.1 (`:112, 116`). This looks like a Canary
-    data error; the row carries `PARITY_PENDING`.
+    data error.
+  - Decision: a promoted vocation uses its base vocation's multipliers, as in Global, so the elite
+    knight uses the knight row (`PARITY_PENDING`).
   - The other vocations take their rows from the same file, cited in the content table.
 - One try may advance several levels at once (`addSkillAdvance`, `player.cpp:1204-1208`).
 - Training (`weapons.cpp`, `player.cpp`, `creature.cpp`):
@@ -84,6 +94,10 @@ take?
 - CHECKs on the row, the build receipt and the death receipt's build fields: every skill `level`
   is between 10 and 1,000; `tries` is between 0 and 2^63 - 1. Tries toward the next level are
   held as a count within the current level, as `mana_spent` is.
+- **Arithmetic.** `req(L)` is computed as Canary does: f64 `pow`, then truncated to an integer.
+  A level whose `req` exceeds 2^63 - 1 is unreachable: the skill stops at the level below it (with
+  a 2.0 multiplier that is around level 67). Cumulative sums for death loss and re-levelling use
+  checked 128-bit arithmetic and saturate at the bound; they never wrap.
 
 ### 3.2 Receipt chain (amends A13 §4.2)
 
@@ -96,7 +110,9 @@ take?
     `>=` and an OR of `>`.
   - `vocation_choice`: see §3.3. The SQL CHECK only requires `none` to a vocation key; the writer
     checks the conversion.
-  - `promotion`: a vocation key to another key; all eight families equal.
+  - `promotion`: a vocation key to another key; all eight families equal. This holds because a
+    promoted vocation uses its base vocation's multipliers (§2), so equal tries never exceed the
+    new requirement.
 - The chain seed for the first build-carrying receipt becomes (`none`, 0, 0, and seven times
   (10, 0)).
 - The binding digest covers every before and after value, the skills included.
@@ -110,6 +126,8 @@ take?
 - The build writer computes the conversion from the content formula table and binds the table
   revision in the binding. SQL does not check it: SQL checks the cause direction only.
 - This replaces A13's "`magic_level` and `mana_spent` equal" for `vocation_choice`.
+- The re-levelled magic level is not capped here. The Dawnport magic-level cap
+  (`dawnport.lua:4-19`) is deferred explicitly to DAWNPORT-1, which owns the island's rules.
 - `PARITY_PENDING` until checked against an owner-trusted or official source.
 
 ### 3.4 Training (amends A13 §4.5)

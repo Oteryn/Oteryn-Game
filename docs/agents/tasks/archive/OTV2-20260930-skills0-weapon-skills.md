@@ -85,6 +85,11 @@ No code, migration or content change is made.
 - Its two owner questions were architect applications of owner rule 5905825574 and D58, and are
   recorded as architect decisions (§3.3, §3.6).
 - Control-plane rule (#162 5912405163): the A13 pointer reads "pending on acceptance of SKILLS-0".
+- Independent review of `3bd7c08d` (5911230309, re-review 5912825014): FIX, 3 medium and 1 low,
+  all answered in one push: promoted vocations use the base multipliers (the elite knight row is a
+  data error); the Dawnport magic-level cap deferred to DAWNPORT-1; the #1271 F1-F4 follow-ups and
+  PG-COVERAGE-1 carried into the CHAR-BUILD-1 brief; `req(L)` by f64 pow with truncation,
+  unreachable levels above 2^63 - 1, checked and saturating sums.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
