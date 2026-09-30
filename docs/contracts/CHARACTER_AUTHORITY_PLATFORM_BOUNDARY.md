@@ -161,6 +161,18 @@ Character Authority is responsible for:
 
 A Platform name-availability preview is advisory only unless backed by an accepted reservation protocol owned by Character Authority.
 
+### 6.1 Naming policy revision 1 (CHAR-NAME-1)
+
+Owner answers given directly on 2026-09-30 (CHAR-NAME-1 questions 1a, 2c, 3a, 4b with a 30-day hold, 5a; D166 slice). These answers fix the §15 "name namespace scope" deferral for this revision only.
+
+- **Repertoire (1a):** 2..29 ASCII letters in words joined by single spaces, with no leading or trailing space. No digits, punctuation, other scripts or control characters (tibia.com manual §starting 2.2.1: at most 29 characters, no digits, no special characters). Blocked words are not part of revision 1.
+- **Comparison key (2c):** the name in ASCII lower case with every space removed, so `Aldric`, `aldric` and `Al Dric` collide. The key is versioned by the naming policy revision. A later revision may only make the key finer (never coarser) without a conflict migration.
+- **Namespace (3a):** one global namespace across all Worlds.
+- **Reservation (4b):** a reservation is held while its Character holds the name. After a rename or a terminal deletion, the released key stays blocked for everyone, including the former owner, for 30 days, and is then free. Revision 1 ships without rename or deletion, so no reservation is released yet. The hold ships with those operations.
+- **Boundary (5a):** the name crosses the boundary as the required `requested_name` of the bootstrap intent, contract version 2. The Platform issuer and the Game decoder change in lockstep, and Game refuses version 1 intents.
+- **Enforcement:** migration 0021 adds `game_character_roots.name` with its generated `name_key`, and `game_character_name_reservations` keyed by `name_key`. A root insert reserves its key in the same statement, so a taken key fails for every writer. Bootstrap returns `NameUnavailable` with no authoritative write. Concurrent same-key bootstraps produce exactly one winner (§16 scenario 3).
+- Names under revision 1 are a strict subset of the `ListCharactersForAccount` v1 `name` wire rule.
+
 ## 7. Identity continuity
 
 The following preserve `CharacterId`:
@@ -309,7 +321,7 @@ This contract intentionally does not freeze:
 - `protocol-oteryn` packet/message layouts;
 - `CommandId` or exact `OperationId` representation;
 - physical PostgreSQL tables/indexes;
-- name namespace scope;
+- name namespace scope (fixed for naming policy revision 1 by §6.1);
 - exact slot/quota values;
 - exact deletion grace/retention/erasure policy;
 - exact progression formulas;

@@ -246,7 +246,7 @@ impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
 }
 
 fn bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![1];
+    let mut binding = vec![2];
     binding.extend_from_slice(&id(31));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&id(30));
@@ -258,6 +258,9 @@ fn bootstrap_binding() -> Vec<u8> {
         binding.extend_from_slice(&u16::try_from(value.len()).expect("length").to_be_bytes());
         binding.extend_from_slice(value.as_bytes());
     }
+    // Contract version 2 binds the requested name last (CHAR-NAME-1).
+    binding.extend_from_slice(&12_u16.to_be_bytes());
+    binding.extend_from_slice(b"Fixture Hero");
     binding
 }
 
@@ -281,7 +284,7 @@ pub(crate) async fn seed_character(
     sqlx::query(
         "INSERT INTO game_character_roots VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1')",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero')",
     )
     .bind(id(CHARACTER).as_slice())
     .bind(id(40).as_slice())
@@ -2015,7 +2018,7 @@ fn transfer_rejects_a_destination_character_in_another_world() -> TestResult {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "INSERT INTO game_character_roots VALUES \
              ('{other_character}', '{account}', '{other_world}', 1, 1, \
-               'profile-1', 'ruleset-1', 'content-1', 'starter-1')"
+               'profile-1', 'ruleset-1', 'content-1', 'starter-1', 'Other Hero')"
         )))
         .execute(&harness.pool)
         .await?;

@@ -344,6 +344,7 @@ mod character_authority_linkage {
         let _ = std::mem::size_of::<ReconciledCharacterAuthority<'_, '_>>();
         let _ = CharacterAuthorityError::Rejected;
         let _ = CharacterAuthorityError::Conflict;
+        let _ = CharacterAuthorityError::NameUnavailable;
         let _ = |error: CharacterAuthorityError| match error {
             CharacterAuthorityError::Unavailable(inner) => Some(inner),
             _ => None,
