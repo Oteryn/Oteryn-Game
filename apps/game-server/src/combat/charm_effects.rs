@@ -424,6 +424,13 @@ impl CharmDefinition {
         self.effect
     }
 
+    /// Whether the server applies this charm's effect today: no [`CharmMissingSystem`] blocks
+    /// it. This is the `effect_active` of the charm's `CharmStateV1` entry (Sol ruling, #162
+    /// comment 5913269950): the client cannot know which systems exist on the server.
+    pub(crate) const fn effect_active(&self) -> bool {
+        self.effect.missing_system().is_none()
+    }
+
     /// The value of an unlocked stage `1..=3`.
     pub(crate) fn stage(&self, stage: u8) -> Option<CharmPercent> {
         usize::from(stage)

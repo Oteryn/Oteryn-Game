@@ -158,9 +158,10 @@ pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
-// PROTOCOL_OTERYN_V1_REGISTRY.json currently registers no optional capabilities.
+// The optional capabilities PROTOCOL_OTERYN_V1_REGISTRY.json registers: 1 BESTIARY_CHARMS_V1
+// (CHARM-5, not offered before CHARM-6). Registered is not offered: the server selects none today.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -2315,7 +2316,8 @@ mod tests {
         );
         assert!(
             encode_server_accepted(&ServerAcceptedValue {
-                selected_capabilities: &[1],
+                // 2 is reserved for PROF-WIRE-1 but not registered.
+                selected_capabilities: &[2],
                 ..accepted
             })
             .is_err()
@@ -2979,17 +2981,25 @@ mod tests {
             ))
             .is_ok()
         );
-        assert_eq!(
+        // 1 BESTIARY_CHARMS_V1 is registered; 2 is reserved for PROF-WIRE-1 but not registered.
+        assert!(
             decode_wire_envelope(&test_envelope(
                 2,
                 &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[1])
+            ))
+            .is_ok()
+        );
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(
+                2,
+                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[2])
             )),
             Err(FoundationProtocolError::CapabilityMismatch)
         );
         assert_eq!(
             decode_wire_envelope(&test_envelope(
                 4,
-                &test_server_resume_accepted_payload(2, 1, 1, &session, &[1])
+                &test_server_resume_accepted_payload(2, 1, 1, &session, &[2])
             )),
             Err(FoundationProtocolError::CapabilityMismatch)
         );

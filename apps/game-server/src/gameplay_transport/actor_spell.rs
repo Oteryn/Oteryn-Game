@@ -29,15 +29,20 @@ pub(crate) struct ChannelSpellStates {
 
 impl ChannelSpellStates {
     /// Create the actor's vitals at its maxima and empty cooldowns in the owner step that makes
-    /// it playable. A present actor that already has them (a retry, a same-GameSession reconnect)
-    /// keeps them exactly: nothing is refilled or reset. `None` when the actor is not the
-    /// committed player of `game_session_id`, or the facts exceed the SPELL-D8 bounds.
+    /// it playable, with the durable monk values `(harmony, serene_forced_micros)` the Character
+    /// owner loaded (SPELL-D8 §8.2), and run the Serene initialization evaluation at `now` before
+    /// any command. A present actor that already has them (a retry, a same-GameSession
+    /// reconnect) keeps them exactly: nothing is refilled or reset, and only Serene is evaluated
+    /// again. `None` when the actor is not the committed player of `game_session_id`, the facts
+    /// exceed the SPELL-D8 bounds, or the monk values are corrupt.
     pub(crate) fn initialize(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         game_session_id: GameSessionId,
         facts: CharacterCastFacts,
+        (harmony, serene_forced_micros): (u8, u64),
+        now: SemanticTimeMicros,
     ) -> Option<&PlayerSpellState> {
         runtime.player_control_facts(actor, game_session_id).ok()?;
         self.actors.retain(|(present, session, _)| {
@@ -46,13 +51,83 @@ impl ChannelSpellStates {
         let index = match self.index(actor, game_session_id) {
             Some(index) => index,
             None => {
-                let state = PlayerSpellState::new(facts)?;
+                let mut state = PlayerSpellState::new(facts, harmony, serene_forced_micros)?;
+                state.make_playable(now).ok()?;
                 self.actors.try_reserve(1).ok()?;
                 self.actors.push((actor, game_session_id, state));
-                self.actors.len() - 1
+                return self.actors.last().map(|(_, _, state)| state);
             }
         };
-        self.actors.get(index).map(|(_, _, state)| state)
+        let state = &mut self.actors.get_mut(index)?.2;
+        state.make_playable(now).ok()?;
+        Some(state)
+    }
+
+    /// FND-04B §20/§21 recovery made the present actor playable again: the Serene
+    /// initialization evaluation runs before its first command (§8.2). `false` when the actor has
+    /// no spell state or the evaluation failed.
+    pub(crate) fn resume(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        self.get_mut(runtime, actor, game_session_id)
+            .is_some_and(|state| state.make_playable(now).is_ok())
+    }
+
+    /// The session left the actor (control loss): no command is accepted until [`Self::resume`].
+    pub(crate) fn detach(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) {
+        if let Some(state) = self.get_mut(runtime, actor, game_session_id) {
+            state.detach();
+        }
+    }
+
+    /// The periodic 1000 ms Serene evaluation of the actor (§8.2): the new `ACTOR_VITALS`
+    /// revision and value when Serene changed, which the owner publishes.
+    pub(crate) fn tick(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Option<(u64, ActorVitals)> {
+        let state = self.get_mut(runtime, actor, game_session_id)?;
+        state
+            .tick(now)
+            .ok()
+            .filter(|changed| *changed)
+            .map(|_| (state.revision(), state.vitals()))
+    }
+
+    /// The monk values the actor-end save writes (§8.2), or `None` when the actor has no spell
+    /// state or is not a monk.
+    pub(crate) fn monk_save_values(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Option<(u8, u64)> {
+        self.get(runtime, actor, game_session_id)?
+            .monk_save_values(now)
+    }
+
+    fn get_mut(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<&mut PlayerSpellState> {
+        runtime.player_control_facts(actor, game_session_id).ok()?;
+        let index = self.index(actor, game_session_id)?;
+        self.actors.get_mut(index).map(|(_, _, state)| state)
     }
 
     fn get(
@@ -336,7 +411,7 @@ pub(crate) mod tests {
         let (runtime, actor, session) = runtime_with_player(0x63);
         let mut states = ChannelSpellStates::default();
         states
-            .initialize(&runtime, actor, session, FACTS)
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
             .expect("initialized");
         let full = ActorVitals {
             health: 185,
@@ -381,12 +456,12 @@ pub(crate) mod tests {
         let (runtime, actor, session) = runtime_with_player(0x64);
         let mut states = ChannelSpellStates::default();
         states
-            .initialize(&runtime, actor, session, FACTS)
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
             .expect("initialized");
         cast_at(&runtime, &mut states, actor, session, 1, 0);
         // A same-GameSession reconnect initializes again: no refill, no cooldown reset.
         let kept = states
-            .initialize(&runtime, actor, session, FACTS)
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
             .expect("kept")
             .clone();
         assert_eq!((kept.revision(), kept.vitals().mana), (2, 70));
@@ -404,9 +479,13 @@ pub(crate) mod tests {
         let (mut runtime, actor, session) = runtime_with_player(0x65);
         let other = GameSessionId::decode(&uuid_v7(0x66)).expect("session");
         let mut states = ChannelSpellStates::default();
-        assert!(states.initialize(&runtime, actor, other, FACTS).is_none());
+        assert!(
+            states
+                .initialize(&runtime, actor, other, FACTS, (0, 0), now(0))
+                .is_none()
+        );
         states
-            .initialize(&runtime, actor, session, FACTS)
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
             .expect("initialized");
         assert_eq!(
             cast_at(&runtime, &mut states, actor, other, 1, 0),
@@ -425,7 +504,7 @@ pub(crate) mod tests {
         let reservation = runtime.reserve_fresh_session(other).expect("reserve");
         let successor = runtime.commit_fresh_session(reservation).expect("commit");
         let fresh = states
-            .initialize(&runtime, successor, other, FACTS)
+            .initialize(&runtime, successor, other, FACTS, (0, 0), now(0))
             .expect("fresh actor")
             .clone();
         assert_eq!((fresh.revision(), fresh.vitals().mana), (1, 90));
@@ -449,10 +528,69 @@ pub(crate) mod tests {
             let (runtime, actor, session) = runtime_with_player(0x68);
             let mut states = ChannelSpellStates::default();
             states
-                .initialize(&runtime, actor, session, FACTS)
+                .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
                 .expect("state");
             cast_at(&runtime, &mut states, actor, session, command_id, 0)
         };
         assert_eq!(outcome(7), outcome(7));
+    }
+
+    /// SPELL-D8 §8.2 in the Channel owner: a new monk actor loads the durable values and is
+    /// Serene from its initialization evaluation; a reconnect keeps Harmony and the forced time,
+    /// and the actor-end save reads the live values.
+    #[test]
+    fn a_monk_actor_loads_its_durable_values_and_keeps_them_across_a_reconnect() {
+        let (runtime, actor, session) = runtime_with_player(0x69);
+        let monk = CharacterCastFacts {
+            vocation: Vocation::Monk,
+            ..FACTS
+        };
+        let mut states = ChannelSpellStates::default();
+        assert!(
+            states
+                .initialize(&runtime, actor, session, monk, (6, 0), now(0))
+                .is_none(),
+            "a corrupt durable Harmony fails the actor closed"
+        );
+        let state = states
+            .initialize(&runtime, actor, session, monk, (3, 4_000_000), now(1000))
+            .expect("monk actor");
+        assert_eq!((state.vitals().harmony, state.vitals().serene), (3, true));
+        assert_eq!(
+            states.monk_save_values(&runtime, actor, session, now(2000)),
+            Some((3, 3_000_000))
+        );
+        // A solo monk's periodic evaluation changes nothing, so nothing is published.
+        assert_eq!(states.tick(&runtime, actor, session, now(2000)), None);
+        // Control loss detaches the actor: its casts are refused until a recovery.
+        states.detach(&runtime, actor, session);
+        assert_eq!(
+            cast_at(&runtime, &mut states, actor, session, 1, 2500),
+            SpellCastOutcome::rejected()
+        );
+        assert!(states.resume(&runtime, actor, session, now(3000)));
+        // A present actor keeps its values: a second initialization reloads nothing.
+        let kept = states
+            .initialize(&runtime, actor, session, monk, (0, 0), now(3000))
+            .expect("kept");
+        assert_eq!(kept.vitals().harmony, 3);
+        assert_eq!(
+            states.monk_save_values(&runtime, actor, session, now(3000)),
+            Some((3, 2_000_000))
+        );
+        assert_eq!(
+            cast_at(&runtime, &mut states, actor, session, 2, 3000).disposition,
+            SpellCastDisposition::Cast
+        );
+        // A druid has no monk values to save.
+        let (druid_runtime, druid, druid_session) = runtime_with_player(0x6a);
+        let mut druids = ChannelSpellStates::default();
+        druids
+            .initialize(&druid_runtime, druid, druid_session, FACTS, (0, 0), now(0))
+            .expect("druid");
+        assert_eq!(
+            druids.monk_save_values(&druid_runtime, druid, druid_session, now(0)),
+            None
+        );
     }
 }

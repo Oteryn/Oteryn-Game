@@ -33,7 +33,7 @@ innych rozmiarów".
 | D84 | Area as in Global: 18 × 14 tiles around the observer (the 15 × 11 view plus a movement margin) in the Reference profile. The size is a server setting within a bounded range, so other sizes can be tested. Every session in one Channel uses the same value. |
 | D85 | Visible objects as in Global: creatures, other players, corpses and ground items. |
 | D86 | Floors as in Global: above ground (floor ≤ 7) the observer sees floors 7 down to 0; underground it sees its floor ± 2. |
-| D87 | Entity ceiling: 256 per snapshot or delta, nearest first beyond it, own actor always included. Global states no cap; this value is the architect's under the "as in Global" direction. |
+| D87 | Entity ceiling: 256 per snapshot or delta, nearest first beyond it, own actor always included. Global states no cap; this value is the architect's under the "as in Global" direction. Amended by D222 (#162 5911768800), pending on acceptance of ITEM-MOVE-WIRE-1: actors rank before items. |
 
 ## 3. Facts
 
@@ -105,6 +105,13 @@ view, the 18 × 14 map area and the floor rule. The manual states only a charact
   session.
 - A delta carries at most 256 enter, leave or update entries; a larger change is sent as a new
   snapshot instead (the packet's "resync" disposition).
+
+**Amendment (ITEM-MOVE-WIRE-1, 2026-09-30; owner decision D222, #162 5911768800), pending on
+acceptance of ITEM-MOVE-WIRE-1.** The canonical order ranks actors (players and
+creatures) before items; within each group it is floor distance, Chebyshev distance, then entity
+identity, as above. So dropped items can never push an actor out of a snapshot. The ceiling and the
+degrade and resync dispositions are unchanged
+(`OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §7.3).
 
 ### 4.4 Resource rows
 

@@ -412,15 +412,17 @@ fn a_focus_fill_gains_the_missing_charges() {
     assert_eq!(state.commit_fill(), Ok(0));
 }
 
-/// Admission gate: Harmony is not durable yet (H-1), so the Harmony spells stay fail-closed.
+/// Admission (H-live): Harmony is durable (H-1) and the runtime actor builds and spends it, so a
+/// monk builder or spender is admitted; `monk_focus` has no implementation and stays fail-closed.
 #[test]
-fn the_harmony_spells_stay_fail_closed_until_harmony_is_durable() {
+fn the_harmony_roles_are_admitted_and_monk_focus_stays_fail_closed() {
     let dependencies: Value = serde_json::from_str(DEPENDENCIES).expect("dependencies");
     for role in ["builder", "spender"] {
         let mut spell: Value = serde_json::from_str(SPELL).expect("spell");
         spell["spell"]["harmony_role"] = json!(role);
-        let error = spell_from_bundle(&spell, &dependencies).expect_err("harmony role admitted");
-        assert!(error.to_string().contains("Harmony"), "{error}");
+        spell["spell"]["requirements"]["vocations"] = json!(["monk", "exalted_monk"]);
+        let admitted = spell_from_bundle(&spell, &dependencies).expect("harmony role admitted");
+        assert!(admitted.harmony_role.is_some());
     }
     let mut spell: Value = serde_json::from_str(SPELL).expect("spell");
     spell["spell"]["execution"] = json!({ "native_behavior": {

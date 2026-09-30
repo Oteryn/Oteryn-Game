@@ -39,6 +39,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use chain::{ChainCreature, ChainHit, ChainSpec, ChainStart, ChainWorld, pick_chain, step_value};
 pub(crate) use formula::{Formula, FormulaError, FormulaInputs};
+use harmony::HarmonyMultiplier;
 use party::{PartyBuffSpec, PartyFailure, PartyWorld};
 use target::{AllowedTargets, CastTarget, CheckedTarget};
 
@@ -132,6 +133,16 @@ pub(crate) enum Execution {
     PartyBuff(PartyBuffSpec),
 }
 
+/// The monk Harmony role of a spell (S26, `harmony_role`; SPELL-D8 §8.2, native behaviours §A.2
+/// steps 3 and 4). The Channel owner applies it at the cast's PRIMARY COMMIT.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum HarmonyRole {
+    /// +1 Harmony up to 5 after a successful cast.
+    Builder,
+    /// Damage bounds scaled by the Harmony multiplier; Harmony becomes 0 after a successful cast.
+    Spender,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct SpellDefinition {
     pub(crate) key: String,
@@ -161,6 +172,8 @@ pub(crate) struct SpellDefinition {
     pub(crate) execution: Execution,
     /// The ability hits a chain of creatures (D12, S23).
     pub(crate) chain: Option<ChainSpec>,
+    /// The monk Harmony role (S26); `None` for every other spell.
+    pub(crate) harmony_role: Option<HarmonyRole>,
 }
 
 impl SpellDefinition {
@@ -333,6 +346,9 @@ pub(crate) struct CasterState {
     pub(crate) melee_weapon: bool,
     /// Defense of the first shield in the caster's left or right hand; `None` without a shield (D.4).
     pub(crate) shield_defense: Option<u32>,
+    /// The Harmony multiplier a spender's damage bounds take (§A.2 step 3b), from the monk's
+    /// current charges and Serene; [`HarmonyMultiplier::ONE`] for anyone else.
+    pub(crate) harmony_multiplier: HarmonyMultiplier,
 }
 
 /// Ready times of a caster's spell and group cooldowns.
@@ -720,6 +736,11 @@ fn resolve(
         shielding_skill: caster.shielding_skill,
         shield_defense: caster.shield_defense,
     };
+    // §A.2 step 3b: only a spender's damage takes the multiplier.
+    let multiplier = match spell.harmony_role {
+        Some(HarmonyRole::Spender) => caster.harmony_multiplier,
+        Some(HarmonyRole::Builder) | None => HarmonyMultiplier::ONE,
+    };
     let resolve_effects = |draw: &mut dyn FnMut(i64, i64) -> i64| match &spell.execution {
         Execution::Conjure {
             reagent,
@@ -732,13 +753,13 @@ fn resolve(
         }]),
         Execution::Effects(effects) => effects
             .iter()
-            .map(|effect| resolve_effect(effect, &inputs, draw))
+            .map(|effect| resolve_effect(effect, &inputs, multiplier, draw))
             .collect::<Result<Vec<_>, _>>()
             .map_err(CastRejection::Formula),
         Execution::PartyBuff(buff) => buff
             .effects
             .iter()
-            .map(|effect| resolve_effect(effect, &inputs, draw))
+            .map(|effect| resolve_effect(effect, &inputs, multiplier, draw))
             .collect::<Result<Vec<_>, _>>()
             .map_err(CastRejection::Formula),
     };
@@ -841,6 +862,7 @@ fn check_group(
 fn resolve_effect(
     effect: &SpellEffect,
     inputs: &FormulaInputs,
+    multiplier: HarmonyMultiplier,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<ResolvedEffect, FormulaError> {
     Ok(match effect {
@@ -848,7 +870,9 @@ fn resolve_effect(
             damage_type,
             formula,
         } => {
+            // §A.2 step 3b: each bound is multiplied and truncated toward zero before the roll.
             let (low, high) = formula.bounds(inputs)?;
+            let (low, high) = (multiplier.apply(low), multiplier.apply(high));
             ResolvedEffect::Damage {
                 damage_type: damage_type.clone(),
                 magnitude: draw(low, high).clamp(low, high),

@@ -666,18 +666,33 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
             }
         ]
     );
-    assert!(
+    let body = oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
+        "oteryn:character-authority:primary",
+        &snapshot,
+    )?;
+    // A retry of the same (epoch, revision) is byte-identical, however much
+    // later it reads: `source_observed_at` is when the revision was assigned
+    // (0028), so a lost acknowledgement never becomes a 409.
+    tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
+    let retry = root
+        .next_account_characters_snapshot(&authority)
+        .await
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("the unacknowledged snapshot is still queued")?;
+    assert_eq!(
         oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
             "oteryn:character-authority:primary",
-            &snapshot
-        )
-        .is_ok()
+            &retry,
+        )?,
+        body
     );
     let facts = root
         .account_characters_watermark_facts(&authority)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(facts.projection_epoch, 1);
+    // Never later than the read.
+    assert!(retry.source_observed_at * 1000 <= facts.now_ms);
     assert!(
         facts
             .oldest_undelivered_ms
@@ -2270,6 +2285,654 @@ mod account_achievement_postgres_cases;
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
 
+// SPELL-D8 H-1 durable monk Harmony and remaining forced Serene time (migration
+// 0026, `durability::monk_state`) run in the same protected lane, on the
+// CHARM-2 harness included above.
+mod monk_state_postgres_cases {
+    use super::{Database, id};
+    use crate::bestiary_postgres_harness::{
+        CHARACTER, Harness, TestResult, configured_admin, context, debug, fence, runtime,
+    };
+    use crate::domain::CharacterId;
+    use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
+    use crate::durability::character_death::{
+        CharacterDeathOutcome, CharacterDeathRequest, DeathCell, PlayerDeathOccurrence,
+    };
+    use crate::durability::character_progression::CharacterProgressionError;
+    use crate::durability::monk_state::{
+        DurableMonkState, MonkStateSaveOccurrence, MonkStateSaveOutcome, MonkStateSaveRequest,
+    };
+    use crate::durability::{DurabilityError, DurabilityRoot};
+    use crate::foundation::{ChannelId, ConnectionGeneration, WorldId};
+    use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+    use sqlx::Connection;
+
+    fn state(harmony: u8, micros: u64) -> TestResult<DurableMonkState> {
+        Ok(DurableMonkState::new(harmony, micros).map_err(debug)?)
+    }
+
+    fn save(tag: u8, harmony: u8, micros: u64) -> TestResult<MonkStateSaveRequest> {
+        Ok(MonkStateSaveRequest {
+            occurrence: MonkStateSaveOccurrence::from_bytes(id(tag)).map_err(debug)?,
+            state: state(harmony, micros)?,
+        })
+    }
+
+    /// Global thresholds of levels 1-10, as the DEATH-1 writer cases.
+    const GLOBAL: [i64; 11] = [0, 100, 200, 400, 800, 1500, 2600, 4200, 6400, 9300, 13000];
+
+    fn death(tag: u8) -> TestResult<CharacterDeathRequest<10>> {
+        let mut thresholds = [LevelThreshold {
+            level: 1,
+            minimum_experience: ExactI64::new(0),
+        }; 10];
+        for (index, threshold) in thresholds.iter_mut().enumerate() {
+            *threshold = LevelThreshold {
+                level: u32::try_from(index + 1)?,
+                minimum_experience: ExactI64::new(GLOBAL[index]),
+            };
+        }
+        Ok(CharacterDeathRequest {
+            occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
+            context: context(),
+            policy_revision: "policy-1".into(),
+            reward_revision: "reward-1".into(),
+            policy: FiniteProgressionPolicy {
+                context: context(),
+                policy_revision: "policy-1".into(),
+                reward_revision: "reward-1".into(),
+                death_policy_revision: "death-1".into(),
+                declared_difference_revision: "declaration-1".into(),
+                thresholds,
+                terminal_exclusive_experience: ExactI64::new(GLOBAL[10]),
+                death_loss_numerator: 1,
+                death_loss_denominator: 1,
+                death_loss_rounding: RoundingMode::Floor,
+            },
+            held_blessings: Vec::new(),
+            death_cell: DeathCell {
+                world_id: WorldId::decode(&id(42)).map_err(debug)?,
+                channel_id: ChannelId::decode(&id(43)).map_err(debug)?,
+                spatial_position: vec![1, 2, 3, 7],
+                map_revision: "map-1".into(),
+            },
+            respawn_position: b"temple:thais".to_vec(),
+        })
+    }
+
+    /// Harmony, forced time, CharacterRevision and monk receipt count as stored.
+    async fn stored(harness: &Harness) -> TestResult<(i16, i64, String, i64)> {
+        let (harmony, micros): (i16, i64) = sqlx::query_as(
+            "SELECT harmony, serene_forced_remaining_micros \
+               FROM game_character_progression_state",
+        )
+        .fetch_one(&harness.pool)
+        .await?;
+        Ok((
+            harmony,
+            micros,
+            harness.root_revision().await?,
+            harness.count("game_character_monk_state_receipts").await?,
+        ))
+    }
+
+    fn database_code(error: &sqlx::Error) -> Option<String> {
+        error
+            .as_database_error()
+            .and_then(|error| error.code())
+            .map(|code| code.into_owned())
+    }
+
+    /// The guard rule that rejected: the message of its RAISE.
+    fn database_message(error: &sqlx::Error) -> String {
+        error
+            .as_database_error()
+            .map(|error| error.message().to_owned())
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn migration_gives_existing_rows_zero_and_storage_rejects_out_of_range() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let database = Database::create_at(admin, "monk_default", Some(24)).await?;
+            let result = existing_rows(&database).await;
+            database.cleanup().await?;
+            result
+        })
+    }
+
+    async fn existing_rows(database: &Database) -> TestResult {
+        let mut connection = sqlx::PgConnection::connect(&database.url).await?;
+        for statement in [
+            "INSERT INTO game_character_interpretations VALUES \
+             (1,'profile-1','ruleset-1','content-1','starter-1',1)",
+            "INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)",
+        ] {
+            let query = sqlx::query(statement);
+            let query = if statement.contains("$1") {
+                query.bind(id(40).as_slice())
+            } else {
+                query
+            };
+            query.execute(&mut connection).await?;
+        }
+        sqlx::query(
+            "INSERT INTO game_character_roots VALUES \
+             (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+              1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero')",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(40).as_slice())
+        .bind(id(42).as_slice())
+        .execute(&mut connection)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_character_progression_state VALUES \
+             (encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1',\
+              'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .execute(&mut connection)
+        .await?;
+
+        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        let values: (i16, i64) = sqlx::query_as(
+            "SELECT harmony, serene_forced_remaining_micros \
+               FROM game_character_progression_state",
+        )
+        .fetch_one(&mut connection)
+        .await?;
+        assert_eq!(
+            values,
+            (0, 0),
+            "an existing row reads Harmony 0 and no forced time"
+        );
+
+        // The CHECKs alone (triggers disabled): storage rejects every other value.
+        for (column, value, constraint) in [
+            (
+                "harmony",
+                6_i64,
+                "game_character_progression_state_harmony_range",
+            ),
+            (
+                "harmony",
+                -1,
+                "game_character_progression_state_harmony_range",
+            ),
+            (
+                "serene_forced_remaining_micros",
+                7_000_001,
+                "game_character_progression_state_serene_forced_range",
+            ),
+            (
+                "serene_forced_remaining_micros",
+                -1,
+                "game_character_progression_state_serene_forced_range",
+            ),
+        ] {
+            let mut tx = connection.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx)
+                .await?;
+            let rejected = sqlx::query(sqlx::AssertSqlSafe(format!(
+                "UPDATE game_character_progression_state SET {column} = {value}"
+            )))
+            .execute(&mut *tx)
+            .await
+            .err()
+            .ok_or_else(|| format!("{column} = {value} must be rejected"))?;
+            assert_eq!(database_code(&rejected).as_deref(), Some("23514"));
+            assert_eq!(
+                rejected
+                    .as_database_error()
+                    .and_then(|error| error.constraint()),
+                Some(constraint)
+            );
+            tx.rollback().await?;
+        }
+        for (harmony, micros) in [(5, 7_000_000), (0, 0)] {
+            let mut tx = connection.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "UPDATE game_character_progression_state \
+                    SET harmony = $1, serene_forced_remaining_micros = $2",
+            )
+            .bind(harmony)
+            .bind(micros)
+            .execute(&mut *tx)
+            .await?;
+            tx.rollback().await?;
+        }
+        connection.close().await?;
+        Ok(())
+    }
+
+    #[test]
+    fn actor_end_save_is_fenced_replayed_and_emptied_by_death() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let harness = Harness::create(admin, "monk_save", false).await?;
+            let result = save_flow(&harness).await;
+            harness.cleanup().await?;
+            result
+        })
+    }
+
+    async fn save_flow(harness: &Harness) -> TestResult {
+        // A level-9 Character at 6500 experience (the DEATH-1 writer fixture).
+        sqlx::query(
+            "INSERT INTO game_character_progression_state VALUES \
+             (encode($1,'hex')::uuid,1,9,6500,'profile-1','ruleset-1','content-1',\
+              'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let root: &DurabilityRoot = &harness.root;
+        let character = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+
+        assert_eq!(
+            root.read_character_monk_state(&authority, character)
+                .await
+                .map_err(debug)?,
+            DurableMonkState::default()
+        );
+        assert!(MonkStateSaveOccurrence::from_bytes([7; 16]).is_err());
+
+        // Actor end with Harmony 3 and 2.5 s of forced Serene left.
+        let first = root
+            .commit_character_monk_state_save(
+                &authority,
+                &harness.node,
+                fence(1)?,
+                save(70, 3, 2_500_000)?,
+            )
+            .await
+            .map_err(debug)?;
+        let MonkStateSaveOutcome::Committed(committed) = first else {
+            return Err(format!("unexpected first save: {first:?}").into());
+        };
+        assert_eq!(committed.before, DurableMonkState::default());
+        assert_eq!(committed.after, state(3, 2_500_000)?);
+        assert_eq!(committed.original_character_revision.get(), 1);
+        assert_eq!(committed.committed_character_revision.get(), 2);
+        assert_eq!(stored(harness).await?, (3, 2_500_000, "2".into(), 1));
+        assert_eq!(
+            root.read_character_monk_state(&authority, character)
+                .await
+                .map_err(debug)?,
+            state(3, 2_500_000)?
+        );
+
+        // A restart between the save and the load: a new DurabilityRoot with its own pool over
+        // the same database, and the retained recovery seal, reads the stored values back.
+        {
+            let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+            assert!(restarted.maintain_ready_once().await?);
+            let reopened = restarted
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                restarted
+                    .read_character_monk_state(&reopened, character)
+                    .await
+                    .map_err(debug)?,
+                state(3, 2_500_000)?
+            );
+        }
+
+        // Exact replay, even at the now stale revision, returns the receipt; changed reuse
+        // conflicts; reconciliation proves what committed.
+        let replay = root
+            .commit_character_monk_state_save(
+                &authority,
+                &harness.node,
+                fence(1)?,
+                save(70, 3, 2_500_000)?,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(replay, MonkStateSaveOutcome::AlreadyCommitted(committed));
+        let conflict = root
+            .commit_character_monk_state_save(&authority, &harness.node, fence(1)?, save(70, 4, 0)?)
+            .await;
+        assert!(
+            matches!(
+                conflict,
+                Err(CharacterProgressionError::ConflictingOccurrence)
+            ),
+            "{conflict:?}"
+        );
+        assert_eq!(
+            root.reconcile_character_monk_state_save(
+                &authority,
+                MonkStateSaveOccurrence::from_bytes(id(70)).map_err(debug)?
+            )
+            .await
+            .map_err(debug)?,
+            Some(committed)
+        );
+        assert_eq!(
+            root.reconcile_character_monk_state_save(
+                &authority,
+                MonkStateSaveOccurrence::from_bytes(id(79)).map_err(debug)?
+            )
+            .await
+            .map_err(debug)?,
+            None
+        );
+
+        // An unchanged save proves the fence and writes nothing.
+        let unchanged = root
+            .commit_character_monk_state_save(
+                &authority,
+                &harness.node,
+                fence(2)?,
+                save(71, 3, 2_500_000)?,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(unchanged, MonkStateSaveOutcome::Unchanged);
+        assert_eq!(stored(harness).await?, (3, 2_500_000, "2".into(), 1));
+
+        // A stale fence writes nothing: each case changes exactly one fact.
+        let mut other_connection = fence(2)?;
+        other_connection.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        let mut other_lease = fence(2)?;
+        other_lease.character_lease_generation = 2;
+        let mut other_session = fence(2)?;
+        other_session.game_session_id =
+            crate::foundation::GameSessionId::decode(&id(51)).map_err(debug)?;
+        for (tag, stale, case) in [
+            (72, other_connection, "another connection generation"),
+            (73, other_lease, "another lease generation"),
+            (74, other_session, "another game session"),
+        ] {
+            let outcome = root
+                .commit_character_monk_state_save(
+                    &authority,
+                    &harness.node,
+                    stale,
+                    save(tag, 5, 0)?,
+                )
+                .await;
+            assert!(
+                matches!(outcome, Err(CharacterProgressionError::AuthorityRejected)),
+                "{case}: {outcome:?}"
+            );
+            assert_eq!(
+                stored(harness).await?,
+                (3, 2_500_000, "2".into(), 1),
+                "{case}"
+            );
+        }
+        let stale_revision = root
+            .commit_character_monk_state_save(&authority, &harness.node, fence(1)?, save(75, 5, 0)?)
+            .await;
+        assert!(
+            matches!(
+                stale_revision,
+                Err(CharacterProgressionError::CharacterRevisionMismatch)
+            ),
+            "{stale_revision:?}"
+        );
+        // The session moved to a newer connection generation: the actor's own (older)
+        // generation is stale and its end write is fenced out.
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET current_generation = 2 \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(50).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        let superseded = root
+            .commit_character_monk_state_save(&authority, &harness.node, fence(2)?, save(76, 5, 0)?)
+            .await;
+        assert!(
+            matches!(
+                superseded,
+                Err(CharacterProgressionError::AuthorityRejected)
+            ),
+            "{superseded:?}"
+        );
+        assert_eq!(stored(harness).await?, (3, 2_500_000, "2".into(), 1));
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET current_generation = 1 \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(50).as_slice())
+        .execute(&harness.pool)
+        .await?;
+
+        // The 0026 guard: a death transition that leaves Harmony non-zero is rejected by the death
+        // rule. The death's own receipt, pending respawn and CharacterRevision step are exact, so
+        // only Harmony is wrong.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("UPDATE game_character_roots SET character_revision = 3")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE game_character_progression_state SET character_revision = 3")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_character_death_receipts(\
+               death_occurrence_id, command_binding, policy_digest, character_id, \
+               original_character_revision, committed_character_revision, level_before, \
+               level_after, experience_before, experience_after, experience_lost, \
+               blessings_before, blessings_after, amulet_of_loss_item_id, lost_item_ids, \
+               death_world_id, death_channel_id, death_spatial_position, death_map_revision, \
+               respawn_position, death_policy_revision, profile_revision, ruleset_revision, \
+               content_revision, simulation_revision, evidence_revision, declaration_revision, \
+               policy_revision, reward_revision, committed_at) \
+             SELECT encode($1,'hex')::uuid, $2, $3, r.character_id, 2, 3, 9, 9, 6500, 6500, 0, \
+               '{}', '{}', NULL, '{}', r.world_id, encode($4,'hex')::uuid, '\\x01'::bytea, \
+               'map-1', 'temple:thais'::bytea, 'death-1', 'profile-1', 'ruleset-1', \
+               'content-1', 'simulation-1', 'evidence-1', 'declaration-1', 'policy-1', \
+               'reward-1', 3 \
+               FROM game_character_roots r WHERE r.character_id = encode($5,'hex')::uuid",
+        )
+        .bind(id(83).as_slice())
+        .bind([83_u8; 33].as_slice())
+        .bind([83_u8; 32].as_slice())
+        .bind(id(43).as_slice())
+        .bind(id(CHARACTER).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_character_pending_respawns VALUES \
+             (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'temple:thais'::bytea)",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(83).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        let kept_harmony = tx
+            .commit()
+            .await
+            .err()
+            .ok_or("a death transition that keeps Harmony must fail")?;
+        assert_eq!(database_code(&kept_harmony).as_deref(), Some("23514"));
+        assert_eq!(
+            database_message(&kept_harmony),
+            "a Character death must empty Harmony and the forced Serene time"
+        );
+        assert_eq!(stored(harness).await?, (3, 2_500_000, "2".into(), 1));
+        assert_eq!(harness.count("game_character_death_receipts").await?, 0);
+
+        // DEATH-1 empties both values in its own Character transaction.
+        let died = root
+            .commit_character_death(&authority, &harness.node, fence(2)?, death(80)?)
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(died, CharacterDeathOutcome::Committed(_)),
+            "{died:?}"
+        );
+        assert_eq!(stored(harness).await?, (0, 0, "3".into(), 1));
+        assert_eq!(
+            root.read_character_monk_state(&authority, character)
+                .await
+                .map_err(debug)?,
+            DurableMonkState::default()
+        );
+        // While the respawn is pending no save changes the death's zeros.
+        let pending = root
+            .commit_character_monk_state_save(&authority, &harness.node, fence(3)?, save(77, 1, 0)?)
+            .await;
+        assert!(
+            matches!(pending, Err(CharacterProgressionError::RespawnPending)),
+            "{pending:?}"
+        );
+        assert_eq!(
+            root.commit_character_monk_state_save(
+                &authority,
+                &harness.node,
+                fence(3)?,
+                save(78, 0, 0)?
+            )
+            .await
+            .map_err(debug)?,
+            MonkStateSaveOutcome::Unchanged
+        );
+        assert_eq!(stored(harness).await?, (0, 0, "3".into(), 1));
+
+        // The 0026 guard: a transition without a monk state receipt cannot change Harmony.
+        let (level, experience): (i64, i64) =
+            sqlx::query_as("SELECT level, total_experience FROM game_character_progression_state")
+                .fetch_one(&harness.pool)
+                .await?;
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("UPDATE game_character_roots SET character_revision = 4")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "UPDATE game_character_progression_state SET character_revision = 4, harmony = 2",
+        )
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_character_stance_receipts(\
+               stance_occurrence_id, command_binding, policy_digest, character_id, \
+               original_character_revision, committed_character_revision, level_before, \
+               level_after, experience_before, experience_after, stance_before, stance_after, \
+               profile_revision, ruleset_revision, content_revision, simulation_revision, \
+               evidence_revision, declaration_revision, policy_revision, reward_revision, \
+               committed_at) \
+             VALUES (encode($1,'hex')::uuid, $2, $3, encode($4,'hex')::uuid, 3, 4, $5, $5, \
+               $6, $6, NULL, 'stance-a', 'profile-1', 'ruleset-1', 'content-1', \
+               'simulation-1', 'evidence-1', 'declaration-1', 'policy-1', 'reward-1', 3)",
+        )
+        .bind(id(81).as_slice())
+        .bind([81_u8; 33].as_slice())
+        .bind([81_u8; 32].as_slice())
+        .bind(id(CHARACTER).as_slice())
+        .bind(level)
+        .bind(experience)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_character_stance VALUES \
+             (encode($1,'hex')::uuid, 'stance-a', 4, encode($2,'hex')::uuid)",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(81).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        let guarded = tx
+            .commit()
+            .await
+            .err()
+            .ok_or("a Harmony change without a monk state receipt must fail")?;
+        assert_eq!(database_code(&guarded).as_deref(), Some("23514"));
+        assert_eq!(
+            database_message(&guarded),
+            "Harmony and the forced Serene time change only with a monk state receipt"
+        );
+        assert_eq!(stored(harness).await?, (0, 0, "3".into(), 1));
+
+        // A stored value outside the bounds fails the load closed (the CHECK is dropped in this
+        // throwaway database to plant it).
+        for (constraint, column, value) in [
+            (
+                "game_character_progression_state_harmony_range",
+                "harmony",
+                6_i64,
+            ),
+            (
+                "game_character_progression_state_serene_forced_range",
+                "serene_forced_remaining_micros",
+                7_000_001,
+            ),
+        ] {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "ALTER TABLE game_character_progression_state DROP CONSTRAINT {constraint}"
+            )))
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "UPDATE game_character_progression_state \
+                    SET harmony = 0, serene_forced_remaining_micros = 0",
+            )
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "UPDATE game_character_progression_state SET {column} = {value}"
+            )))
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            let corrupt = root.read_character_monk_state(&authority, character).await;
+            assert!(
+                matches!(
+                    corrupt,
+                    Err(CharacterProgressionError::Unavailable(
+                        DurabilityError::InvalidStoredState
+                    ))
+                ),
+                "{column}: {corrupt:?}"
+            );
+            let blocked = root
+                .commit_character_monk_state_save(
+                    &authority,
+                    &harness.node,
+                    fence(3)?,
+                    save(82, 0, 0)?,
+                )
+                .await;
+            assert!(
+                matches!(
+                    blocked,
+                    Err(CharacterProgressionError::Unavailable(
+                        DurabilityError::InvalidStoredState
+                    ))
+                ),
+                "{column}: {blocked:?}"
+            );
+        }
+        drop(authority);
+        drop(seal);
+        Ok(())
+    }
+}
 // Combat D2b creature death -> loot MINT + R7 P03 XP composition shares its
 // cases with the focused standalone target through the same protected lane.
 #[allow(dead_code, unused_imports)]

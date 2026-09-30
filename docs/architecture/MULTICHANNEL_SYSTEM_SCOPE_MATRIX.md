@@ -91,6 +91,12 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | Channel directory | World Registry | World | Health-driven/eventual with guarded admission | Lists and routes channels | Shared control plane |
 | Game Session | Gateway/session issuer | Character + World + Channel | Strong, short-lived | Frozen to selected channel | Mandatory binding |
 
+**Pending on acceptance of CHAR-POSITION-0**
+(`reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md`): the Player position
+row gains a durable last position, a Character projection per World written under the session
+fence and at most 5 minutes stale, shared by every channel of the World; runtime position stays
+Channel-local.
+
 **Pending on acceptance of BANK-0** (`reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md`):
 the Bank row becomes "Game bank ledger (BANK-0); Account + World (owner answer 1b, #162
 5912593702); strong durable, immutable ledger; the same balance on all channels of the World,
