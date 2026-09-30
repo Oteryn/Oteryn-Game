@@ -3,7 +3,8 @@
 - Decision: `BANK0-ACCOUNT-WORLD-BANK-BALANCE-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence
   and economy) and protected integration. Owner question Q1 (§11) is open; §4.4 applies its
-  recommended answer as a reversible assumption.
+  recommended answer as a reversible assumption. Amended by the owner's recipient-feedback
+  decision (2026-09-30, #162): transfer refusals are typed results the sender sees (§4.3).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to start the bank ("bank i depozyt (drugi etap opłat, pełna
   zgodność handlu z Tibią)", 2026-09-30) and the owner answer **1b** (verbatim record on #162
@@ -137,8 +138,8 @@ burns of house shapes; the bank shapes of §5 still have none.
 - Lock order (composition rule 4, extended): the recovery fence and admission relations, the
   operation occurrence, the acting Character's session and guard checks (rule 2), its
   `character_root` FOR UPDATE, the main backpack, then its coin entries, then the balance rows by
-  `account_id` (upsert, then FOR UPDATE). A transfer recipient's root is read without a row lock:
-  its Account and World cannot change. The balance row lock serializes every writer of one
+  `account_id` (upsert, then FOR UPDATE). A transfer recipient's root is locked `FOR SHARE` and
+  rechecked, as §4.3's amendment states. The balance row lock serializes every writer of one
   (account, world), including another Account's transfer into it.
 - No `CharacterRevision` advance (the composition amendment of §7.2).
 - One bank event per operation (§5).
@@ -168,6 +169,57 @@ burns of house shapes; the bank shapes of §5 still have none.
 - Refused: an unknown name, another World, a recipient of the same Account (the balance is
   already shared; Canary also refuses a transfer to oneself), a junior sender or recipient, an
   amount above the balance, a credit above `BANK0-RL-01`.
+
+**Amendment (owner recipient-feedback decision, 2026-09-30, #162): transfer results.** Every
+transfer refusal is a typed result that the banker tells the sender in a dialogue reply; nothing
+fails silently or by a CHECK abort. The names follow MAIL-0 (#1404) §5 and §7.
+
+| Result | When | Banker reply |
+|---|---|---|
+| `OK` | the transfer commits | "Very well. You have transferred {amount} gold to {name}." |
+| `UNKNOWN_RECIPIENT` | no live character of that name on the sender's World: a name that never existed, an invalid or overlong name, a deleted character, a character of another World, or a confirmed recipient renamed before the commit | "This player does not exist." |
+| `RECIPIENT_CANNOT_RECEIVE_TRANSFERS` | a junior recipient (§4.4, while Q1 b applies), or a credit above `BANK0-RL-01` on the recipient's balance | "You cannot transfer money to this account." |
+| `SAME_ACCOUNT` | a recipient of the sender's own Account, the sender included | "This character already shares your bank balance." |
+| `INSUFFICIENT_BALANCE` | an amount above the sender's balance | "There is not enough gold on your account." |
+| `JUNIOR_ACCOUNT` | a junior sender (§4.4, while Q1 b applies) | "You can use the bank once you have left the island." |
+
+- **Anti-enumeration.** `UNKNOWN_RECIPIENT` never says whether a name exists on another World,
+  once existed, or was renamed: a deleted character, a non-existent one and one on a different
+  World give the same result and reply, as MAIL-0 §5 does. `RECIPIENT_CANNOT_RECEIVE_TRANSFERS`
+  names no reason; it tells the sender only that the name exists on the World, which a letter to
+  the same name already shows (MAIL-0 §7). `SAME_ACCOUNT` names only the sender's own characters.
+  `BALANCE_LIMIT` (§4.1) keeps its name for a deposit; for a transfer the recipient-side limit
+  is reported as `RECIPIENT_CANNOT_RECEIVE_TRANSFERS`, so the reply never reveals the recipient's
+  balance.
+- **Where it is checked.** At the prompt, the dialogue resolves the name through `0022` in the
+  sender's World and refuses `UNKNOWN_RECIPIENT`, `SAME_ACCOUNT`, `INSUFFICIENT_BALANCE` and
+  `JUNIOR_ACCOUNT` before asking for confirmation, as Canary does. At commit, the writer rechecks
+  every refusal of the table: it locks the recipient's `character_root` `FOR SHARE`, taking the two
+  roots in CharacterId order (the acting one `FOR UPDATE` as rule 2 takes it), and checks under
+  that lock that the root is live, is of the sender's World, and still has the confirmed
+  `name_key`. A rename or a terminal deletion updates the root, so it waits for the transfer or the
+  transfer sees its result.
+- **No value moves on a refusal.** Every check runs before the first ledger or balance write. A
+  refused transfer writes no ledger entry and changes no balance, so nothing is debited and
+  nothing needs to be returned; it emits no bank event. Its operation row records the refused
+  result, so a replay of the same occurrence and binding returns the same result; §3's guard that
+  an operation has exactly the entries its kind needs applies to an `OK` outcome only.
+- **Reference.** Canary `main` and Crystal Server `zimbadev/crystalserver` `main` (both read
+  2026-09-30, `OTS_HYPOTHESIS_ONLY`) share the dialogue. `data/npclib/npc_system/bank_system.lua`
+  resolves the name at the prompt with `Game.getNormalizedPlayerName` and replies "This player
+  does not exist." for an unknown name or a denied sample name (Canary `:241-262`, `:294-313`;
+  Crystal `:241-263`, `:295-315`), and "Fill in this field with person who receives your gold!"
+  for the sender's own name. At commit, `src/game/bank/bank.cpp` `Bank::transferTo` refuses a
+  denied name, the town gate between Rookgaard-type and main towns (junior accounts), or a failed
+  debit or credit (Canary `:82-138`, Crystal `:96-156`), and the dialogue replies "You cannot
+  transfer money to this account." Canary debits before it credits and does not restore the
+  debit when the credit fails (`:126-128`); Crystal restores it (`:141-147`). Oteryn checks
+  everything before its first write, in one transaction, so it needs neither path. A balance too
+  low replies "There is not enough gold on your account." `UNKNOWN_RECIPIENT`, `RECIPIENT_CANNOT_RECEIVE_TRANSFERS` and `INSUFFICIENT_BALANCE`
+  use those replies. `SAME_ACCOUNT` and `JUNIOR_ACCOUNT` are Oteryn's own, since Global has no
+  shared balance (owner 1b) and gates junior transfers by town.
+- **Implementation.** BANK-1 returns these results from the writer; BANK-NPC-1 maps them to the
+  replies. No wire change: the replies are NPC-0 dialogue text.
 
 ### 4.4 Junior characters
 
