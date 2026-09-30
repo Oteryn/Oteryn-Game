@@ -9,13 +9,15 @@ This is only the content layer:
 - A Character's progress and selected perks are durable Character state (PROFICIENCY-0 §4.2).
 - Which weapon uses which definition is the Item `proficiency.profile_binding` (item-authoring).
 
-None of these is modelled here. Nothing is written to `content/`, `rulesets/` or runtime code; populating
-`content/proficiencies/` and switching Items to `profile_binding` stay with PROF-CONTENT-1.
+None of these is modelled here. `build`, `validate` and the tests write only under this directory;
+`content` writes `content/proficiencies/` and its registration (PROF-CONTENT-1a). Switching Items to
+`profile_binding` and the Rust family stay with PROF-CONTENT-1b.
 
 | File | Purpose |
 |---|---|
 | `proficiency.schema.json` | One catalogue (`OTERYN_PROFICIENCY_AUTHORING_CATALOGUE/v1`), JSON Schema 2020-12, closed shapes. A definition has `identity {family: Proficiency, key, revision}`, `name`, `source` (client id, raw `Version`, record digest) and 1-7 `levels`, each with 1-3 `perks`. A perk is a `oneOf` over 33 closed kinds, one per source `Type` code. |
 | `proficiency_authoring.py` | `build` promotes the staged 15.30 definitions with the D199 code map and rejects any unmapped code or key set; `build --check` diffs a rebuild against the committed candidate. `validate` runs the schema and the semantic rules. |
+| `proficiency_authoring.py content` | Writes (`--check` verifies) `content/proficiencies/index.json` (`OTERYN_FAMILY_INDEX/v1`) and three shards of 150 (`OTERYN_PROFICIENCY_SHARD/v1`, one `definition` per record, identity `{key, revision}`), and registers `Proficiency` in `content/project.json` (`migrated_families`), `content/manifest.json` (`families`, `managed_files`) and `content/content.lock.json` (`family_counts`). Threshold tables stay in the catalogue: they are progression rules and go to `rulesets/progression/weapon-proficiency/` with PROF-2. |
 | `test_proficiency_authoring.py` | No-network tests: perk encoding and its rejections, the committed build, one negative case per rule. |
 | `samples/proficiencies-candidate.json` | The candidate catalogue: 443 definitions, 3,671 perks, all 33 kinds. One definition per line. |
 
@@ -98,9 +100,16 @@ Canary `04b83b5` (`src/creatures/players/components/weapon_proficiency.*`) and C
 - Against staging: the same id set, the same record digests, and every perk decodes back to its
   staged source perk exactly.
 
+## Content population
+
+`tools/content-migration/world_project_v2_to_tree.py` registers the committed Proficiency family (no legacy
+source), as it does Charm, so `content --check` and the generator agree byte for byte. Nothing loads
+`content/proficiencies/` at runtime; `runtime_source` stays `legacy_until_separately_qualified`.
+
 ```sh
 pip install -r requirements.txt
 python proficiency_authoring.py build --check
 python proficiency_authoring.py validate samples/proficiencies-candidate.json
+python proficiency_authoring.py content --check
 python test_proficiency_authoring.py
 ```
