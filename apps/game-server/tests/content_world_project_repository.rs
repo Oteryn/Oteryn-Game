@@ -81,6 +81,10 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
+/// WO-2 catalogue shards beside the legacy package: `(directory, shard prefix)`. Their
+/// bytes are pinned by `build_catalogue.py --check`, not by this package inventory.
+const WORLD_CATALOGUE_SHARDS: [(&str, &str); 2] =
+    [("terrain/", "terrain-"), ("objects/", "objects-")];
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
@@ -233,6 +237,22 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     let root = project_root();
     let mut files = Vec::new();
     collect_files(&root, &root, &mut files);
+    let (catalogue_shards, files): (Vec<_>, Vec<_>) = files.into_iter().partition(|locator| {
+        WORLD_CATALOGUE_SHARDS.iter().any(|(directory, prefix)| {
+            locator
+                .strip_prefix(directory)
+                .and_then(|name| name.strip_prefix(prefix))
+                .is_some_and(|name| !name.contains('/') && name.ends_with(".json"))
+        })
+    });
+    for (directory, prefix) in WORLD_CATALOGUE_SHARDS {
+        assert!(
+            catalogue_shards
+                .iter()
+                .any(|locator| locator.starts_with(&format!("{directory}{prefix}"))),
+            "{directory} catalogue is populated"
+        );
+    }
     let (mut markers, mut actual): (Vec<_>, Vec<_>) = files
         .into_iter()
         .partition(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()));
@@ -957,11 +977,15 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         assert_eq!(payload["path"], path);
         assert_eq!(payload["kind"], node["kind"], "{path}");
         assert_eq!(payload["owner"], node["owner"], "{path}");
+        let populated_catalogue = WORLD_CATALOGUE_SHARDS
+            .iter()
+            .any(|(directory, _)| *directory == locator);
         assert!(
-            matches!(
-                payload["population_state"].as_str(),
-                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT")
-            ),
+            match payload["population_state"].as_str() {
+                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT") => true,
+                Some("POPULATED") => populated_catalogue,
+                _ => false,
+            },
             "{path}"
         );
         world_markers.push(format!("{locator}index.json"));

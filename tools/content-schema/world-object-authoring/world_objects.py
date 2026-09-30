@@ -553,8 +553,12 @@ def iter_routed(sources):
             yield item_id, report.get("key"), routed["owner"], routed["reason"]
 
 
-def build_census(sources, records_dir=None):
-    """Return the deterministic census dict; optionally write every record."""
+def build_census(sources, records_dir=None, on_record=None):
+    """Return the deterministic census dict; optionally write every record.
+
+    `on_record(family, record)` receives every validated record in ascending source id
+    order; the WO-2 catalogue builder collects them through it.
+    """
     meta = source_meta_of(sources)
     routes = Counter()
     excluded = Counter()
@@ -594,6 +598,8 @@ def build_census(sources, records_dir=None):
         if key in keys:
             raise SystemExit(f"family key collision: {key}")
         keys.add(key)
+        if on_record is not None:
+            on_record(family, record)
         kind = record["kind"].get("value") or "UNKNOWN"
         kinds[f"{family}:{kind}"] += 1
         if kind == "UNKNOWN" and len(unknown_kind_examples[family]) < 5:

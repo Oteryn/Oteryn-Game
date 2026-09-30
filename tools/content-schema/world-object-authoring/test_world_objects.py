@@ -16,8 +16,12 @@ import json
 import tempfile
 from pathlib import Path
 
+# isort: off
+# world_objects puts item-authoring on sys.path, so test_engine_items imports after it.
+import build_catalogue
 import world_objects
 from test_engine_items import synthetic_sources
+# isort: on
 
 CHECKS = 0
 
@@ -459,15 +463,64 @@ def test_committed_census_sample_is_consistent():
     check(records["total"] == sum(routes.values()) - sum(excluded.values()), "total")
     check(sum(records["by_family"].values()) == records["total"], "by_family")
     check(sum(records["by_kind"].values()) == records["total"], "by_kind")
+    # D149 removed the ids without a CipSoft appearance, so some D94 routes are empty.
     check(
         set(excluded)
-        == {f"{owner}:{reason}" for owner, reason in world_objects.EXCLUDED_ROUTES},
+        <= {f"{owner}:{reason}" for owner, reason in world_objects.EXCLUDED_ROUTES},
         excluded,
     )
     for name, keys in records["examples"].items():
         family = name.split(":", 1)[0]
         for key in keys:
             check(world_objects.FAMILY_KEY[family].match(key) is not None, key)
+
+
+def test_catalogue_shards_each_family_and_marks_it_populated():
+    files, census = build_catalogue.outputs(census_sources())
+    check(
+        sorted(files)
+        == [
+            "content/world/objects/index.json",
+            "content/world/objects/objects-00000-00002.json",
+            "content/world/terrain/index.json",
+            "content/world/terrain/terrain-00000-00002.json",
+        ],
+        sorted(files),
+    )
+    terrain = json.loads(files["content/world/terrain/terrain-00000-00002.json"])
+    check(terrain["family"] == "Terrain", terrain["family"])
+    ids = [r["provenance"]["source_item_id"] for r in terrain["records"]]
+    check(ids == [100, 101, 102], ids)
+    for record in terrain["records"]:
+        check(world_objects.validate_record(record) == [], record["identity"])
+    marker = json.loads(files["content/world/objects/index.json"])
+    check(marker["population_state"] == "POPULATED", marker)
+    check(marker["path"] == "content/world/objects/", marker)
+    check(": 3 records" in marker["notes"], marker["notes"])
+    again, census_again = build_catalogue.outputs(census_sources())
+    check(again == files and census_again == census, "catalogue is deterministic")
+
+
+def test_committed_catalogue_matches_the_census_sample():
+    sample = json.loads(world_objects.DEFAULT_SAMPLE.read_text(encoding="utf-8"))
+    for family, (directory, prefix, _notes) in build_catalogue.CATALOGUES.items():
+        shards = sorted((build_catalogue.ROOT / directory).glob(f"{prefix}-*.json"))
+        count = 0
+        previous = 0
+        for shard in shards:
+            document = json.loads(shard.read_text(encoding="utf-8"))
+            check(document["family"] == family, shard.name)
+            check(shard.name.startswith(f"{prefix}-{count:05d}-"), shard.name)
+            for record in document["records"]:
+                source_id = record["provenance"]["source_item_id"]
+                check(source_id > previous, (shard.name, source_id))
+                previous = source_id
+            count += len(document["records"])
+        check(count == sample["records"]["by_family"][family], (family, count))
+        marker = json.loads(
+            (build_catalogue.ROOT / directory / "index.json").read_text()
+        )
+        check(marker["population_state"] == "POPULATED", marker)
 
 
 if __name__ == "__main__":

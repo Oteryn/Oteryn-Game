@@ -4,7 +4,7 @@
   "kind": "static_content",
   "owner": "WorldObject/LocalObject",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Doors, ladders, boats, carpets, furniture, decorations and reusable world objects."
+  "notes": "Doors, ladders, beds, corpses, furniture, decorations and other world objects: 12785 records, one per Tibia id routed to WorldObject by the item converter at zimbadev/crystalserver@ff7ede5 (WO-0 D93/D94, A12 §4.6), built by tools/content-schema/world-object-authoring/build_catalogue.py."
 }

@@ -59,6 +59,9 @@ jobs:
           python3 tools/content-schema/validate_materialized_game_tree.py --print-world-markers > "$RUNNER_TEMP/world-markers.txt"
           test "$(wc -l < "$RUNNER_TEMP/world-markers.txt")" -eq 10
           while IFS= read -r marker; do rm -- "${tracked:?}/${marker:?}"; done < "$RUNNER_TEMP/world-markers.txt"
+          # WO-2 catalogue shards are not WorldProject locators either; build_catalogue.py
+          # --check pins their bytes (item-authoring-schema).
+          rm -- "$tracked"/terrain/terrain-*.json "$tracked"/objects/objects-*.json
           find "$tracked" -mindepth 1 -type d -empty -delete
           diff --no-dereference --recursive "$tracked" "$RUNNER_TEMP/world-a"
 
