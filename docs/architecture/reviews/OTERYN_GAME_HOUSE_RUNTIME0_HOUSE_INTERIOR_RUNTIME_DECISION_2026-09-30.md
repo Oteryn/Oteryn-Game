@@ -104,18 +104,42 @@ and how do house items change?
   - the house is not in `DISPOSITION`.
 - A refusal leaves the character outside with a typed reason (`NO_ACCESS`, `IN_COMBAT`, `BUSY`,
   `HOUSE_CLOSED`); nothing is written.
-- On success the transition runs ADR-0001 §10: checkpoint, close the Channel session, fresh
-  admission into the house scope, fresh `GameSessionId`. The origin Channel is recorded on the new
-  session. The character is placed on the tile inside the door.
+- The Channel check is a pre-check only. The admission commit (below) re-reads, in its own
+  transaction and under a FOR SHARE lock on the property row, which every content-fence and ACL
+  write updates (HOUSE-OWN-0 §9, §10), the property state, the content fence, and the exact `acl_revision` and guild revisions
+  the pre-check used. Any difference refuses (`NO_ACCESS` or `HOUSE_CLOSED`) and the character
+  stays in its source session. So a revocation or disposition either commits first and the
+  admission refuses, or commits after and finds the character inside (§5.4, §7).
+- On success the transition runs ADR-0001 §10 (checkpoint, close the Channel session, fresh
+  admission into the house scope, fresh `GameSessionId`) as a recoverable handoff:
+  1. **Prepare.** One transaction records a handoff row (CharacterId, source `GameSessionId`,
+     destination `HouseId` and scope generation, origin ChannelId) and reserves the destination
+     while the source session stays live and fenced; the character takes no further action in
+     the source.
+  2. **Commit.** One transaction, with the revalidation above, makes the source session terminal
+     and admits the destination session with its fresh `GameSessionId`, the origin Channel
+     recorded on it, and marks the handoff committed. Where source and destination cannot share
+     one transaction, the durable handoff row is the commit point and each side reconciles to it;
+     the source never becomes terminal before that point.
+  3. **Abort.** A refusal or failure before the commit deletes the reservation and resumes the
+     source session; nothing else is written.
+
+  A crash at any point leaves the character in exactly one admitted scope: before the commit
+  point the source, after it the destination. Restart reconciles every open handoff row to that
+  outcome before either scope admits or resumes the character (§4.3). The character is placed on
+  the tile inside the door.
 - The client receives a snapshot (MAP-WIRE-1's teleport trigger). The player sees one walk
   through a door; the transition target is `HOUSERT0-RL-02` (500 ms at the 99th percentile),
   measured before activation.
 
 ### 4.2 Exit
 
-- Walking out through the front door, leaving (§5.3), a kick, a revocation (§5.4) or a disposition
-  (§7) moves the character to the house's `entrance` tile on the recorded origin Channel, through
-  the same transition in reverse.
+- Walking out through the front door, leaving (§5.3), a kick, a revocation (§5.4), a property
+  transfer, a disposition (§7) or a house scope shutdown moves the character to the house's
+  `entrance` tile on the recorded origin Channel, through the same transition (§4.1) in reverse.
+- Every exit's commit transaction also writes the last-position row (CHAR-POSITION-0 §3.2): it
+  clears the house columns (§6.3) and records the `entrance` tile under the destination session's
+  order key. A disconnect right after any exit therefore never returns the character inside.
 - If the origin Channel is draining or unavailable, admission picks another Channel of the World
   under its normal rules (EXP-HOUSES-01 §5.3 fallback). A house is never a way to change channel
   by choice: the exit always targets the origin first (ADR-0001 §12).
@@ -124,6 +148,9 @@ and how do house items change?
 
 - A crash of the house node follows the ordinary reconnect and recovery rules for sessions in scope
   kind 2; a new assignment has a higher generation, so the old runtime writes nothing.
+- An open handoff row (§4.1, either direction) is reconciled at restart before the character is
+  admitted or resumed anywhere: committed, the destination holds; not committed, the source holds
+  and the reservation is released.
 - A character whose house scope cannot be recovered is placed at the `entrance` on its origin
   Channel at the next admission.
 
@@ -175,7 +202,11 @@ EXP-HOUSES-01 §17). It needs the kicker to be inside the house or to own it.
 
 The three HOUSE-CUSTODY-0 §3.4 shapes are binding, each one item and one transaction with its
 provenance, run by the house runtime under its generation fence and the acting character's
-`character_root` lock:
+`character_root` lock. The same transaction also takes the acting character's normal session fence
+(composition decision rule 2: its reconnect-session row with the current `GameSessionId`, lease
+generation and session generation, and the runtime-scope assignment of this house scope). Both
+fences are checked in the one commit, so a command from an older session of the character writes
+nothing even when the house scope generation is still current:
 
 - from `CharacterInventory` or `CharacterEquipment` to `HouseInterior`;
 - from `HouseInterior` to `CharacterInventory`;
@@ -197,7 +228,8 @@ beds decision.
 ### 6.3 Logout and login
 
 - **Position.** In a house scope the last-position row (CHAR-POSITION-0) records the `HouseId` and
-  the tile inside, in two new nullable columns, instead of skipping the write.
+  the tile inside, in two new nullable columns, instead of skipping the write. Every exit clears
+  them in its commit (§4.2).
 - **Login.** When the row names a house, admission re-checks access and the property state. If both
   hold, the character is admitted into the house scope at that tile (activating it if needed), with
   the Channel admission chooses recorded as origin. Otherwise it is placed at the house's `entrance`
@@ -268,10 +300,12 @@ items; characters inside are not seen from outside; a bounded number of characte
 
 1. **Contract amendments:** ADR-0001 §11 pointer; HOUSE-CUSTODY-0 §3.4 and §4; CHAR-POSITION-0
    §3.2 and §3.3; HOUSE-OWN-0 §11, each written "pending on acceptance of HOUSE-RUNTIME-0".
-2. **Serialization:** one live generation per `HouseId`; item shapes under the house fence and the
-   acting `character_root` lock.
+2. **Serialization:** one live generation per `HouseId`; item shapes under the house fence, the
+   acting character's session fence and its `character_root` lock; admission revalidates access
+   and property state under a lock on the property row.
 3. **Restart:** items and positions are durable; a lost house scope sends characters to the
-   entrance; transitions are fresh admissions.
+   entrance; transitions are fresh admissions through a durable handoff reconciled at restart;
+   every exit commits the outside position.
 4. **Typed references:** HouseId, WorldId, ChannelId (origin), CharacterId, GameSessionId, scope
    generation.
 5. **Wire:** MAP-WIRE-1 snapshots; HOUSE-WIRE-1 gains `kick` and `leave` (HOUSE-OWN-0 §11 pointer).

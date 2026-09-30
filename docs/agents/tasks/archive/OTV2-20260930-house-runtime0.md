@@ -76,5 +76,8 @@ persistence review.
 - `python3 tools/agents/validate_governance.py`: PASS on the final authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the final authoring tree.
 - `git diff --check`: clean.
+- Codex round 1 (4 P1) repaired in one authoring write: recoverable durable handoff (§4.1, §4.3),
+  admission-time ACL and disposition revalidation (§4.1), outside position committed on every exit
+  (§4.2, §6.3), session fence on house item transfers (§6.1); validators re-run PASS.
 
 This record was archived in the final authoring commit of its PR.
