@@ -1,0 +1,3827 @@
+{
+ "applied_meaning": {
+  "EXCLUDED": "D165 26a: excluded from live content, no record is minted",
+  "PENDING_MINT": "approved, but the id has no Item record and no engine binding (client-only list A ids; WorldObject routes): the minting lane (WO-2 / item authoring) applies it when the record is authored",
+  "WorldObject route non_pickupable_blocking_prop (engine_items.NON_PICKUPABLE_BLOCKING_PROP_IDS)": "D165 27a: id 9132 routes to WorldObject in the converter",
+  "tools/content-schema/item-authoring/owner-item-family-decisions.json": "engine row with a Crystal binding: the decision is the converter's last classifier"
+ },
+ "counts": {
+  "APPROVED_HIGH|PENDING_MINT": 165,
+  "APPROVED_HIGH|tools/content-schema/item-authoring/owner-item-family-decisions.json": 11,
+  "APPROVED_OWNER_D165|EXCLUDED": 1,
+  "APPROVED_OWNER_D165|PENDING_MINT": 36,
+  "APPROVED_OWNER_D165|WorldObject route non_pickupable_blocking_prop (engine_items.NON_PICKUPABLE_BLOCKING_PROP_IDS)": 1,
+  "APPROVED_OWNER_D165|tools/content-schema/item-authoring/owner-item-family-decisions.json": 3,
+  "APPROVED_REVERIFIED|PENDING_MINT": 46,
+  "APPROVED_REVERIFIED|tools/content-schema/item-authoring/owner-item-family-decisions.json": 3
+ },
+ "owner_decision": "Q13d (#162, 2026-09-29): 176 HIGH rows approved; MEDIUM and LOW rows re-verified by the ITEM-ID-1 writer, clear ones approved, disputed ids returned to the owner; D165 (2026-09-30) decided all 41 disputed rows (status APPROVED_OWNER_D165)",
+ "reverification": "TibiaWiki (tibia.fandom.com MediaWiki API, read live 2026-09-29, unpinned) and client 15.30 2dfa943b appearance flags; profile vocabulary profile-catalog.json and engine_items.PRIMARYTYPE_PROFILE",
+ "rows": [
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-container-HIGH",
+   "id": 49160,
+   "key": "oteryn:item.tibia.i49160",
+   "list": "A",
+   "name": "bursa obscura",
+   "profile": "container",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-container-HIGH",
+   "id": 53192,
+   "key": "oteryn:item.tibia.i53192",
+   "list": "A",
+   "name": "sailor's backpack",
+   "profile": "container",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 42085,
+   "key": "oteryn:item.tibia.i42085",
+   "list": "A",
+   "name": "folded artefact carpet VII",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 42175,
+   "key": "oteryn:item.tibia.i42175",
+   "list": "A",
+   "name": "santa Ahau",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 44755,
+   "key": "oteryn:item.tibia.i44755",
+   "list": "A",
+   "name": "draccoon santa",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 51749,
+   "key": "oteryn:item.tibia.i51749",
+   "list": "A",
+   "name": "painting of Thais",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 51750,
+   "key": "oteryn:item.tibia.i51750",
+   "list": "A",
+   "name": "painting of Thais",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 51751,
+   "key": "oteryn:item.tibia.i51751",
+   "list": "A",
+   "name": "skullfrost figurine",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 51752,
+   "key": "oteryn:item.tibia.i51752",
+   "list": "A",
+   "name": "emberwing figurine",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 51753,
+   "key": "oteryn:item.tibia.i51753",
+   "list": "A",
+   "name": "thundergiant figurine",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 51754,
+   "key": "oteryn:item.tibia.i51754",
+   "list": "A",
+   "name": "grovebeast figurine",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 51755,
+   "key": "oteryn:item.tibia.i51755",
+   "list": "A",
+   "name": "omniphant figurine",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-decoration-HIGH",
+   "id": 54755,
+   "key": "oteryn:item.tibia.i54755",
+   "list": "A",
+   "name": "noble bath tub kit",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-decoration-LOW",
+   "id": 49156,
+   "key": "oteryn:item.tibia.i49156",
+   "list": "A",
+   "name": "sand toys",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Exact page Sand Toys (49156) has empty primarytype, no notes, no backlinks; flags usable+multiuse only. Name alone does not fix the class.",
+    "options": [
+     "decoration",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Sand_Toys"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-decoration-MEDIUM",
+   "id": 44028,
+   "key": "oteryn:item.tibia.i44028",
+   "list": "A",
+   "name": "werewolf painting",
+   "profile": "decoration",
+   "reverification": {
+    "evidence": "Exact page Werewolf Painting (Howling) (44028): empty type, obtained from Treasure Chest (Oskayaat) (Grimvale reward); client hang flag -> wall-hanging decoration.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Werewolf_Painting_(Howling)"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-decoration-MEDIUM",
+   "id": 44029,
+   "key": "oteryn:item.tibia.i44029",
+   "list": "A",
+   "name": "werewolf painting",
+   "profile": "decoration",
+   "reverification": {
+    "evidence": "Exact page Werewolf Painting (Moon) (44029): empty type, obtained from Treasure Chest (Oskayaat) (Grimvale reward); client hang flag -> wall-hanging decoration.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Werewolf_Painting_(Moon)"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-decoration-MEDIUM",
+   "id": 50335,
+   "key": "oteryn:item.tibia.i50335",
+   "list": "A",
+   "name": "guardian statue",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Guardian Statue (Quest)' (50335) has primarytype 'Quest Items' -> quest_item (Mystery of the Valley Quest); proposal used the immobile 8008/8009 statue page. Client market category is decoration.",
+    "options": [
+     "quest_item",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Guardian_Statue_(Quest)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-decoration-MEDIUM",
+   "id": 51315,
+   "key": "oteryn:item.tibia.i51315",
+   "list": "A",
+   "name": "Banor doll",
+   "profile": "decoration",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Banor Doll (Replica)' (51315): primarytype 'Dolls and Bears' -> decoration (secondary Replicas, Thais Museum souvenir for 20 Silver Raid Tokens).",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Banor_Doll_(Replica)"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-document-HIGH",
+   "id": 8748,
+   "key": "oteryn:item.tibia.i8748",
+   "list": "A",
+   "name": "old piece of paper",
+   "profile": "document",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-document-MEDIUM",
+   "id": 40518,
+   "key": "oteryn:item.tibia.i40518",
+   "list": "A",
+   "name": "letter",
+   "profile": "document",
+   "reverification": {
+    "evidence": "Page 'Letter' (3505): primarytype 'Documents and Papers' -> document; 40518 lacks the write flag but a letter is unambiguously a document.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Letter"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-document-MEDIUM",
+   "id": 51759,
+   "key": "oteryn:item.tibia.i51759",
+   "list": "A",
+   "name": "book",
+   "profile": "document",
+   "reverification": {
+    "evidence": "No own page (wiki 'Book' redirects to class page 'Books'); client write_once text flag + lenshelp 1112 make it an unambiguous book -> document.",
+    "verdict": "APPROVE"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 53197,
+   "key": "oteryn:item.tibia.i53197",
+   "list": "A",
+   "name": "enchanted flamingo amulet of valor",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 53199,
+   "key": "oteryn:item.tibia.i53199",
+   "list": "A",
+   "name": "enchanted flamingo amulet of precision",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 53201,
+   "key": "oteryn:item.tibia.i53201",
+   "list": "A",
+   "name": "enchanted flamingo amulet of destruction",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 53203,
+   "key": "oteryn:item.tibia.i53203",
+   "list": "A",
+   "name": "enchanted flamingo amulet of nature",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 53205,
+   "key": "oteryn:item.tibia.i53205",
+   "list": "A",
+   "name": "enchanted swan amulet of balance",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 54510,
+   "key": "oteryn:item.tibia.i54510",
+   "list": "A",
+   "name": "flamingo amulet of valor",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 54511,
+   "key": "oteryn:item.tibia.i54511",
+   "list": "A",
+   "name": "flamingo amulet of precision",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 54512,
+   "key": "oteryn:item.tibia.i54512",
+   "list": "A",
+   "name": "flamingo amulet of destruction",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 54513,
+   "key": "oteryn:item.tibia.i54513",
+   "list": "A",
+   "name": "flamingo amulet of nature",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-equipment_offhand-HIGH",
+   "id": 54514,
+   "key": "oteryn:item.tibia.i54514",
+   "list": "A",
+   "name": "swan amulet of balance",
+   "profile": "equipment_offhand",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-equipment_offhand-MEDIUM",
+   "id": 53198,
+   "key": "oteryn:item.tibia.i53198",
+   "list": "A",
+   "name": "enchanted flamingo amulet of valor",
+   "profile": "equipment_offhand",
+   "reverification": {
+    "evidence": "Page 'Enchanted Flamingo Amulet of Valor' (53197): primarytype 'Amulets and Necklaces' -> equipment_offhand; client clothes slot 2 + changedtoexpire from 53197 (expiring equipped state).",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Valor"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-equipment_offhand-MEDIUM",
+   "id": 53200,
+   "key": "oteryn:item.tibia.i53200",
+   "list": "A",
+   "name": "enchanted flamingo amulet of precision",
+   "profile": "equipment_offhand",
+   "reverification": {
+    "evidence": "Page 'Enchanted Flamingo Amulet of Precision' (53199): primarytype 'Amulets and Necklaces' -> equipment_offhand; client clothes slot 2 + changedtoexpire from 53199 (expiring equipped state).",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Precision"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-equipment_offhand-MEDIUM",
+   "id": 53202,
+   "key": "oteryn:item.tibia.i53202",
+   "list": "A",
+   "name": "enchanted flamingo amulet of destruction",
+   "profile": "equipment_offhand",
+   "reverification": {
+    "evidence": "Page 'Enchanted Flamingo Amulet of Destruction' (53201): primarytype 'Amulets and Necklaces' -> equipment_offhand; client clothes slot 2 + changedtoexpire from 53201 (expiring equipped state).",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Destruction"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-equipment_offhand-MEDIUM",
+   "id": 53204,
+   "key": "oteryn:item.tibia.i53204",
+   "list": "A",
+   "name": "enchanted flamingo amulet of nature",
+   "profile": "equipment_offhand",
+   "reverification": {
+    "evidence": "Page 'Enchanted Flamingo Amulet of Nature' (53203): primarytype 'Amulets and Necklaces' -> equipment_offhand; client clothes slot 2 + changedtoexpire from 53203 (expiring equipped state).",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Nature"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-equipment_offhand-MEDIUM",
+   "id": 53206,
+   "key": "oteryn:item.tibia.i53206",
+   "list": "A",
+   "name": "enchanted swan amulet of balance",
+   "profile": "equipment_offhand",
+   "reverification": {
+    "evidence": "Page 'Enchanted Swan Amulet of Balance' (53205): primarytype 'Amulets and Necklaces' -> equipment_offhand; client clothes slot 2 + changedtoexpire from 53205.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Enchanted_Swan_Amulet_of_Balance"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44051,
+   "key": "oteryn:item.tibia.i44051",
+   "list": "A",
+   "name": "duality doll",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44052,
+   "key": "oteryn:item.tibia.i44052",
+   "list": "A",
+   "name": "duality doll",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44053,
+   "key": "oteryn:item.tibia.i44053",
+   "list": "A",
+   "name": "duality doll",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44054,
+   "key": "oteryn:item.tibia.i44054",
+   "list": "A",
+   "name": "duality doll",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44055,
+   "key": "oteryn:item.tibia.i44055",
+   "list": "A",
+   "name": "the dragon spirit",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44056,
+   "key": "oteryn:item.tibia.i44056",
+   "list": "A",
+   "name": "the dragon spirit",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44057,
+   "key": "oteryn:item.tibia.i44057",
+   "list": "A",
+   "name": "the dragon spirit",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44058,
+   "key": "oteryn:item.tibia.i44058",
+   "list": "A",
+   "name": "the dragon spirit",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44059,
+   "key": "oteryn:item.tibia.i44059",
+   "list": "A",
+   "name": "Aylie",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44060,
+   "key": "oteryn:item.tibia.i44060",
+   "list": "A",
+   "name": "Aylie",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44061,
+   "key": "oteryn:item.tibia.i44061",
+   "list": "A",
+   "name": "Aylie",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44062,
+   "key": "oteryn:item.tibia.i44062",
+   "list": "A",
+   "name": "Aylie",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44759,
+   "key": "oteryn:item.tibia.i44759",
+   "list": "A",
+   "name": "Aurora's Collection",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44760,
+   "key": "oteryn:item.tibia.i44760",
+   "list": "A",
+   "name": "Aurora's Collection",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44761,
+   "key": "oteryn:item.tibia.i44761",
+   "list": "A",
+   "name": "Aurora's Collection",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-event_collectible-HIGH",
+   "id": 44762,
+   "key": "oteryn:item.tibia.i44762",
+   "list": "A",
+   "name": "Aurora's Collection",
+   "profile": "event_collectible",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 49272,
+   "key": "oteryn:item.tibia.i49272",
+   "list": "A",
+   "name": "love elixir",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Love Elixir (Replica)' (49272) gives primarytype 'Armors' ('Armors' maps to equipment_armor but the client has no armor slot, so it looks like a wiki error), secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Love_Elixir_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 49273,
+   "key": "oteryn:item.tibia.i49273",
+   "list": "A",
+   "name": "chaos critical dice",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Chaos Critical Dice (Replica)' (49273) gives primarytype 'Armors' ('Armors' maps to equipment_armor but the client has no armor slot, so it looks like a wiki error), secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Chaos_Critical_Dice_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 51314,
+   "key": "oteryn:item.tibia.i51314",
+   "list": "A",
+   "name": "magic hat",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Magic Hat (Replica)' (51314) gives primarytype 'Dolls and Bears' -> decoration, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Magic_Hat_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 51316,
+   "key": "oteryn:item.tibia.i51316",
+   "list": "A",
+   "name": "bard doll",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Bard Doll (Replica)' (51316) gives primarytype 'Dolls and Bears' -> decoration, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Bard_Doll_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 51317,
+   "key": "oteryn:item.tibia.i51317",
+   "list": "A",
+   "name": "Aylie",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Aylie (Replica)' (51317) gives primarytype 'Dolls and Bears' -> decoration, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Aylie_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 51318,
+   "key": "oteryn:item.tibia.i51318",
+   "list": "A",
+   "name": "Aurora's Collection",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Aurora's Collection (Replica)' (51318) gives primarytype 'Dolls and Bears' -> decoration, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Aurora's_Collection_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 51319,
+   "key": "oteryn:item.tibia.i51319",
+   "list": "A",
+   "name": "the dragon spirit",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'The Dragon Spirit (Replica)' (51319) gives primarytype 'Dolls and Bears' -> decoration, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Dragon_Spirit_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53174,
+   "key": "oteryn:item.tibia.i53174",
+   "list": "A",
+   "name": "yellow rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53175,
+   "key": "oteryn:item.tibia.i53175",
+   "list": "A",
+   "name": "red rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53176,
+   "key": "oteryn:item.tibia.i53176",
+   "list": "A",
+   "name": "green rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53177,
+   "key": "oteryn:item.tibia.i53177",
+   "list": "A",
+   "name": "blue rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53178,
+   "key": "oteryn:item.tibia.i53178",
+   "list": "A",
+   "name": "purple rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53179,
+   "key": "oteryn:item.tibia.i53179",
+   "list": "A",
+   "name": "royal rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53180,
+   "key": "oteryn:item.tibia.i53180",
+   "list": "A",
+   "name": "undead rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53181,
+   "key": "oteryn:item.tibia.i53181",
+   "list": "A",
+   "name": "mermaid rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53182,
+   "key": "oteryn:item.tibia.i53182",
+   "list": "A",
+   "name": "ferumbras rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53183,
+   "key": "oteryn:item.tibia.i53183",
+   "list": "A",
+   "name": "warrior rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53184,
+   "key": "oteryn:item.tibia.i53184",
+   "list": "A",
+   "name": "dark rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53185,
+   "key": "oteryn:item.tibia.i53185",
+   "list": "A",
+   "name": "orc rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53186,
+   "key": "oteryn:item.tibia.i53186",
+   "list": "A",
+   "name": "demon rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53187,
+   "key": "oteryn:item.tibia.i53187",
+   "list": "A",
+   "name": "pirate rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53188,
+   "key": "oteryn:item.tibia.i53188",
+   "list": "A",
+   "name": "frozen rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53189,
+   "key": "oteryn:item.tibia.i53189",
+   "list": "A",
+   "name": "dragon rubber duck",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Achievement 'Rubber Ducking' + The Great Expedition/Spoiler: 16 rubber ducks (53174-53189) are bought for Event Points from Proprietor Piers and a full set is traded for a Noble Bath; client npcsaledata Proprietor Piers -> event_collectible.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53633,
+   "key": "oteryn:item.tibia.i53633",
+   "list": "A",
+   "name": "beaver of wisdom",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Beaver of Wisdom (Replica)' (53633) gives primarytype 'Valuables' -> material_valuable, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Beaver_of_Wisdom_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53634,
+   "key": "oteryn:item.tibia.i53634",
+   "list": "A",
+   "name": "war backpack",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'War Backpack (Replica)' (53634) gives primarytype 'Valuables' -> material_valuable, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/War_Backpack_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53635,
+   "key": "oteryn:item.tibia.i53635",
+   "list": "A",
+   "name": "bonelord tome",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Bonelord Tome (Replica)' (53635) gives primarytype 'Valuables' -> material_valuable, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Bonelord_Tome_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53636,
+   "key": "oteryn:item.tibia.i53636",
+   "list": "A",
+   "name": "wicked witch",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Wicked Witch (Replica)' (53636) gives primarytype 'Valuables' -> material_valuable, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Wicked_Witch_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-event_collectible-MEDIUM",
+   "id": 53637,
+   "key": "oteryn:item.tibia.i53637",
+   "list": "A",
+   "name": "Tibiapedia",
+   "profile": "event_collectible",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Tibiapedia (Replica)' (53637) gives primarytype 'Valuables' -> material_valuable, secondary 'Replicas', 'Souvenir from Thais Museum'; the original's 'Fansite Items' type does not carry over to the replica.",
+    "options": [
+     "event_collectible",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Tibiapedia_(Replica)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-food-HIGH",
+   "id": 43892,
+   "key": "oteryn:item.tibia.i43892",
+   "list": "A",
+   "name": "dewberries",
+   "profile": "food",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-food-HIGH",
+   "id": 43893,
+   "key": "oteryn:item.tibia.i43893",
+   "list": "A",
+   "name": "moon-touched dewberries",
+   "profile": "food",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-food-HIGH",
+   "id": 48115,
+   "key": "oteryn:item.tibia.i48115",
+   "list": "A",
+   "name": "taiyaki",
+   "profile": "food",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-food-HIGH",
+   "id": 48179,
+   "key": "oteryn:item.tibia.i48179",
+   "list": "A",
+   "name": "moon melon slice",
+   "profile": "food",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-food-HIGH",
+   "id": 48197,
+   "key": "oteryn:item.tibia.i48197",
+   "list": "A",
+   "name": "moon melon",
+   "profile": "food",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 43860,
+   "key": "oteryn:item.tibia.i43860",
+   "list": "A",
+   "name": "bag you covet",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 43894,
+   "key": "oteryn:item.tibia.i43894",
+   "list": "A",
+   "name": "dewberry palm leaf",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 43896,
+   "key": "oteryn:item.tibia.i43896",
+   "list": "A",
+   "name": "bag you covet",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 43897,
+   "key": "oteryn:item.tibia.i43897",
+   "list": "A",
+   "name": "bag you covet",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 43898,
+   "key": "oteryn:item.tibia.i43898",
+   "list": "A",
+   "name": "bag you covet",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 44157,
+   "key": "oteryn:item.tibia.i44157",
+   "list": "A",
+   "name": "albino dragon leather",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 44179,
+   "key": "oteryn:item.tibia.i44179",
+   "list": "A",
+   "name": "bottled dragon breath",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 44436,
+   "key": "oteryn:item.tibia.i44436",
+   "list": "A",
+   "name": "idol of Tukh",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 50053,
+   "key": "oteryn:item.tibia.i50053",
+   "list": "A",
+   "name": "blood coin",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 50312,
+   "key": "oteryn:item.tibia.i50312",
+   "list": "A",
+   "name": "mighty demonic core essence",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53142,
+   "key": "oteryn:item.tibia.i53142",
+   "list": "A",
+   "name": "pirate navigator soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53143,
+   "key": "oteryn:item.tibia.i53143",
+   "list": "A",
+   "name": "pirate gunner soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53144,
+   "key": "oteryn:item.tibia.i53144",
+   "list": "A",
+   "name": "pirate cook soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53145,
+   "key": "oteryn:item.tibia.i53145",
+   "list": "A",
+   "name": "pirate quartermaster soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53146,
+   "key": "oteryn:item.tibia.i53146",
+   "list": "A",
+   "name": "sea captain soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53147,
+   "key": "oteryn:item.tibia.i53147",
+   "list": "A",
+   "name": "lizard henchman soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53148,
+   "key": "oteryn:item.tibia.i53148",
+   "list": "A",
+   "name": "lizard magician soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53149,
+   "key": "oteryn:item.tibia.i53149",
+   "list": "A",
+   "name": "lizard swordmaster soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53150,
+   "key": "oteryn:item.tibia.i53150",
+   "list": "A",
+   "name": "lizard executioner soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53151,
+   "key": "oteryn:item.tibia.i53151",
+   "list": "A",
+   "name": "lizard commander soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53152,
+   "key": "oteryn:item.tibia.i53152",
+   "list": "A",
+   "name": "infernoid blob soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53153,
+   "key": "oteryn:item.tibia.i53153",
+   "list": "A",
+   "name": "infernoid hound soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53154,
+   "key": "oteryn:item.tibia.i53154",
+   "list": "A",
+   "name": "infernoid soul soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-material_valuable-HIGH",
+   "id": 53155,
+   "key": "oteryn:item.tibia.i53155",
+   "list": "A",
+   "name": "infernoid spiritual soul core",
+   "profile": "material_valuable",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-material_valuable-LOW",
+   "id": 50051,
+   "key": "oteryn:item.tibia.i50051",
+   "list": "A",
+   "name": "Rotrender's sceptre",
+   "profile": "tool",
+   "reverification": {
+    "evidence": "Page 'Rotrender's Sceptre' (50051, 50052): objectclass Weapons, empty primarytype, Rotrender boss loot; flavortext 'Growth is this wicked sceptre's gift, coins are the tribute it demands' (usable, no weapon flags), so its function is unknown.",
+    "options": [
+     "material_valuable",
+     "tool"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Rotrender's_Sceptre"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-material_valuable-LOW",
+   "id": 50052,
+   "key": "oteryn:item.tibia.i50052",
+   "list": "A",
+   "name": "Rotrender's sceptre",
+   "profile": "tool",
+   "reverification": {
+    "evidence": "Page 'Rotrender's Sceptre' (50051, 50052): objectclass Weapons, empty primarytype, Rotrender boss loot; flavortext 'Growth is this wicked sceptre's gift, coins are the tribute it demands' (usable, no weapon flags), so its function is unknown.",
+    "options": [
+     "material_valuable",
+     "tool"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Rotrender's_Sceptre"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-material_valuable-MEDIUM",
+   "id": 43946,
+   "key": "oteryn:item.tibia.i43946",
+   "list": "A",
+   "name": "abridged promotion scroll",
+   "profile": "progression_material",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Abridged Promotion Scroll' (43946): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
+    "options": [
+     "material_valuable",
+     "progression_material"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Abridged_Promotion_Scroll"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-material_valuable-MEDIUM",
+   "id": 43947,
+   "key": "oteryn:item.tibia.i43947",
+   "list": "A",
+   "name": "basic promotion scroll",
+   "profile": "progression_material",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Basic Promotion Scroll' (43947): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
+    "options": [
+     "material_valuable",
+     "progression_material"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Basic_Promotion_Scroll"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-material_valuable-MEDIUM",
+   "id": 43948,
+   "key": "oteryn:item.tibia.i43948",
+   "list": "A",
+   "name": "revised promotion scroll",
+   "profile": "progression_material",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Revised Promotion Scroll' (43948): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
+    "options": [
+     "material_valuable",
+     "progression_material"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Revised_Promotion_Scroll"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-material_valuable-MEDIUM",
+   "id": 43949,
+   "key": "oteryn:item.tibia.i43949",
+   "list": "A",
+   "name": "extended promotion scroll",
+   "profile": "progression_material",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Extended Promotion Scroll' (43949): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
+    "options": [
+     "material_valuable",
+     "progression_material"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Extended_Promotion_Scroll"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-material_valuable-MEDIUM",
+   "id": 43950,
+   "key": "oteryn:item.tibia.i43950",
+   "list": "A",
+   "name": "advanced promotion scroll",
+   "profile": "progression_material",
+   "reverification": {
+    "evidence": "Exact-itemid page 'Advanced Promotion Scroll' (43950): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
+    "options": [
+     "material_valuable",
+     "progression_material"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Advanced_Promotion_Scroll"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-progression_material-MEDIUM",
+   "id": 48419,
+   "key": "oteryn:item.tibia.i48419",
+   "list": "A",
+   "name": "Podzilla's Finest",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Podzilla's Finest' (48419) has an empty type; per 'Petrified Leaf' notes, 20 Processed Blue Tea Leaves are exchanged with Petaloid for Podzilla's Finest, which only rarely yields the Rootwalker 2nd-addon item, so it is at best an indirect addon currency.",
+    "options": [
+     "progression_material",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Podzilla's_Finest"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-progression_material-MEDIUM",
+   "id": 48420,
+   "key": "oteryn:item.tibia.i48420",
+   "list": "A",
+   "name": "processed blue tea leaves",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Processed Blue Tea Leaves' (48420) has an empty type; per 'Petrified Leaf' notes, 20 are exchanged for Podzilla's Finest (rare Petrified Leaf addon item). It is an indirect addon currency, not itself an addon unlock.",
+    "options": [
+     "progression_material",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Processed_Blue_Tea_Leaves"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-progression_material-MEDIUM",
+   "id": 53190,
+   "key": "oteryn:item.tibia.i53190",
+   "list": "A",
+   "name": "captain's sabre",
+   "profile": "progression_material",
+   "reverification": {
+    "evidence": "Client description 'Use it to unlock the sabre addon for the Captain's outfit'; sold by Proprietor Piers for 280 Event Points (Great Expedition spoiler). Matches the decorative-plume precedent -> progression_material.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-progression_material-MEDIUM",
+   "id": 53191,
+   "key": "oteryn:item.tibia.i53191",
+   "list": "A",
+   "name": "captain's hat",
+   "profile": "progression_material",
+   "reverification": {
+    "evidence": "Client description 'Use it to unlock the tricorne addon for the Captain's outfit'; sold by Proprietor Piers for 560 Event Points. Matches the decorative-plume precedent -> progression_material.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 39818,
+   "key": "oteryn:item.tibia.i39818",
+   "list": "A",
+   "name": "some golem parts",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40016,
+   "key": "oteryn:item.tibia.i40016",
+   "list": "A",
+   "name": "fresh hydra herbs",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40514,
+   "key": "oteryn:item.tibia.i40514",
+   "list": "A",
+   "name": "research records",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40515,
+   "key": "oteryn:item.tibia.i40515",
+   "list": "A",
+   "name": "copied research notes",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40516,
+   "key": "oteryn:item.tibia.i40516",
+   "list": "A",
+   "name": "feather and inkwell",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40517,
+   "key": "oteryn:item.tibia.i40517",
+   "list": "A",
+   "name": "book with transcripts",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40523,
+   "key": "oteryn:item.tibia.i40523",
+   "list": "A",
+   "name": "the key Intihuatac",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40524,
+   "key": "oteryn:item.tibia.i40524",
+   "list": "A",
+   "name": "piece of an ancient disc",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40525,
+   "key": "oteryn:item.tibia.i40525",
+   "list": "A",
+   "name": "part of an ancient disc",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40526,
+   "key": "oteryn:item.tibia.i40526",
+   "list": "A",
+   "name": "fragment of an ancient disc",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40581,
+   "key": "oteryn:item.tibia.i40581",
+   "list": "A",
+   "name": "wet boards",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40596,
+   "key": "oteryn:item.tibia.i40596",
+   "list": "A",
+   "name": "egg cracker",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40598,
+   "key": "oteryn:item.tibia.i40598",
+   "list": "A",
+   "name": "bottled yolk",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40599,
+   "key": "oteryn:item.tibia.i40599",
+   "list": "A",
+   "name": "empty flask",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40601,
+   "key": "oteryn:item.tibia.i40601",
+   "list": "A",
+   "name": "nutrient solution",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 40602,
+   "key": "oteryn:item.tibia.i40602",
+   "list": "A",
+   "name": "crumbled diary page",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43585,
+   "key": "oteryn:item.tibia.i43585",
+   "list": "A",
+   "name": "ocarina",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43778,
+   "key": "oteryn:item.tibia.i43778",
+   "list": "A",
+   "name": "organic acid",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43779,
+   "key": "oteryn:item.tibia.i43779",
+   "list": "A",
+   "name": "unstable darklight matter",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43780,
+   "key": "oteryn:item.tibia.i43780",
+   "list": "A",
+   "name": "yellow darklight matter",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43781,
+   "key": "oteryn:item.tibia.i43781",
+   "list": "A",
+   "name": "darklight obsidian axe",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43782,
+   "key": "oteryn:item.tibia.i43782",
+   "list": "A",
+   "name": "lichen gobbler",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43861,
+   "key": "oteryn:item.tibia.i43861",
+   "list": "A",
+   "name": "conch shell",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43862,
+   "key": "oteryn:item.tibia.i43862",
+   "list": "A",
+   "name": "wooden mouthpiece",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 43969,
+   "key": "oteryn:item.tibia.i43969",
+   "list": "A",
+   "name": "Heliodor's scrolls",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44180,
+   "key": "oteryn:item.tibia.i44180",
+   "list": "A",
+   "name": "maddening mushroom",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44351,
+   "key": "oteryn:item.tibia.i44351",
+   "list": "A",
+   "name": "ballista bolt",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44352,
+   "key": "oteryn:item.tibia.i44352",
+   "list": "A",
+   "name": "enchanted ballista bolt",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44434,
+   "key": "oteryn:item.tibia.i44434",
+   "list": "A",
+   "name": "pilchi with paint",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44435,
+   "key": "oteryn:item.tibia.i44435",
+   "list": "A",
+   "name": "jug of gold lye",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44525,
+   "key": "oteryn:item.tibia.i44525",
+   "list": "A",
+   "name": "fryclops axe",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44558,
+   "key": "oteryn:item.tibia.i44558",
+   "list": "A",
+   "name": "immensely powerful crystal",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44672,
+   "key": "oteryn:item.tibia.i44672",
+   "list": "A",
+   "name": "the Mitmah north key",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44673,
+   "key": "oteryn:item.tibia.i44673",
+   "list": "A",
+   "name": "the Mitmah east key",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44674,
+   "key": "oteryn:item.tibia.i44674",
+   "list": "A",
+   "name": "the Mitmah south key",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44675,
+   "key": "oteryn:item.tibia.i44675",
+   "list": "A",
+   "name": "the Mitmah west key",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 44677,
+   "key": "oteryn:item.tibia.i44677",
+   "list": "A",
+   "name": "ley triangulator",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 45646,
+   "key": "oteryn:item.tibia.i45646",
+   "list": "A",
+   "name": "powerful pink seed",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 45647,
+   "key": "oteryn:item.tibia.i45647",
+   "list": "A",
+   "name": "powerful red seed",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 45648,
+   "key": "oteryn:item.tibia.i45648",
+   "list": "A",
+   "name": "powerful light blue seed",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 45649,
+   "key": "oteryn:item.tibia.i45649",
+   "list": "A",
+   "name": "powerful violet seed",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 45650,
+   "key": "oteryn:item.tibia.i45650",
+   "list": "A",
+   "name": "powerful purple seed",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 45651,
+   "key": "oteryn:item.tibia.i45651",
+   "list": "A",
+   "name": "powerful yellow seed",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48102,
+   "key": "oteryn:item.tibia.i48102",
+   "list": "A",
+   "name": "gingerbread key recipe",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48192,
+   "key": "oteryn:item.tibia.i48192",
+   "list": "A",
+   "name": "mirror image spell",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48194,
+   "key": "oteryn:item.tibia.i48194",
+   "list": "A",
+   "name": "flask with moon melon sirup",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48195,
+   "key": "oteryn:item.tibia.i48195",
+   "list": "A",
+   "name": "flask with raspberry sirup",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48196,
+   "key": "oteryn:item.tibia.i48196",
+   "list": "A",
+   "name": "flask with lemon sirup",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48198,
+   "key": "oteryn:item.tibia.i48198",
+   "list": "A",
+   "name": "gingerbread key",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48238,
+   "key": "oteryn:item.tibia.i48238",
+   "list": "A",
+   "name": "rose milk cake",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48239,
+   "key": "oteryn:item.tibia.i48239",
+   "list": "A",
+   "name": "matcha turtle",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48240,
+   "key": "oteryn:item.tibia.i48240",
+   "list": "A",
+   "name": "nightsky cupcake",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48241,
+   "key": "oteryn:item.tibia.i48241",
+   "list": "A",
+   "name": "candy lipstick",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48248,
+   "key": "oteryn:item.tibia.i48248",
+   "list": "A",
+   "name": "rainbow waffles",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48278,
+   "key": "oteryn:item.tibia.i48278",
+   "list": "A",
+   "name": "tattered piece of paper",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48280,
+   "key": "oteryn:item.tibia.i48280",
+   "list": "A",
+   "name": "full honey glass",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48359,
+   "key": "oteryn:item.tibia.i48359",
+   "list": "A",
+   "name": "candy cane beam",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48422,
+   "key": "oteryn:item.tibia.i48422",
+   "list": "A",
+   "name": "potent dew",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48423,
+   "key": "oteryn:item.tibia.i48423",
+   "list": "A",
+   "name": "toothbrush",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48480,
+   "key": "oteryn:item.tibia.i48480",
+   "list": "A",
+   "name": "rose milk cake recipe",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48481,
+   "key": "oteryn:item.tibia.i48481",
+   "list": "A",
+   "name": "matcha turtle recipe",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48482,
+   "key": "oteryn:item.tibia.i48482",
+   "list": "A",
+   "name": "nightsky cupcake recipe",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48483,
+   "key": "oteryn:item.tibia.i48483",
+   "list": "A",
+   "name": "rainbow waffles recipe",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48512,
+   "key": "oteryn:item.tibia.i48512",
+   "list": "A",
+   "name": "insect tarsus",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48582,
+   "key": "oteryn:item.tibia.i48582",
+   "list": "A",
+   "name": "handful of marzipan carrots",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 48586,
+   "key": "oteryn:item.tibia.i48586",
+   "list": "A",
+   "name": "marzipan carrot",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 49176,
+   "key": "oteryn:item.tibia.i49176",
+   "list": "A",
+   "name": "celestial torch",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 50336,
+   "key": "oteryn:item.tibia.i50336",
+   "list": "A",
+   "name": "fragment of a statue",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 50337,
+   "key": "oteryn:item.tibia.i50337",
+   "list": "A",
+   "name": "fragment of a statue",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 50338,
+   "key": "oteryn:item.tibia.i50338",
+   "list": "A",
+   "name": "fragment of a statue",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 50975,
+   "key": "oteryn:item.tibia.i50975",
+   "list": "A",
+   "name": "magic bookmark",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 50979,
+   "key": "oteryn:item.tibia.i50979",
+   "list": "A",
+   "name": "illuminated book page",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 50980,
+   "key": "oteryn:item.tibia.i50980",
+   "list": "A",
+   "name": "illuminated book page",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 50981,
+   "key": "oteryn:item.tibia.i50981",
+   "list": "A",
+   "name": "illuminated book page",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51031,
+   "key": "oteryn:item.tibia.i51031",
+   "list": "A",
+   "name": "empowered stake",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51032,
+   "key": "oteryn:item.tibia.i51032",
+   "list": "A",
+   "name": "vial of corrosive blood",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51033,
+   "key": "oteryn:item.tibia.i51033",
+   "list": "A",
+   "name": "vial of vampiric blood",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51078,
+   "key": "oteryn:item.tibia.i51078",
+   "list": "A",
+   "name": "jar of red colour",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51079,
+   "key": "oteryn:item.tibia.i51079",
+   "list": "A",
+   "name": "jar of blue colour",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51236,
+   "key": "oteryn:item.tibia.i51236",
+   "list": "A",
+   "name": "painted torch",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51376,
+   "key": "oteryn:item.tibia.i51376",
+   "list": "A",
+   "name": "dip pen",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51377,
+   "key": "oteryn:item.tibia.i51377",
+   "list": "A",
+   "name": "dip pen with ink",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51380,
+   "key": "oteryn:item.tibia.i51380",
+   "list": "A",
+   "name": "painted arrow",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51381,
+   "key": "oteryn:item.tibia.i51381",
+   "list": "A",
+   "name": "painted bow",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51439,
+   "key": "oteryn:item.tibia.i51439",
+   "list": "A",
+   "name": "phoenix feather quill",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51440,
+   "key": "oteryn:item.tibia.i51440",
+   "list": "A",
+   "name": "ink-coated sword",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 51441,
+   "key": "oteryn:item.tibia.i51441",
+   "list": "A",
+   "name": "the sacred writings of Getema",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 53288,
+   "key": "oteryn:item.tibia.i53288",
+   "list": "A",
+   "name": "mariner's anchor",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-quest_item-HIGH",
+   "id": 53423,
+   "key": "oteryn:item.tibia.i53423",
+   "list": "A",
+   "name": "cursed coin",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-quest_item-LOW",
+   "id": 43356,
+   "key": "oteryn:item.tibia.i43356",
+   "list": "A",
+   "name": "restorative goo",
+   "profile": "material_valuable",
+   "reverification": {
+    "evidence": "No wiki page or search hit; client has no description, only usable+take flags. Only the id block suggests a quest item.",
+    "options": [
+     "quest_item",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "EXCLUDED",
+   "confidence": "LOW",
+   "family": "Excluded",
+   "group": "A-quest_item-LOW",
+   "id": 44044,
+   "key": "oteryn:item.tibia.i44044",
+   "list": "A",
+   "name": "test voodoo skull",
+   "profile": null,
+   "reverification": {
+    "evidence": "Page 'Test Voodoo Skull' (44044): status ts-only, a Test Server helper sold by Testserver Assistant; precedent 52864 test proficiency catalyst was authored as tool. The owner decides between quest_item, tool, or excluding it from live content.",
+    "options": [
+     "quest_item",
+     "tool",
+     "exclude_ts_only"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Test_Voodoo_Skull"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-quest_item-LOW",
+   "id": 48118,
+   "key": "oteryn:item.tibia.i48118",
+   "list": "A",
+   "name": "bioluminescent root end",
+   "profile": "light_source",
+   "reverification": {
+    "evidence": "Page 'Bioluminescent Root End' (48118): empty type, flavortext 'An organic communication device', light 4/65, no notes or article backlinks. No quest is proven.",
+    "options": [
+     "quest_item",
+     "light_source"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Bioluminescent_Root_End"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-quest_item-LOW",
+   "id": 51293,
+   "key": "oteryn:item.tibia.i51293",
+   "list": "A",
+   "name": "ancient orc fetish",
+   "profile": "decoration",
+   "reverification": {
+    "evidence": "Page 'Ancient Orc Fetish' (51293): empty type, no notes, no article backlinks; 'The Orc King' page does not mention it. Client has take only.",
+    "options": [
+     "quest_item",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Ancient_Orc_Fetish"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-quest_item-LOW",
+   "id": 52996,
+   "key": "oteryn:item.tibia.i52996",
+   "list": "A",
+   "name": "green worm-away",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "The Great Expedition/Spoiler Day 1 'Worm Hunt': colour-coded pesticide flasks are picked up and used on woodworms of the same colour (green worm-away); a temporary event-activity item like the gnome-shovel quest_item precedent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-quest_item-LOW",
+   "id": 52997,
+   "key": "oteryn:item.tibia.i52997",
+   "list": "A",
+   "name": "blue worm-away",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "The Great Expedition/Spoiler Day 1 'Worm Hunt': colour-coded pesticide flasks are picked up and used on woodworms of the same colour (blue worm-away); a temporary event-activity item like the gnome-shovel quest_item precedent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-quest_item-LOW",
+   "id": 52998,
+   "key": "oteryn:item.tibia.i52998",
+   "list": "A",
+   "name": "red worm-away",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "The Great Expedition/Spoiler Day 1 'Worm Hunt': colour-coded pesticide flasks are picked up and used on woodworms of the same colour (red worm-away); a temporary event-activity item like the gnome-shovel quest_item precedent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-quest_item-LOW",
+   "id": 52999,
+   "key": "oteryn:item.tibia.i52999",
+   "list": "A",
+   "name": "yellow worm-away",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "The Great Expedition/Spoiler Day 1 'Worm Hunt': colour-coded pesticide flasks are picked up and used on woodworms of the same colour (yellow worm-away); a temporary event-activity item like the gnome-shovel quest_item precedent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 40603,
+   "key": "oteryn:item.tibia.i40603",
+   "list": "A",
+   "name": "flask with anti-mutagen",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Exact page 'Flask with Anti-Mutagen' (40603): empty type, but The Cradle of Monsters Quest/Spoiler Mission 9 requires preparing 5 of these flasks -> quest_item.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Flask_with_Anti-Mutagen"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 44008,
+   "key": "oteryn:item.tibia.i44008",
+   "list": "A",
+   "name": "moonlight ipomea's stamen",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page (44008): primarytype 'Extra Slot' (unmapped; the reason's 'empty type' is wrong), secondary 'Light Sources'. Grimvale Quest/Spoiler: the item is consumed on twines to open the Treasure Chest (Oskayaat) room, so quest use outweighs the secondary light type.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Moonlight_Ipomea's_Stamen"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 44045,
+   "key": "oteryn:item.tibia.i44045",
+   "list": "A",
+   "name": "empty essence flask",
+   "profile": "tool",
+   "reverification": {
+    "evidence": "Exact page 'Empty Essence Flask (Rotten)' (44045): empty type, flavortext 'It can contain rotten essence.', no notes or article backlinks. No quest use is documented; it could be a quest item or a collecting tool.",
+    "options": [
+     "quest_item",
+     "tool"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Empty_Essence_Flask_(Rotten)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 44046,
+   "key": "oteryn:item.tibia.i44046",
+   "list": "A",
+   "name": "empty essence flask",
+   "profile": "tool",
+   "reverification": {
+    "evidence": "Exact page 'Empty Essence Flask (Dark)' (44046): empty type, flavortext 'It can contain dark energy.', no notes or article backlinks. No quest use is documented; it could be a quest item or a collecting tool.",
+    "options": [
+     "quest_item",
+     "tool"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Empty_Essence_Flask_(Dark)"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 48178,
+   "key": "oteryn:item.tibia.i48178",
+   "list": "A",
+   "name": "gingerbread key",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Gingerbread Key' (48198): primarytype 'Quest Items' -> quest_item (secondary Decorations); client flags (take only) consistent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Gingerbread_Key"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 48199,
+   "key": "oteryn:item.tibia.i48199",
+   "list": "A",
+   "name": "gingerbread key",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Gingerbread Key' (48198): primarytype 'Quest Items' -> quest_item (secondary Decorations); client flags (take only) consistent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Gingerbread_Key"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 48200,
+   "key": "oteryn:item.tibia.i48200",
+   "list": "A",
+   "name": "gingerbread key",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Gingerbread Key' (48198): primarytype 'Quest Items' -> quest_item (secondary Decorations); client flags (take only) consistent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Gingerbread_Key"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 48201,
+   "key": "oteryn:item.tibia.i48201",
+   "list": "A",
+   "name": "sugar",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Sugar' (12275): primarytype 'Quest Items' -> quest_item; client take/usable/stackable consistent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Sugar"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 48513,
+   "key": "oteryn:item.tibia.i48513",
+   "list": "A",
+   "name": "amber infused insect heart",
+   "profile": "material_valuable",
+   "reverification": {
+    "evidence": "Exact page 'Amber Infused Insect Heart' (48513): empty type, no notes, no backlinks; 'Amber with a Bug' (32624, Valuables) does not mention it. The only quest signal is sibling 48512 Insect Tarsus (Quest Items).",
+    "options": [
+     "quest_item",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Amber_Infused_Insect_Heart"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 49910,
+   "key": "oteryn:item.tibia.i49910",
+   "list": "A",
+   "name": "pine cone",
+   "profile": "plant",
+   "reverification": {
+    "evidence": "Exact page 'Pine Cone' (49910, 15.00): empty type, no notes and no article backlinks. The claimed Ape City Quest link is not confirmed.",
+    "options": [
+     "quest_item",
+     "plant"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Pine_Cone"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 51034,
+   "key": "oteryn:item.tibia.i51034",
+   "list": "A",
+   "name": "empowered stake",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Empowered Stake' (51031): primarytype 'Quest Items' -> quest_item; client take-only consistent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Empowered_Stake"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 51035,
+   "key": "oteryn:item.tibia.i51035",
+   "list": "A",
+   "name": "vial of corrosive blood",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Vial of Corrosive Blood' (51032): primarytype 'Quest Items' -> quest_item; client take-only consistent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Vial_of_Corrosive_Blood"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 52987,
+   "key": "oteryn:item.tibia.i52987",
+   "list": "A",
+   "name": "mole hammer",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "The Great Expedition/Spoiler Day 2 'Whack-A-Mole': mole hammers are picked up and used on moleholes; a temporary event-activity item -> quest_item.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 52991,
+   "key": "oteryn:item.tibia.i52991",
+   "list": "A",
+   "name": "empty bucket",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "The Great Expedition/Spoiler: a bucket of water found south of Proprietor Piers puts out event fires; wiki 'Bucket Full of Water' (39243) and 'Empty Bucket' (44650, Quest Objects) are also quest items -> quest_item.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-quest_item-MEDIUM",
+   "id": 52992,
+   "key": "oteryn:item.tibia.i52992",
+   "list": "A",
+   "name": "bucket full of water",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "The Great Expedition/Spoiler: a bucket of water found south of Proprietor Piers puts out event fires; wiki 'Bucket Full of Water' (39243) and 'Empty Bucket' (44650, Quest Objects) are also quest items -> quest_item.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/The_Great_Expedition/Spoiler"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-tool-HIGH",
+   "id": 44048,
+   "key": "oteryn:item.tibia.i44048",
+   "list": "A",
+   "name": "spiritual horseshoe",
+   "profile": "tool",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-tool-HIGH",
+   "id": 44437,
+   "key": "oteryn:item.tibia.i44437",
+   "list": "A",
+   "name": "polished idol of Tukh",
+   "profile": "tool",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-tool-HIGH",
+   "id": 48578,
+   "key": "oteryn:item.tibia.i48578",
+   "list": "A",
+   "name": "sweet present",
+   "profile": "tool",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-tool-HIGH",
+   "id": 50062,
+   "key": "oteryn:item.tibia.i50062",
+   "list": "A",
+   "name": "demon in a red box",
+   "profile": "tool",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-tool-HIGH",
+   "id": 50063,
+   "key": "oteryn:item.tibia.i50063",
+   "list": "A",
+   "name": "demon in a golden box",
+   "profile": "tool",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-tool-HIGH",
+   "id": 53287,
+   "key": "oteryn:item.tibia.i53287",
+   "list": "A",
+   "name": "mariner's fishing rod",
+   "profile": "tool",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "A-tool-LOW",
+   "id": 48475,
+   "key": "oteryn:item.tibia.i48475",
+   "list": "A",
+   "name": "magic bag of magic chests",
+   "profile": "decoration",
+   "reverification": {
+    "evidence": "Page 'Magic Bag of Magic Chests' (48475): empty type, flavortext 'Use exclusively on empty and flat ground to create a magic chest'; linked only from 'Bags'. It is unclear whether this is a utility or a furniture/decoration kit.",
+    "options": [
+     "tool",
+     "decoration"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Magic_Bag_of_Magic_Chests"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-tool-MEDIUM",
+   "id": 43738,
+   "key": "oteryn:item.tibia.i43738",
+   "list": "A",
+   "name": "pocket sundial",
+   "profile": "material_valuable",
+   "reverification": {
+    "evidence": "Page 'Pocket Sundial' (43738): empty type; it is the opened state of 'Closed Pocket Sundial' (43888), whose primarytype 'Creature Products' maps to material_valuable (NPC-sellable loot), and it auto-closes after 10 s.",
+    "options": [
+     "tool",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Pocket_Sundial"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-tool-MEDIUM",
+   "id": 43930,
+   "key": "oteryn:item.tibia.i43930",
+   "list": "A",
+   "name": "pocket sundial",
+   "profile": "material_valuable",
+   "reverification": {
+    "evidence": "Page 'Pocket Sundial' (43738): empty type; it is the opened state of 'Closed Pocket Sundial' (43888), whose primarytype 'Creature Products' maps to material_valuable (NPC-sellable loot), and it auto-closes after 10 s.",
+    "options": [
+     "tool",
+     "material_valuable"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Pocket_Sundial"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-tool-MEDIUM",
+   "id": 51030,
+   "key": "oteryn:item.tibia.i51030",
+   "list": "A",
+   "name": "wooden stake",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Wooden Stake' (5941, Tools -> tool) is usable+multiuse+market, but 51030 is take-only and sits beside 51031 Empowered Stake (Quest Items, 15.10), so it is probably a quest variant.",
+    "options": [
+     "tool",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Wooden_Stake"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-transformation_item-MEDIUM",
+   "id": 44527,
+   "key": "oteryn:item.tibia.i44527",
+   "list": "A",
+   "name": "spirit container",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Spirit Container' (5884): 'Enchanted Items' -> transformation_item, but 5884 is stackable/market/NPC-sold and not usable, while this id is usable+multiuse and non-market (13.20 block). The flags do not match, so it may be a quest variant.",
+    "options": [
+     "transformation_item",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Spirit_Container"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-transformation_item-MEDIUM",
+   "id": 44528,
+   "key": "oteryn:item.tibia.i44528",
+   "list": "A",
+   "name": "spirit container",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "Page 'Spirit Container' (5884): 'Enchanted Items' -> transformation_item, but 5884 is stackable/market/NPC-sold and not usable, while this id is usable+multiuse and non-market (13.20 block). The flags do not match, so it may be a quest variant.",
+    "options": [
+     "transformation_item",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Spirit_Container"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-trash-MEDIUM",
+   "id": 53009,
+   "key": "oteryn:item.tibia.i53009",
+   "list": "A",
+   "name": "wooden trash",
+   "profile": "trash",
+   "reverification": {
+    "evidence": "Page 'Wooden Trash' (3135-3140): primarytype 'Rubbish' -> trash; client stackable, market others, consistent.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Wooden_Trash"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "A-weapon_distance-HIGH",
+   "id": 53855,
+   "key": "oteryn:item.tibia.i53855",
+   "list": "A",
+   "name": "snowball with ice shards",
+   "profile": "weapon_distance",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "A-weapon_distance-MEDIUM",
+   "id": 44072,
+   "key": "oteryn:item.tibia.i44072",
+   "list": "A",
+   "name": "snowball",
+   "profile": "weapon_distance",
+   "reverification": {
+    "evidence": "Page 'Snowball' (2992): primarytype 'Distance Weapons' -> weapon_distance; client clothes slot 6 + usable/multiuse consistent (only stackable/market dropped).",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Snowball"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "B-key-MEDIUM",
+   "id": 54262,
+   "key": "oteryn:item.tibia.i54262",
+   "list": "B",
+   "name": "key",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "No itemid wiki page ('Key' redirects to 'Keys' class page); client usable/multiuse/take with no description. The reason itself leaves the quest link unproven and names quest_item.",
+    "options": [
+     "key",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "B-progression_material-HIGH",
+   "id": 54640,
+   "key": "oteryn:item.tibia.i54640",
+   "list": "B",
+   "name": "scraps of a radiant attire",
+   "profile": "progression_material",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "B-quest_item-HIGH",
+   "id": 53692,
+   "key": "oteryn:item.tibia.i53692",
+   "list": "B",
+   "name": "sample of bluish tide veil",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "B-quest_item-HIGH",
+   "id": 53693,
+   "key": "oteryn:item.tibia.i53693",
+   "list": "B",
+   "name": "sample of bluish whisper reed",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "B-quest_item-HIGH",
+   "id": 53696,
+   "key": "oteryn:item.tibia.i53696",
+   "list": "B",
+   "name": "empty crystal flask",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "B-quest_item-HIGH",
+   "id": 53783,
+   "key": "oteryn:item.tibia.i53783",
+   "list": "B",
+   "name": "shell gauge",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "B-quest_item-HIGH",
+   "id": 54267,
+   "key": "oteryn:item.tibia.i54267",
+   "list": "B",
+   "name": "moonsilver crystals",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "B-quest_item-HIGH",
+   "id": 54564,
+   "key": "oteryn:item.tibia.i54564",
+   "list": "B",
+   "name": "crystal flask with blue lava",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "B-quest_item-HIGH",
+   "id": 54566,
+   "key": "oteryn:item.tibia.i54566",
+   "list": "B",
+   "name": "crystal flask with blessed blue lava",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "C-decoration-HIGH",
+   "id": 34078,
+   "key": "oteryn:item.tibia.i34078",
+   "list": "C",
+   "name": "cask (goblin zombie, active)",
+   "profile": "decoration",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "C-document-LOW",
+   "id": 23547,
+   "key": "oteryn:item.tibia.i23547",
+   "list": "C",
+   "name": "arena certificate",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "No wiki page for 23547; sibling 'Arena Certificates' (23548) is an immobile 'Utilities' board. Client usable + lenshelp 1112, description 'An arena certificate', no write flag. Readable paper is a guess.",
+    "options": [
+     "document",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED",
+    "wiki_url": "https://tibia.fandom.com/wiki/Arena_Certificates"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "C-quest_item-HIGH",
+   "id": 36707,
+   "key": "oteryn:item.tibia.i36707",
+   "list": "C",
+   "name": "eye-shaped frame",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "HIGH",
+   "family": "Item",
+   "group": "C-quest_item-HIGH",
+   "id": 36876,
+   "key": "oteryn:item.tibia.i36876",
+   "list": "C",
+   "name": "blackened hand mirror",
+   "profile": "quest_item",
+   "status": "APPROVED_HIGH"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "C-quest_item-MEDIUM",
+   "id": 19392,
+   "key": "oteryn:item.tibia.i19392",
+   "list": "C",
+   "name": "aligned opticording sphere",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "No own page, but client description 'The sphere has been adjusted and its key mechanism aligned' is the intermediate Opticording Sphere Quest state; 'Opticording Sphere' (19063/19064) is 'Quest Items' -> quest_item.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Opticording_Sphere"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "LOW",
+   "family": "Item",
+   "group": "C-trash-LOW",
+   "id": 21212,
+   "key": "oteryn:item.tibia.i21212",
+   "list": "C",
+   "name": "the ashes of a device",
+   "profile": "quest_item",
+   "reverification": {
+    "evidence": "No wiki page; client description 'It seems this device has just disintegrated', take only. Only an analogy supports trash, and the reason names quest_item as an alternative.",
+    "options": [
+     "trash",
+     "quest_item"
+    ],
+    "verdict": "DISPUTED"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "C-trash-MEDIUM",
+   "id": 20129,
+   "key": "oteryn:item.tibia.i20129",
+   "list": "C",
+   "name": "remains of a crude dream (small)",
+   "profile": "trash",
+   "reverification": {
+    "evidence": "Exact page 'Remains of a Crude Dream (Small)' (20129): empty type, flavortext 'They melt away as you look at them'; Roshamuul Quest/Spoiler lists it only as the failed-extraction byproduct ('You blasted the dream to pieces'), with no further use -> trash.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Remains_of_a_Crude_Dream_(Small)"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+   "confidence": "MEDIUM",
+   "family": "Item",
+   "group": "C-trash-MEDIUM",
+   "id": 20131,
+   "key": "oteryn:item.tibia.i20131",
+   "list": "C",
+   "name": "remains of a crude dream (large)",
+   "profile": "trash",
+   "reverification": {
+    "evidence": "Exact page 'Remains of a Crude Dream (Large)' (20131): empty type, flavortext 'They melt away as you look at them'; Roshamuul Quest/Spoiler lists it only as the failed-extraction byproduct ('You blasted the dream to pieces'), with no further use -> trash.",
+    "verdict": "APPROVE",
+    "wiki_url": "https://tibia.fandom.com/wiki/Remains_of_a_Crude_Dream_(Large)"
+   },
+   "status": "APPROVED_REVERIFIED"
+  },
+  {
+   "applied": "WorldObject route non_pickupable_blocking_prop (engine_items.NON_PICKUPABLE_BLOCKING_PROP_IDS)",
+   "confidence": "MEDIUM",
+   "family": "WorldObject",
+   "group": "C-world_object-MEDIUM",
+   "id": 9132,
+   "key": "oteryn:world-object.tibia.i9132",
+   "list": "C",
+   "name": "frost cannon",
+   "profile": null,
+   "reverification": {
+    "evidence": "No wiki page (only the Roost of the Graveborn quest text); client has no take, unpass + usable + height 8 and no appearance name, so it is a blocking placed prop. It needs a new WorldObject route reason ('non_pickupable_blocking_prop'), an owner/lane decision.",
+    "options": [
+     "WorldObject:non_pickupable_blocking_prop",
+     "WorldObject:existing_reason"
+    ],
+    "verdict": "DISPUTED"
+   },
+   "status": "APPROVED_OWNER_D165"
+  },
+  {
+   "applied": "PENDING_MINT",
+   "confidence": "MEDIUM",
+   "family": "WorldObject",
+   "group": "C-world_object-MEDIUM",
+   "id": 32267,
+   "key": "oteryn:world-object.tibia.i32267",
+   "list": "C",
+   "name": "unknow item",
+   "profile": null,
+   "reverification": {
+    "evidence": "Client object has no name/description, no take, unpass+usable+light 3/212; items.xml placeholder name 'unknow item' matches the existing 'unknown item'/'unknow' appearance_placeholder_slot pattern -> WorldObject.",
+    "verdict": "APPROVE"
+   },
+   "status": "APPROVED_REVERIFIED"
+  }
+ ],
+ "schema": "OTERYN_ITEM_FAMILY_DECISION_REGISTER/v1",
+ "slice": "ITEM-ID-1b",
+ "source_table": "docs/agents/evidence/OTV2-20260929-item-family-proposals-266.md (#1282)",
+ "task_id": "OTV2-20260929-item-id-1-tibia-id-keys"
+}

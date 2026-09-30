@@ -229,9 +229,9 @@ def load_fixture_sources(
 # by the override tests below. The fixture Crystal delivery list (`itemId = 101`) makes
 # 101 the only fixture item the rule admits without an override.
 FIXTURE_ITEM_KEYS = {
-    100: "oteryn:item.registry.i00000021",
-    101: "oteryn:item.registry.i00000022",
-    102: "oteryn:item.registry.i00000023",
+    100: "oteryn:item.tibia.i100",
+    101: "oteryn:item.tibia.i101",
+    102: "oteryn:item.tibia.i102",
 }
 
 
@@ -1006,7 +1006,7 @@ def test_forge_max_tier_from_classification_table():
     # highest tier key `item_tiers.lua` registers for that classification, never a
     # source fact (classification 1->1, 2->2, 3->3, 4->10).
     for classification, expected_max_tier in (1, 1), (2, 2), (3, 3), (4, 10):
-        item_id = 370 + classification
+        item_id = 699 + classification
         item, _deps, report = convert(
             {
                 item_id: {
@@ -1160,8 +1160,8 @@ def test_routed_non_item_corpse_and_placeholder_and_terrain():
 def test_routed_non_item_unmove_map_geometry():
     # unmove=true + a ground/border flag, no resolvable family: Terrain/ground_or_border.
     item, _deps, report = convert(
-        {395: {"attrs": {}, "flags": {"flags.unmove": True, "flags.bank": True}}},
-        item_id=395,
+        {1395: {"attrs": {}, "flags": {"flags.unmove": True, "flags.bank": True}}},
+        item_id=1395,
     )
     check(item is None, report)
     check(report["converted"] is False, report)
@@ -1297,7 +1297,7 @@ def test_wrap_target_never_overrides_already_resolved_item():
 
     # Wiki-evidence-resolved wins for the same reason: wrap-target inheritance is the
     # lowest-priority resolution, below the wiki fallback.
-    key = engine_items.build_identity_index()[465][0]
+    key = engine_items.build_identity_index()[1465][0]
     fallback = {
         key: synthetic_wiki_fallback_entry(
             "document", ["wiki wins over wrap"], field="primarytype", value="Books"
@@ -1305,11 +1305,11 @@ def test_wrap_target_never_overrides_already_resolved_item():
     }
     item, _deps, report = convert_with_fallback(
         {
-            465: {"name": "Wiki Wins Over Wrap", "attrs": {"wrapableto": "90001"}},
+            1465: {"name": "Wiki Wins Over Wrap", "attrs": {"wrapableto": "90001"}},
             90001: {"attrs": {"primarytype": "furniture"}},
         },
         fallback,
-        item_id=465,
+        item_id=1465,
     )
     check(item["family_profile"] == "document", item)
     check(item["family_profile_basis"] == "wiki_evidence_fallback", item)
@@ -1319,7 +1319,7 @@ def test_corpse_decoration_routes_without_take():
     # Owner decision 2026-09-28: an unresolved item named "dead ..." with no `flags.take`
     # is a non-take-able map/quest decoration corpse, routed to WorldObject, never an Item.
     item, _deps, report = convert(
-        {466: {"name": "dead dragon", "attrs": {}, "flags": {}}}, item_id=466
+        {1466: {"name": "dead dragon", "attrs": {}, "flags": {}}}, item_id=1466
     )
     check(item is None, report)
     check(report["converted"] is False, report)
@@ -1334,8 +1334,8 @@ def test_corpse_decoration_routes_without_take():
 def test_corpse_with_take_in_owner_table():
     # A take-able "dead ..." name in the explicit owner table resolves to its family.
     item, _deps, report = convert(
-        {467: {"name": "dead rat", "attrs": {}, "flags": {"flags.take": True}}},
-        item_id=467,
+        {1467: {"name": "dead rat", "attrs": {}, "flags": {"flags.take": True}}},
+        item_id=1467,
     )
     check(item is not None, report)
     check(item["family_profile"] == "material_valuable", item)
@@ -1352,13 +1352,13 @@ def test_corpse_takeable_unlisted_name_stays_unresolved():
     # closed) rather than guessed, and is never routed away as a non-Item.
     item, _deps, report = convert(
         {
-            468: {
+            1468: {
                 "name": "dead unlisted creature",
                 "attrs": {},
                 "flags": {"flags.take": True},
             }
         },
-        item_id=468,
+        item_id=1468,
     )
     check(item is None, report)
     check(report["converted"] is False, report)
@@ -1404,8 +1404,8 @@ def test_fluid_type_without_appearance_routes_non_item():
 
     # Every admitted fluid name routes the same way.
     for name in sorted(engine_items.FLUID_TYPE_NAMES):
-        sources = synthetic_sources("crystal", {471: {"name": name, "attrs": {}}})
-        _item, _deps, report = engine_items.convert_item(sources, 471)
+        sources = synthetic_sources("crystal", {2400: {"name": name, "attrs": {}}})
+        _item, _deps, report = engine_items.convert_item(sources, 2400)
         check(
             report["routed_non_item"]
             == {"owner": "Fluid", "reason": "fluid_type_without_appearance"},
@@ -1419,10 +1419,10 @@ def test_fluid_type_with_appearance_is_not_routed():
     # A non-empty flag keeps this id out of the unrelated empty-client-object route
     # (task #15) too, so this test stays focused on the fluid rule alone.
     sources = synthetic_sources(
-        "crystal", {472: {"name": "wine", "attrs": {}, "flags": {"flags.take": True}}}
+        "crystal", {2401: {"name": "wine", "attrs": {}, "flags": {"flags.take": True}}}
     )
-    check(472 in sources["appearances"], "fixture must carry an appearance")
-    _item, _deps, report = engine_items.convert_item(sources, 472)
+    check(2401 in sources["appearances"], "fixture must carry an appearance")
+    _item, _deps, report = engine_items.convert_item(sources, 2401)
     check(report.get("routed_non_item") is None, report)
     check("family_profile_unresolved" in report["blockers"], report)
 
@@ -1431,14 +1431,14 @@ def test_fluid_type_route_requires_items_xml_record():
     # No items.xml record at all (appearance-only entry): the fluid rule never applies,
     # since it only ever recognizes an items.xml-only name.
     sources = synthetic_sources("crystal", {})
-    sources["appearances"][473] = {
-        "id": 473,
+    sources["appearances"][2402] = {
+        "id": 2402,
         "flags": {"flags.take": True},
         "frame_groups": [],
         "name": "water",
         "description": None,
     }
-    _item, _deps, report = engine_items.convert_item(sources, 473)
+    _item, _deps, report = engine_items.convert_item(sources, 2402)
     check(report.get("routed_non_item") is None, report)
 
 
@@ -1448,9 +1448,9 @@ def test_appearance_less_non_fluid_name_routes_no_client_appearance():
     # decision 2026-09-28 (task h) routes it WorldObject/no_client_appearance instead
     # of leaving it in `family_profile_unresolved` (the pinned client build simply has
     # no sprite for this id).
-    sources = synthetic_sources("crystal", {474: {"name": "bridge", "attrs": {}}})
-    check(474 not in sources["appearances"], "fixture must lack an appearance")
-    item, _deps, report = engine_items.convert_item(sources, 474)
+    sources = synthetic_sources("crystal", {2403: {"name": "bridge", "attrs": {}}})
+    check(2403 not in sources["appearances"], "fixture must lack an appearance")
+    item, _deps, report = engine_items.convert_item(sources, 2403)
     check(item is None, report)
     check(
         report["routed_non_item"]
@@ -2329,13 +2329,19 @@ def test_committed_wiki_fallback_snapshot_loads_fail_closed():
     resolved = engine_items.load_wiki_family_fallback(
         engine_items.WIKI_FAMILY_FALLBACK_PATH, engine_items.build_identity_index()
     )
-    # 1,482 pinned-engine records plus the 8 epoch-2 donor records appended by B2.
-    check(len(resolved) == 1490, len(resolved))
-    donor_keys = sorted(
-        key
-        for key in resolved
-        if int(key.rsplit("i", 1)[1]) >= 38094  # first epoch-2 sequence (B1b)
-    )
+    # 1,463 pinned-engine records (1,482 less 19 D149 records, ITEM-ID-1b) plus the 8
+    # epoch-2 donor records appended by B2.
+    check(len(resolved) == 1471, len(resolved))
+    donor_targets = {
+        binding["target"]["key"]
+        for binding in json.loads(
+            engine_items.ROOT.parents[2]
+            .joinpath("imports/crystalserver/bindings/items.json")
+            .read_text(encoding="utf-8")
+        )["bindings"]
+        if binding["source_revision"] == "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    }
+    donor_keys = sorted(key for key in resolved if key in donor_targets)
     check(len(donor_keys) == 8, donor_keys)
     check(
         all(resolved[key]["match_basis"] == "itemid" for key in donor_keys),
@@ -3483,9 +3489,9 @@ def test_owner_family_decisions_resolves_real_examples():
         for item_id, (key, _basis) in engine_items.build_identity_index().items()
     }
     cases = [
-        ("oteryn:item.registry.i00003909", "red chair", "decoration"),
-        ("oteryn:item.registry.i00004151", "slain ghoul", "trash"),
-        ("oteryn:item.registry.i00037988", "bottle of raubritter lager", "fluid"),
+        ("oteryn:item.tibia.i4054", "red chair", "decoration"),
+        ("oteryn:item.tibia.i4296", "slain ghoul", "trash"),
+        ("oteryn:item.tibia.i52745", "bottle of raubritter lager", "fluid"),
     ]
     for key, name, expected_profile in cases:
         check(key in decisions, f"{key} missing from the committed owner table")
@@ -3547,12 +3553,12 @@ def test_owner_family_decisions_never_outranks_wrap_target_or_dead_item():
     check(item["family_profile"] == "decoration", (item, report))
     check(item["family_profile_basis"] == "engine_wrap_target", item)
 
-    key = engine_items.build_identity_index()[467][0]
+    key = engine_items.build_identity_index()[1467][0]
     decisions = {key: owner_decision_entry("dead rat", "trash")}
     item, _deps, report = convert_with_owner_decisions(
-        {467: {"name": "dead rat", "attrs": {}, "flags": {"flags.take": True}}},
+        {1467: {"name": "dead rat", "attrs": {}, "flags": {"flags.take": True}}},
         decisions,
-        item_id=467,
+        item_id=1467,
     )
     check(item["family_profile"] == "material_valuable", (item, report))
     check(item["family_profile_evidence"]["rule"] == "take_able_dead_creature", item)
@@ -3696,7 +3702,8 @@ def test_committed_owner_family_decisions_loads_fail_closed():
     decisions = engine_items.load_owner_family_decisions(
         engine_items.OWNER_FAMILY_DECISIONS_PATH, valid_keys
     )
-    check(len(decisions) == 121, len(decisions))
+    # 121 leftover decisions (task #15) plus 14 Q13d rows with an engine binding (ITEM-ID-1b).
+    check(len(decisions) == 138, len(decisions))
     check(
         all(
             entry["profile"] in engine_items.PROFILE_ITEM_CLASS
@@ -3727,6 +3734,27 @@ def test_empty_client_object_routes_appearance_placeholder_slot():
         report,
     )
     check(report["blockers"] == [], report)
+
+
+def test_frost_cannon_routes_non_pickupable_blocking_prop():
+    # D165 27a: id 9132 is a quest-mechanism prop; it routes to WorldObject even though
+    # its client object carries flags that would otherwise resolve a family.
+    sources = synthetic_sources(
+        "crystal",
+        {9132: {"name": "frost cannon", "attrs": {}, "flags": {"flags.take": True}}},
+    )
+    item, _deps, report = engine_items.convert_item(sources, 9132)
+    check(item is None, report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "non_pickupable_blocking_prop"},
+        report,
+    )
+    check(report["blockers"] == [], report)
+    check(
+        engine_items.non_item_route(None, {}, {"flags.take": True}, 9133) is None,
+        "only the listed id routes",
+    )
 
 
 def test_empty_client_object_route_requires_zero_flags():

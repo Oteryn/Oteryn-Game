@@ -1,0 +1,16 @@
+{
+  "schema": "OTERYN_ACHIEVEMENT_OWNER_RESOLUTIONS/v1",
+  "decided": "2026-09-29",
+  "contract": "docs/architecture/OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1.md#22-source-precedence-for-population",
+  "overrides": {
+    "Hell Rider": {"points": 2, "basis": "Canary register_achievements.lua and GuildStats agree"},
+    "Sail Away!": {"premium": true, "basis": "the wiki displays an empty premium value as yes"},
+    "Sculptor Apprentice": {"premium": true, "basis": "wiki value Yes"},
+    "Smart Thinking": {"premium": true, "basis": "the wiki displays an empty premium value as yes"},
+    "Taskaholic": {"points": 7, "basis": "provisional: no source states the value; a sourced value is a new revision"},
+    "The More the Merrier": {"grade": 1, "points": 0, "retired": true, "basis": "cannot be earned since 2015; Canary grade 1, 0 points"}
+  },
+  "excluded": {
+    "Achievement 563": "no name, grade or points; inferred id 563?"
+  }
+}

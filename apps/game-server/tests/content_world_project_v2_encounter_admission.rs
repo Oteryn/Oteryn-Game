@@ -13,8 +13,8 @@ const ADD: &str = "oteryn:creature.greed";
 const PRESENTATION: &str = "oteryn:presentation.creature.shared";
 const BEHAVIOR: &str = "oteryn:behavior.creature.shared";
 const SUMMON: &str = "oteryn:ability.spell.hunger_summon";
-const VORTEX: &str = "oteryn:item.registry.i00023469";
-const OPEN_VORTEX: &str = "oteryn:item.registry.i00023470";
+const VORTEX: &str = "oteryn:item.tibia.i24296";
+const OPEN_VORTEX: &str = "oteryn:item.tibia.i24297";
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {

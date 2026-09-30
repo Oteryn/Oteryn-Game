@@ -1,0 +1,2178 @@
+{
+ "alias_name_screening": {
+  "alias_rows": 33972,
+  "categories": {
+   "OT_RANGE_NAME": 258,
+   "SOUL_CORE_MONSTER_LABEL": 9,
+   "STATE_OR_VARIANT_NAME": 26
+  },
+  "category_meaning": {
+   "OT_RANGE_NAME": "the OT row is a fromid..toid range that gives one name to adjacent CipSoft objects (for example 'weapon of carving' over 23223-23342, 'event item' over 31963-32008, 'simple arrow' over the 22043-22050 ammunition, 'hireling sex change rune' over 29948-29949); the CipSoft objects are the same class the OT attributes describe",
+   "SOUL_CORE_MONSTER_LABEL": "OT soul core rows with primarytype 'soul cores' whose monster label differs from CipSoft (for example 47779/47783 feversleep/terrorsleep swapped); the object is a soul core in both. Authored presentation names come from OT and are a content data-quality finding for the item-authoring lane, not an identity conflict",
+   "STATE_OR_VARIANT_NAME": "OT names a sibling state or variant of the same object (lit/unlit lamp, rolled-up carpet, bed part, wrap state, cake variant, soul core colour qualifier, spelling)"
+  },
+  "escalation": "not required",
+  "method": "every ALIAS row from Crystal ff7ede5 whose CipSoft 15.30 object has a name, compared after lowercasing, dropping a leading article and punctuation; each difference classified and the attribute evidence of the suspicious rows (ammo, soul cores, hireling scroll, probing device, keys, shields) checked against the CipSoft flags",
+  "note_on_count": "the review's 178 used a stricter substantive-difference filter; this screening covers the superset",
+  "repurposed_ids": [],
+  "rows": [
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "helmet of the ancients",
+    "id": 3230,
+    "ot_name": "full helmet of the ancients",
+    "retired_key": "oteryn:item.registry.i00003113"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "dead dog",
+    "id": 4283,
+    "ot_name": "pile of bones",
+    "retired_key": "oteryn:item.registry.i00004138"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "poem scroll",
+    "id": 5952,
+    "ot_name": "scroll",
+    "retired_key": "oteryn:item.registry.i00005791"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "golden Fafnar trophy",
+    "id": 9626,
+    "ot_name": "silver Fafnar trophy",
+    "retired_key": "oteryn:item.registry.i00009420"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "cake with a cherry",
+    "id": 12148,
+    "ot_name": "cake",
+    "retired_key": "oteryn:item.registry.i00011714"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "cake with a cherry",
+    "id": 12149,
+    "ot_name": "cake",
+    "retired_key": "oteryn:item.registry.i00011715"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "strange probing device",
+    "id": 21209,
+    "ot_name": "active probing device",
+    "retired_key": "oteryn:item.registry.i00020434"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "silver key",
+    "id": 21392,
+    "ot_name": "silver key (Key:0010)",
+    "retired_key": "oteryn:item.registry.i00020617"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "some broken shells",
+    "id": 21395,
+    "ot_name": "piece of a shell",
+    "retired_key": "oteryn:item.registry.i00020620"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "arrow",
+    "id": 22043,
+    "ot_name": "simple arrow",
+    "retired_key": "oteryn:item.registry.i00021260"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bolt",
+    "id": 22046,
+    "ot_name": "simple arrow",
+    "retired_key": "oteryn:item.registry.i00021263"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "power bolt",
+    "id": 22047,
+    "ot_name": "simple arrow",
+    "retired_key": "oteryn:item.registry.i00021264"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "sniper arrow",
+    "id": 22048,
+    "ot_name": "simple arrow",
+    "retired_key": "oteryn:item.registry.i00021265"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "piercing bolt",
+    "id": 22049,
+    "ot_name": "simple arrow",
+    "retired_key": "oteryn:item.registry.i00021266"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "ogre rune stone",
+    "id": 22667,
+    "ot_name": "ogre rune stones",
+    "retired_key": "oteryn:item.registry.i00021869"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of mayhem",
+    "id": 23223,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022422"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of mayhem",
+    "id": 23224,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022423"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of mayhem",
+    "id": 23225,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022424"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of mayhem",
+    "id": 23226,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022425"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of mayhem",
+    "id": 23227,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022426"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of mayhem",
+    "id": 23228,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022427"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of mayhem",
+    "id": 23229,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022428"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of mayhem",
+    "id": 23230,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022429"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of mayhem",
+    "id": 23231,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022430"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of mayhem",
+    "id": 23232,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022431"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of mayhem",
+    "id": 23233,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022432"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of mayhem",
+    "id": 23234,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022433"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of mayhem",
+    "id": 23235,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022434"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of mayhem",
+    "id": 23236,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022435"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of mayhem",
+    "id": 23237,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022436"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of mayhem",
+    "id": 23238,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022437"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of mayhem",
+    "id": 23239,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022438"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of mayhem",
+    "id": 23240,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022439"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of mayhem",
+    "id": 23241,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022440"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of mayhem",
+    "id": 23242,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022441"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of mayhem",
+    "id": 23243,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022442"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of mayhem",
+    "id": 23244,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022443"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of mayhem",
+    "id": 23245,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022444"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of mayhem",
+    "id": 23246,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022445"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of mayhem",
+    "id": 23247,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022446"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of mayhem",
+    "id": 23248,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022447"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of mayhem",
+    "id": 23249,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022448"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of mayhem",
+    "id": 23250,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022449"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of mayhem",
+    "id": 23251,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022450"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of mayhem",
+    "id": 23252,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022451"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of mayhem",
+    "id": 23253,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022452"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of mayhem",
+    "id": 23254,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022453"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of mayhem",
+    "id": 23255,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022454"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of mayhem",
+    "id": 23256,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022455"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of mayhem",
+    "id": 23257,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022456"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of mayhem",
+    "id": 23258,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022457"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of mayhem",
+    "id": 23259,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022458"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of mayhem",
+    "id": 23260,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022459"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of mayhem",
+    "id": 23261,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022460"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of mayhem",
+    "id": 23262,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022461"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of remedy",
+    "id": 23263,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022462"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of remedy",
+    "id": 23264,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022463"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of remedy",
+    "id": 23265,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022464"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of remedy",
+    "id": 23266,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022465"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of remedy",
+    "id": 23267,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022466"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of remedy",
+    "id": 23268,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022467"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of remedy",
+    "id": 23269,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022468"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of remedy",
+    "id": 23270,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022469"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of remedy",
+    "id": 23271,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022470"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of remedy",
+    "id": 23272,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022471"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of remedy",
+    "id": 23273,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022472"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of remedy",
+    "id": 23274,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022473"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of remedy",
+    "id": 23275,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022474"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of remedy",
+    "id": 23276,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022475"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of remedy",
+    "id": 23277,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022476"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of remedy",
+    "id": 23278,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022477"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of remedy",
+    "id": 23279,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022478"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of remedy",
+    "id": 23280,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022479"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of remedy",
+    "id": 23281,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022480"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of remedy",
+    "id": 23282,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022481"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of remedy",
+    "id": 23283,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022482"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of remedy",
+    "id": 23284,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022483"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of remedy",
+    "id": 23285,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022484"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of remedy",
+    "id": 23286,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022485"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of remedy",
+    "id": 23287,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022486"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of remedy",
+    "id": 23288,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022487"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of remedy",
+    "id": 23289,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022488"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of remedy",
+    "id": 23290,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022489"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of remedy",
+    "id": 23291,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022490"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of remedy",
+    "id": 23292,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022491"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of remedy",
+    "id": 23293,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022492"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of remedy",
+    "id": 23294,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022493"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of remedy",
+    "id": 23295,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022494"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of remedy",
+    "id": 23296,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022495"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of remedy",
+    "id": 23297,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022496"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of remedy",
+    "id": 23298,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022497"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of remedy",
+    "id": 23299,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022498"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of remedy",
+    "id": 23300,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022499"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of remedy",
+    "id": 23301,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022500"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of remedy",
+    "id": 23302,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022501"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of carving",
+    "id": 23303,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022502"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of carving",
+    "id": 23304,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022503"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of carving",
+    "id": 23305,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022504"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of carving",
+    "id": 23306,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022505"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of carving",
+    "id": 23307,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022506"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of carving",
+    "id": 23308,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022507"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of carving",
+    "id": 23309,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022508"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of carving",
+    "id": 23310,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022509"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of carving",
+    "id": 23311,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022510"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of carving",
+    "id": 23312,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022511"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of carving",
+    "id": 23313,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022512"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of carving",
+    "id": 23314,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022513"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of carving",
+    "id": 23315,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022514"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of carving",
+    "id": 23316,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022515"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of carving",
+    "id": 23317,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022516"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of carving",
+    "id": 23318,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022517"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of carving",
+    "id": 23319,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022518"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of carving",
+    "id": 23320,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022519"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of carving",
+    "id": 23321,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022520"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of carving",
+    "id": 23322,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022521"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of carving",
+    "id": 23323,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022522"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of carving",
+    "id": 23324,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022523"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of carving",
+    "id": 23325,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022524"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of carving",
+    "id": 23326,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022525"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of carving",
+    "id": 23327,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022526"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of carving",
+    "id": 23328,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022527"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of carving",
+    "id": 23329,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022528"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of carving",
+    "id": 23330,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022529"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of carving",
+    "id": 23331,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022530"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of carving",
+    "id": 23332,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022531"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of carving",
+    "id": 23333,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022532"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of carving",
+    "id": 23334,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022533"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of carving",
+    "id": 23335,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022534"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of carving",
+    "id": 23336,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022535"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of carving",
+    "id": 23337,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022536"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of carving",
+    "id": 23338,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022537"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of carving",
+    "id": 23339,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022538"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of carving",
+    "id": 23340,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022539"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of carving",
+    "id": 23341,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022540"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of carving",
+    "id": 23342,
+    "ot_name": "weapon of carving",
+    "retired_key": "oteryn:item.registry.i00022541"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of mayhem",
+    "id": 23577,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022765"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of mayhem",
+    "id": 23578,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022766"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of mayhem",
+    "id": 23579,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022767"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of mayhem",
+    "id": 23580,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022768"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of mayhem",
+    "id": 23581,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022769"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of mayhem",
+    "id": 23582,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022770"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of mayhem",
+    "id": 23583,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022771"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of mayhem",
+    "id": 23584,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022772"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of mayhem",
+    "id": 23585,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022773"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of mayhem",
+    "id": 23586,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022774"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of mayhem",
+    "id": 23587,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022775"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of mayhem",
+    "id": 23588,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022776"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of mayhem",
+    "id": 23589,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022777"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of mayhem",
+    "id": 23590,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022778"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of mayhem",
+    "id": 23591,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022779"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of mayhem",
+    "id": 23592,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022780"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of mayhem",
+    "id": 23593,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022781"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of mayhem",
+    "id": 23594,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022782"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of mayhem",
+    "id": 23595,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022783"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of remedy",
+    "id": 23596,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022784"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of mayhem",
+    "id": 23597,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022785"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of mayhem",
+    "id": 23598,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022786"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of remedy",
+    "id": 23599,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022787"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of remedy",
+    "id": 23600,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022788"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of remedy",
+    "id": 23601,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022789"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of remedy",
+    "id": 23602,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022790"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of remedy",
+    "id": 23604,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022792"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of carving",
+    "id": 23605,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022793"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of remedy",
+    "id": 23606,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022794"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of remedy",
+    "id": 23607,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022795"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of mayhem",
+    "id": 23608,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022796"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of carving",
+    "id": 23609,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022797"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of mayhem",
+    "id": 23610,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022798"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of remedy",
+    "id": 23611,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022799"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of mayhem",
+    "id": 23612,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022800"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of remedy",
+    "id": 23613,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022801"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "blade of carving",
+    "id": 23614,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022802"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of remedy",
+    "id": 23615,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022803"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of carving",
+    "id": 23616,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022804"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of remedy",
+    "id": 23617,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022805"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of carving",
+    "id": 23618,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022806"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of remedy",
+    "id": 23619,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022807"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of remedy",
+    "id": 23620,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022808"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "slayer of carving",
+    "id": 23621,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022809"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of remedy",
+    "id": 23622,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022810"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of remedy",
+    "id": 23623,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022811"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of carving",
+    "id": 23624,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022812"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of remedy",
+    "id": 23625,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022813"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of carving",
+    "id": 23626,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022814"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of remedy",
+    "id": 23627,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022815"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "axe of carving",
+    "id": 23628,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022816"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of remedy",
+    "id": 23629,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022817"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of remedy",
+    "id": 23630,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022818"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of carving",
+    "id": 23631,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022819"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of remedy",
+    "id": 23632,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022820"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of remedy",
+    "id": 23633,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022821"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of carving",
+    "id": 23634,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022822"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of remedy",
+    "id": 23635,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022823"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of remedy",
+    "id": 23636,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022824"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "chopper of carving",
+    "id": 23637,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022825"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of remedy",
+    "id": 23638,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022826"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of remedy",
+    "id": 23639,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022827"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of carving",
+    "id": 23640,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022828"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of remedy",
+    "id": 23641,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022829"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of carving",
+    "id": 23642,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022830"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of remedy",
+    "id": 23643,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022831"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mace of carving",
+    "id": 23644,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022832"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of remedy",
+    "id": 23645,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022833"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of remedy",
+    "id": 23646,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022834"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of carving",
+    "id": 23647,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022835"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of carving",
+    "id": 23648,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022836"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hammer of carving",
+    "id": 23649,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022837"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of carving",
+    "id": 23650,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022838"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of carving",
+    "id": 23651,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022839"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bow of carving",
+    "id": 23652,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022840"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of carving",
+    "id": 23653,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022841"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of carving",
+    "id": 23654,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022842"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "crossbow of carving",
+    "id": 23655,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022843"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of carving",
+    "id": 23656,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022844"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of carving",
+    "id": 23657,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022845"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of carving",
+    "id": 23658,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022846"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of carving",
+    "id": 23659,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022847"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of carving",
+    "id": 23660,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022848"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of carving",
+    "id": 23661,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022849"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of mayhem",
+    "id": 23662,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022850"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of mayhem",
+    "id": 23663,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022851"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "wand of mayhem",
+    "id": 23664,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022852"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of mayhem",
+    "id": 23665,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022853"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of mayhem",
+    "id": 23666,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022854"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rod of mayhem",
+    "id": 23667,
+    "ot_name": "weapon of mayhem",
+    "retired_key": "oteryn:item.registry.i00022855"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "lit vengothic lamp",
+    "id": 25210,
+    "ot_name": "vengothic lamp",
+    "retired_key": "oteryn:item.registry.i00024372"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "lit vengothic lamp",
+    "id": 25211,
+    "ot_name": "vengothic lamp",
+    "retired_key": "oteryn:item.registry.i00024373"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "wooden planks",
+    "id": 26122,
+    "ot_name": "pile of wooden planks",
+    "retired_key": "oteryn:item.registry.i00025266"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "pile of wooden planks",
+    "id": 26123,
+    "ot_name": "wooden planks",
+    "retired_key": "oteryn:item.registry.i00025267"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rolled-up crested carpet",
+    "id": 26152,
+    "ot_name": "crested carpet",
+    "retired_key": "oteryn:item.registry.i00025296"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rolled-up decorated carpet",
+    "id": 26154,
+    "ot_name": "decorated carpet",
+    "retired_key": "oteryn:item.registry.i00025298"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "useless piece of shield",
+    "id": 26947,
+    "ot_name": "Journal Shield",
+    "retired_key": "oteryn:item.registry.i00026090"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "intermediate state",
+    "id": 27267,
+    "ot_name": "forged glowing key",
+    "retired_key": "oteryn:item.registry.i00026409"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "fluorescent fungi",
+    "id": 28920,
+    "ot_name": "luminescent fungi",
+    "retired_key": "oteryn:item.registry.i00028039"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "fluorescent fungi",
+    "id": 28921,
+    "ot_name": "luminescent fungi",
+    "retired_key": "oteryn:item.registry.i00028040"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "glowing sulphur fungi",
+    "id": 28924,
+    "ot_name": "gloomy poisonous fungi",
+    "retired_key": "oteryn:item.registry.i00028043"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "glowing sulphur fungi",
+    "id": 28925,
+    "ot_name": "gloomy poisonous fungi",
+    "retired_key": "oteryn:item.registry.i00028044"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "hireling name change scroll",
+    "id": 29948,
+    "ot_name": "hireling sex change rune",
+    "retired_key": "oteryn:item.registry.i00029067"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "tournament carpet",
+    "id": 31466,
+    "ot_name": "rolled-up tournament carpet",
+    "retired_key": "oteryn:item.registry.i00030440"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "sublime tournament carpet",
+    "id": 31467,
+    "ot_name": "rolled-up sublime tournament carpet",
+    "retired_key": "oteryn:item.registry.i00030441"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "spicy frog",
+    "id": 31964,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030936"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "mango",
+    "id": 31966,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030938"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "smelly slime",
+    "id": 31968,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030940"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bone",
+    "id": 31970,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030942"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "fish",
+    "id": 31972,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030944"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bulb of garlic",
+    "id": 31974,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030946"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bottle of vinegar",
+    "id": 31976,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030948"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "flour",
+    "id": 31978,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030950"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "ham",
+    "id": 31980,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030952"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "red mushroom",
+    "id": 31982,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030954"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "raven herb",
+    "id": 31984,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030956"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "peanut",
+    "id": 31986,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030958"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "cheese",
+    "id": 31988,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030960"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "egg",
+    "id": 31990,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030962"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "tomato",
+    "id": 31992,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030964"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "banana",
+    "id": 31994,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030966"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "haunch of boar",
+    "id": 31996,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030968"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "peas",
+    "id": 31998,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030970"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "worn leather boots",
+    "id": 32000,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030972"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "some pieces of wood",
+    "id": 32002,
+    "ot_name": "event item",
+    "retired_key": "oteryn:item.registry.i00030974"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "potato peelings",
+    "id": 32026,
+    "ot_name": "addled egg",
+    "retired_key": "oteryn:item.registry.i00030998"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "old meat",
+    "id": 32027,
+    "ot_name": "addled egg",
+    "retired_key": "oteryn:item.registry.i00030999"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "flaccid salad",
+    "id": 32028,
+    "ot_name": "addled egg",
+    "retired_key": "oteryn:item.registry.i00031000"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "rotten tomatoes",
+    "id": 32029,
+    "ot_name": "addled egg",
+    "retired_key": "oteryn:item.registry.i00031001"
+   },
+   {
+    "category": "OT_RANGE_NAME",
+    "cipsoft_name": "bread crust",
+    "id": 32030,
+    "ot_name": "addled egg",
+    "retired_key": "oteryn:item.registry.i00031002"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "bone bed",
+    "id": 32795,
+    "ot_name": "bone headboard",
+    "retired_key": "oteryn:item.registry.i00031762"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "bone bed",
+    "id": 32796,
+    "ot_name": "bone footboard",
+    "retired_key": "oteryn:item.registry.i00031763"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "bone bed",
+    "id": 32797,
+    "ot_name": "bone headboard",
+    "retired_key": "oteryn:item.registry.i00031764"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "bone bed",
+    "id": 32798,
+    "ot_name": "bone footboard",
+    "retired_key": "oteryn:item.registry.i00031765"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "replacement marble",
+    "id": 36545,
+    "ot_name": "marble floor",
+    "retired_key": "oteryn:item.registry.i00033128"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "opulent wooden floor",
+    "id": 42337,
+    "ot_name": "opulent wood floor",
+    "retired_key": "oteryn:item.registry.i00035868"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "opulent kline bed",
+    "id": 42352,
+    "ot_name": "opulent kline",
+    "retired_key": "oteryn:item.registry.i00035883"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "crystallised blood",
+    "id": 44752,
+    "ot_name": "crystallized blood",
+    "retired_key": "oteryn:item.registry.i00036186"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "butterfly soul core",
+    "id": 47490,
+    "ot_name": "butterfly soul core (purple)",
+    "retired_key": "oteryn:item.registry.i00036355"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "butterfly soul core",
+    "id": 47503,
+    "ot_name": "butterfly soul core (blue)",
+    "retired_key": "oteryn:item.registry.i00036368"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "butterfly soul core",
+    "id": 47504,
+    "ot_name": "butterfly soul core (red)",
+    "retired_key": "oteryn:item.registry.i00036369"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "nomad soul core",
+    "id": 47558,
+    "ot_name": "nomad soul core (basic)",
+    "retired_key": "oteryn:item.registry.i00036423"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "undead gladiator soul core",
+    "id": 47621,
+    "ot_name": "undead guardian soul core",
+    "retired_key": "oteryn:item.registry.i00036475"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "vampire viscount soul core",
+    "id": 47758,
+    "ot_name": "vampire count soul core",
+    "retired_key": "oteryn:item.registry.i00036592"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "terrorsleep soul core",
+    "id": 47779,
+    "ot_name": "feversleep soul core",
+    "retired_key": "oteryn:item.registry.i00036613"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "feversleep soul core",
+    "id": 47783,
+    "ot_name": "terrorsleep soul core",
+    "retired_key": "oteryn:item.registry.i00036616"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "werelion soul core",
+    "id": 47976,
+    "ot_name": "werelion shaman soul core",
+    "retired_key": "oteryn:item.registry.i00036776"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "werelioness soul core",
+    "id": 47977,
+    "ot_name": "werelioness shaman soul core",
+    "retired_key": "oteryn:item.registry.i00036777"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "usurper knight soul core",
+    "id": 47978,
+    "ot_name": "lion knight soul core",
+    "retired_key": "oteryn:item.registry.i00036778"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "usurper archer soul core",
+    "id": 47979,
+    "ot_name": "lion paladin soul core",
+    "retired_key": "oteryn:item.registry.i00036779"
+   },
+   {
+    "category": "SOUL_CORE_MONSTER_LABEL",
+    "cipsoft_name": "two-headed turtle soul core",
+    "id": 48034,
+    "ot_name": "two-head turtle soul core",
+    "retired_key": "oteryn:item.registry.i00036807"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "horse soul core",
+    "id": 48961,
+    "ot_name": "horse soul core (taupe)",
+    "retired_key": "oteryn:item.registry.i00036993"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "horse soul core",
+    "id": 48962,
+    "ot_name": "horse soul core (brown)",
+    "retired_key": "oteryn:item.registry.i00036994"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "horse soul core",
+    "id": 48963,
+    "ot_name": "horse soul core (gray)",
+    "retired_key": "oteryn:item.registry.i00036995"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "nomad soul core",
+    "id": 48965,
+    "ot_name": "nomad soul core (blue)",
+    "retired_key": "oteryn:item.registry.i00036997"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "nomad soul core",
+    "id": 48966,
+    "ot_name": "nomad soul core (female)",
+    "retired_key": "oteryn:item.registry.i00036998"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "white lion soul core",
+    "id": 49038,
+    "ot_name": "white lion",
+    "retired_key": "oteryn:item.registry.i00037070"
+   },
+   {
+    "category": "STATE_OR_VARIANT_NAME",
+    "cipsoft_name": "voodoo carpet",
+    "id": 51222,
+    "ot_name": "rolled-up voodoo carpet",
+    "retired_key": "oteryn:item.registry.i00037664"
+   }
+  ],
+  "rows_name_differs": 293,
+  "rows_same_name": 7841,
+  "rows_without_cipsoft_name": 25434,
+  "rule": "A12 §4.2: a different OT name alone does not block EXACT; an OT row that describes a different item than its id's CipSoft record (repurposed id) is CONFLICT"
+ },
+ "d149_gate": {
+  "escalation": "not required",
+  "named_records": {
+   "count": 201,
+   "definition": "D149 tombstones whose authored definition has presentation KNOWN (a name)"
+  },
+  "records_with_known_fields_beyond_name": [
+   {
+    "basis": "the CipSoft 15.30 objects 28525 and 28526 are named 'magic gold converter' and are current keys; 12699 is an OT duplicate id",
+    "id": 12699,
+    "known": [
+     "charges",
+     "presentation"
+    ],
+    "name": "magic gold converter",
+    "verdict": "SUCCESSOR_EXISTS"
+   },
+   {
+    "basis": "no appearance in any admitted CipSoft file, no current id with this name in CipSoft or OT names, no TibiaWiki page 'Crystal Bolt' (fandom API missingtitle, 2026-09-29); attack 36 is OT-authored",
+    "id": 15792,
+    "known": [
+     "presentation",
+     "weapon"
+    ],
+    "name": "crystal bolt",
+    "verdict": "OT_ONLY_REMOVE"
+   },
+   {
+    "basis": "TibiaWiki 'Purse': status deprecated, empty itemid, not pickupable; it held premium scrolls until 10.8. No current CipSoft object is named purse",
+    "id": 16087,
+    "known": [
+     "container",
+     "presentation"
+    ],
+    "name": "purse",
+    "verdict": "DEPRECATED_IN_TIBIA_REMOVE"
+   }
+  ],
+  "same_name_on_current_id": [
+   {
+    "matches": 199,
+    "misses": [
+     15792,
+     16087
+    ],
+    "name_source": "authored presentation names of ALIAS records (= Crystal items.xml names of current ids)"
+   },
+   {
+    "matches": 184,
+    "misses": [
+     13595,
+     15351,
+     15352,
+     15353,
+     15354,
+     15390,
+     15391,
+     15792,
+     16087,
+     20033,
+     20034,
+     20037,
+     20038,
+     20040,
+     20042,
+     20196,
+     28143
+    ],
+    "name_source": "CipSoft 15.30 object names (8,978 of 43,516 objects carry one)"
+   }
+  ],
+  "semantics_lost": "none: every removed definition, including these three, is kept byte-exact in the tombstone archive; no content or apps ref names a D149 key",
+  "statement": "1a's 199/201 used the authored (OT) names of current ids; the independent review's 184/201 used CipSoft 15.30 names. Both reproduce. Neither count is a gate input: D149 removes a record because its id is in no admitted CipSoft file."
+ },
+ "decision": "A12-ITEM-IDENTITY-TIBIA-ID-V1",
+ "inputs": {
+  "alias_table": {
+   "path": "content/items/aliases.json",
+   "sha256": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2"
+  },
+  "cipsoft_names": {
+   "objects": 43516,
+   "objects_with_name": 8978,
+   "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat"
+  },
+  "ot_names": {
+   "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+   "source": "zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a:data/items/items.xml"
+  },
+  "tombstones": {
+   "path": "docs/agents/evidence/OTV2-20260929-item-id-1-d149-tombstones.json",
+   "sha256": "9e2dac1cdc231e792c7f69811e3998e4240c81f5440c4956e53d210fa996030d"
+  }
+ },
+ "named_keys": {
+  "a12_count": 64,
+  "count": 65,
+  "reconciliation": "A12 D147 counts the 64 protected semantic keys of the CW2-B1 native batch (NATIVE_ITEM_BATCH in cw2_b1_import.rs). R7-P04 later renamed registry i00002921 to oteryn:item.currency.gold_coin, the 65th named key. Both historical keys of Crystal 3031 alias to oteryn:item.tibia.i3031; the alias verifier allowlists exactly that pair"
+ },
+ "schema": "OTERYN_ITEM_ID_1B_IDENTITY_SCREENING/v1",
+ "slice": "ITEM-ID-1b",
+ "task_id": "OTV2-20260929-item-id-1-tibia-id-keys"
+}
