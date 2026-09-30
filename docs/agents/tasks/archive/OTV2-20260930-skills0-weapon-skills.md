@@ -84,6 +84,7 @@ No code, migration or content change is made.
   no skill wire; multi-level receipts).
 - Its two owner questions were architect applications of owner rule 5905825574 and D58, and are
   recorded as architect decisions (§3.3, §3.6).
+- Control-plane rule (#162 5912405163): the A13 pointer reads "pending on acceptance of SKILLS-0".
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

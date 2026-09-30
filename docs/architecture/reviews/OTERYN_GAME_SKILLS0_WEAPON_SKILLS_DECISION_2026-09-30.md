@@ -8,7 +8,7 @@
   and ATTACK-0 needs skill values
 - Amends: A13 (`OTERYN_GAME_A13_CHARACTER_BUILD_STATE_DECISION_2026-09-29.md`) §4.1, §4.2, §4.4,
   §4.5, §4.6 and §5, by extending build state from magic level to all eight Tibia skills (in this PR, a
-  pointer paragraph in A13)
+  pointer paragraph in A13, written pending on acceptance of SKILLS-0, #162 5912405163)
 - Builds on: A13 (D150, D151), DEATH-0 §3.1, DUR-02 rule 2, GAME-CHAR-01 Stage B (the eight skill
   categories), ATTACK-0, owner rule 5905825574
 - Runtime, migration and production authority: NONE.
