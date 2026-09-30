@@ -5,8 +5,10 @@
   protocol, security and privacy) and protected integration. It builds on DEPOT-0, MARKET-0
   (`CharacterInbox`), HOUSE-OWN-0, CHAT-0, ITEM-MOVE-WIRE-0 and -1 and MAP-WIRE-1, and integrates
   after them. Owner questions Q1 to Q3 (§14) are answered (2026-09-30, #162): system letters are
-  delivered (Q1a); a junior sends and receives letters only, no parcels (Q2b); a parcel addressed
-  to a junior returns `UNKNOWN_RECIPIENT` (Q3a).
+  delivered (Q1a); a junior sends and receives letters only, no parcels (Q2b). The owner's
+  recipient-feedback decision (2026-09-30, #162) supersedes Q3a: a parcel addressed to a junior
+  returns `RECIPIENT_CANNOT_RECEIVE_PARCELS`, a name that does not exist on the World returns
+  `UNKNOWN_RECIPIENT`, and a refused item always stays with the sender.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to build the mail system now, with full Tibia Global parity
   (2026-09-30); HOUSE-OWN-0 §5's "shown on login until a mail system exists"
@@ -96,6 +98,13 @@ system messages reach a player?
   + 1 (stamped), keeping a letter's text, writer and date (`mailbox.cpp:91-116`). An online
   recipient next to a depot sees "New mail has arrived." (`player.cpp:1589-1593`).
 - A label holds 79 characters, a letter 1,999 (`items.xml:10974-10989`).
+- An invalid or unknown name (Canary `main` and Crystal Server `zimbadev/crystalserver` `main`,
+  both read 2026-09-30, `src/items/containers/mailbox/mailbox.cpp`): the item is first placed on
+  the mailbox tile, whose add notification passes it to `Mailbox::addThing` (Canary
+  `tile.cpp:1695-1699`); `addThing` calls `sendItem` and ignores its result. `sendItem` returns `false` when no receiver line is found or when
+  `getPlayerByName` finds no player (Canary `:74-118`, Crystal `:83-127`), so the item stays on
+  the mailbox tile and the sender gets no message. Both servers are identical here, and they match
+  the manual's "reappear on the mailbox".
 
 ## 3. Items and mailboxes (MAIL-CONTENT-1)
 
@@ -151,15 +160,20 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   line is ignored: under 2b every town opens the same Inbox. A second line is never checked.
 - **Refused, writing nothing** (the item stays in the backpack):
   - no text or an empty first line: `NO_ADDRESS`;
-  - an unknown name, a name of another World, or a recipient failing §6's root check:
-    `UNKNOWN_RECIPIENT`, one answer for all, so a reply never reveals where a name exists (CHAT-0's
-    rule);
+  - no character of that name on the sender's World (an unknown name, a name of another World, or
+    a recipient failing §6's root check): `UNKNOWN_RECIPIENT`. The sender is always told (owner
+    decision, 2026-09-30, #162), for letters and parcels alike; the client shows it as a message. A
+    name of another World is unknown on this World, so the reply never says whether it exists
+    elsewhere;
+  - a parcel to a junior recipient: `RECIPIENT_CANNOT_RECEIVE_PARCELS` (§7);
   - not an unstamped letter or parcel, a corpse or Ground source, or an equipped item:
     `NOT_MAILABLE`;
   - a recipient Inbox at the mail ceiling (§8): `RECIPIENT_INBOX_FULL`;
   - above the posting rate (§8): `EXHAUSTED`.
-  Tibia drops a misaddressed item on the mailbox tile; keeping it in the backpack is a declared
-  difference (`PARITY_PENDING`) that creates no Ground item.
+  Tibia, Canary and Crystal leave a misaddressed item on the mailbox tile with no message (§2).
+  Refusing with a result while the item stays in the backpack is an owner-decided
+  `INTENTIONAL_DIFFERENCE` from Global (2026-09-30, #162), not a pending parity item; it also
+  creates no Ground item.
 - **Allowed recipients.** Any character of the World: oneself, another character of the same
   Account, offline characters, characters on another channel. Mail moves no bank value, so
   BANK-0 §4.3's same-Account refusal does not apply. A junior character (BANK-0 §4.4) sends and
@@ -216,10 +230,12 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   empty; its first line resolves as in §5. No such label is `NO_ADDRESS`.
 - **Juniors** (owner Q2b). A junior character (BANK-0 §4.4) neither posts nor receives a parcel.
   A junior sender's parcel is refused as `NOT_MAILABLE`; a parcel addressed to a junior recipient
-  is refused, checked under §6's recipient root lock. Either refusal writes nothing and the parcel
-  stays in the backpack. The sender of a parcel to a junior recipient sees `UNKNOWN_RECIPIENT`
-  (owner Q3a, §14), so the reply never reveals that the character is a junior.
-  Juniors still receive letters and system letters.
+  is refused as `RECIPIENT_CANNOT_RECEIVE_PARCELS`, checked under §6's recipient root lock. Either
+  refusal writes nothing and the parcel stays in the backpack. The result names no reason. It does
+  tell the sender that the name exists on the World and cannot receive parcels; since juniors are
+  its only case, a sender can infer junior status (as a delivered letter to the same name already
+  shows that the name exists). The owner accepted this disclosure (2026-09-30, #162, superseding
+  Q3a, §14). Juniors still receive letters and system letters.
 - **Shape.** One TRANSFER of the parcel root from the backpack entry to a new Inbox entry, and the
   stamp TRANSFORM of the root. The children keep their `Container {parent}` location (DUR-03 §10);
   they are locked and checked but not moved. The operation records the tree: its item count and a
@@ -248,8 +264,9 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   type and one state domain are reserved on #162 at allocation. Without it, a mailbox handle is not
   a destination and USE on a letter is `NOTHING_TO_USE`.
 - **Command 9** gains `MAILBOX {map_item_handle}`. Results: `OK`, `NO_ADDRESS`,
-  `UNKNOWN_RECIPIENT`, `RECIPIENT_INBOX_FULL`, `NOT_MAILABLE`, `EXHAUSTED`, plus the existing ones
-  (`TOO_FAR`, `BLOCKED`, `STALE`). At most 4 bytes.
+  `UNKNOWN_RECIPIENT`, `RECIPIENT_CANNOT_RECEIVE_PARCELS`, `RECIPIENT_INBOX_FULL`, `NOT_MAILABLE`,
+  `EXHAUSTED`, plus the existing ones (`TOO_FAR`, `BLOCKED`, `STALE`). At most 4 bytes. The client
+  shows every refusal to the sender as a message.
 - **Text view.** USE field 2 on a letter, label or stamped letter the session reaches opens it as a
   non-durable view in the new domain `ITEM_TEXT`: handle, text, `max_characters`, writable, writer
   name (the current name, never the CharacterId) and time. One text view at a time; it closes like
@@ -311,8 +328,9 @@ MAIL-1 against the audit envelope before implementation.
 - **A mail custody family between mailbox and Inbox.** One transaction moves the item; DUR-03 §34
   is not needed.
 - **Reading the town line.** Under 2b every town opens one Inbox; the town cannot misroute mail.
-- **Dropping a misaddressed item on the mailbox tile.** It creates a Ground item and a D191
-  retirement for a typo; keeping it in the backpack is safer.
+- **Dropping a misaddressed item on the mailbox tile.** The owner rejected it (2026-09-30, #162):
+  the sender is told and keeps the item. It would also create a Ground item and a D191 retirement
+  for a typo.
 - **Flattening a parcel into loose Inbox entries.** The recipient would lose the parcel Tibia
   shows, and a parcel of 10 would take 11 entries.
 - **A parcel-only nesting path before BAGS-0.** It would be a second, narrower bags design.
@@ -328,7 +346,10 @@ decision:
   only address; stamping, so a received parcel is repacked; the 79 and 1,999 character texts; the
   last writer and time shown; mail to oneself and to the same Account; the "New mail has arrived."
   notice next to a depot; the rent warning letter in the Inbox.
-- **Declared differences** (`PARITY_PENDING`): a misaddressed item stays in the backpack; parcels
+- **Owner-decided difference** (`INTENTIONAL_DIFFERENCE`, 2026-09-30, #162): a misaddressed or
+  refused item stays in the backpack and the sender sees the result (§5), where Global leaves it on
+  the mailbox tile without a message.
+- **Declared differences** (`PARITY_PENDING`): parcels
   hold at most 10 children without contents; the 1 per second posting rate; the 50,000 mail
   ceiling; posting only from backpack direct entries; juniors send and receive letters only (owner
   Q2b).
@@ -348,15 +369,20 @@ as in Tibia (recommended); b) letters only, no parcels; c) no mail until it leav
 Owner answer (2026-09-30, #162): b — a junior on the starting island sends and receives letters
 only, no parcels (§5, §7).
 
-**Q3 (answered). What does the sender see when a parcel is addressed to a junior?** Q2b refuses it
+**Q3 (owner-superseded). What does the sender see when a parcel is addressed to a junior?** Q2b refuses it
 (§7). A distinct result tells any player that the named character is a junior; `UNKNOWN_RECIPIENT`
 hides it but tells the sender that the name does not exist, while a letter to the same name is
 delivered. a) `UNKNOWN_RECIPIENT`, as CHAT-0 hides where a name exists; b) a new result
 `RECIPIENT_CANNOT_RECEIVE_PARCELS`. The refusal itself does not wait on Q3; MAIL-WIRE-1 registers
 the answer.
 
-Owner answer (2026-09-30, #162): a — `UNKNOWN_RECIPIENT`; junior status stays hidden (§7). No new
-result is registered.
+Owner answer (2026-09-30, #162): a — `UNKNOWN_RECIPIENT`; junior status stays hidden (§7).
+
+Superseded by the owner's recipient-feedback decision (2026-09-30, #162), after review showed that
+a letter to the same name reveals what `UNKNOWN_RECIPIENT` was meant to hide: b —
+`RECIPIENT_CANNOT_RECEIVE_PARCELS`, naming no reason, and the parcel stays with the sender (§7).
+`UNKNOWN_RECIPIENT` means only that no character of that name exists on the sender's World and is
+always shown (§5). MAIL-WIRE-1 registers both results.
 
 ## 15. Decision test
 
