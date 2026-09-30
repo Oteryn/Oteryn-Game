@@ -40,8 +40,8 @@ packet (architect ruling on #162, 5909181928, answer 1a).
   (conversation) and 8 (trade window), all runtime-local.
 - **Value.** BUY, SELL and travel reuse the gold fee plan (D174-D177) with closed causes, one
   transaction and one Character receipt each. Travel records a durable destination.
-- **DUR-03 amendment.** §15 and §39.3, effective with the owner decision on NPC value sources
-  (D178).
+- **DUR-03 amendment.** §15 and §39.3. The owner admitted NPC value sources (Q1a, "tak a",
+  2026-09-30), as D178 requires.
 - **Children.** NPC-CONTENT-1, NPC-WIRE-1, NPC-TALK-1, NPC-TRADE-1, NPC-TRAVEL-1.
 
 No code, migration or content change is made.
@@ -61,7 +61,7 @@ needs protocol review.
 ## Acceptance criteria
 
 - [x] Decision and DUR-03 amendment on an exact frozen head with passing validators.
-- [ ] Owner answer on NPC value sources (decision §9, D178).
+- [x] Owner answer on NPC value sources (decision §9, D178): Q1a.
 - [ ] Independent exact-head review (persistence and protocol).
 - [ ] Protected Merge Queue integration.
 
@@ -84,7 +84,7 @@ needs protocol review.
 last_progress: final authoring commit; archived before freeze
 status: completed
 branch: claude/laughing-goldberg-4gwjfq
-owner_action_required: "decision §9 Q1 (NPC value sources, D178)"
+owner_action_required: null
 blocker: null
 next_action: null
 ```

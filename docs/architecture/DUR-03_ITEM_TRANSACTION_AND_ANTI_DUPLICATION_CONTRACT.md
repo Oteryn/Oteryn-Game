@@ -1248,8 +1248,8 @@ authority, conservation) is unchanged.
 
 **NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
 (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes
-built on the gold fee amendment above. It takes effect only with the owner decision on NPC value
-sources required by D178 (decision §9). Every other §39 obligation is unchanged.
+built on the gold fee amendment above. The owner admitted NPC buying, selling and travel as value
+sources on 2026-09-30 (decision §9, Q1a), as D178 requires. Every other §39 obligation is unchanged.
 
 - **BUY.** The gold fee plan with `F = unit price x quantity` under
   `FeeBurnCause::NpcBuy {npc, offer, occurrence}`, plus one MINT of the bought item (one stack, or

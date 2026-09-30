@@ -1,7 +1,7 @@
 # NPC-0 NPC runtime service (talk, trade, travel)
 
 - Decision: `NPC0-NPC-RUNTIME-SERVICE-V1`
-- Status: **CANDIDATE**. Acceptance needs owner answer Q1 (§9), exact-head validation,
+- Status: **CANDIDATE**. Owner answer Q1a given (§9). Acceptance needs exact-head validation,
   independent review (persistence and protocol) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the NPC lane question packet (architect ruling on #162, 5909181928, answer 1a)
@@ -205,9 +205,13 @@ D178 requires an owner decision for every new fee source. This decision adds thr
 - **b)** Only buying and travel now; selling later.
 - **c)** None now; NPCs talk and show the trade window only.
 
+**Owner answer (2026-09-30, given directly in the architect session):** "tak a". Q1a: NPC
+buying, selling and travel are admitted as value sources (D178 satisfied). The control plane
+assigns the D-number.
+
 ## 10. Before-freeze checklist
 
-1. **Contract amendments:** DUR-03 §15 and §39.3 are amended in this PR, effective with Q1a.
+1. **Contract amendments:** DUR-03 §15 and §39.3 are amended in this PR (owner answer Q1a).
 2. **Serialization:** the Character writer's fence and `character_root` lock per transaction.
 3. **Restart:** conversation state is runtime-local; value and travel destination are durable
    receipts.
