@@ -1576,14 +1576,21 @@ Once accepted, in its NPC-QUEST-1 child:
   (§11.1, §11.5), the claim's MINT lines and its `RewardClaim` row (D42) when the node rewards, and
   one quest obligation row. Every check precedes every write: it is refused with nothing written
   when an item is missing, the claim is not allowed, or any QUEST-STATE-0 §4 validation of the
-  transition fails (`STAGE_MISMATCH`, `REVISION_MISMATCH`, `OUT_OF_RANGE`, `NOT_SUPPORTED`).
+  transition fails (`STAGE_MISMATCH`, `REVISION_MISMATCH`, `OUT_OF_RANGE`, `NOT_SUPPORTED`), or
+  the character already holds 64 pending quest obligations (`OBLIGATIONS_FULL`). An exchange always
+  names a transition.
 - **Gold hand-in** (owner Q1b). An exchange that takes gold is also a fee under the
   `FeeBurnCause` variant `QuestExchange(QuestExchangeCause)`, an item-only fee source in the same
   transaction: coins first, then the bank part of the bank fee amendment above (one `FEE_DEBIT`
   value line, `DUR03-RL-03-FEE`), refused with nothing written on insufficient funds or a junior
   payer whose coins are short.
-- **Supersession.** For these shapes only, the §39.1 exclusions of burn and multiple touched items.
-  Every other §39 obligation is unchanged; its rows are suffixed `-QUEST-EXCHANGE`.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn, of multiple touched items
+  and of a MINT committed with other lines: the rewarded exchange commits the claim's MINT lines
+  together with the BURN lines, the `RewardClaim` row and the quest obligation row in one
+  transaction, with one audit aggregate (one event, one cause record) covering all its lines. The
+  MINT admission is bounded to the named claim's declared items, and the lines are never
+  independent of the BURN lines. Every other §39 obligation is unchanged; its rows are suffixed
+  `-QUEST-EXCHANGE`.
 
 ## 40. Durable acknowledgement
 

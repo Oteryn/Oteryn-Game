@@ -90,6 +90,10 @@ No code, migration or content change is made.
   as provenance, and content requires `1 <= n <= QUESTGATE0-RL-05` (§5.5). Validators re-run PASS
   on the repaired tree.
 - Codex round 3 (#1401, 1 P1, 2 P2): dialogue node predicates revalidated under `character_root` in the value transaction (§5.1); tracker tracks quest lines, missions derived (§7, RL-06); pending XP cap RL-10 enforced before the transition with `OUT_OF_RANGE` (§5.5). Validators re-run PASS.
+- Codex round 4 (#1401, 2 P1, 3 P2): DUR-03 supersession admits the rewarded-exchange MINT with BURN
+  and its audit aggregate; relocation children are not trigger roots (no cascade); exchange
+  preflight checks RL-07 (`OBLIGATIONS_FULL`); active quests render from their pinned revision
+  (§7); exchange nodes must declare a transition (§5.2). Validators re-run PASS.
 - Owner answers applied (2026-09-30, #162): Q1b (§5.4 gold hand-in, coins then bank, rows §9) and
   Q2a (§7 journal text 1:1); the DUR-03 §39.3 quest exchange paragraph names the gold hand-in.
   Validators re-run PASS.

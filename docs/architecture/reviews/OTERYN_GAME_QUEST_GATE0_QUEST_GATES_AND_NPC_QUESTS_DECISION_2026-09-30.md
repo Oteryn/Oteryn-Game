@@ -167,9 +167,13 @@ declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated 
   still authorize it (§7), else it is `REJECTED`. Nested cascades and every other child kind stay
   `PROPOSED / NONCANONICAL`.
 - **Roots.** `USE`: the `USE_INTENT` CommandRef. `ON_ENTER` and `ON_LEAVE`: the occurrence that
-  moved the character, which is its own move command, another player's push command or a D37
-  relocation child. A move with no such root (an admission placement) fires nothing (successor
-  §18: no ad hoc identity).
+  moved the character, which is its own move command or another player's push command. A move
+  with no such root fires nothing (successor §18: no ad hoc identity): an admission placement and,
+  by architect ruling (fail closed), the landing of a D37 relocation child. A relocation child
+  is never a trigger root, so there is no relocation-to-trigger cascade and nested cascades
+  stay `PROPOSED / NONCANONICAL`; content validation still checks the target tile, and a
+  destination that carries `ON_ENTER` is a declared v1 difference (the trigger stays silent on a
+  relocation landing).
 - **Quest child.** `request_transition(fence, character, transition_key, cause)` with the child
   occurrence as cause (QUEST-STATE-0 §4). Several quest children request their transitions in the
   successor's canonical child order (§6.1) within one sequencer slot.
@@ -180,10 +184,10 @@ declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated 
 - **Items.** An interaction hands out items only through a `RewardClaim` (the CHEST-1 path, D40)
   and takes carried items only through the §5.4 exchange. It never mints or burns by itself.
 - **Bounds.** Trigger firings per character are limited by `QUESTGATE0-RL-03`. The limit is
-  checked before the root commits, never after: a `USE`, move, push or relocation child whose
-  firing would exceed it is refused before commit (architect ruling, fail closed). The `USE`
-  changes nothing, the move or push is refused and the character stays on its tile, and a
-  relocation child is `REJECTED`; no child runs and no firing is dropped. A firing is never
+  checked before the root commits, never after: a `USE`, move or push whose firing would
+  exceed it is refused before commit (architect ruling, fail closed). The `USE` changes nothing
+  and the move or push is refused, the character staying on its tile; no child runs and no
+  firing is dropped. A firing is never
   discarded after its root has committed.
 
 ## 5. NPC quest dialogue (NPC-QUEST-1)
@@ -203,7 +207,10 @@ declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated 
 ### 5.2 Outcomes
 
 - A node's `effect` gains a closed set of outcomes: at most one `transition {key}` and at most one
-  of `claim {reward_claim}` or `exchange {exchange_key}` (`QUESTGATE0-RL-02`). Dialogue requests
+  of `claim {reward_claim}` or `exchange {exchange_key}` (`QUESTGATE0-RL-02`). A node with an
+  `exchange` must also declare a `transition` (content validation refuses it otherwise; architect
+  ruling, fail closed): the exchange's quest obligation exists for that transition, so there is
+  never an exchange without one. A `claim` may stand without a transition. Dialogue requests
   them; it never writes progress or commits value (NPC-0).
 - **Occurrence.** The cause is the occurrence of the `NPC_TALK_INTENT` that matched the node
   (NPC-0 §5.1). A node that asks a question binds a confirmation to (NPC, node, outcome keys,
@@ -235,6 +242,9 @@ QUEST-STATE-0 §4 codes) selects the node's refusal reply and writes nothing.
     the burn commit together or not at all; a claim that is already taken (`once`) or not yet
     allowed (cooldown) refuses the whole exchange;
   - the quest obligation row for its transition.
+  The preflight also counts the character's locked pending quest obligations: at
+  `QUESTSTATE0-RL-07` (64) the whole exchange is refused `OBLIGATIONS_FULL` (QUEST-STATE-0 §5.4)
+  before any BURN, MINT, claim or obligation write, and the node selects its refusal reply.
   All checks precede every write in the one transaction. Under the `character_root` lock it
   validates, without writing the tracks, every QUEST-STATE-0 §4 condition of the transition on the
   locked values: each `from` (`STAGE_MISMATCH`), the quest state's definition hash
@@ -318,8 +328,14 @@ blessings wait for their owners' decisions; a node that needs one stays held.
   - a mission is shown while its track lies in `[start_value, end_value]`, and done at
     `end_value`;
   - its text is the journal entry for the current value (`per_stage`, `fixed` or `template`, with
-    the template's tracks filled in), from the active content revision (text is outside the hash,
-    QUEST-STATE-0 §6).
+    the template's tracks filled in). An in-progress quest (a state row with no
+    `completed_receipt`) is resolved against its pinned content revision (QUEST-STATE-0 §6, account
+    decision §4.1 P2): its mission ranges, template reads and journal entries come from that
+    revision, never from a newer active one, until an explicit DUR-04 migration repins it. A quest
+    with no state row, and a completed one, use the active revision (text is outside the hash,
+    QUEST-STATE-0 §6). The session copy carries each active quest's pin; a pinned revision that
+    is no longer loadable hides the quest from the projection (fail closed) rather than
+    reinterpreting its tracks.
 - Quests and missions are canonical uint32 indexes per content generation (SPELL-D1 pattern).
   Nothing else leaves the server: track keys, values other than template counters, transitions,
   gates and claims.
