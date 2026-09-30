@@ -207,6 +207,13 @@ pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transact
   - resource limits;
   - protocol, client and production.
 
+**Amendment (BANK-0, 2026-09-30), pending on acceptance of BANK-0.** Once BANK-0 is accepted,
+rule 1 also covers bank operations, ledger entries and coin
+lines (`OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md` §7.2): those of the acting character's (Account, World) and a transfer's counterpart
+entry on another Account. They are DUR-03 value records keyed by the bank operation, not Character
+receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: after
+`character_root`, the main backpack, its coin entries, then the balance rows in `account_id` order.
+
 ## 6. Handback
 
 ```yaml
