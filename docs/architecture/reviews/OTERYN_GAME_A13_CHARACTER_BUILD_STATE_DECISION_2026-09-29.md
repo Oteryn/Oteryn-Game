@@ -314,6 +314,14 @@ The owner confirmed these directly in this session on 2026-09-29.
   (D151). So W2b may merge, but training is not enabled in production until the DEATH ML loss
   child has merged. Dev and test builds may enable it earlier.
 
+**Amendment (SKILLS-0, 2026-09-30).** `OTERYN_GAME_SKILLS0_WEAPON_SKILLS_DECISION_2026-09-30.md`
+extends build state, the build receipt, training, the death flush and the death receipt's build
+fields from magic level to all eight skills (fist, club, sword, axe, distance, shielding and
+fishing join magic level). CHAR-BUILD-1 takes the skill columns in the same migration; W2b trains
+skills with magic level; the DEATH ML loss child also takes skill progress. It also replaces the
+`vocation_choice` rule of §4.2: the choice keeps cumulative progress, magic level included, and
+re-levels it under the new vocation (SKILLS-0 §3.3).
+
 ## 5. Delivery
 
 | Child | Scope | Depends on |
