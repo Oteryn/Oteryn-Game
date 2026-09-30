@@ -59,7 +59,7 @@
       "authoritative": false,
       "expiry_rule": "Expired for current-state authority as soon as any recorded branch, PR, head, ownership, blocker, or accepted programme state changes; always re-resolve from live GitHub and current main before continuation.",
       "superseded_by": [
-        "docs/agents/tasks/active/OTV2-20260928-world-base-map.md",
+        "docs/agents/tasks/archive/OTV2-20260928-world-base-map.md",
         "live GitHub Issue/PR/CI state"
       ]
     }

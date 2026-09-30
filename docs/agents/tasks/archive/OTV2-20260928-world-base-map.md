@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-world-base-map
 title: Populate the WorldPlacement.Base full map (tiles and items) from CrystalServer as B3 region files
 mode: MIGRATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/blissful-turing-oca168-world-map
@@ -14,7 +14,7 @@ base_sha: 4e65a5e4
 head_sha: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T00:00:00Z
-updated_at: 2026-09-28T00:00:00Z
+updated_at: 2026-09-30T00:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/world-authoring/
@@ -28,7 +28,7 @@ owned_paths:
   - .gitattributes
   - .github/workflows/world-metadata-authoring.yml
   - apps/game-server/tests/content_world_project_repository.rs
-  - docs/agents/tasks/active/OTV2-20260928-world-base-map.md
+  - docs/agents/tasks/archive/OTV2-20260928-world-base-map.md
   - docs/agents/reports/OTV2-20260929-world-map-handover.md
   - docs/agents/HANDOVER_LIFECYCLE.json
 public_contracts: []
@@ -149,7 +149,7 @@ sha256-pinned and `OtsHypothesisOnly`.
       The palette switched those keys from `donor:` to Terrain keys (region files
       byte-identical; provisional remain: `items.xml` ids for B1b and id 99).
       `validate_terrain.py`, `validate_world_base.py` and `test_terrain.py` pass.
-- [ ] Required checks pass on the frozen PR head.
+- [x] Required checks pass on the frozen PR head; merge commit: squash merge of #1170.
 
 ## Excluded scope
 
