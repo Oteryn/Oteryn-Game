@@ -1,4 +1,4 @@
-// Shared CHARM-3 cases (migration 0019). Any wrapper that provides the same path-loaded crate
+// Shared CHARM-3 cases (migration 0020). Any wrapper that provides the same path-loaded crate
 // root as `charm_state_postgres.rs` can include this file.
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
@@ -11,13 +11,16 @@ use crate::domain::progression::{
 };
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::admission_authority_guards::GuardPublicationDisposition;
+use crate::durability::bestiary_progress::{
+    BestiaryKillOccurrence, BestiaryKillOutcome, BestiaryKillRequest,
+};
 use crate::durability::character_progression::{
     CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceCommitOutcome,
     ExperienceRewardOccurrence,
 };
 use crate::durability::charm_state::{
-    CharmCommand, CharmCommandEffect, CharmCommandOccurrence, CharmCommandOutcome,
-    CharmCommandRequest, CharmFacts, CharmStateError,
+    BestiaryCharmEntry, BestiaryCharmFacts, CharmCommand, CharmCommandEffect,
+    CharmCommandOccurrence, CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError,
 };
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
@@ -834,11 +837,9 @@ fn assert_expected_state(
     Ok(())
 }
 
-/// Restart readback. `open_character_authority` runs `verify_character_integrity`
-/// (`durability/character_authority.rs`), which still requires XP receipts alone to explain
-/// every CharacterRevision. Any death, stance or charm receipt therefore fails it, so no
-/// Character authority opens after the first charm command. The fix lies outside the CHARM-3
-/// owned paths. This case stays RED until the check covers every receipt kind (#1278).
+/// Restart readback: `open_character_authority` runs `verify_character_integrity`, whose
+/// receipt chain must include the charm receipts, or no Character authority opens after the
+/// first charm command.
 #[test]
 fn restart_readback_after_charm_commands() -> TestResult {
     run(async |admin| {
@@ -875,6 +876,163 @@ fn restart_readback_after_charm_commands() -> TestResult {
             .await
             .map_err(debug)?;
         assert_expected_state(&state)?;
+        drop(restart_authority);
+        drop(restart_seal);
+        drop(restarted);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// The production facts over real CHARM-2 kill counters: kills and charm commands share one
+/// CharacterRevision chain, a completed entry earns its charm points, and a restart reopens
+/// Character authority over both receipt kinds.
+#[test]
+fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
+    run(async |admin| {
+        let harness = Harness::create(admin, "bestiary", true).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let bestiary_race = |name: &str| {
+            crate::domain::bestiary::BestiaryRace::new(
+                format!("oteryn:creature.{name}"),
+                "definition-r1",
+                vec![1, 2, 3],
+            )
+            .map_err(debug)
+        };
+        let facts = BestiaryCharmFacts::new([
+            BestiaryCharmEntry {
+                race: bestiary_race("rat")?,
+                charm_points: 300,
+            },
+            BestiaryCharmEntry {
+                race: bestiary_race("wolf")?,
+                charm_points: 300,
+            },
+        ])
+        .map_err(debug)?;
+        let context = xp_request(1)?.context;
+        let mut kill_revision = 1;
+        for (tag, name) in [
+            (80, "rat"),
+            (81, "rat"),
+            (82, "rat"),
+            (83, "wolf"),
+            (84, "wolf"),
+        ] {
+            let outcome = harness
+                .root
+                .commit_bestiary_kill(
+                    &authority,
+                    &harness.node,
+                    fence(kill_revision)?,
+                    BestiaryKillRequest {
+                        occurrence: BestiaryKillOccurrence::from_bytes(id(tag)).map_err(debug)?,
+                        race: bestiary_race(name)?,
+                        context: context.clone(),
+                        policy_revision: "policy-1".into(),
+                        reward_revision: "reward-1".into(),
+                    },
+                )
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(outcome, BestiaryKillOutcome::Committed(_)),
+                "{outcome:?}"
+            );
+            kill_revision += 1;
+        }
+        // Only the completed rat entry earns points: its 300 buy wound stage 1 (240); zap
+        // (320) would then need 560.
+        let unlocked = harness
+            .root
+            .commit_charm_command(
+                &authority,
+                &harness.node,
+                fence(6)?,
+                unlock(61, "wound"),
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(unlocked, CharmCommandOutcome::Committed(_)));
+        let short = harness
+            .root
+            .commit_charm_command(
+                &authority,
+                &harness.node,
+                fence(7)?,
+                unlock(62, "zap"),
+                facts.clone(),
+            )
+            .await;
+        assert!(
+            matches!(
+                short,
+                Err(CharmStateError::Rule(CharmRuleError::InsufficientBalance))
+            ),
+            "{short:?}"
+        );
+        // Wolf is at stage 2 of 3: no major charm.
+        let incomplete = harness
+            .root
+            .commit_charm_command(
+                &authority,
+                &harness.node,
+                fence(7)?,
+                assign(63, "wound", "wolf"),
+                facts.clone(),
+            )
+            .await;
+        assert!(
+            matches!(
+                incomplete,
+                Err(CharmStateError::Rule(CharmRuleError::BestiaryStageTooLow))
+            ),
+            "{incomplete:?}"
+        );
+        let assigned = harness
+            .root
+            .commit_charm_command(
+                &authority,
+                &harness.node,
+                fence(7)?,
+                assign(64, "wound", "rat"),
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(assigned, CharmCommandOutcome::Committed(_)));
+        assert_eq!(revision(&harness.pool).await?, "8");
+
+        let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+        assert!(restarted.maintain_ready_once().await?);
+        let restart_seal = harness.recovery.seal_current().map_err(debug)?;
+        let restart_authority = restarted
+            .open_character_authority(&restart_seal)
+            .await
+            .map_err(debug)?;
+        let state = restarted
+            .read_character_charm_state(
+                &restart_authority,
+                CharacterId::from_bytes(id(41)).map_err(debug)?,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            state.unlocks,
+            BTreeMap::from([(charm("wound"), CharmStage::FIRST)])
+        );
+        assert_eq!(
+            state.assignments,
+            BTreeMap::from([(charm("wound"), race("rat"))])
+        );
         drop(restart_authority);
         drop(restart_seal);
         drop(restarted);

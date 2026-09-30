@@ -89,8 +89,30 @@ pub(crate) async fn exchange(
     body: &str,
     permit: &mut super::QueuePermit<'_>,
 ) -> Result<Vec<u8>, SourceError> {
+    exchange_status(desc, operation, body, permit, true)
+        .await
+        .map(|(_, body)| body)
+}
+/// `exchange` for an operation whose contract distinguishes failure statuses:
+/// a final non-200 status is returned with its bounded body instead of
+/// `Unavailable`. Framing, size and deadline rules are unchanged.
+pub(crate) async fn exchange_with_status(
+    desc: &ProducerDescriptor,
+    operation: Operation,
+    body: &str,
+    permit: &mut super::QueuePermit<'_>,
+) -> Result<(u16, Vec<u8>), SourceError> {
+    exchange_status(desc, operation, body, permit, false).await
+}
+async fn exchange_status(
+    desc: &ProducerDescriptor,
+    operation: Operation,
+    body: &str,
+    permit: &mut super::QueuePermit<'_>,
+    require_ok: bool,
+) -> Result<(u16, Vec<u8>), SourceError> {
     permit.require_active()?;
-    if body.len() > 1024 {
+    if body.len() > operation.request_bytes_max() {
         return Err(SourceError::CapacityExceeded);
     }
     let future = async {
@@ -120,7 +142,11 @@ pub(crate) async fn exchange(
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
-        read_response(&mut tls).await
+        if require_ok {
+            read_response(&mut tls).await.map(|body| (200, body))
+        } else {
+            read_response_status(&mut tls, false).await
+        }
     };
     tokio::time::timeout(Duration::from_millis(EXCHANGE_DEADLINE_MS), future)
         .await
@@ -129,6 +155,35 @@ pub(crate) async fn exchange(
 pub(crate) async fn read_response<S: AsyncRead + Unpin>(
     stream: &mut S,
 ) -> Result<Vec<u8>, SourceError> {
+    read_response_status(stream, true)
+        .await
+        .map(|(_, body)| body)
+}
+/// A final status: `HTTP/1.1 <200-599>[ <reason>]`; informational and
+/// malformed status lines are invalid.
+fn final_status(line: &str) -> Result<u16, SourceError> {
+    let rest = line
+        .strip_prefix("HTTP/1.1 ")
+        .ok_or(SourceError::InvalidInput)?;
+    let (digits, reason) = rest.split_at_checked(3).ok_or(SourceError::InvalidInput)?;
+    let code = digits
+        .bytes()
+        .all(|b| b.is_ascii_digit())
+        .then(|| digits.parse::<u16>().ok())
+        .flatten()
+        .ok_or(SourceError::InvalidInput)?;
+    if !(200..=599).contains(&code)
+        || !(reason.is_empty() || reason.starts_with(' '))
+        || reason.bytes().any(|b| b.is_ascii_control())
+    {
+        return Err(SourceError::InvalidInput);
+    }
+    Ok(code)
+}
+async fn read_response_status<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    require_ok: bool,
+) -> Result<(u16, Vec<u8>), SourceError> {
     let mut head = Vec::with_capacity(1024);
     let mut one = [0_u8; 1];
     let mut line_bytes = 0usize;
@@ -153,9 +208,13 @@ pub(crate) async fn read_response<S: AsyncRead + Unpin>(
     let text = std::str::from_utf8(&head).map_err(|_| SourceError::InvalidInput)?;
     let mut lines = text.split("\r\n");
     let status = lines.next().ok_or(SourceError::InvalidInput)?;
-    if status.len() > 256 || status != "HTTP/1.1 200 OK" {
+    let code = if status == "HTTP/1.1 200 OK" {
+        200
+    } else if require_ok || status.len() > 256 {
         return Err(SourceError::Unavailable);
-    }
+    } else {
+        final_status(status)?
+    };
     let mut fields = 0_usize;
     let mut length = None;
     let mut chunked = false;
@@ -202,31 +261,35 @@ pub(crate) async fn read_response<S: AsyncRead + Unpin>(
             return Err(SourceError::InvalidInput);
         }
     }
-    if chunked {
-        return read_chunked(stream).await;
-    }
-    let Some(length) = length else {
-        let mut body = Vec::with_capacity(8192);
-        let mut scratch = [0u8; 1024];
-        loop {
-            // At the cap, probe one byte without retaining any excess body.
-            let available = (8192 - body.len()).clamp(1, scratch.len());
-            let n = stream.read(&mut scratch[..available]).await?;
-            if n == 0 {
-                return Ok(body);
-            }
-            if n > 8192 - body.len() {
-                return Err(SourceError::CapacityExceeded);
-            }
-            body.extend_from_slice(&scratch[..n]);
+    let body = async {
+        if chunked {
+            return read_chunked(stream).await;
         }
-    };
-    if length > 8192 {
-        return Err(SourceError::CapacityExceeded);
+        let Some(length) = length else {
+            let mut body = Vec::with_capacity(8192);
+            let mut scratch = [0u8; 1024];
+            loop {
+                // At the cap, probe one byte without retaining any excess body.
+                let available = (8192 - body.len()).clamp(1, scratch.len());
+                let n = stream.read(&mut scratch[..available]).await?;
+                if n == 0 {
+                    return Ok(body);
+                }
+                if n > 8192 - body.len() {
+                    return Err(SourceError::CapacityExceeded);
+                }
+                body.extend_from_slice(&scratch[..n]);
+            }
+        };
+        if length > 8192 {
+            return Err(SourceError::CapacityExceeded);
+        }
+        let mut body = vec![0; length];
+        stream.read_exact(&mut body).await?;
+        Ok(body)
     }
-    let mut body = vec![0; length];
-    stream.read_exact(&mut body).await?;
-    Ok(body)
+    .await?;
+    Ok((code, body))
 }
 async fn read_chunked<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SourceError> {
     let mut body = Vec::new();

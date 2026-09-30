@@ -6,8 +6,10 @@
 
 pub mod admission_authority_guards;
 mod admission_journal;
+pub mod bestiary_progress;
 pub mod character_authority;
 pub mod character_authority_audit;
+pub mod character_death;
 pub mod character_progression;
 pub mod charm_state;
 pub mod content_activation;
@@ -30,6 +32,29 @@ mod schema;
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod bestiary_progress_linkage {
+    use super::DurabilityRoot;
+    use super::bestiary_progress::{
+        BestiaryKillOccurrence, BestiaryKillOutcome, BestiaryKillRequest, BestiaryProgressError,
+        BestiaryRaceProgress, CommittedBestiaryKill,
+    };
+
+    #[test]
+    fn bestiary_progress_api_is_linked() {
+        let _ = std::mem::size_of::<BestiaryKillOutcome>();
+        let _ = std::mem::size_of::<BestiaryKillRequest>();
+        let _ = std::mem::size_of::<BestiaryProgressError>();
+        let _ = std::mem::size_of::<BestiaryRaceProgress>();
+        let _ = std::mem::size_of::<CommittedBestiaryKill>();
+        let _ = BestiaryKillOccurrence::from_bytes;
+        let _ = BestiaryKillOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_bestiary_kill;
+        let _ = DurabilityRoot::reconcile_bestiary_kill;
+        let _ = DurabilityRoot::read_bestiary_progress;
+    }
+}
 
 #[cfg(test)]
 mod character_progression_linkage {
@@ -58,15 +83,31 @@ mod character_progression_linkage {
         let _ = std::mem::size_of::<ProgressionInitializationOutcome>();
         let _ = DurabilityRoot::initialize_character_progression::<2>;
     }
+
+    #[test]
+    fn character_death_api_is_linked() {
+        use super::character_death::{
+            CharacterDeathOutcome, CharacterDeathRequest, CommittedCharacterDeath, DeathCell,
+            PlayerDeathOccurrence,
+        };
+        let _ = std::mem::size_of::<CharacterDeathOutcome>();
+        let _ = std::mem::size_of::<CharacterDeathRequest<2>>();
+        let _ = std::mem::size_of::<CommittedCharacterDeath>();
+        let _ = std::mem::size_of::<DeathCell>();
+        let _ = PlayerDeathOccurrence::from_bytes;
+        let _ = PlayerDeathOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_character_death::<2>;
+        let _ = DurabilityRoot::reconcile_character_death;
+    }
 }
 
 #[cfg(test)]
 mod charm_state_linkage {
     use super::DurabilityRoot;
     use super::charm_state::{
-        CharacterCharmState, CharmCommand, CharmCommandEffect, CharmCommandOccurrence,
-        CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError,
-        CommittedCharmCommand,
+        BestiaryCharmEntry, BestiaryCharmFacts, CharacterCharmState, CharmCommand,
+        CharmCommandEffect, CharmCommandOccurrence, CharmCommandOutcome, CharmCommandRequest,
+        CharmFacts, CharmStateError, CommittedCharmCommand,
     };
 
     struct NoFacts;
@@ -109,6 +150,9 @@ mod charm_state_linkage {
     #[test]
     fn charm_state_api_is_linked() {
         let _ = std::mem::size_of::<CharacterCharmState>();
+        let _ = std::mem::size_of::<BestiaryCharmEntry>();
+        let _ = BestiaryCharmFacts::new(Vec::<BestiaryCharmEntry>::new());
+        let _ = DurabilityRoot::commit_charm_command::<BestiaryCharmFacts>;
         let _ = std::mem::size_of::<CharmCommand>();
         let _ = std::mem::size_of::<CharmCommandEffect>();
         let _ = std::mem::size_of::<CharmCommandOutcome>();

@@ -469,13 +469,13 @@ mod tests {
             algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
             entries: vec![
                 LootTableEntry {
-                    item: item_ref("oteryn:item.registry.i00003469"),
+                    item: item_ref("oteryn:item.tibia.i3607"),
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(356_433),
                 },
                 LootTableEntry {
-                    item: item_ref("oteryn:item.currency.gold_coin"),
+                    item: item_ref("oteryn:item.tibia.i3031"),
                     min_count: 1,
                     max_count: 4,
                     probability_ppm: Some(903_036),
@@ -486,7 +486,7 @@ mod tests {
 
     const GOLDEN_CHANCE: u64 = 10_348_850_681_732_701_394;
     const GOLDEN_QUANTITY: u64 = 9_517_304_501_960_542_980;
-    const GOLDEN_RAT_PLAN: &str = r#"[("oteryn:item.currency.gold_coin", 1, 1)]"#;
+    const GOLDEN_RAT_PLAN: &str = r#"[("oteryn:item.tibia.i3031", 1, 1)]"#;
 
     #[test]
     fn deterministic_draw_is_pinned_by_golden_vectors() {

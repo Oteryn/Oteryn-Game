@@ -543,7 +543,7 @@ def build_real_item_examples():
     examples = []
 
     item = item_base(
-        "oteryn:item.registry.i00003167",
+        "oteryn:item.tibia.i3288",
         "Magic Sword",
         "weapon_melee",
         "weapon",
@@ -695,7 +695,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.registry.i00003256",
+        "oteryn:item.tibia.i3388",
         "Demon Armor",
         "equipment_armor",
         "equipment",
@@ -777,7 +777,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.registry.i00002752",
+        "oteryn:item.tibia.i2854",
         "Backpack",
         "container",
         "container",
@@ -863,7 +863,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.registry.i00003447",
+        "oteryn:item.tibia.i3585",
         "Red Apple",
         "food",
         "consumable",
@@ -951,7 +951,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.consumable.sudden_death_rune",
+        "oteryn:item.tibia.i3155",
         "Sudden Death Rune",
         "rune",
         "rune",
@@ -1042,7 +1042,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.registry.i00002771",
+        "oteryn:item.tibia.i2874",
         "Vial",
         "fluid",
         "fluid_container",

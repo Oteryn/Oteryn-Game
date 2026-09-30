@@ -1,4 +1,4 @@
-//! Typed, fenced Character Charm commands (CHARM-3, migration 0019).
+//! Typed, fenced Character Charm commands (CHARM-3, migration 0020).
 //!
 //! Two commands exist: unlock the next stage of a charm, and assign an unlocked charm to a
 //! Bestiary race. Each is one Character transaction under the same current gameplay fence as an
@@ -12,12 +12,16 @@
 //! of the unlocks takes the same root lock and revision, so a double spend is impossible.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::CurrentCharacterGameplayFence;
+use super::character_progression::{
+    CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
+    state_matches_root, uuid_text, valid_revision,
+};
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
-use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::domain::bestiary::BestiaryRace;
 use crate::domain::charm::{
     BestiaryRaceKey, BestiaryStage, CharmCatalogue, CharmCategory, CharmKey, CharmRuleError,
     CharmSlotEntitlement, CharmStage, derive_balance, plan_assign, plan_unlock,
@@ -29,11 +33,11 @@ use sqlx::Row;
 use sqlx::postgres::PgConnection;
 use std::collections::BTreeMap;
 use std::future::Future;
+use std::sync::Arc;
 
 type Result<T> = std::result::Result<T, CharmStateError>;
 const COMMAND_BINDING_VERSION: u8 = 1;
 const CATALOGUE_DIGEST_VERSION: u8 = 1;
-const MAX_REVISION_BYTES: usize = 128;
 const KIND_UNLOCK: i16 = 1;
 const KIND_ASSIGN: i16 = 2;
 const CATEGORY_MAJOR: i16 = 1;
@@ -62,8 +66,7 @@ impl CharmCommandOccurrence {
 /// The Bestiary methods must never report less progress than before for the same Character and
 /// definition revision: kill counters saturate and never fall (§4.1).
 ///
-/// CHARM-2 implements the Bestiary methods from its kill counters. No durable promotion or slot
-/// entitlement exists yet, so production reports `false` and `Free` until one does.
+/// [`BestiaryCharmFacts`] is the production implementation over the CHARM-2 kill counters.
 pub trait CharmFacts: Send + Sync + 'static {
     /// The completed Bestiary stage of `race` for `character` (0 when the race is unknown).
     fn completed_stage<'a>(
@@ -93,6 +96,117 @@ pub trait CharmFacts: Send + Sync + 'static {
         connection: &'a mut PgConnection,
         character: CharacterId,
     ) -> impl Future<Output = std::result::Result<CharmSlotEntitlement, DurabilityError>> + Send + 'a;
+}
+
+/// One Bestiary entry as the Charm rules see it: the race bound from its Creature definition
+/// and the entry's `charm_points`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BestiaryCharmEntry {
+    pub race: BestiaryRace,
+    pub charm_points: u32,
+}
+
+/// Production [`CharmFacts`] over the CHARM-2 kill counters (`game_character_bestiary_progress`),
+/// read in the Charm command's transaction. Every counter writer advances the CharacterRevision
+/// under the same root lock, so the counters read here are current. A counter of a race missing
+/// from `entries` earns nothing and admits no assignment. No durable promotion or slot
+/// entitlement exists yet: `promoted` is `false` and the entitlement `Free` until one does.
+#[derive(Debug, Clone)]
+pub struct BestiaryCharmFacts {
+    entries: Arc<BTreeMap<String, BestiaryCharmEntry>>,
+}
+
+impl BestiaryCharmFacts {
+    /// Rejects a duplicate race and a race key that is not a Bestiary race key.
+    pub fn new(entries: impl IntoIterator<Item = BestiaryCharmEntry>) -> Result<Self> {
+        let mut map = BTreeMap::new();
+        for entry in entries {
+            let key = BestiaryRaceKey::new(entry.race.key())
+                .map_err(|_| CharmStateError::InvalidInput)?;
+            if map.insert(key.as_str().to_owned(), entry).is_some() {
+                return Err(CharmStateError::InvalidInput);
+            }
+        }
+        Ok(Self {
+            entries: Arc::new(map),
+        })
+    }
+}
+
+/// The completed stage of an entry: the final stage at the last threshold, otherwise the
+/// thresholds reached, capped below the final stage.
+fn bestiary_stage(race: &BestiaryRace, kill_count: u32) -> BestiaryStage {
+    if race.is_complete(kill_count) {
+        return BestiaryStage::FINAL;
+    }
+    let reached = u8::try_from(race.stages_unlocked(kill_count)).unwrap_or(u8::MAX);
+    BestiaryStage::new(reached.min(BestiaryStage::FINAL.get() - 1)).unwrap_or(BestiaryStage::NONE)
+}
+
+impl CharmFacts for BestiaryCharmFacts {
+    async fn completed_stage(
+        &self,
+        connection: &mut PgConnection,
+        character: CharacterId,
+        race: &BestiaryRaceKey,
+    ) -> std::result::Result<BestiaryStage, DurabilityError> {
+        let Some(entry) = self.entries.get(race.as_str()) else {
+            return Ok(BestiaryStage::NONE);
+        };
+        let kill_count: Option<i64> = sqlx::query_scalar(
+            "SELECT kill_count FROM game_character_bestiary_progress \
+              WHERE character_id = encode($1,'hex')::uuid AND race_key = $2",
+        )
+        .bind(character.as_bytes().as_slice())
+        .bind(race.as_str())
+        .fetch_optional(&mut *connection)
+        .await?;
+        let kill_count = u32::try_from(kill_count.unwrap_or(0))
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        Ok(bestiary_stage(&entry.race, kill_count))
+    }
+
+    async fn completed_entry_charm_points(
+        &self,
+        connection: &mut PgConnection,
+        character: CharacterId,
+    ) -> std::result::Result<Vec<u32>, DurabilityError> {
+        let rows = sqlx::query(
+            "SELECT race_key, kill_count FROM game_character_bestiary_progress \
+              WHERE character_id = encode($1,'hex')::uuid ORDER BY race_key",
+        )
+        .bind(character.as_bytes().as_slice())
+        .fetch_all(&mut *connection)
+        .await?;
+        let mut points = Vec::new();
+        for row in rows {
+            let race_key: String = row.try_get("race_key")?;
+            let kill_count = u32::try_from(row.try_get::<i64, _>("kill_count")?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if let Some(entry) = self.entries.get(&race_key)
+                && entry.race.is_complete(kill_count)
+            {
+                points.push(entry.charm_points);
+            }
+        }
+        Ok(points)
+    }
+
+    async fn promoted(
+        &self,
+        _connection: &mut PgConnection,
+        _character: CharacterId,
+    ) -> std::result::Result<bool, DurabilityError> {
+        Ok(false)
+    }
+
+    async fn slot_entitlement(
+        &self,
+        _connection: &mut PgConnection,
+        _character: CharacterId,
+    ) -> std::result::Result<CharmSlotEntitlement, DurabilityError> {
+        Ok(CharmSlotEntitlement::Free)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -254,13 +368,11 @@ impl DurabilityRoot {
                         return Ok(Ok(CharmCommandOutcome::AlreadyCommitted(committed)));
                     }
 
-                    let root = match assert_charm_gameplay_fence(&mut tx, &fence, &node).await? {
+                    // The XP writer's own fence, so every Character write is fenced identically.
+                    let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         Ok(root) => root,
-                        Err(error) => return Ok(Err(error)),
+                        Err(error) => return Ok(Err(fence_error(error))),
                     };
-                    if request.catalogue_revision != root.content_revision {
-                        return Ok(Err(CharmStateError::CharmContextMismatch));
-                    }
 
                     let state = sqlx::query(
                         "SELECT character_revision::text, level, total_experience, \
@@ -279,7 +391,12 @@ impl DurabilityRoot {
                     if numeric_u64(&state, "character_revision")? != root.revision {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    if !state_matches_root(&state, &root) {
+                    // The state's content revision equals the fenced root's, so the catalogue
+                    // must belong to the Character's current content.
+                    if !state_matches_root(&state, &root)
+                        || state.try_get::<String, _>("content_revision")?
+                            != request.catalogue_revision
+                    {
                         return Ok(Err(CharmStateError::CharmContextMismatch));
                     }
 
@@ -534,166 +651,20 @@ impl DurabilityRoot {
     }
 }
 
-/// Current Character root facts proven under the gameplay fence.
-struct FencedCharacterRoot {
-    revision: u64,
-    profile_revision: String,
-    ruleset_revision: String,
-    content_revision: String,
-}
-
-/// The current gameplay fence of a Charm command. It is the fence of
-/// `character_progression::commit_character_experience` (that module's private
-/// `assert_gameplay_fence`), kept identical: the caller has asserted the recovery fence and
-/// taken the admission relation locks; this proves the live FND-04 session/lease/scope, the scope
-/// assignment held by the current node incarnation, the admission guards, the live root
-/// (row-locked) at the expected CharacterRevision and the current Game-owned interpretation.
-async fn assert_charm_gameplay_fence(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    fence: &CurrentCharacterGameplayFence,
-    node: &NodeIncarnationProof,
-) -> std::result::Result<std::result::Result<FencedCharacterRoot, CharmStateError>, DurabilityError>
-{
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Ok(Err(CharmStateError::AuthorityRejected));
-    };
-    let session = sqlx::query(
-        "SELECT account_id::text FROM game_durability_reconnect_sessions \
-         WHERE game_session_id = encode($1,'hex')::uuid \
-           AND character_id = encode($2,'hex')::uuid \
-           AND world_id = encode($3,'hex')::uuid \
-           AND runtime_scope_kind = 1 \
-           AND runtime_scope_world_id = encode($3,'hex')::uuid \
-           AND runtime_scope_channel_id = encode($4,'hex')::uuid \
-           AND runtime_scope_instance_id IS NULL \
-           AND current_generation = $5::text::numeric(20,0) \
-           AND character_lease_generation = $6::text::numeric(20,0) \
-           AND scope_ownership_generation = $7::text::numeric(20,0) \
-           AND session_state IN (1,2) FOR SHARE",
-    )
-    .bind(fence.game_session_id.as_bytes().as_slice())
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
-    .bind(fence.connection_generation.get().to_string())
-    .bind(fence.character_lease_generation.to_string())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(session) = session else {
-        return Ok(Err(CharmStateError::AuthorityRejected));
-    };
-    let account_text: String = session.try_get("account_id")?;
-
-    let key = scope_key(world_id, channel_id);
-    let fact = node.fact();
-    let assignment = sqlx::query(
-        "SELECT 1 FROM game_runtime_scope_assignments \
-         WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
-           AND ownership_generation = $4::text::numeric(20,0) \
-           AND holder_node_id = encode($5,'hex')::uuid \
-           AND holder_registration_revision = $6::text::numeric(20,0) \
-         FOR SHARE",
-    )
-    .bind(key.as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .bind(fact.node_id().as_bytes().as_slice())
-    .bind(fact.registration_revision().to_string())
-    .fetch_optional(&mut **tx)
-    .await?;
-    if assignment.is_none() || !prove_current_incarnation(tx, node).await? {
-        return Ok(Err(CharmStateError::AuthorityRejected));
-    }
-
-    let guards_ok: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 \
-           FROM game_durability_admission_character_guards c \
-           JOIN game_durability_admission_account_guards a \
-             ON a.account_id = c.account_id \
-           JOIN game_durability_admission_runtime_guards g \
-             ON g.scope_key = $1 \
-          WHERE c.character_id = encode($2,'hex')::uuid \
-            AND c.account_id = $3::uuid \
-            AND c.world_id = encode($4,'hex')::uuid \
-            AND c.eligible \
-            AND c.lease_generation = $5::text::numeric(20,0) \
-            AND c.holder_game_session_id = encode($6,'hex')::uuid \
-            AND a.presence_character_id = c.character_id \
-            AND a.holder_game_session_id = c.holder_game_session_id \
-            AND g.ready \
-            AND g.ownership_generation = $7::text::numeric(20,0))",
-    )
-    .bind(key.as_slice())
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(&account_text)
-    .bind(world_id.as_bytes().as_slice())
-    .bind(fence.character_lease_generation.to_string())
-    .bind(fence.game_session_id.as_bytes().as_slice())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .fetch_one(&mut **tx)
-    .await?;
-    if !guards_ok {
-        return Ok(Err(CharmStateError::AuthorityRejected));
-    }
-
-    let root = sqlx::query(
-        "SELECT account_id::text, world_id::text, character_revision::text, \
-                profile_revision, ruleset_revision, content_revision, \
-                starter_template_revision \
-           FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
-          FOR UPDATE",
-    )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(root) = root else {
-        return Ok(Err(CharmStateError::AuthorityRejected));
-    };
-    if root.try_get::<String, _>("account_id")? != account_text
-        || uuid_text(root.try_get("world_id")?)? != *world_id.as_bytes()
-    {
-        return Ok(Err(CharmStateError::AuthorityRejected));
-    }
-    let root_revision = numeric_u64(&root, "character_revision")?;
-    if root_revision != fence.expected_character_revision.get() {
-        return Ok(Err(CharmStateError::CharacterRevisionMismatch));
-    }
-
-    let current = sqlx::query(
-        "SELECT profile_revision, ruleset_revision, content_revision, \
-                starter_template_revision \
-           FROM game_character_interpretations \
-          ORDER BY interpretation_revision DESC LIMIT 1 FOR SHARE",
-    )
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(current) = current else {
-        return Ok(Err(CharmStateError::CharmContextMismatch));
-    };
-    for column in [
-        "profile_revision",
-        "ruleset_revision",
-        "content_revision",
-        "starter_template_revision",
-    ] {
-        if root.try_get::<String, _>(column)? != current.try_get::<String, _>(column)? {
-            return Ok(Err(CharmStateError::CharmContextMismatch));
+/// The shared fence refuses with `AuthorityRejected`, `CharacterRevisionMismatch` or
+/// `ProgressionContextMismatch`; any other refusal it might add later still fails closed as an
+/// authority rejection.
+fn fence_error(error: CharacterProgressionError) -> CharmStateError {
+    match error {
+        CharacterProgressionError::CharacterRevisionMismatch => {
+            CharmStateError::CharacterRevisionMismatch
         }
+        CharacterProgressionError::ProgressionContextMismatch => {
+            CharmStateError::CharmContextMismatch
+        }
+        CharacterProgressionError::Unavailable(error) => CharmStateError::Unavailable(error),
+        _ => CharmStateError::AuthorityRejected,
     }
-    Ok(Ok(FencedCharacterRoot {
-        revision: root_revision,
-        profile_revision: root.try_get("profile_revision")?,
-        ruleset_revision: root.try_get("ruleset_revision")?,
-        content_revision: root.try_get("content_revision")?,
-    }))
 }
 
 fn validate_request(
@@ -707,15 +678,6 @@ fn validate_request(
         return Err(CharmStateError::InvalidInput);
     }
     Ok(())
-}
-
-fn valid_revision(value: &str) -> bool {
-    let mut bytes = value.bytes();
-    value.len() <= MAX_REVISION_BYTES
-        && bytes
-            .next()
-            .is_some_and(|byte| byte.is_ascii_alphanumeric())
-        && bytes.all(|byte| byte.is_ascii_alphanumeric() || b"._:-".contains(&byte))
 }
 
 const fn category_code(category: CharmCategory) -> i16 {
@@ -885,40 +847,6 @@ async fn load_charm_state(
     Ok(state)
 }
 
-fn state_matches_root(row: &sqlx::postgres::PgRow, root: &FencedCharacterRoot) -> bool {
-    row.try_get::<String, _>("profile_revision").ok().as_deref()
-        == Some(root.profile_revision.as_str())
-        && row.try_get::<String, _>("ruleset_revision").ok().as_deref()
-            == Some(root.ruleset_revision.as_str())
-        && row.try_get::<String, _>("content_revision").ok().as_deref()
-            == Some(root.content_revision.as_str())
-}
-
-fn numeric_u64(
-    row: &sqlx::postgres::PgRow,
-    column: &str,
-) -> std::result::Result<u64, DurabilityError> {
-    row.try_get::<String, _>(column)?
-        .parse()
-        .map_err(|_| DurabilityError::InvalidStoredState)
-}
-
-fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
-    let hex: String = value
-        .chars()
-        .filter(|character| *character != '-')
-        .collect();
-    if hex.len() != 32 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let mut out = [0_u8; 16];
-    for (index, byte) in out.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-    }
-    Ok(out)
-}
-
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
@@ -1023,6 +951,45 @@ mod tests {
         }])
         .expect("catalogue");
         assert_ne!(binding(&fence(), &cost), original);
+    }
+
+    #[test]
+    fn bestiary_stage_is_final_only_at_the_last_threshold() {
+        let race = BestiaryRace::new("oteryn:creature.rat", "definition-r1", vec![25, 250, 500])
+            .expect("race");
+        for (kills, stage) in [
+            (0, 0),
+            (24, 0),
+            (25, 1),
+            (249, 1),
+            (250, 2),
+            (499, 2),
+            (500, 3),
+        ] {
+            assert_eq!(bestiary_stage(&race, kills).get(), stage, "{kills} kills");
+        }
+        // A one-threshold entry is complete or nothing.
+        let single =
+            BestiaryRace::new("oteryn:creature.boss", "definition-r1", vec![5]).expect("race");
+        assert_eq!(bestiary_stage(&single, 4), BestiaryStage::NONE);
+        assert_eq!(bestiary_stage(&single, 5), BestiaryStage::FINAL);
+    }
+
+    #[test]
+    fn bestiary_facts_reject_duplicate_and_non_bestiary_races() {
+        let entry = |key: &str| BestiaryCharmEntry {
+            race: BestiaryRace::new(key, "definition-r1", vec![1, 2, 3]).expect("race"),
+            charm_points: 5,
+        };
+        assert!(BestiaryCharmFacts::new([entry("oteryn:creature.rat")]).is_ok());
+        assert!(matches!(
+            BestiaryCharmFacts::new([entry("oteryn:creature.rat"), entry("oteryn:creature.rat")]),
+            Err(CharmStateError::InvalidInput)
+        ));
+        assert!(matches!(
+            BestiaryCharmFacts::new([entry("oteryn:item.rat")]),
+            Err(CharmStateError::InvalidInput)
+        ));
     }
 
     #[test]

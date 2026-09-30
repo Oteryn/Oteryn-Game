@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17.6 qualification for CHARM-3 (migration 0019). Ordinary workspace runs
+// Dedicated PostgreSQL 17.6 qualification for CHARM-3 (migration 0020). Ordinary workspace runs
 // report PRE-ROUTING/NONCANONICAL when the routed database is absent.
 extern crate self as oteryn_game_server;
 

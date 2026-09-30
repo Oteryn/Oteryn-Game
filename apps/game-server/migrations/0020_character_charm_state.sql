@@ -12,14 +12,14 @@
 --     one race per charm, written once. There is no unassign (owner answer 3c): it waits for
 --     `GAME-ITEM-01`/`DUR-03` and ships with its gold fee, so the row is immutable here;
 --   * Charm Points and Minor Charm Echoes are derived and never stored (owner answer 2a);
---   * the 0017 deferred consistency guard now admits one chain with four receipt kinds (XP,
---     death, stance or charm), exactly one receipt per revision.
+--   * the 0019 deferred consistency guard now admits one chain with five receipt kinds (XP,
+--     death, stance, Bestiary kill or charm), exactly one receipt per revision.
 -- The §4.2 race capacity is one major and one minor charm per race at the same time (TibiaWiki
 -- Updates/14.10; Canary `iobestiary.cpp`): the database enforces it as one assignment per race
 -- and category. The slot limit on assigned charms depends on Premium and the Charm Expansion, so
 -- only the Game rule (`domain::charm::CharmSlotEntitlement`) enforces it.
--- The 0009/0016/0017 tables, their CHECKs and the state guard are unchanged: the state guard's
--- stance direction (experience and level equal) already admits a charm successor.
+-- The 0009/0016/0017/0019 tables, their CHECKs and the state guard are unchanged: the state
+-- guard's stance direction (experience and level equal) already admits a charm successor.
 
 -- A charm key is `oteryn:charm.<name>`, a race key the Creature definition key
 -- `oteryn:creature.<name>`, both at most 128 bytes (`domain::charm`).
@@ -111,8 +111,9 @@ CREATE TABLE game_character_charm_assignments (
     UNIQUE (character_id, race_key, charm_category)
 );
 
--- The 0017 chain guard with the charm kind added to the revision-one check, the receipt chain
--- and the state-transition binding. Everything else is unchanged.
+-- The 0019 chain guard (XP, death, stance and Bestiary kinds) with the charm kind added to the
+-- revision-one check, the receipt chain and the state-transition binding. Everything else,
+-- including every Bestiary arm, is unchanged.
 CREATE OR REPLACE FUNCTION game_character_progression_consistency_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -120,7 +121,8 @@ DECLARE
     v_root_revision NUMERIC(20,0);
     v_state game_character_progression_state%ROWTYPE;
 BEGIN
-    -- The stance row trigger also fires on DELETE (rejected before it runs).
+    -- The stance and progress row triggers also fire on DELETE (rejected
+    -- before they run).
     IF TG_OP = 'DELETE' THEN
         v_character := OLD.character_id;
     ELSE
@@ -139,6 +141,8 @@ BEGIN
            OR EXISTS (SELECT 1 FROM game_character_death_receipts WHERE character_id = v_character)
            OR EXISTS (SELECT 1 FROM game_character_stance_receipts WHERE character_id = v_character)
            OR EXISTS (SELECT 1 FROM game_character_stance WHERE character_id = v_character)
+           OR EXISTS (SELECT 1 FROM game_character_bestiary_kill_receipts WHERE character_id = v_character)
+           OR EXISTS (SELECT 1 FROM game_character_bestiary_progress WHERE character_id = v_character)
            OR EXISTS (SELECT 1 FROM game_character_charm_receipts WHERE character_id = v_character)
            OR (v_state.character_id IS NOT NULL AND v_state.character_revision <> 1) THEN
             RAISE EXCEPTION 'initial Character progression is inconsistent' USING ERRCODE = '23514';
@@ -171,6 +175,15 @@ BEGIN
                        s.policy_revision, s.reward_revision
                   FROM game_character_stance_receipts s WHERE s.character_id = v_character
                 UNION ALL
+                -- CHARM-2
+                SELECT b.original_character_revision, b.committed_character_revision,
+                       b.level_before, b.level_after, b.experience_before, b.experience_after,
+                       b.profile_revision, b.ruleset_revision, b.content_revision,
+                       b.simulation_revision, b.evidence_revision, b.declaration_revision,
+                       b.policy_revision, b.reward_revision
+                  FROM game_character_bestiary_kill_receipts b WHERE b.character_id = v_character
+                UNION ALL
+                -- CHARM-3
                 SELECT c.original_character_revision, c.committed_character_revision,
                        c.level_before, c.level_after, c.experience_before, c.experience_after,
                        c.profile_revision, c.ruleset_revision, c.content_revision,
@@ -236,6 +249,37 @@ BEGIN
             USING ERRCODE = '23514';
     END IF;
 
+    -- CHARM-2: the per-race kill chain and the progress rows.
+    IF EXISTS (
+            WITH ordered AS (
+                SELECT b.bestiary_occurrence_id, b.race_key, b.committed_character_revision,
+                       b.kill_count_before, b.kill_count_after,
+                       coalesce(lag(b.kill_count_after) OVER w, 0) AS previous_after,
+                       row_number() OVER w AS position,
+                       count(*) OVER (PARTITION BY b.race_key) AS kills
+                  FROM game_character_bestiary_kill_receipts b
+                 WHERE b.character_id = v_character
+                WINDOW w AS (PARTITION BY b.race_key ORDER BY b.committed_character_revision)
+            )
+            SELECT 1 FROM ordered o
+             WHERE o.kill_count_before <> o.previous_after
+                OR (o.position = o.kills AND NOT EXISTS (
+                    SELECT 1 FROM game_character_bestiary_progress r
+                     WHERE r.character_id = v_character
+                       AND r.race_key = o.race_key
+                       AND r.kill_count = o.kill_count_after
+                       AND r.committed_character_revision = o.committed_character_revision
+                       AND r.last_bestiary_occurrence_id = o.bestiary_occurrence_id))
+            UNION ALL
+            SELECT 1 FROM game_character_bestiary_progress r
+             WHERE r.character_id = v_character
+               AND NOT EXISTS (
+                    SELECT 1 FROM game_character_bestiary_kill_receipts b
+                     WHERE b.character_id = v_character AND b.race_key = r.race_key)) THEN
+        RAISE EXCEPTION 'Character Bestiary progress is inconsistent with its kill receipts'
+            USING ERRCODE = '23514';
+    END IF;
+
     IF TG_TABLE_NAME = 'game_character_progression_state' AND TG_OP = 'UPDATE' THEN
         IF NOT EXISTS (
                 SELECT 1 FROM game_character_xp_receipts x
@@ -262,6 +306,16 @@ BEGIN
                    AND s.experience_before = OLD.total_experience
                    AND s.experience_after = NEW.total_experience
                 UNION ALL
+                -- CHARM-2
+                SELECT 1 FROM game_character_bestiary_kill_receipts b
+                 WHERE b.character_id = v_character
+                   AND b.original_character_revision = OLD.character_revision
+                   AND b.committed_character_revision = NEW.character_revision
+                   AND b.level_before = OLD.level AND b.level_after = NEW.level
+                   AND b.experience_before = OLD.total_experience
+                   AND b.experience_after = NEW.total_experience
+                UNION ALL
+                -- CHARM-3
                 SELECT 1 FROM game_character_charm_receipts c
                  WHERE c.character_id = v_character
                    AND c.original_character_revision = OLD.character_revision
@@ -282,7 +336,7 @@ $$;
 --     row equals the latest one (stage, revision, occurrence); no unlock row without a receipt;
 --   * each assign receipt has its assignment row and each row its receipt (race, category,
 --     revision, occurrence), and the charm was unlocked at an earlier revision.
--- The receipt chain itself (one receipt per revision, across kinds) is the 0017 guard's.
+-- The receipt chain itself (one receipt per revision, across kinds) is the 0019 guard's.
 CREATE FUNCTION game_character_charm_consistency_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE

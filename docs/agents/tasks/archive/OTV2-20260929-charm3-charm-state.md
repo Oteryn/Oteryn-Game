@@ -2,25 +2,25 @@
 
 ```yaml
 task_id: OTV2-20260929-charm3-charm-state
-title: CHARM-3 - Charm unlocks and assignments, derived Charm Points and Echoes (migration 0019)
+title: CHARM-3 - Charm unlocks and assignments, derived Charm Points and Echoes (migration 0020)
 mode: IMPLEMENT
-status: blocked   # not freezable: blockers B1 and B2 below
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/charm3-charm-state
 issue: 162
 lane_id: GAME-CHAR durability (0009 guard-function chain)
-pr: null   # recorded in the FREEZE_SHA packet on #162
+pr: 1307
 base_sha: 4ea220f
 head_sha: null   # a commit cannot hold its own SHA; exact head is in the FREEZE_SHA packet
 final_head_sha: null
 final_head_frozen_at: null
 owner: "CHARM-3 hard worker (claude-code-session-012nzPTz29NThWJG45F2m5fP)"
 created_at: 2026-09-29
-updated_at: 2026-09-29
+updated_at: 2026-09-30
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/migrations/0019_character_charm_state.sql
+  - apps/game-server/migrations/0020_character_charm_state.sql
   - apps/game-server/src/domain/charm.rs
   - apps/game-server/src/domain/mod.rs          # registration line only
   - apps/game-server/src/durability/charm_state.rs
@@ -28,12 +28,14 @@ owned_paths:
   - apps/game-server/tests/charm_state_postgres.rs
   - apps/game-server/tests/support/charm_state_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs   # shared: one #[path] include only (lead decision)
+  - apps/game-server/src/durability/character_authority.rs  # charm_receipts arm of verify_character_integrity only (lead decision)
   - docs/agents/tasks/archive/OTV2-20260929-charm3-charm-state.md
 public_contracts: []
 depends_on:
   - "CHARM-0 decision packet §4.2 and owner answers §7 (PR #1295)"
   - "#1293 static charm catalogue candidate (25 charms, oteryn:charm.<name>)"
-  - "CHARM-2 Bestiary progress (claude/charm2-bestiary-progress, migration 0018)"
+  - "#1278 DEATH-1 (multi-kind integrity check, pub(super) gameplay fence)"
+  - "#1306 CHARM-2 Bestiary progress (migration 0019)"
 blocks: [CHARM-4, CHARM-5]
 external_repositories: []
 jira: null   # sync pending (coordinator batch)
@@ -56,8 +58,8 @@ jira: null   # sync pending (coordinator batch)
   `read_character_charm_state`, and the `CharmFacts` trait for facts owned elsewhere (completed
   Bestiary stage and entries from CHARM-2, promotion, slot entitlement), read inside the
   command's transaction after the root lock.
-- Migration 0019: `game_character_charm_receipts`, `game_character_charm_unlocks`,
-  `game_character_charm_assignments`; the 0017 chain guard with the charm kind added; a deferred
+- Migration 0020: `game_character_charm_receipts`, `game_character_charm_unlocks`,
+  `game_character_charm_assignments`; the 0019 chain guard with the charm kind added; a deferred
   charm projection guard; row guards; grants. Points and echoes are never stored.
 
 ## High-risk authority qualification
@@ -68,7 +70,7 @@ authority_invariants:
   identity_binding: [occurrence -> one command binding, receipt <-> row (charm, stage/race, revision, occurrence)]
   current_liveness: [recovery fence, FND-04 session/connection/lease/scope, scope assignment + node incarnation, root at expected revision]
   temporal_provenance: [catalogue revision = root content revision, catalogue digest in the binding]
-consumer_boundaries: [commit_charm_command, reconcile_charm_command, read_character_charm_state, SQL writes under 0019]
+consumer_boundaries: [commit_charm_command, reconcile_charm_command, read_character_charm_state, open_character_authority integrity, SQL writes under 0020]
 mutation_operators:
   applicable: [stale revision, stale connection/lease/scope generation, other session, ended session, revoked node, missing progression state, foreign catalogue revision, reused occurrence, concurrent distinct commands, concurrent same occurrence, injected rollback, row-only write, skipped or out-of-order stage, receipt without row, row without receipt, assign before unlock, second assign, race capacity, delete/update/truncate]
   considered_not_applicable: [expired/future time - no time-bounded input; the receipt time is the server statement time]
@@ -76,49 +78,47 @@ one_invariant_per_negative_case: true
 record_derived_matching_helper: none
 ```
 
-## Blockers
+## Resolved blockers
 
-- **B1** `verify_character_integrity` (`durability/character_authority.rs`, outside the owned
-  paths) requires XP receipts alone to explain every CharacterRevision. After the first charm
-  (or death, stance, Bestiary) receipt, `open_character_authority` fails for every Character, so
-  a restart cannot open Character authority. `restart_readback_after_charm_commands` reproduces it
-  and stays RED (not ignored, lead decision) in the protected PostgreSQL lane until the check
-  covers every receipt kind. #1278 (DEATH-1) rewrites that check; after it merges this PR adds
-  the charm arm (path granted for that arm only).
-- **B2** CHARM-2 migration 0018 also replaces `game_character_progression_consistency_guard`.
-  0019 replaces it again from the 0017 body, so 0019 must be rebased onto 0018 (add the Bestiary
-  kill receipts to the chain) before either merges. Prepared and verified locally: 0018 at
-  `73f66421` plus 0019 with the 0018 guard body and the three charm arms passes
-  `charm_state_postgres`, `character_stance_postgres` and `character_death_receipts_postgres`.
-
-Sequence (lead decision): #1278 -> #1306 (CHARM-2, 0018) -> #1307. After both merge, one push:
-merge `main`, rebuild the 0019 guard on 0018's merged body, add the charm arm to
-`verify_character_integrity`, switch to #1278's `pub(super)` gameplay fence and drop the copy.
+- **B1** `verify_character_integrity` counted only XP receipts, so after the first charm receipt
+  no Character authority reopened. #1278 made it multi-kind; this PR adds the
+  `game_character_charm_receipts` arm (path granted for that arm only).
+  `restart_readback_after_charm_commands` is GREEN.
+- **B2** #1306 (CHARM-2, now migration 0019) replaces the chain guard too. After merging `main`,
+  migration 0020 rebuilds the guard on main's 0019 body with every arm (XP, death, stance,
+  Bestiary) kept and the charm arms added.
 
 ## Findings for the lead
 
-- The gameplay fence is a copy of the private `character_progression::assert_gameplay_fence`
-  until #1278 makes it `pub(super)`.
-- The cases run in the standalone `charm_state_postgres` target and, through one `#[path]`
-  include, in the protected `character_authority_postgres` lane.
+- The gameplay fence is the shared `pub(super)` `character_progression::assert_gameplay_fence`
+  (#1278); the copy is gone. The catalogue revision is checked against the progression state's
+  content revision, which the shared `state_matches_root` binds to the fenced root.
+- `BestiaryCharmFacts` is the production `CharmFacts` over the CHARM-2 kill counters, read in the
+  command's transaction. Its entries (race + `charm_points`) come from the Creature definitions
+  loaded by the caller. No durable promotion or slot entitlement exists: it reports `false` and
+  `Free` until one does.
 - Slot limits (free 2, Premium 6, Charm Expansion unlimited) are a Canary-sourced assumption
   pending the owner's answer.
-- No durable promotion or slot entitlement exists; production `CharmFacts` returns `false` and
-  `Free` until one does. `rulesets/progression/charms/` stays unpopulated: the rules are code.
+- The cases run in the standalone `charm_state_postgres` target and, through one `#[path]`
+  include, in the protected `character_authority_postgres` lane.
+- `rulesets/progression/charms/` stays unpopulated: the rules are code.
 
 ## Validation (local)
 
 - `cargo fmt --all --check`, `cargo clippy --locked -p oteryn-game-server --all-targets -- -D
   warnings`, `cargo test --locked -p oteryn-game-server`: pass.
-- PostgreSQL 17.6: `charm_state_postgres` 5 pass, 1 RED (B1); `character_authority_postgres`
-  691 pass, 1 RED (the same B1 case); `character_stance_postgres`,
-  `character_death_receipts_postgres`, `character_progression_postgres`: pass.
+- PostgreSQL 17.6: `charm_state_postgres` 7/7 (restart readback GREEN; real CHARM-2 kill
+  counters through `BestiaryCharmFacts`), `character_authority_postgres` 718/718,
+  `bestiary_progress_postgres` 628/628, `combat_bestiary_postgres` 645/645,
+  `character_stance_postgres` 5/5, `character_death_receipts_postgres` 6/6,
+  `character_progression_postgres` 635/635.
 - RED: disabling the charm projection guard fails the SQL guard case; skipping the balance check
-  fails the rules and the double-spend cases.
+  fails the rules and the double-spend cases; without the integrity arm the restart case fails.
 - `validate_governance.py`, governance unit tests, `validate_repository_policy.py`,
   `git diff --check`: pass.
 
 ## Closeout
 
-- Review: independent exact-head review after B1 and B2 are resolved and the head is frozen.
+- Review: independent exact-head persistence review, routed by the control plane on the frozen
+  head (no owner-funded review triggered by the worker).
 - Merge commit/result: squash merge of the CHARM-3 PR (resolve with `git log --grep`).
