@@ -4,7 +4,8 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   combat, security, privacy and protocol) and protected integration. Owner question P1 (§16) is
   answered: the PvP type is per-World configuration; Optional and Open PvP are both delivered; the
-  first World launches as Optional PvP (a stated assumption pending owner confirmation, §16).
+  first World launches as Optional PvP (confirmed by the owner, §16). Owner question P2 (§16) is
+  answered: Hardcore PvP stays a v1 engine value that no World uses.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30): build parties and PvP now, full Tibia Global
   parity. It is the PvP decision that ATTACK-0 §3, the first player death decision §4.1 (D60) and
@@ -35,7 +36,9 @@
 | PVP-BLOCK-1 | impl, movement review | walking through characters and expert-mode blocking (§7.5) | PVP-RT-1; SPEED-1 |
 | PVP-WIRE-1 | impl, protocol review | capabilities `PARTY_V1` and `PVP_V1`, the party and PvP commands and domains, VIS-2 skull, shield and frame fields (§11) | PARTY-1; PVP-RT-1; VIS-2; ATTACK-WIRE-1 |
 
-Every PvP child builds and tests both `OPTIONAL` and `OPEN` (owner answer P1, §16). PvP goes live
+Every PvP child builds and tests both `OPTIONAL` and `OPEN` (owner answer P1, §16). The `HARDCORE`
+branches it touches are built and unit-tested with them, but no World is configured `HARDCORE`
+(owner answer P2, §16). PvP goes live
 on a World only when PVP-1, PVP-RT-1, PVP-DEATH-1 and PVP-WIRE-1 have landed; until then
 ATTACK-0's "creatures only" stays. The first World goes live as `OPTIONAL` under that gate: rule 1
 (§7.2) then refuses every character target until GUILD-WAR-0 fills `war_between`. A World
@@ -291,7 +294,7 @@ it off for the colocated members.
 - `pvp_type` is a World ruleset field (`rulesets/pvp/`), the same on every channel, bound into the
   ruleset revision. It changes only with a new ruleset revision at a planned reset; a change never
   clears durable PvP state.
-- Values in v1: `OPTIONAL`, `OPEN`, `HARDCORE`. `RETRO_OPEN` and `RETRO_HARDCORE` are refused by
+- Values in v1: `OPTIONAL`, `OPEN`, `HARDCORE` (kept as an unused value, owner answer P2, §16). `RETRO_OPEN` and `RETRO_HARDCORE` are refused by
   ruleset validation until their rules have a source (retro frags, PvP XP formula, 6.31%
   blessings).
 - **First World** (owner answer P1, §16): `OPTIONAL`. `OPEN`, with the full skull system, is
@@ -303,10 +306,9 @@ Character + World, strong durable, one state on every channel (the scope matrix 
 
 - `game_character_pvp_state`: `character_id` primary key, `world_id`, `skull` (`NONE`, `RED`,
   `BLACK`), `skull_until`, `kill_block_until`, `logout_block_until`, `pz_block_until`,
-  `white_skull_until`, `adventurer_forfeited`, `ledger_total_damage`, `ledger_snapshot_at`,
-  `revision`.
+  `white_skull_until`, `adventurer_forfeited`, `ledger_total_buckets`, `revision`.
 - `game_character_pvp_ledger` (§8.3): (`victim_character_id`, `contributor_character_id`) primary
-  key, `damage`, `assist`, `last_at`; at most `PARTYPVP0-RL-25` (16) per victim.
+  key, `buckets` (at most 31 entries of bucket start, damage, assist; 10 s buckets), `last_at`; at most `PARTYPVP0-RL-25` (16) per victim.
 - `game_character_unjustified_points`: (`character_id`, `death_occurrence_id`) primary key,
   `victim_character_id`, `points_milli` (1 to 1,000), `committed_at`.
 - `game_character_revenge_marks` (orange): (`victim_character_id`, `killer_character_id`,
@@ -416,19 +418,25 @@ attack, the mode is locked to Red Fist. A black skull cannot select Red Fist.
 
 Per character victim, runtime: each character contributor's damage (its summons' included) and
 assists (a paralysis applied, a trap closed, a heal on an attacker) over the last `PARTYPVP0-RL-18`
-(5 minutes), at most `PARTYPVP0-RL-25` (16) contributors (D3's rule: the 17th is not tracked), plus
-the total damage taken from all sources in that window.
+(5 minutes), at most `PARTYPVP0-RL-25` (16) contributors, plus the total damage taken from all
+sources in that window. Architect ruling (replaces D3's "the 17th is not tracked", which would let an
+untracked attacker escape §9): a PvP damaging or assisting action by a character with no ledger slot
+while all 16 are taken is refused (`PVP_REFUSED {LEDGER_FULL}`; an area effect skips that target)
+before any effect, so every accepted attacker is tracked and the contributor count in §9 and §10.1
+is complete. Slots free as contributors age out of the window.
 
 **Durable snapshot** (architect ruling; §9 and §10.1 must not lose contributors to a node crash):
 the ledger is written ahead with the §8.1 deadlines. Every durable deadline write that touches a
 victim upserts its `game_character_pvp_ledger` rows from the runtime ledger (the acting contribution
-as a row with the amounts known before it) and sets `ledger_total_damage` and `ledger_snapshot_at`
-in its state row; a hit or assist by a contributor with no durable row for that victim always
+as a row with the amounts known before it) and sets `ledger_total_buckets` in its state row; amounts
+are kept per 10 s time bucket (`PARTYPVP0-RL-27`), each hit or assist adding to the bucket of its time; a hit or assist by a contributor with no durable row for that victim always
 triggers such a write before it takes effect (a failed write refuses the action). So every
 contributor is durable before it contributes, and the stored amounts are at most `PARTYPVP0-RL-27`
 (10 s) behind. At every admission and readmission (§8.1) the runtime ledger is restored from the
-rows whose `last_at` is within the window, with the stored total aging out at `ledger_snapshot_at`
-+ the window. The victim's death transaction (§9) deletes its rows; the World job deletes expired
+buckets that are still within the window, each bucket aging out at its end + the window, so a hit
+near the start of the window expires on time even when a later hit by the same contributor is
+current, and a restored amount is never lower than the live one (at most 10 s longer); the stored
+total ages out per bucket the same way. A contributor row with no live bucket is deleted. The victim's death transaction (§9) deletes its rows; the World job deletes expired
 ones (§6.2). A crash can lose at most 10 s of amounts, never a contributor
 (`PARTYPVP0-RL-31`).
 
@@ -607,8 +615,14 @@ c) Hardcore PvP: no skulls, no restrictions.
 
 Owner answer (2026-09-30, #162): b and a — the PvP type is per-World configuration; Optional PvP
 and Open PvP (with the full skull system) are both delivered; the first World launches as Optional
-PvP, and Open PvP is available for a World configured with it. Stated assumption pending owner
-confirmation: this reading of "b i a" ("b and a").
+PvP, and Open PvP is available for a World configured with it. The owner confirmed this reading of
+"b i a" ("b and a") on 2026-09-30 (#162, A1).
+
+**P2. Should Hardcore PvP be dropped from the v1 engine values?** a) drop it; b) keep it as an
+unused value.
+
+Owner answer (2026-09-30, #162): b — `HARDCORE` stays a v1 value with the rules of §7; no World is
+configured with it (§6.1, §7).
 
 ## 17. Decision test
 
@@ -617,7 +631,7 @@ confirmation: this reading of "b i a" ("b and a").
 - **Minimum sufficient:** three party tables, two consent tables, four PvP tables, rules in the existing legality
   stage, PvP fields in the existing death transaction, two wire capabilities.
 - **Superseding evidence:** an official source for the thresholds, the activity window, the
-  unfair-fight formula or the retro rules; an owner correction of the P1 reading (§16).
+  unfair-fight formula or the retro rules.
 - **Deliberately not decided:** guild wars, arenas and PvP zones, the Party Finder, the Party Hunt
   Analyser, Retro Worlds, Death Redemption, blessing sales (DEATH-4).
 

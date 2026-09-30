@@ -54,8 +54,8 @@ PARTY-PVP-0 decides parties and PvP at full Global parity (owner direction, 2026
   respawn at 40 HP and 0 mana; the unfair-fight reduction recorded as 0 until sourced.
 - **GUILD-WAR-0 hooks:** `war_between`, `on_player_kill`, `AssistLedger`, the war emblem slot.
 - **Owner question P1** (answered): the PvP type is per-World configuration; Optional and Open
-  PvP are both delivered; the first World launches as Optional PvP (stated assumption pending
-  owner confirmation).
+  PvP are both delivered; the first World launches as Optional PvP (confirmed, A1).
+- **Owner question P2** (answered b): `HARDCORE` stays an unused v1 value.
 
 No code, migration or content change is made.
 
@@ -96,9 +96,14 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
   `top_damage_party_id`, invite consent serialized on `character_root`, durable PvP ledger
   snapshot, channel-visibility setting, Leave under the full combat lock, invitee cap and
   invitation expiry; validators re-run PASS.
+- Codex round 3 (#1402, 2 P1): durable PvP ledger now keeps per-10 s time buckets so a restore
+  expires old hits on time (never below the live amount, at most 10 s longer); a 17th attacker is refused
+  (`LEDGER_FULL`) instead of untracked; validators re-run PASS.
 - Owner answers (2026-09-30, #162): P1 b and a — per-World PvP type; Optional and Open PvP both
   delivered; the first World launches as Optional PvP (stated assumption pending owner
   confirmation); validators re-run PASS.
+- Owner answers (2026-09-30, #162 5919339646): A1 confirms the P1 reading; P2 b keeps `HARDCORE`
+  as an unused v1 value (§6.1, §16); validators re-run PASS.
 
 ## Closeout
 
@@ -109,10 +114,10 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
-last_progress: draft authored; awaiting architect review and publication
+last_progress: owner answers P1, A1 and P2 applied; awaiting exact-head review and integration
 status: completed
 branch: claude/arch-party-pvp-0
-owner_action_required: "confirm the P1 reading (b and a: first World Optional, Open available)"
+owner_action_required: null
 blocker: null
-next_action: "architect reviews and commits the owner-answer update"
+next_action: "exact-head independent review, then protected Merge Queue integration"
 ```
