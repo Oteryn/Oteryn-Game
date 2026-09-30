@@ -236,7 +236,13 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
   root for a command, FOR UPDATE; the bidders' roots FOR SHARE in CharacterId order for
   settlement); the property row; the auction and its bids by id; the slot rows by AccountId; the ban
   row; for a disposition step, the items by ItemInstanceId and the Inbox counters by CharacterId;
-  then the balance rows by `account_id`.
+  then the balance rows by `account_id`. Amendment (pending on acceptance of GUILD-0;
+  `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §4.1, `GUILD0-LO-01`): the
+  guild rows by `GuildId` come after the Character roots and before the property row (FOR SHARE
+  for the bidding guilds of a guildhall settlement or release, FOR UPDATE for the owner guild);
+  the guild member, invitation and leadership rows follow them; the guild ban follows the house
+  ban; the guild balance and disband claim rows by `GuildId` come after the Inbox counters and
+  before the balance rows by `account_id`. A job never locks a guild row after the property row.
 - **Fence.** Every `HOUSE_INTENT` command takes the composition decision rule 2 session fence
   (recovery fence, admission relations, the acting Character's session generation and guards) before
   the property row; World jobs take only the recovery fence and admission relations.
@@ -267,7 +273,8 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
   `STALE_REVISION` and writes nothing.
 - Entries name characters of the same World only; at most `HOUSEOWN0-RL-12` (200) per list. Guild
   and wildcard patterns wait for guilds. Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §10): a list entry may also be a guild
-  entry `{guild, min_level}` or an exclusion of one character; name wildcards stay deferred.
+  entry `{guild, match, level}` with `match` `EXACT` or `AT_LEAST`, or an exclusion of one
+  character; name wildcards stay deferred.
 - No spell edits the list (EXP-HOUSES-01 §17). Entry, door and kick checks belong to the house
   interior runtime, which reads the list at its revision.
 
