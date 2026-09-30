@@ -27,7 +27,7 @@ CATALOGUES = {
     "content/world/objects": "WorldObject",
     "content/world/terrain": "Terrain",
 }
-ITEM_BINDINGS = "imports/crystalserver/bindings/items.json"
+ITEM_DEFINITIONS = "content/items/definitions"
 GENERATORS = {
     "Area.HuntingPlace": "tools/content-schema/world-authoring/convert_hunting_places.py",
 }
@@ -240,7 +240,11 @@ def validate(root: Path) -> list[str]:
     if any(": schema:" in error for error in errors):
         return errors  # semantic checks assume schema-valid records
     hunting_places(root, hunting_summary, families, errors)
-    item_keys = {row["target"]["key"] for row in load(root, ITEM_BINDINGS)["bindings"]}
+    item_keys = {
+        record["definition"]["identity"]["key"]
+        for shard in sorted((root / ITEM_DEFINITIONS).glob("items-*.json"))
+        for record in load(root, str(shard.relative_to(root)))["records"]
+    }
     catalogue = catalogue_keys(root)
     used = {"Item": 0, "Terrain": 0, "WorldObject": 0}
     for record in families["Transition.Teleport"]:
@@ -250,28 +254,29 @@ def validate(root: Path) -> list[str]:
         item_id = (
             record["source_bindings"][0]["external_id"].split(":")[1].split("#")[0]
         )
-        expected = next(
-            (
-                (family, f"oteryn:{prefix}.tibia.i{item_id}")
-                for prefix, family in (
-                    ("world-object", "WorldObject"),
-                    ("terrain", "Terrain"),
-                )
-                if f"oteryn:{prefix}.tibia.i{item_id}" in catalogue
-            ),
-            None,
-        )
+        item_key = f"oteryn:item.tibia.i{item_id}"
+        if item_key in item_keys:
+            expected = ("Item", item_key)
+        else:
+            expected = next(
+                (
+                    (family, f"oteryn:{prefix}.tibia.i{item_id}")
+                    for prefix, family in (
+                        ("world-object", "WorldObject"),
+                        ("terrain", "Terrain"),
+                    )
+                    if f"oteryn:{prefix}.tibia.i{item_id}" in catalogue
+                ),
+                None,
+            )
         if target is None:
             errors.append(f"{key}: teleport without an object")
             continue
         used[target["family"]] += 1
-        if expected is not None:
-            if (target["family"], target["key"]) != expected:
-                errors.append(f"{key}: object must be the catalogue key {expected[1]}")
-        elif target["family"] != "Item" or target["key"] not in item_keys:
-            errors.append(
-                f"{key}: object is neither a catalogue record nor a bound Item"
-            )
+        if expected is None:
+            errors.append(f"{key}: item {item_id} has no Item record or catalogue key")
+        elif (target["family"], target["key"]) != expected:
+            errors.append(f"{key}: object must be the canonical key {expected[1]}")
         if declaration["from"] == declaration["to"]:
             errors.append(f"{key}: teleport to its own tile")
     if summary.get("teleport_object_families") != used:

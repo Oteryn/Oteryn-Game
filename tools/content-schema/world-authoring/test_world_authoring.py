@@ -16,7 +16,7 @@ import fandom_hunting_snapshot as snapshot_tool
 import otbm_reader
 import validate_world_metadata as validate
 
-TELEPORT_ITEM = 1949  # bound in imports/crystalserver/bindings/items.json
+TELEPORT_ITEM = 1949  # has an Item record in content/items/definitions
 
 
 def escape(payload: bytes) -> bytes:
@@ -88,8 +88,10 @@ def fixture_map(extra_houses=()) -> bytes:
     )
 
 
-def add_areas(root: Path, catalogue=(("WorldObject", TELEPORT_ITEM),)) -> None:
-    """Fixture stand-ins for the AREAS-1 city records and the WO-2 catalogue shards."""
+def add_areas(
+    root: Path, catalogue=(("WorldObject", TELEPORT_ITEM),), items=()
+) -> None:
+    """Fixture stand-ins for the AREAS-1 city records, WO-2 catalogue and Item records."""
     files = {
         "content/world/areas/cities/areas-00000-00000.json": {
             "areas": [
@@ -126,6 +128,22 @@ def add_areas(root: Path, catalogue=(("WorldObject", TELEPORT_ITEM),)) -> None:
                 ],
                 "schema": "OTERYN_AREA_AUTHORING/candidate-1",
             }
+    if items:
+        files["content/items/definitions/items-00000-00000.json"] = {
+            "family": "Item",
+            "records": [
+                {
+                    "definition": {
+                        "identity": {
+                            "family": "Item",
+                            "key": f"oteryn:item.tibia.i{item}",
+                            "revision": "definition-r1",
+                        }
+                    }
+                }
+                for item in items
+            ],
+        }
     for path, document in files.items():
         (root / path).parent.mkdir(parents=True, exist_ok=True)
         (root / path).write_bytes(convert.canonical(document))
@@ -178,9 +196,6 @@ class ConvertAndValidateTest(unittest.TestCase):
         for path, data in self.out.items():
             (self.root / path).parent.mkdir(parents=True, exist_ok=True)
             (self.root / path).write_bytes(data)
-        bindings = self.root / validate.ITEM_BINDINGS
-        bindings.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(convert.ITEM_BINDINGS, bindings)
         data = snapshot_tool.canonical(
             snapshot_tool.build_snapshot(PAGES, "2026-09-29")
         )
@@ -230,9 +245,9 @@ class ConvertAndValidateTest(unittest.TestCase):
             },
         )
 
-    def teleport_object(self, catalogue):
+    def teleport_object(self, catalogue, items=()):
         with tempfile.TemporaryDirectory() as empty:
-            add_areas(Path(empty), catalogue)
+            add_areas(Path(empty), catalogue, items)
             out = convert.build(
                 {"data-global/world/world.otbm": fixture_map()}, Path(empty)
             )
@@ -241,36 +256,49 @@ class ConvertAndValidateTest(unittest.TestCase):
         ]
         return json.loads(out[path])["records"][0]["declaration"]["object"]
 
-    def test_teleport_object_uses_the_family_key_of_its_id(self):
+    def test_teleport_object_uses_the_canonical_key_of_its_id(self):
+        item_key = f"oteryn:item.tibia.i{TELEPORT_ITEM}"
+        for catalogue in (
+            (),
+            (("Terrain", TELEPORT_ITEM),),
+            (("WorldObject", TELEPORT_ITEM),),
+        ):
+            item = self.teleport_object(catalogue, (TELEPORT_ITEM,))
+            self.assertEqual((item["family"], item["key"]), ("Item", item_key))
         terrain = self.teleport_object((("Terrain", TELEPORT_ITEM),))
         self.assertEqual(
             (terrain["family"], terrain["key"]),
             ("Terrain", f"oteryn:terrain.tibia.i{TELEPORT_ITEM}"),
         )
-        item = self.teleport_object(())
-        self.assertEqual(
-            (item["family"], item["key"]), ("Item", convert.item_keys()[TELEPORT_ITEM])
-        )
+        self.assertEqual(convert.item_keys()[TELEPORT_ITEM], item_key)
 
-    def test_teleport_object_fails_closed_without_any_family_key(self):
-        original = convert.item_keys
-        convert.item_keys = dict
-        try:
-            with self.assertRaises(convert.ConvertError):
-                self.teleport_object(())
-        finally:
-            convert.item_keys = original
+    def test_teleport_object_fails_closed_without_any_key(self):
+        with self.assertRaises(convert.ConvertError):
+            self.teleport_object(())
 
-    def test_rejects_teleport_object_outside_the_catalogue_or_family(self):
+    def test_rejects_teleport_object_that_is_not_the_canonical_key(self):
         shard = self.shard("Transition.Teleport")
+        item_key = f"oteryn:item.tibia.i{TELEPORT_ITEM}"
+        # No Item record in the fixture: the catalogue key is canonical, an Item key is not.
         shard["records"][0]["declaration"]["object"] = {
             "family": "Item",
-            "key": convert.item_keys()[TELEPORT_ITEM],
+            "key": item_key,
             "revision": "definition-r1",
         }
         self.rewrite("Transition.Teleport", shard)
         self.assertTrue(
-            any("must be the catalogue key" in e for e in validate.validate(self.root))
+            any("must be the canonical key" in e for e in validate.validate(self.root))
+        )
+        # With an Item record the catalogue key is no longer canonical.
+        add_areas(self.root, (("WorldObject", TELEPORT_ITEM),), (TELEPORT_ITEM,))
+        shard["records"][0]["declaration"]["object"] = {
+            "family": "WorldObject",
+            "key": f"oteryn:world-object.tibia.i{TELEPORT_ITEM}",
+            "revision": "definition-r1",
+        }
+        self.rewrite("Transition.Teleport", shard)
+        self.assertTrue(
+            any("must be the canonical key" in e for e in validate.validate(self.root))
         )
         shard["records"][0]["declaration"]["object"] = {
             "family": "WorldObject",
@@ -279,10 +307,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         }
         self.rewrite("Transition.Teleport", shard)
         self.assertTrue(
-            any(
-                "must be the catalogue key" in e or "neither" in e
-                for e in validate.validate(self.root)
-            )
+            any("must be the canonical key" in e for e in validate.validate(self.root))
         )
 
     def test_check_reports_and_write_removes_extra_generated_shards(self):
@@ -486,9 +511,6 @@ class HuntingPlaceEndToEndTest(unittest.TestCase):
         }
         add_areas(self.root)
         self.write(convert.build(blobs, self.root))
-        bindings = self.root / validate.ITEM_BINDINGS
-        bindings.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(convert.ITEM_BINDINGS, bindings)
         self.load(snapshot_tool.build_snapshot(PAGES, "2026-09-29"))
 
     def tearDown(self):

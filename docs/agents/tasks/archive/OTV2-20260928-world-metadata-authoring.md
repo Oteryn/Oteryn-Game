@@ -67,10 +67,12 @@ The source is `zimbadev/crystalserver@00ce02a5` (`summer-update`, owner-selected
 - `recommended_levels`: plain integer levels per vocation (386);
 - `source_facts.creature_names`: plain wiki names, not Creature keys (439).
 
-Each teleport `object` is the A12 4.6 family key of its item id: the WorldObject key
-`oteryn:world-object.tibia.i<id>` (826) or Terrain key `oteryn:terrain.tibia.i<id>` (42) when
-the WO-2 catalogue has the id, else the Item key (4), else the converter fails closed. The
-validator requires the family and key to exist and the catalogue to win over Item.
+Each teleport `object` is the canonical A12 key of its item id (architect ruling #162 comment
+5910173902, Q1b, superseding the earlier catalogue-first rule): the Item key when the id has an
+Item record in `content/items/definitions` (even if it routes to Terrain or WorldObject; the
+runtime follows the 4.6 `routed_to` pointer), else the WO-2 catalogue key, else the converter
+fails closed. All 872 teleports are Item. The validator requires an Item key to have an Item
+record and allows a catalogue key only when the id has none.
 
 Generator-owned shards on disk that a run no longer generates (`<stem>-NNNNN-NNNNN.json` in a
 family directory whose index the run writes) are reported `EXTRA` by `--check` and deleted in
@@ -100,7 +102,7 @@ write mode; indexes and other files are never touched.
       and deletes extra generated shards; `convert_hunting_places.py` does the same.
 - [x] `validate_world_metadata.py` checks schema, shard contiguity, canonical bytes, stray
       files, sorted unique keys, binding targets, hunting-place city references against
-      AREAS-1, teleport object family and key against the WO-2 catalogue and Item bindings,
+      AREAS-1, teleport object canonical key against the Item records and WO-2 catalogue,
       capture counts and map extent.
 - [x] `test_world_authoring.py` covers reader, converters, validator, negatives, the
       teleport family choice and the extra-shard check and delete.

@@ -10,7 +10,7 @@ on:
       - content/world/objects/**
       - content/world/areas/cities/**
       - content/world/areas/hunting-places/**
-      - imports/crystalserver/bindings/items.json
+      - content/items/definitions/**
       - imports/tibiawiki/hunting-places/**
       - .github/workflows/world-metadata-authoring.yml
   workflow_dispatch:
