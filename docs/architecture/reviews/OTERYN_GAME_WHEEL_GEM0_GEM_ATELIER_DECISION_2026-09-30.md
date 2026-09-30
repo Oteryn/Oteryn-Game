@@ -140,7 +140,8 @@ Wheel.
 - `game_character_atelier_state`: `character_id`, `atelier_revision` (+1 per change), `gem_count`.
 - `game_character_atelier_receipts`: one per change: occurrence, SHA-256 request binding, action,
   the CharacterRevision it advanced, before and after `atelier_revision`, the gem or grade row
-  before and after, the RNG outputs, the TransactionId of the item lines, the fee binding.
+  before and after, the RNG outputs, the TransactionId of the item lines, the fee binding and
+  the Wheel ruleset revision the outcome was committed under.
 - **Cap** `WHEELGEM0-RL-02`: 250 revealed gems per character (`PARITY_PENDING`). A reveal over it
   is `ATELIER_FULL`, nothing written.
 - **Guards** (deferred): `gem_count` equals the rows; quality matches the non-null mods; the
@@ -155,7 +156,15 @@ Wheel.
 bank balance (BANK-FEE-0 lock order). The request carries the expected `atelier_revision`: stale is
 `STALE_REVISION`; a CharacterRevision move by another writer retries once (WHEEL-0 §4). Each change
 advances `CharacterRevision` once, with its receipt, and commits its item lines in the same
-transaction (D177). A replay of the occurrence returns the first outcome. A refusal writes nothing.
+transaction (D177). A refusal writes nothing.
+
+**Replay first (`WHEELGEM0-RP`).** The writer resolves the receipt by occurrence before any other
+check. A found receipt whose request binding matches returns the stored outcome, using the ruleset
+revision bound in that receipt, and draws, validates and writes nothing; a mismatched binding is
+the existing conflict. The request binding covers the client request only, never the server's
+current ruleset revision (SIM-DETERMINISM-01 §12: a newer ruleset does not change a retry-safe
+occurrence). The current-ruleset checks (`RULESET_MIGRATION_PENDING`, §5.3; the `WHEELGEM0-RNG`
+seed revision, §6) apply only to an occurrence with no receipt.
 
 **Runtime projection (`WHEELGEM0-RT`).** Combat reads the runtime actor's Wheel projection, never
 the database (WHEEL-0 §4 Load). Admission loads the vessel gems, their rows and the grade rows into
@@ -182,7 +191,8 @@ revision on the gem or grade row it writes.
   type of a grade row, contribute 0 to every effect of §9.3, count as Grade I for the preceding-mod
   cap and give no Grade IV point. Every Atelier action on such a gem or mod type (dismantle, switch
   domain, lock, grade up) and every vessel placement of such a gem is refused with
-  `RULESET_MIGRATION_PENDING`, writing nothing. A gem already in a vessel stays there, dormant.
+  `RULESET_MIGRATION_PENDING`, writing nothing; this applies to a new occurrence only, since a
+  replay returns its receipt first (`WHEELGEM0-RP`, §5.2). A gem already in a vessel stays there, dormant.
 - **Migration obligation (GEM-R).** A revision that changes mod identities, values, the
   compatibility rule, the grade chain, fees or yields ships exactly one of: (1) an explicit
   source-to-destination migration of gem and grade rows, validated against the destination
@@ -214,7 +224,8 @@ revision on the gem or grade row it writes.
   the same command on the same draw. It draws in order: the domain (0-3), basic mod 1 from the slot-1
   list, basic mod 2 from the slot-2 list compatible with mod 1 (regular and greater), the supreme
   mod from the vocation's list (greater). The outputs are written in the receipt; a replay returns
-  them and never draws again; a changed ruleset revision is a new binding and conflicts.
+  them and never draws again. A replay returns the outcome under the revision bound in its
+  receipt (`WHEELGEM0-RP`, §5.2); only a new occurrence draws under the current revision.
 - **Fees (D178, owner question G1).** `FeeBurnCause` gains `GemReveal {gem_id, occurrence}`,
   `GemSwitchDomain {gem_id, occurrence}` and `GemGradeUp {kind, mod, to_grade, occurrence}`, only
   if G1 admits them. Values are ruleset data; the first revision takes Canary's (§2) as

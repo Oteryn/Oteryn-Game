@@ -85,6 +85,9 @@ combat review; GEM-WIRE-1 protocol review; GEM-R content review.
 - Codex round-1 repair (PR #1414, 3 findings): ruleset revision compatibility §5.3
   (`WHEELGEM0-RV`, R3), protected reveal RNG root (`WHEELGEM0-RNG`), runtime projection refresh
   (`WHEELGEM0-RT`); validators re-run PASS.
+- Codex round-2 repair (PR #1414, 1 finding): replay resolves the receipt by occurrence first
+  and returns the outcome under its bound ruleset revision (`WHEELGEM0-RP`, §5.2, §5.3, §6);
+  validators re-run PASS.
 
 ## Closeout
 
