@@ -5,9 +5,11 @@
 //! One transaction keyed by the `PlayerDeathOccurrence` advances the global
 //! CharacterRevision with exactly one death receipt: the D58 experience loss,
 //! the consumption of every held blessing and the pending respawn at the
-//! recorded position.  It writes Character state only.  Until DEATH-3 a death
-//! selects no Amulet of Loss and loses no item; no durable promotion or
-//! Premium state exists yet, so the D66 promotion reduction never applies.
+//! recorded position, and empties the monk Harmony and remaining forced Serene
+//! time (SPELL-D8 §8.2 cross-owner item, migration 0026).  It writes Character
+//! state only.  Until DEATH-3 a death selects no Amulet of Loss and loses no
+//! item; no durable promotion or Premium state exists yet, so the D66
+//! promotion reduction never applies.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
@@ -269,7 +271,8 @@ impl DurabilityRoot {
                     let progression_update = sqlx::query(
                         "UPDATE game_character_progression_state \
                             SET character_revision = $2::text::numeric(20,0), level = $3, \
-                                total_experience = $4 \
+                                total_experience = $4, harmony = 0, \
+                                serene_forced_remaining_micros = 0 \
                           WHERE character_id = encode($1,'hex')::uuid \
                             AND character_revision = $5::text::numeric(20,0)",
                     )
