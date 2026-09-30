@@ -48,7 +48,7 @@ No code, migration or content change is made.
 ## Architecture and source of truth
 
 - `PROVEN`: #162 5896414182; migrations `0001`-`0017` (`0017` merged in #1270 as `878f6fad`; next
-  free migration `0018`); DUR-02 rule 2; `CasterState`; the spell cast contract §10.
+  free migration after `0018`-`0020`, #162 5901531201); DUR-02 rule 2; `CasterState`; the spell cast contract §10.
 - `UNKNOWN`: the Dawnport choice details, the magic-level formula and multipliers, and the death
   loss amounts. These are for the implementation lanes.
 
@@ -123,6 +123,12 @@ persistence review.
        added: the row-guard placement and the revision-1 list; the flush failure paths; the death
        binding version; the death build-field CHECKs; and "training is not enabled in production
        before the DEATH ML loss child".
+  - Carried over from the independent review of PROFICIENCY-0 (#1294 5901976834). It applies to
+    every new receipt kind, so it is fixed here before the pending re-review:
+    - CHAR-BUILD-1 extends `verify_character_integrity`;
+    - it keeps every consistency-guard arm;
+    - it grants and revokes as `0017`;
+    - it takes the next free migration after `0018`-`0020` (#162 5901531201).
   - Re-review of the successor head goes through the control plane.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 

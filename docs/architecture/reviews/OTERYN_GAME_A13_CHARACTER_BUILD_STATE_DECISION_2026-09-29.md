@@ -29,14 +29,16 @@
 ## Implementation brief
 
 - **CHAR-BUILD-1** (durability lane, `oteryn-hard-worker`, persistence review). Owned paths:
-  migration `0018` (or the next free number at allocation), `apps/game-server/src/durability/**`
+  the next free migration at allocation (after `0018`-`0020`), `apps/game-server/src/durability/**`
   for the writer and reconcile, the admission load, and its `*_postgres` tests. It builds:
   - `game_character_build_state` and `game_character_build_receipts` (§4.1-§4.2). No row means
     (`none`, 0, 0). No creation insert, no backfill.
   - The build kind in the shared `0009` guards, in that migration. The #162 lease
     orders the guard rewrites STANCE-0 (`0017`, merged `878f6fad`), then CHAR-BUILD-1, then H-1
-    (spell contract §8.2), so CHAR-BUILD-1 starts from `0017` and carries XP, death, stance and
-    build (§4.2 "Shared guard").
+    (spell contract §8.2). CHAR-BUILD-1 starts from the last merged rewrite (`0018` of DEATH-1a,
+    #1278, if merged) and carries XP, death, stance and build (§4.2 "Shared guard").
+  - The extension of `verify_character_integrity` and the grants (§4.2 "Integrity verifier",
+    "Grants").
   - `commit_character_build` and `reconcile_character_build` (§4.2 "Writer").
   - The nullable build columns on `game_character_death_receipts` (DEATH-0 §3.1 amendment, §4.6).
   - The admission load into the live Character (§4.1).
@@ -189,9 +191,26 @@ The owner confirmed these directly in this session on 2026-09-29.
   receipt kind.
 - **Shared guard.** Build state joins the guard-rewrite chain of DEATH-0, STANCE-0 and H-1, in
   the #162 lease order (STANCE-0, then CHAR-BUILD-1, then H-1). Each rewrite starts from the last
-  merged one and carries every receipt kind so far. The migration is `0018`, or the next free
-  number at allocation. The consistency guard counts build
-  receipts in the `revision − 1` total and chains their level and experience.
+  merged one and carries every receipt kind so far. The migration takes the next free number at
+  allocation, after `0018` (DEATH-1a, #1278) and the `0019`/`0020` CHARM reservations.
+  - The consistency guard counts build receipts in the `revision − 1` total, and chains their
+    level and experience.
+  - It keeps every arm it has when CHAR-BUILD-1 starts: the count and distinct count, the root
+    state match, the cross-kind before/after chain, the revision fields, the stance chain, and the
+    rule that the successor explains the state change.
+- **Integrity verifier.** `verify_character_integrity`
+  (`apps/game-server/src/durability/character_authority.rs`) checks the chain at admission.
+  CHAR-BUILD-1 extends it from the latest merged version (XP ∪ death ∪ stance after #1278) to
+  build receipts, and to death receipts' build fields. It keeps every existing arm. Otherwise
+  every Character with a build receipt would fail admission as `Unavailable`.
+- **Grants.** As in `0017`:
+  - REVOKE ALL on the new tables and guard functions from PUBLIC;
+  - `oteryn_game_runtime` gets SELECT and INSERT on the build receipts, and SELECT, INSERT and
+    UPDATE on the build row (never DELETE);
+  - `oteryn_game_control` gets SELECT on both;
+  - the guard functions get a fixed `search_path`.
+
+  The new death receipt columns need no new grant.
 - **Build chain.** The shared consistency guard reads a `build_chain`: build receipts, and death
   receipts with non-NULL build fields (§4.6), ordered by revision. Each receipt's before values
   equal the previous one's after values, or (`none`, 0, 0) for the first. A death's single
@@ -299,7 +318,7 @@ The owner confirmed these directly in this session on 2026-09-29.
 
 | Child | Scope | Depends on |
 |---|---|---|
-| CHAR-BUILD-1 | Migration `0018` (or the next free number at allocation), writer and reconcile: the table, the receipt kind, the nullable death receipt build columns, admission load, row and chain guards (§4.1, §4.2, §4.6). It needs a persistence review. | this decision; `0017` |
+| CHAR-BUILD-1 | Next free migration at allocation, writer and reconcile: the table, the receipt kind, the nullable death receipt build columns, admission load, row and chain guards, integrity verifier, grants (§4.1, §4.2, §4.6). It needs a persistence review. | this decision; `0018`-`0020` |
 | W2b | `CasterState` facts from build state, `Vocation::None`, training accumulation and the Reference formula. Allocated only after CHAR-BUILD-1, which tightens ruling 5896480875. | CHAR-BUILD-1 |
 | DAWNPORT-1 | Dawnport content and the vocation-choice interaction | CHAR-BUILD-1 |
 | DEATH ML loss | The flush before a death and the death receipt's build fields (§4.6) | CHAR-BUILD-1, DEATH-1 |
