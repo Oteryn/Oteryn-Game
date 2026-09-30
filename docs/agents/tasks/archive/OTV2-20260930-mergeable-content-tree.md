@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/modest-sagan-lqsb08
-pr: 1376
+pr: 1390  # follow-up; #1376 merged on the round-1 FIX head
 base_sha: f38d7f3
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: content tree layout (owner session)"
 created_at: 2026-09-30T15:00:00Z
-updated_at: 2026-09-30T16:40:00Z
+updated_at: 2026-09-30T17:05:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1_AMENDMENT_01.md
@@ -101,9 +101,9 @@ No generator, loader, runtime, CI, test or content change. No change to
   - LOW: per-family identity key and byte-order sort defined; rollback stated; §5 dropped
     contribution returns to AUTHORING, and the contributor PR lifecycle is stated; the base
     contract CANDIDATE status is noted.
-- round 2: pending on the repaired head.
+- round 2: pending on the frozen head of #1390 (FREEZE_SHA on #162). #1376 merged on the round-1 head before the repair could be pushed.
 
 ## PR and closeout
 
-- merge commit/result: squash merge of the PR on this branch
+- merge commit/result: #1376 squash merged (round-1 head); #1390 squash merge pending
 - ownership release: on merge
