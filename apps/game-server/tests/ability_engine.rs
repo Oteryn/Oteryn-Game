@@ -5,6 +5,68 @@
 mod foundation {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct ExactActorRef(pub(crate) u64);
+    impl ExactActorRef {
+        pub(crate) fn placement_identity(self) -> [u8; 16] {
+            let mut identity = [0; 16];
+            identity[8..].copy_from_slice(&self.0.to_be_bytes());
+            identity
+        }
+    }
+    // AI-4's creature bite reads the Channel owner; the real owner is tested in Foundation.
+    pub(crate) mod owner_timer {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        pub(crate) struct SemanticTimeMicros(u64);
+        impl SemanticTimeMicros {
+            pub(crate) const fn from_micros(value: u64) -> Self {
+                Self(value)
+            }
+            pub(crate) const fn get(self) -> u64 {
+                self.0
+            }
+            pub(crate) const fn saturating_add_micros(self, delta: u64) -> Self {
+                Self(self.0.saturating_add(delta))
+            }
+        }
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct GameSessionId;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct MovementLocalPosition {
+        pub(crate) x: i32,
+        pub(crate) y: i32,
+        pub(crate) floor: i16,
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct MovementPositionContext;
+    #[derive(Debug, Clone, Copy)]
+    pub(crate) struct MovementPositionSnapshot(MovementLocalPosition);
+    impl MovementPositionSnapshot {
+        pub(crate) const fn position(self) -> MovementLocalPosition {
+            self.0
+        }
+        pub(crate) const fn context(self) -> MovementPositionContext {
+            MovementPositionContext
+        }
+    }
+    pub(crate) struct ChannelRuntimeV1;
+    impl ChannelRuntimeV1 {
+        pub(crate) fn contains_live_creature(&self, _: ExactActorRef) -> bool {
+            false
+        }
+        pub(crate) fn read_actor_position(
+            &self,
+            _: ExactActorRef,
+        ) -> Result<MovementPositionSnapshot, CarrierError> {
+            Err(CarrierError::Invalid)
+        }
+        pub(crate) fn player_control_facts(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+        ) -> Result<(), CarrierError> {
+            Err(CarrierError::Invalid)
+        }
+    }
     pub(crate) struct CurrentOwnerExactActorLookup<'a>(pub(crate) &'a ExactActorRef);
     impl CurrentOwnerExactActorLookup<'_> {
         pub(crate) fn contains(&self, actor: ExactActorRef) -> bool {
