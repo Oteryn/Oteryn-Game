@@ -38,10 +38,26 @@
 //! with nothing written. The fence is the B3-1 TRANSFER fence
 //! ([`super::item_transfer::character_item_fence_is_current`]);
 //! `CharacterRevision` is never read as a fence nor written.
+//!
+//! Achievement (Achievement owner contract §3 and §5 step 4; chest decisions
+//! §6): a chest's `placement.achievement` rides on the request with the
+//! caller's resolution against the world's current catalogue, and is part of
+//! the intent binding. The commit transaction records the grant request and
+//! consumes it into the account's fact after the fence and the
+//! `character_root` row lock, together with the claim. The source event is
+//! the claim itself, (Character, claim family, claim production key), so a
+//! replay can never request it twice. A key the catalogue lacks is refused
+//! before anything is reserved; a retired key grants nothing and the claim
+//! commits.
 
+use super::account_achievement::{
+    AchievementCatalogueLookup, AchievementGrantError, AchievementGrantRequest,
+    AchievementSourceEvent, FencedGrantingCharacter, record_achievement_grant, valid_key,
+};
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
+use super::character_progression::valid_revision;
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
@@ -73,6 +89,16 @@ type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>,
 const INTENT_BINDING_VERSION: u8 = 1;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 const EVENT_SCHEMA_REVISION: i64 = mint_audit::EVENT_SCHEMA_REVISION as i64;
+/// `source_kind` of the achievement grant requests a reward claim records.
+pub const ACHIEVEMENT_SOURCE_KIND: &str = "oteryn:reward-claim";
+
+/// The chest's achievement and the caller's lookup of its key in the world's
+/// current catalogue (no runtime catalogue loader exists).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RewardClaimAchievement {
+    pub key: String,
+    pub catalogue: AchievementCatalogueLookup,
+}
 
 /// Complete semantic intent of one reward-claim MINT.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,6 +116,8 @@ pub struct RewardClaimMintRequest {
     pub content_revision: String,
     pub ruleset_revision: String,
     pub sim_revision: String,
+    /// The chest's achievement, granted with the claim; `None` grants none.
+    pub achievement: Option<RewardClaimAchievement>,
 }
 
 /// Refusal reasons. A refusal writes nothing and the player can retry.
@@ -149,6 +177,9 @@ pub enum RewardClaimMintError {
     ConflictingCause,
     /// A frozen identity is bound to a different cause.
     ConflictingCandidate,
+    /// The world's catalogue lacks the chest's achievement: nothing is
+    /// reserved, minted, claimed or granted.
+    UnknownAchievement,
     Unavailable(DurabilityError),
 }
 
@@ -163,6 +194,18 @@ impl From<AuditError> for RewardClaimMintError {
         match error {
             AuditError::InvalidInput => Self::InvalidInput,
             AuditError::CapacityExceeded => Self::CapacityExceeded,
+        }
+    }
+}
+
+impl From<AchievementGrantError> for RewardClaimMintError {
+    fn from(error: AchievementGrantError) -> Self {
+        match error {
+            AchievementGrantError::InvalidInput => Self::InvalidInput,
+            AchievementGrantError::AuthorityRejected => Self::AuthorityRejected,
+            AchievementGrantError::UnknownAchievement => Self::UnknownAchievement,
+            AchievementGrantError::ConflictingSourceEvent => Self::ConflictingCandidate,
+            AchievementGrantError::Unavailable(error) => Self::Unavailable(error),
         }
     }
 }
@@ -187,6 +230,9 @@ impl std::fmt::Display for RewardClaimMintError {
             }
             Self::ConflictingCandidate => {
                 formatter.write_str("reward-claim identity is bound to a different command")
+            }
+            Self::UnknownAchievement => {
+                formatter.write_str("reward-claim achievement is not in the world catalogue")
             }
             Self::Unavailable(error) => {
                 write!(
@@ -589,6 +635,24 @@ impl DurabilityRoot {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
                     };
+                    // After the fence and the `character_root` row lock in
+                    // `admit`; an error drops the whole transaction.
+                    if let Some(achievement) = &frozen.request.achievement {
+                        let grant = match achievement_grant(
+                            achievement,
+                            fence.character_id,
+                            &frozen.request.claim,
+                        ) {
+                            Ok(grant) => grant,
+                            Err(error) => return Ok(Err(error)),
+                        };
+                        let granter = FencedGrantingCharacter::after_fence(fence.character_id);
+                        if let Err(error) =
+                            record_achievement_grant(&mut tx, &granter, &grant).await?
+                        {
+                            return Ok(Err(error.into()));
+                        }
+                    }
                     let committed =
                         apply_claim(&mut tx, &frozen, &reservation, destination, &envelope).await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -994,13 +1058,50 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
     ] {
         mint_audit::check_content_key(revision)?;
     }
+    if let Some(achievement) = &request.achievement {
+        let revision_ok = match &achievement.catalogue {
+            AchievementCatalogueLookup::Earnable { revision } => valid_revision(revision),
+            AchievementCatalogueLookup::Retired | AchievementCatalogueLookup::Absent => true,
+        };
+        if !valid_key(&achievement.key) || !revision_ok {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
+        if achievement.catalogue == AchievementCatalogueLookup::Absent {
+            return Err(RewardClaimMintError::UnknownAchievement);
+        }
+    }
     Ok(())
+}
+
+/// The grant request of the chest's achievement. Its source event is the
+/// claim: the Character's id and a SHA-256 over the claim family and
+/// production key (the RewardClaim's unique key), 48 bytes.
+fn achievement_grant(
+    achievement: &RewardClaimAchievement,
+    character_id: CharacterId,
+    claim: &TypedDefinitionRef,
+) -> Result<AchievementGrantRequest> {
+    let mut claim_key = Vec::new();
+    push_text(&mut claim_key, claim.family.as_bytes()).map_err(from_transfer_input)?;
+    push_text(&mut claim_key, claim.production_key.as_bytes()).map_err(from_transfer_input)?;
+    let mut event_id = character_id.as_bytes().to_vec();
+    event_id.extend_from_slice(&Sha256::digest(&claim_key));
+    Ok(AchievementGrantRequest {
+        achievement_key: achievement.key.clone(),
+        catalogue: achievement.catalogue.clone(),
+        source: AchievementSourceEvent {
+            kind: ACHIEVEMENT_SOURCE_KIND.into(),
+            event_id,
+        },
+    })
 }
 
 /// Version byte plus SHA-256 over the complete intent: the CommandRef, the
 /// fenced Character, the claim, the reward item facts and quantity, the
-/// backpack facts and the interpretation revisions. The connection
-/// generation is not part of the intent (DUR-03 §31).
+/// backpack facts, the interpretation revisions and, only when the chest has
+/// one, its achievement and catalogue lookup (so a claim without one keeps
+/// its binding). The connection generation is not part of the intent
+/// (DUR-03 §31).
 fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -> Result<[u8; 33]> {
     let mut canonical = Vec::new();
     canonical.extend_from_slice(request.command.game_session_id().as_bytes());
@@ -1022,6 +1123,18 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
         &request.sim_revision,
     ] {
         push_text(&mut canonical, revision.as_bytes()).map_err(from_transfer_input)?;
+    }
+    if let Some(achievement) = &request.achievement {
+        canonical.push(1);
+        push_text(&mut canonical, achievement.key.as_bytes()).map_err(from_transfer_input)?;
+        match &achievement.catalogue {
+            AchievementCatalogueLookup::Earnable { revision } => {
+                canonical.push(1);
+                push_text(&mut canonical, revision.as_bytes()).map_err(from_transfer_input)?;
+            }
+            AchievementCatalogueLookup::Retired => canonical.push(2),
+            AchievementCatalogueLookup::Absent => canonical.push(3),
+        }
     }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
@@ -1206,5 +1319,120 @@ mod tests {
         assert_eq!(mismatch, Err(R::DefinitionMismatch));
         // The last free entry is admitted (strict count < capacity).
         assert!(plan(&coin, 100, false, &full[..19], 20).is_ok());
+    }
+
+    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+        use crate::foundation::{CommandId, GameSessionId};
+        RewardClaimMintRequest {
+            command: CommandRef::new(
+                GameSessionId::decode(&id(50)).expect("session"),
+                CommandId::new(7).expect("command"),
+            ),
+            claim: TypedDefinitionRef {
+                family: "RewardClaim".into(),
+                production_key: "fixture:chest.claim".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            item: facts("fixture:b3.coin", COIN),
+            quantity: 3,
+            backpack: backpack_facts(20),
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+            achievement: achievement.map(|(key, catalogue)| RewardClaimAchievement {
+                key: key.into(),
+                catalogue,
+            }),
+        }
+    }
+
+    #[test]
+    fn the_achievement_is_validated_and_bound_into_the_intent() {
+        use AchievementCatalogueLookup as Lookup;
+        const KEY: &str = "oteryn:achievement/allow_cookies";
+        let earnable = |revision: &str| Lookup::Earnable {
+            revision: revision.into(),
+        };
+        assert!(validate_request(&request(None)).is_ok());
+        assert!(validate_request(&request(Some((KEY, earnable("r1"))))).is_ok());
+        assert!(validate_request(&request(Some((KEY, Lookup::Retired)))).is_ok());
+        assert!(matches!(
+            validate_request(&request(Some((KEY, Lookup::Absent)))),
+            Err(RewardClaimMintError::UnknownAchievement)
+        ));
+        for (key, catalogue) in [
+            ("oteryn:achievement/Allow", earnable("r1")),
+            ("oteryn:achievement/allow", earnable("-r1")),
+            ("oteryn:achievement/", Lookup::Absent),
+        ] {
+            assert!(matches!(
+                validate_request(&request(Some((key, catalogue)))),
+                Err(RewardClaimMintError::InvalidInput)
+            ));
+        }
+
+        // Each achievement intent has its own binding. `None` appends
+        // nothing, so a claim without one keeps its pre-achievement binding
+        // (pinned: an in-flight reservation stays resumable).
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let bind =
+            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+        let hex: String = bind(&request(None))
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        assert_eq!(
+            hex,
+            "016d5194b02ecc07d47aef727e1a1077ba93027a8a51c607f5096bf95193f63429"
+        );
+        let bindings = [
+            bind(&request(None)),
+            bind(&request(Some((KEY, earnable("r1"))))),
+            bind(&request(Some((KEY, earnable("r2"))))),
+            bind(&request(Some((KEY, Lookup::Retired)))),
+            bind(&request(Some(("oteryn:achievement/other", earnable("r1"))))),
+        ];
+        for (index, binding) in bindings.iter().enumerate() {
+            assert_eq!(binding[0], INTENT_BINDING_VERSION);
+            assert!(bindings[index + 1..].iter().all(|other| other != binding));
+        }
+    }
+
+    #[test]
+    fn the_grant_source_event_is_the_claim_of_the_character() {
+        let achievement = RewardClaimAchievement {
+            key: "oteryn:achievement/allow_cookies".into(),
+            catalogue: AchievementCatalogueLookup::Retired,
+        };
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let claim = request(None).claim;
+        let grant = achievement_grant(&achievement, character, &claim).expect("grant");
+        assert_eq!(grant.source.kind, ACHIEVEMENT_SOURCE_KIND);
+        assert_eq!(grant.source.event_id.len(), 48);
+        assert_eq!(&grant.source.event_id[..16], character.as_bytes());
+        // The claim revision is not part of the claim's identity (D40).
+        let mut revised = claim.clone();
+        revised.revision_ref = "definition-r2".into();
+        assert_eq!(
+            achievement_grant(&achievement, character, &revised)
+                .expect("grant")
+                .source,
+            grant.source
+        );
+        let mut other = claim.clone();
+        other.production_key = "fixture:chest.other".into();
+        assert_ne!(
+            achievement_grant(&achievement, character, &other)
+                .expect("grant")
+                .source,
+            grant.source
+        );
+        let second = CharacterId::from_bytes(id(44)).expect("character");
+        assert_ne!(
+            achievement_grant(&achievement, second, &claim)
+                .expect("grant")
+                .source,
+            grant.source
+        );
     }
 }

@@ -14,7 +14,7 @@
 //! The catalogue check is an input: the granter resolves the key against the
 //! world's current compatible catalogue and passes the result
 //! ([`AchievementCatalogueLookup`]). No runtime catalogue loader exists yet;
-//! the step-4 granter provides the lookup from its Content. A key the
+//! the reward-claim MINT (step 4) takes the lookup from its caller. A key the
 //! catalogue lacks fails the granting transaction closed; a retired key is a
 //! no-op and the granting transaction continues.
 //!
@@ -125,13 +125,6 @@ pub struct FencedGrantingCharacter {
 
 impl FencedGrantingCharacter {
     /// Call only after the writer's fence succeeded in the same transaction.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the first granter (contract §5 step 4) creates it"
-        )
-    )]
     pub(super) const fn after_fence(character_id: CharacterId) -> Self {
         Self { character_id }
     }
@@ -269,7 +262,7 @@ async fn load_fact(
 }
 
 /// `oteryn:achievement/<slug>`, the catalogue schema's key grammar.
-fn valid_key(key: &str) -> bool {
+pub(super) fn valid_key(key: &str) -> bool {
     key.len() <= MAX_KEY_BYTES
         && key.strip_prefix(KEY_PREFIX).is_some_and(|slug| {
             slug.split('_').all(|part| {
@@ -292,8 +285,8 @@ fn valid_request(request: &AchievementGrantRequest) -> bool {
 }
 
 /// Test-only granting transaction: the XP writer's complete gameplay fence,
-/// then each request in order, committed together or not at all. The first
-/// granter (contract §5 step 4) replaces it in production.
+/// then each request in order, committed together or not at all. In
+/// production the reward-claim MINT is the granter (contract §5 step 4).
 #[cfg(test)]
 mod granting_harness {
     use super::*;
