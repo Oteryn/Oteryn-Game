@@ -171,7 +171,7 @@ These cut reading, writing and waiting; they change no authority, review or inte
   - Workers never post `@codex review` and never enable auto-merge or enqueue. Say so in every packet.
 - **Findings reach the writer.** Task sessions do not receive PR comments. Deliver a FIX to the session that writes the branch. If that session is idle or unreachable, archive it and start one new fix session as the single writer. Never write to the branch yourself while another writer holds it.
 - **Merge Queue grouping (D246).** The queue builds up to 5 PRs at once and removes only a failing one. Keep the content train serialized anyway: at most one derived-content PR (`content/manifest.json` or locks) in the queue at a time. Order dependent PRs so that a migration or registry prerequisite enters first.
-- **Enqueue and readback.** Enqueue only through the route that *Integration* below names: the bound META native `merge-async` with the exact head in `sha` and `merge_action="merge_queue"`. Generic auto-merge, a direct merge and a branch update or no-op commit are never enqueue or retry substitutes. `mergeable_state: clean`, an auto-merge flag, a queue event or an accepted request is not proof of admission or integration: reconcile the request, then require the real `merge_group` `game-gate` and protected-`main` readback. With no proven route, record `BLOCKED_CAPABILITY_UNAVAILABLE`, keep the qualified head, and list the PR for the owner to enqueue.
+- **Enqueue (D247).** The owner authorizes the control plane alone, never a worker, to enable auto-merge on a qualified exact head as its Merge Queue entry (#162, 2026-09-30). A direct merge, a branch update or a no-op commit is never an enqueue or retry substitute. An auto-merge flag, `mergeable_state: clean` or a queue event is not proof of admission or integration: if the PR does not enter the queue, reconcile live state and report it; integration still requires the real `merge_group` `game-gate` and protected-`main` readback.
 
 ## Architecture escalation
 
@@ -187,7 +187,7 @@ For every candidate:
 4. refresh `main` and keep the stable candidate unless source reconciliation is actually required;
 5. resolve protected integration through the current immutable bound META integration-capability router after a fresh exact repository/PR/`base=main`/head/auth/eligibility preflight;
 6. use a freshly proven `DIRECT_CAPABLE` route when available, otherwise a freshly proven `DELEGATED_CAPABLE` executor route, following the bound route-specific receipt and reconciliation contract exactly;
-7. never substitute direct merge, generic auto-merge, bypass, force, a default merge action, no-op/retrigger commits or ambiguous dequeue;
+7. never substitute direct merge, generic auto-merge (other than the control plane's D247 route above), bypass, force, a default merge action, no-op/retrigger commits or ambiguous dequeue;
 8. mark the lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither direct nor delegated capability is freshly proven, keeping the qualified candidate;
 9. require real `merge_group` `game-gate` SUCCESS and protected-main readback before archive, ownership release or `DONE`.
 
