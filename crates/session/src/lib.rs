@@ -16,9 +16,10 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
-use oteryn_protocol_oteryn::actor_spell::{
-    self, ActorVitals, SpellCastDisposition, SpellCastIntent, SpellTarget,
-};
+use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
+/// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
+/// direct `protocol-oteryn` edge (ADR-0020 section 1).
+pub use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::world_object::{
     self, UseDisposition, WorldObjectOverlayEntry, WorldObjectTarget,
 };

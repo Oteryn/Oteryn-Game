@@ -3,6 +3,7 @@
 
 pub mod input;
 pub mod scene;
+pub mod spell;
 
 use oteryn_client_runtime::{ClientRuntime, RuntimeError};
 use oteryn_foundation::ProcessGeneration;

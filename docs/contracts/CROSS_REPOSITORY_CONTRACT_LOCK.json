@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-22T22:29:50+02:00",
+  "updated_at": "2026-09-30T00:45:00Z",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
@@ -153,6 +153,75 @@
       "canonical_contract_revision": 1,
       "source_pull_request": 57,
       "merged_at": "2026-08-22T20:27:22Z"
+    },
+    {
+      "coordination_id": "OTV2-20260929-N4P-NATIVE-GATEWAY-LOGIN",
+      "contract_name": "oteryn-native-gateway-login-v1",
+      "status": "PENDING_CANONICAL_MERGE",
+      "canonical_repository": "Oteryn/Oteryn-Platform",
+      "canonical_commit": null,
+      "schema_revision": null,
+      "schema_sha256": null,
+      "pending_pull_request": 1420,
+      "pending_pull_request_repository": "Oteryn/Oteryn-Platform",
+      "pending_contract_path": "docs/contracts/OTERYN_V2_NATIVE_GATEWAY_LOGIN_CONTRACT.md",
+      "pending_head_commit": "892d640d7dbf5497811901d250d384b19e639556",
+      "pending_contract_file_sha256": "3e0e56f4536ba609144835115cb2a71b273e019511fe1727ece134c3f21066cd",
+      "pending_head_is_canonical": false,
+      "contract_status": "CANDIDATE_ACCEPTANCE_BY_ARCHITECT_AND_OWNER_REQUIRED",
+      "governing_issues": [
+        "Oteryn/Oteryn-Platform#1419",
+        "Oteryn/Oteryn-Game#162"
+      ],
+      "owner_decisions": [
+        "Q14",
+        "Q15a",
+        "Q16b",
+        "Q17a",
+        "Q18a"
+      ],
+      "game_companion_candidates": [
+        "docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+        "docs/contracts/OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md"
+      ],
+      "game_dependencies": [
+        "docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md",
+        "docs/architecture/FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md",
+        "docs/architecture/ADR-0020-native-client-gameplay-entry.md"
+      ],
+      "accepted_for_fnd02": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "CANDIDATE_NOT_IMPLEMENTED_NATIVE_GATEWAY_BRANCH_AND_GRANT_ISSUER"
+        },
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CANDIDATE_NOT_IMPLEMENTED_RUNTIME_STATUS_AND_CHARACTER_PROJECTION_PRODUCERS"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "NOT_IMPLEMENTED_N4_CLIENT_AND_FND04_ADMISSION_OF_PLATFORM_GRANTS"
+        },
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "NOT_IMPLEMENTED_RUNTIME_STATUS_AND_CHARACTER_PROJECTION_INGESTION"
+        }
+      ],
+      "rollout_order": [
+        "architect and owner accept the Platform contract candidate and both Game companion candidates",
+        "record the Platform merge commit and contract digest here and switch this entry to LOCKED",
+        "Game runtime-status and ListCharactersForAccount producers (server-first-safe; delivery never gates the node)",
+        "Platform ingestion endpoints and read models (backward-compatible)",
+        "Platform native ticket, grant issuer and Gateway native branch behind a default-off switch (backward-compatible)",
+        "Game N4 client in crates/platform-client (client-first-safe; fails closed while the branch is off)",
+        "joint E2E: node-boot qualification through the real Gateway and issuer",
+        "enable for internal test builds in testing or preproduction only (Q18a); production needs separate authority"
+      ],
+      "production_enabled": false,
+      "notes": "Pending evidence only: the PR head is not canonical. Q18a lets internal test builds enter without ADR-0020 N6 and N7; release still needs the full ADR-0020 section 7 entry."
     }
   ]
 }
