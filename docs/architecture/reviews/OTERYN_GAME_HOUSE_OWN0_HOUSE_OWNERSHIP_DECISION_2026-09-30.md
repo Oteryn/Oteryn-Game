@@ -314,7 +314,7 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
 | Bid, raise or lower | 0 items, 2 value lines (reserve or release, escrow change), 1 event |
 | Settlement first step | 0 items, 4 value lines (escrow fall, price, rent, return), 1 event |
 | Rent charge | 0 items, 1 value line (`HOUSE_RENT`, its own burn line), 1 event |
-| Release step | 100 bids, 200 value lines (escrow fall and return per bid), 1 event |
+| Release step | 100 bids, 200 value lines (escrow fall and return per bid), 1 event. Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §6.2, `GUILD0-RL-14`): a guildhall release step holds at most 50 bids (4 value lines each, split escrow) |
 | Disposition step | 100 items, 200 location lines, 0 value lines, 1 event |
 
 ## 13. Rejected options
