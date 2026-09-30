@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-imbue-forge-0
-pr: "the PR named in the #162 FREEZE_SHA entry"
+pr: 1415
 base_sha: a6a054e6
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -89,13 +89,16 @@ review.
 - Codex round-2 repair (PR #1415, 1 finding): `REVISION_CHANGED` persisted as a receipt-only
   terminal record keyed by (occurrence, character); every later replay returns the same
   rejection (§10).
+- Codex round 3 (#1415, 1 P1, 2 P2): bounded checkpoint transactions (`IMBFORGE0-RL-11`, 10 items,
+  max+1 rejected, §4.3, §15); `FeeBurnCause::ForgeFusion` carries kind, items and occurrence (§10);
+  concrete PR number in the record.
 - Owner answers (2026-09-30, #162): I1 a) (all imbuing and forge gold fees at Global prices,
   D178) and I2 a) (dust, slivers and the conversions as in Global, D208) made binding in the
   decision and the gold fee §4.4 amendment.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1415. Merge commit/result: its squash merge.
 - Amendments follow the control-plane rule (#162 5912405163): pending on acceptance. Amended:
   MARKET-0 §3.1, the gold fee decision §4.4. DUR-03 §15, §17, §18, §39.3 and composition rule 1
   are left to IMBUE-1 and FORGE-1.
