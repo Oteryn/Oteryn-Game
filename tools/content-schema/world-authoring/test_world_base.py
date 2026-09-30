@@ -49,6 +49,17 @@ def bindings_for(pairs) -> bytes:
     ).encode()
 
 
+def write_definitions(
+    root: Path, bindings: bytes, skip: set[str] = frozenset()
+) -> None:
+    """One Item definition record per binding target (the rule of A12 section 5)."""
+    keys = sorted({r["target"]["key"] for r in json.loads(bindings)["bindings"]} - skip)
+    path = root / "content/items/definitions/items-00000-00499.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    records = [{"definition": {"identity": {"key": key}}} for key in keys]
+    path.write_text(json.dumps({"records": records}), encoding="utf-8")
+
+
 # 100 is bound to a named key, 1234 to a registry key and 1949 (the teleport) is unbound.
 ITEMS_BY_SERVER_ID = bindings_for([(100, GOLD), (1234, REGISTRY), (7, "oteryn:x")])
 ITEMS_XML = (
@@ -205,6 +216,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         bindings = self.root / validate.ITEM_BINDINGS
         bindings.parent.mkdir(parents=True, exist_ok=True)
         bindings.write_bytes(data)
+        write_definitions(self.root, data)
 
     def index(self):
         return json.loads((self.root / validate.INDEX).read_text())
@@ -700,6 +712,27 @@ class ConvertAndValidateTest(unittest.TestCase):
             },
         )
 
+    def test_binding_to_an_undefined_item_key_is_provisional(self):
+        defined = {GOLD, "oteryn:x"}
+        out = convert.build(self.blobs, ITEMS_BY_SERVER_ID, defined=defined)
+        palette = json.loads(out[validate.INDEX])["palette"]
+        row = next(r for r in palette if r["source_item_id"] == 1234)
+        self.assertEqual(
+            row, {"key": f"{DONOR}1234", "provisional": True, "source_item_id": 1234}
+        )
+        self.assertEqual(
+            convert.bound_keys(ITEMS_BY_SERVER_ID, defined), {100: GOLD, 7: "oteryn:x"}
+        )
+        self.assertEqual(len(convert.bound_keys(ITEMS_BY_SERVER_ID)), 3)
+
+    def test_validator_rejects_an_item_key_without_a_definition(self):
+        write_definitions(self.root, ITEMS_BY_SERVER_ID, skip={REGISTRY})
+        self.assertTrue(any("not an Item binding target" in e for e in self.errors()))
+        out = convert.build(self.blobs, ITEMS_BY_SERVER_ID, defined={GOLD, "oteryn:x"})
+        for path, data in out.items():
+            (self.root / path).write_bytes(data)
+        self.assertEqual(self.errors(), [])
+
     def test_without_bindings_every_id_is_provisional_and_regions_do_not_change(self):
         out = convert.build(self.blobs, bindings_for([]))
         palette = json.loads(out[validate.INDEX])["palette"]
@@ -944,6 +977,7 @@ class ConvertAndValidateTest(unittest.TestCase):
             (root / path).write_bytes(data)
         (root / validate.ITEM_BINDINGS).parent.mkdir(parents=True, exist_ok=True)
         (root / validate.ITEM_BINDINGS).write_bytes(ITEMS_BY_SERVER_ID)
+        write_definitions(root, ITEMS_BY_SERVER_ID)
         return root
 
     @staticmethod

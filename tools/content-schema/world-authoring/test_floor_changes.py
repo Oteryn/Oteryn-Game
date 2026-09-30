@@ -53,6 +53,17 @@ PALETTE = [
 ]
 
 
+def write_definitions(
+    root: Path, bindings: bytes, skip: set[str] = frozenset()
+) -> None:
+    """One Item definition record per binding target (the rule of A12 section 5)."""
+    keys = sorted({r["target"]["key"] for r in json.loads(bindings)["bindings"]} - skip)
+    path = root / "content/items/definitions/items-00000-00499.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    records = [{"definition": {"identity": {"key": key}}} for key in keys]
+    path.write_text(json.dumps({"records": records}), encoding="utf-8")
+
+
 def make_root(root: Path) -> None:
     """Twelve regions: enough for the parallel path. Palette 0 is seen twice at depth 0
     and once inside a container, palette 1 once, palette 3 twice."""
@@ -78,6 +89,7 @@ def make_root(root: Path) -> None:
     bindings = root / base.ITEM_BINDINGS.relative_to(convert.ROOT)
     bindings.parent.mkdir(parents=True, exist_ok=True)
     bindings.write_bytes(BINDINGS)
+    write_definitions(root, BINDINGS)
 
 
 def write_family(root: Path, xml: bytes = XML) -> dict[str, bytes]:
@@ -151,6 +163,20 @@ class FloorChangeTest(unittest.TestCase):
             by_id[201]["identity"]["key"], "oteryn:world_object.floor_change.donor_201"
         )
         self.assertFalse(by_id[100]["provisional_item"])
+
+    def test_a_binding_to_an_undefined_item_key_is_provisional(self):
+        defined = {REGISTRY.format(1), REGISTRY.format(5), RAMP}
+        out = convert.build(XML, self.root, BINDINGS, defined=defined)
+        shard = json.loads(out[self.shard_path])
+        row = next(
+            r for r in shard["records"] if r["declaration"]["source_item_id"] == 200
+        )
+        self.assertTrue(row["declaration"]["provisional_item"])
+        self.assertEqual(row["declaration"]["item"]["key"], base.donor_key(200))
+
+    def test_validator_rejects_an_item_key_without_a_definition(self):
+        write_definitions(self.root, BINDINGS, skip={REGISTRY.format(1)})
+        self.assertTrue(self.has("unbound id must use the provisional donor key"))
 
     def test_occurrences_count_top_level_tile_items_only(self):
         by_id = self.declarations()

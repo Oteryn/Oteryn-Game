@@ -5,7 +5,7 @@ Writes the ``WorldObject.FloorChange`` family (content/world/objects/) and the c
 capture summary. One record per item type that declares a ``floorchange`` attribute
 (stairs, ramps, holes and trapdoors). The record key derives from the item's identity key,
 resolved by the same rule as the base map palette: the ``ots/item_server_id`` binding
-target, else the provisional donor key. Occurrences are counted from the committed
+target that has an Item record, else the provisional donor key. Occurrences are counted from the committed
 ``WorldPlacement.Base`` region files (top-level tile items, container contents excluded).
 
 Ladders, rope spots and sewer grates are scripted ``use`` actions in the server, not
@@ -185,11 +185,15 @@ def committed_palette_index(root: Path) -> dict[int, int]:
 
 
 def build(
-    xml: bytes, root: Path = ROOT, bindings: bytes | None = None, workers: int = 1
+    xml: bytes,
+    root: Path = ROOT,
+    bindings: bytes | None = None,
+    workers: int = 1,
+    defined: set[str] | None = None,
 ) -> dict[str, bytes]:
     if bindings is None:
         bindings = base.ITEM_BINDINGS.read_bytes()
-    bound = base.bound_keys(bindings)
+    bound = base.bound_keys(bindings, defined)
     items = floor_change_items(xml)
     if not items:
         raise ConvertError("items.xml declares no floorchange")
@@ -307,7 +311,11 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=min(4, os.cpu_count() or 1))
     args = parser.parse_args()
     try:
-        out = build(read_source(args.crystal_root), workers=args.workers)
+        out = build(
+            read_source(args.crystal_root),
+            workers=args.workers,
+            defined=base.defined_item_keys(),
+        )
     except (ConvertError, codec.CodecError, otbm_reader.OtbmError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)
         return 1

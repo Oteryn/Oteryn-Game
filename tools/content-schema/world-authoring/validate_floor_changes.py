@@ -5,8 +5,8 @@ python validate_floor_changes.py [--root REPOSITORY_ROOT] [--workers N]
 
 Checks schema and canonical bytes of the index, shard and capture summary, that the
 directory holds nothing else, the pinned source and item bindings digest, key derivation
-and ordering, that every item key exists in the item bindings (or is the provisional donor
-key of an unbound id) and equals the base map palette key, and that every occurrence count
+and ordering, that every item key is an item binding target with an Item record (or is the
+provisional donor key of an unbound or undefined id) and equals the base map palette key, and that every occurrence count
 and the capture summary equal a recount over the committed region files.
 """
 
@@ -91,8 +91,8 @@ def validate(root: Path, workers: int = 1) -> list[str]:
     bindings = (root / base.ITEM_BINDINGS.relative_to(convert.ROOT)).read_bytes()
     if index["item_bindings"]["sha256"] != hashlib.sha256(bindings).hexdigest():
         errors.append(f"{INDEX}: item_bindings digest is stale")
-    bound = base.bound_keys(bindings)
-    binding_targets = {row["target"]["key"] for row in json.loads(bindings)["bindings"]}
+    defined = base.defined_item_keys(root)
+    bound = base.bound_keys(bindings, defined)
     palette = json.loads((root / convert.PLACEMENTS_INDEX).read_text("utf-8"))[
         "palette"
     ]
@@ -123,8 +123,6 @@ def validate(root: Path, workers: int = 1) -> list[str]:
                 errors.append(
                     f"{key}: item differs from its binding {bound[server_id]}"
                 )
-            if item not in binding_targets:
-                errors.append(f"{key}: item {item} is not a bound Item")
         elif item != base.donor_key(server_id) or not declaration["provisional_item"]:
             errors.append(f"{key}: unbound id must use the provisional donor key")
         if server_id in by_id and by_id[server_id][1]["key"] != item:

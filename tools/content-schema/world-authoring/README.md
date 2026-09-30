@@ -321,9 +321,11 @@ committed base map, and writes the shard `floor-changes-00000-00446.json`, the i
 - **Key:** `oteryn:world_object.floor_change.<item key without "oteryn:item.", every
   non-alphanumeric run as "_">`, for example
   `oteryn:world_object.floor_change.registry_i00000087`. The item key is resolved as in the
-  base map palette: the `ots/item_server_id` binding target, else the provisional donor
+  base map palette: the `ots/item_server_id` binding target that has an Item record in
+  `content/items/definitions`, else the provisional donor
   `donor:crystalserver@00ce02a5:item/<id>` (key `..floor_change.donor_<id>`,
-  `provisional_item: true`). All 447 types are bound today. Ranges (`fromid`/`toid`) expand
+  `provisional_item: true`). 446 of the 447 types resolve to an Item key today; 53431 is bound
+  to an Item key that has no definition yet, so it is provisional (1 provisional_item). Ranges (`fromid`/`toid`) expand
   to one record per id.
 - **Fields:** `floor_change`, the `item` reference, the items.xml `name`,
   `source_item_id`, and `occurrences_on_base_map`. It counts top-level tile items in the
@@ -412,16 +414,17 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   index into `palette` in `index.json`. The palette holds the distinct server item
   ids the map uses (and any retired ones) as `{"key", "source_item_id", "provisional"}`. A fresh build orders it by
   ascending id, and the palette is then **append-only** (see below):
-  - an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) takes
-    that binding's target key, either `oteryn:item.registry.iNNNNNNNN` or a named key such
+  - an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) to a
+    key that has an Item record in `content/items/definitions` takes that target key, either `oteryn:item.registry.iNNNNNNNN` or a named key such
     as `oteryn:item.currency.gold_coin`, with `provisional: false`;
   - an appearance-only id (the official client declares it, `items.xml` does not) that the
     committed Terrain family covers takes that record's `oteryn:terrain.a<id>` key with
     `provisional: false` (see "Terrain" below);
   - any other id takes `donor:crystalserver@00ce02a5:item/<id>` (the donor-census key
     form) with `provisional: true`. This covers ids that `items.xml` declares but no Item
-    binding covers yet (the item agent's B1b registry step admits them) and ids no source
-    declares.
+    binding covers yet, ids bound to an Item key without a definition (the A12 section 5 rule
+    forbids such a key in `content/`) and ids no source declares; the item agent's B1b
+    registry step admits the first two.
 
   **Ownership rule:** ids present in `items.xml` -> Item registry (item agent, B1b);
   appearance-only ids -> Terrain (world). An id is never both.
@@ -434,9 +437,10 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   capture summary counts provisional entries and occurrences, split into ids that
   `items.xml` declares at the pinned revision and appearance-only ids, and the Terrain-keyed
   entries. Current counts: 25,984 palette entries; 5,949 Terrain keys (760,248
-  occurrences); 5 provisional (24 occurrences): 4 ids that `items.xml` declares and id 99,
-  which neither `items.xml` nor the client declares.
-  `validate_world_base.py` accepts a non-provisional key that is an Item binding target or
+  occurrences); 46 provisional (54,555 occurrences): 45 ids that `items.xml` declares (40 of them
+  bound to an Item key without a definition, 54,530 occurrences) and id 99, which neither
+  `items.xml` nor the client declares.
+  `validate_world_base.py` accepts a non-provisional key that is an Item binding target with an Item record or
   a Terrain key of that palette id (`oteryn:terrain.a` plus the id in six digits, bound in
   the Terrain family), and rejects an id that is both.
   The converter still fails closed, and never guesses, on an item or tile attribute

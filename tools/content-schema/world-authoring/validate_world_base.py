@@ -31,6 +31,7 @@ from convert_world_base import (
     TERRAIN_DIRECTORY,
     TERRAIN_KEY_PREFIX,
     TERRAIN_NAMESPACE,
+    defined_item_keys,
     world_otbm_totals,
 )
 
@@ -767,8 +768,12 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
         return errors
 
     bound: dict[int, set[str]] = {}
+    defined = defined_item_keys(root)
     for row in load(root, ITEM_BINDINGS, strict=False)["bindings"]:
-        if row["identity_namespace"] == ITEM_NAMESPACE:
+        if (
+            row["identity_namespace"] == ITEM_NAMESPACE
+            and row["target"]["key"] in defined
+        ):
             bound.setdefault(int(row["external_id"]), set()).add(row["target"]["key"])
     terrain = terrain_bindings(root, errors)
     palette = index["palette"]

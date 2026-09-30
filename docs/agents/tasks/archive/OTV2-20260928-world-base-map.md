@@ -58,7 +58,7 @@ sha256-pinned and `OtsHypothesisOnly`.
   - An appearance-only id (declared by the official client, not by `items.xml`) takes the
     `oteryn:terrain.a<id>` key of its `Terrain` record with `provisional: false` (5,949 ids).
   - Any other id takes `donor:crystalserver@00ce02a5:item/<id>` with `provisional: true`
-    (4 items that `items.xml` declares and the appearance-less id 99).
+    (45 `items.xml` ids, 40 bound to an undefined Item key, and id 99).
   - **Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
     appearance-only ids -> Terrain (world).**
   - Item identity work later rewrites palette entries only. Region files do not change.
@@ -148,6 +148,7 @@ sha256-pinned and `OtsHypothesisOnly`.
       `flags`, `speed`, `name`, `automap_color`, occurrences). Client ids equal server ids.
       The palette switched those keys from `donor:` to Terrain keys (region files
       byte-identical; provisional remain: `items.xml` ids for B1b and id 99).
+      G4 fix: undefined Item key stays provisional (floor changes 0->1).
       `validate_terrain.py`, `validate_world_base.py` and `test_terrain.py` pass.
 - [x] Required checks pass on the frozen PR head; merge commit: squash merge of #1170.
 

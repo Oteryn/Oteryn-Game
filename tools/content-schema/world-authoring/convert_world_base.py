@@ -156,11 +156,25 @@ def donor_key(server_id: int) -> str:
     return f"{DONOR_PREFIX}{server_id}"
 
 
-def bound_keys(bindings: bytes) -> dict[int, str]:
-    """Return ``{server id: target key}`` for every ``ots/item_server_id`` binding."""
+def defined_item_keys(root: Path = ROOT) -> set[str]:
+    """Every Item key that has a record in ``content/items/definitions`` (A12 section 5)."""
+    keys: set[str] = set()
+    for path in sorted((root / "content/items/definitions").glob("items-*.json")):
+        for record in json.loads(path.read_text(encoding="utf-8"))["records"]:
+            keys.add(record["definition"]["identity"]["key"])
+    return keys
+
+
+def bound_keys(bindings: bytes, defined: set[str] | None = None) -> dict[int, str]:
+    """Return ``{server id: target key}`` for every ``ots/item_server_id`` binding.
+
+    With ``defined``, a binding whose target key has no Item record is skipped, so its id is
+    treated exactly like an unbound id (the provisional donor key)."""
     keys: dict[int, str] = {}
     for row in json.loads(bindings)["bindings"]:
         if row["identity_namespace"] != ITEM_NAMESPACE:
+            continue
+        if defined is not None and row["target"]["key"] not in defined:
             continue
         server_id, key = int(row["external_id"]), row["target"]["key"]
         if keys.setdefault(server_id, key) != key:
@@ -714,15 +728,17 @@ def build(
     blocking: set[int] | None = None,
     kinds: dict[int, str] | None = None,
     yellow: set[int] | None = None,
+    defined: set[str] | None = None,
 ) -> dict[str, bytes]:
-    """Build every output; `previous` is the committed palette to extend, if any and
+    """Build every output; `defined` is the set of Item keys with a definition (a binding to
+    any other key leaves its id provisional; default: every binding target counts); `previous` is the committed palette to extend, if any and
     `terrain` the committed Terrain keys of appearance-only ids and `land` the minimap land
     test of a partial fill (default: the committed 15.30 minimap). The Edron rework runs when
     `tibiamaps` (decoded, default: the pinned files among `blobs`) is available, with the
     `blocking` ids and floor-change `kinds` of the committed assets and objects."""
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
-    bound = bound_keys(bindings)
+    bound = bound_keys(bindings, defined)
     collector = Collector()
     replace_row = next(
         (r for r in FILL if "replace" in r and fill_key(r) in blobs), None
@@ -1039,6 +1055,7 @@ def main() -> int:
             read_source(args.crystal_root, args.tibiamaps_root),
             previous=committed_palette(),
             terrain=terrain_keys(),
+            defined=defined_item_keys(),
         )
         totals = json.loads(out[f"{DIRECTORY}/index.json"])["totals"]
         summary = json.loads(out[str(SUMMARY.relative_to(ROOT))])

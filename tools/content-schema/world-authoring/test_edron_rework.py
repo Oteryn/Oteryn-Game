@@ -15,7 +15,7 @@ import convert_world_base as convert
 import edron_rework as edron
 import test_world_authoring as fixtures
 import validate_world_base as validate
-from test_world_base import ITEMS_BY_SERVER_ID, ITEMS_XML
+from test_world_base import ITEMS_BY_SERVER_ID, ITEMS_XML, write_definitions
 
 ROCK, ROCK2, GROUND, GROUND2, WALL_ITEM = 101, 1128, 4000, 4001, 5000
 STAIRS, YELLOW = 1010, 1020
@@ -359,6 +359,7 @@ class BuildAndValidateTest(unittest.TestCase):
             (root / path).write_bytes(data)
         (root / validate.ITEM_BINDINGS).parent.mkdir(parents=True, exist_ok=True)
         (root / validate.ITEM_BINDINGS).write_bytes(ITEMS_BY_SERVER_ID)
+        write_definitions(root, ITEMS_BY_SERVER_ID)
         return root
 
     def summary(self, out):
