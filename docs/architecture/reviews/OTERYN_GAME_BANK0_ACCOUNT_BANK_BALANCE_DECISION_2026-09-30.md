@@ -136,11 +136,18 @@ burns of house shapes; the bank shapes of §5 still have none.
 - Each operation is one PostgreSQL transaction with one TransactionId, fixed with its planned
   output slots before the first attempt (DUR-03 §20, §23.1).
 - Lock order (composition rule 4, extended): the recovery fence and admission relations, the
-  operation occurrence, the acting Character's session and guard checks (rule 2), its
-  `character_root` FOR UPDATE, the main backpack, then its coin entries, then the balance rows by
-  `account_id` (upsert, then FOR UPDATE). A transfer recipient's root is locked `FOR SHARE` and
-  rechecked, as §4.3's amendment states. The balance row lock serializes every writer of one
-  (account, world), including another Account's transfer into it.
+  operation occurrence, the acting Character's session and guard checks (rule 2), the root step,
+  the main backpack, then its coin entries, then the balance rows by `account_id` (upsert, then
+  FOR UPDATE). The root step of a deposit or withdrawal is the acting `character_root` FOR UPDATE.
+  The root step of a transfer locks both roots together in CharacterId order, the sender FOR
+  UPDATE and the recipient `FOR SHARE` (§4.3's amendment). That is a transfer's single root-lock
+  order: no root and no balance row is locked before it, and a transfer touches no backpack or
+  coin entry. The balance row lock serializes every writer of one (account, world), including
+  another Account's transfer into it.
+- **Zero-balance row.** The upsert creates a missing balance row with balance 0 and no
+  `last_entry_id`. That row is value-neutral and equal to no row (§3); the §3 chain guard admits
+  it with no entry. It is the only write an operation may make before a refusal: a refusal writes
+  no ledger entry, coin line or event and changes no balance.
 - No `CharacterRevision` advance (the composition amendment of §7.2).
 - One bank event per operation (§5).
 - A credit above `BANK0-RL-01` is refused with a typed result (`BALANCE_LIMIT`), never by a CHECK
@@ -194,16 +201,21 @@ fails silently or by a CHECK abort. The names follow MAIL-0 (#1404) §5 and §7.
 - **Where it is checked.** At the prompt, the dialogue resolves the name through `0022` in the
   sender's World and refuses `UNKNOWN_RECIPIENT`, `SAME_ACCOUNT`, `INSUFFICIENT_BALANCE` and
   `JUNIOR_ACCOUNT` before asking for confirmation, as Canary does. At commit, the writer rechecks
-  every refusal of the table: it locks the recipient's `character_root` `FOR SHARE`, taking the two
-  roots in CharacterId order (the acting one `FOR UPDATE` as rule 2 takes it), and checks under
-  that lock that the root is live, is of the sender's World, and still has the confirmed
-  `name_key`. A rename or a terminal deletion updates the root, so it waits for the transfer or the
-  transfer sees its result.
-- **No value moves on a refusal.** Every check runs before the first ledger or balance write. A
-  refused transfer writes no ledger entry and changes no balance, so nothing is debited and
-  nothing needs to be returned; it emits no bank event. Its operation row records the refused
-  result, so a replay of the same occurrence and binding returns the same result; §3's guard that
-  an operation has exactly the entries its kind needs applies to an `OK` outcome only.
+  every refusal of the table under §4.1's lock order. Its root step locks both roots in
+  CharacterId order, the sender FOR UPDATE and the recipient `FOR SHARE`, before any other root
+  or balance row lock; under those locks the writer checks that the recipient root is live, is of
+  the sender's World, and still has the confirmed `name_key`. The acting character's rule 2 checks
+  precede the root step, as rule 4 orders them, and read no recipient row. The balance rows are
+  then locked by `account_id` (upsert, then FOR UPDATE), and the balance and limit checks run under
+  those locks. Two reciprocal transfers take the roots and the balance rows in the same orders, so
+  they cannot deadlock. A rename or a terminal deletion updates the root, so it waits for the
+  transfer or the transfer sees its result.
+- **No value moves on a refusal.** Every check runs before the first ledger entry or balance
+  change. A refused transfer writes no ledger entry and changes no balance, so nothing is debited
+  and nothing needs to be returned; it emits no bank event. The only write it may make is §4.1's
+  value-neutral zero-balance row. Its operation row records the refused result, so a replay of the
+  same occurrence and binding returns the same result; §3's guard that an operation has exactly
+  the entries its kind needs applies to an `OK` outcome only.
 - **Reference.** Canary `main` and Crystal Server `zimbadev/crystalserver` `main` (both read
   2026-09-30, `OTS_HYPOTHESIS_ONLY`) share the dialogue. `data/npclib/npc_system/bank_system.lua`
   resolves the name at the prompt with `Game.getNormalizedPlayerName` and replies "This player
