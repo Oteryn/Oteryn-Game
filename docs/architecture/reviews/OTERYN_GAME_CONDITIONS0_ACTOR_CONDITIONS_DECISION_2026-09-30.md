@@ -34,7 +34,12 @@
 | COND-CONTENT-1 | content lane | `ConditionDefinition` records for the spells, runes, potions, food, fields and monster attacks that use §3 families | this decision |
 
 FOOD-REGEN-1 (ITEM-USE-0) builds its definition on COND-1. After COND-1, the charm lane wires
-Cripple, Numb, Adrenaline Burst and Cleanse to it.
+Cleanse and the player-side cases to it. The speed charms (Cripple, Numb, Adrenaline Burst) stay
+failing closed (`CharmMissingSystem::ParalysisCondition` / `HasteCondition`) until SPEED-1 and,
+for creature targets, the GAME-AI-01 step cadence amendment (§4.3) have landed; before that a speed
+condition would change nothing. Their speed values come from one `ConditionDefinition` per charm
+(`charm.cripple`, `charm.numb`, `charm.adrenaline_burst`, COND-CONTENT-1); the charm variant keeps
+only its `duration_ms` (`charm_effects.rs:153-158`) and names the definition by key.
 
 ## 1. Question
 
@@ -116,7 +121,8 @@ exists per conflict key.
 - **Coefficients** are rationals in thousandths (`a = 1300` means 1.3); every product is computed in
   i64 and truncated toward zero once, at the end of each formula.
 - **Speed.** The target speed is drawn uniformly in `[a_min × (base − 40) + b_min, a_max × (base −
-  40) + b_max]`; the delta is target − base, fixed when applied; a paralysis target is at least 40.
+  40) + b_max]`; the delta is target − base, fixed when applied; a paralysis target is at least 40,
+  and a paralysis on an actor whose base speed is below 40 leaves its speed unchanged (delta 0).
 - Later families (drunk, invisible, outfit, skill boosts, fear, root) come with their own decisions.
 
 ### 3.1 Damage over time
@@ -169,8 +175,8 @@ exists per conflict key.
 
 ### 4.2 Step duration
 
-- **Step-speed table.** SPEED-1 generates, once and offline, a u16 table from speed (0..65,535) to
-  Canary's step speed, and checks it in as content with its digest; the runtime and the client read
+- **Step-speed table.** SPEED-1 generates, once and offline, a u16 table from the clamped speed
+  range (10..65,535, where the formula is positive) to Canary's step speed, and checks it in as content with its digest; the runtime and the client read
   the table and never evaluate `ln`.
 - Step duration = `floor(1000 × ground speed / step speed)` ms (ground speed from the tile's ground
   item definition, default 150), rounded up to a multiple of 50 ms (`SERVER_BEAT`); × 2 for a
@@ -193,9 +199,14 @@ exists per conflict key.
 - Dispel is a typed action with a closed selector: one conflict key (`exana pox` removes poison),
   or the tag `negative` (damage over time and paralysis; later drunk and similar). A selector names
   how many it removes (1 or all).
-- **Cleanse** (charm): picks one `negative` instance uniformly through `COND_CLEANSE_PICK`, never
-  drowning; the target is then immune to that conflict key for 11 s, which refuses new
-  applications at admission.
+- **Cleanse** (charm): the candidates are the target's `negative` instances except drowning, in
+  instance-sequence order. With none, nothing happens and no draw is made; with one, it is removed
+  without a draw; with two or more, one uniform draw through `COND_CLEANSE_PICK` picks the index.
+  The target is then immune to that conflict key for 11 s, which refuses new applications at
+  admission.
+- **Cleanse immunity** is per-actor state, not an instance: `{conflict key, remaining time}`, at
+  most one per key. It crosses reconnects and channel transfers with the instances (§6.2) and ends
+  at death and at a fresh admission.
 - Removal is forward-only: committed ticks stay committed.
 
 ## 6. Lifecycle (COND-1)
@@ -215,8 +226,8 @@ exists per conflict key.
 - **Reconnect and post-grace recovery** keep the instances with the runtime actor.
 - **Channel transfer** carries every instance in the transfer continuation: definition, provenance,
   remaining duration, the offset to the next tick, the instance sequence, capacity and remaining
-  values. The target channel resumes them; no tick is dealt twice or skipped, and the source channel
-  deals none after the handover.
+  values, plus each Cleanse immunity with its remaining time. The target channel resumes them; no
+  tick is dealt twice or skipped, and the source channel deals none after the handover.
 - **Fresh admission** starts with no instances, except §6.3.
 
 ### 6.3 Persistence
@@ -232,7 +243,8 @@ exists per conflict key.
 - **Own actor.** A new `ACTOR_VITALS` revision, behind capability `CONDITIONS_V1`, adds
   `condition_icons` (a 32-bit mask of the condition bits only: poison, burn, energy, drowning,
   freezing, dazzled, cursed, bleeding, haste, paralyze, mana shield, hungry) and the mana shield's
-  `remaining` and `capacity`. COND-WIRE-1 measures the new cap and acknowledges it on #162; the old
+  `remaining` and `capacity`. Its cap is 48 bytes (worst case about 43: the 27-byte revision, a
+  5-byte mask field and two 5-byte values with tags), acknowledged on #162 at allocation; the old
   revision stays at 32 bytes for sessions without the capability.
 - In-fight is shown from ATTACK-0 domain 10; the protection-zone block belongs to PARTY-PVP-0 and the
   protection zone to tile state (MAP-WIRE-1). Neither is in this mask.

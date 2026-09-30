@@ -84,6 +84,11 @@ review.
 - Its two questions are Global-parity applications ruled by the architect (owner rule 5905825574):
   Cleanse is random as in Tibia; persistence follows Tibia as vitals become durable, with food time
   durable now and the rest a declared `PARITY_PENDING` gap.
+- Review of `b7848afb` (#1380 5914810790: 3 MEDIUM, 3 LOW), answered in one push: Cleanse
+  candidates in instance-sequence order with no draw for zero or one; Cleanse immunity carried
+  across reconnect and transfer; the speed charms stay failing closed until SPEED-1 and the AI
+  cadence amendment, with one ConditionDefinition per charm; the step table over 10..65,535; the
+  paralysis floor for base speeds below 40; the vitals cap of 48 bytes.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
