@@ -1,4 +1,4 @@
-//! Proto3 wire helpers shared by the proposed Bestiary and Charm payload codecs
+//! Proto3 wire helpers shared by the Bestiary and Charm payload codecs
 //! (`docs/contracts/protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md`).
 //!
 //! The same strict subset as `actor_spell`: varint scalars, length-delimited submessages, no
@@ -12,8 +12,8 @@ pub enum CyclopediaWireError {
     /// unknown enum, an index of zero, entries out of order or repeated, a stage or kill count
     /// that contradicts the thresholds or the cost, an unknown or repeated field.
     Malformed,
-    /// The payload is over its byte bound, a repeated field has more entries than its proposed
-    /// resource limit, or a value is above its proposed bound.
+    /// The payload is over its byte bound, a repeated field has more entries than its registered
+    /// resource limit, or a value is above its registered bound.
     LimitExceeded,
 }
 

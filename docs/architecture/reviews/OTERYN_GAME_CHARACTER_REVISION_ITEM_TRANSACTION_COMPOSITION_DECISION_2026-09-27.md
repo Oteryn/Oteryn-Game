@@ -153,6 +153,16 @@ How does such a transaction relate to the global `CharacterRevision`?
      advances the revision with its receipt, and §3.1 covers the item part. This decision does
      not require or allocate such a combined transaction.
 
+**Amendment (CHAR-POSITION-0, 2026-09-30): Character runtime-state projections, pending on
+acceptance of CHAR-POSITION-0.** Once accepted: a Character runtime-state projection is a mutable
+row that mirrors runtime state for the next admission and
+carries no semantic value: first, the last position
+(`OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md` §3.2). It does not advance
+`CharacterRevision` and writes no root, progression or receipt row. It takes rule 2's session
+checks without a cause lock or replay, and no rule 4 root lock, because it reads no inventory,
+occupancy or claim. Its own decision fixes its write order. Any other projection needs its own
+decision under rule 6.
+
 ### 3.1 Amendment (2026-09-28): B3 and reward chest locations
 
 The B3 decision (`OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md`,
@@ -170,6 +180,21 @@ equipment slots are not covered until their own decisions.
 row (`game_character_pending_arrivals`), an obligation outside the revision chain like DEATH-0's
 pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transactions under rules
 1-6 (`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6).
+
+**Amendment (PLAYER-TRADE-0, 2026-09-30), pending on acceptance of PLAYER-TRADE-0.** Once
+PLAYER-TRADE-0 is accepted (`OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md` §5), one item-only transaction may fence two
+Characters for a trade swap: the second accepter by rule 2 with its pending CommandRef, the first
+accepter by its terminal accept recorded in the cause, with its GameSessionId, lease and scope
+generations pinned at that accept. Both `character_root` rows are locked in `character_id` order,
+then the items in ItemInstanceId order. No `CharacterRevision` advances.
+
+**Amendment (STARTER-BACKPACK-0, 2026-09-30), pending on acceptance of STARTER-BACKPACK-0.** Rule 1
+also covers a starter grant (`OTERYN_GAME_STARTER_BACKPACK0_STARTER_GRANT_DECISION_2026-09-30.md`
+§5): the container-slot location it mints into and its `game_character_starter_grants` row, a
+DUR-03 cause record keyed by the Character. Rules 2 and 3 apply in a server-originated variant: the
+cause lock is the grant key (re-read after the `character_root` lock), and the fence is the admitted
+session's `CurrentCharacterItemFence` without a CommandRef, whose Character and World must equal the
+grant's; no synthetic CommandId is created. Rules 4-6 apply unchanged.
 
 ## 4. Rejected options
 
@@ -222,6 +247,11 @@ entry on another Account. They are DUR-03 value records keyed by the bank operat
 receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: after
 `character_root`, the main backpack, its coin entries, then the balance rows in `account_id` order.
 
+**Quest obligation amendment (pending on acceptance of QUEST-STATE-0, #1373;
+`OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md` §5.4).** Rule 1 also covers a
+`game_character_quest_obligations` row written by a reward-claim transaction: an obligation outside
+the revision chain, like the pending arrival; the claim still advances no `CharacterRevision`.
+
 ## 6. Handback
 
 ```yaml
@@ -243,6 +273,17 @@ remaining_unknowns:
   - RewardClaim physical schema and cooldown identity
 next_action: "#162 validates this exact head, routes the required independent review and integrates it through the governed Merge Queue."
 ```
+
+**Market amendment (pending on acceptance of MARKET-0, #162 5912405163;
+`OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md`).** When MARKET-0 is accepted, rule 1
+also covers Market escrow, Inbox and offer records: a market transaction advances no
+`CharacterRevision`. Rule 2 fences only the acting Character of a player command; a
+counterparty's Inbox, escrow and bank balance change without its fence, because no runtime owns
+them, and its Inbox counter row lock takes the place of its `character_root` lock. Matching and
+expiry steps have no acting Character: they take the recovery fence and admission relations only.
+Rule 4's lock order becomes: `character_root`, the ware's book row, the offers by `offer_id`, the
+items by ItemInstanceId, the container-slot row, the Inbox counters by CharacterId, then the balance
+rows by `account_id`.
 
 ## 7. Protected integration
 

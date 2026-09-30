@@ -453,6 +453,8 @@ fn charm_effect_hook_and_fail_closed_matrix_covers_every_charm() {
         let definition = catalogue.charm(&key).expect("catalogue charm");
         assert_eq!(definition.effect().hook(), hook, "{name}");
         assert_eq!(definition.effect().missing_system(), missing, "{name}");
+        // The wire's `effect_active` (CHARM-5 view) is exactly "no missing system".
+        assert_eq!(definition.effect_active(), missing.is_none(), "{name}");
         // At its own hook, with a certain trigger, the charm applies exactly when its system
         // exists and otherwise fails closed with that system named.
         match (single(&catalogue, &key, 3, event_for(hook)), missing) {
@@ -465,6 +467,16 @@ fn charm_effect_hook_and_fail_closed_matrix_covers_every_charm() {
             (other, _) => unreachable!("{name}: {other:?}"),
         }
     }
+    // 9 charms apply today and 16 fail closed (CHARM-4, #1303).
+    let active = expected
+        .iter()
+        .filter(|(name, ..)| {
+            catalogue
+                .charm(&format!("oteryn:charm.{name}"))
+                .is_some_and(CharmDefinition::effect_active)
+        })
+        .count();
+    assert_eq!(active, 9);
 }
 
 #[test]

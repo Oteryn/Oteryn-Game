@@ -386,11 +386,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The durable session is ACTIVE on the candidate connection: the still-present actor
         // is controlled again, from the lost connection's FND-02 continuity. The durable
         // switch stands even if the runtime mark could not be cleared.
-        let _ = self
-            .runtime
-            .lock()
-            .await
-            .restore_control(actor, session_id, epoch.get());
+        {
+            let mut runtime = self.runtime.lock().await;
+            let _ = runtime.restore_control(actor, session_id, epoch.get());
+            // SPELL-D8 §8.2: the Serene initialization evaluation runs in this owner step,
+            // before the resumed actor's first command. An actor without spell state has none.
+            let _ = self.spell_states.lock().await.resume(
+                &runtime,
+                actor,
+                session_id,
+                self.owner_now(),
+            );
+        }
         self.forget_lost(session_id, lost.continuity.connection_generation);
         Ok(resumed)
     }

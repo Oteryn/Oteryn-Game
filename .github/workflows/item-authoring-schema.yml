@@ -20,6 +20,9 @@ on:
       - tools/content-census/item_wiki_family_capture.py
       - tools/content-census/item_wiki_stats_capture.py
       - tools/content-census/item_wiki_stats_capture_self_test.py
+      - docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json
+      - content/items/index.json
+      - content/items/definitions/**
       - content/assets/files/appearances-*.dat
       - imports/official/appearance-membership/**
       - .github/workflows/item-authoring-schema.yml
@@ -81,6 +84,9 @@ jobs:
       - name: TibiaWiki Item stat snapshot self-test
         working-directory: tools/content-census
         run: python item_wiki_stats_capture_self_test.py
+
+      - name: TibiaWiki Item stat promotion packet tests and drift
+        run: python test_lower_wiki_stats_packet.py
 
       - name: Weapon proficiency tests and artifact drift
         run: |

@@ -4950,25 +4950,25 @@
     },
     {
       "id": "MOVE-RL-11",
-      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
       "resource": "Semantic entities in one WORLD_SPATIAL_VISIBILITY snapshot or delta",
       "unit": "entities per snapshot or delta",
-      "hard_maximum": 1,
+      "hard_maximum": 256,
       "configurable_range": {
-        "minimum": 1,
-        "maximum": 1
+        "minimum": 256,
+        "maximum": 256
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "The first child carries only the session's own actor; a second entity is refused before encoding.",
+      "allocation_impact": "A snapshot carries at most 256 entities (nearest first, own actor always included); a delta at most 256 entries, a larger change is a snapshot. Encoders refuse the 257th before encoding.",
       "client_visible": true,
       "boundary_tests": [
-        "max=1: the own actor is carried in a snapshot or delta",
-        "max+1=2: a second entity cannot be encoded by the first-child payload schema"
+        "max=256: a snapshot of 256 entities (own actor included) encodes within 33,792 bytes and decodes",
+        "max+1=257: encode and decode both refuse the 257th entity"
       ],
       "consumers": [
-        "WORLD_SPATIAL_VISIBILITY state domain 1, delta type 1, snapshot type 1"
+        "WORLD_SPATIAL_VISIBILITY state domain 1, snapshot type 2 and delta type 2 (capability 6 WORLD_SPATIAL_ENTITIES)"
       ],
-      "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
+      "notes": "Re-decided from 1 in D87 (decision section 4.4), registered with the VIS-2 schema revision. Sessions without capability 6 keep the v1 own-actor-only types."
     },
     {
       "id": "MOVE-RL-08",
@@ -4991,7 +4991,7 @@
         "movement::interest::diff_interest",
         "movement::interest::INTEREST_DELTA_ENTRIES_MAX"
       ],
-      "notes": "Re-decided in D87. Decision section 4.4; #162 comment 5875958040. Wire consumer arrives with VIS-2 (new WORLD_SPATIAL revision); MOVE-RL-11 remains 1 until then."
+      "notes": "Re-decided in D87. Decision section 4.4; #162 comment 5875958040. Wire consumer: VIS-2 WORLD_SPATIAL type 2 (capability 6)."
     },
     {
       "id": "MOVE-RL-09",
@@ -5037,7 +5037,7 @@
         "movement::interest::InterestIndex::query_with",
         "movement::interest::VISIBILITY_QUERY_RESULTS_MAX"
       ],
-      "notes": "Equals the future MOVE-RL-11 value (D87). Decision section 4.4; #162 comment 5875958040. Wire consumer arrives with VIS-2 (new WORLD_SPATIAL revision); MOVE-RL-11 remains 1 until then."
+      "notes": "Equals the future MOVE-RL-11 value (D87). Decision section 4.4; #162 comment 5875958040. Wire consumer: VIS-2 WORLD_SPATIAL type 2 (capability 6)."
     },
     {
       "id": "MOVE-VIEW-WIDTH",
@@ -5863,47 +5863,48 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
       "resource": "One exact OneItemTransactionV1 payload (event type 2, operation fee_burn) inside EventEnvelope.payload",
       "unit": "bytes",
-      "hard_maximum": 24181,
+      "hard_maximum": 25398,
       "configurable_range": {
-        "minimum": 24181,
-        "maximum": 24181
+        "minimum": 25398,
+        "maximum": 25398
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; ANL01-EVENT-PAYLOAD-BYTES (196,608 B) still applies on top.",
       "client_visible": false,
       "boundary_tests": [
-        "the measured worst case of the registered schema (20 whole burns, 512-byte revisions, the longest charm key, maximal integers) is exactly 24,181 B and accepted",
-        "24,182 bytes rejected before decode"
+        "the measured worst case of the registered schema (20 whole burns, two change MINTs of 99 coins, 512-byte revisions, the longest charm key, maximal integers) is exactly 25,398 B and accepted",
+        "25,399 bytes rejected before decode"
       ],
       "consumers": [
         "apps/game-server/src/durability/item_fee_burn_audit.rs",
         "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
     },
     {
       "id": "DUR03-RL-07-FEE-BURN-ENVELOPE-BYTES",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
       "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 2 operation fee_burn, including payload",
       "unit": "bytes",
-      "hard_maximum": 24495,
+      "hard_maximum": 25712,
       "configurable_range": {
-        "minimum": 24495,
-        "maximum": 24495
+        "minimum": 25712,
+        "maximum": 25712
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0023 admits a stored envelope above the one-item 9,216 B only for a fee event of the same transaction.",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0023 admits a stored envelope above the one-item 9,216 B only for a fee event of the same transaction; migration 0031 sets the stored ceiling to this row.",
       "client_visible": false,
       "boundary_tests": [
-        "the measured worst-case envelope (128-byte build id) is exactly 24,495 B and accepted",
-        "24,496 bytes rejected before decode"
+        "the measured worst-case envelope (128-byte build id) is exactly 25,712 B and accepted",
+        "25,713 bytes rejected before decode"
       ],
       "consumers": [
         "apps/game-server/src/durability/item_fee_burn_audit.rs",
         "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)",
-        "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)"
+        "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)",
+        "apps/game-server/migrations/0031_character_gold_fee_change_mint.sql (stored envelope ceiling, re-measured)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
     },
     {
       "id": "DUR03-AUDIT-RETENTION-S",
@@ -6541,6 +6542,238 @@
       "unit": "microseconds"
     },
     {
+      "allocation_impact": "Checked on the input length before any header field is trusted; the u32 offsets need the file below 4 GiB.",
+      "boundary_tests": [
+        "a bundle is size-accepted at a reduced file_bytes cap equal to its length (ReadCaps)",
+        "the same bundle is rejected before parsing at a cap one byte smaller; a zero-filled input one byte over 1 GiB is rejected by read()"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1073741824,
+        "minimum": 1073741824
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 1073741824,
+      "id": "MAP01-BUNDLE-FILE-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Size of one server World Bundle file",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Checked from the header before the manifest is parsed.",
+      "boundary_tests": [
+        "a 16 MiB manifest is length-accepted",
+        "a manifest length over 16 MiB is rejected before parsing"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 16777216,
+        "minimum": 16777216
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 16777216,
+      "id": "MAP01-BUNDLE-MANIFEST-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Canonical JSON manifest of one bundle, palette included",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Checked from the header, and the table must fit inside the file before any row is read or the sector list is reserved.",
+      "boundary_tests": [
+        "a bundle is count-accepted at a reduced sectors cap equal to its row count (ReadCaps)",
+        "the same bundle is rejected at a cap one row smaller, and a header count over 1,048,576 is rejected by read() before the table is read"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1048576,
+        "minimum": 1048576
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 1048576,
+      "id": "MAP01-BUNDLE-SECTOR-COUNT",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Rows of the sector table of one bundle",
+      "unit": "sectors"
+    },
+    {
+      "allocation_impact": "raw_length is checked against 16 MiB and against 1,024 times compressed_length before decompression; decompression writes into exactly raw_length bytes and the output must be exactly that long. The compressed frame is bounded by the file size.",
+      "boundary_tests": [
+        "a payload is accepted at a reduced sector_raw_bytes cap equal to the largest raw_length (ReadCaps), and rejected at one byte less",
+        "raw_length over 16 MiB is rejected before decompression",
+        "raw_length over 1,024 times the frame length is rejected before decompression",
+        "a frame that decompresses to a length other than raw_length is rejected"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 16777216,
+        "minimum": 16777216
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 16777216,
+      "id": "MAP01-BUNDLE-SECTOR-RAW-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Matches the B3 codec MAX_SECTOR_BYTES; ratio limit 1,024:1.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Decompressed payload of one sector, with its zstd frame as the compressed size",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Running total checked per row before that sector is decompressed.",
+      "boundary_tests": [
+        "a bundle is accepted at a reduced total_raw_bytes cap equal to its payload total (ReadCaps)",
+        "at a cap one byte smaller, the row that takes the total over it is rejected before decompression"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1073741824,
+        "minimum": 1073741824
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 1073741824,
+      "id": "MAP01-BUNDLE-TOTAL-RAW-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Aligned with MAP01-BASE-RSS-BYTES.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Sum of the decompressed sector payloads of one bundle",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "The compiler rejects a tile over the limit; the reader rejects such a bundle. It is the reach of the per-tile hidden-item bitmask and bounds the placement key ordinal.",
+      "boundary_tests": [
+        "a tile with 64 top-level entries compiles",
+        "a tile with 65 top-level entries fails compilation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 64,
+        "minimum": 64
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 64,
+      "id": "MAP01-TILE-BASE-ENTRIES",
+      "notes": "ADR-0021 \u00a74.4 (base map maximum 26); format document \u00a77 and \u00a79.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Top-level (depth 0) base entries on one tile",
+      "unit": "entries"
+    },
+    {
+      "allocation_impact": "Checked from the tile control word before the item list is reserved.",
+      "boundary_tests": [
+        "a tile with 4,096 entries decodes",
+        "a tile control word over 4,096 entries is rejected before allocation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 4096,
+        "minimum": 4096
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 4096,
+      "id": "MAP01-TILE-ENTRIES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Entries on one tile in a sector payload, container contents included",
+      "unit": "entries"
+    },
+    {
+      "allocation_impact": "Checked from the length varint before the text is copied.",
+      "boundary_tests": [
+        "a 4,096-byte text decodes",
+        "a text length over 4,096 bytes is rejected before allocation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 4096,
+        "minimum": 4096
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 4096,
+      "id": "MAP01-ITEM-TEXT-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "UTF-8 bytes of one item text or description attribute",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Charged per sector from the tile count and each tile's control word before the tile list or item list is reserved; bounds decoded memory, which the raw-byte limits do not (one raw byte can decode to a whole entry).",
+      "boundary_tests": [
+        "a bundle decoding to exactly the budget is accepted",
+        "the sector that takes the total over the budget is rejected before its tiles are reserved"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 33554432,
+        "minimum": 33554432
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 33554432,
+      "id": "MAP01-BUNDLE-TILES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map. Source map about 19.37 M tiles.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Decoded tiles of one bundle, over all sectors",
+      "unit": "tiles"
+    },
+    {
+      "allocation_impact": "Charged per sector from the tile count and each tile's control word before the tile list or item list is reserved; bounds decoded memory, which the raw-byte limits do not (one raw byte can decode to a whole entry).",
+      "boundary_tests": [
+        "a bundle decoding to exactly the budget is accepted",
+        "the tile that takes the total over the budget is rejected before its items are reserved"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 67108864,
+        "minimum": 67108864
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 67108864,
+      "id": "MAP01-BUNDLE-ENTRIES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map. Source map about 24.98 M items.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Decoded entries of one bundle, container contents included",
+      "unit": "entries"
+    },
+    {
       "id": "LCA-CHARACTERS",
       "owner_contract": "OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md",
       "resource": "CharacterSummary entries in one PublishAccountCharactersV1 snapshot",
@@ -6626,6 +6859,140 @@
         "apps/game-server/src/native_admission_source/account_characters.rs"
       ],
       "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
+    },
+    {
+      "id": "CHARPOS0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md",
+      "resource": "Interval between periodic last-position writes of one live Character while its position has changed",
+      "unit": "seconds",
+      "hard_maximum": 300,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 300
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Bounds crash loss of movement to one interval and write load to one small fenced upsert per Character per interval; no allocation from untrusted input.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a changed position is written within 300 s",
+        "an unchanged position writes nothing at the interval",
+        "a configured value above 300 s is rejected"
+      ],
+      "consumers": [
+        "game server channel runtime"
+      ],
+      "notes": "CHAR-POSITION-0 \u00a73.2, pending on acceptance of CHAR-POSITION-0; the final write at logout does not depend on this interval."
+    },
+    {
+      "id": "CHARM5-RL-01",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Bestiary races in one BestiaryViewV1, and the largest race index",
+      "unit": "races per view",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 1025th entry or a race index above 1024 before allocating for it; the whole view is at most 21504 bytes (state domain 4). A server view over the bound is a server fault and is never truncated.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: a view of 1024 races at race index 1024 encodes and decodes",
+        "max+1=1025: a 1025th entry or race index 1025 is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/bestiary.rs MAX_BESTIARY_VIEW_ENTRIES, MAX_BESTIARY_RACE",
+        "crates/protocol-oteryn/src/charm.rs CharmAssignIntentV1.race and CharmStateV1.assigned_race"
+      ],
+      "notes": "833 Bestiary races in the captured staticdata (CHARM-0 section 2). CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-02",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest Bestiary kill threshold in BestiaryRaceProgressV1",
+      "unit": "kills",
+      "hard_maximum": 100000,
+      "configurable_range": {
+        "minimum": 100000,
+        "maximum": 100000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A threshold or kill count above 100000 is refused in both directions; it bounds each varint to 3 bytes.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=100000: a final threshold of 100000 round-trips",
+        "max+1=100001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/bestiary.rs MAX_BESTIARY_KILL_THRESHOLD"
+      ],
+      "notes": "The captured definitions top out at 5000. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-03",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Charms in one CharmViewV1, the largest charm index, and the largest assignment slot limit",
+      "unit": "charms per view",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 33rd entry, a charm index above 32 or a slot limit above 32 before allocating for it; the whole view is at most 554 bytes (state domain 5).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=32: a view of 32 charms at charm index 32 with slot limit 32 is exactly 554 bytes and round-trips",
+        "max+1=33: a 33rd entry, charm index 33 or slot limit 33 is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARMS, MAX_CHARM"
+      ],
+      "notes": "25 charms in the candidate catalogue. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-04",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest single charm stage cost in CharmStateV1.next_stage_cost",
+      "unit": "Charm Points or Minor Charm Echoes",
+      "hard_maximum": 100000,
+      "configurable_range": {
+        "minimum": 100000,
+        "maximum": 100000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A cost above 100000 is refused in both directions.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=100000: a next stage cost of 100000 round-trips",
+        "max+1=100001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARM_STAGE_COST"
+      ],
+      "notes": "CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-05",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest available balance of Charm Points or Minor Charm Echoes in CharmViewV1",
+      "unit": "Charm Points or Minor Charm Echoes",
+      "hard_maximum": 1000000,
+      "configurable_range": {
+        "minimum": 1000000,
+        "maximum": 1000000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A balance above 1000000 is refused in both directions.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1000000: both balances at 1000000 round-trip",
+        "max+1=1000001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARM_BALANCE"
+      ],
+      "notes": "Earned Charm Points are at most 1024 x 100. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
     }
   ]
 }

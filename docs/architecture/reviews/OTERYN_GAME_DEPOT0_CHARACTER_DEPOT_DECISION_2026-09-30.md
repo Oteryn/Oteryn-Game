@@ -183,6 +183,13 @@ Each keeps the previous function body and adds one clause:
 - **Rows:** the `DUR03-RL-02` and `DUR03-RL-06` allocation texts gain the depot source; each shape
   is one item, two location lines, three work units.
 
+**Amendment (pending on acceptance of MARKET-0 (#1367); `OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §5, §7).** The Inbox is decided: `CharacterInbox`
+is the third custody family, with two out-shapes (Inbox to backpack, Inbox to a depot box) and the
+Inbox view on the locker. A sell offer takes depot entries into Market escrow and a buy-offer fill
+takes them to the buyer's Inbox, with at most one split of the last entry (its row stays, its item's
+quantity falls). Rule 4's order stays `character_root`, items, container-slot row, with the Market's
+book and offer rows between the root and the items.
+
 ## 7. Other amendments
 
 ### 7.1 DUR-03
