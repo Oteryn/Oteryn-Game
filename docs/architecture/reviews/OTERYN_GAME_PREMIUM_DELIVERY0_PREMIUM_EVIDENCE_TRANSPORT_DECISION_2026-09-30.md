@@ -5,6 +5,8 @@
   cross-repository integration) and protected integration here, and the matching producer change
   accepted in `Oteryn/Oteryn-Platform` (PREM-P).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
+- Amended (2026-09-30): §3.1, the request and response handling, answering PREM-1b's
+  `ARCHITECTURE_ESCALATION_REQUIRED` (#162 5916078350).
 - Answers: the owner's direction to start Premium now (2026-09-30, verbatim: "no to wydaj takie
   decyzje i przygotuj zeby to ruszylo", answering the recommendation to start the Platform lane and
   the Game lane in parallel)
@@ -80,6 +82,37 @@ How does Game learn, safely and in time, that an account has Premium?
   closed. The durable fence (§6) rejects any older revision.
 - **Size:** a response is at most 1,024 bytes (`PREMDEL0-RL-01`); anything larger or malformed fails
   closed for benefit.
+
+### 3.1 Request and responses (both sides; ruling on PREM-1b, #162 5916078350)
+
+PREM-1a stopped because §3 and §4 fix the response, not the request. This fixes the request so
+PREM-1b's client and test producer and PREM-P serve the same exchange.
+
+- **Request:** `POST /v1/premium/snapshot` over the §3 mutual TLS channel, with
+  `Content-Type: application/json` and this body, at most 256 bytes (`PREMDEL0-RL-02`):
+
+  ```text
+  schema:     "oteryn.premium_snapshot_request.v1"
+  account_id: AccountId, canonical lowercase hyphenated UUID (8-4-4-4-12)
+  nonce:      32 lowercase hexadecimal characters (the 128-bit nonce of §3)
+  ```
+
+- **Text forms.** `account_id` in the request and in the §4 response uses the same canonical
+  lowercase hyphenated form as the existing Platform contracts; `nonce` is echoed byte for byte.
+  Game compares both as exact strings; any other form fails closed.
+- **200** carries the §4 body only, with `Content-Type: application/json`. An account without a
+  Premium entitlement, including one Platform has never granted, is a 200 with
+  `entitlement_state` `NONE`, `entitlement_id` null and Platform's normal `authority_revision`
+  series: there is no separate "unknown account" answer.
+- **Anything else is unavailable:** any other status, a redirect (never followed), another content
+  type, a timeout after 5 seconds (`PREMDEL0-RL-03`), or a TLS failure. Unavailable yields no new
+  evidence: the fence keeps its last accepted evidence, the class is derived from its absolute times
+  (so benefits stop at `authority_valid_until`), and the §3 retry with backoff continues. A 429 or
+  503 `Retry-After` is honoured within that backoff. Login is never affected.
+- **Test producer** (PREM-1b): an in-process server that speaks exactly this exchange and the §4
+  body, used by PREM-1's tests and by the cross-repository end-to-end test's Game half.
+- PREM-P accepts or amends this in Platform (the cross-repository note in the header); a Platform change
+  of path or form updates this section before activation.
 
 ## 4. Evidence message (both sides)
 
@@ -181,4 +214,4 @@ current (consumer contract §7, ENT-CDF-04).
    monotonic revisions.
 3. **Restart:** the fence and evidence are durable; a restart re-pulls before any benefit.
 4. **Typed references:** AccountId, EntitlementId, revisions, absolute UTC times.
-5. **Wire:** no client wire; a private service endpoint (§3, §4).
+5. **Wire:** no client wire; a private service endpoint (§3, §3.1, §4).
