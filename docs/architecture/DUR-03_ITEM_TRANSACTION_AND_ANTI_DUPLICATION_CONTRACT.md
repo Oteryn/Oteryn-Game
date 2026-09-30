@@ -368,6 +368,7 @@ Silent row deletion, `quantity=0` live state or disappearance during recovery is
 
 Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of the
 gold fee amendment in §39.3 (owner decisions D174-D178).
+The item use amendment in §39.3 (ITEM-USE-0) admits the closed `ItemUseCause`.
 
 ## 16. Transform semantics
 
@@ -731,7 +732,8 @@ non-item accounts, nested containers or additional custody families. (The B3
 amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
 amendment in §39.3 admits typed BURN of up to 20 coin stacks with up to 2 change MINTs, composed
-with a Character change in one transaction.) Unsupported
+with a Character change in one transaction; the item use amendment in §39.3 admits a one-unit
+BURN, or a one-unit TRANSFORM into a flask stack or a fresh flask, under `ItemUseCause`.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -1381,6 +1383,22 @@ unchanged.
   - the matching extension of the Ground-removal proof triggers.
 
   This amendment grants no runtime or DDL authority.
+
+**Item use amendment (ITEM-USE-0, 2026-09-30).** `reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4 admits, in its ITEM-USE-1 child and
+for these shapes only:
+
+- **Burn.** One BURN line (§17) of exactly one unit from the used stack, which keeps its identity
+  (§11.1) or retires at zero (§11.5), under the closed sink `ItemUseCause` (`Food`, `Potion`),
+  keyed by the using command's CommandRef.
+- **Flask.** For a potion whose content names an empty flask, one unit-level TRANSFORM line (§17)
+  instead: one unit of the used stack in, one flask unit out, either as a quantity adjustment of a
+  compatible flask stack in the main backpack (§11.1) or as a fresh flask item in a new entry,
+  planned in the reservation (§11.3). §16.1's instance policy does not apply, because no whole
+  instance changes type. At most two items. Nothing is minted.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn, transform, mint into an
+  existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
+  event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
+  use's effect, with its own suffixed resource rows.
 
 ## 40. Durable acknowledgement
 
