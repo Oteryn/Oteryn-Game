@@ -27,7 +27,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| PARTY-1 | hard, persistence, security and privacy review | party, member, invitation and consent tables; invite (with the consent check), accept, decline, revoke, leave, succession, pass leadership, shared-XP toggle, block, party-invite and channel-visibility settings, invitation expiry; the node `PartyView` cache, full refresh and revision check, and the relay change hint; the cleanup job (§3, §4) | this decision; CHAT-2 |
+| PARTY-1 | hard, persistence, security and privacy review | party, member, invitation and consent tables; invite (with the consent check), accept, decline, revoke, leave, succession, pass leadership, shared-XP toggle, block, party-invite and channel-visibility settings, invitation expiry; the node `PartyView` cache, full refresh, admission read and revision check, and the relay change hint; the cleanup job (§3, §4) | this decision; CHAT-2 |
 | PARTY-XP-1 | hard (combat), combat review | shared-experience eligibility and split on the D118 XP slice; party immunity in area effects; the party loot right; the `PartyView` query for `party_buff` and the monk party rules (§5) | PARTY-1; the D118 XP lane; D3-4 |
 | PARTY-CHAT-1 | impl, security review | one party room per party on the CHAT-0 World relay (§4.3) | PARTY-1; CHAT-2 |
 | PVP-1 | hard, persistence and security review | PvP state, unjustified point and revenge mark tables; skull evaluation in the death transaction; the World cleanup job; the `rulesets/pvp/` and `rulesets/party/` rows, with `pvp_type` `OPTIONAL` for the first World (§6, §9) | DEATH-1; PARTY-1 |
@@ -215,6 +215,14 @@ party row; member rows by CharacterId; invitation rows; consent rows.
   or a party-chat line (§4.3) shows a revision the node did not apply in order, the node re-reads
   from the durable rows every local character's `game_party_members` row and each such party's
   rows at their current `revision`, and replaces its views.
+- **Admission and channel entry** (architect ruling): at every local admission, readmission,
+  reconnect and channel entry of a character (the same points as the §8.1 restore), the node reads
+  that character's `game_party_members` row and, when it has one, that party's rows at their
+  current `revision`, in one indexed read, and adds or replaces that party's view; from then the
+  view is in the `PARTYPVP0-RL-26` check. Channel movement changes no party `revision`, so this
+  read, not a hint, is how a node learns of a member that arrives after its full refresh. Until the
+  read has completed the character is not party-ready (below); a failed read is retried and the
+  character stays not party-ready meanwhile. A node drops a view when it has no local member of it.
 - **Bounded staleness:** a node also re-reads the `revision` of all its cached parties in one query
   every `PARTYPVP0-RL-26` (5 s) and refreshes any view that differs, so a hint lost to a writer
   crash or a dropped listener is caught. A view not confirmed within twice that interval is stale.
@@ -246,14 +254,32 @@ party row; member rows by CharacterId; invitation rows; consent rows.
 
 ### 4.4 Presence
 
-- The party list shows each member's name, level, vocation and channel (the social baseline
-  allows the channel to party members); health and mana percentages only for members on the
-  viewer's channel. Never a position. Membership never names another character of the Account.
+- The party list shows each member's name, level, vocation and presence. Never a position.
+  Membership never names another character of the Account.
+- **Authorization-bearing presence** (architect ruling; the social baseline requires that a stale
+  record never keeps exposing an exact channel after authorization, membership or permission has
+  ended, `SOCIAL_PRESENCE_AND_CONTACT_CONSENT_OWNER_BASELINE.md` "Presence authority and
+  freshness"). A member's exact channel and its health and mana percentages are sent only for a
+  member whose actor is present on the viewer's own channel runtime, and are taken from that
+  runtime's own state, never from a cached remote value. Every change that ends that
+  authorization is ordered in the same runtime: the member's leave, logout, accept and
+  `channel_visibility` change are issued by the channel runtime hosting its actor, which applies the
+  committed `revision` to its `PartyView` before it sends the operation's result or any further
+  presence output; the viewer's own leave or logout is local to it; the member's channel exit is a
+  local runtime event; and the cleanup job never removes a member whose actor is present (§4.1). A
+  member arriving on the channel is party-ready only after the §4.2 admission read, so its state at
+  entry is the durable one. The disclosure is therefore ordered with every change that revokes it,
+  not bounded by the `PARTYPVP0-RL-26` poll.
+- **Members on another channel** are shown only as "online on this World" (or offline): no channel,
+  health or mana. Declared deferral: showing a remote member's exact channel, which the social
+  baseline allows, needs the revisioned presence with ordered invalidation that the baseline leaves
+  to a later contract; it comes with that contract (the channel-selection party co-location
+  question), not in v1.
 - **Channel visibility** (the social baseline lets the observed player hide its exact channel):
   for a member whose `channel_visibility` is `HIDDEN`, other members get only "online on this
-  World": no channel, and no health or mana (which would reveal a shared channel). The setting is
-  carried in the `PartyView` at its `revision`; a view not confirmed (§4.2) sends no member channel
-  or health. Characters on the same channel still see each other on the map (VIS-2).
+  World" even on the same channel: no channel, and no health or mana (which would reveal a shared
+  channel). A view not ready (§4.2) sends no member channel or health. Characters on the same
+  channel still see each other on the map (VIS-2).
 
 ## 5. Party benefits (PARTY-XP-1)
 
@@ -439,7 +465,9 @@ tracked"): legal PvP damage and assists are never refused for ledger space. A ne
 all 16 full slots are taken **demotes** the full contributor with the least damage in the window
 (assist-only first, then oldest `last_at`) to a compact row, and takes the slot; its amounts stay in
 the PvP total, and it stays classified in §9 as a damage or assist contributor. When the 64 compact
-slots are also taken the compact row with the oldest `last_at` is dropped. Declared residual: only
+slots are also taken the compact row with the oldest `last_at` is dropped. A compact contributor
+gets the same §9 consequences as a full one (points by its damage or assist flag, kill block,
+skull evaluation, revenge mark), so a death processes at most 80 contributors (§13). Declared residual: only
 an attack by more than 80 distinct characters within 5 minutes can drop the oldest contributors'
 consequences (they are the ones that hit longest ago), and never the victim's protection; the
 final-blow character is always classified, from the death itself. Slots free as contributors age
@@ -468,6 +496,9 @@ ones (§6.2). A crash can lose at most 10 s of amounts of any source, never a co
   marked toward it at death (white, red or black skull; yellow toward it; an orange mark toward
   it), when `war_between` is some, or on Hardcore; else unjustified (Open only). Friendly-fire
   damage never counts.
+- **Contributors** are every full and compact ledger row of the victim in the window (at most 80,
+  §8.3; a final-blow character, when there is one, is always among them, its hit being the latest); each gets every
+  consequence below.
 - **Points** per unjustified contributor: 1,000 milli for a damage contributor, 500 for an
   assist-only one (`PARTYPVP0-RL-19`, `PARITY_PENDING`); with more than 5 damage contributors
   (`PARTYPVP0-RL-18`), each gets `1,000 × 5 / n`, rounded down.
@@ -584,7 +615,7 @@ the action. Reaching level 21 needs no write.
 | `PARTYPVP0-RL-22` Adventurer's Blessing | level 20 or less, Open only |
 | `PARTYPVP0-RL-23` point row retention | 45 days |
 | `PARTYPVP0-RL-24` aggression relations per actor | 64 |
-| `PARTYPVP0-RL-25` PvP contributors per victim | 16 |
+| `PARTYPVP0-RL-25` PvP contributors per victim | 16 full (plus 64 compact, `PARTYPVP0-RL-32`) |
 | `PARTYPVP0-RL-26` `PartyView` revision check | every 5 s; stale after 10 s unconfirmed |
 | `PARTYPVP0-RL-27` durable PvP deadline write-ahead | 10 s beyond the 60 s block |
 | `PARTYPVP0-RL-28` blocked characters per character | 100 |
@@ -594,7 +625,8 @@ the action. Reaching level 21 needs no write.
 | `PARTYPVP0-RL-31` durable PvP ledger | at most 16 full and 64 compact rows per victim, at most 10 s behind, deleted 5 minutes after `last_at` or at the victim's death |
 | PvP legality party check | 1 indexed read per character target; 1 batched read per area effect |
 | Party operation | 1 transaction, 0 items, 0 value lines, 1 relay hint |
-| PvP additions to a death | at most 17 state rows, 16 point rows, 16 mark rows, 80 ledger rows deleted; no value lines |
+| PvP additions to a death | at most 81 state rows (the victim and 80 classified contributors, full and compact), 80 point rows, 80 mark rows, 80 ledger rows deleted; no value lines |
+| Party read at admission or channel entry | 1 indexed read per character |
 | PvP deadline write | 1 transaction, at most 2 state rows and 80 ledger rows, per character at most once per 10 s plus once per new contributor |
 
 ## 14. Rejected options
@@ -625,7 +657,8 @@ invitee, expiring after 5 minutes); leaving a party is barred by the whole comba
 for members on the same channel; the "battle sign" read as the PZ block; the 2-minute activity
 window, the assist share and the lower-bound thresholds (`PARITY_PENDING`); no unfair-fight
 reduction until a source; no Retro types yet; no green skull; a block list and a party-invite
-setting and a channel-visibility setting (social baseline); PvP party relations confirmed against
+setting and a channel-visibility setting (social baseline); a party member's exact channel, health
+and mana shown only when it is on the viewer's channel (remote channel deferred, §4.4); PvP party relations confirmed against
 durable rows, so a just-changed membership can refuse an attack; a node crash can lengthen a PvP block by up to 10 s, never shorten it,
 and ends yellow skulls and retaliation relations and can lose at most 10 s of PvP ledger amounts.
 
@@ -656,7 +689,8 @@ configured with it (§6.1, §7).
 - **Superseding evidence:** an official source for the thresholds, the activity window, the
   unfair-fight formula or the retro rules.
 - **Deliberately not decided:** guild wars, arenas and PvP zones, the Party Finder, the Party Hunt
-  Analyser, Retro Worlds, Death Redemption, blessing sales (DEATH-4).
+  Analyser, Retro Worlds, Death Redemption, blessing sales (DEATH-4), a remote party member's exact
+  channel (§4.4).
 
 ## 18. Before-freeze checklist
 

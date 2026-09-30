@@ -104,6 +104,12 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
   is flushed at least every 10 s while PvP damage is in the window; party cleanup removes a member
   only when legally absent and combat-lock clear; accept deletes only its own invitation, other
   invitations expire and the cleanup job ends leader-only parties; validators re-run PASS.
+- Codex round 5 (final batched round, #1402, 3 P1): fixed 4149464332 (a party read at every
+  local admission, reconnect and channel entry adds the view, §4.2); fixed 4149464338 (exact channel
+  and health only for members on the viewer's channel runtime, ordered with every revoking change;
+  a remote member's exact channel is a declared deferral, §4.4); fixed 4149464353 (compact
+  contributors keep every §9 consequence and the death bound covers 81 state, 80 point and 80 mark
+  rows, §8.3, §9, §13); PR number filled in the closeout; validators re-run PASS.
 - Owner answers (2026-09-30, #162): P1 b and a — per-World PvP type; Optional and Open PvP both
   delivered; the first World launches as Optional PvP (stated assumption pending owner
   confirmation); validators re-run PASS.
@@ -112,7 +118,7 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1402 (`Oteryn/Oteryn-Game`). Merge commit/result: its squash merge.
 - Amendments follow the control-plane rule (#162 5912405163): pending on acceptance. Amended:
   ATTACK-0 §3 (and §4 by reference), the first player death decision §4.1 (and §4.5), DEATH-0
   §3.1, D3 §4.4, the composition decision rule 1, the scope matrix.
