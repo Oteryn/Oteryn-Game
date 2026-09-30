@@ -669,8 +669,9 @@ the market row is filled by two §5.2 custody families, `MarketOfferEscrow {offe
 and by a buy offer's `escrow_gold` as §18 non-item value in custody. Its shapes (place, accept,
 cancel, expire, match, Inbox out) move whole items as `TRANSFER` lines with at most one §12 split
 (`SPLIT_MERGE_QUANTITY`, a §11.3 planned output identity), gold as `TRANSFER` value lines, and the
-placing fee as one `BURN` value line under the Market variant of `FeeBurnCause`. That fee source is
-admitted in §39.3 and the gold fee decision §4.4 only with its own owner decision (D178). For those
+placing fee as one `BURN` value line under the Market variant of `FeeBurnCause`. The owner
+admitted that fee source, paid from the bank (D178; #162 5913348961); MARKET-1 writes it into §39.3
+and the gold fee decision §4.4. For those
 shapes only, it supersedes the §39.1 exclusions of non-item accounts, multiple touched items and
 burn combined with other lines, and the §39.1 and §39.3 source and destination limits, within the
 MARKET-0 §9 rows (100 touched items, 3 value lines). Every other obligation is unchanged.

@@ -4,7 +4,7 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   economy, security and protocol) and protected integration. It builds on BANK-0 (PR #1357),
   BANK-FEE-0 (PR #1361) and DEPOT-0 (PR #1359) and integrates after them. Owner questions Q1-Q3
-  (§13) are open; §4 and §6 apply their recommended answers as reversible assumptions.
+  (§13) are answered (#162 5913348961).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to start the Market ("pełna zgodność handlu z Tibią",
   2026-09-30)
@@ -18,7 +18,7 @@
   families and shapes, a paragraph after the §38 table); the composition decision (a paragraph
   before its §7). The BANK-0, BANK-FEE-0 and DEPOT-0 amendments of §8 are written into those
   documents by MARKET-1 once they are on `main`. The DUR-03 §39.3 and gold fee §4.4 fee-source
-  amendment waits for Q1.
+  amendment is admitted by the Q1 answer and written by MARKET-1.
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -29,10 +29,11 @@
 | MARKET-CONTENT-1 | content lane | `trade.marketable` and `trade.market_category` for every Item, from the client appearances' market data (§3.1) | none |
 | MARKET-RET-0 | control plane routes; privacy review | the retention profile of the market event (purpose `ECONOMY_LEDGER`) | this decision |
 | INBOX-1 | hard, persistence review | the `CharacterInbox` family, its counter and its two out-shapes (§5) | DEPOT-1 |
-| MARKET-1 | hard, persistence, economy and security review | operations, offers, escrow, the book lock, place, accept, cancel, expiry and matching steps, the market event and every delta of §8 | BANK-1; GOLD-FEE-2; MARKET-RET-0; INBOX-1; MARKET-CONTENT-1; Q1 |
+| MARKET-1 | hard, persistence, economy and security review | operations, offers, escrow, the book lock, place, accept, cancel, expiry and matching steps, the market event and every delta of §8 | BANK-1; GOLD-FEE-2; MARKET-RET-0; INBOX-1; MARKET-CONTENT-1 |
 | MARKET-WIRE-1 | impl, protocol review | capability `MARKET_V1`, the market commands and domain, the Inbox view (§10) | DEPOT-WIRE-1; MARKET-1 |
 
-Later, each with its own decision: Tibia Coin offers (Q2), 30-day price statistics and the
+Later, each with its own decision: Tibia Coin offers (**MARKET-COINS-0**, owner answer Q2b, with a
+cross-repository contract with Oteryn-Platform), 30-day price statistics and the
 unfair-offer highlight, `trade_as` ware merging, the Stash as an offer source, bags with contents.
 
 ## 1. Question
@@ -51,7 +52,7 @@ How do players of one World buy and sell items through the Market, safely across
   ceilings before implementation; §15 and D178: a new fee source needs its own owner decision.
 - BANK-0 (candidate): one balance per (Account, World) up to `BANK0-RL-01`; ledger entries belong
   to a bank operation whose acting character is a live root of the entry's account; junior
-  characters without bank use (Q1 pending, recommended b). BANK-FEE-0 (candidate): fees pay coins
+  characters without bank use (owner answer b, #162 5913348961). BANK-FEE-0 (candidate): fees pay coins
   first, the remainder as a `FEE_DEBIT` ledger entry referencing the fee record.
 - DEPOT-0 (candidate): `CharacterDepot` rows are immutable and leave only by TRANSFER; whole-item
   shapes; the Inbox is left to a later decision.
@@ -118,10 +119,10 @@ How do players of one World buy and sell items through the Market, safely across
   `FILLED`, `CANCELLED`, `EXPIRED`), `escrow_gold` and `matching_pending`.
 - **Placing** (the acting character next to the locker whose depot view is open, checked again at
   execution under FND-02 §13.3):
-  - not junior; the Premium gate (Q3; assumption: everyone passes until the Premium consumer
-    contract is accepted, then Premium only); fewer than 100 open offers (`MARKET0-RL-01`);
+  - not junior; the Premium gate (owner answer Q3: everyone passes until the Premium consumer
+    contract is delivered, then Premium only); fewer than 100 open offers (`MARKET0-RL-01`);
   - the fee is a `FEE_DEBIT` ledger entry referencing this Market operation, class BURN under the
-    Market fee cause (pending Q1). It is taken from the bank only, as Tibia does: a declared
+    Market fee cause (owner answer Q1: yes, from the bank). It is taken from the bank only, as Tibia does: a declared
     exception to BANK-FEE-0's coins-first rule. An insufficient balance refuses the offer and
     writes nothing;
   - a **sell offer** moves `amount` units of default-state entries of the ware from the
@@ -185,7 +186,7 @@ How do players of one World buy and sell items through the Market, safely across
   re-stacked (Canary creates new stacks; moving the items keeps their identity).
 - **Refused:** an offer of the same Account (the balance is shared, as BANK-0 §4.3 refuses
   same-Account transfers; a declared Reference difference); a junior accepter (it has no bank under
-  Q1b, so a junior cannot buy either, a declared consequence); `amount` above `remaining`; an
+  BANK-0's owner answer b, so a junior cannot buy either, a declared consequence); `amount` above `remaining`; an
   ended offer; missing units or gold; more than 100 touched items (larger amounts take several
   accepts, `PARITY_PENDING`); a book with a pending match (`BOOK_BUSY`, retryable, §7).
 - **Balance ceiling.** Market credits (sales and escrow returns) are value already owned and are
@@ -306,10 +307,14 @@ characters cannot buy (from BANK-0 Q1b); no re-stacking on delivery; the total c
 - **Unknown wares as marketable.** The Market needs a category to list a ware.
 - **Refusing a sale credit at `BANK0-RL-01`.** It would strand escrowed gold in a step that can
   never commit.
-- **Tibia Coin offers now.** Tibia Coins are Platform's (Q2).
+- **Tibia Coin offers in this slice.** The owner wants them (Q2b), but Tibia Coins are Platform's;
+  MARKET-COINS-0 adds them with a cross-repository contract.
 - **Refunding the fee on cancel.** Tibia never refunds it.
 
-## 13. Owner questions
+## 13. Owner questions (answered)
+
+Owner answers, verbatim record on #162 5913348961: Q1 "tak z konta" (yes, from the bank); Q2 b;
+Q3 yes.
 
 **Q1. Admit the Market fee as a gold sink?** D178 needs an owner decision for every new fee source.
 a) Yes, 2% (20 to 1,000,000) from the bank, as in Tibia (recommended); b) no fee.
@@ -326,8 +331,8 @@ delivered, then Premium only (recommended); b) nobody places offers until then.
 
 - **Must decide now:** YES. The owner asked for the Market now, with the bank and depot.
 - **Minimum sufficient:** one operation, offer and book table, two custody families, bounded steps,
-  three commands; no statistics, no coin offers, no ware merging.
-- **Superseding evidence:** owner answers other than the recommendations; official partial-fill or
+  three commands; no statistics, no coin offers yet, no ware merging.
+- **Superseding evidence:** a later owner change of the answers in §13; official partial-fill or
   fee-rounding rules.
 - **Deliberately not decided:** Tibia Coin offers, statistics and the unfair-offer highlight,
   `trade_as`, the Stash, bags with contents.
