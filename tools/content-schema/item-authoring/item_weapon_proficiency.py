@@ -20,9 +20,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from collections import Counter
 from pathlib import Path
-import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 STAGING = ROOT / "imports" / "cipsoft-staticdata"
