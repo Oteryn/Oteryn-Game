@@ -98,11 +98,15 @@ it rent and run a guildhall?
 
 - **Guild.** `game_guilds`: `guild_id` (UUIDv7, Game-issued), `world_id`, `name`, `name_key`
   (unique per World while not `DISBANDED`), state (`FORMING`, `ACTIVE`, `DISBANDING`,
-  `DISBANDED`), `formation_deadline`, `vice_deficit_since`, `motd` (at most 255 characters, the
-  CHAT-0 text rules), `revision`, `created_at`. A row is never deleted; `DISBANDED` frees the name.
-- **Ranks.** `game_guild_ranks`: (guild, level 1 to `GUILD0-RL-06` (20), name). Level 1 is the
-  leader, level 2 the vice leaders, levels 3 and above members. A new guild gets "Leader", "Vice
-  Leader" and "Member".
+  `DISBANDED`), `formation_deadline`, `vice_deficit_since`, `premium_deficit_since` (nullable; only
+  the §3.3 Premium job writes it, so it stays NULL until PREM-1 delivers `premium_current`),
+  `motd` (at most 255 characters, the CHAT-0 text rules), `revision`, `created_at`. A row is never
+  deleted; `DISBANDED` frees the name.
+- **Ranks.** `game_guild_ranks`: (guild, level 1 to `GUILD0-RL-06` (20), name, `name_key`). Level 1
+  is the leader, level 2 the vice leaders, levels 3 and above members. A new guild gets "Leader",
+  "Vice Leader" and "Member". (guild, `name_key`) is unique (architect ruling): `name_key` is the
+  `0022` canonical name key of the rank name, so a `rank@guild` ACL entry (§10) resolves to exactly
+  one level.
 - **Members.** `game_guild_members`: `character_id` (primary key: at most one guild per
   character), guild, rank level, `title` (at most 29 characters), `joined_at`. A deferred guard
   keeps exactly one level-1 member per guild that is not `DISBANDED`, and the member's World equal
@@ -130,8 +134,12 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
 - **Invite `{character}` / revoke.** By levels 1 and 2; the target is of the same World and not a
   member of this guild; at most `GUILD0-RL-08` (500) invitation rows per guild and at most `GUILD0-RL-17` (50)
   invitation rows per target character across all guilds, counting expired retained rows
-  (`INVITATION_LIMIT`, architect ruling). Inside the invite transaction, expired rows of that target
-  character (at most 50) are deleted first, so an expired row never blocks a new invitation.
+  (`INVITATION_LIMIT`, architect ruling). The per-target count is serialized on the target
+  character's root: the invite transaction locks it FOR UPDATE at §4.1 position 2 (it writes
+  nothing there), then deletes that character's expired rows (at most 50), counts and inserts; an
+  accept already holds that root as the acting character. So two guilds cannot both pass the count
+  for one target, and an expired row never blocks a new invitation. Revoke and the §3.4 steps only
+  delete rows and need no target lock.
 - **Accept.** By the invited character, which is in no guild; it joins at the lowest level. At most
   `GUILD0-RL-05` (2,000, `PARITY_PENDING`: Tibia has no limit) members per guild; a further join is
   `GUILD_FULL`. Accepting removes the character's other invitation rows, expired or not: at most `GUILD0-RL-17` (50)
@@ -142,8 +150,8 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
   level `n` satisfy `a < t` and `a < n`; so only the leader sets level 2. A move to level 2 writes
   the target's Account leadership row and needs it free (`ACCOUNT_HAS_POSITION`).
 - **Edit ranks `{names}` / set title / set message.** Leader only for ranks and titles (3 to 20
-  names; removing a level moves its members to the new lowest level); levels 1 and 2 set the
-  message.
+  names, pairwise distinct by `name_key`, else `NAME_TAKEN` and nothing is written; removing a
+  level moves its members to the new lowest level); levels 1 and 2 set the message.
 - **Resign `{successor}`.** The leader names a vice of the guild that is not junior (so the
   leader's bank may fund guildhall costs, §6-§7); the two swap levels 1 and 2, the
   leadership rows follow (the successor's Account already holds this guild's position). Immediate:
@@ -175,8 +183,13 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
   (`GUILD0-RL-04`).
 - These jobs act only on `FORMING` or `ACTIVE` guilds; a guild already `DISBANDING` is skipped.
 - The Premium rule (fewer than 5 Premium players among leader and vices for 14 days disbands) waits
-  for PREM-1 (G1 a): from then on a daily World job reads `premium_current` per leadership Account
-  and keeps `premium_deficit_since` the same way.
+  for PREM-1 (G1 a). From then on a daily World job reads `premium_current` per leadership Account
+  of each `ACTIVE` guild under the guild lock and writes `premium_deficit_since` (§3.1)
+  (`GUILD0-RL-11`, `GUILD0-RL-04`): count at least 5 sets it NULL; count below 5 with NULL sets it to
+  the database transaction time; count below 5 with a value older than 14 days disbands (§3.4).
+  Premium changes outside guild transactions, so the job is the only writer and the only observer;
+  a restore seen by a late job clears the deficit (declared: the manual gives no finer rule). No
+  guild transaction writes it, so `GUILD0-RL-18` does not apply to it.
 - Jobs follow HOUSE-OWN-0 §9: candidates without a lock, then locked and re-checked; at most
   `GUILD0-RL-09` (100) guilds per pass; idempotent per key.
 
@@ -210,8 +223,9 @@ orders. A transaction takes only the classes it needs, always in this order:
 
 1. the operation occurrence;
 2. the Character roots: the acting Character's session fence and root FOR UPDATE (composition
-   rule 2) for a command; the bidders' roots FOR SHARE in CharacterId order for a settlement
-   (HOUSE-OWN-0 §9);
+   rule 2) for a command, and for an invite also the target character's root FOR UPDATE (§3.2,
+   no write, no session fence), both in CharacterId order; the bidders' roots FOR SHARE in
+   CharacterId order for a settlement (HOUSE-OWN-0 §9);
 3. the guild rows by `GuildId` (FOR UPDATE for the acting or owner guild; FOR SHARE, in `GuildId`
    order, for the bidding guilds of a guildhall settlement or release step);
 4. the member rows by CharacterId; the invitation rows; the leadership rows by AccountId;
@@ -223,8 +237,9 @@ orders. A transaction takes only the classes it needs, always in this order:
 
 A job that finds a guild row it has not locked (for example a guildhall bid read after the
 property row) rolls back and retries with the guild row at position 3; it never locks a guild row
-after a property row. A target character's root is read without a row lock: its Account and World
-cannot change. World jobs take the recovery fence and admission relations and no session fence.
+after a property row. Except for an invite (position 2), a target character's root is read without
+a row lock: its Account and World cannot change. World jobs take the recovery fence and admission
+relations and no session fence.
 Position 2 in World jobs (architect ruling): only a **settlement's first step** takes it, locking
 FOR SHARE in CharacterId order the bidders' roots of a house auction (HOUSE-OWN-0 §4, §9) or, for
 a guildhall auction, the roots of the bidding guilds' current leaders (picked without a lock; if a
@@ -266,10 +281,11 @@ profile (purpose `GUILD_ACTIVITY`, bank entries also `ECONOMY_LEDGER`).
   `BALANCE_LIMIT`, so returning guild escrow to its source always fits and never blocks auction
   cleanup or disband.
   The same holds for the account part (architect ruling, `GUILD0-RL-20`): a deferred guard on the
-  funding Account keeps `balance + sum(escrow_account_gold of open guildhall bids funded by it)` at
-  most the hard ceiling (`HOUSEOWN0-RL-13`). A credit that would break it is refused
-  `BALANCE_LIMIT` by its own system (Market, house, bank), so returning `escrow_account_gold` to
-  `funding_account_id` always fits. This is reserve headroom only: no new custody or recovery
+  funding (Account, World) keeps `balance + sum(escrow_account_gold of open guildhall bids funded by
+  it in that World)` at most the hard ceiling (`HOUSEOWN0-RL-13`). A credit that would break it is
+  refused `BALANCE_LIMIT` by its own system (Market, house, bank; the disband payout and claim of
+  §5.3 clamp to it instead), so returning `escrow_account_gold` to `funding_account_id` always
+  fits. This is reserve headroom only: no new custody or recovery
   protocol.
 - `game_guild_bank_entries`: immutable, the BANK-0 entry shape keyed by guild instead of Account:
   kinds `GUILD_DEPOSIT`, `GUILD_WITHDRAW`, `GUILDHALL_BID_RESERVE`, `GUILDHALL_BID_RELEASE`,
@@ -302,8 +318,14 @@ After any guildhall release (§3.4), the whole guild balance leaves the guild
 owned, so the bank credit may exceed `BANK0-RL-01` up to the hard ceiling (`HOUSEOWN0-RL-13`).
 The manual is silent; `PARITY_PENDING`.
 
+- **Headroom.** For an (Account, World), `headroom` = hard ceiling - bank balance - the sum of
+  `escrow_account_gold` of open (`HELD`) guildhall bids with that `funding_account_id` in that
+  World. `GUILD0-RL-20` keeps it at least 0, so every credit below uses it and never breaks that
+  guard, whichever guild the escrow came from. It is read under the bank balance row lock (§4.1
+  position 8); a bid reserve or escrow return only moves value between its two terms, so a
+  concurrent bid cannot change it.
 - **Ceiling-safe payout** (architect ruling, `GUILD0-RL-12`): in one transaction the leader's bank
-  balance is credited with `min(guild balance, hard ceiling - bank balance)`; any remainder is
+  balance is credited with `min(guild balance, headroom)`; any remainder is
   credited to a `game_guild_disband_claims` row owned by the ex-leader's Account in that World;
   the guild balance becomes 0. A deferred guard keeps the guild debit equal to the bank credit plus
   the claim credit (value conserved; nothing is burned or created). Step 2 therefore always
@@ -311,7 +333,7 @@ The manual is silent; `PARITY_PENDING`.
   or its members.
 - **Claim** (`claim_disband_payout {guild}`, a `GUILD_INTENT`): by any non-junior character of the
   claim's Account in the claim's World, whether in a guild or not. It moves
-  `min(claim amount, hard ceiling - bank balance)` to that bank balance (`GUILD_DISBAND_CLAIM`,
+  `min(claim amount, headroom)` to that bank balance (`GUILD_DISBAND_CLAIM`,
   `TRANSFER`, one bank event); when nothing fits the answer is `BALANCE_LIMIT` and nothing is
   written; a partial claim
   leaves the rest in the row. `GUILD_QUERY` lists the Account's open claims in that World.
@@ -423,7 +445,8 @@ belongs to the house interior runtime, which admits only characters with house a
   `accept`, `leave`, `exclude`, `set_rank`, `edit_ranks`, `set_title`, `set_message`, `resign`,
   `disband`, `deposit`, `withdraw`, `claim_disband_payout`. Results: `OK`, `NOT_ALLOWED`, `NAME_TAKEN`, `NAME_INVALID`,
   `ALREADY_IN_GUILD`, `ACCOUNT_HAS_POSITION`, `NOT_PREMIUM`, `GUILD_FULL`, `NOT_INVITED`, `JUNIOR`,
-  `INSUFFICIENT_FUNDS`, `BALANCE_LIMIT`, `STALE_REVISION`, `GUILD_DISBANDING` (§3.2 state gate), plus
+  `INSUFFICIENT_FUNDS`, `BALANCE_LIMIT`, `STALE_REVISION`, `GUILD_DISBANDING` (§3.2 state gate),
+  `GUILD_DEADLINE_PASSED` (§3.2 deadline gate), `INVITATION_LIMIT` (§3.2 invite limits), plus
   the common results. Edits carry
   the expected guild `revision`.
 - **Domain:** the viewer-relative emblem of §4.3 per visible character, and the member's own guild
@@ -464,14 +487,14 @@ belongs to the house interior runtime, which admits only characters with house a
 | `GUILD0-RL-06` ranks per guild | 3 to 20 |
 | `GUILD0-RL-07` invitation lifetime | 30 days (`PARITY_PENDING`) |
 | `GUILD0-RL-08` open invitations per guild | 500 |
-| `GUILD0-RL-17` open invitations per target character | 50 |
+| `GUILD0-RL-17` invitation rows per target character | 50, expired retained rows included; serialized on the target's root |
 | `GUILD0-RL-18` deadline gate | transactions cannot activate or cure a guild past its deadline |
 | `GUILD0-RL-19` guild balance plus outstanding guild escrow | at most `BANK0-RL-01` |
 | `GUILD0-RL-20` funding Account balance plus outstanding guildhall account escrow | at most 9,000,000,000,000,000 |
 | `GUILD0-RL-09` guilds per job pass | 100 |
 | `GUILD0-RL-10` activity log window | 30 days |
 | `GUILD0-RL-11` Premium leaders and vices required | 5, once PREM-1 delivers Premium (G1 a) |
-| `GUILD0-RL-12` disband payout | bank credit up to the hard ceiling; the rest in a custody claim |
+| `GUILD0-RL-12` disband payout | bank credit up to the §5.3 headroom (hard ceiling less balance and outstanding guildhall account escrow); the rest in a custody claim |
 | `GUILD0-RL-13` guild-room delivery | members of the payload's `GuildId` at delivery only |
 | Guild bank deposit or withdraw | 0 items, 2 value lines, 2 events (BANK-0 bank event, guild event) |
 | Disband payout | 0 items, up to 3 value lines (guild debit, bank credit, claim credit), 2 events (bank, guild) |
