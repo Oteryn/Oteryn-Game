@@ -8,6 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/prof-content-1-proficiency-definitions
+issue: 162
 pr: null
 base_sha: null   # stacked on #1327 (claude/inspiring-lamport-nc623x) until it merges
 head_sha: null
