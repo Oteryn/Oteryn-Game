@@ -41,7 +41,9 @@ PARTY-PVP-0 decides parties and PvP at full Global parity (owner direction, 2026
 - **Parties:** World-scoped party, member and invitation tables (UUIDv7 PartyId, at most 50
   members, D109); invite a visible character, accept, decline, revoke, leave (not under a logout
   block), pass leadership, succession by invitation order; membership survives a channel switch;
-  a node `PartyView` cache refreshed by a sealed hint on the CHAT-0 World relay; party chat room.
+  a node `PartyView` cache refreshed by a sealed hint on the CHAT-0 World relay; party chat room;
+  a remote member's exact channel through a revisioned presence record with ordered invalidation
+  (owner decision 3b), health and mana on the same channel only.
 - **Party benefits** on the same channel only: shared experience (D118, activity window 2 minutes,
   the "battle sign" read as the PZ block), party immunity and friendly fire, the D3 party loot
   right, a `members_in_area` hook for `party_buff` and the monk rules.
@@ -107,7 +109,8 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 - Codex round 5 (final batched round, #1402, 3 P1): fixed 4149464332 (a party read at every
   local admission, reconnect and channel entry adds the view, §4.2); fixed 4149464338 (exact channel
   and health only for members on the viewer's channel runtime, ordered with every revoking change;
-  a remote member's exact channel is a declared deferral, §4.4); fixed 4149464353 (compact
+  a remote member's exact channel, first a declared deferral, is now shown under owner decision 3b,
+  §4.4); fixed 4149464353 (compact
   contributors keep every §9 consequence and the death bound covers 81 state, 80 point and 80 mark
   rows, §8.3, §9, §13); PR number filled in the closeout; validators re-run PASS.
 - Owner answers (2026-09-30, #162): P1 b and a — per-World PvP type; Optional and Open PvP both
@@ -115,6 +118,9 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
   confirmation); validators re-run PASS.
 - Owner answers (2026-09-30, #162 5919339646): A1 confirms the P1 reading; P2 b keeps `HARDCORE`
   as an unused v1 value (§6.1, §16); validators re-run PASS.
+- Owner decision 3b (2026-09-30, #162): remote members' exact channel shown in PARTY-1 v1 via revisioned presence with ordered invalidation.
+  Applied in §3, §4.1, §4.2, §4.4, §11, §13, §15, §17 and §18; declared gap: a lost invalidating relay hint is caught by the next 5 s check (CHAT-0);
+  validators re-run PASS.
 
 ## Closeout
 
@@ -125,7 +131,7 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
-last_progress: owner answers P1, A1 and P2 applied; awaiting exact-head review and integration
+last_progress: owner answers P1, A1, P2 and decision 3b applied; awaiting exact-head review and integration
 status: completed
 branch: claude/arch-party-pvp-0
 owner_action_required: null

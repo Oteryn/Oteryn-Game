@@ -27,7 +27,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| PARTY-1 | hard, persistence, security and privacy review | party, member, invitation and consent tables; invite (with the consent check), accept, decline, revoke, leave, succession, pass leadership, shared-XP toggle, block, party-invite and channel-visibility settings, invitation expiry; the node `PartyView` cache, full refresh, admission read and revision check, and the relay change hint; the cleanup job (§3, §4) | this decision; CHAT-2 |
+| PARTY-1 | hard, persistence, security and privacy review | party, member, invitation and consent tables; invite (with the consent check), accept, decline, revoke, leave, succession, pass leadership, shared-XP toggle, block, party-invite and channel-visibility settings, invitation expiry; the node `PartyView` cache, full refresh, admission read and revision check, and the relay change hint; the revisioned member presence record and its ordered invalidation; the cleanup job (§3, §4) | this decision; CHAT-2 |
 | PARTY-XP-1 | hard (combat), combat review | shared-experience eligibility and split on the D118 XP slice; party immunity in area effects; the party loot right; the `PartyView` query for `party_buff` and the monk party rules (§5) | PARTY-1; the D118 XP lane; D3-4 |
 | PARTY-CHAT-1 | impl, security review | one party room per party on the CHAT-0 World relay (§4.3) | PARTY-1; CHAT-2 |
 | PVP-1 | hard, persistence and security review | PvP state, unjustified point and revenge mark tables; skull evaluation in the death transaction; the World cleanup job; the `rulesets/pvp/` and `rulesets/party/` rows, with `pvp_type` `OPTIONAL` for the first World (§6, §9) | DEATH-1; PARTY-1 |
@@ -114,8 +114,12 @@ zone cannot attack (`combat.cpp:327-329`); in-fight lasts 60 s, refreshed by hit
   - `game_parties`: `party_id` (UUIDv7, Game-issued), `world_id`, `leader_character_id`,
     `shared_xp_enabled`, `next_seq`, `revision`, `created_at`.
   - `game_party_members`: `character_id` primary key (one party per character), `party_id`,
-    `seq` (the invitation order), `joined_at`. A deferred guard keeps the leader a member and the
-    member's World equal to the party's.
+    `seq` (the invitation order), `joined_at`, and the member's presence record (§4.4):
+    `presence_revision` (starts at 1 on joining, +1 on every presence write), `presence_state`
+    (`CHANNEL`, `HIDDEN` or `OFFLINE`) and `presence_channel_id` (set only in `CHANNEL`). A
+    deferred guard keeps the leader a member, the member's World equal to the party's, a stored
+    channel a channel of that World, and no stored channel for a member whose `channel_visibility`
+    is `HIDDEN`.
   - `game_party_invitations`: (party, invitee), `seq`, `created_at`, `expires_at` = `created_at`
     + `PARTYPVP0-RL-30` (5 minutes). At most `PARTYPVP0-RL-02` (50) per party and
     `PARTYPVP0-RL-29` (20) open per invitee. An expired invitation is invalid from `expires_at`
@@ -126,7 +130,7 @@ zone cannot attack (`combat.cpp:327-329`); in-fight lasts 60 s, refreshed by hit
   `PARTYPVP0-RL-28` (100) per character; `game_character_social_settings`: `character_id` primary
   key, `party_invites` (`ANYONE`, the Global default, or `NOBODY`) and `channel_visibility`
   (`PARTY`, the social baseline's default, or `HIDDEN`, the observed player hiding its exact channel
-  from party members, §4.4). A missing settings row reads as `ANYONE` and `PARTY`. They advance no `CharacterRevision` (composition rule 1 amendment).
+  from party members on every channel, §4.4). A missing settings row reads as `ANYONE` and `PARTY`. They advance no `CharacterRevision` (composition rule 1 amendment).
 - **Party size** `PARTYPVP0-RL-01` (50, D109).
 - **No `CharacterRevision` advance**: party rows are World social state (the scope matrix), not
   Character state (composition rule 1 amendment).
@@ -172,10 +176,12 @@ party row; member rows by CharacterId; invitation rows; consent rows.
   seen, and one that commits later sees the change. A block also deletes, in the same transaction,
   an open invitation to the blocker from a party the blocked character leads. A channel-visibility
   change of a party member also advances its party's `revision` (party row locked after the
-  `character_root`), so every `PartyView` refreshes (§4.2, §4.4).
+  `character_root`) and, in the same transaction, writes the member's presence record (§4.4:
+  `HIDDEN`, or `CHANNEL` with its current channel when switched to `PARTY`), so every `PartyView`
+  refreshes (§4.2, §4.4).
 - **Revoke `{invitee}`** by the leader; **decline** by the invitee.
 - **Accept `{party}`.** The invitee holds a valid invitation and is in no party; it joins with
-  the invitation's `seq`. Accepting deletes only the accepted invitation (architect ruling): the invitee's other
+  the invitation's `seq` and its first presence record (§4.4: its current channel, or `HIDDEN`). Accepting deletes only the accepted invitation (architect ruling): the invitee's other
   invitations stay until revoked, declined or expired (accepting one while in a party is refused `ALREADY_IN_PARTY`)
   (5 minutes, `PARTYPVP0-RL-30`), and the cleanup job ends any party left with only its leader
   and no invitation (§3 lifetime). So an accept locks one party and never has to close others. The members need not be on the
@@ -200,7 +206,8 @@ party row; member rows by CharacterId; invitation rows; consent rows.
   durable `logout_block_until`, `pz_block_until` and `kill_block_until` are all past the database
   clock, §8.1); otherwise the member stays and the next pass re-checks, so a disconnect never
   bypasses the rule that the combat lock blocks leaving a party (at most the 15-minute kill block
-  delays the removal). It also deletes expired
+  delays the removal). A member it finds without such a session row, and whose presence record
+  is not `OFFLINE`, gets an `OFFLINE` presence write (§4.4) in that pass. It also deletes expired
   invitations, oldest `expires_at` first, at most 100 per pass, one party per transaction (party
   row locked, then re-checked); a party left with only its leader and no invitation ends in that
   transaction (§3 lifetime).
@@ -208,9 +215,10 @@ party row; member rows by CharacterId; invitation rows; consent rows.
 ### 4.2 Node cache
 
 - Each node keeps a `PartyView` per party with a local member: members, leader, shared-XP flag,
-  `revision`. After a commit, the writer sends a sealed hint `{party_id, revision}` on the CHAT-0
-  World relay. The hint is advisory and at most once: it only makes a node re-read sooner; no rule
-  depends on receiving it.
+  `revision`, and each member's presence record (§4.4). After a commit, the writer sends a sealed
+  hint `{party_id, revision}` on the CHAT-0 World relay, with the presence record the transaction
+  wrote, if any. The hint is advisory and at most once: it only makes a node re-read or update
+  sooner; no rule depends on receiving it.
 - **Full refresh** (architect ruling): at node start, at every relay (re)connect, and when a hint
   or a party-chat line (§4.3) shows a revision the node did not apply in order, the node re-reads
   from the durable rows every local character's `game_party_members` row and each such party's
@@ -219,13 +227,16 @@ party row; member rows by CharacterId; invitation rows; consent rows.
   reconnect and channel entry of a character (the same points as the §8.1 restore), the node reads
   that character's `game_party_members` row and, when it has one, that party's rows at their
   current `revision`, in one indexed read, and adds or replaces that party's view; from then the
-  view is in the `PARTYPVP0-RL-26` check. Channel movement changes no party `revision`, so this
+  view is in the `PARTYPVP0-RL-26` check. When the character is a member, the same transaction
+  writes its presence record (§4.4). Channel movement changes no party `revision`, so this
   read, not a hint, is how a node learns of a member that arrives after its full refresh. Until the
-  read has completed the character is not party-ready (below); a failed read is retried and the
-  character stays not party-ready meanwhile. A node drops a view when it has no local member of it.
-- **Bounded staleness:** a node also re-reads the `revision` of all its cached parties in one query
-  every `PARTYPVP0-RL-26` (5 s) and refreshes any view that differs, so a hint lost to a writer
-  crash or a dropped listener is caught. A view not confirmed within twice that interval is stale.
+  transaction has committed the character is not party-ready (below); a failed one is retried and
+  the character stays not party-ready meanwhile. A node drops a view when it has no local member of
+  it.
+- **Bounded staleness:** a node also re-reads the `revision` and the members' `presence_revision`
+  of all its cached parties in one query every `PARTYPVP0-RL-26` (5 s) and refreshes any view that
+  differs, so a hint lost to a writer crash or a dropped listener is caught. A view not confirmed
+  within twice that interval is stale.
 - **Party readiness:** a node is ready for parties only after its full refresh has completed and
   while its views are confirmed. While a node or a view is not ready, it fails toward less
   disclosure and no shared benefit: party commands answer `PARTY_UNAVAILABLE`; shared experience
@@ -259,27 +270,71 @@ party row; member rows by CharacterId; invitation rows; consent rows.
 - **Authorization-bearing presence** (architect ruling; the social baseline requires that a stale
   record never keeps exposing an exact channel after authorization, membership or permission has
   ended, `SOCIAL_PRESENCE_AND_CONTACT_CONSENT_OWNER_BASELINE.md` "Presence authority and
-  freshness"). A member's exact channel and its health and mana percentages are sent only for a
-  member whose actor is present on the viewer's own channel runtime, and are taken from that
-  runtime's own state, never from a cached remote value. Every change that ends that
+  freshness"). A member's health and mana percentages, and its exact channel when it shares the
+  viewer's channel, are sent from this path only for a member whose actor is present on the
+  viewer's own channel runtime, and are taken from that runtime's own state, never from a cached
+  remote value. Every change that ends that
   authorization is ordered in the same runtime: the member's leave, logout, accept and
   `channel_visibility` change are issued by the channel runtime hosting its actor, which applies the
   committed `revision` to its `PartyView` before it sends the operation's result or any further
   presence output; the viewer's own leave or logout is local to it; the member's channel exit is a
   local runtime event; and the cleanup job never removes a member whose actor is present (§4.1). A
   member arriving on the channel is party-ready only after the §4.2 admission read, so its state at
-  entry is the durable one. The disclosure is therefore ordered with every change that revokes it,
-  not bounded by the `PARTYPVP0-RL-26` poll.
-- **Members on another channel** are shown only as "online on this World" (or offline): no channel,
-  health or mana. Declared deferral: showing a remote member's exact channel, which the social
-  baseline allows, needs the revisioned presence with ordered invalidation that the baseline leaves
-  to a later contract; it comes with that contract (the channel-selection party co-location
-  question), not in v1.
+  entry is the durable one. This same-channel disclosure is therefore ordered with every change
+  that revokes it, not bounded by the `PARTYPVP0-RL-26` poll.
+- **Members on another channel** (owner decision 3b, 2026-09-30, #162; the social baseline lets
+  party members see a member's exact channel): shown with their exact channel from the presence
+  record below, or as "online on this World", or offline. Health and mana stay channel-local:
+  never sent for a member on another channel.
+- **Presence record** (PARTY-1; the baseline's revisioned presence with stale-update rejection):
+  one per member, in its `game_party_members` row (§3), advancing no `CharacterRevision`. It is
+  written only by a PARTY-1 transaction holding the party row lock in the §4.1 order: the §4.2
+  channel-entry transaction (`CHANNEL` with the entered channel, or `HIDDEN`; it takes the party
+  row FOR SHARE, then reads the member's row and `channel_visibility`, and writes only when the
+  record would change), accept (the first record), a
+  channel-visibility change (§4.1) and the cleanup job's `OFFLINE` (§4.1); leave, logout and
+  removal delete it with the row. Every write advances `presence_revision`, so each channel move
+  gives a new revision. As sent, a record is `{world_id, party_id, character_id,
+  presence_revision, revision, state, channel}`, where `revision` is the party `revision` read
+  under that lock: the membership and authorization epoch. A `HIDDEN` or `OFFLINE` record carries
+  no channel.
+- **Invalidation before exposure.** Every change that ends a viewer's authorization to see a
+  member's channel (the member's leave, logout or removal, or its switch to `HIDDEN`) advances the
+  party `revision` in the same transaction that deletes the record or writes it `HIDDEN`, under
+  the party row FOR UPDATE. A later record carrying a channel is written under the same lock, so
+  it commits after the invalidation and carries a newer `revision`; its writer sends its hint only
+  after its commit. A node applies a hinted record only when its view is confirmed at that
+  record's `revision` and the record's `presence_revision` is newer than the one it holds; a
+  record with a newer `revision` is not applied but triggers the §4.2 refresh from the durable
+  rows, which already hold the invalidation; an older one is dropped. A durable read replaces
+  every record. So the invalidation reaches a view before any record carrying the new channel,
+  and a stale record never re-exposes a channel after a leave, a removal or a switch to `HIDDEN`.
+- **Ordered delivery to the client.** The `PARTY` domain sends each member's presence with the
+  pair (the view's `revision`, the record's `presence_revision`), in order on the session. The
+  client applies a new record only when its pair is newer than the one it holds and drops an older
+  one. A removal, or the node's fallback entry ("online on this World", offline) carrying the held
+  pair, always applies; the node lifts a fallback only by resending the record it holds (the same
+  pair) or a newer one, never an older one.
+- **Uncertain presence fails toward less disclosure.** A node shows a remote member's exact
+  channel only while its view is ready (§4.2), its last `PARTYPVP0-RL-26` check (5 s) confirmed
+  the view and the next check is not overdue. Otherwise (a relay (re)connect or a revision gap until the
+  refresh completes, a failed check, a view not confirmed in time) and for a record naming the
+  viewer's own channel while the member's actor is not present there (a member in transit), the
+  view shows "online on this World" until a fresh record or durable read arrives.
+- **Declared gap (CHAT-0 relay).** The relay is at most once and unacknowledged, so a lost
+  invalidating hint is found by the next `PARTYPVP0-RL-26` check, not at once: a node that already
+  shows a member's channel may keep showing that old channel for at most one interval (5 s) plus
+  that check's read after the member's leave, removal or switch to `HIDDEN`. It never shows a new channel meanwhile, and no
+  stale record re-exposes one. An acknowledged, ordered fan-out that would close this interval is
+  a CHAT-0 amendment (a later chat child), not part of this PR; the exact channel stays visible
+  in PARTY-1 v1 (owner decision 3b).
 - **Channel visibility** (the social baseline lets the observed player hide its exact channel):
   for a member whose `channel_visibility` is `HIDDEN`, other members get only "online on this
-  World" even on the same channel: no channel, and no health or mana (which would reveal a shared
-  channel). A view not ready (§4.2) sends no member channel or health. Characters on the same
-  channel still see each other on the map (VIS-2).
+  World" (or offline) on every channel, even the same one: its record carries no channel, and the
+  same-channel path sends no channel, health or mana (which would reveal a shared channel).
+  `HIDDEN` wins: the switch invalidates as above, and no record carrying a channel is written
+  while it holds. A view not ready (§4.2) sends no member channel or health. Characters on the
+  same channel still see each other on the map (VIS-2).
 
 ## 5. Party benefits (PARTY-XP-1)
 
@@ -569,7 +624,8 @@ the action. Reaching level 21 needs no write.
   `NOT_VISIBLE` (also a block, `party_invites` or invitee-cap refusal, §4.1), `LOGOUT_BLOCKED`
   (any combat lock, §4.1), `RATE_LIMITED`,
   `PARTY_UNAVAILABLE`, plus the common results.
-- **Domain `PARTY`:** members (§4.4), leader, shared-XP state (on, off, or the failing member),
+- **Domain `PARTY`:** members (§4.4), each with its presence (exact channel, "online on this
+  World" or offline) and its `(revision, presence_revision)` pair, leader, shared-XP state (on, off, or the failing member),
   the character's pending unexpired invitations (at most `PARTYPVP0-RL-29`) with the inviter's name
   and expiry, its own blocked list and its `party_invites` and `channel_visibility` settings.
 - **`PVP_INTENT`:** `join_aggression {actor}`. **`FIGHT_MODES_INTENT`** gains `expert_mode` in a
@@ -616,7 +672,7 @@ the action. Reaching level 21 needs no write.
 | `PARTYPVP0-RL-23` point row retention | 45 days |
 | `PARTYPVP0-RL-24` aggression relations per actor | 64 |
 | `PARTYPVP0-RL-25` PvP contributors per victim | 16 full (plus 64 compact, `PARTYPVP0-RL-32`) |
-| `PARTYPVP0-RL-26` `PartyView` revision check | every 5 s; stale after 10 s unconfirmed |
+| `PARTYPVP0-RL-26` `PartyView` revision check | every 5 s (party and presence revisions); stale after 10 s unconfirmed; a remote member's exact channel shown only while the last check confirmed the view and the next is not overdue |
 | `PARTYPVP0-RL-27` durable PvP deadline write-ahead | 10 s beyond the 60 s block |
 | `PARTYPVP0-RL-28` blocked characters per character | 100 |
 | `PARTYPVP0-RL-29` open invitations per invitee | 20 |
@@ -626,7 +682,8 @@ the action. Reaching level 21 needs no write.
 | PvP legality party check | 1 indexed read per character target; 1 batched read per area effect |
 | Party operation | 1 transaction, 0 items, 0 value lines, 1 relay hint |
 | PvP additions to a death | at most 81 state rows (the victim and 80 classified contributors, full and compact), 80 point rows, 80 mark rows, 80 ledger rows deleted; no value lines |
-| Party read at admission or channel entry | 1 indexed read per character |
+| Party read at admission or channel entry | 1 transaction per character: 1 indexed read and at most 1 presence write (a member row) |
+| Presence write | 1 member row, 1 relay hint; at channel entry, accept, a channel-visibility change, and the cleanup job's `OFFLINE` |
 | PvP deadline write | 1 transaction, at most 2 state rows and 80 ledger rows, per character at most once per 10 s plus once per new contributor |
 
 ## 14. Rejected options
@@ -657,8 +714,10 @@ invitee, expiring after 5 minutes); leaving a party is barred by the whole comba
 for members on the same channel; the "battle sign" read as the PZ block; the 2-minute activity
 window, the assist share and the lower-bound thresholds (`PARITY_PENDING`); no unfair-fight
 reduction until a source; no Retro types yet; no green skull; a block list and a party-invite
-setting and a channel-visibility setting (social baseline); a party member's exact channel, health
-and mana shown only when it is on the viewer's channel (remote channel deferred, §4.4); PvP party relations confirmed against
+setting and a channel-visibility setting (social baseline); a party member's health and mana shown
+only when it is on the viewer's channel; a member's exact channel shown to its party on every
+channel (owner decision 3b) unless it chose `HIDDEN`, and "online on this World" while that
+presence is uncertain (§4.4); PvP party relations confirmed against
 durable rows, so a just-changed membership can refuse an attack; a node crash can lengthen a PvP block by up to 10 s, never shorten it,
 and ends yellow skulls and retaliation relations and can lose at most 10 s of PvP ledger amounts.
 
@@ -684,13 +743,13 @@ configured with it (§6.1, §7).
 
 - **Must decide now:** YES. The owner asked for parties and PvP now; ATTACK-0, the first player
   death decision, CONDITIONS-0, D3 and D118 wait for them.
-- **Minimum sufficient:** three party tables, two consent tables, four PvP tables, rules in the existing legality
+- **Minimum sufficient:** three party tables (the presence record in the member row), two consent tables, four PvP tables, rules in the existing legality
   stage, PvP fields in the existing death transaction, two wire capabilities.
 - **Superseding evidence:** an official source for the thresholds, the activity window, the
   unfair-fight formula or the retro rules.
 - **Deliberately not decided:** guild wars, arenas and PvP zones, the Party Finder, the Party Hunt
-  Analyser, Retro Worlds, Death Redemption, blessing sales (DEATH-4), a remote party member's exact
-  channel (§4.4).
+  Analyser, Retro Worlds, Death Redemption, blessing sales (DEATH-4), an acknowledged ordered
+  relay fan-out for presence invalidation (CHAT-0, §4.4 declared gap).
 
 ## 18. Before-freeze checklist
 
@@ -701,7 +760,8 @@ configured with it (§6.1, §7).
 3. **Restart:** party and PvP rows are durable and keyed; PvP logout and PZ blocks, the white
    skull, the kill block, skulls and the PvP ledger's contributors survive every restart (§8.1,
    §8.3); a PvE-only in-fight deadline
-   follows ATTACK-0; a node rebuilds its `PartyView`s before party readiness (§4.2).
+   follows ATTACK-0; a node rebuilds its `PartyView`s, with their presence records, before party
+   readiness (§4.2).
 4. **Typed references:** PartyId with WorldId, CharacterId, `PlayerDeathOccurrence`, actor ids on
    the wire; never a PartyId or CharacterId from a client as authority.
 5. **Wire:** §11, capabilities `PARTY_V1` and `PVP_V1`.
@@ -710,3 +770,7 @@ configured with it (§6.1, §7).
    cleanup transaction.
 7. **World type:** the PvP children build and test `OPTIONAL` and `OPEN`; the first World's
    ruleset has `pvp_type` `OPTIONAL` (owner answer P1).
+8. **Presence:** a remote member's exact channel comes only from a revisioned presence record,
+   applied in order; every leave, removal or switch to `HIDDEN` advances the party `revision` in
+   the invalidating transaction; uncertain presence shows "online on this World"; health and mana
+   stay channel-local (§4.4, owner decision 3b).
