@@ -106,7 +106,7 @@ def assert_ids_convert_and_validate(sources, item_ids):
 def self_check(sources, engine):
     """Engine-specific assertions for both engines; an engine without any is a bug."""
     identity_key, _ = sources["identity_index"][3288]
-    assert identity_key == "oteryn:item.registry.i00003167", identity_key
+    assert identity_key == "oteryn:item.tibia.i3288", identity_key
 
     item, _dependencies, _report = convert_item(sources, 3288)
     assert item["physical"]["weight"] == {"value": "42.00", "unit": "oz"}

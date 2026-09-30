@@ -2873,6 +2873,7 @@ fn field(path: &str, value: CandidateValue) -> NamedCandidateField {
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 mod donor_identity_epoch_2_tests {
+    use super::super::item_identity::{ItemKeyAliasTable, RetiredItemKey, tibia_item_key};
     use super::*;
     use serde_json::Value;
 
@@ -2887,6 +2888,7 @@ mod donor_identity_epoch_2_tests {
     );
     const CRYSTAL_BINDINGS: &[u8] =
         include_bytes!("../../../../imports/crystalserver/bindings/items.json");
+    const ITEM_KEY_ALIASES: &[u8] = include_bytes!("../../../../content/items/aliases.json");
     const FROZEN_FULL_FAMILY_ALLOCATION_DIGEST: &str =
         "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 
@@ -3054,19 +3056,16 @@ mod donor_identity_epoch_2_tests {
     }
 
     #[test]
-    fn committed_bindings_carry_epoch_1_unchanged_and_exactly_the_epoch_2_allocation() {
+    fn committed_bindings_requalify_epochs_1_and_2_through_the_alias_table() {
+        // ITEM-ID-1b (A12 §4.2): every historical row, epoch 1 (the frozen allocation with
+        // the R7-P04 gold coin at its promoted key) and epoch 2 (the minted donor ids), is
+        // bound EXACT to the Tibia key of its own id when its retired key aliases, and
+        // emits no binding when its retired key is D149 (`RETIRED_WITHOUT_SUCCESSOR`).
         let imported = epoch2();
         let frozen =
             protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("frozen full item family");
-        let bindings = bindings_file();
-        assert_eq!(
-            bindings.len(),
-            CW2_B1_FULL_ITEM_FAMILY_COUNT + CW2_B1_DONOR_EPOCH2_MINTED_COUNT
-        );
-
-        // Epoch 1: the 38,157 base-revision rows are the frozen allocation, with only the
-        // R7-P04 gold coin at its promoted key.
-        let mut expected_epoch1 = frozen
+        let aliases = ItemKeyAliasTable::parse(ITEM_KEY_ALIASES).expect("aliases");
+        let historical = frozen
             .batch
             .candidates
             .iter()
@@ -3078,56 +3077,71 @@ mod donor_identity_epoch_2_tests {
                     key
                 };
                 (
-                    candidate.source_numeric_id.expect("source id").to_string(),
+                    CW2_B1_SOURCE_REVISION,
+                    candidate.source_numeric_id.expect("source id"),
                     key.to_owned(),
                 )
             })
-            .collect::<BTreeMap<_, _>>();
-        let epoch1_rows = bindings
-            .iter()
-            .filter(|row| row["source_revision"] == CW2_B1_SOURCE_REVISION)
+            .chain(
+                minted(&imported)
+                    .into_iter()
+                    .map(|(id, key)| (CW2_B1_DONOR_EPOCH2_SOURCE_REVISION, id, key)),
+            )
             .collect::<Vec<_>>();
-        assert_eq!(epoch1_rows.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
-        for row in &epoch1_rows {
-            assert_eq!(row["disposition"], "EXACT");
-            assert_eq!(row["identity_namespace"], "ots/item_server_id");
-            assert_eq!(row["source_key"], "oteryn:source.crystalserver");
-            let external_id = row["external_id"].as_str().expect("external id");
-            let key = expected_epoch1
-                .remove(external_id)
-                .expect("epoch-1 source id in the frozen allocation");
-            assert_eq!(row["target"]["key"], key.as_str());
-        }
-        assert!(expected_epoch1.is_empty());
-
-        // Epoch 2: one EXACT row per minted id at the donor commit, in ascending source id
-        // order after every epoch-1 row, at exactly the keys the function mints.
-        let epoch2_rows = &bindings[CW2_B1_FULL_ITEM_FAMILY_COUNT..];
-        assert!(
-            bindings[..CW2_B1_FULL_ITEM_FAMILY_COUNT]
-                .iter()
-                .all(|row| row["source_revision"] == CW2_B1_SOURCE_REVISION)
+        assert_eq!(
+            historical.len(),
+            CW2_B1_FULL_ITEM_FAMILY_COUNT + CW2_B1_DONOR_EPOCH2_MINTED_COUNT
         );
-        assert_eq!(epoch2_rows.len(), CW2_B1_DONOR_EPOCH2_MINTED_COUNT);
-        let minted = minted(&imported);
-        for (row, (source_id, key)) in epoch2_rows.iter().zip(&minted) {
+        let mut expected = BTreeMap::new();
+        let mut unbound = 0;
+        for (revision, source_id, key) in historical {
+            match aliases
+                .resolve(&key)
+                .expect("historical key has an alias entry")
+            {
+                RetiredItemKey::Alias { target } => {
+                    assert_eq!(Some(target.clone()), tibia_item_key(source_id));
+                    expected.insert((revision.to_owned(), source_id.to_string()), target.clone());
+                }
+                RetiredItemKey::WithoutSuccessor { .. } => {
+                    assert_eq!(revision, CW2_B1_SOURCE_REVISION);
+                    unbound += 1;
+                }
+            }
+        }
+        assert_eq!(unbound, 4_590);
+
+        let bindings = bindings_file();
+        assert_eq!(bindings.len(), expected.len());
+        assert_eq!(bindings.len(), 33_971);
+        for row in &bindings {
             assert_eq!(row["disposition"], "EXACT");
             assert_eq!(row["identity_namespace"], "ots/item_server_id");
             assert_eq!(row["source_key"], "oteryn:source.crystalserver");
-            assert_eq!(row["source_revision"], CW2_B1_DONOR_EPOCH2_SOURCE_REVISION);
-            assert_eq!(row["external_id"], source_id.to_string().as_str());
             assert_eq!(row["target"]["family"], "Item");
-            assert_eq!(row["target"]["key"], key.as_str());
-            assert_eq!(row["target"]["revision"], CW2_B1_DONOR_EPOCH2_REVISION);
+            assert_eq!(row["target"]["revision"], "definition-r1");
+            let slot = (
+                row["source_revision"]
+                    .as_str()
+                    .expect("revision")
+                    .to_owned(),
+                row["external_id"].as_str().expect("external id").to_owned(),
+            );
+            let target = expected.remove(&slot).expect("bound historical row");
+            assert_eq!(row["target"]["key"], target.as_str());
         }
+        assert!(expected.is_empty());
 
-        // No collision anywhere in the file: every key and every (revision, id) is unique.
+        // No collision anywhere in the file: every key is unique and no retired key remains.
         let keys = bindings
             .iter()
             .map(|row| row["target"]["key"].as_str().expect("key"))
             .collect::<BTreeSet<_>>();
         assert_eq!(keys.len(), bindings.len());
-        assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
+        assert!(
+            keys.iter()
+                .all(|key| key.starts_with("oteryn:item.tibia.i"))
+        );
     }
 
     #[test]
