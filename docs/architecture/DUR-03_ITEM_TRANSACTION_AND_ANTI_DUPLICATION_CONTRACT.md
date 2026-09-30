@@ -723,7 +723,7 @@ transactions, with separate TransactionIds, event candidates and atomic
 boundaries. Aggregation does not
 combine their sequence into one commit. This child does not support mint into an
 existing stack, multiple touched items, quantity redistribution, burn (outside
-the one named `DECAY_RETIRE` cause above), transform,
+the named `DECAY_RETIRE` causes above), transform,
 non-item accounts, nested containers or additional custody families. (The B3
 amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`.) Unsupported
@@ -1275,8 +1275,9 @@ unchanged.
 - **Map-item materialization.**
   - **Eligibility.** Only a top-level map-authored entry qualifies, and only if its definition
     is pickupable, it is not on a house tile, and it carries no `action`, `unique`, `door`,
-    `depot` or `teleport` binding and no contents. Every other map-authored item is never
-    pickupable.
+    `depot` or `teleport` binding, no contents, and no `text`, `description`, `charges` or other
+    attribute that the ItemInstance state cannot represent. Every other map-authored item is
+    never pickupable.
   - **Provenance.** The pickup is the player's command (`CommandRef`), under the channel's live
     scope-ownership fence.
   - **Cause.** `MapItemMaterialization {world_id, channel_id, base_bundle_digest, placement_key,
@@ -1325,9 +1326,14 @@ unchanged.
   - the proto and registry fields of both shapes;
   - the reset record;
   - the epoch storage;
-  - the widening of the `0015` retire receipt with a cause discriminator (`CorpseDecay` or
-    `WorldReset`), so both causes share its per-item primary key, and the matching extension of
-    the Ground-removal proof triggers.
+  - the widening of both `0015` tables, `game_item_decay_retire_reservations` and
+    `game_item_decay_retire_receipts`, with a cause discriminator (`CorpseDecay` or
+    `WorldReset`), so both causes share their per-item primary key:
+    - `corpse_item_instance_id` and `deadline` (with `deadline >= 60000`) are required only for
+      `CorpseDecay`;
+    - the `{world_id, reset_epoch}` binding is required only for `WorldReset`;
+    - a discriminator CHECK on each table enforces both rules;
+  - the matching extension of the Ground-removal proof triggers.
 
   This amendment grants no runtime or DDL authority.
 

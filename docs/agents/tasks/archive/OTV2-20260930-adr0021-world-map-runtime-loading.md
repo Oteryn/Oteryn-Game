@@ -95,6 +95,11 @@ No code, migration or content change is made.
 - HOUSE-CUSTODY-0 self-review (`oteryn-hard-worker`, read-only) on `1f6f8cba`: 5 material, 4
   evidence gaps and 5 hardening findings, all fixed before freeze (revision-free `HouseId`, no
   Ground source, reset preflight, one exclusivity guard, storage-only slice, no runtime grants).
+- Independent review on `36e9223d` (#1315, FIX, 7 items) is answered in one push: verbatim owner
+  quotes and D188-D196 in ADR §2 with a separate architect note; HOUSE-CUSTODY-0 §3.4 marked
+  non-binding direction; both `0015` tables named with discriminator CHECKs; the `build_class`
+  release gate; the overlay re-hide rule and its boundary test; unrepresentable map-item
+  attributes excluded; migration `0025` for HOUSE-CUSTODY-1.
 - Owner answer on house tiles: a. Ground items on the tiles of a house without an owner are
   retired at a reset.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).

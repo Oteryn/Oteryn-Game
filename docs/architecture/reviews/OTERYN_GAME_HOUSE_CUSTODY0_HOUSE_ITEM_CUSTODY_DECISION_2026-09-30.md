@@ -4,7 +4,7 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence)
   and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
-- Answers: the follow-up named by ADR-0021 (house tiles, owner answer a) and the owner's direct
+- Answers: the house contract named by D196 (ADR-0021 house tiles, owner answer a) and the owner's direct
   request of 2026-09-30 to decide it now and have a worker implement it
 - Builds on: EXP-HOUSES-01 (accepted) §4.1, §5, §14, §15, §16 and §19; DUR-03 §5 and §39.3;
   ADR-0021 §4.4 and §4.7
@@ -17,7 +17,9 @@
 ## Implementation brief
 
 - **HOUSE-CUSTODY-1** (durability lane, `oteryn-hard-worker`, persistence review). Owned paths:
-  - the next free migration;
+  - the next free migration, `0025` at the time of writing (main has `0021`; `0022`-`0024` are
+    reserved for CHAR-NAME-1, LCFA-1 and GOLD-FEE-1a); the control plane confirms it at
+    allocation;
   - its `*_postgres` tests.
 - It builds one migration, storage only:
   - the `HouseInterior` location table (§3.1): revision-free `HouseId`, an ordinal unique per
@@ -42,7 +44,7 @@
 
 Where does a durable item live when it is in a house, and what happens to it at a world reset?
 ADR-0021 retires every Ground item at a planned reset, including items on house tiles, until this
-decision exists (owner answer, house tiles a).
+decision exists (D196).
 
 ## 2. Facts
 
@@ -129,13 +131,14 @@ decision exists (owner answer, house tiles a).
 - A live item has exactly one row across them. A retired item has none.
 - Any later location family joins this guard in its own migration.
 
-### 3.4 Writer, fence and transfer shapes (house interior runtime child)
+### 3.4 Writer, fence and transfer shapes (non-binding direction)
 
-These are fixed now and built by the house interior runtime child, not by HOUSE-CUSTODY-1.
+This section is **non-binding direction** for the EXP-HOUSES-01 house interior runtime decision,
+which fixes the fence and scope schema. HOUSE-CUSTODY-1 builds none of it.
 
 - **Fence.** One live generation per `HouseId`, matching the one interior runtime
-  (EXP-HOUSES-01 §5.1). It reuses the `Instance` runtime scope bound to `HouseId` (§5.2). That
-  child changes `0003` and `0006`:
+  (EXP-HOUSES-01 §5.1). The suggested route reuses the `Instance` runtime scope bound to `HouseId`
+  (§5.2). A new migration of that child alters the tables from `0003` and `0006`:
   - a scope kind column and a house column, with `channel_id` nullable;
   - a tagged `scope_key` CHECK (`\x02` for a house);
   - `IS DISTINCT FROM` in the immutability guard;
@@ -184,7 +187,7 @@ These are fixed now and built by the house interior runtime child, not by HOUSE-
 |---|---|---|
 | HOUSE-CUSTODY-1 | One migration: `HouseInterior`, provenance, exclusivity guard, no runtime grants, `_postgres` tests | this decision |
 | MAP-OVERLAY-1 | Reset preflight, step-4 recheck, "reset touches only Ground" test (§3.6) | ADR-0021 accepted |
-| House interior runtime | Scope kind, `0003`/`0006` changes, writer, transfer shapes (§3.4) | HOUSE-CUSTODY-1; EXP-HOUSES-01 runtime decision |
+| House interior runtime | Fence and scope schema (decided there; §3.4 is direction), a new migration altering the `0003`/`0006` tables, writer, transfer shapes | HOUSE-CUSTODY-1; EXP-HOUSES-01 runtime decision |
 | House ownership and ACL | Opens §3.5, decides the Ground-on-house-tiles gate | house interior runtime |
 
 ## 5. Rejected options
@@ -195,7 +198,7 @@ These are fixed now and built by the house interior runtime child, not by HOUSE-
 - **`house_ref` with a content revision.** A revision bump would orphan every stored item
   (EXP-HOUSES-01 §5.2).
 - **Building the scope kind and shapes now.** Nothing can reach them before the interior runtime
-  and ownership exist (playable-first). They are fixed here and built with their first caller.
+  and ownership exist (playable-first). They are given as direction here (§3.4) and decided and built with their first caller.
 - **Docs only, no migration.** The owner asked for the worker now. The storage slice is small,
   and it makes the exclusivity guard cover house rows from the start.
 
@@ -214,7 +217,7 @@ These are fixed now and built by the house interior runtime child, not by HOUSE-
 1. **Contract amendments:** DUR-03 §5.2 and §39.3, and ADR-0021 §4.4, the owner-answer row and
    §7, are amended in this PR.
 2. **Serialization:** the exclusivity guard now. One live house generation plus `character_root`
-   locks later (§3.4).
+   locks later, as non-binding direction (§3.4).
 3. **Restart:** the durable location and provenance are enough. A rebuild fails closed on a
    missing house or tile.
 4. **Typed references:** a revision-free `HouseId`. The provenance names its transaction.

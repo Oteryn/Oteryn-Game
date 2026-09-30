@@ -7,8 +7,8 @@
 - Role: Sol Supervising Architect
 - Answers: the owner's architecture decision request "runtime loading of the Oteryn world map"
   (2026-09-30), about the base map of #1160 and #1170
-- Owner decisions: answers 1a, 2a, 3a, 4a, 5a, 6a, 7a and 8a, given directly in the architect
-  session on 2026-09-30 (§2). The control plane assigns their D-numbers.
+- Owner decisions: D188-D196 (answers 1a to 8a and house tiles a), given directly in the architect
+  session on 2026-09-30 and numbered by the control plane on #162 (§2).
 - Builds on: ADR-0001 (multichannel), ADR-0005 (World Project, compiler and World Bundle),
   ADR-0010 (product profiles), `OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1`,
   `OTERYN_CRYSTALSERVER_LEGACY_SPATIAL_IMPORT_PROFILE_V1`, DUR-03 §9 and §39.3, DUR-04 §9, §11
@@ -33,7 +33,8 @@
   - patch granularity.
 
   This is the spike evidence for the server bundle (§4.2).
-- **MAP-BUNDLE-1** (compiler, impl worker; format doc reviewed with it). A deterministic compiler
+- **MAP-BUNDLE-1** (compiler, impl worker; format doc reviewed with it). It writes `build_class`
+  into the manifest (§4.2). A deterministic compiler
   from the World Project (B3 placements plus the World, FloorChange, Transition, House and area
   families) to a server World Bundle (§4.2). It:
   - maps the project frame to native positions (§4.3);
@@ -54,7 +55,9 @@
   - the Ground rebuild after an unplanned restart, with origins re-hidden;
   - map-item pickup as a MINT;
   - the World reset record, the reset fence and the world-reset retirement (DUR-03 §39.3
-    amendment).
+    amendment), with the HOUSE-CUSTODY-0 preflight and recheck;
+  - a boundary test of the overlay budget: a freeze-time hide at the limit is refused, and a
+    rebuild re-hide at the limit is admitted and alarmed.
 - **MAP-WIRE-1** (protocol, contract candidate, owner acceptance required). An FND-02 child for
   the item state a client must see:
   - base items hidden or added by the overlay;
@@ -86,17 +89,46 @@ built, eight things must be fixed:
 
 ## 2. Owner decisions
 
-| # | Owner choice (2026-09-30) |
-|---|---|
-| 1a | The full base is loaded into memory at start, in a compact server-owned model shared by the channels of a World. |
-| 2a | B3 stays the source format. A compiler produces a server World Bundle, and the server reads only the bundle. |
-| 3a | The project frame `global-target-2026-09-27` stays the source frame of all content families. The compiler maps it to native positions. |
-| 4a | Tibia parity: map changes are volatile and reset at the planned world reset. Player items on the ground survive a crash and are retired at the planned reset. The owner accepted this without an in-game test. |
-| 5a | Unknown keys fail compilation. The five provisional keys are skipped with a diagnostic outside production and must be resolved before release. |
-| 6a | The new families are the only source for the full world. Draft areas load behind a testing and preproduction flag and block release. `native_entry_room` stays a fixture. There is no dual loading. |
-| 7a | A new base activates only at a planned world reset. |
-| 8a | The budgets of §4.8 are accepted as initial gates, and the first compact-model measurement confirms them. |
-| House tiles (a) | Ground items on the tiles of a house without an owner are retired at the reset like any other Ground item. Items in an owned house use the `HouseInterior` family decided by HOUSE-CUSTODY-0 (§4.4, §5). |
+| D | # | Owner choice (2026-09-30), summary |
+|---|---|---|
+| D188 | 1a | The full base is loaded into memory at start, in a compact server-owned model shared by the channels of a World. |
+| D189 | 2a | B3 stays the source format. A compiler produces a server World Bundle, and the server reads only the bundle. |
+| D190 | 3a | The project frame `global-target-2026-09-27` stays the source frame of all content families. The compiler maps it to native positions. |
+| D191 | 4a | Tibia parity: map changes are volatile and reset at the planned world reset. Player items on the ground survive a crash and are retired at the planned reset. Picking up a map item is a MINT. The owner accepted this without an in-game test. |
+| D192 | 5a | Unknown keys fail compilation. The five provisional keys are skipped with a diagnostic outside production and must be resolved before release. |
+| D193 | 6a | The new families are the only source for the full world. Draft areas load behind a testing and preproduction flag and block release. `native_entry_room` stays a fixture. There is no dual loading. |
+| D194 | 7a | A new base activates only at a planned world reset. |
+| D195 | 8a | The budgets of §4.8 are accepted as initial gates, and the first compact-model measurement confirms them. |
+| D196 | House tiles (a) | Until a house item custody family exists, Ground items on house tiles are retired at the reset like any other Ground item. |
+
+**Verbatim record.** The options were presented in Polish, and the owner answered in Polish.
+
+- **Answer to questions 1-7** (2026-09-30T07:22Z): "1a, 2a, 3a jesli uwazasz ze to jest ok, 4 dobra
+  zrobmy to tak jak ma byc bez testow bo to nie ejst az tak istotne a zajmie czas, 5 czyli wiesz co
+  jest lepsze, 6a, 7a". Answer 8a was given earlier in the same session ("8a").
+- **Option 4a as presented:**
+  - "Nakładka jest ulotna: przesunięte obiekty mapy, otwarte drzwi i dźwignie wracają do stanu
+    bazy przy planowanym resecie, tak jak server save."
+  - "Przedmioty graczy na ziemi są już trwałe przez DUR-03 (Ground custody). Po awarii wracają do
+    nakładki, a przy planowanym resecie są wycofywane, tak jak w Tibii."
+  - "Podniesienie przedmiotu z mapy to MINT (DUR-03 §9.2); po resecie przedmiot na mapie się
+    odnawia, jak w Tibii."
+
+  In English: the overlay is volatile and reset at the planned reset; player items on the ground
+  survive a crash and are retired at the planned reset; **picking up a map item is a MINT**, and
+  the map item respawns after the reset. The owner accepted it without the in-game test.
+- **House tiles, option a as presented:** "Tymczasowo znikają przy resecie, jak wszystko inne na
+  ziemi. Gdy powstanie kontrakt domów, dostaną własną ochronę i od tego momentu będą zostawać."
+  (For now they disappear at the reset, like everything else on the ground. When the house
+  contract exists, they get their own protection and stay from then on.)
+  The owner's answer (07:42Z): "a ale trzeba zrobic ten knotaktu domu kto to ma robic" (a, but the
+  house contract has to be made; who does it), followed by "zrob odrazu tj i niech worker wykona"
+  (do it right away and let a worker implement it), which started HOUSE-CUSTODY-0.
+
+**Architect note (interpretation, not an owner decision).** HOUSE-CUSTODY-0 is the house contract
+named by D196. It reads D196 as: the tiles of a house without an owner stay ordinary Ground, and
+their items are retired at the reset; the items of an owned house use `HouseInterior` and are
+never retired (§4.4). No house can be owned yet, so today every house tile follows the first rule.
 
 ## 3. Facts
 
@@ -162,7 +194,8 @@ built, eight things must be fixed:
   - a manifest with the fields ADR-0005 §3 and DUR-04 §9 require: `project_format_version`,
     `world_schema_version`, `content_revision`, the Content Lock digest, `compiler_version`, the
     minimum reader and runtime versions, the required capabilities, a provenance summary, the
-    projection class (server), ruleset compatibility, and the World bounds and floors;
+    projection class (server), ruleset compatibility, the World bounds and floors, and
+    `build_class` (`production` or `non-production`);
   - decompression limits;
   - one compiler-emitted `placement_key` per top-level base entry. It is bound to the bundle
     digest and used both as the MINT origin (§4.4) and as the wire placement identity. It is not
@@ -172,6 +205,9 @@ built, eight things must be fixed:
   level 3 (MAP-SPIKE-0).
 - The server loads a bundle only if its digest, checksums, schema versions and content revision
   match the World's pinned revisions. Otherwise the World does not start.
+- A World deployed as production refuses a bundle whose `build_class` is not `production`, and a
+  missing or unknown `build_class` counts as `non-production`. This is the fail-closed release
+  gate for provisional keys and drafts (§4.5, §4.6).
 
 ### 4.3 Coordinates (3a)
 
@@ -204,7 +240,7 @@ built, eight things must be fixed:
   - At the planned world reset they are retired, as in a Tibia server save (§4.7).
 - **House tiles** (HOUSE-CUSTODY-0, amending this section).
   - The tiles of a house without an owner are ordinary map tiles. Ground items there are
-    retired at the reset (owner answer, house tiles a).
+    retired at the reset (D196, read as in the §2 architect note).
   - The tiles of an owned house are served by its World-scoped interior runtime, not by the
     channel overlay. Items there use the `HouseInterior` family and are never retired by a
     reset.
@@ -213,7 +249,9 @@ built, eight things must be fixed:
     to live Ground items on its tiles in each channel (HOUSE-CUSTODY-0 §3.5).
 - **Picking up a map-authored item** (DUR-03 §39.3 amendment).
   - **Eligible items.** A top-level entry that is pickupable, is not on a house tile, and has no
-    action, unique, door, depot or teleport binding and no contents. Everything else stays in place.
+    action, unique, door, depot or teleport binding, no contents, and no `text`, `description`,
+    `charges` or other attribute that the ItemInstance state cannot represent. Everything else
+    stays in place.
   - **Pickup.** A MINT into Ground at the item's current tile, of the whole origin entry, followed
     by the ordinary Ground-to-inventory TRANSFER.
   - **Cause.** `MapItemMaterialization {world, channel, base bundle digest, placement_key, reset
@@ -227,6 +265,9 @@ built, eight things must be fixed:
 - **Overlay budget** (`MAP01-CHANNEL-OVERLAY-BYTES`).
   - It covers volatile entries and hidden origins. A new volatile entry that would exceed it is
     refused atomically.
+  - A freeze-time hide of an origin may be refused, and then the pickup is refused. A rebuild
+    re-hide of an origin that has a receipt is never refused: it is only counted, and an overflow
+    raises an alarm.
   - Durable Ground items (loot, corpses, drops, materialized map items) are bounded by their own
     DUR-03 and combat limits. They are never refused or dropped for this budget. They are
     counted, and an overflow raises an operational alarm.
@@ -255,8 +296,8 @@ built, eight things must be fixed:
   Transition.Teleport and House families, compiled into the bundle.
 - The seven minimap draft areas are compiled with a `draft` marker, in non-production builds
   only.
-- A production World accepts only a bundle built for production, so drafts and skipped
-  provisional keys never reach it. The drafts are a release blocker, like D171 and D172.
+- A production World accepts only a bundle with `build_class = production` (§4.2), so drafts and
+  skipped provisional keys never reach it. The drafts are a release blocker, like D171 and D172.
 - The B3 tile house id must match the House family, as a teleport must match its Transition
   record. Otherwise compilation fails.
 - `native_entry_room.json` stays a test fixture World.
