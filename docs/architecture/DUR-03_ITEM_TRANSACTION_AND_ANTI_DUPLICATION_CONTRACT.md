@@ -368,8 +368,8 @@ Silent row deletion, `quantity=0` live state or disappearance during recovery is
 
 Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of the
 gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC service amendment in
-§39.3, the closed `NpcTradeCause` of a SELL. The item use amendment in §39.3 (ITEM-USE-0) admits the
-closed `ItemUseCause`.
+§39.3, the closed `NpcTradeCause` of a SELL. Pending on acceptance of ITEM-USE-0, the item use
+amendment in §39.3 admits the closed `ItemUseCause`.
 
 ## 16. Transform semantics
 
@@ -734,8 +734,9 @@ amendment in §39.3 admits the two-item merge and top-up shapes and direct entri
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
 amendment in §39.3 admits typed BURN of up to 20 coin stacks with up to 2 change MINTs, composed
 with a Character change in one transaction; the NPC service amendment in §39.3 admits the NPC BUY,
-SELL and travel shapes; the item use amendment in §39.3 admits a one-unit BURN, or a one-unit
-TRANSFORM into a flask stack or a fresh flask, under `ItemUseCause`.) Unsupported
+SELL and travel shapes; pending on acceptance of ITEM-USE-0, the item use amendment in §39.3 admits
+a one-unit BURN, or a one-unit TRANSFORM into a flask stack or a fresh flask, under
+`ItemUseCause`.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -1440,8 +1441,9 @@ unchanged.
 
   This amendment grants no runtime or DDL authority.
 
-**Item use amendment (ITEM-USE-0, 2026-09-30).** `reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4 admits, in its ITEM-USE-1 child and
-for these shapes only:
+**Item use amendment (ITEM-USE-0, 2026-09-30), pending on acceptance of ITEM-USE-0.**
+`reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4, once accepted, admits, in its
+ITEM-USE-1 child and for these shapes only:
 
 - **Burn.** One BURN line (§17) of exactly one unit from the used stack, which keeps its identity
   (§11.1) or retires at zero (§11.5), under the closed sink `ItemUseCause` (`Food`, `Potion`),

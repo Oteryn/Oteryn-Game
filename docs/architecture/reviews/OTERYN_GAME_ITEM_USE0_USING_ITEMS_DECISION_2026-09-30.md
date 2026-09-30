@@ -211,8 +211,9 @@ admitted shapes and by a paragraph at the end of §39.3. Every other §39 obliga
 
 ## 9. Before-freeze checklist
 
-1. **Contract amendments:** USE-WIRE-V1 (§3); DUR-03 §15, §39.1 and §39.3 (§4.3). The capability
-   number is reserved at allocation.
+1. **Contract amendments:** USE-WIRE-V1 (§3, edited by ITEM-USE-WIRE-1 after #1344); DUR-03 §15,
+   §39.1 and §39.3 (§4.3), written pending on acceptance of ITEM-USE-0 (#162 5912405163). The
+   capability number is reserved at allocation.
 2. **Serialization:** one in-flight use per actor; one item-only DUR-03 transaction before the
    effect; reserved source and destination; rule 2 fence; replay by CommandRef.
 3. **Restart:** items are durable; the condition and cooldowns are runtime state.
