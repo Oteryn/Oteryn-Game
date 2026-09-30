@@ -193,6 +193,11 @@ declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated 
 - A Dialogue node's `gate` gains a typed `quest` condition: a conjunction of at most
   `QUESTGATE0-RL-01` QUEST-STATE-0 §7 predicates over the session's copy, plus the level and
   `holds_item` owners. The first matching sibling whose condition passes answers (schema §4).
+- **Revalidation.** A confirmation-bearing node's predicates are evaluated again under
+  `character_root` inside the claim, exchange or transition transaction, before any write, like
+  quest-gated travel: the node's quest, level and `holds_item` conditions must still pass on the
+  locked state. A stale confirmation whose node is no longer eligible is refused as the node's
+  refusal reply and writes nothing; a confirmation is never authority by itself.
 - A node still marked `LUA_PREDICATE` or `LUA_ACTION` stays held (D9).
 
 ### 5.2 Outcomes
@@ -276,6 +281,10 @@ QUEST-STATE-0 §4 codes) selects the node's refusal reply and writes nothing.
   provenance and is never passed as `reward_revision`. The XP writer deletes the obligation in
   its transaction; a guard allows the delete only with the XP receipt naming it. The award keeps
   its own receipt and revision advance (rule 6 unchanged).
+- **Capacity.** The transition transaction counts the character's locked pending XP obligations
+  before any write; at `QUESTGATE0-RL-10` (16) an XP-bearing transition is refused whole with
+  `OUT_OF_RANGE` (QUEST-STATE-0 §4), before quest state changes or a seventeenth row is inserted,
+  and the dialogue node selects its refusal reply.
 - Pending XP obligations are requested again at admission, like quest obligations. An XP refusal
   keeps the row, and a defect is reported (a revision mismatch fails closed, QUEST-STATE-0 §5.2).
 - Experience never comes from dialogue, a claim or an interaction directly.
@@ -298,8 +307,8 @@ blessings wait for their owners' decisions; a node that needs one stays held.
 | Kind | Name | Content |
 |---|---|---|
 | capability | `QUEST_LOG_V1` | gates everything below |
-| command type | `QUEST_LOG_QUERY` | oneof `list`, `quest {quest_index}`, `track {mission_indexes}`; an empty oneof is `REJECTED` |
-| state domain | `QUEST_LOG` | the last requested list or quest line, and the tracked missions |
+| command type | `QUEST_LOG_QUERY` | oneof `list`, `quest {quest_index}`, `track {quest_indexes}`; an empty oneof is `REJECTED` |
+| state domain | `QUEST_LOG` | the last requested list or quest line, and the tracked quests |
 
 - **Computed from the session copy**, never stored:
   - a storyline quest shown in the log is listed once its `start` track reaches `at_least`;
@@ -314,9 +323,12 @@ blessings wait for their owners' decisions; a node that needs one stays held.
 - Quests and missions are canonical uint32 indexes per content generation (SPELL-D1 pattern).
   Nothing else leaves the server: track keys, values other than template counters, transitions,
   gates and claims.
-- **Tracker.** At most `QUESTGATE0-RL-06` tracked missions; `track` replaces the set. After a
-  committed receipt changes a listed quest, the open quest line or a tracked mission, the domain
-  sends a delta.
+- **Tracker.** At most `QUESTGATE0-RL-06` tracked quests (the "Show in quest tracker" choice is
+  per quest line); `track` replaces the set, and an unlisted or unknown quest index is `REJECTED`.
+  The missions shown are derived from the session copy: the currently visible missions of each
+  tracked quest, so the tracker follows the quest when a mission completes and the next starts.
+  After a committed receipt changes a listed quest, the open quest line or a tracked quest, the
+  domain sends a delta.
 - Search, sort, "Show completed" and "Show hidden" are client features (assumption A1).
 - **Revisions.** The domain is owned by the channel runtime, monotonic per `GameSessionId`; every
   admission, reconnect and transfer sends a new snapshot (NPC-0 §4 pattern).
@@ -347,7 +359,7 @@ blessings wait for their owners' decisions; a node that needs one stays held.
 | `QUESTGATE0-RL-03` trigger firings per character per second | 10 |
 | `QUESTGATE0-RL-04` burn lines per exchange | 8 |
 | `QUESTGATE0-RL-05` experience per transition | 1 to 100,000,000 |
-| `QUESTGATE0-RL-06` tracked missions | 10 (`PARITY_PENDING`) |
+| `QUESTGATE0-RL-06` tracked quests | 10 (`PARITY_PENDING`) |
 | `QUESTGATE0-RL-07` quests per list projection | 1,024 (as `QUESTSTATE0-RL-05`) |
 | `QUESTGATE0-RL-08` missions per quest line and payload bytes | measured by QUEST-LOG-WIRE-1 over the catalogue |
 | `QUESTGATE0-RL-09` quest log queries per second | 2 |
