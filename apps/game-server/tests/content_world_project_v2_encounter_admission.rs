@@ -196,6 +196,7 @@ fn profiles() -> Vec<ProjectV2AuthoringProfile> {
                     variants: vec![],
                     encounter: Some(reference(ProjectV2Family::Encounter, ENCOUNTER)),
                     path_requirement: None,
+                    windup: None,
                     chain: None,
                     cast_cue: None,
                     impact_cue: None,

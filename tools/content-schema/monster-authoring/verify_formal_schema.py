@@ -244,6 +244,16 @@ if __name__=='__main__':
     case('named affects need creatures',set_value(('d','effects',0,'affects'),{**affects,'kind':'named_creatures'}))
     case('named affects accepted',set_value(('d','effects',0,'affects'),{**affects,'kind':'named_creatures','creatures':[ref('Creature','creature')]}),True)
     case('group affects forbid creatures',set_value(('d','effects',0,'affects'),{**affects,'creatures':[ref('Creature','creature')]}))
+    windup={'delay_ms':2000,'caster_asset_binding':'oteryn:body_sprite'}
+    def targeted(extra):
+        def mutate(m,d,c):
+            d['abilities'][0].update({'needs_target':True,'windup':windup,**extra})
+        return mutate
+    case('windup accepted on a single-target ability (SW-1)',targeted({}),True)
+    case('windup delay must be positive',targeted({'windup':{**windup,'delay_ms':0}}))
+    case('windup needs a caster binding',targeted({'windup':{'delay_ms':2000}}))
+    case('windup needs a target',targeted({'needs_target':False}))
+    case('windup rejected with an area',targeted({'area':{'radius_tiles':1}}))
     case('path requirement accepted (D18)',set_value(('d','abilities',0,'path_requirement'),{'max_search_tiles':8,'clear_sight':True}),True)
     case('path requirement needs its search distance',set_value(('d','abilities',0,'path_requirement'),{'clear_sight':True}))
     case('path trail presentation accepted',set_value(('d','effects',0,'presentation'),{'path_asset_binding':'oteryn:body_sprite'}),True)
