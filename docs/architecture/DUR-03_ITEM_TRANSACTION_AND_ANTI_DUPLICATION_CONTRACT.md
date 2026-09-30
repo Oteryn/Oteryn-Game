@@ -1275,26 +1275,31 @@ unchanged.
 - **World-reset retirement.** A durable World reset record holds `{world_id, reset_epoch N,
   target bundle digest, state RETIRING | ACTIVATED}`. A reset runs in this order:
   1. Write the record as RETIRING and close admission for every channel of the World.
-  2. End every prior scope-ownership generation of the World, so in-flight fenced commits fail.
-     The retirement runs under a reset-owned fence, and no new scope assignment is made until
-     activation.
+  2. For each channel scope of the World, the existing assignment writer assigns a fresh
+     ownership generation to the resetting node, with admission still closed. This ends the old
+     generation, so in-flight fenced commits fail `fence_is_live`. The retirements run under that
+     ordinary live fence. No new fence kind or scope level is introduced.
   3. Retire every live Ground root of the World and its container entries, entries first and
      then the root, in the D3 order. Each is a one-item `DECAY_RETIRE` with the cause
-     `WorldReset {world_id, reset_epoch, item_instance_id}`. When the same item is also due for
-     `CorpseDecay`, a per-item retire receipt settles it: the first retirement to commit wins, and
-     the other is a terminal no-op.
+     `WorldReset {world_id, reset_epoch, item_instance_id}`. `WorldReset` and `CorpseDecay`
+     share one per-item retirement uniqueness (one retirement per item, ever). A later
+     `CorpseDecay` step for an already retired item is refused as not live.
   4. When no live Ground item of the World remains, activation writes the new bundle digest,
      epoch N+1 and state ACTIVATED atomically, bound to the content activation record.
 
-  If the process crashes while the record is RETIRING, boot refuses admission and resumes step 3.
-  The old bundle never boots over a half-retired Ground.
+  If the process crashes while the record is RETIRING, boot refuses admission and resumes from
+  step 2, which is idempotent, then step 3. The old bundle never boots over a half-retired
+  Ground.
 
   No house custody family exists yet, so Ground items on house tiles are retired as well, until
   a house contract admits such a family and its exemption.
 - **Registration.** MAP-OVERLAY-1 registers:
   - the proto and registry fields of both shapes;
   - the reset record;
-  - the epoch storage and the per-item retire receipt.
+  - the epoch storage;
+  - the widening of the `0015` retire receipt with a cause discriminator (`CorpseDecay` or
+    `WorldReset`), so both causes share its per-item primary key, and the matching extension of
+    the Ground-removal proof triggers.
 
   This amendment grants no runtime or DDL authority.
 

@@ -188,7 +188,9 @@ built, eight things must be fixed:
   §7):
   - per tile: base items hidden, and items added;
   - items added to the overlay keep their full attributes;
-  - a per-tile expiry index removes volatile added items when they decay, at 1 s granularity.
+  - a per-tile expiry index removes volatile added items when they decay, at 1 s granularity;
+  - a base map stack is never merged with another item in the overlay, so each `placement_key`
+    keeps exactly one entry.
 - **Tile limit.** A tile holds at most 64 base items, the reach of the hidden-item bitmask. The
   base map maximum is 26, and the compiler rejects more.
 - **Volatile map state.** Moved or used map objects, doors, levers and removed map items are
@@ -213,9 +215,12 @@ built, eight things must be fixed:
     proven non-commit. After a crash, the Ground rebuild re-hides every origin that has a receipt
     for this channel, digest and epoch. A retried MINT that returns an existing item is still
     checked for reach before its TRANSFER.
-- **Overlay budget** (`MAP01-CHANNEL-OVERLAY-BYTES`):
-  - a new volatile entry or a MINT that would exceed it is refused atomically;
-  - a Ground rebuild that would exceed it fails channel admission closed.
+- **Overlay budget** (`MAP01-CHANNEL-OVERLAY-BYTES`).
+  - It covers volatile entries and hidden origins. A new volatile entry that would exceed it is
+    refused atomically.
+  - Durable Ground items (loot, corpses, drops, materialized map items) are bounded by their own
+    DUR-03 and combat limits. They are never refused or dropped for this budget. They are
+    counted, and an overflow raises an operational alarm.
 - **No overlay snapshots and no overlay journal.**
 - **Character positions.** Durable Character positions, such as the DEATH-0 respawn position
   and a later logout position, are outside this section. Admission validates them against the
@@ -257,22 +262,28 @@ built, eight things must be fixed:
   drives the reset:
   1. The record is written as RETIRING, and admission to every channel of the World closes.
      Players are logged out.
-  2. Every prior scope-ownership generation of the World ends, so in-flight Ground, MINT and
-     TRANSFER commits fail their fence. A reset-owned fence holds the World, and no new scope
-     assignment is made until activation.
+  2. For each channel scope of the World, the existing assignment writer gives the resetting node
+     a fresh ownership generation, with admission still closed. The old generation ends, so
+     in-flight Ground, MINT and TRANSFER commits fail their fence. The retirements run under that
+     ordinary fence; no new fence kind or World-level scope is added.
   3. Every live DUR-03 Ground item of the World is retired, including container entries (entries
      first, D3 order). Each retirement is a one-item `DECAY_RETIRE` keyed
-     `WorldReset {world, epoch, item}`.
+     `WorldReset {world, epoch, item}`. It shares the per-item retirement uniqueness with
+     `CorpseDecay`.
   4. When none remains, activation writes the new digest, epoch N+1 and ACTIVATED atomically,
      bound to the content activation record. Channels then start with empty overlays.
 - **Crash recovery.** A crash while the record is RETIRING makes boot refuse admission and resume
-  step 3. The old bundle never boots over a half-retired Ground. A crash restart outside a reset
+  from step 2, which is idempotent, then step 3. The old bundle never boots over a half-retired Ground. A crash restart outside a reset
   reuses the active bundle and never switches revisions.
 - **Scope.** No overlay or Ground position survives a reset, so neither needs a position
   migration. In DUR-04 §12 terms, Ground at activation is `REMOVED_WITH_EXPLICIT_POLICY`.
   Character positions are handled at admission (§4.4).
-- **Duration.** The reset takes one transaction per Ground item. MAP-OVERLAY-1 measures it and
-  proposes a bound.
+- **Duration.** The reset takes one transaction per Ground item, and the World stays closed
+  meanwhile. MAP-OVERLAY-1 measures it and registers `MAP01-RESET-RETIRE-MS` with a measured
+  bound before any production World resets.
+- **First cutover.** The first boot of a World from a bundle is itself a reset. It retires every
+  pre-cutover Ground item, which carries the legacy map revision, and activates the bundle.
+  MAP-CUTOVER-1 therefore depends on MAP-OVERLAY-1.
 
 ### 4.8 Qualification (8a)
 
@@ -304,8 +315,8 @@ built, eight things must be fixed:
 | MAP-BUNDLE-1 | Compiler, format doc, key resolution, drafts, limits | this ADR; #1160 and #1170 merged; A12 item keys |
 | MAP-LOAD-1 | Reader, compact model, budgets | MAP-BUNDLE-1 |
 | MAP-OVERLAY-1 | Overlay, Ground rebuild, map-item MINT, reset retirement | MAP-LOAD-1; DUR-03 §39.3 amendment accepted |
-| MAP-CUTOVER-1 | Boot from the bundle, fixture world, draft gate | MAP-LOAD-1 |
-| MAP-WIRE-1 | Item overlay and Ground state domain, viewport snapshots | owner acceptance; MAP-OVERLAY-1 |
+| MAP-CUTOVER-1 | Boot from the bundle through a first reset, fixture world, draft gate | MAP-LOAD-1; MAP-OVERLAY-1 |
+| MAP-WIRE-1 | Item overlay and Ground state domain, viewport snapshots. Needed before a playable release, because clients cannot see pickups or hidden origins without it; may run in parallel. | owner acceptance |
 
 ## 6. Rejected options
 
@@ -349,11 +360,12 @@ built, eight things must be fixed:
 2. **Serialization.**
    - Overlays are single-writer in the channel tick.
    - Ground and MINT follow the DUR-03 fences and the `character_root` lock.
-   - A reset ends every prior generation before it retires anything, under a reset-owned fence.
-   - A retirement that overlaps with CorpseDecay is settled by the per-item receipt.
+   - A reset assigns each channel scope a fresh generation to the resetting node before it
+     retires anything, using the existing assignment writer and ordinary fences.
+   - `WorldReset` and `CorpseDecay` share one per-item retirement uniqueness.
 3. **Restart.**
    - Ground is rebuilt and origins are re-hidden.
-   - A reset resumes from its durable record.
+   - A reset resumes from its durable record, starting again at step 2.
    - The active bundle is pinned by digest and bound to the activation record.
 4. **Typed references.** `MapItemMaterialization` names world, channel, digest, placement key and
    epoch. `WorldReset` names world, epoch and item.
@@ -373,3 +385,22 @@ built, eight things must be fixed:
    - the MINT provenance;
    - the wire;
    - house tiles.
+
+   A second read-only check (`51eabf93`) confirmed the fixes. It found four more problems, all
+   fixed in §4.7 and the amendment:
+   - the reset fence now uses per-channel generations;
+   - crash recovery resumes at step 2;
+   - the `0015` receipt shares one uniqueness for both causes;
+   - the first cutover is a reset.
+
+   Its hardening points 9-18 are also covered:
+   - character positions;
+   - placement identity;
+   - the benchmark marked DERIVED;
+   - the manifest fields;
+   - the deployment gate;
+   - the overlay budget;
+   - the registry notes;
+   - the DUR-04 §12 class;
+   - the house id check;
+   - the reset duration row.

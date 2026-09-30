@@ -6331,11 +6331,11 @@
       "unit": "bytes"
     },
     {
-      "allocation_impact": "Runtime cutoff: a new volatile overlay entry or a map-item MINT that would exceed the budget is refused atomically with no partial state; a Ground rebuild after a restart that would exceed it fails channel admission closed.",
+      "allocation_impact": "Runtime cutoff for volatile entries only: a new volatile entry that would exceed the budget is refused atomically with no partial state. Durable DUR-03 Ground items are never refused or dropped for this budget; they are counted, and an overflow raises an operational alarm.",
       "boundary_tests": [
         "overlay at 64 MiB accepts no further volatile entry",
-        "an entry that would exceed 64 MiB is refused before allocation",
-        "a Ground rebuild over 64 MiB fails channel admission closed"
+        "a volatile entry that would exceed 64 MiB is refused before allocation",
+        "a Ground rebuild over 64 MiB still admits every durable item and raises the alarm"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -6350,7 +6350,7 @@
       "id": "MAP01-CHANNEL-OVERLAY-BYTES",
       "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
-      "resource": "Memory of one channel's volatile map overlay (hidden base items, added items, expiry index)",
+      "resource": "Memory of one channel's volatile map overlay: volatile added items, hidden base origins and the expiry index",
       "unit": "bytes"
     },
     {
