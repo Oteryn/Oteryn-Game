@@ -5741,6 +5741,171 @@
       "notes": "D51, decision \u00a73.3: a policy value, not a measurement. Stage C must re-decide it once real PostgreSQL reconciliation exists and prove max/max+1 across a restart. Registered by OTV2-20260928-dur03-b4-binding-513."
     },
     {
+      "id": "DUR03-RL-01-FEE-BURN",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+      "resource": "ItemInstances touched by one DUR-03 fee BURN transaction (FeeBurnCause shape)",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 22,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 22
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write and in the payload gate; never truncated. Up to 20 burned coin stacks plus up to 2 change stacks (the change stacks arrive with GOLD-FEE-1b).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=22: a usage of 22 touched ItemInstances is admitted by the fee rows",
+        "max+1=23 rejected (CAPACITY_EXCEEDED)",
+        "a 21-input plan is rejected (CAPACITY_EXCEEDED) before any write",
+        "the one-item rows still reject a fee-sized usage"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+      ],
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+    },
+    {
+      "id": "DUR03-RL-02-FEE-BURN",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+      "resource": "Location/custody lines in one DUR-03 fee BURN transaction",
+      "unit": "location/custody lines per logical transaction",
+      "hard_maximum": 22,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 22
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. One removal per whole-burned stack (at most 20) plus one new backpack entry per change stack (at most 2); a partial burn keeps its entry.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=22 admitted",
+        "max+1=23 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+      ],
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+    },
+    {
+      "id": "DUR03-RL-06-FEE-BURN-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+      "resource": "Plan participants in one DUR-03 fee BURN transaction",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 22,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 22
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. One participant per touched ItemInstance.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=22 admitted",
+        "max+1=23 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+      ],
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+    },
+    {
+      "id": "DUR03-RL-06-FEE-BURN-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+      "resource": "Effect work units in one DUR-03 fee BURN transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. Whole burn 3 (participant, removal, retirement), partial burn 2, change MINT 2; worst case 20 x 3 + 2 x 2.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=64 admitted",
+        "max+1=65 rejected (CAPACITY_EXCEEDED)",
+        "20 whole gold burns use 60"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+      ],
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+    },
+    {
+      "id": "DUR03-RL-07-FEE-BURN-EVENTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+      "resource": "Audit events for one DUR-03 fee BURN transaction",
+      "unit": "events per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Exactly one event; the shape is never split into several events or truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: TransactionEventRef ordinal 1 of count 1",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+      ],
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+    },
+    {
+      "id": "DUR03-RL-07-FEE-BURN-PAYLOAD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+      "resource": "One exact OneItemTransactionV1 payload (event type 2, operation fee_burn) inside EventEnvelope.payload",
+      "unit": "bytes",
+      "hard_maximum": 24181,
+      "configurable_range": {
+        "minimum": 24181,
+        "maximum": 24181
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; ANL01-EVENT-PAYLOAD-BYTES (196,608 B) still applies on top.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst case of the registered schema (20 whole burns, 512-byte revisions, the longest charm key, maximal integers) is exactly 24,181 B and accepted",
+        "24,182 bytes rejected before decode"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+      ],
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+    },
+    {
+      "id": "DUR03-RL-07-FEE-BURN-ENVELOPE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+      "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 2 operation fee_burn, including payload",
+      "unit": "bytes",
+      "hard_maximum": 24495,
+      "configurable_range": {
+        "minimum": 24495,
+        "maximum": 24495
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0023 admits a stored envelope above the one-item 9,216 B only for a fee event of the same transaction.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst-case envelope (128-byte build id) is exactly 24,495 B and accepted",
+        "24,496 bytes rejected before decode"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)",
+        "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)"
+      ],
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+    },
+    {
       "id": "DUR03-AUDIT-RETENTION-S",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
       "resource": "Ordinary retention ceiling of one event type 2 durable-audit event (profile DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1)",
@@ -6285,6 +6450,95 @@
         "apps/game-server/src/native_admission_source/runtime_status.rs"
       ],
       "notes": "Compiled H = 5000 ms (U-RS1); 60000 ms is the contract hard maximum. Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+    },
+    {
+      "allocation_impact": "Qualification budget on the reference node (the owner's 4 vCPU / 15.7 GiB benchmark node, pinned by MAP-SPIKE-0); a load over the budget fails MAP-LOAD-1 qualification. It is not a runtime timeout.",
+      "boundary_tests": [
+        "full bundle load at or under 5,000 ms passes",
+        "a measured load over 5,000 ms fails qualification"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 5000,
+        "minimum": 5000
+      },
+      "consumers": [
+        "game server World runtime"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 5000,
+      "id": "MAP01-BASE-LOAD-MS",
+      "notes": "Owner answer 8a (2026-09-30); initial gate confirmed or revised by the first compact-model measurement (ADR-0021 \u00a74.8).",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Full decode of one World's server World Bundle into the compact base model at node start",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Qualification budget per World per node, measured after load and before any channel is admitted; not a runtime cutoff.",
+      "boundary_tests": [
+        "base RSS at or under 1 GiB passes",
+        "base RSS over 1 GiB fails qualification and reopens the mmap option"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1073741824,
+        "minimum": 1073741824
+      },
+      "consumers": [
+        "game server World runtime"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1073741824,
+      "id": "MAP01-BASE-RSS-BYTES",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8.",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Resident memory of one World's shared read-only base model",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Runtime cutoff for volatile entries only: a new volatile entry that would exceed the budget is refused atomically with no partial state. Durable DUR-03 Ground items are never refused or dropped for this budget; they are counted, and an overflow raises an operational alarm.",
+      "boundary_tests": [
+        "overlay at 64 MiB accepts no further volatile entry",
+        "a volatile entry that would exceed 64 MiB is refused before allocation",
+        "a Ground rebuild over 64 MiB still admits every durable item and raises the alarm"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 67108864,
+        "minimum": 67108864
+      },
+      "consumers": [
+        "game server World runtime"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 67108864,
+      "id": "MAP01-CHANNEL-OVERLAY-BYTES",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8.",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Memory of one channel's volatile map overlay: volatile added items, hidden base origins and the expiry index",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Qualification budget at p99, hotspots included; not a runtime cutoff.",
+      "boundary_tests": [
+        "p99 viewport at or under 100 us passes",
+        "p99 over 100 us fails qualification"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 100,
+        "minimum": 100
+      },
+      "consumers": [
+        "game server World runtime"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 100,
+      "id": "MAP01-VIEWPORT-US",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.8.",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Server cost of assembling one 18x14 viewport from base and overlay, over every floor the client sees",
+      "unit": "microseconds"
     },
     {
       "id": "LCA-CHARACTERS",

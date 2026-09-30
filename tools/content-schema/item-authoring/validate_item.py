@@ -465,7 +465,7 @@ def validate(item, dependencies, manifest=None):
             actual_payload = {
                 key: value
                 for key, value in item["proficiency"].items()
-                if key != "profile_binding"
+                if key not in ("profile_binding", "client_binding")
             }
             if actual_payload != admitted_profile["payload"]:
                 errors.append(

@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 13,
-  "checks": 242,
-  "passed": 242,
+  "checks": 246,
+  "passed": 246,
   "failed": 0,
   "results": [
     {
@@ -173,6 +173,34 @@
       "expected_valid": false,
       "error_count": 2,
       "warning_count": 1
+    },
+    {
+      "name": "client proficiency binding with a threshold class validates",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "reject unknown proficiency threshold class",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject zero client proficiency id",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject client proficiency binding with an unknown key",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
     },
     {
       "name": "admitted Canary and Crystal proficiency 238/3 validates",
