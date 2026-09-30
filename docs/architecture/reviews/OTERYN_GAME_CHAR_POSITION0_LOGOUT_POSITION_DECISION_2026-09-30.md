@@ -105,6 +105,11 @@ chain, with no cause and no replay.
 - **World reset.** Step 2's new scope ownership generation fences late writes out, so the last
   periodic row is used and re-checked by §3.3.
 
+**Amendment (pending on acceptance of HOUSE-RUNTIME-0; `reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md` §6.3).** In a house scope the write is not skipped: the row records the
+`HouseId` and the tile inside, in two new nullable columns. At admission, a row naming a house
+admits the character into that house scope when its access and the property state still hold;
+otherwise it places the character at the house's `entrance`.
+
 ### 3.3 Admission
 
 The read runs only when a new runtime actor is created, in the first-entry path under the channel

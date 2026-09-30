@@ -282,6 +282,8 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
   `TOO_LOW`, `AUCTION_CLOSED`, `AUCTION_FULL`, `NOT_OWNER`, `STALE_REVISION`, plus the common
   results.
 - The panel works anywhere; it needs no position in the house.
+- **Amendment (pending on acceptance of HOUSE-RUNTIME-0; `reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md` §5.3, §5.5).** `HOUSE_INTENT` gains `kick {character}` (owner: anyone;
+  subowner: guests; the kicker inside the house or its owner) and `leave`.
 
 ## 12. Rows (registered by the children before implementation)
 
