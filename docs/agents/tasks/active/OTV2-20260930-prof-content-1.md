@@ -7,9 +7,9 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/prof-content-1b-proficiency-rust
+branch: claude/prof-content-1d-item-schema
 issue: 162
-pr: 1339
+pr: 1342   # #1328 (1a) and #1339 (1b) merged; the task continues in #1341 (1c) and #1342 (1d)
 base_sha: 1852a69   # #1327 and #1328 merged; 1b-1d stacked
 head_sha: null
 final_head_sha: null
