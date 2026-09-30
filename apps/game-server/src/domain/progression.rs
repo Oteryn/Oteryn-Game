@@ -1,6 +1,7 @@
 //! Pure, persistence-neutral Character experience projection.
 
-use oteryn_simulation_determinism::{ExactI64, FixedScale, NumericError, RoundingMode};
+use super::death::{PveDeathError, death_experience_loss};
+use oteryn_simulation_determinism::{ExactI64, NumericError, RoundingMode};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProgressionRevisionContext<R> {
@@ -37,6 +38,8 @@ pub struct FiniteProgressionPolicy<R, const N: usize> {
     pub declared_difference_revision: R,
     pub thresholds: [LevelThreshold; N],
     pub terminal_exclusive_experience: ExactI64,
+    /// D58/D68 pin the death loss to ratio 1/1 with `Floor` rounding; a death
+    /// under any other ratio or rounding is rejected (`InvalidDeathPolicy`).
     pub death_loss_numerator: i64,
     pub death_loss_denominator: i64,
     pub death_loss_rounding: RoundingMode,
@@ -49,10 +52,17 @@ pub enum ProgressionOperation<O, R> {
         reward_revision: R,
         amount: ExactI64,
     },
+    /// Reference first player death (D58, D59, D66-D68): the loss is
+    /// `domain::death::death_experience_loss` (one source of truth), capped
+    /// at the current experience so it never drops below 0; the level
+    /// follows it.
     ApplyDeathExperienceLoss {
         death_occurrence: O,
         death_policy_revision: R,
         declared_difference_revision: R,
+        /// `0..=death::MAX_REGULAR_BLESSINGS`.
+        regular_blessings: u8,
+        promoted_with_current_premium: bool,
     },
     /// Closed marker allowing callers to reject skill/proficiency families without
     /// translating them into an arbitrary signed experience delta.
@@ -79,6 +89,10 @@ pub enum ProgressionCalculationError {
     InvalidSnapshot,
     InvalidAward,
     ExperienceUnderflow,
+    /// More regular blessings than D58 admits (`death::MAX_REGULAR_BLESSINGS`).
+    TooManyBlessings,
+    /// The death loss is not the pinned D58/D68 ratio 1/1 with `Floor`.
+    InvalidDeathPolicy,
     Numeric(NumericError),
     UnsupportedOperation,
 }
@@ -133,6 +147,8 @@ where
         ProgressionOperation::ApplyDeathExperienceLoss {
             death_policy_revision,
             declared_difference_revision,
+            regular_blessings,
+            promoted_with_current_premium,
             ..
         } => {
             if death_policy_revision != &policy.death_policy_revision
@@ -140,17 +156,27 @@ where
             {
                 return Err(ProgressionCalculationError::RevisionMismatch);
             }
-            let span = level_span(snapshot.level, policy)?;
-            let lost = FixedScale::new(span.get(), 0)?
-                .checked_mul_ratio(
-                    policy.death_loss_numerator,
-                    policy.death_loss_denominator,
-                    policy.death_loss_rounding,
-                )?
-                .raw();
-            if lost < 0 {
-                return Err(ProgressionCalculationError::InvalidPolicy);
+            if (
+                policy.death_loss_numerator,
+                policy.death_loss_denominator,
+                policy.death_loss_rounding,
+            ) != (1, 1, RoundingMode::Floor)
+            {
+                return Err(ProgressionCalculationError::InvalidDeathPolicy);
             }
+            let raw = death_experience_loss(
+                snapshot.level,
+                *regular_blessings,
+                *promoted_with_current_premium,
+            )
+            .map_err(|error| match error {
+                PveDeathError::TooManyBlessings => ProgressionCalculationError::TooManyBlessings,
+                PveDeathError::InvalidLevel => ProgressionCalculationError::InvalidSnapshot,
+                _ => ProgressionCalculationError::Numeric(NumericError::Overflow),
+            })?;
+            let lost = i64::try_from(raw)
+                .unwrap_or(i64::MAX)
+                .min(snapshot.total_experience.get());
             let after = snapshot.total_experience.checked_sub(ExactI64::new(lost))?;
             if after.get() < 0 {
                 return Err(ProgressionCalculationError::ExperienceUnderflow);
@@ -226,23 +252,4 @@ fn project_level<R, const N: usize>(
         .find(|entry| experience.get() >= entry.minimum_experience.get())
         .map(|entry| entry.level)
         .ok_or(ProgressionCalculationError::MissingThresholdOracle)
-}
-
-fn level_span<R, const N: usize>(
-    level: u32,
-    policy: &FiniteProgressionPolicy<R, N>,
-) -> Result<ExactI64, ProgressionCalculationError> {
-    let index = policy
-        .thresholds
-        .iter()
-        .position(|entry| entry.level == level)
-        .ok_or(ProgressionCalculationError::MissingThresholdOracle)?;
-    let lower = policy.thresholds[index].minimum_experience;
-    let upper = policy
-        .thresholds
-        .get(index + 1)
-        .map_or(policy.terminal_exclusive_experience, |entry| {
-            entry.minimum_experience
-        });
-    Ok(upper.checked_sub(lower)?)
 }

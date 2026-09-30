@@ -17,27 +17,27 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "1fb6a5b174af29359a60c3ffe9f17dcf5562ea4561d461724f15ca19528a4691",
+        "3689791ba6efc88197a6f478223a425599f67ccabff2f29945963d095d1bb066",
     ),
     (
         "definitions/declarations.json",
-        14_941_145,
-        "dcbb0325e37c5edb9312be9f53f8523ca7100a3bfc402f13f8d777430e763a00",
+        14_938_464,
+        "4b13f55ec1cc2f3985c47de27e265a069cca3729e6cd675e874be2bf01be0756",
     ),
     (
         "definitions/reference.json",
-        22_584_907,
-        "d9f32aeda02a453caf02ba4c64a282fa0cca75e80300e4fa604308d28ef8cdbc",
+        21_316_331,
+        "2aeef18975a6d2e07bae8322ae886b1246b3e6c18ef7c72975f998a5aeafc048",
     ),
     (
         "editor/author.json",
-        121_657,
-        "a41044d85174f5c8f9a86c8433d880f43ea48a0c988d7772260a02eb78deea42",
+        120_557,
+        "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
         1937,
-        "42c0dad8711e8496316cad226ce078cded1f82b9ab3b3a495168addf961cb32e",
+        "9bad2c17c819472ba9076b772614699b836af4ab9b82fb3c2104348d67d6539f",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "fc7480eaa8a4633ffcf5d27fac094be6f4d96e92a32d6876681907d8d50233a6",
+        "e124fbcc70899b09f2d909b8967a3925a2d53c2c21d4a5a9c8f1e28f474ab975",
     ),
     (
         "provenance/imports.json",
-        31_225,
-        "350f489a9ac45497f4add64c08161fa245b2706322ecaf3d8f386812c15d111a",
+        32_476,
+        "d91343f3e0bbc2d053b272ac59df4856e18ae720987c788d14dc3c11afa35c11",
     ),
     (
         "provenance/sources.json",
-        1_294_992,
-        "45e9bf4fd15eb8cf540efec08e8609d4f9ef0246ef5761b3f54a4ca67c59c324",
+        1_299_026,
+        "c384023117ceb182e8b48f8ed800de85be6fac5527f3a6f22bf29179580a9f7c",
     ),
     (
         "worlds/world.json",
@@ -84,13 +84,15 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "e6c174f4e9ddb88412fd83935141984d26c9699d6c619c2d5297274ff8dea339";
+const TREE_SHA256: &str = "317f66009654b7950a303aee8127aeb79afaec10826f735a5f9ad31f78dd4d4b";
+/// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
+const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1463;
-const CREATURE_RECORDS: usize = 20464;
-const CREATURE_PROFILES: usize = 19519;
+const CREATURES: usize = 1476;
+const CREATURE_RECORDS: usize = 20638;
+const CREATURE_PROFILES: usize = 19693;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1094;
 const NPC_RECORDS: usize = 2188;
@@ -98,7 +100,7 @@ const NPC_DECLARATIONS: usize = 2179;
 const NPC_DIALOGUES: usize = 707;
 const NPC_BINDINGS: usize = 2344;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
-const ENCOUNTERS: usize = 58;
+const ENCOUNTERS: usize = 61;
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -816,24 +818,26 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .expect("link protected Item family and admitted creatures");
     assert_eq!(
         linked.definitions.len(),
-        CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS
+        ITEMS + CREATURE_RECORDS + NPC_RECORDS
     );
     let keys = linked
         .definitions
         .iter()
         .map(|definition| definition.definition.key().as_str())
         .collect::<BTreeSet<_>>();
-    assert_eq!(
-        keys.len(),
-        CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS
-    );
-    assert!(keys.contains(R7_P04_GOLD_COIN_KEY));
+    assert_eq!(keys.len(), ITEMS + CREATURE_RECORDS + NPC_RECORDS);
+    // Both historical gold-coin keys are retired; the Tibia key is the only identity.
+    assert!(keys.contains(item_identity::semantic::CURRENCY_GOLD_COIN));
+    assert!(!keys.contains(R7_P04_GOLD_COIN_KEY));
     assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
-    assert!(keys.contains(R7_P04_UNRELATED_REGISTRY_KEY));
+    assert!(!keys.contains(R7_P04_UNRELATED_REGISTRY_KEY));
+    assert!(keys.contains("oteryn:item.tibia.i3147"));
     let gold_coin = linked
         .definitions
         .iter()
-        .find(|definition| definition.definition.key().as_str() == R7_P04_GOLD_COIN_KEY)
+        .find(|definition| {
+            definition.definition.key().as_str() == item_identity::semantic::CURRENCY_GOLD_COIN
+        })
         .expect("repository Gold Coin definition");
     let ReferenceDefinitionKind::Item(gold_coin) = &gold_coin.kind else {
         panic!("Gold Coin is an Item");
@@ -894,10 +898,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             let atoms = promoted_atom_count(&item.semantics);
             (items + usize::from(atoms > 0), fields + atoms)
         });
-    assert_eq!(promoted_items, 12_301);
+    // The 201 D149 records carried 204 promoted atoms; they left content with their records
+    // (ITEM-ID-1b) and are kept in the tombstone archive.
+    assert_eq!(promoted_items, 12_301 - 201);
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204
     );
     let (wave1_items, wave1_fields) = linked
         .definitions

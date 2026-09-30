@@ -5,17 +5,19 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
-    CW2_B1_FULL_ITEM_FAMILY_COUNT, CandidateValue, CanonicalProjectDocuments, ImportBatch,
-    ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2AuthoringProfile,
-    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
-    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
-    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
-    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
-    ProjectV2SourceIdentityDisposition, ProjectV2State, R7_P04_GOLD_COIN_EVIDENCE_PACKET,
-    ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
-    ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
-    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
-    ReimportDecision, ReimportFieldState, protected_r7_p04_gold_coin_item_family_import,
+    CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_FULL_ITEM_REVISION, CandidateValue,
+    CanonicalProjectDocuments, ImportBatch, ProjectDraft, ProjectEvidenceLimits,
+    ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2Declaration,
+    ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass,
+    ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile,
+    ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
+    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
+    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
+    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
+    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
+    ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
+    item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule},
+    protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -24,6 +26,10 @@ const B1_EVIDENCE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
 );
 const DOCUMENT_COUNT: usize = 11;
+const ITEM_KEY_ALIASES: &[u8] = include_bytes!("../../../content/items/aliases.json");
+/// A12: 38,157 protected Item records less the 4,590 D149 records.
+const ITEM_TIBIA_KEYS: usize = 33_567;
+const ITEM_D149_REMOVED: usize = 4_590;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 const ITEM_SELECTED: &[u8] =
@@ -64,9 +70,9 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "0c5fe49325cefec7e56ab75f09bda6a4d7a248f839b9137eee9659d2a9b06c3d";
+    "fbddcdb87ed36890bb59a93ca0170cbcd7a2553e713c9bded6f15f181bb290e6";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "5f90ac7acfd4611633a8c6c936061b9e13cec6cbd4a7cbceaca07635c67430f8";
+    "0fc3154a417b522fd8f3886822bf44fed804c7217f80483acf0341f601efd8fd";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 /// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
 const CREATURE_WIKI_SAMPLE_SHA256: &str =
@@ -84,7 +90,7 @@ const CREATURE_CRYSTAL_SOURCE_REVISION: &str =
     "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f";
 const CREATURE_CRYSTAL_COUNT: usize = 13;
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "5251e62c7009a12a4d10d85a7a6ff59aa9526f169ec8c6d27fbdd7a687b571d9";
+    "6b5d9bc4a2d57e71d9f2cc4e15993576c3e348ee4f740970b85fc6dce4c0dec0";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
@@ -122,11 +128,11 @@ const NPC_DIALOGUE_STAGED_SHA256: &str =
 const NPC_DIALOGUES: usize = 707;
 const NPC_DIALOGUE_NODES: usize = 6375;
 const NPC_BINDINGS: usize = 2344;
-const CREATURE_COUNT: usize = 1463;
-const CREATURE_RECORDS: usize = 20464;
-const CREATURE_PROFILES: usize = 19519;
+const CREATURE_COUNT: usize = 1476;
+const CREATURE_RECORDS: usize = 20638;
+const CREATURE_PROFILES: usize = 19693;
 /// Encounter admission E1-E5: encounters admitted with the creatures they cover.
-const ENCOUNTER_COUNT: usize = 58;
+const ENCOUNTER_COUNT: usize = 61;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -1652,6 +1658,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("protected promoted Item family count drifted".into());
     }
     let mut provenance = promoted.family.batch;
+    // The historical key of every Item record and its CW2-B1 source id: the §4.1 rule input.
+    let item_source_ids = provenance
+        .candidates
+        .iter()
+        .map(|candidate| {
+            let key = candidate
+                .candidate_target
+                .strip_suffix(&format!("@{CW2_B1_FULL_ITEM_REVISION}"))
+                .ok_or("protected Item candidate target drifted")?;
+            let source_id = candidate
+                .source_numeric_id
+                .ok_or("protected Item candidate source id missing")?;
+            Ok((key.to_owned(), source_id))
+        })
+        .collect::<Result<BTreeMap<_, _>, &str>>()?;
+    if item_source_ids.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err("protected Item source id closure drifted".into());
+    }
     provenance.candidates.clear();
     provenance.reimport_states.clear();
     let source = ProjectV2Source {
@@ -1724,61 +1748,67 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     declarations.extend(npc_declarations);
     authoring_profiles.extend(npc_profiles);
     bindings.extend(npc_bindings);
-    let documents = CanonicalProjectDocuments::from_v2_draft(
-        ProjectV2Draft {
-            core: ProjectDraft {
-                project_revision: "g4-npc-wave-a-r7".to_owned(),
-                package_key: "oteryn:content.world-project".to_owned(),
-                semantic_schema_version: "reference-schema-v1".to_owned(),
-                licensing_metadata: "PENDING".to_owned(),
-                world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
-                coordinate_frame: "global-target-2026-09-27".to_owned(),
-                records,
-                imports: vec![
-                    provenance,
-                    wiki_import,
-                    wave1_import,
-                    mount_import,
-                    creature_import,
-                    creature_wiki_import,
-                    creature_crystal_import,
-                    npc_import,
-                    npc_br_import,
-                    npc_tibiopedia_import,
-                    npc_supplement_import,
-                ],
-                metadata: Vec::new(),
-            },
-            state: ProjectV2State {
-                sources: vec![
-                    source,
-                    wiki_source,
-                    wave1_source,
-                    mount_source,
-                    creature_source,
-                    creature_wiki_source,
-                    creature_crystal_source,
-                    npc_source,
-                    npc_br_source,
-                    npc_tibiopedia_source,
-                    npc_supplement_source,
-                ],
-                declarations,
-                source_identity_bindings: bindings,
-                editor,
-                item_authoring,
-                authoring_profiles,
-                ..ProjectV2State::default()
-            },
+    let mut draft = ProjectV2Draft {
+        core: ProjectDraft {
+            project_revision: "g4-npc-wave-a-r7".to_owned(),
+            package_key: "oteryn:content.world-project".to_owned(),
+            semantic_schema_version: "reference-schema-v1".to_owned(),
+            licensing_metadata: "PENDING".to_owned(),
+            world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+            coordinate_frame: "global-target-2026-09-27".to_owned(),
+            records,
+            imports: vec![
+                provenance,
+                wiki_import,
+                wave1_import,
+                mount_import,
+                creature_import,
+                creature_wiki_import,
+                creature_crystal_import,
+                npc_import,
+                npc_br_import,
+                npc_tibiopedia_import,
+                npc_supplement_import,
+            ],
+            metadata: Vec::new(),
         },
-        limits(),
-    )?;
+        state: ProjectV2State {
+            sources: vec![
+                source,
+                wiki_source,
+                wave1_source,
+                mount_source,
+                creature_source,
+                creature_wiki_source,
+                creature_crystal_source,
+                npc_source,
+                npc_br_source,
+                npc_tibiopedia_source,
+                npc_supplement_source,
+            ],
+            declarations,
+            source_identity_bindings: bindings,
+            editor,
+            item_authoring,
+            authoring_profiles,
+            ..ProjectV2State::default()
+        },
+    };
+    // A12 §4.1: every Item key becomes its Tibia key and the D149 records leave content.
+    let aliases = ItemKeyAliasTable::parse(ITEM_KEY_ALIASES)?;
+    let switch = apply_tibia_id_key_rule(&mut draft, &aliases, &item_source_ids)?;
+    if switch.item_records != ITEM_TIBIA_KEYS
+        || switch.removed_without_successor != ITEM_D149_REMOVED
+    {
+        return Err(format!("Item key switch drifted: {switch:?}").into());
+    }
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={ITEM_TIBIA_KEYS} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())

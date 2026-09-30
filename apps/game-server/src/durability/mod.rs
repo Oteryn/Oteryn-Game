@@ -4,11 +4,15 @@
 //! constructs and revalidates reconnect authority; the runtime must submit the
 //! resulting request asynchronously and consume its completion as new input.
 
+pub mod account_achievement;
 pub mod admission_authority_guards;
 mod admission_journal;
+pub mod bestiary_progress;
 pub mod character_authority;
 pub mod character_authority_audit;
+pub mod character_death;
 pub mod character_progression;
+pub mod charm_state;
 pub mod content_activation;
 mod db;
 pub mod fresh_admission;
@@ -29,6 +33,52 @@ mod schema;
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod account_achievement_linkage {
+    use super::DurabilityRoot;
+    use super::account_achievement::{
+        AccountAchievement, AchievementCatalogueLookup, AchievementGrantError,
+        AchievementGrantOutcome, AchievementGrantRequest, AchievementSourceEvent,
+        FencedGrantingCharacter, record_achievement_grant,
+    };
+
+    #[test]
+    fn account_achievement_api_is_linked() {
+        let _ = std::mem::size_of::<AccountAchievement>();
+        let _ = std::mem::size_of::<AchievementCatalogueLookup>();
+        let _ = std::mem::size_of::<AchievementGrantError>();
+        let _ = std::mem::size_of::<AchievementGrantOutcome>();
+        let _ = std::mem::size_of::<AchievementGrantRequest>();
+        let _ = std::mem::size_of::<AchievementSourceEvent>();
+        let _ = FencedGrantingCharacter::after_fence;
+        let _ = record_achievement_grant;
+        let _ = DurabilityRoot::commit_test_achievement_grants;
+    }
+}
+
+#[cfg(test)]
+mod bestiary_progress_linkage {
+    use super::DurabilityRoot;
+    use super::bestiary_progress::{
+        BestiaryKillOccurrence, BestiaryKillOutcome, BestiaryKillRequest, BestiaryProgressError,
+        BestiaryRaceProgress, CommittedBestiaryKill,
+    };
+
+    #[test]
+    fn bestiary_progress_api_is_linked() {
+        let _ = std::mem::size_of::<BestiaryKillOutcome>();
+        let _ = std::mem::size_of::<BestiaryKillRequest>();
+        let _ = std::mem::size_of::<BestiaryProgressError>();
+        let _ = std::mem::size_of::<BestiaryRaceProgress>();
+        let _ = std::mem::size_of::<CommittedBestiaryKill>();
+        let _ = BestiaryKillOccurrence::from_bytes;
+        let _ = BestiaryKillOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_bestiary_kill;
+        let _ = DurabilityRoot::reconcile_bestiary_kill;
+        let _ = DurabilityRoot::read_bestiary_progress;
+    }
+}
 
 #[cfg(test)]
 mod character_progression_linkage {
@@ -56,6 +106,89 @@ mod character_progression_linkage {
         let _ = std::mem::size_of::<ProgressionInitializationRequest<2>>();
         let _ = std::mem::size_of::<ProgressionInitializationOutcome>();
         let _ = DurabilityRoot::initialize_character_progression::<2>;
+    }
+
+    #[test]
+    fn character_death_api_is_linked() {
+        use super::character_death::{
+            CharacterDeathOutcome, CharacterDeathRequest, CommittedCharacterDeath, DeathCell,
+            PlayerDeathOccurrence,
+        };
+        let _ = std::mem::size_of::<CharacterDeathOutcome>();
+        let _ = std::mem::size_of::<CharacterDeathRequest<2>>();
+        let _ = std::mem::size_of::<CommittedCharacterDeath>();
+        let _ = std::mem::size_of::<DeathCell>();
+        let _ = PlayerDeathOccurrence::from_bytes;
+        let _ = PlayerDeathOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_character_death::<2>;
+        let _ = DurabilityRoot::reconcile_character_death;
+    }
+}
+
+#[cfg(test)]
+mod charm_state_linkage {
+    use super::DurabilityRoot;
+    use super::charm_state::{
+        BestiaryCharmEntry, BestiaryCharmFacts, CharacterCharmState, CharmCommand,
+        CharmCommandEffect, CharmCommandOccurrence, CharmCommandOutcome, CharmCommandRequest,
+        CharmFacts, CharmStateError, CommittedCharmCommand,
+    };
+
+    struct NoFacts;
+
+    impl CharmFacts for NoFacts {
+        async fn completed_stage(
+            &self,
+            _connection: &mut sqlx::postgres::PgConnection,
+            _character: crate::domain::CharacterId,
+            _race: &crate::domain::charm::BestiaryRaceKey,
+        ) -> Result<crate::domain::charm::BestiaryStage, super::DurabilityError> {
+            Ok(crate::domain::charm::BestiaryStage::NONE)
+        }
+
+        async fn completed_entry_charm_points(
+            &self,
+            _connection: &mut sqlx::postgres::PgConnection,
+            _character: crate::domain::CharacterId,
+        ) -> Result<Vec<u32>, super::DurabilityError> {
+            Ok(Vec::new())
+        }
+
+        async fn promoted(
+            &self,
+            _connection: &mut sqlx::postgres::PgConnection,
+            _character: crate::domain::CharacterId,
+        ) -> Result<bool, super::DurabilityError> {
+            Ok(false)
+        }
+
+        async fn slot_entitlement(
+            &self,
+            _connection: &mut sqlx::postgres::PgConnection,
+            _character: crate::domain::CharacterId,
+        ) -> Result<crate::domain::charm::CharmSlotEntitlement, super::DurabilityError> {
+            Ok(crate::domain::charm::CharmSlotEntitlement::Free)
+        }
+    }
+
+    #[test]
+    fn charm_state_api_is_linked() {
+        let _ = std::mem::size_of::<CharacterCharmState>();
+        let _ = std::mem::size_of::<BestiaryCharmEntry>();
+        let _ = BestiaryCharmFacts::new(Vec::<BestiaryCharmEntry>::new());
+        let _ = DurabilityRoot::commit_charm_command::<BestiaryCharmFacts>;
+        let _ = std::mem::size_of::<CharmCommand>();
+        let _ = std::mem::size_of::<CharmCommandEffect>();
+        let _ = std::mem::size_of::<CharmCommandOutcome>();
+        let _ = std::mem::size_of::<CharmCommandRequest>();
+        let _ = std::mem::size_of::<CharmStateError>();
+        let _ = std::mem::size_of::<CommittedCharmCommand>();
+        let _ = CharmCommandOccurrence::from_bytes;
+        let _ = CharmCommandOccurrence::as_bytes;
+        let _ = CharmCommand::charm;
+        let _ = DurabilityRoot::commit_charm_command::<NoFacts>;
+        let _ = DurabilityRoot::reconcile_charm_command;
+        let _ = DurabilityRoot::read_character_charm_state;
     }
 }
 

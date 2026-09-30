@@ -283,6 +283,8 @@ FLAG_REPEATED_SUBMESSAGE = {
         },
     )
 }
+# CipSoft `market.category` values. 26 is soul cores: all 835 objects carrying it in client
+# 15.30 `2dfa943b` are soul cores (ITEM-ID-1b); 28-30 occur in no admitted file.
 ITEM_CATEGORY_NAMES = {
     1: "armors",
     2: "amulets",
@@ -309,12 +311,11 @@ ITEM_CATEGORY_NAMES = {
     23: "tibia_coins",
     24: "creature_products",
     25: "quiver",
-    26: "twohandweapon",
+    26: "soul_cores",
     27: "fist_weapons",
     28: "backpack",
     29: "onehandweapon",
     30: "arrow",
-    31: "soulcores",
 }
 PLAYER_PROFESSION_NAMES = {
     -1: "any",
@@ -1470,8 +1471,15 @@ WORLD_OBJECT_PRIMARYTYPES = {
 PLACEHOLDER_APPEARANCE_NAMES = {"reserved sprite", "deprecated item", "empty sprite"}
 
 
-def non_item_route(xml_record, attrs, flags):
+# Owner decision D165 27a (2026-09-30): the frost cannon (Shadows of Yalahar quest
+# mechanism) is a blocking world prop, never a carried Item.
+NON_PICKUPABLE_BLOCKING_PROP_IDS = frozenset({9132})
+
+
+def non_item_route(xml_record, attrs, flags, item_id=None):
     """Return (owner, reason) when this id names a non-Item owner; else None."""
+    if item_id in NON_PICKUPABLE_BLOCKING_PROP_IDS:
+        return "WorldObject", "non_pickupable_blocking_prop"
     if any(flags.get(flag) for flag in CORPSE_FLAGS):
         return "WorldObject", "corpse"
     name = (xml_record.get("name") if xml_record else None) or ""
@@ -2436,7 +2444,7 @@ def convert_item(sources, item_id):
     note("appearance.description", bool(appearance and appearance.get("description")))
     note("appearance.frame_group", bool(appearance and appearance.get("frame_groups")))
 
-    non_item = non_item_route(xml_record, attrs, flags)
+    non_item = non_item_route(xml_record, attrs, flags, item_id)
     if non_item is not None:
         owner, reason = non_item
         return (

@@ -225,9 +225,13 @@ pub enum ProjectV2EncounterTrigger {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         base_vocation: Option<ProjectV2BaseVocation>,
     },
+    /// Exactly one of an item and `corpse_of`, the role whose corpse the creature steps on.
     SteppedOn {
         role: String,
-        item: ProjectV2DefinitionRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        item: Option<ProjectV2DefinitionRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        corpse_of: Option<String>,
     },
     EncounterStarted,
     EncounterReset,
@@ -340,7 +344,7 @@ pub enum ProjectV2EncounterCondition {
         value: ProjectV2StateValue,
     },
     InAnchor {
-        subject: ProjectV2EncounterSubject,
+        subject: ProjectV2InAnchorSubject,
         anchor: String,
     },
     KillerIsPlayer,
@@ -379,6 +383,16 @@ pub enum ProjectV2EncounterSubject {
     Spawned,
 }
 
+/// The `in_anchor` subject: a shared subject, or the creature that fired the rule.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ProjectV2InAnchorSubject {
+    Role { role: String },
+    Killer,
+    Spawned,
+    Triggering,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ProjectV2EncounterPosition {
@@ -390,6 +404,9 @@ pub enum ProjectV2EncounterPosition {
     },
     RandomIn {
         anchor: String,
+        /// Draw only among tiles a creature can be placed on now.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        free: bool,
     },
     RolePosition {
         role: String,
@@ -510,8 +527,14 @@ pub enum ProjectV2ModifierUntil {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ProjectV2TeleportWho {
-    Role { role: String },
-    PlayersIn { anchor: String },
+    Role {
+        role: String,
+    },
+    PlayersIn {
+        anchor: String,
+    },
+    /// The creature that fired the rule.
+    Triggering,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -659,10 +682,14 @@ pub enum ProjectV2EncounterAction {
         who: ProjectV2TeleportWho,
         to: String,
     },
-    /// Exactly one of an anchor and the death position.
+    /// Exactly one of an anchor and the death position, or `triggering` alone: a remove of the
+    /// item that fired a `stepped_on` rule.
     MapItem {
         operation: ProjectV2MapItemOperation,
-        item: ProjectV2DefinitionRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        item: Option<ProjectV2DefinitionRef>,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        triggering: bool,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         into: Option<ProjectV2DefinitionRef>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1186,9 +1213,9 @@ pub(super) fn validate_encounter_details(
             limits.max_reference_records,
         )?;
         for value in &rule.conditions {
-            condition(value, &names, require_ref, limits)?;
+            condition(value, &rule.trigger, &names, require_ref, limits)?;
         }
-        actions(&rule.actions, &names, require_ref, limits)?;
+        actions(&rule.actions, &rule.trigger, &names, require_ref, limits)?;
     }
     Ok(())
 }
@@ -1233,9 +1260,21 @@ fn trigger(
             names.role(role)?;
             reference(ability, ProjectV2Family::Ability, require_ref)
         }
-        T::ItemUsed { role, item, .. } | T::SteppedOn { role, item } => {
+        T::ItemUsed { role, item, .. } => {
             names.role(role)?;
             reference(item, ProjectV2Family::Item, require_ref)
+        }
+        T::SteppedOn {
+            role,
+            item,
+            corpse_of,
+        } => {
+            names.role(role)?;
+            match (item, corpse_of) {
+                (Some(item), None) => reference(item, ProjectV2Family::Item, require_ref),
+                (None, Some(corpse)) => names.role(corpse),
+                _ => invalid("v2 stepped_on takes exactly one of item and corpse_of"),
+            }
         }
         T::TimerElapsed { timer } => names.timer(timer),
         T::CounterReached { counter, .. } => names.counter(counter),
@@ -1261,8 +1300,37 @@ fn subject(value: &ProjectV2EncounterSubject, names: &Names<'_>) -> Result<(), P
     }
 }
 
+/// Triggers fired by one creature.
+fn one_creature(value: &ProjectV2EncounterTrigger) -> bool {
+    use ProjectV2EncounterTrigger as T;
+    matches!(
+        value,
+        T::CreatureDied { .. }
+            | T::LethalDamage { .. }
+            | T::HealthCrossed { .. }
+            | T::CreatureSpawned { .. }
+            | T::AbilityCast { .. }
+            | T::DamageTaken { .. }
+            | T::HealReceived { .. }
+            | T::DamageAccumulated { .. }
+            | T::ItemUsed { .. }
+            | T::SteppedOn { .. }
+    )
+}
+
+/// Triggers that name a triggering creature: one creature, or an area entered or left.
+fn triggering_creature(value: &ProjectV2EncounterTrigger) -> bool {
+    one_creature(value)
+        || matches!(
+            value,
+            ProjectV2EncounterTrigger::AreaEntered { .. }
+                | ProjectV2EncounterTrigger::AreaLeft { .. }
+        )
+}
+
 fn condition(
     value: &ProjectV2EncounterCondition,
+    fired: &ProjectV2EncounterTrigger,
     names: &Names<'_>,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
     limits: ProjectEvidenceLimits,
@@ -1313,7 +1381,14 @@ fn condition(
             subject: who,
             anchor,
         } => {
-            subject(who, names)?;
+            match who {
+                ProjectV2InAnchorSubject::Role { role } => names.role(role)?,
+                ProjectV2InAnchorSubject::Killer | ProjectV2InAnchorSubject::Spawned => {}
+                ProjectV2InAnchorSubject::Triggering if triggering_creature(fired) => {}
+                ProjectV2InAnchorSubject::Triggering => {
+                    return invalid("v2 in_anchor of triggering needs a creature or area trigger");
+                }
+            }
             names.area(anchor)
         }
         C::KillerIsPlayer => Ok(()),
@@ -1335,7 +1410,7 @@ fn position(value: &ProjectV2EncounterPosition, names: &Names<'_>) -> Result<(),
     use ProjectV2EncounterPosition as P;
     match value {
         P::Anchor { anchor } => names.anchor(anchor),
-        P::RandomIn { anchor } => names.area(anchor),
+        P::RandomIn { anchor, .. } => names.area(anchor),
         P::RolePosition { role, .. } => names.role(role),
         P::DeathPosition
         | P::SubjectPosition
@@ -1360,6 +1435,7 @@ fn text(value: &str, limits: ProjectEvidenceLimits) -> Result<(), ProjectError> 
 
 fn actions(
     values: &[ProjectV2EncounterAction],
+    fired: &ProjectV2EncounterTrigger,
     names: &Names<'_>,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
     limits: ProjectEvidenceLimits,
@@ -1427,7 +1503,21 @@ fn actions(
                 match (role, all_in, triggering) {
                     (Some(role), None, false) => names.role(role)?,
                     (None, Some(area), false) => names.area(area)?,
-                    (None, None, true) => {}
+                    (None, None, true) => {
+                        if !one_creature(fired)
+                            || matches!(
+                                fired,
+                                ProjectV2EncounterTrigger::AreaEntered {
+                                    who: ProjectV2AreaWho::Player,
+                                    ..
+                                }
+                            )
+                        {
+                            return invalid(
+                                "v2 remove triggering needs a trigger fired by a creature",
+                            );
+                        }
+                    }
                     _ => {
                         return invalid(
                             "v2 remove takes exactly one of role, all_in and triggering",
@@ -1535,12 +1625,19 @@ fn actions(
                 match who {
                     ProjectV2TeleportWho::Role { role } => names.role(role)?,
                     ProjectV2TeleportWho::PlayersIn { anchor } => names.area(anchor)?,
+                    ProjectV2TeleportWho::Triggering if triggering_creature(fired) => {}
+                    ProjectV2TeleportWho::Triggering => {
+                        return invalid(
+                            "v2 teleport of triggering needs a creature or area trigger",
+                        );
+                    }
                 }
                 names.anchor(to)?;
             }
             A::MapItem {
                 operation,
                 item,
+                triggering,
                 into,
                 anchor,
                 at_death_position,
@@ -1550,6 +1647,29 @@ fn actions(
                 effect,
                 interaction,
             } => {
+                if *triggering {
+                    if *operation != ProjectV2MapItemOperation::Remove
+                        || !matches!(fired, ProjectV2EncounterTrigger::SteppedOn { .. })
+                    {
+                        return invalid("v2 map_item triggering is a remove in a stepped_on rule");
+                    }
+                    if item.is_some()
+                        || into.is_some()
+                        || anchor.is_some()
+                        || *at_death_position
+                        || destination.is_some()
+                        || revert_after_ms.is_some()
+                        || revert_destination.is_some()
+                        || effect.is_some()
+                        || interaction.is_some()
+                    {
+                        return invalid("v2 map_item triggering takes no other field");
+                    }
+                    continue;
+                }
+                let Some(item) = item else {
+                    return invalid("v2 map_item needs an item");
+                };
                 reference(item, ProjectV2Family::Item, require_ref)?;
                 match (operation, into) {
                     (ProjectV2MapItemOperation::Transform, Some(into)) => {
@@ -1684,7 +1804,7 @@ fn actions(
                     if branch.weight == 0 {
                         return invalid("v2 one_of weight must be positive");
                     }
-                    actions(&branch.actions, names, require_ref, limits)?;
+                    actions(&branch.actions, fired, names, require_ref, limits)?;
                 }
             }
             A::EmitOutcome {

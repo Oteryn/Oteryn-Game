@@ -73,7 +73,7 @@
           "item_refs": [
             {
               "family": "Item",
-              "key": "oteryn:item.registry.i00000239",
+              "key": "oteryn:item.tibia.i239",
               "revision": "definition-r1"
             }
           ],

@@ -15,11 +15,11 @@ assert manifest["compatibility"] == {
     "runtime_switch_authorized": False,
 }
 assert lock["family_counts"] == {
-    "Item": 38157, "Mount": 252,
-    "Creature": 1463, "Presentation": 2557, "Behavior": 2557, "Loot": 1026, "Ability": 5841, "Effect": 4447, "Formula": 4761,
-    "NPC": 1094, "Dialogue": 707, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 58,
+    "Item": 33567, "Mount": 252,
+    "Creature": 1476, "Presentation": 2570, "Behavior": 2570, "Loot": 1029, "Ability": 5886, "Effect": 4489, "Formula": 4806,
+    "NPC": 1094, "Dialogue": 707, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 61,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1463, "Encounter": 58, "NPC": 2344}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1476, "Encounter": 61, "NPC": 2344}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -29,7 +29,7 @@ for directory in {(ROOT / path).parent for path in paths if shard_name.search(pa
     stale = sorted(file.relative_to(ROOT).as_posix() for file in directory.glob("*.json")
                    if shard_name.search(file.name) and file.relative_to(ROOT).as_posix() not in paths)
     assert not stale, stale
-assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 77
+assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 68
 assert any(path.startswith("content/cosmetics/mounts/mounts-") for path in paths)
 assert any(path.startswith("content/creatures/definitions/creatures-") for path in paths)
 assert any(path.startswith("content/npcs/definitions/npcs-") for path in paths)
@@ -48,4 +48,4 @@ assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "conte
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 
-print(f"PASS managed_files={len(paths)} item_shards=77")
+print(f"PASS managed_files={len(paths)} item_shards=68")

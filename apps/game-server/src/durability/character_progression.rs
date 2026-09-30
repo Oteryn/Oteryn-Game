@@ -128,6 +128,11 @@ pub enum CharacterProgressionError {
     CharacterRevisionMismatch,
     ProgressionContextMismatch,
     ConflictingOccurrence,
+    /// A committed death's respawn is still pending (the character is not
+    /// playable), so no second death can commit.
+    RespawnPending,
+    /// The death intent's held blessings are not the durable held set.
+    HeldBlessingsMismatch,
     Calculation(ProgressionCalculationError),
     Unavailable(DurabilityError),
 }
@@ -155,7 +160,11 @@ impl std::fmt::Display for CharacterProgressionError {
                 formatter.write_str("Character progression context does not match")
             }
             Self::ConflictingOccurrence => {
-                formatter.write_str("reward occurrence was reused with different semantics")
+                formatter.write_str("occurrence was reused with different semantics")
+            }
+            Self::RespawnPending => formatter.write_str("a Character respawn is still pending"),
+            Self::HeldBlessingsMismatch => {
+                formatter.write_str("death intent blessings are not the held blessings")
             }
             Self::Calculation(error) => {
                 write!(formatter, "progression calculation rejected: {error:?}")
@@ -547,8 +556,8 @@ impl DurabilityRoot {
 }
 
 /// Current Character root facts proven under the gameplay fence.
-struct FencedCharacterRoot {
-    revision: u64,
+pub(super) struct FencedCharacterRoot {
+    pub(super) revision: u64,
     profile_revision: String,
     ruleset_revision: String,
     content_revision: String,
@@ -560,7 +569,7 @@ struct FencedCharacterRoot {
 /// session/lease/scope, the scope assignment held by the current node
 /// incarnation, the admission guards, the live root (row-locked) at the
 /// expected CharacterRevision and the current Game-owned interpretation.
-async fn assert_gameplay_fence(
+pub(super) async fn assert_gameplay_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CurrentCharacterGameplayFence,
     node: &NodeIncarnationProof,
@@ -681,11 +690,14 @@ async fn assert_gameplay_fence(
         return Ok(Err(CharacterProgressionError::CharacterRevisionMismatch));
     }
 
+    // Interpretation rows are immutable (0005 trigger) and a new one is only
+    // ever inserted, so a row lock here would serialize nothing; it would
+    // also need UPDATE, which the runtime role does not hold (0006).
     let current = sqlx::query(
         "SELECT profile_revision, ruleset_revision, content_revision, \
                 starter_template_revision \
            FROM game_character_interpretations \
-          ORDER BY interpretation_revision DESC LIMIT 1 FOR SHARE",
+          ORDER BY interpretation_revision DESC LIMIT 1",
     )
     .fetch_optional(&mut **tx)
     .await?;
@@ -785,7 +797,7 @@ fn all_revisions<const N: usize>(
     .into_iter()
 }
 
-fn valid_revision(value: &str) -> bool {
+pub(super) fn valid_revision(value: &str) -> bool {
     let mut bytes = value.bytes();
     value.len() <= MAX_REVISION_BYTES
         && bytes
@@ -818,7 +830,9 @@ fn command_binding<const N: usize>(
     Ok(binding)
 }
 
-fn policy_digest<const N: usize>(policy: &FiniteProgressionPolicy<String, N>) -> Result<[u8; 32]> {
+pub(super) fn policy_digest<const N: usize>(
+    policy: &FiniteProgressionPolicy<String, N>,
+) -> Result<[u8; 32]> {
     let mut encoded = Vec::new();
     encoded.push(POLICY_BINDING_VERSION);
     for revision in [
@@ -928,7 +942,7 @@ fn decode_state(
     })
 }
 
-fn stored_context_matches(
+pub(super) fn stored_context_matches(
     row: &sqlx::postgres::PgRow,
     context: &ProgressionRevisionContext<String>,
     policy_revision: &str,
@@ -948,7 +962,7 @@ fn stored_context_matches(
     .all(|(column, expected)| row.try_get::<String, _>(column).ok().as_deref() == Some(expected))
 }
 
-fn state_matches_root(row: &sqlx::postgres::PgRow, root: &FencedCharacterRoot) -> bool {
+pub(super) fn state_matches_root(row: &sqlx::postgres::PgRow, root: &FencedCharacterRoot) -> bool {
     row.try_get::<String, _>("profile_revision").ok().as_deref()
         == Some(root.profile_revision.as_str())
         && row.try_get::<String, _>("ruleset_revision").ok().as_deref()
@@ -957,7 +971,7 @@ fn state_matches_root(row: &sqlx::postgres::PgRow, root: &FencedCharacterRoot) -
             == Some(root.content_revision.as_str())
 }
 
-fn numeric_u64(
+pub(super) fn numeric_u64(
     row: &sqlx::postgres::PgRow,
     column: &str,
 ) -> std::result::Result<u64, DurabilityError> {
@@ -966,7 +980,7 @@ fn numeric_u64(
         .map_err(|_| DurabilityError::InvalidStoredState)
 }
 
-fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
+pub(super) fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
     let hex: String = value
         .chars()
         .filter(|character| *character != '-')
@@ -1032,7 +1046,7 @@ mod tests {
                 ],
                 terminal_exclusive_experience: ExactI64::new(1200),
                 death_loss_numerator: 1,
-                death_loss_denominator: 10,
+                death_loss_denominator: 1,
                 death_loss_rounding: RoundingMode::Floor,
             },
         }

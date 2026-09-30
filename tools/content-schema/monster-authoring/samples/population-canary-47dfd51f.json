@@ -42,13 +42,13 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 93,
+    "blocked": 90,
     "crystal_blocked": 1,
     "crystal_fully_resolved": 48,
     "crystal_wiki_adopted_monsters": 25,
-    "fully_resolved": 1557,
+    "fully_resolved": 1560,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1188,
+    "wiki_adopted_monsters": 1191,
     "wiki_authored": 1
   },
   "wiki_adopted_rows": {
@@ -83,7 +83,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 39,
+      "monsters": 36,
       "examples": [
         "energized_raging_mage",
         "izcandar_champion_of_summer",
@@ -1185,6 +1185,7 @@
     "medusa",
     "mega_dragon",
     "megasylvan_yselda",
+    "melting_frozen_horror",
     "memory_of_a_banshee",
     "memory_of_a_book",
     "memory_of_a_carnisylvan",
@@ -1643,6 +1644,7 @@
     "stolen_knowledge_of_spells",
     "stolen_knowledge_of_summoning",
     "stolen_soul",
+    "stolen_tome_of_portals",
     "stone_devourer",
     "stone_golem",
     "stone_rhino",
@@ -1749,6 +1751,7 @@
     "the_red_knight",
     "the_remorseless_corruptor",
     "the_rootkraken",
+    "the_sandking",
     "the_sandking_fake",
     "the_scion_of_havoc",
     "the_scourge_of_oblivion",

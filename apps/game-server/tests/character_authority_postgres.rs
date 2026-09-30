@@ -1870,13 +1870,37 @@ mod corpse_decay_postgres_cases;
 #[path = "support/character_death_receipts_postgres_cases.rs"]
 mod character_death_receipts_postgres_cases;
 
+// PRIV-GUARD-1 (the runtime role executes every function a CHECK calls) shares
+// its cases with the focused standalone target through the same protected lane.
+#[path = "support/check_function_privileges_postgres_cases.rs"]
+mod check_function_privileges_postgres_cases;
+
 // STANCE-0 stance slot and stance receipts (migration 0017) share their cases
 // with the focused standalone target through the same protected lane.
 #[path = "support/character_stance_postgres_cases.rs"]
 mod character_stance_postgres_cases;
+
+// CHARM-3 charm unlocks, assignments and receipts (migration 0020) share their
+// cases with the focused standalone target through the same protected lane.
+#[path = "support/charm_state_postgres_cases.rs"]
+mod charm_state_postgres_cases;
 
 // CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
 // entry) shares its cases with the focused standalone target through the same
 // protected lane.
 #[path = "support/reward_claim_mint_postgres_cases.rs"]
 mod reward_claim_mint_postgres_cases;
+
+// CHARM-2 Bestiary kill progress (migration 0019) shares its cases and their
+// harness with the focused standalone target through the same protected lane.
+#[allow(dead_code)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+#[path = "support/bestiary_progress_postgres_cases.rs"]
+mod bestiary_progress_postgres_cases;
+
+// ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
+// focused standalone target through the same protected lane, on the CHARM-2
+// harness included above.
+#[path = "support/account_achievement_postgres_cases.rs"]
+mod account_achievement_postgres_cases;
