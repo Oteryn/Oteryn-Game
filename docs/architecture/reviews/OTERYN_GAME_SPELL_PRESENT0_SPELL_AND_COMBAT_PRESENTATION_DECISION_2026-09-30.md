@@ -234,8 +234,12 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
   `SPELLPRES0-RL-03` (131,136 bytes with a 64-byte header), under FND-02's 256 KiB and 4,096
   entries.
 - **Overflow.** Beyond it, the server keeps the observer's own events (its casts, its received
-  damage and heals) first, then the nearest by the D87 order, and drops the rest. No marker: the
-  events are presentation (§4).
+  damage and heals) first, then the nearest by the D87 order, and drops the rest. Ties, including
+  events with no entity identity (`magic_effect`, `sound`), break by the authoritative order of
+  the committed outcome in the sync unit, then by the event's emission ordinal within that
+  outcome; this total order never depends on insertion or container iteration order, so the same
+  outcomes keep the same events on every server and every run. No marker: the events are
+  presentation (§4).
 - **Slow clients.** When a session's egress already holds `SPELLPRES0-RL-07` (2) undelivered
   presentation batches, the next batch is dropped whole. Presentation never fills the egress
   queue and never trips slow-client handling (FND-02 §16).
@@ -247,15 +251,24 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
 ## 10. Cooldowns (PRESENT-WIRE-1, SPELL-PRESENT-1, PRESENT-CLIENT-1)
 
 - **Domain `ACTOR_COOLDOWNS`**, own actor only, owned by the channel runtime. It is state: an
-  entry is `{kind: SPELL or GROUP, id, remaining_ms}`, where `id` is the SPELL-D1 index or the
-  group's ordinal in the S9 catalogue.
+  entry is `{kind: SPELL or GROUP, id, expires_at_ms}`, where `id` is the SPELL-D1 index or the
+  group's ordinal in the S9 catalogue and `expires_at_ms` is the absolute expiry on the channel
+  runtime's monotonic millisecond clock. Each snapshot and delta also carries `server_now_ms`, that
+  clock's value when the server encoded it. No duration travels on the wire, so time spent in the
+  egress queue, on the network or in a chunked snapshot never extends a cooldown on the client.
 - **Snapshot** at admission, reconnect and channel transfer: every running cooldown with its
-  remaining time. SPELL-D2 keeps cooldowns across a reconnect, so the bar survives it.
+  expiry. SPELL-D2 keeps cooldowns across a reconnect, so the bar survives it. The clock belongs
+  to the channel runtime, so a snapshot re-expresses every expiry on the new runtime's clock.
 - **Delta** at each PRIMARY COMMIT that starts or changes a cooldown (a cast, a later reduction):
-  the changed entries. Expiry sends nothing; the client counts down from `remaining_ms` and drops
-  an entry at 0.
+  the changed entries. Expiry sends nothing.
+- **Client countdown.** On each snapshot or delta the client records `offset = server_now_ms -
+  local_receipt_ms` from its own monotonic clock; a snapshot resets the estimate and a delta keeps
+  the larger offset, the one with the least delivery delay. It shows `remaining = max(0,
+  expires_at_ms - (local_now_ms + offset))` and drops an entry at 0. The residual error is at
+  most the least observed one-way delay, and the bar still never decides legality.
 - Bounds: at most `SPELLPRES0-RL-04` entries (`SPELL-RL-04` plus 16 group slots) of at most
-  `SPELLPRES0-RL-05` (16 bytes) each.
+  `SPELLPRES0-RL-05` (16 bytes) each; `expires_at_ms` stays within 6 varint bytes (2^42 ms) and
+  `server_now_ms` is per message, outside the entry bound.
 - The client draws the bar of `interface.md` §3.8 and never decides legality: `COOLING_DOWN`
   still comes from the server.
 

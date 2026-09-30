@@ -81,6 +81,9 @@ determinism review.
 - `python3 tools/agents/validate_governance.py`: PASS on the final authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the final authoring tree.
 - `git diff --check`: clean.
+- Codex round-1 repair (#1406): §9 overflow gains a total tie-break order (outcome commit order,
+  then emission ordinal); §10 cooldowns carry an absolute `expires_at_ms` with `server_now_ms`
+  and a defined client countdown clamped at 0.
 
 ## Closeout
 
