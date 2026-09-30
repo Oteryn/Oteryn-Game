@@ -6,7 +6,7 @@
       "slug": "magic-sword",
       "item": {
         "identity": {
-          "key": "oteryn:item.registry.i00003167",
+          "key": "oteryn:item.tibia.i3288",
           "revision": "real-source-example-r1"
         },
         "display_name": "Magic Sword",
@@ -280,7 +280,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.registry.i00003167",
+        "item_key": "oteryn:item.tibia.i3288",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "3288",
@@ -912,7 +912,7 @@
       "slug": "demon-armor",
       "item": {
         "identity": {
-          "key": "oteryn:item.registry.i00003256",
+          "key": "oteryn:item.tibia.i3388",
           "revision": "real-source-example-r1"
         },
         "display_name": "Demon Armor",
@@ -1000,7 +1000,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.registry.i00003256",
+        "item_key": "oteryn:item.tibia.i3388",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "3388",
@@ -1431,7 +1431,7 @@
       "slug": "backpack",
       "item": {
         "identity": {
-          "key": "oteryn:item.registry.i00002752",
+          "key": "oteryn:item.tibia.i2854",
           "revision": "real-source-example-r1"
         },
         "display_name": "Backpack",
@@ -1513,7 +1513,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.registry.i00002752",
+        "item_key": "oteryn:item.tibia.i2854",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "2854",
@@ -1899,7 +1899,7 @@
       "slug": "red-apple",
       "item": {
         "identity": {
-          "key": "oteryn:item.registry.i00003447",
+          "key": "oteryn:item.tibia.i3585",
           "revision": "real-source-example-r1"
         },
         "display_name": "Red Apple",
@@ -1989,7 +1989,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.registry.i00003447",
+        "item_key": "oteryn:item.tibia.i3585",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "3585",
@@ -2378,7 +2378,7 @@
       "slug": "sudden-death-rune",
       "item": {
         "identity": {
-          "key": "oteryn:item.consumable.sudden_death_rune",
+          "key": "oteryn:item.tibia.i3155",
           "revision": "real-source-example-r1"
         },
         "display_name": "Sudden Death Rune",
@@ -2462,7 +2462,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.consumable.sudden_death_rune",
+        "item_key": "oteryn:item.tibia.i3155",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "3155",
@@ -2891,7 +2891,7 @@
       "slug": "vial",
       "item": {
         "identity": {
-          "key": "oteryn:item.registry.i00002771",
+          "key": "oteryn:item.tibia.i2874",
           "revision": "real-source-example-r1"
         },
         "display_name": "Vial",
@@ -2979,7 +2979,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.registry.i00002771",
+        "item_key": "oteryn:item.tibia.i2874",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "2874",

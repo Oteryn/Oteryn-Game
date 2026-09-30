@@ -409,6 +409,7 @@ table above). The DEATH owner must accept it; it does not block this contract.
 - Durable persistence of vitals and cooldowns. (Monk Harmony and the remaining forced-Serene time are durable under SPELL-D8, §8.2.)
 - The monk virtue slot (Part C `stance`) and party membership (party service).
 - Mana and health regeneration (conditions S8).
-- Magic-level training.
+- Magic-level training. (Decided by A13, owner decision D151:
+  `reviews/OTERYN_GAME_A13_CHARACTER_BUILD_STATE_DECISION_2026-09-29.md`.)
 - PvP rules.
 - Any spell value as an Oteryn product value.
