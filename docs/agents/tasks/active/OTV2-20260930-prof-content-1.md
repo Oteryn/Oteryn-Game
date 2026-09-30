@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/prof-content-1-proficiency-definitions
 issue: 162
 pr: 1328
-base_sha: null   # stacked on #1327 (claude/inspiring-lamport-nc623x) until it merges
+base_sha: 1852a69   # #1327 and #1328 merged; 1b-1d stacked
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -44,7 +44,7 @@ jira: null   # sync pending (coordinator batch)
 
 ## Outcome (target)
 
-- **1a (this branch):** `content/proficiencies/` holds the 443 definitions from the #1327 candidate
+- **1a (#1328, merged as `1852a69`):** `content/proficiencies/` holds the 443 definitions from the #1327 candidate
   (index + 3 shards). Keys `oteryn:proficiency.tibia.p<id>` are minted here. `Proficiency` is registered
   in project, manifest and lock, and `world_project_v2_to_tree.py` knows it, so its output stays
   byte-identical. No runtime loading.
