@@ -662,6 +662,19 @@ Owning combat/loot/content architecture also declares whether visible runtime lo
 
 No surface becomes accepted merely because DUR-03 supplies transaction/custody primitives.
 
+**Market amendment (pending on acceptance of MARKET-0, #162 5912405163;
+`reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md`).** When MARKET-0 is accepted,
+the market row is filled by two §5.2 custody families, `MarketOfferEscrow {offer_id, ordinal}`
+(World-scoped, owned by the Market) and `CharacterInbox {character_id, ordinal}` (Character + World),
+and by a buy offer's `escrow_gold` as §18 non-item value in custody. Its shapes (place, accept,
+cancel, expire, match, Inbox out) move whole items as `TRANSFER` lines with at most one §12 split
+(`SPLIT_MERGE_QUANTITY`, a §11.3 planned output identity), gold as `TRANSFER` value lines, and the
+placing fee as one `BURN` value line under the Market variant of `FeeBurnCause`. That fee source is
+admitted in §39.3 and the gold fee decision §4.4 only with its own owner decision (D178). For those
+shapes only, it supersedes the §39.1 exclusions of non-item accounts, multiple touched items and
+burn combined with other lines, and the §39.1 and §39.3 source and destination limits, within the
+MARKET-0 §9 rows (100 touched items, 3 value lines). Every other obligation is unchanged.
+
 ## 39. Mandatory durable evidence boundary
 
 ADR-0006 requires durable audit for security-relevant durable item/currency mutation. DUR-03 therefore requires ANL-compatible durable transaction evidence sufficient to reconcile every effect whose owning value/security policy declares mandatory audit.
