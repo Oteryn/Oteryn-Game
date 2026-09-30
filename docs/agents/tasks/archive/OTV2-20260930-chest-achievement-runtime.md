@@ -32,6 +32,7 @@ owned_paths:
   - tools/content-schema/achievement-authoring/test_validate_achievements.py
   - tools/content-schema/achievement-authoring/README.md
   - docs/agents/tasks/archive/OTV2-20260930-chest-achievement-runtime.md
+  - .github/workflows/achievement-authoring-schema.yml   # path filter only; owner authorized 2026-09-30 (answer 3a)
 public_contracts: []
 depends_on:
   - "docs/architecture/OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1.md §2, §2.2, §3, §5 step 4"
@@ -112,3 +113,8 @@ achievement in play).
 - Review: independent exact-head review routed by the lead on the frozen head. The worker
   triggered no owner-funded review.
 - Merge commit/result: squash merge of the PR (resolve with `git log --grep`).
+
+## Owner answers
+
+- 2026-09-30, answer 3a: the Achievement Authoring Schema workflow also triggers on a hand edit of
+  `tools/content-schema/quest-authoring/samples/chests/claims.json` (one path-filter line).
