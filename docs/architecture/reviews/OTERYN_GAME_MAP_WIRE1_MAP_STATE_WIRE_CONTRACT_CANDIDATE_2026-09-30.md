@@ -71,15 +71,16 @@ overlay hides or moves, and the items players leave on the ground?
   - count or subtype, only where the appearance needs it (stackables, fluids);
   - its stack position (§5);
   - a per-session `map_item_handle` (§6), only for items the client can act on (usable, movable,
-    containers, doors, or with a domain-2 state); `placement_key` itself never leaves the server.
+    containers, doors, or with a domain-2 state). The handle is the wire placement identity; the
+    server maps it to the `placement_key`, which is never encoded on the wire (checklist item 1).
 
   Nothing else leaves the server: action, unique, door and depot ids, reward bindings, teleport
   destinations, text and descriptions (sent only by Look), house membership, protection-zone and
   no-logout flags, `build_class`.
 - Only a `production` bundle is ever described; draft areas cannot reach a client.
-- `placement_key` stays server-side; MAP-BUNDLE-1 still proves it is not derivable from legacy
-  action or unique ids, because domain 2 keys on it.
-- **Owned house tiles** (HOUSE-CUSTODY-0 §13.5 gives their view to this contract): their base
+- `placement_key` is not encoded on the wire; the handle stands for it. MAP-BUNDLE-1 still proves
+  it is not derivable from legacy action or unique ids, because domain 2 keys on it.
+- **Owned house tiles** (HOUSE-CUSTODY-0 §7 item 5 gives their view to this contract): their base
   entries are described by `MAP_TILES` like any tile, with the house interior runtime as the source
   of what is hidden; `HouseInterior` items are durable custody and travel as domain 1 entities,
   exactly like Ground items (§4). HOUSE-RUNTIME-0 supplies the runtime, not a new wire.
@@ -123,7 +124,14 @@ overlay hides or moves, and the items players leave on the ground?
   channel. A handle binds both, so a restart (volatile overlay lost) or a transfer to another
   channel makes every old handle `STALE`; a counter that restarts never matches an old handle.
 - It is a new source variant of command 9 (ITEM-MOVE-WIRE-0 §4.1) and of USE-WIRE-V1's use target:
-  `map_item {handle}`, 9 bytes. Which moves it enables stays with ITEM-MOVE-WIRE-1 §9.
+  `map_item {handle}`, at most 11 bytes (a u64 varint of up to 10 bytes and its 1-byte tag). Which
+  moves it enables stays with ITEM-MOVE-WIRE-1 §9.
+- **Handle budget.** Map handles have their own per-session table, separate from
+  `ITEMV0-RL-03`: at most `MAPW1-RL-07` (80,640 = 8 floors × 1,008 tiles × 10 items), the handles of
+  the described area. Each snapshot replaces the whole table (older map handles answer `STALE`);
+  `AREA_ENTER` and `TILE_SET` add the handles of the tiles they describe and drop those of tiles
+  that left the area or changed, so the table never exceeds the area. Only actionable items get a
+  handle, so the typical table is far smaller; MAP-WIRE-2 measures it with the bytes (§8).
 - **Replay of a pickup.** No ItemInstanceId exists before the MINT. The command's replay binding is
   (CommandRef, `overlay_incarnation`, `placement_key`); the MINT plans the new item's identity in
   that transaction (DUR-03 §11.3, §39.1) and records it with the CommandRef, so a replay returns the
@@ -155,8 +163,9 @@ overlay hides or moves, and the items players leave on the ground?
 
 ## 8. Bounds (MAP-WIRE-2 registers and measures)
 
-Worst case per encoded item 22 bytes (type 4, count 4, stack position 3, handle 10 with its tag;
-positions are implicit in the per-floor lists) and per tile 10 items; the largest configurable area is 36 × 28 (MOVE-RL-11).
+Worst case per encoded item 22 bytes (type 4, count 4, stack position 3, handle 11 with its tag;
+positions are implicit in the per-floor lists); per tile at most 10 items, 10 × 22 = 220 bytes plus
+6 bytes of tile framing (226); the largest configurable area is 36 × 28 (MOVE-RL-11).
 
 | Row | Value |
 |---|---|
@@ -166,6 +175,7 @@ positions are implicit in the per-floor lists) and per tile 10 items; the larges
 | `MAPW1-RL-04` `AREA_ENTER` | a diagonal step at 36 × 28: 63 × 8 tiles × 226 bytes ≈ 114 KB, under 256 KiB |
 | `MAPW1-RL-05` snapshots per session | 4 per 10 s, one in flight, coalesced |
 | `MAPW1-RL-06` `TILE_SET` per sync unit | 1,024 |
+| `MAPW1-RL-07` live map handles per session | 80,640 (the described area), separate from `ITEMV0-RL-03` |
 
 - Before activation, MAP-WIRE-2 measures on B3 and records on #162: typical and p99 bytes of a
   login snapshot and of a cardinal and a diagonal step, and server time per description.
@@ -211,7 +221,12 @@ Option a is not taken.
 ## 13. Before-freeze checklist
 
 1. **Contract amendments:** MAP-WIRE-2 adds the `map_item {handle}` source to ITEM-MOVE-WIRE-0 §4.1 and
-   USE-WIRE-V1, and registers the domain, rows and capability; no FND-02 or FND-04 change.
+   USE-WIRE-V1, and registers the domain, rows and capability; no FND-02 or FND-04 change. Pending
+   on acceptance of MAP-WIRE-1, two texts read "`placement_key` as the wire placement identity":
+   ADR-0021 (the bundle's `placement_key`, lines 202-203) and ITEM-MOVE-WIRE-0 §4.1 (the
+   map-authored base items paragraph). Both are amended to: the wire placement identity is the
+   per-session `map_item_handle`, which the server maps to the `placement_key`; the key itself is
+   never encoded on the wire.
 2. **Serialization:** one domain revision per committed overlay change; a map-item pickup publishes
    with its domain 1 entity in one sync unit.
 3. **Restart:** descriptions rebuild from the bundle and the overlay, which ADR-0021 rebuilds.
