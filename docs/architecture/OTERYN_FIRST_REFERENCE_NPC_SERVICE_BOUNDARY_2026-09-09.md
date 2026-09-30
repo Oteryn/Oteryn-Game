@@ -8,7 +8,8 @@
 - Architecture coordination: #220
 - Reference target: `global-tibia-observable-2026-07-28-post-server-save`
 - Status: `ARCHITECTURE DECISION CANDIDATE`
-- DecisionStatus: `PROPOSED_FOR_PROTECTED_REVIEW`
+- DecisionStatus: `PROPOSED_FOR_PROTECTED_REVIEW`; accepted with NPC-0 on that PR's protected
+  integration (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §10)
 - Runtime implementation authority: `NONE`
 - Production authority: `NONE`
 - Merge authority: `REPOSITORY_CONTROL_PLANE_ONLY`
@@ -217,6 +218,11 @@ Actual BUY/SELL is a later composition with the accepted value owners:
 
 The smallest first trade fixture SHOULD use sufficient explicit physical-currency/value state so it does not need to exercise bank fallback unless that bank path is separately ready and target-evidenced.
 
+**Amendment (BANK-FEE-0, 2026-09-30), pending on acceptance of BANK-0 and BANK-FEE-0.** The bank
+owner is BANK-0, and the fallback rule is
+`reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`. The first trade fixture may
+still exclude it.
+
 ## 10. Interaction boundary
 
 GAME-INTERACTION remains a generic occurrence/proposal/reconciliation helper, not the NPC business owner.
@@ -312,6 +318,11 @@ For the first Newhaven trader:
 
 Canary/Crystal/other OTS data remains `OTS_HYPOTHESIS_ONLY` and may only suggest fields, edge cases and tests.
 
+**Amendment (NPC-0 §7).** For the playable slice, admitted content prices (two-of-three wiki
+consensus, or the Canary/Crystal price marked `PARITY_PENDING`) satisfy the price input of
+`NPC_SINGLE_TRADE_COMMIT_V1`. Exact target evidence stays a parity gate before a production
+release.
+
 ## 16. Resource dimensions before implementation
 
 No numeric hard maximum is selected by this decision.
@@ -367,6 +378,10 @@ This decision does not select:
 - any Oteryn Evolved behavior.
 
 ## 19. Coordinator handoff
+
+**Amendment (NPC-0 §10).** This decision is accepted with NPC-0 on that PR's protected
+integration. From then on the bar below no longer applies, and #162 allocates the NPC-0 children
+(`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md`).
 
 While this decision is unprotected:
 

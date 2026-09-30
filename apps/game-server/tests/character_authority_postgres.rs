@@ -2833,3 +2833,49 @@ mod monk_state_postgres_cases {
         Ok(())
     }
 }
+// Combat D2b creature death -> loot MINT + R7 P03 XP composition shares its
+// cases with the focused standalone target through the same protected lane.
+#[allow(dead_code, unused_imports)]
+#[path = "../src/combat.rs"]
+pub mod combat;
+#[path = "support/combat_death_reward_postgres_cases.rs"]
+mod combat_death_reward_postgres_cases;
+
+// CHARM-2 Bestiary descendant of a committed creature death shares its cases
+// with the focused standalone target, on the CHARM-2 harness included above.
+#[path = "support/combat_bestiary_postgres_cases.rs"]
+mod combat_bestiary_postgres_cases;
+
+// B3-2 Combat ground pickup (definition facts bound to the current Content
+// generation) shares its cases with the focused standalone target, on the B3-1
+// and D3-4 cases included above. `combat_pickup` is a top-level module and
+// `content` is the test shim for the same reasons as in that target.
+#[allow(dead_code, unused_imports)]
+#[path = "../src/combat/pickup.rs"]
+pub mod combat_pickup;
+#[path = "support/combat_pickup_postgres_cases.rs"]
+mod combat_pickup_postgres_cases;
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_shim.rs"]
+pub mod content;
+
+// D39 chest `USE` wiring to the CHEST-1 reward-claim MINT shares its cases with
+// the focused standalone target through the same protected lane.
+#[path = "support/chest_use_postgres_cases.rs"]
+mod chest_use_postgres_cases;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/interaction/mod.rs"]
+pub mod interaction;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/interaction/chest_use.rs"]
+pub mod interaction_chest_use;
+
+// GOLD-FEE-1a in-transaction gold fee BURN (migration 0023) shares its cases
+// with the focused standalone target through the same protected lane.
+#[path = "support/item_fee_burn_postgres_cases.rs"]
+mod item_fee_burn_postgres_cases;
+
+// PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
+// no CI-run PostgreSQL target includes. Runs without a database.
+#[path = "support/postgres_target_aggregation.rs"]
+mod postgres_target_aggregation;

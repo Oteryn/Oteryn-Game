@@ -32,6 +32,17 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
+## Basis
+
+- SPELL-D8 already has implemented parts on `main`: H-2 #1243 and H-3 #1254 (`docs/agents/DECISION_INDEX.md`
+  rows 87-88). The owner acceptance used for H-3 is #162 comment 5884682203; H-1 builds on the same SPELL-D8 text.
+- Owner decision Q1=b (the remaining forced Serene time is durable across logout, following Canary; the flag is
+  evaluated again at init): #162 comment 5893212269 (2026-09-29), recorded in the contract by #1205. D209 (the
+  Serene flag is not durable): #162 comment 5909477417.
+- The death reset (`character_death.rs`, contract §8.2 "the DEATH owner must accept it"): the control plane owns the
+  DEATH lane allocation and records that acceptance as part of this PR, conditional on the independent persistence
+  review confirming it (#1360 comment 5912905200, item 3).
+
 ## Outcome
 
 - **Migration 0026** (lease 0026; 0025 is HOUSE-CUSTODY-1's and is not created here). Two columns of the typed

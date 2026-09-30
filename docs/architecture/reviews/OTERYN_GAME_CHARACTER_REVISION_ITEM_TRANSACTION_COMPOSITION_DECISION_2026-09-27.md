@@ -166,6 +166,11 @@ Character root, progression or receipt row. Rules 2-6 (the complete fence, the c
 replay, the `character_root` row lock, atomicity in DUR-03) apply unchanged. Nested bags and other
 equipment slots are not covered until their own decisions.
 
+**Amendment (NPC-0, 2026-09-30).** Rule 1 also covers an NPC travel transaction's pending arrival
+row (`game_character_pending_arrivals`), an obligation outside the revision chain like DEATH-0's
+pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transactions under rules
+1-6 (`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6).
+
 ## 4. Rejected options
 
 - **Put every item transaction into the `CharacterRevision` chain** with a closed union of typed
@@ -201,6 +206,13 @@ equipment slots are not covered until their own decisions.
   - TRANSFER admission itself;
   - resource limits;
   - protocol, client and production.
+
+**Amendment (BANK-0, 2026-09-30), pending on acceptance of BANK-0.** Once BANK-0 is accepted,
+rule 1 also covers bank operations, ledger entries and coin
+lines (`OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md` §7.2): those of the acting character's (Account, World) and a transfer's counterpart
+entry on another Account. They are DUR-03 value records keyed by the bank operation, not Character
+receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: after
+`character_root`, the main backpack, its coin entries, then the balance rows in `account_id` order.
 
 ## 6. Handback
 

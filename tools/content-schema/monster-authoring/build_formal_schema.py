@@ -152,6 +152,10 @@ d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range
     'path_requirement':obj({'max_search_tiles':integer(1),'clear_sight':use('bool')},('max_search_tiles','clear_sight'),
         description='D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight '
             'when clear_sight); without one the cast fails and nothing happens.'),
+    'windup':obj({'delay_ms':integer(1),'caster_asset_binding':use('assetBinding')},('delay_ms','caster_asset_binding'),
+        description='SW-1: at the cast the caster binding shows on the caster tile; after delay_ms the effects run, if the caster '
+            'still exists, on its target at that moment (none: nothing happens). Only with needs_target and without area, '
+            'variants, chain and encounter.'),
     'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding'),
                  'target_filter':enum('players','ranged_monsters'),
                  'shape':{**enum('sequential','fork'),'description':'sequential (default): each jump starts at the last creature '
@@ -230,7 +234,8 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
             'creatures named like the caster; includes_caster: the caster is affected when it stands in the area.'),
     'removed_items':obj({'items':array(use('ItemRef'),1,True),'selection':enum('first_listed_per_tile','top_item_first_tile')},
         ('items','selection'),description='D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first '
-            'listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops.'),
+            'listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops. Tiles are '
+            'scanned column by column, west to east, each column north to south (Canary destroy_magic_walls.lua).'),
     'summon':obj({'creatures':array(use('CreatureRef'),1,True),'count_mode':enum('fill_to_limit','fixed'),'count':integer(1),
         'only_below_summons':integer(1),'owned':use('bool'),'max_offset_tiles':integer(0)},
         ('creatures','count_mode','count','only_below_summons','owned','max_offset_tiles'),

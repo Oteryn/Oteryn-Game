@@ -2397,3 +2397,179 @@ fn an_absent_achievement_fails_the_claim_closed_and_a_retired_one_grants_nothing
         harness.cleanup().await
     })
 }
+
+/// Re-review 5907886746 (LOW): a reservation whose GameSession has really ended (state 3)
+/// no longer blocks the claim for the Character's new session, and cannot itself commit.
+#[test]
+fn a_reservation_of_an_ended_session_does_not_block_the_new_session() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "endedsession").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        harness.equip_backpack(&authority, 1).await?;
+        let claim = "fixture:chest.ended-session";
+
+        let mut stranded = harness
+            .root
+            .freeze_reward_claim_mint(
+                &authority,
+                &harness.node,
+                fence()?,
+                coins(command(40)?, claim, 1),
+            )
+            .await
+            .map_err(debug)?;
+        refused(
+            harness
+                .claim(&authority, fence()?, coins(command(41)?, claim, 1))
+                .await,
+            RewardClaimRefusal::ClaimPending,
+        )?;
+
+        // The session ends for real (state 3) and the Character reconnects in a new
+        // GameSession with the same scope and generations.
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(SESSION).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions(\
+               game_session_id,account_id,character_id,world_id,runtime_scope_kind,\
+               runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,\
+               original_grace_deadline,predecessor_generation,character_lease_generation,\
+               scope_ownership_generation,current_generation,current_transport_ref,session_state) \
+             VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+               encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,\
+               1,999999,1,1,1,1,$6,1)",
+        )
+        .bind(id(SECOND_SESSION).as_slice())
+        .bind(id(ACCOUNT).as_slice())
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(WORLD).as_slice())
+        .bind(id(CHANNEL).as_slice())
+        .bind([9_u8; 16].as_slice())
+        .execute(&harness.pool)
+        .await?;
+        // The admission guards now name the new session as the holder.
+        sqlx::query(
+            "UPDATE game_durability_admission_character_guards \
+                SET holder_game_session_id = encode($1,'hex')::uuid \
+              WHERE character_id = encode($2,'hex')::uuid",
+        )
+        .bind(id(SECOND_SESSION).as_slice())
+        .bind(id(CHARACTER).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        sqlx::query(
+            "UPDATE game_durability_admission_account_guards \
+                SET holder_game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(SECOND_SESSION).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        let mut current = fence()?;
+        current.game_session_id = GameSessionId::decode(&id(SECOND_SESSION)).map_err(debug)?;
+        let second_session_command =
+            CommandRef::new(current.game_session_id, CommandId::new(1).map_err(debug)?);
+
+        let outcome = harness
+            .claim(&authority, current, coins(second_session_command, claim, 1))
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(outcome, RewardClaimMintOutcome::Committed(_)),
+            "{outcome:?}"
+        );
+        // The stranded reservation cannot commit under its ended session.
+        rejected(
+            harness
+                .root
+                .commit_reward_claim_mint(&authority, &harness.node, fence()?, &mut stranded)
+                .await,
+            "ended session",
+        )?;
+        assert_eq!(harness.count("game_reward_claims").await?, 1);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// Re-review 5907886746 (LOW): admission is re-checked at commit. A reservation of the same
+/// claim that becomes pending after this candidate froze refuses its commit with
+/// `ClaimPending`, and nothing is written.
+#[test]
+fn a_claim_that_became_pending_after_freeze_refuses_the_commit() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "commitpending").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        harness.equip_backpack(&authority, 1).await?;
+        let claim = "fixture:chest.commit-pending";
+
+        let mut candidate = harness
+            .root
+            .freeze_reward_claim_mint(
+                &authority,
+                &harness.node,
+                fence()?,
+                coins(command(42)?, claim, 1),
+            )
+            .await
+            .map_err(debug)?;
+        // A second reservation of the same claim, as another admitted attempt would leave it.
+        sqlx::query(
+            "INSERT INTO game_reward_claim_mint_reservations(game_session_id, command_id, \
+               character_id, world_id, channel_id, claim_family, claim_production_key, \
+               claim_revision_ref, intent_binding, transaction_id, event_id, item_instance_id, \
+               occurred_at, work_units_used, reserved_at) \
+             VALUES (encode($1,'hex')::uuid, 43, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+               encode($4,'hex')::uuid, 'RewardClaim', $5, 'definition-r1', $6, \
+               encode($7,'hex')::uuid, encode($8,'hex')::uuid, encode($9,'hex')::uuid, 1, 0, 0)",
+        )
+        .bind(id(SESSION).as_slice())
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(WORLD).as_slice())
+        .bind(id(CHANNEL).as_slice())
+        .bind(claim)
+        .bind(vec![3_u8; 33])
+        .bind(id(90).as_slice())
+        .bind(id(91).as_slice())
+        .bind(id(92).as_slice())
+        .execute(&harness.pool)
+        .await?;
+
+        let before = harness.footprint().await?;
+        refused(
+            harness
+                .root
+                .commit_reward_claim_mint(&authority, &harness.node, fence()?, &mut candidate)
+                .await,
+            RewardClaimRefusal::ClaimPending,
+        )?;
+        assert_eq!(harness.footprint().await?, before);
+        assert_eq!(harness.count("game_reward_claims").await?, 0);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
