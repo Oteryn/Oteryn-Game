@@ -30,6 +30,9 @@ owned_paths:
   - tools/content-migration/validate_world_project_v2_to_tree.py  # shared: RewardClaim checks only
   - tools/content-migration/test_world_project_v2_to_tree.py  # shared: RewardClaim checks only
   - docs/agents/tasks/archive/OTV2-20260930-chest-content-2b.md
+  # extension declared on #162 5912778877 (repair of freeze 22b5a9bb):
+  - tools/content-schema/proficiency-authoring/proficiency_authoring.py  # shared: registered() ordering only
+  - tools/content-schema/charm-authoring/charm_authoring.py  # shared: registered() ordering only
 public_contracts: []
 depends_on: [CHEST-CONTENT part 1 (#1334), part 2a (#1356)]
 blocks: [MAP-BUNDLE-1 binding of claim placements]
@@ -69,6 +72,16 @@ parser: the server does not read `content/`, and MAP-BUNDLE-1 compiles it (ADR-0
   `content/interactions/**` do not trigger that workflow; G4 (`content/**`) still checks the
   keys.
 
+## Repair of freeze 22b5a9bb (#162 5912778877)
+
+`proficiency-authoring` failed on `22b5a9bb`: `content --check` found `content/project.json`
+stale. The Charm, Proficiency and RewardClaim tools each registered their family by moving it to
+the end of `migrated_families`, so only the last one could pass. Charm already failed this way on
+`main` (5dcfb724), unnoticed because its workflow triggers only on its own tool paths.
+
+The three `registered()` functions now keep a listed family where it is and append only a new
+one. `content/project.json` is unchanged, and all three `content --check` runs pass.
+
 ## Validation
 
 - `reward_claim_authoring.py content --check`: ok. `test_reward_claim_authoring.py`: 7 tests
@@ -77,6 +90,8 @@ parser: the server does not read `content/`, and MAP-BUNDLE-1 compiles it (ADR-0
   `reward_claim_records=231`.
 - A regenerated tree is byte-identical (`world_project_v2_to_tree.py`).
 - `item_key_references.py`: PASS.
+- Charm and Proficiency: `content --check`, `build --check`, their tests, ruff check and ruff
+  format all pass.
 
 ## Closeout
 
