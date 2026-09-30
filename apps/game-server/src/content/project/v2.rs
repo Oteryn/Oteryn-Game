@@ -95,6 +95,8 @@ impl ProjectV2Family {
             DefinitionFamily::Formula => Self::Formula,
             DefinitionFamily::Loot => Self::Loot,
             DefinitionFamily::Behavior => Self::Behavior,
+            // `parse_family` never yields RewardClaim; its authoring home is `content/interactions/`.
+            DefinitionFamily::RewardClaim => Self::Interaction,
         })
     }
 }
