@@ -236,6 +236,8 @@ if __name__=='__main__':
     case('only summon_creature carries summon',extra_effect({'operation':'presentation_only','presentation':{'impact_asset_binding':'oteryn:body_sprite'},'summon':summon}))
     removal={'items':[ref('Item','coin')],'selection':'first_listed_per_tile'}
     case('remove items accepted (D18)',extra_effect({'operation':'remove_items','removed_items':removal}),True)
+    case('remove items top item of the first tile accepted (SW-2)',extra_effect({'operation':'remove_items','removed_items':{**removal,'selection':'top_item_first_tile'}}),True)
+    case('remove items needs an item',extra_effect({'operation':'remove_items','removed_items':{**removal,'items':[],'selection':'top_item_first_tile'}}))
     case('remove items selection is closed',extra_effect({'operation':'remove_items','removed_items':{**removal,'selection':'all'}}))
     affects={'kind':'masterless_monsters','top_creature_only':False,'excludes_caster_name':False,'includes_caster':True}
     case('heal affects allies accepted (D18)',set_value(('d','effects',0,'affects'),affects),True)

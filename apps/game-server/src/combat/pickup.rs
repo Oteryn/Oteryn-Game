@@ -79,6 +79,7 @@ const fn family_wire_name(family: DefinitionFamily) -> &'static str {
         DefinitionFamily::Effect => "Effect",
         DefinitionFamily::Formula => "Formula",
         DefinitionFamily::Behavior => "Behavior",
+        DefinitionFamily::RewardClaim => "RewardClaim",
     }
 }
 

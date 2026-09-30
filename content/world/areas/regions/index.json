@@ -4,7 +4,7 @@
   "kind": "static_content",
   "owner": "Area",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Region/subregion definitions."
+  "notes": "Region/subregion definitions: the 28 regions and 415 subregions of the 15.30 client map areas, built by tools/content-schema/area-authoring/build_areas.py."
 }

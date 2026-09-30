@@ -1798,3 +1798,330 @@ fn local_object_placement_attributes_fail_closed_before_evidence_promotion()
     ));
     Ok(())
 }
+
+// CHEST-CONTENT-1: the RewardClaim family (reward chest D39-D42, architect ruling on #162
+// 5905746509). A server-only `once` claim lists the chest placements sharing it, each with its
+// own one-item reward.
+
+fn reward_claim_ref(key: &str) -> Result<TypedDefinitionRef, ContentError> {
+    Ok(TypedDefinitionRef::new(
+        DefinitionFamily::RewardClaim,
+        ProductionKey::new(key)?,
+        DefinitionRevisionRef::new("reward-claim-r1")?,
+    ))
+}
+
+fn reward_placement(
+    placement: &str,
+    item: &TypedDefinitionRef,
+    count: u32,
+) -> Result<RewardClaimPlacement, ContentError> {
+    Ok(RewardClaimPlacement {
+        placement: PlacementKey::new(placement)?,
+        items: vec![RewardClaimItem {
+            item: item.clone(),
+            count,
+        }],
+    })
+}
+
+/// The typed item probe plus one claim with two chest placements, listed out of order.
+fn source_with_reward_claim() -> Result<ReferencePlayableContentSource, ContentError> {
+    let mut candidate = source_with_typed_item(ClientProjectionClass::ClientSafe)?;
+    let item = typed_item_definition(&candidate.definitions)?
+        .definition
+        .clone();
+    candidate.definitions.push(ReferenceDefinition {
+        definition: reward_claim_ref("oteryn:reward-claim.reference.first")?,
+        kind: ReferenceDefinitionKind::RewardClaim(ReferenceRewardClaimDefinition {
+            placements: vec![
+                reward_placement("oteryn:reference.placement.chest-b", &item, 2)?,
+                reward_placement("oteryn:reference.placement.chest-a", &item, 1)?,
+            ],
+        }),
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+    Ok(candidate)
+}
+
+fn reward_claim_kind_mut(
+    source: &mut ReferencePlayableContentSource,
+) -> Result<&mut ReferenceRewardClaimDefinition, ContentError> {
+    source
+        .definitions
+        .iter_mut()
+        .find_map(|definition| match &mut definition.kind {
+            ReferenceDefinitionKind::RewardClaim(claim) => Some(claim),
+            _ => None,
+        })
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable reward claim probe missing",
+        ))
+}
+
+#[test]
+fn reward_claim_links_canonically_and_stays_server_only() -> Result<(), ContentError> {
+    let canonical = link_reference_playable(source_with_reward_claim()?)?;
+    let claim = canonical
+        .definitions
+        .iter()
+        .find_map(|definition| match &definition.kind {
+            ReferenceDefinitionKind::RewardClaim(claim) => Some(claim),
+            _ => None,
+        })
+        .ok_or(ContentError::InvalidArtifact("claim missing"))?;
+    let placements: Vec<&str> = claim
+        .placements
+        .iter()
+        .map(|entry| entry.placement.as_str())
+        .collect();
+    assert_eq!(
+        placements,
+        [
+            "oteryn:reference.placement.chest-a",
+            "oteryn:reference.placement.chest-b"
+        ]
+    );
+    let chest_b = PlacementKey::new("oteryn:reference.placement.chest-b")?;
+    assert_eq!(
+        claim.placement(&chest_b).map(|entry| entry.items[0].count),
+        Some(2)
+    );
+    assert!(
+        claim
+            .placement(&PlacementKey::new("oteryn:reference.placement.other")?)
+            .is_none()
+    );
+    assert!(
+        canonical
+            .client_safe_definitions()
+            .iter()
+            .all(|definition| definition.definition.family() != DefinitionFamily::RewardClaim)
+    );
+
+    let mut client_safe = source_with_reward_claim()?;
+    for definition in &mut client_safe.definitions {
+        if definition.definition.family() == DefinitionFamily::RewardClaim {
+            definition.client_projection = ClientProjectionClass::ClientSafe;
+        }
+    }
+    assert!(matches!(
+        link_reference_playable(client_safe),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim must remain server-only"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn reward_claim_shape_fails_closed() -> Result<(), ContentError> {
+    let mut empty = source_with_reward_claim()?;
+    reward_claim_kind_mut(&mut empty)?.placements.clear();
+    assert!(matches!(
+        link_reference_playable(empty),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim requires at least one placement"
+        ))
+    ));
+
+    let mut repeated = source_with_reward_claim()?;
+    let first = reward_claim_kind_mut(&mut repeated)?.placements[0].clone();
+    reward_claim_kind_mut(&mut repeated)?.placements.push(first);
+    assert!(matches!(
+        link_reference_playable(repeated),
+        Err(ContentError::DuplicateKey(_))
+    ));
+
+    let mut no_item = source_with_reward_claim()?;
+    reward_claim_kind_mut(&mut no_item)?.placements[0]
+        .items
+        .clear();
+    let mut two_items = source_with_reward_claim()?;
+    let extra = reward_claim_kind_mut(&mut two_items)?.placements[0].items[0].clone();
+    reward_claim_kind_mut(&mut two_items)?.placements[0]
+        .items
+        .push(extra);
+    for candidate in [no_item, two_items] {
+        assert!(matches!(
+            link_reference_playable(candidate),
+            Err(ContentError::InvalidArtifact(
+                "reference-playable reward claim placement requires exactly one reward item"
+            ))
+        ));
+    }
+
+    let mut zero = source_with_reward_claim()?;
+    reward_claim_kind_mut(&mut zero)?.placements[0].items[0].count = 0;
+    assert!(matches!(
+        link_reference_playable(zero),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim item requires a positive count"
+        ))
+    ));
+
+    // Family and kind must agree in both directions.
+    let mut generic = source_with_reward_claim()?;
+    for definition in &mut generic.definitions {
+        if definition.definition.family() == DefinitionFamily::RewardClaim {
+            definition.kind = ReferenceDefinitionKind::Generic;
+        }
+    }
+    assert!(matches!(
+        link_reference_playable(generic),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim requires typed claim placements"
+        ))
+    ));
+    let mut misfiled = source_with_reward_claim()?;
+    for definition in &mut misfiled.definitions {
+        if definition.definition.family() == DefinitionFamily::RewardClaim {
+            definition.definition = TypedDefinitionRef::new(
+                DefinitionFamily::Loot,
+                ProductionKey::new("oteryn:reward-claim.reference.first")?,
+                DefinitionRevisionRef::new("reward-claim-r1")?,
+            );
+        }
+    }
+    assert!(link_reference_playable(misfiled).is_err());
+    Ok(())
+}
+
+#[test]
+fn reward_claim_items_resolve_only_to_typed_items() -> Result<(), ContentError> {
+    let mut wrong_family = source_with_reward_claim()?;
+    let item = reward_claim_kind_mut(&mut wrong_family)?.placements[0].items[0]
+        .item
+        .clone();
+    reward_claim_kind_mut(&mut wrong_family)?.placements[0].items[0].item = TypedDefinitionRef::new(
+        DefinitionFamily::Creature,
+        item.key().clone(),
+        item.revision().clone(),
+    );
+    assert!(matches!(
+        link_reference_playable(wrong_family),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim item must target Item"
+        ))
+    ));
+
+    let mut missing = source_with_reward_claim()?;
+    reward_claim_kind_mut(&mut missing)?.placements[0].items[0].item = TypedDefinitionRef::new(
+        DefinitionFamily::Item,
+        ProductionKey::new("oteryn:reference.item.missing")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    assert!(matches!(
+        link_reference_playable(missing),
+        Err(ContentError::MissingReference { .. })
+    ));
+    Ok(())
+}
+
+#[test]
+fn a_chest_placement_belongs_to_at_most_one_reward_claim() -> Result<(), ContentError> {
+    let mut candidate = source_with_reward_claim()?;
+    let item = typed_item_definition(&candidate.definitions)?
+        .definition
+        .clone();
+    candidate.definitions.push(ReferenceDefinition {
+        definition: reward_claim_ref("oteryn:reward-claim.reference.second")?,
+        kind: ReferenceDefinitionKind::RewardClaim(ReferenceRewardClaimDefinition {
+            placements: vec![reward_placement(
+                "oteryn:reference.placement.chest-a",
+                &item,
+                1,
+            )?],
+        }),
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::DuplicateKey(key)) if key == "oteryn:reference.placement.chest-a"
+    ));
+    Ok(())
+}
+
+#[test]
+fn a_placement_cannot_place_a_reward_claim() -> Result<(), ContentError> {
+    let mut candidate = source_with_target_claim(accepted_case_binding()?)?;
+    let item = typed_item_definition(&source_with_reward_claim()?.definitions)?
+        .definition
+        .clone();
+    let claim = reward_claim_ref("oteryn:reward-claim.reference.placed")?;
+    candidate.definitions.push(
+        source_with_typed_item(ClientProjectionClass::ClientSafe)?
+            .definitions
+            .into_iter()
+            .find(|definition| definition.definition == item)
+            .ok_or(ContentError::InvalidArtifact("item probe missing"))?,
+    );
+    candidate.definitions.push(ReferenceDefinition {
+        definition: claim.clone(),
+        kind: ReferenceDefinitionKind::RewardClaim(ReferenceRewardClaimDefinition {
+            placements: vec![reward_placement(
+                "oteryn:reference.placement.chest-a",
+                &item,
+                1,
+            )?],
+        }),
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+    candidate.placements[0].definition = claim;
+    candidate.placements[0].local_object_initial_state = None;
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable placement cannot place a reward claim"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn reward_claim_count_fits_the_items_known_stack() -> Result<(), ContentError> {
+    let set_count =
+        |source: &mut ReferencePlayableContentSource, count| -> Result<(), ContentError> {
+            for entry in &mut reward_claim_kind_mut(source)?.placements {
+                entry.items[0].count = count;
+            }
+            Ok(())
+        };
+    // NonStackable: exactly one.
+    let mut single = source_with_reward_claim()?;
+    typed_item_kind_mut(&mut single)?.stack_class = ReferenceItemStackClass::NonStackable;
+    let mut two = single.clone();
+    set_count(&mut single, 1)?;
+    link_reference_playable(single)?;
+    set_count(&mut two, 2)?;
+    assert!(matches!(
+        link_reference_playable(two),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim count exceeds the Item's stack"
+        ))
+    ));
+
+    // StackCapable with a known maximum: at most that maximum.
+    let mut capped = source_with_reward_claim()?;
+    typed_item_kind_mut(&mut capped)?.semantics.stack =
+        ReferenceItemField::Known(ReferenceItemStack {
+            stackable: ReferenceItemField::Known(true),
+            stack_max: ReferenceItemField::Known(5),
+        });
+    let mut over = capped.clone();
+    set_count(&mut capped, 5)?;
+    link_reference_playable(capped)?;
+    set_count(&mut over, 6)?;
+    assert!(matches!(
+        link_reference_playable(over),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim count exceeds the Item's stack"
+        ))
+    ));
+
+    // Unknown stack facts are left to the MINT admission (D82).
+    let mut unknown = source_with_reward_claim()?;
+    set_count(&mut unknown, 1_000)?;
+    link_reference_playable(unknown)?;
+    Ok(())
+}

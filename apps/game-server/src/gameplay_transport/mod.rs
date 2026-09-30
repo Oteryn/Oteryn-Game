@@ -2,6 +2,7 @@
 //! semantics and the composed owners decide admission.
 
 pub(crate) mod actor_spell;
+pub(crate) mod charm;
 mod connection;
 pub(crate) mod fresh_evidence;
 #[cfg(test)]
