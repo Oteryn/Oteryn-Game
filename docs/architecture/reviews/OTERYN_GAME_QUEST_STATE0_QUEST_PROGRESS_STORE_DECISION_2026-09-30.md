@@ -145,6 +145,13 @@ Where does a character's quest progress live, and how does it change safely?
   monk `monk_state.rs:397`), a mismatch is not retried: it fails closed and is reported as a
   defect.
 
+**Amendment (pending on acceptance of PREY-0;
+`reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md` §4.2 and §9).** The
+death chain becomes XP, then Bestiary or Bosstiary, then task kill credit, then quest transitions.
+Task kill credit is written only when the Creature matches an active task. Prey and Task Board
+writes are revision-advancing writers on the sequencer; their bindings exclude the revision, so a
+mismatch reloads the cursor and retries once.
+
 ### 5.3 Fence and locks
 
 - The XP writer's fence (composition decision §2 steps 1-6), with the quest receipt key in place of

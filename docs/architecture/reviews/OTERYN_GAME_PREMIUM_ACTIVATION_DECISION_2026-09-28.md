@@ -87,6 +87,12 @@ surface table is consumer policy revision `premium-surfaces-1`, bound to product
 reads as Free. The degraded (Free) behaviour of each benefit is owned by the child that builds it:
 PREM-2 (promotion benefits and soul), PREM-3 (areas), PREM-4 (spells), PREM-5 (NPC services).
 
+**Amendment (pending on acceptance of PREY-0;
+`reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md` §5.1).** Prey slot 2 is
+a running-session surface checked at use (`REQUIRE_CURRENT`). Until PREM-1 is live it is open to
+every eligible character (architect ruling R2, after the owner's H2a). Its degraded behaviour is
+owned by PREY-1: the slot keeps its state, applies no bonus and spends no hunting time.
+
 ### 4.2 Promotion (D70, D72, D73, D76)
 
 - Promotion is durable Character state: `promoted` plus provenance. It is bought once at a
