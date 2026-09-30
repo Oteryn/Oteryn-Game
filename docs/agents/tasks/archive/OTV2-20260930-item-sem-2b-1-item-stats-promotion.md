@@ -20,6 +20,7 @@ owned_paths:
   - apps/game-server/examples/materialize_content_world_project_v2.rs
   - apps/game-server/tests/content_world_project_repository.rs
   - tools/content-migration/validate_world_project_v2_to_tree.py
+  - tools/content-census/g4_item_wave1_stage.py   # v2 values supersede frozen Wave 1 candidates
   - content/world/** and the content tree (regenerated)
   - docs/agents/tasks/archive/OTV2-20260930-item-sem-2b-1-item-stats-promotion.md
 public_contracts:
