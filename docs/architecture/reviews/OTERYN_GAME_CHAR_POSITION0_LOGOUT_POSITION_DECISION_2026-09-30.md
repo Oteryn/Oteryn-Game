@@ -102,6 +102,11 @@ chain, with no cause and no replay.
   - in an instance scope (`runtime_scope_kind = 2`): the row keeps the last position outside,
     which is the instance's entry side;
   - at channel transfer, which does not exist yet; its decision adds the write.
+
+  **Amendment (pending on acceptance of TRAVEL-0; `reviews/OTERYN_GAME_TRAVEL0_NPC_TRAVEL_DECISION_2026-09-30.md` §7.4).**
+  A pending arrival whose actor has already arrived is consumed by the arrival's follow-up
+  transaction, or else by the terminal release before its final write; its row then no longer
+  stops the last-position write.
 - **World reset.** Step 2's new scope ownership generation fences late writes out, so the last
   periodic row is used and re-checked by §3.3.
 

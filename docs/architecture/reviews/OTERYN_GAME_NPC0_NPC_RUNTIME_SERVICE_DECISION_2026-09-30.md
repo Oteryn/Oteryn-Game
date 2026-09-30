@@ -264,6 +264,12 @@ shapes are new?
   (the DEATH-0 respawn rule). NPC-TRAVEL-1 builds this rule; DEATH-1 uses the same rule for an
   occupied respawn tile.
 
+**Amendment (pending on acceptance of TRAVEL-0; `reviews/OTERYN_GAME_TRAVEL0_NPC_TRAVEL_DECISION_2026-09-30.md` §5-§8).**
+The fare subtracts route discounts whose quest gate passes (floored at 0). A PZ block or kill block
+refuses travel; the logout block alone no longer does. A travel hold stops walking until the
+outcome; the move follows the known commit, and a fenced follow-up transaction consumes the pending
+arrival. Travel never changes channel. The §6.1 fallback stays (no stacking); summons are removed.
+
 ## 7. Price evidence (boundary §15 and §19)
 
 The boundary requires exact target evidence for prices before `NPC_SINGLE_TRADE_COMMIT_V1`.
