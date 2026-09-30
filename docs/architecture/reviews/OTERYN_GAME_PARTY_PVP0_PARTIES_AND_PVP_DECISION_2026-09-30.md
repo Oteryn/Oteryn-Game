@@ -3,7 +3,8 @@
 - Decision: `PARTYPVP0-PARTIES-AND-PVP-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   combat, security, privacy and protocol) and protected integration. Owner question P1 (§16) is
-  open; it chooses the first World's PvP type and blocks only PvP going live, not any child.
+  answered: the PvP type is per-World configuration; Optional and Open PvP are both delivered; the
+  first World launches as Optional PvP (a stated assumption pending owner confirmation, §16).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30): build parties and PvP now, full Tibia Global
   parity. It is the PvP decision that ATTACK-0 §3, the first player death decision §4.1 (D60) and
@@ -28,14 +29,17 @@
 | PARTY-1 | hard, persistence, security and privacy review | party, member, invitation and consent tables; invite (with the consent check), accept, decline, revoke, leave, succession, pass leadership, shared-XP toggle, block, party-invite and channel-visibility settings, invitation expiry; the node `PartyView` cache, full refresh and revision check, and the relay change hint; the cleanup job (§3, §4) | this decision; CHAT-2 |
 | PARTY-XP-1 | hard (combat), combat review | shared-experience eligibility and split on the D118 XP slice; party immunity in area effects; the party loot right; the `PartyView` query for `party_buff` and the monk party rules (§5) | PARTY-1; the D118 XP lane; D3-4 |
 | PARTY-CHAT-1 | impl, security review | one party room per party on the CHAT-0 World relay (§4.3) | PARTY-1; CHAT-2 |
-| PVP-1 | hard, persistence and security review | PvP state, unjustified point and revenge mark tables; skull evaluation in the death transaction; the World cleanup job; the `rulesets/pvp/` and `rulesets/party/` rows (§6, §9) | DEATH-1; PARTY-1 |
+| PVP-1 | hard, persistence and security review | PvP state, unjustified point and revenge mark tables; skull evaluation in the death transaction; the World cleanup job; the `rulesets/pvp/` and `rulesets/party/` rows, with `pvp_type` `OPTIONAL` for the first World (§6, §9) | DEATH-1; PARTY-1 |
 | PVP-RT-1 | hard (combat), combat and security review | PvP legality in the GAME-ABILITY-01 legality stage; aggression relations; white and yellow skulls; logout, PZ and kill blocks and their durable write-ahead and restore; the damage factor; the PvP damage ledger and its durable snapshot; kill classification; Join Aggression; friendly fire (§7, §8) | ATTACK-1; COND-1; PVP-1 |
 | PVP-DEATH-1 | hard (persistence), persistence review | the PvP variants of the death outcome: PvP death, red and black skull loss, Twist of Fate, Adventurer's Blessing, black skull respawn (§10) | DEATH-1; DEATH-3; PVP-1 |
 | PVP-BLOCK-1 | impl, movement review | walking through characters and expert-mode blocking (§7.5) | PVP-RT-1; SPEED-1 |
 | PVP-WIRE-1 | impl, protocol review | capabilities `PARTY_V1` and `PVP_V1`, the party and PvP commands and domains, VIS-2 skull, shield and frame fields (§11) | PARTY-1; PVP-RT-1; VIS-2; ATTACK-WIRE-1 |
 
-PvP goes live on a World only when PVP-1, PVP-RT-1, PVP-DEATH-1 and PVP-WIRE-1 have landed; until
-then ATTACK-0's "creatures only" stays. Later, each with its own decision: GUILD-WAR-0 (fills the
+Every PvP child builds and tests both `OPTIONAL` and `OPEN` (owner answer P1, §16). PvP goes live
+on a World only when PVP-1, PVP-RT-1, PVP-DEATH-1 and PVP-WIRE-1 have landed; until then
+ATTACK-0's "creatures only" stays. The first World goes live as `OPTIONAL` under that gate: rule 1
+(§7.2) then refuses every character target until GUILD-WAR-0 fills `war_between`. A World
+configured `OPEN` goes live under the same gate with no further decision. Later, each with its own decision: GUILD-WAR-0 (fills the
 §12 hooks), arenas and PvP zones (`rulesets/pvp/arena/`), the Party Finder, the Party Hunt
 Analyser, Retro Open and Retro Hardcore PvP (§6.1), Death Redemption (D64).
 
@@ -290,6 +294,8 @@ it off for the colocated members.
 - Values in v1: `OPTIONAL`, `OPEN`, `HARDCORE`. `RETRO_OPEN` and `RETRO_HARDCORE` are refused by
   ruleset validation until their rules have a source (retro frags, PvP XP formula, 6.31%
   blessings).
+- **First World** (owner answer P1, §16): `OPTIONAL`. `OPEN`, with the full skull system, is
+  delivered with it and available to any World configured with it.
 
 ### 6.2 Tables
 
@@ -583,7 +589,7 @@ bonuses; party immunity and friendly fire; world types; level 8; PZ rules; 10 s 
 yellow, red, black and orange skulls and their durations; logout, PZ and 15-minute kill blocks;
 secure and expert modes; Join Aggression; red and black loss; Twist of Fate; Adventurer's
 Blessing; black skull respawn; no XP for PvP kills. D60 is superseded by the owner's direction of
-2026-09-30. Declared differences: at most 50 members (D109) and bounded invitations (20 per
+2026-09-30. The first World is Optional PvP (owner answer P1). Declared differences: at most 50 members (D109) and bounded invitations (20 per
 invitee, expiring after 5 minutes); leaving a party is barred by the whole combat lock; benefits only
 for members on the same channel; the "battle sign" read as the PZ block; the 2-minute activity
 window, the assist share and the lower-bound thresholds (`PARITY_PENDING`); no unfair-fight
@@ -599,6 +605,11 @@ there at all; the engine supports all three (§6.1). a) Open PvP: skulls and the
 most common Global type (recommended); b) Optional PvP: no PvP until guild wars exist;
 c) Hardcore PvP: no skulls, no restrictions.
 
+Owner answer (2026-09-30, #162): b and a — the PvP type is per-World configuration; Optional PvP
+and Open PvP (with the full skull system) are both delivered; the first World launches as Optional
+PvP, and Open PvP is available for a World configured with it. Stated assumption pending owner
+confirmation: this reading of "b i a" ("b and a").
+
 ## 17. Decision test
 
 - **Must decide now:** YES. The owner asked for parties and PvP now; ATTACK-0, the first player
@@ -606,7 +617,7 @@ c) Hardcore PvP: no skulls, no restrictions.
 - **Minimum sufficient:** three party tables, two consent tables, four PvP tables, rules in the existing legality
   stage, PvP fields in the existing death transaction, two wire capabilities.
 - **Superseding evidence:** an official source for the thresholds, the activity window, the
-  unfair-fight formula or the retro rules; owner answer P1.
+  unfair-fight formula or the retro rules; an owner correction of the P1 reading (§16).
 - **Deliberately not decided:** guild wars, arenas and PvP zones, the Party Finder, the Party Hunt
   Analyser, Retro Worlds, Death Redemption, blessing sales (DEATH-4).
 
@@ -626,3 +637,5 @@ c) Hardcore PvP: no skulls, no restrictions.
 6. **Split work:** one party per transaction; PvP rows only inside the victim's death transaction;
    at most 100 rows per cleanup pass; a leader-only party ends in the leader's leave, logout or
    cleanup transaction.
+7. **World type:** the PvP children build and test `OPTIONAL` and `OPEN`; the first World's
+   ruleset has `pvp_type` `OPTIONAL` (owner answer P1).

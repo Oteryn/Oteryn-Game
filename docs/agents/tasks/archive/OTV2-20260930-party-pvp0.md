@@ -53,7 +53,9 @@ PARTY-PVP-0 decides parties and PvP at full Global parity (owner direction, 2026
 - **Death:** PvP death test, red and black loss, Twist of Fate, Adventurer's Blessing, black skull
   respawn at 40 HP and 0 mana; the unfair-fight reduction recorded as 0 until sourced.
 - **GUILD-WAR-0 hooks:** `war_between`, `on_player_kill`, `AssistLedger`, the war emblem slot.
-- **Owner question P1** (open): the first World's PvP type; recommended Open PvP.
+- **Owner question P1** (answered): the PvP type is per-World configuration; Optional and Open
+  PvP are both delivered; the first World launches as Optional PvP (stated assumption pending
+  owner confirmation).
 
 No code, migration or content change is made.
 
@@ -75,7 +77,7 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 - [ ] Decision on an exact frozen head with passing validators.
 - [ ] Independent exact-head review (persistence, combat, security, privacy, protocol).
 - [ ] Protected Merge Queue integration.
-- [ ] Owner answer to P1 recorded on #162 before PvP goes live on a World.
+- [x] Owner answer to P1 recorded on #162 (2026-09-30).
 
 ## Excluded scope
 
@@ -94,6 +96,9 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
   `top_damage_party_id`, invite consent serialized on `character_root`, durable PvP ledger
   snapshot, channel-visibility setting, Leave under the full combat lock, invitee cap and
   invitation expiry; validators re-run PASS.
+- Owner answers (2026-09-30, #162): P1 b and a — per-World PvP type; Optional and Open PvP both
+  delivered; the first World launches as Optional PvP (stated assumption pending owner
+  confirmation); validators re-run PASS.
 
 ## Closeout
 
@@ -107,7 +112,7 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 last_progress: draft authored; awaiting architect review and publication
 status: completed
 branch: claude/arch-party-pvp-0
-owner_action_required: "P1: the first World's PvP type"
+owner_action_required: "confirm the P1 reading (b and a: first World Optional, Open available)"
 blocker: null
-next_action: "architect reviews, commits, opens the PR and posts P1 to the owner"
+next_action: "architect reviews and commits the owner-answer update"
 ```
