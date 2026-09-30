@@ -41,8 +41,11 @@ owner answer Q2b; owner direction, 2026-09-30).
   on Platform (T1 intent row, HOLD, T2 commit or ABORT with a tombstone); every other fill,
   match, cancel and expiry is Game-only and queues SETTLE or RELEASE in a transactional outbox,
   delivered at least once and applied once by Platform.
-- **Failure:** Platform down refuses only new holds (`COINS_UNAVAILABLE`); settlements wait. A
-  daily reconciler compares holds with Platform; differences are corrected by compensation only.
+- **Failure:** Platform down refuses only steps needing a new hold or claim
+  (`COINS_UNAVAILABLE`); settlements wait. A daily reconciler compares holds with Platform's
+  acknowledged snapshot net of pending outbox instructions; differences are corrected by
+  compensation only. Platform bounds SETTLE by hold, claim and caps, and retains keys,
+  tombstones and receipts 90 days and across restore.
 - **Gates:** same 2% Market fee (no new fee source); no Premium gate for coins; junior and
   same-Account refused; coin offers count toward the 100-offer limit.
 - **Wire:** capability `MARKET_COINS_V1` (number reserved on #162 at allocation), two results,
@@ -85,12 +88,15 @@ protocol review; the instruction payload privacy review.
 - `python3 tools/agents/validate_governance.py`: PASS on the draft authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the draft authoring tree.
 - `git diff --cached --check`: clean.
+- Codex round-1 repair (PR #1412, 4 findings): reconciliation nets pending outbox instructions;
+  discriminated ware key amends MARKET-0 §4 and §7; Platform settlement fence with CLAIM-bound
+  destinations and SETTLE caps; key, tombstone and receipt retention and restore rule.
 
 ## Closeout
 
 - PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
 - Amendments follow the control-plane rule (#162 5912405163): pending on acceptance. Amended:
-  MARKET-0 §3.1 and §10, the Store catalog owner decision (follow-up 1). The Platform Wallet
+  MARKET-0 §3.1, §4, §7 and §10, the Store catalog owner decision (follow-up 1). The Platform Wallet
   contract change is an external dependency (MKTCOIN-P), not edited here.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 

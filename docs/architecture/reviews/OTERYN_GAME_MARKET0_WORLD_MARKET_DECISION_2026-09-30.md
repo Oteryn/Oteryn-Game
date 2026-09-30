@@ -148,6 +148,12 @@ of §4 does not apply to coin offers (Global).
 - **Retention.** The expiry job deletes ended offers beyond each character's 600 newest
   (`MARKET0-RL-07`); the market event keeps the audit record under MARKET-RET-0's profile.
 
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3 `MKTCOIN0-WARE-KEY`).** An offer's ware is a discriminated key: `ware_kind` `ITEM` with
+definition key and definition revision (as above), or `COIN` with `coin_kind` (closed list:
+`TIBIA_COIN`) and no definition key or revision; a database check refuses any other combination,
+and an unknown kind fails closed. Existing rows are `ITEM`.
+
 ## 5. Inbox (INBOX-1)
 
 - **Family.** A new DUR-03 custody family, the third after `HouseInterior` and `CharacterDepot`:
@@ -246,6 +252,11 @@ of §4 does not apply to coin offers (Global).
   declared difference (`PARITY_PENDING`).
 - **Expiry.** Offers past `expires_at`, oldest first, one per step, returning escrow as a cancel.
 - **Revision.** No `CharacterRevision` advance (composition rule 1 as amended).
+
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3 `MKTCOIN0-WARE-KEY`).** `game_market_books` keys by (World, `ware_kind`, definition key or
+`coin_kind`). A `COIN` book has no revision; its fills need equal `coin_kind` only, not DUR-03
+§46 compatibility.
 
 ## 8. Persistence deltas (MARKET-1 and INBOX-1)
 
