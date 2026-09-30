@@ -762,8 +762,9 @@ async fn admit(
     // §17.2: a pending MINT of this claim under another CommandRef. It is
     // pending while it has no receipt, its RL-08 budget is not exhausted and
     // its GameSession is not terminal: only then can it still commit. The
-    // `character_root` row lock taken by the fence serializes this read with
-    // every other admission of the Character.
+    // EXCLUSIVE locks of `lock_admission_relations`, taken by every freeze and
+    // commit pass before `admit`, serialize this read with every other
+    // admission, so a reservation inserted by a concurrent freeze is visible.
     let claim_pending: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_reward_claim_mint_reservations r \
                           JOIN game_durability_reconnect_sessions s \
