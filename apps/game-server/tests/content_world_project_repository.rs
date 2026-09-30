@@ -81,6 +81,20 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
+/// Successor family shards (written by `tools/content-schema/world-authoring`) are likewise
+/// never WorldProject locators. They sit only in a successor directory that holds no legacy
+/// locator, so legacy locator lookups scan no additional directory entries.
+fn is_successor_shard(locator: &str) -> bool {
+    SUCCESSOR_TREE_MARKERS.iter().any(|marker| {
+        let directory = marker.trim_end_matches("index.json");
+        locator
+            .strip_prefix(directory)
+            .is_some_and(|name| !name.contains('/') && name.ends_with(".json"))
+            && !DOCUMENTS
+                .iter()
+                .any(|(document, _, _)| document.starts_with(directory))
+    })
+}
 /// WO-2 and Area catalogue shards beside the legacy package: `(directory, shard prefix)`.
 /// Their bytes are pinned by `build_catalogue.py --check` and `build_areas.py build --check`,
 /// not by this package inventory.
@@ -256,9 +270,13 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
             "{directory} catalogue is populated"
         );
     }
-    let (mut markers, mut actual): (Vec<_>, Vec<_>) = files
+    let (successors, mut actual): (Vec<_>, Vec<_>) = files.into_iter().partition(|locator| {
+        SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()) || is_successor_shard(locator)
+    });
+    let mut markers: Vec<_> = successors
         .into_iter()
-        .partition(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()));
+        .filter(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()))
+        .collect();
     markers.sort();
     actual.sort();
     assert_eq!(markers, SUCCESSOR_TREE_MARKERS);
@@ -1008,6 +1026,23 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         let payload: serde_json::Value =
             serde_json::from_slice(&fs::read(&marker).expect("read world tree marker"))
                 .expect("world tree marker is JSON");
+        world_markers.push(format!("{locator}index.json"));
+        if payload["schema"] == "OTERYN_FAMILY_INDEX/v1" {
+            // A populated successor family: shards stay in this directory, which holds no
+            // legacy locator (see `is_successor_shard`).
+            assert_eq!(payload["population_state"], "POPULATED", "{path}");
+            let shards = payload["shards"].as_array().expect("family index shards");
+            assert!(!shards.is_empty(), "{path}");
+            for shard in shards {
+                let shard = shard.as_str().expect("family shard path");
+                let shard_locator = shard
+                    .strip_prefix("content/world/")
+                    .unwrap_or_else(|| panic!("{shard}"));
+                assert!(shard_locator.starts_with(locator), "{shard}");
+                assert!(is_successor_shard(shard_locator), "{shard}");
+            }
+            continue;
+        }
         assert_eq!(payload["schema"], "OTERYN_GAME_TREE_DIRECTORY/v1", "{path}");
         assert_eq!(payload["path"], path);
         assert_eq!(payload["kind"], node["kind"], "{path}");
@@ -1023,7 +1058,6 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
             },
             "{path}"
         );
-        world_markers.push(format!("{locator}index.json"));
     }
     world_markers.sort();
     assert_eq!(world_markers, SUCCESSOR_TREE_MARKERS);

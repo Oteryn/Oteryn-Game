@@ -36,13 +36,14 @@ use crate::foundation::{
 };
 use crate::interaction::InteractionError;
 use crate::interaction_chest_use::{
-    ChestUseError, ChestUseOutcome, ChestUseRequest, chest_use_occurrence, prepare_chest_use,
-    resolve_chest, settle_chest_use,
+    ChestUseError, ChestUseOutcome, ChestUseRequest, chest_use_occurrence, entry_chest,
+    prepare_chest_use, resolve_chest, settle_chest_use, use_chest, with_entry_chest,
 };
 use crate::item_transfer_postgres_cases::{
     CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, id, runtime, scope, uuid_text,
 };
 use ReferenceItemField::{Known, Unknown};
+use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::BTreeMap;
 
 const COIN: &str = "oteryn:chestuse.pg.coin";
@@ -1064,5 +1065,179 @@ fn a_chest_with_an_achievement_grants_it_and_a_chest_without_one_grants_none() -
         drop(authority);
         drop(seal);
         harness.cleanup().await
+    })
+}
+
+async fn nothing_written(harness: &Harness) -> TestResult {
+    assert_eq!(claim_rows(harness).await?, 0);
+    assert_eq!(reservation_rows(harness).await?, 0);
+    Ok(())
+}
+
+fn entry_item(key: &str) -> TypedDefinitionRef {
+    TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: key.into(),
+        revision_ref: entry_chest::DEFINITION_REVISION.into(),
+    }
+}
+
+fn entry_request(command: CommandRef) -> TestResult<ChestUseRequest> {
+    Ok(ChestUseRequest {
+        command,
+        chest: PlacementKey::new(entry_chest::PLACEMENT)?,
+        content_revision: entry_chest::CONTENT_REVISION.into(),
+        ruleset_revision: entry_chest::RULESET_REVISION.into(),
+        sim_revision: entry_chest::SIM_REVISION.into(),
+    })
+}
+
+/// C2: the `USE_INTENT` dispatch of the injected entry chest (`with_entry_chest` +
+/// `use_chest`). Without a main backpack it refuses `NoMainBackpack` (production, until
+/// STARTER-BACKPACK) and without a fence it refuses; neither writes. With a harness-seeded
+/// backpack, a stale fence writes nothing, the first `USE` mints the reward once and a second
+/// `USE` is `NOTHING_TO_USE`.
+#[test]
+fn the_entry_chest_use_mints_once_and_refuses_cleanly_otherwise() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "chestentry").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let content = with_entry_chest(&pg_content()?).map_err(debug)?;
+        let achievements = catalogue()?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+        // A Character with no main backpack (every production Character until
+        // STARTER-BACKPACK): refused cleanly, nothing written.
+        let (disposition, error) = use_chest(
+            &session,
+            &content,
+            &achievements,
+            Some(fence()?),
+            entry_request(command(1)?)?,
+        )
+        .await;
+        assert_eq!(disposition, UseDisposition::Rejected);
+        assert!(
+            matches!(
+                error,
+                Some(ChestUseError::Mint(RewardClaimMintError::Refused(
+                    RewardClaimRefusal::NoMainBackpack
+                )))
+            ),
+            "{error:?}"
+        );
+        nothing_written(&harness).await?;
+
+        // A session without an item fence never reaches DUR-03.
+        let (disposition, error) = use_chest(
+            &session,
+            &content,
+            &achievements,
+            None,
+            entry_request(command(2)?)?,
+        )
+        .await;
+        assert_eq!(disposition, UseDisposition::Rejected);
+        assert!(error.is_none());
+        nothing_written(&harness).await?;
+
+        // Harness-seeded main backpack of the injected entry backpack definition.
+        let backpack = harness
+            .mint_definition(&authority, entry_item(entry_chest::BACKPACK_ITEM), 1)
+            .await?;
+        let equipped = settle_ground_pickup(
+            &session,
+            &content,
+            fence()?,
+            GroundPickupRequest {
+                command: command(900)?,
+                source_item_instance_id: backpack,
+                source_definition: entry_item(entry_chest::BACKPACK_ITEM),
+                destination: ItemTransferDestination::ContainerSlot,
+                content_revision: "content-1".into(),
+                ruleset_revision: "ruleset-1".into(),
+                sim_revision: "sim-1".into(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(equipped, ItemTransferOutcome::Committed(_)));
+
+        // A stale fence (a superseded connection generation) writes nothing.
+        let mut stale = fence()?;
+        stale.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        let (disposition, error) = use_chest(
+            &session,
+            &content,
+            &achievements,
+            Some(stale),
+            entry_request(command(3)?)?,
+        )
+        .await;
+        assert_eq!(disposition, UseDisposition::Rejected);
+        assert!(
+            matches!(
+                error,
+                Some(ChestUseError::Mint(RewardClaimMintError::AuthorityRejected))
+            ),
+            "{error:?}"
+        );
+        nothing_written(&harness).await?;
+        assert_eq!(backpack_entries(&harness, &authority).await?, 0);
+
+        // The first USE mints the chest's reward once, into the backpack.
+        let (disposition, error) = use_chest(
+            &session,
+            &content,
+            &achievements,
+            Some(fence()?),
+            entry_request(command(4)?)?,
+        )
+        .await;
+        assert_eq!(disposition, UseDisposition::Committed, "{error:?}");
+        assert_eq!(claim_rows(&harness).await?, 1);
+        assert_eq!(backpack_entries(&harness, &authority).await?, 1);
+        let entry = harness
+            .root
+            .read_character_backpack(&authority, fence()?.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("no backpack")?
+            .entries
+            .into_iter()
+            .next()
+            .ok_or("no entry")?;
+        assert_eq!(entry.item.definition, entry_item(entry_chest::REWARD_ITEM));
+        assert_eq!(entry.item.quantity, entry_chest::REWARD_COUNT);
+
+        // A second USE (a new command) finds the `once` claim taken: NOTHING_TO_USE, nothing
+        // written.
+        let (disposition, error) = use_chest(
+            &session,
+            &content,
+            &achievements,
+            Some(fence()?),
+            entry_request(command(5)?)?,
+        )
+        .await;
+        assert_eq!(disposition, UseDisposition::NothingToUse);
+        assert!(refused_with(
+            &Err(error.ok_or("no refusal")?),
+            RewardClaimRefusal::AlreadyClaimed
+        ));
+        assert_eq!(claim_rows(&harness).await?, 1);
+        assert_eq!(backpack_entries(&harness, &authority).await?, 1);
+        Ok(())
     })
 }

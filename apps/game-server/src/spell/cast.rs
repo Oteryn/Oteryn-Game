@@ -17,11 +17,15 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::Value;
 
 use super::authoring::spell_from_bundle;
+use super::chain::{ChainCreature, TilePosition};
+use super::harmony::{HarmonyMultiplier, MonkState, MonkStateError};
+use super::party::SoloParty;
 use super::plan::{CastPlanError, effect_plan};
 use super::{
-    CastRejection, CasterState, Cooldowns, ResolvedEffect, SpellBook, SpellDefinition, Vocation,
-    resolve_cast,
+    CastRejection, CasterState, Cooldowns, HarmonyRole, ResolvedEffect, SpellBook, SpellDefinition,
+    Vocation, resolve_cast,
 };
+use crate::ability::creature_bite::{FlooredDamage, floor_creature_damage};
 use crate::ability::{AbilityOccurrence, Effect};
 
 macro_rules! starter {
@@ -83,7 +87,8 @@ pub(crate) struct CharacterCastFacts {
 }
 
 /// The runtime actor's vitals and cooldowns (§4). `revision` is the `ACTOR_VITALS` revision: 1
-/// when the actor's state is created, one more for every committed cast.
+/// when the actor's state is created, one more for every committed cast and for every periodic
+/// evaluation that changes Serene.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PlayerSpellState {
     facts: CharacterCastFacts,
@@ -92,12 +97,34 @@ pub(crate) struct PlayerSpellState {
     soul: u32,
     cooldowns: Cooldowns,
     revision: u64,
+    /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
+    monk: Option<MonkState>,
+}
+
+/// The Serene world of a runtime actor. No party service exists, so every monk is solo (§4
+/// interim rule) and always Serene by the rule; a solo evaluation never reads the creature.
+fn solo() -> SoloParty {
+    SoloParty(ChainCreature {
+        id: 0,
+        actor: String::new(),
+        position: TilePosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
+    })
 }
 
 impl PlayerSpellState {
-    /// A new runtime actor starts at its maxima (SPELL-D2). Maxima above the SPELL-D8 wire bounds
-    /// are refused.
-    pub(crate) fn new(facts: CharacterCastFacts) -> Option<Self> {
+    /// A new runtime actor starts at its maxima (SPELL-D2), with the durable Harmony and remaining
+    /// forced Serene time the Character owner loaded (§8.2; both 0 for any other vocation).
+    /// Maxima above the SPELL-D8 wire bounds, and corrupt Harmony values, are refused.
+    pub(crate) fn new(
+        facts: CharacterCastFacts,
+        harmony: u8,
+        serene_forced_micros: u64,
+    ) -> Option<Self> {
+        let monk = MonkState::load(facts.vocation, harmony, serene_forced_micros).ok()?;
         (facts.max_health <= MAX_VITAL_POOL
             && facts.max_mana <= MAX_VITAL_POOL
             && facts.max_soul <= MAX_SOUL)
@@ -108,7 +135,67 @@ impl PlayerSpellState {
                 soul: facts.max_soul,
                 cooldowns: Cooldowns::default(),
                 revision: 1,
+                monk,
             })
+    }
+
+    /// The Serene initialization evaluation (§8.2), in the owner step that makes the actor
+    /// playable: a fresh admission, a same-GameSession reconnect or FND-04B §21 recovery. No
+    /// command of a monk is accepted before it.
+    pub(crate) fn make_playable(&mut self, now: SemanticTimeMicros) -> Result<(), MonkStateError> {
+        match &mut self.monk {
+            Some(monk) => monk.initialize(now, &solo()),
+            None => Ok(()),
+        }
+    }
+
+    /// The session left the actor: Harmony and the forced time are kept, and commands wait for
+    /// the next [`Self::make_playable`].
+    pub(crate) fn detach(&mut self) {
+        if let Some(monk) = &mut self.monk {
+            monk.detach();
+        }
+    }
+
+    /// The periodic 1000 ms Serene evaluation (§8.2). `true` when Serene changed; the change then
+    /// has its own `ACTOR_VITALS` revision. On an error nothing changes.
+    pub(crate) fn tick(&mut self, now: SemanticTimeMicros) -> Result<bool, MonkStateError> {
+        let Some(monk) = &self.monk else {
+            return Ok(false);
+        };
+        let mut monk = monk.clone();
+        if !monk.tick(now, &solo())? {
+            self.monk = Some(monk);
+            return Ok(false);
+        }
+        self.revision = self
+            .revision
+            .checked_add(1)
+            .ok_or(MonkStateError::TimeOverflow)?;
+        self.monk = Some(monk);
+        Ok(true)
+    }
+
+    /// The values the actor-end save writes (§8.2): Harmony and the forced Serene time left at
+    /// `now`. `None` for an actor that is not a monk.
+    pub(crate) fn monk_save_values(&self, now: SemanticTimeMicros) -> Option<(u8, u64)> {
+        self.monk
+            .as_ref()
+            .map(|monk| (monk.harmony(), monk.serene_forced_remaining(now)))
+    }
+
+    /// GAME-AI-01 slice §4.7 (D54): the state after one creature hit of `magnitude`. Health never
+    /// drops below 1 (no player death in V1). `None` when the hit removes nothing (the actor is
+    /// already at 1) or the revision is exhausted; the state is then unchanged.
+    pub(crate) fn after_creature_damage(&self, magnitude: u32) -> Option<(Self, FlooredDamage)> {
+        let damage = floor_creature_damage(self.health, magnitude);
+        if damage.applied == 0 {
+            return None;
+        }
+        let mut next = self.clone();
+        next.health = damage.health_after;
+        next.revision = next.revision.checked_add(1)?;
+        Some((next, damage))
     }
 
     /// Test only: stages a wounded actor (no damage owner exists yet).
@@ -121,21 +208,24 @@ impl PlayerSpellState {
         self.revision
     }
 
-    /// The own-actor `ActorVitalsV1` value. Harmony and Serene stay 0 and false: the SPELL-D8
-    /// Harmony owner (H-1, H-2) is not delivered, and no admitted spell changes them.
-    pub(crate) const fn vitals(&self) -> ActorVitals {
+    /// The own-actor `ActorVitalsV1` value. Harmony and Serene are the monk's live values
+    /// (§8.2), and 0 and false for any other vocation.
+    pub(crate) fn vitals(&self) -> ActorVitals {
         ActorVitals {
             health: self.health,
             max_health: self.facts.max_health,
             mana: self.mana,
             max_mana: self.facts.max_mana,
             soul: self.soul,
-            harmony: 0,
-            serene: false,
+            harmony: self
+                .monk
+                .as_ref()
+                .map_or(0, |monk| u32::from(monk.harmony())),
+            serene: self.monk.as_ref().is_some_and(MonkState::serene),
         }
     }
 
-    fn caster(&self) -> CasterState {
+    fn caster(&self, harmony_multiplier: HarmonyMultiplier) -> CasterState {
         CasterState {
             vocation: self.facts.vocation,
             level: self.facts.level,
@@ -154,6 +244,7 @@ impl PlayerSpellState {
             shielding_skill: 0,
             melee_weapon: false,
             shield_defense: None,
+            harmony_multiplier,
         }
     }
 }
@@ -209,9 +300,25 @@ pub(crate) fn cast(
         // SPELL-D7: only a `cast_at_position` spell takes a position, and the core admits none.
         SpellTarget::Position(_) => return Err(SpellCastDisposition::Rejected),
     };
+    // §8.2: a monk accepts no command before its initialization evaluation. A spender's damage
+    // takes the multiplier of the current charges and Serene; no stance owner exists, so no
+    // virtue (§4 interim rule).
+    let harmony_multiplier = match &state.monk {
+        Some(monk) => {
+            monk.accept_command()
+                .map_err(|_| SpellCastDisposition::Rejected)?;
+            match spell.harmony_role {
+                Some(HarmonyRole::Spender) => monk
+                    .spender_multiplier(state.facts.level, false)
+                    .map_err(|_| SpellCastDisposition::Rejected)?,
+                Some(HarmonyRole::Builder) | None => HarmonyMultiplier::ONE,
+            }
+        }
+        None => HarmonyMultiplier::ONE,
+    };
     let resolution = resolve_cast(
         spell,
-        &state.caster(),
+        &state.caster(harmony_multiplier),
         &state.cooldowns,
         context.now,
         has_target,
@@ -244,6 +351,16 @@ pub(crate) fn cast(
         for effect in plan.effects() {
             commit_effect(&mut next, spell, effect, context.caster)?;
         }
+    }
+    // §8.2 PRIMARY COMMIT: Harmony changes in this same value, only because the cast succeeded
+    // (§A.2 steps 3c and 4). A Harmony spell without a monk state is refused.
+    if let Some(role) = spell.harmony_role {
+        let monk = next.monk.as_mut().ok_or(SpellCastDisposition::Rejected)?;
+        match role {
+            HarmonyRole::Builder => monk.commit_builder().map(|_| ()),
+            HarmonyRole::Spender => monk.commit_spender().map(|_| ()),
+        }
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     }
     // §5 anchor: mana, soul and cooldowns are paid in this same value, only because it succeeded.
     next.mana = next
