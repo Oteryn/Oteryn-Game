@@ -24,6 +24,7 @@ LEGACY_REFERENCE = ROOT / "content/world/definitions/reference.json"
 # the reference names Tibia keys, so a target is found through the append-only alias table.
 ITEM_ALIASES = ROOT / "content/items/aliases.json"
 STAGED = ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json"
+ITEM_STATS_V2 = ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json"
 
 SCHEMA = "OTERYN_G4_ITEM_WAVE1_STAGED/v1"
 MAPPER = "OTERYN_G4_ITEM_WAVE1_STAGE/v1"
@@ -113,7 +114,18 @@ def alias_targets(table: dict[str, Any]) -> dict[str, str]:
     return {key: entry["target"] for key, entry in current.items() if entry["state"] == "ALIAS"}
 
 
-def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, Any], aliases: dict[str, str]) -> dict[str, Any]:
+def superseding_values(packet: dict[str, Any]) -> dict[tuple[str, str], Any]:
+    """ITEM-SEM-2b: English TibiaWiki stat rows that supersede Wave 1 values in content."""
+    content_path = {"weapon.range_cells": "weapon.range"}
+    return {
+        (row["item_key"], content_path.get(row["field_path"], row["field_path"])): row["typed_value"]["value"]
+        for row in packet["promotions"]
+    }
+
+
+def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, Any], aliases: dict[str, str],
+          superseding: dict[tuple[str, str], Any] | None = None) -> dict[str, Any]:
+    superseding = superseding or {}
     assignments = census["family_assignments"]
     by_key = {record["identity"]["key"]: record for record in legacy["records"]}
     items: list[dict[str, Any]] = []
@@ -233,6 +245,9 @@ def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, An
         existing = known_semantics(record)
         for entry in facts:
             prior = existing.get(entry["field_path"])
+            # A current value set by the v2 stat promotion supersedes the frozen Wave 1 candidate.
+            if prior is not None and superseding.get((aliases[key], entry["field_path"])) == prior:
+                continue
             if prior is not None and prior != entry["value"]:
                 conflicts.append({**provenance, "target_key": key, "field_path": entry["field_path"], "existing": prior, "candidate": entry["value"]})
 
@@ -309,6 +324,7 @@ def main() -> int:
         json.loads(FIELD_CENSUS.read_bytes()),
         json.loads(LEGACY_REFERENCE.read_bytes()),
         alias_targets(json.loads(ITEM_ALIASES.read_bytes())),
+        superseding_values(json.loads(ITEM_STATS_V2.read_bytes())),
     ))
     if args.check:
         if STAGED.read_bytes() != staged:

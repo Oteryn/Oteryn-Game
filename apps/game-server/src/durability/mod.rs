@@ -26,6 +26,7 @@ pub mod item_mint;
 pub mod item_mint_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
+pub mod monk_state;
 pub mod native_admission_source;
 pub mod recovery_evidence_composition;
 pub mod reward_claim_mint;
@@ -192,6 +193,30 @@ mod charm_state_linkage {
         let _ = DurabilityRoot::commit_charm_command::<NoFacts>;
         let _ = DurabilityRoot::reconcile_charm_command;
         let _ = DurabilityRoot::read_character_charm_state;
+    }
+}
+
+#[cfg(test)]
+mod monk_state_linkage {
+    use super::DurabilityRoot;
+    use super::monk_state::{
+        CommittedMonkStateSave, DurableMonkState, MonkStateSaveOccurrence, MonkStateSaveOutcome,
+        MonkStateSaveRequest,
+    };
+
+    #[test]
+    fn monk_state_api_is_linked() {
+        let _ = std::mem::size_of::<CommittedMonkStateSave>();
+        let _ = std::mem::size_of::<MonkStateSaveOutcome>();
+        let _ = std::mem::size_of::<MonkStateSaveRequest>();
+        let _ = DurableMonkState::new;
+        let _ = DurableMonkState::harmony;
+        let _ = DurableMonkState::serene_forced_remaining_micros;
+        let _ = MonkStateSaveOccurrence::from_bytes;
+        let _ = MonkStateSaveOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_character_monk_state_save;
+        let _ = DurabilityRoot::reconcile_character_monk_state_save;
+        let _ = DurabilityRoot::read_character_monk_state;
     }
 }
 

@@ -200,8 +200,11 @@ def materialize_world() -> None:
             shutil.copyfile(output / locator, WORLD / locator)
 
 
-def literal(length: int) -> str:
-    return f"{length:_}" if length >= 10_000 else str(length)
+def literal(length: int, previous: str) -> str:
+    """Keep the pinned literal when its value holds; otherwise follow its digit grouping."""
+    if previous.replace("_", "") == str(length):
+        return previous
+    return f"{length:_}" if "_" in previous or length >= 10_000 else str(length)
 
 
 def repin_rust_inventory() -> None:
@@ -217,11 +220,12 @@ def repin_rust_inventory() -> None:
             + data
         )
         entry = re.compile(
-            r'(\(\s*"' + re.escape(locator) + r'",\s*)[\d_]+(,\s*")[0-9a-f]{64}(")'
+            r'(\(\s*"' + re.escape(locator) + r'",\s*)([\d_]+)(,\s*")[0-9a-f]{64}(")'
         )
         text, count = entry.subn(
             lambda m: (
-                f"{m.group(1)}{literal(len(data))}{m.group(2)}{hashlib.sha256(data).hexdigest()}{m.group(3)}"
+                f"{m.group(1)}{literal(len(data), m.group(2))}{m.group(3)}"
+                f"{hashlib.sha256(data).hexdigest()}{m.group(4)}"
             ),
             text,
         )
