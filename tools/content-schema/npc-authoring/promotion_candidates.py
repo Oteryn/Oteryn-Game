@@ -130,6 +130,46 @@ DEFINITION_REVIEWED = {
     'Grumpy Stone': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'crystal', 'image': 'File:Grumpy Stone.gif',
                                 'sha1': 'd2b356e031104e639ce29494f5e9b1862d12f5da'}},
 }
+# D16: the facts a single-source Crystal file itself marks unconfirmed ("TODO" at the pinned revision: guessed outfit
+# colours, dialogue Crystal wrote itself, a walk setting); recorded on the candidate as `source_unconfirmed`. The
+# dialogue stage never stages such text; the owner chose on 2026-09-30 to keep these NPCs with generated replies
+SOURCE_UNCONFIRMED = {
+    'crystal:npc/brewmaster_bhaan': ('outfit', 'text', 'walk'),
+    'crystal:npc/captain_indigo': ('outfit',),
+    'crystal:npc/captain_marie-denise_banner': ('outfit',),
+    'crystal:npc/dragon_ancestor_spirit': ('text', 'walk'),
+    'crystal:npc/drunken_sailor': ('outfit', 'text', 'walk'),
+    'crystal:npc/eldoran_the_ambitious': ('outfit', 'text'),
+    'crystal:npc/emiliana': ('outfit', 'text'),
+    'crystal:npc/exhausted_lion_knight': ('outfit', 'text', 'walk'),
+    'crystal:npc/fitzduncan': ('outfit', 'text', 'walk'),
+    'crystal:npc/guard_captain_hartford': ('outfit', 'text'),
+    'crystal:npc/guard_post': ('outfit', 'text', 'walk'),
+    'crystal:npc/hardened_lion_archer': ('outfit', 'text', 'walk'),
+    'crystal:npc/leonora': ('outfit',),
+    'crystal:npc/lieutenant_harlan': ('outfit', 'text', 'walk'),
+    'crystal:npc/lizzie': ('outfit',),
+    'crystal:npc/persevering_lion_archer': ('outfit', 'text', 'walk'),
+    'crystal:npc/raubritter_battler': ('outfit', 'text'),
+    'crystal:npc/raubritter_chastener': ('outfit', 'text'),
+    'crystal:npc/raubritter_chastigator': ('outfit', 'text'),
+    'crystal:npc/raubritter_guard': ('outfit', 'text'),
+    'crystal:npc/raubritter_guardsman': ('outfit', 'text'),
+    'crystal:npc/raubritter_honour_guard': ('outfit', 'text'),
+    'crystal:npc/raubritter_patrol': ('outfit', 'text', 'walk'),
+    'crystal:npc/raubritter_post': ('outfit', 'text'),
+    'crystal:npc/raubritter_purifier': ('outfit', 'text'),
+    'crystal:npc/raubritter_sentinel': ('outfit', 'text'),
+    'crystal:npc/raubritter_sentry': ('outfit', 'text'),
+    'crystal:npc/raubritter_thug': ('outfit', 'text'),
+    'crystal:npc/second_in_command_demeron': ('outfit', 'text'),
+    'crystal:npc/sterling': ('outfit',),
+    'crystal:npc/steward_volkmar': ('outfit', 'text', 'walk'),
+    'crystal:npc/stranded_lion_knight': ('outfit', 'text', 'walk'),
+    'crystal:npc/swashbuckling_lion_archer': ('outfit', 'text', 'walk'),
+    'crystal:npc/szallar_mandar': ('text', 'walk'),
+    'crystal:npc/weary_lion_knight': ('outfit', 'text', 'walk'),
+}
 # D16: the wikis' name of an Item whose registered name differs (folded wiki name -> folded registered name)
 WIKI_ITEM_NAMES = {'straw mat foot section': 'straw bed foot section'}
 # Owner decision 2026-09-27: these source-only NPCs exist only in that OT server, not in Tibia,
@@ -715,6 +755,8 @@ class Builder:
                            for s, b in sorted(bundles.items())},
             'wiki': {'pageid': wiki['pageid'], 'revid': wiki['revid']} if wiki else None,
             'arbitration': [a for a in arbitration if a['rule'] in WIKI_ARBITRATION_RULES],
+            **({'source_unconfirmed': list(SOURCE_UNCONFIRMED[sources['crystal']])}
+               if list(sources) == ['crystal'] and sources['crystal'] in SOURCE_UNCONFIRMED else {}),
             'left_out': left_out,
         }
         return record

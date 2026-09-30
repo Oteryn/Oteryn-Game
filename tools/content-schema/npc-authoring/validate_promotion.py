@@ -219,6 +219,11 @@ def candidate_errors(candidate, index):
         if 'revision' in entry and (source != 'crystal' or key not in promotion_candidates.SUPPLEMENT_ADMITTED
                                     or entry['revision'] != promotion_candidates.CRYSTAL_SUPPLEMENT_REVISION):
             errs.append(f"{plabel}: revision {entry['revision']!r} is not the D14 supplement revision of a listed file")
+    unconfirmed = candidate.get('source_unconfirmed')
+    table_row = promotion_candidates.SOURCE_UNCONFIRMED.get((provenance.get('crystal') or {}).get('key'))
+    expected_unconfirmed = list(table_row) if table_row is not None and list(provenance) == ['crystal'] else None
+    if unconfirmed != expected_unconfirmed:
+        errs.append(f'{label}: source_unconfirmed {unconfirmed!r} != the D16 table row {expected_unconfirmed!r}')
     fan_confirmed = any(row.get('rule') == 'FAN_WIKI_CONFIRMED' for row in candidate.get('arbitration') or [])
     if len(provenance) == 1 and candidate.get('wiki') is None and not fan_confirmed:
         errs.append(f'{label}: single-source candidate has no wiki confirmation (D6)')
