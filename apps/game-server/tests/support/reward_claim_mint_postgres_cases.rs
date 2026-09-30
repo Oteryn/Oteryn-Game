@@ -10,6 +10,7 @@ use crate::domain::progression::{
     FiniteProgressionPolicy, LevelThreshold, ProgressionRevisionContext,
 };
 use crate::durability::DurabilityRoot;
+use crate::durability::account_achievement::AchievementCatalogueLookup;
 use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_progression::{
@@ -25,8 +26,8 @@ use crate::durability::item_transfer::{
     ItemTransferRefusal, ItemTransferRequest,
 };
 use crate::durability::reward_claim_mint::{
-    CommittedRewardClaimMint, RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest,
-    RewardClaimRefusal,
+    ACHIEVEMENT_SOURCE_KIND, CommittedRewardClaimMint, RewardClaimAchievement,
+    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
 };
 use crate::durability::reward_claim_mint_audit as audit;
 use crate::durability::runtime_scope_assignment::{
@@ -783,6 +784,7 @@ fn chest(
         content_revision: "content-1".into(),
         ruleset_revision: "ruleset-1".into(),
         sim_revision: "sim-1".into(),
+        achievement: None,
     }
 }
 
@@ -1983,5 +1985,415 @@ fn xp_request(tag: u8) -> TestResult<ExperienceAwardRequest<2>> {
             death_loss_denominator: 10,
             death_loss_rounding: RoundingMode::Floor,
         },
+    })
+}
+
+// ACHIEVEMENT step 4: the chest's achievement is granted in the claim's own
+// commit transaction (Achievement owner contract §3). Character 41 of account
+// 40 is live on session 50.
+
+const ACCOUNT: u8 = 40;
+const SECOND_CHARACTER: u8 = 44;
+const SECOND_SESSION: u8 = 51;
+const COOKIES: &str = "oteryn:achievement/allow_cookies";
+
+fn with_achievement(
+    mut request: RewardClaimMintRequest,
+    catalogue: AchievementCatalogueLookup,
+) -> RewardClaimMintRequest {
+    request.achievement = Some(RewardClaimAchievement {
+        key: COOKIES.into(),
+        catalogue,
+    });
+    request
+}
+
+fn earnable(revision: &str) -> AchievementCatalogueLookup {
+    AchievementCatalogueLookup::Earnable {
+        revision: revision.into(),
+    }
+}
+
+/// The claim's source event: Character id, then SHA-256 over the
+/// length-prefixed claim family and production key.
+fn claim_event(character: u8, claim_key: &str) -> Vec<u8> {
+    use sha2::{Digest, Sha256};
+    let mut claim = Vec::new();
+    for part in ["RewardClaim", claim_key] {
+        claim.extend_from_slice(&u16::try_from(part.len()).unwrap_or(0).to_be_bytes());
+        claim.extend_from_slice(part.as_bytes());
+    }
+    let mut event = id(character).to_vec();
+    event.extend_from_slice(&Sha256::digest(&claim));
+    event
+}
+
+impl Harness {
+    /// (grant requests, account facts).
+    async fn achievement_rows(&self) -> TestResult<(i64, i64)> {
+        Ok((
+            self.count("game_account_achievement_grant_requests")
+                .await?,
+            self.count("game_account_achievements").await?,
+        ))
+    }
+
+    /// Every row a claim with an achievement could write.
+    async fn claim_footprint(&self) -> TestResult<(Vec<i64>, (i64, i64))> {
+        Ok((self.footprint().await?, self.achievement_rows().await?))
+    }
+}
+
+/// Character 44 of the same account takes the account's presence on session
+/// 51; session 50 of Character 41 ends.
+async fn switch_to_second_character(pool: &sqlx::PgPool) -> TestResult {
+    sqlx::query(
+        "INSERT INTO game_character_roots VALUES \
+         (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Second Hero')",
+    )
+    .bind(id(SECOND_CHARACTER).as_slice())
+    .bind(id(ACCOUNT).as_slice())
+    .bind(id(WORLD).as_slice())
+    .execute(pool)
+    .await?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3")
+        .execute(pool)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_durability_reconnect_sessions(\
+           game_session_id,account_id,character_id,world_id,runtime_scope_kind,\
+           runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,\
+           original_grace_deadline,predecessor_generation,character_lease_generation,\
+           scope_ownership_generation,current_generation,current_transport_ref,session_state) \
+         VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+           encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,\
+           1,999999,1,1,1,1,$6,1)",
+    )
+    .bind(id(SECOND_SESSION).as_slice())
+    .bind(id(ACCOUNT).as_slice())
+    .bind(id(SECOND_CHARACTER).as_slice())
+    .bind(id(WORLD).as_slice())
+    .bind(id(CHANNEL).as_slice())
+    .bind([8_u8; 16].as_slice())
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_durability_admission_character_guards VALUES \
+         (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+          true,1,encode($4,'hex')::uuid,1,'test',1,'character-current',1,0,'{}')",
+    )
+    .bind(id(SECOND_CHARACTER).as_slice())
+    .bind(id(ACCOUNT).as_slice())
+    .bind(id(WORLD).as_slice())
+    .bind(id(SECOND_SESSION).as_slice())
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "UPDATE game_durability_admission_account_guards \
+            SET presence_character_id = encode($1,'hex')::uuid, \
+                holder_game_session_id = encode($2,'hex')::uuid",
+    )
+    .bind(id(SECOND_CHARACTER).as_slice())
+    .bind(id(SECOND_SESSION).as_slice())
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+fn second_fence() -> TestResult<CurrentCharacterItemFence> {
+    Ok(CurrentCharacterItemFence {
+        character_id: CharacterId::from_bytes(id(SECOND_CHARACTER)).map_err(debug)?,
+        game_session_id: GameSessionId::decode(&id(SECOND_SESSION)).map_err(debug)?,
+        ..fence()?
+    })
+}
+
+fn second_command(value: u64) -> TestResult<CommandRef> {
+    Ok(CommandRef::new(
+        GameSessionId::decode(&id(SECOND_SESSION)).map_err(debug)?,
+        CommandId::new(value).map_err(debug)?,
+    ))
+}
+
+/// (source_kind, source_event_id, revision, account, Character) of the
+/// requests for the key, in Character order, and the fact's source event.
+async fn achievement_state(
+    pool: &sqlx::PgPool,
+) -> TestResult<(Vec<(String, Vec<u8>, String, String, String)>, Vec<u8>)> {
+    let rows = sqlx::query(
+        "SELECT source_kind, source_event_id, achievement_revision, account_id::text, \
+                character_id::text \
+           FROM game_account_achievement_grant_requests \
+          WHERE achievement_key = $1 ORDER BY character_id",
+    )
+    .bind(COOKIES)
+    .fetch_all(pool)
+    .await?;
+    let mut requests = Vec::new();
+    for row in rows {
+        requests.push((
+            row.try_get("source_kind")?,
+            row.try_get("source_event_id")?,
+            row.try_get("achievement_revision")?,
+            row.try_get("account_id")?,
+            row.try_get("character_id")?,
+        ));
+    }
+    let fact: Vec<u8> = sqlx::query_scalar(
+        "SELECT source_event_id FROM game_account_achievements \
+          WHERE account_id = encode($1,'hex')::uuid AND achievement_key = $2 \
+            AND source_kind = $3",
+    )
+    .bind(id(ACCOUNT).as_slice())
+    .bind(COOKIES)
+    .bind(ACHIEVEMENT_SOURCE_KIND)
+    .fetch_one(pool)
+    .await?;
+    Ok((requests, fact))
+}
+
+#[test]
+fn a_chest_achievement_commits_with_its_claim_once_per_account() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "achievement").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        harness.equip_backpack(&authority, 1).await?;
+        let request = || -> TestResult<RewardClaimMintRequest> {
+            Ok(with_achievement(
+                coins(command(10)?, CLAIM, 30),
+                earnable("r1"),
+            ))
+        };
+
+        // A valid freeze, then a commit under a stale connection generation:
+        // no item, claim, request or fact.
+        let mut candidate = harness
+            .root
+            .freeze_reward_claim_mint(&authority, &harness.node, fence()?, request()?)
+            .await
+            .map_err(debug)?;
+        let before = harness.claim_footprint().await?;
+        let mut stale = fence()?;
+        stale.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        rejected(
+            harness
+                .root
+                .commit_reward_claim_mint(&authority, &harness.node, stale, &mut candidate)
+                .await,
+            "stale connection_generation",
+        )?;
+        assert_eq!(harness.claim_footprint().await?, before);
+        assert_eq!(before.1, (0, 0));
+
+        // The same candidate under the current fence: the item, the claim,
+        // the request and the fact commit together.
+        let first = match harness
+            .root
+            .commit_reward_claim_mint(&authority, &harness.node, fence()?, &mut candidate)
+            .await
+            .map_err(debug)?
+        {
+            RewardClaimMintOutcome::Committed(result) => result,
+            other => return Err(format!("expected a fresh claim, got {other:?}").into()),
+        };
+        assert_eq!(harness.item_state(first.item_instance_id).await?, (30, 1));
+        assert_eq!(harness.count("game_reward_claims").await?, 1);
+        let event = claim_event(CHARACTER, CLAIM);
+        let (requests, fact) = achievement_state(&harness.pool).await?;
+        assert_eq!(
+            requests,
+            vec![(
+                ACHIEVEMENT_SOURCE_KIND.to_owned(),
+                event.clone(),
+                "r1".to_owned(),
+                uuid_text(id(ACCOUNT)),
+                uuid_text(id(CHARACTER)),
+            )]
+        );
+        assert_eq!(fact, event);
+        // The grant does not advance CharacterRevision.
+        assert_eq!(harness.character_revision().await?, "1");
+
+        // Replay returns the first outcome and writes nothing (the last
+        // DUR03-RL-08 unit of this reservation; reconcile follows below).
+        let after = harness.claim_footprint().await?;
+        let mut replay = harness
+            .root
+            .freeze_reward_claim_mint(&authority, &harness.node, fence()?, request()?)
+            .await
+            .map_err(debug)?;
+        match harness
+            .root
+            .commit_reward_claim_mint(&authority, &harness.node, fence()?, &mut replay)
+            .await
+            .map_err(debug)?
+        {
+            RewardClaimMintOutcome::AlreadyCommitted(result) => assert_eq!(result, first),
+            other => return Err(format!("expected the retained result, got {other:?}").into()),
+        }
+        assert_eq!(harness.claim_footprint().await?, after);
+        // The achievement is part of the intent: the same command without
+        // it, or with another lookup, conflicts.
+        let without = coins(command(10)?, CLAIM, 30);
+        let retired = with_achievement(
+            coins(command(10)?, CLAIM, 30),
+            AchievementCatalogueLookup::Retired,
+        );
+        let revised = with_achievement(coins(command(10)?, CLAIM, 30), earnable("r2"));
+        for changed in [without, retired, revised] {
+            assert!(matches!(
+                harness
+                    .root
+                    .freeze_reward_claim_mint(&authority, &harness.node, fence()?, changed)
+                    .await,
+                Err(RewardClaimMintError::ConflictingCause)
+            ));
+        }
+        // D40: another USE of the claimed `once` chest is refused and
+        // requests nothing.
+        refused(
+            harness
+                .claim(
+                    &authority,
+                    fence()?,
+                    with_achievement(coins(command(11)?, CLAIM, 30), earnable("r1")),
+                )
+                .await,
+            RewardClaimRefusal::AlreadyClaimed,
+        )?;
+        assert_eq!(harness.claim_footprint().await?, after);
+
+        // Character 44 of the same account opens the same chest type: its own
+        // claim commits, one more request, and the account's one fact keeps
+        // Character 41's provenance.
+        switch_to_second_character(&harness.pool).await?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        match harness
+            .transfer(
+                &authority,
+                second_fence()?,
+                to_slot(second_command(1)?, backpack, backpack_facts()),
+            )
+            .await
+            .map_err(debug)?
+        {
+            ItemTransferOutcome::Committed(_) => {}
+            other => return Err(format!("expected an equip, got {other:?}").into()),
+        }
+        let mut candidate = harness
+            .root
+            .freeze_reward_claim_mint(
+                &authority,
+                &harness.node,
+                second_fence()?,
+                with_achievement(coins(second_command(10)?, CLAIM, 30), earnable("r1")),
+            )
+            .await
+            .map_err(debug)?;
+        let second = match harness
+            .root
+            .commit_reward_claim_mint(&authority, &harness.node, second_fence()?, &mut candidate)
+            .await
+            .map_err(debug)?
+        {
+            RewardClaimMintOutcome::Committed(result) => result,
+            other => return Err(format!("expected a fresh claim, got {other:?}").into()),
+        };
+        assert_eq!(second.destination, at(backpack, 1).ok_or("entry")?);
+        assert_eq!(harness.count("game_reward_claims").await?, 2);
+        // Reconcile returns the committed claim and writes nothing.
+        let after = harness.claim_footprint().await?;
+        assert_eq!(
+            harness
+                .root
+                .reconcile_reward_claim_mint(&authority, &mut candidate)
+                .await
+                .map_err(debug)?,
+            Some(second)
+        );
+        assert_eq!(harness.claim_footprint().await?, after);
+        let (requests, fact) = achievement_state(&harness.pool).await?;
+        assert_eq!(
+            requests
+                .iter()
+                .map(|request| (request.1.clone(), request.4.clone()))
+                .collect::<Vec<_>>(),
+            vec![
+                (event.clone(), uuid_text(id(CHARACTER))),
+                (
+                    claim_event(SECOND_CHARACTER, CLAIM),
+                    uuid_text(id(SECOND_CHARACTER))
+                ),
+            ]
+        );
+        assert_eq!(fact, event);
+        assert_eq!(harness.achievement_rows().await?, (2, 1));
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn an_absent_achievement_fails_the_claim_closed_and_a_retired_one_grants_nothing() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "achievement_catalogue").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        harness.equip_backpack(&authority, 1).await?;
+
+        // Absent from the catalogue: nothing is reserved, minted, claimed or
+        // granted.
+        let before = harness.claim_footprint().await?;
+        assert!(matches!(
+            harness
+                .claim(
+                    &authority,
+                    fence()?,
+                    with_achievement(
+                        coins(command(10)?, CLAIM, 30),
+                        AchievementCatalogueLookup::Absent,
+                    ),
+                )
+                .await,
+            Err(RewardClaimMintError::UnknownAchievement)
+        ));
+        assert_eq!(harness.claim_footprint().await?, before);
+
+        // Retired: the item and the claim commit, no achievement rows.
+        let retired = harness
+            .claimed(
+                &authority,
+                with_achievement(
+                    coins(command(11)?, CLAIM, 30),
+                    AchievementCatalogueLookup::Retired,
+                ),
+            )
+            .await?;
+        assert_eq!(harness.item_state(retired.item_instance_id).await?, (30, 1));
+        assert_eq!(harness.count("game_reward_claims").await?, 1);
+        assert_eq!(harness.achievement_rows().await?, (0, 0));
+        assert_eq!(harness.character_revision().await?, "1");
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
     })
 }

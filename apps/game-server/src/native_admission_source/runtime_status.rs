@@ -92,7 +92,7 @@ fn charset(value: &str, maximum: usize, extra: &[u8]) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"._:-".contains(&b) || extra.contains(&b))
 }
 
-fn canonical_uuid(value: &str, version: Option<u8>) -> bool {
+pub(super) fn canonical_uuid(value: &str, version: Option<u8>) -> bool {
     let b = value.as_bytes();
     b.len() == 36
         && b.iter().enumerate().all(|(i, c)| match i {
@@ -213,35 +213,57 @@ impl RuntimeStatusDescriptor {
         client_key: PrivateKeyDer<'static>,
         other_purposes: &[&[CertificateDer<'static>]],
     ) -> Result<Self, SourceError> {
-        let own = leaf_spki(&client_chain)?;
-        let signer = rustls::crypto::aws_lc_rs::default_provider()
-            .key_provider
-            .load_private_key(client_key.clone_key())
-            .map_err(|_| SourceError::InvalidDescriptor)?;
-        let key_spki = signer
-            .public_key()
-            .ok_or(SourceError::InvalidDescriptor)?
-            .as_ref()
-            .to_vec();
-        if key_spki != own {
-            return Err(SourceError::InvalidDescriptor);
-        }
-        for chain in other_purposes {
-            if leaf_spki(chain)? == own {
-                return Err(SourceError::InvalidDescriptor);
-            }
-        }
-        ProducerDescriptor::new(
-            PURPOSE.into(),
+        purpose_descriptor(
+            PURPOSE,
             connect_endpoint,
-            peer_name.clone(),
             peer_name,
             roots,
             client_chain,
             client_key,
+            other_purposes,
         )
         .map(Self)
     }
+}
+
+/// A descriptor for one purpose-bound client identity whose key matches its
+/// leaf and whose public key no other purpose's leaf uses.
+pub(super) fn purpose_descriptor(
+    purpose: &str,
+    connect_endpoint: (String, u16),
+    peer_name: String,
+    roots: Vec<CertificateDer<'static>>,
+    client_chain: Vec<CertificateDer<'static>>,
+    client_key: PrivateKeyDer<'static>,
+    other_purposes: &[&[CertificateDer<'static>]],
+) -> Result<ProducerDescriptor, SourceError> {
+    let own = leaf_spki(&client_chain)?;
+    let signer = rustls::crypto::aws_lc_rs::default_provider()
+        .key_provider
+        .load_private_key(client_key.clone_key())
+        .map_err(|_| SourceError::InvalidDescriptor)?;
+    let key_spki = signer
+        .public_key()
+        .ok_or(SourceError::InvalidDescriptor)?
+        .as_ref()
+        .to_vec();
+    if key_spki != own {
+        return Err(SourceError::InvalidDescriptor);
+    }
+    for chain in other_purposes {
+        if leaf_spki(chain)? == own {
+            return Err(SourceError::InvalidDescriptor);
+        }
+    }
+    ProducerDescriptor::new(
+        purpose.into(),
+        connect_endpoint,
+        peer_name.clone(),
+        peer_name,
+        roots,
+        client_chain,
+        client_key,
+    )
 }
 
 /// Why a report was not delivered. None of these is a statement about the
@@ -302,7 +324,14 @@ pub async fn deliver(
     )
     .await
     .map_err(|_| NotDelivered::Unavailable)?;
-    // Failures are empty bodies (§4).
+    if status == 200 {
+        return decode_response(&raw).map_err(|_| NotDelivered::InvalidResponse);
+    }
+    Err(refusal(status, &raw))
+}
+
+/// The class of a non-200 outcome. Failures are empty bodies (§4).
+pub(super) fn refusal(status: u16, raw: &[u8]) -> NotDelivered {
     let refused = |class| {
         if raw.is_empty() {
             class
@@ -310,14 +339,13 @@ pub async fn deliver(
             NotDelivered::InvalidResponse
         }
     };
-    Err(match status {
-        200 => return decode_response(&raw).map_err(|_| NotDelivered::InvalidResponse),
+    match status {
         400 => refused(NotDelivered::Malformed),
         401 => refused(NotDelivered::Unauthenticated),
         409 => refused(NotDelivered::Conflict),
         429 => refused(NotDelivered::RateLimited),
         _ => NotDelivered::Unavailable,
-    })
+    }
 }
 
 /// Monotonic and wall time for the report loop; injectable for tests.

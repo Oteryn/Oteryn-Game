@@ -6,6 +6,7 @@ on:
       - tools/content-schema/house-authoring/**
       - tools/content-schema/monster-authoring/monster.schema.json
       - imports/cipsoft-staticdata/houses/**
+      - content/houses/**
       - .github/workflows/house-authoring-schema.yml
   workflow_dispatch:
 
@@ -47,7 +48,10 @@ jobs:
           python validate_houses.py synthetic-valid-house.json
 
       - name: All staged houses convert and validate
-        run: python convert_houses.py convert --check
+        run: |
+          set -euo pipefail
+          python convert_houses.py convert --check
+          python build_catalogue.py --check
 
       - name: Wiki comparison self-test
         run: python wiki_br_houses.py self-test

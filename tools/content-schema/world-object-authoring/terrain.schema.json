@@ -44,7 +44,8 @@
                 "ground",
                 "border",
                 "wall",
-                "field"
+                "field",
+                "roof"
               ]
             }
           },
@@ -130,6 +131,29 @@
               },
               "required": [
                 "field_type"
+              ]
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ]
+        }
+      ]
+    },
+    "behavior": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "KNOWN"
+            },
+            "value": {
+              "enum": [
+                "trash_holder",
+                "teleport"
               ]
             }
           },
