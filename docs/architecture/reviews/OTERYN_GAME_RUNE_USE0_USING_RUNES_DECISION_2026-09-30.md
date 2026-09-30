@@ -29,7 +29,7 @@
 | RUNE-CONTENT-1 | content lane | rune items as stacks of 100; the rune checks the #162 spell audit left open; lowering of the ready rune bundles (§3, §9) | ITEM-SEM-USE |
 | RUNE-1 | hard, persistence review | the `ItemUseCause::Rune` burn and its audit, the rune slot, holds and ambiguity (§5, §7) | ITEM-USE-1; RUNE-WIRE-1 |
 | RUNE-CAST-1 | spell lane, combat review | rune resolution, the frozen cast and its application through the ability pipeline; the 18 direct runes of §9 (§6, §8) | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1 |
-| RUNE-CONJ-1 | hard, persistence, combat and protocol review | the `ConjureCause` BURN and MINT, the mana and soul holds, two cast dispositions (§10) | RUNE-1; the instant cast composition (SPELL-D4) |
+| RUNE-CONJ-1 | hard, persistence, combat and protocol review | the `ConjureCause` BURN and MINT with the receipt-recorded mana and soul debit, the holds, two cast dispositions under `RUNE_USE_V1` (§10) | RUNE-1; the instant cast composition (SPELL-D4) |
 | FIELD-1 | hard (combat), combat review | the runtime field overlay, `create_item`, decay, step-in conditions, blocking walls (§11) | COND-1; RUNE-CAST-1 |
 | FIELD-WIRE-1 | impl, protocol review | field entities in VIS-2 (§11.4) | VIS-2; FIELD-1 |
 
@@ -119,7 +119,7 @@ exactly once and only for a cast that happens?
 
 - **Capability `RUNE_USE_V1`**, which requires `ITEM_USE_V1`; its number is reserved on #162 at
   allocation. Without it a rune is `NOTHING_TO_USE`, and the new arm and dispositions are not
-  sent.
+  sent. It also gates conjuring and the two conjure dispositions (§10).
 - **The used rune:** field 2 (a handle to a main backpack direct entry, and to an equipped item
   after ITEM-MOVE-2a) or field 5 (the hotkey form, resolved as ITEM-USE-0 §3). The client never
   opens a container to use a rune.
@@ -214,15 +214,18 @@ The DUR-03 burn commits (§5). A known abort releases every hold: nothing was pa
   the PREPARE time. Any cast of the same spell or group meanwhile is `EXHAUSTED` (runes and
   instant spells share groups, S9). A known commit makes them real; a known abort removes them.
 - **Mana and soul holds** (conjure, §10): taken from the vitals at PREPARE, shown as spent,
-  settled at PRIMARY COMMIT, returned (capped at the maximum) on a known abort. A mana shield hit
-  uses only unheld mana.
+  settled at PRIMARY COMMIT from the committed `ConjureCause` receipt, returned (capped at the
+  maximum) on a known abort. A mana shield hit uses only unheld mana.
 - **Retry.** A replay of the same CommandId returns the original result while FND-02 retains it,
   then `COMMAND_OUTCOME_EXPIRED` with reconciliation (SPELL-D3). The burn's TransactionId and the
   occurrence come from the CommandRef, so a replay never burns, draws or applies twice.
 - **Ambiguous commit.** After `ITEMUSE0-RL-04` (2,000 ms) the slot is freed. The pending
-  cooldowns and holds become final. S stays unspendable until reconciliation (hotkeys skip it). A
-  commit known only after reconciliation applies no late effect: the unit is spent, as after a
-  crash.
+  cooldowns and the mana and soul holds are not finalized and not released: they stay held
+  (shown as spent, unusable) until reconciliation reads the durable receipt. A committed receipt
+  settles them as a debit; no committed receipt (an abort) releases them and removes the pending
+  cooldowns. S and the conjure reagent stay unspendable until reconciliation (hotkeys skip
+  them). A commit known only after reconciliation applies no late effect: the unit is spent, as
+  after a crash, and a conjure's minted runes are published with the settlement.
 - **Channel transfer and logout** wait for the slot's outcome, within the same bound.
 - Each use is one item-only transaction under the composition rule 2 fence, with no
   `CharacterRevision` advance (rule 1, main backpack entries).
@@ -280,11 +283,28 @@ checks it like any other.
 - **Wire.** The conjure is sent as a spell cast (SPELL-D1). Two dispositions are added to
   `SpellCastDisposition`, `REAGENT_MISSING` and `NO_ROOM`, numbered by RUNE-CONJ-1 with the
   protocol owner; the cast result is sent at the outcome, after the commit.
+- **Capability gate (`RUNEUSE0-C1`).** Conjuring and the two dispositions exist only for a
+  session that negotiated `RUNE_USE_V1` (§4). Without it a conjure spell is refused as the
+  existing `NOT_AVAILABLE` (SPELL-D1), checked first, before the reagent search, any hold, any
+  reservation and any cost; `REAGENT_MISSING` and `NO_ROOM` are never sent to that session.
 - **Why MINT.** Conjured runes are new value made from mana. A MINT line names that source for
   conservation and economy checks; a transform would hide it.
 - **Costs:** mana, soul and cooldowns are held at PREPARE and settle at PRIMARY COMMIT (§7). The
   effect is the conjure presentation (`magic_red`, S18); the runes appear through the item
   delta after the commit. A known abort returns the holds.
+- **Payment is failure-atomic with the mint (`RUNEUSE0-C2`).** Mana and soul are
+  runtime-actor-local in V1 (SPELL-D2), so there is no durable vitals row to write. The
+  `ConjureCause` transaction therefore records the debit durably: its receipt and audit event
+  carry the held `mana` and `soul` amounts as the MINT's source, in the same transaction as the
+  BURN and MINT lines. The durable outcome alone decides the payment: a committed receipt means
+  the debit is owed and the holds settle; no committed receipt means nothing was minted and the
+  holds are released. Neither the result stack's delta nor the cast result is published before
+  the holds settle, in the same owner mutation as the PRIMARY COMMIT. A conjure never settles or
+  releases a hold on a timeout (§7). If the runtime actor ends before settlement, its vitals end
+  with it and a new actor starts at the maximum (SPELL-D2); that is the accepted V1 vitals
+  limitation, and it restores no more than a settled conjure followed by the same actor end.
+  When durable vitals land (DUR-02), the mana and soul debit becomes a line of the same
+  `ConjureCause` transaction. Architect ruling R2 (§15).
 - Blank runes come from NPC trade (NPC-0). Conjuring ammunition and food uses the same cause
   without a reagent, in a later amendment.
 
@@ -386,6 +406,13 @@ path for a case of tens of milliseconds. **Ruled a)**: it is a Global-parity app
 owner rule 5905825574 gives to the architect, and it keeps DUR-03 §7 and SPELL-D3 exactly as
 ITEM-USE-0 does for potions. No owner question is open.
 
+**R2. Conjure payment without durable vitals.** Mana and soul are runtime-actor-local (SPELL-D2)
+and cannot share the MINT's database transaction. The conservative, fail-closed choice is
+`RUNEUSE0-C2` (§10): the `ConjureCause` receipt records the mana and soul debit atomically with
+the MINT, and the holds settle or release only from that durable outcome, never from a timeout.
+Rejected: finalizing holds on the ambiguity bound (charges for an aborted mint) and releasing
+them on the bound (a free mint). DUR-02 durable vitals move the debit into the same transaction.
+
 ## 16. Decision test
 
 - **Must decide now:** YES. The owner asked for runes now; the spell cast contract lists rune use
@@ -404,11 +431,12 @@ ITEM-USE-0 does for potions. No owner question is open.
    contract §5 and §6; the spell authoring schema §6. Each is written "pending on acceptance of
    RUNE-USE-0". The capability number is reserved at allocation.
 2. **Serialization:** one rune slot per actor; pending cooldowns and holds; reserved S; one
-   item-only DUR-03 transaction before the effect; rule 2 fence; replay by CommandRef.
+   item-only DUR-03 transaction before the effect; rule 2 fence; replay by CommandRef; conjure
+   holds settle or release only from the durable receipt (`RUNEUSE0-C2`).
 3. **Restart:** items are durable; the frozen cast, holds, cooldowns and fields are runtime state.
 4. **Typed references:** handles, definition indexes, D85 identities, SPELL-D7 positions,
    `ProductionKey` in audit.
-5. **Wire:** §4, capability `RUNE_USE_V1`; the two conjure dispositions (§10); §11.4 at
-   FIELD-WIRE-1.
+5. **Wire:** §4, capability `RUNE_USE_V1`; the two conjure dispositions under it, else
+   `NOT_AVAILABLE` (§10, `RUNEUSE0-C1`); §11.4 at FIELD-WIRE-1.
 6. **Split work:** one unit per use; one reagent unit and one result stack per conjure; at most
    25 fields per cast.

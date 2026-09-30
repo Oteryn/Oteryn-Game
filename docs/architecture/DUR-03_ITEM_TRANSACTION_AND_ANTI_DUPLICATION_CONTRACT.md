@@ -1580,7 +1580,9 @@ third `ItemUseCause` variant `Rune`, keyed by the using command's CommandRef and
 the rune's effect (RUNE-1); (b) **conjure**, in one transaction under the closed `ConjureCause`
 keyed by the cast's CommandRef, one BURN line of one reagent unit (§11.1 or §11.5) and one MINT
 line (§14) of the conjured units into a compatible stack or a fresh entry planned in the
-reservation (§11.3), at most two items (RUNE-CONJ-1). Both supersede the §39.1 exclusions of burn,
+reservation (§11.3), at most two items (RUNE-CONJ-1); its receipt and audit event record the
+conjure's mana and soul debit as the MINT source, and the runtime settles or releases the
+caster's holds only from that durable outcome (RUNE-USE-0 `RUNEUSE0-C2`). Both supersede the §39.1 exclusions of burn,
 mint into an existing stack and multiple touched items for these shapes only, with one audit
 event each and their own suffixed rows (`DUR03-RL-01-RUNE`, `DUR03-RL-01-CONJURE`).
 

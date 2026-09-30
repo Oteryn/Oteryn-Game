@@ -197,7 +197,10 @@ Mana-spent progress (magic-level training) is a separate GAME-CHAR descendant an
 `OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md` §5).** A cast with an item
 cost (rune use, conjure) runs every check at PREPARE, freezes the cast, and holds its cooldowns
 (and, for a conjure, mana and soul). The DUR-03 item transaction commits first; the holds settle
-with the Effect Plan at PRIMARY COMMIT, and a known abort releases them. SPELL-D3 is kept: nothing
+with the Effect Plan at PRIMARY COMMIT, and a known abort releases them. A conjure's mana and soul
+debit is recorded in its durable `ConjureCause` receipt with the MINT; after an ambiguous commit
+the holds stay held until reconciliation reads that receipt (commit settles, abort releases) and
+are never finalized or released by a timeout. SPELL-D3 is kept: nothing
 is paid for a refused cast, and a cast whose item cost has committed is cast
 (`reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md` §6 and §7).
 
@@ -221,7 +224,8 @@ VSL-COMBAT-01 child E provides other-actor visibility and an attack target.
 `OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md` §6).** Rune use and conjure
 are designed by RUNE-USE-0: rune use through the USE command (capability `RUNE_USE_V1`), a
 one-unit burn under `ItemUseCause::Rune`; conjure as a spell cast with a `ConjureCause` burn and
-mint, and two added dispositions, `REAGENT_MISSING` and `NO_ROOM`.
+mint, and two added dispositions, `REAGENT_MISSING` and `NO_ROOM`, sent only under `RUNE_USE_V1`;
+without it a conjure spell is refused as `NOT_AVAILABLE` before any hold or cost.
 
 ## 7. Proposed resource limits (for the resource owner)
 
