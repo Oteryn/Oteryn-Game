@@ -106,8 +106,30 @@ PREM-1b's client and test producer and PREM-P serve the same exchange.
   series: there is no separate "unknown account" answer.
 - **Anything else is unavailable:** any other status, a redirect (never followed), another content
   type, a timeout after 5 seconds (`PREMDEL0-RL-03`), or a TLS failure. A 200 whose body is
-  dropped under §3 or §4, or that the fence (§6) does not accept as newer evidence or as an exact
-  replay of the accepted revision (consumer contract §6.2 rule 3), counts as a failed pull too.
+  malformed or dropped under §3 or §4 (size, JSON shape, nonce, `account_id`, the closed `NONE`
+  variant), or that the fence (§6) rejects as stale without contradiction (consumer contract §8.1
+  rules 1 and 3), counts as a failed pull too. The two semantic failures below are not failed
+  pulls.
+- **Semantic failures are `INVALID_OR_CONFLICTING`, not unavailable** (consumer contract §8.1
+  rules 2 and 4, §8.3, §16). A well-formed 200 on the §3 channel, with the echoed nonce and the
+  requested `account_id`, is authenticated evidence; it is classified `INVALID_OR_CONFLICTING`
+  when either:
+  1. **Same-revision contradiction:** it carries an `authority_revision` the account has already
+     accepted (the current high water or a retained historical one, §6) and any field other than
+     `nonce` and `producer_revision` differs from that accepted evidence. An identical payload is
+     an exact replay (§6.2 rule 3) and is a successful pull.
+  2. **Unsupported or downgraded semantics:** its `schema`, `producer_profile`, `product_id` or
+     `product_version` is outside the compatibility pair PREM-1 records (§4), or its profile or
+     version is older than one the account has already accepted (a downgrade).
+
+  Such a response is never accepted as evidence and never moves the high water. PREM-1 records a
+  durable conflict marker on the account's fence row (§6) before any later benefit check, raises a
+  security audit event (consumer contract §15), and denies Premium (login unaffected). The marker
+  survives later successful pulls and restarts: consumer contract §8.3 requires reconciliation,
+  not a retry. **Declared V1 deferral:** V1 defines no Premium reconciliation, so no path clears
+  the marker; the account's Premium stays denied until a later accepted decision defines
+  reconciliation (consumer contract §13 covers only Profile C/D). This decision grants no
+  authority to clear it.
 - **A failed pull denies Premium at once.** A failed admission, reconnect or refresh pull yields no
   new evidence: the fence keeps its last accepted evidence unchanged, but the account's class is
   `AUTHORITY_UNAVAILABLE` from that failure until a later pull for the account succeeds, even while
@@ -115,11 +137,13 @@ PREM-1b's client and test producer and PREM-P serve the same exchange.
   failed refresh is `STALE_WITHIN_BOUND` only where stale use is permitted, and it is not
   (PREMIUM-ACTIVATION §4.1 is `REQUIRE_CURRENT` on every surface; §5), so it is
   `AUTHORITY_UNAVAILABLE`, which denies benefit (its §16 row "Same outage; surface requires
-  current"). A restrictive class from the kept evidence (`REVOKED`, `EXPIRED`,
-  `NOT_YET_EFFECTIVE`, `INVALID_OR_CONFLICTING`) still wins under §8.2, and reaching
+  current"). A conflict marker (`INVALID_OR_CONFLICTING`, §8.1) and a restrictive class from the
+  kept evidence (`REVOKED`, `EXPIRED`, `NOT_YET_EFFECTIVE`, §8.2) still win over it, and reaching
   `authority_valid_until` or `effective_until` is still the separate transition to `EXPIRED`. The
   §3 retry with backoff continues; a 429 or 503 `Retry-After` is honoured within that backoff.
-  Login is never affected, and `premium_entitlement_ended` (§6) stays false.
+  Login is never affected. A failed pull, like a semantic failure, leaves
+  `premium_entitlement_ended` (§6) unchanged: it reads only the kept evidence, so it stays true
+  when that evidence already ended the entitlement and never becomes true from the failure.
 - **Test producer** (PREM-1b): an in-process server that speaks exactly this exchange and the §4
   body, used by PREM-1's tests and by the cross-repository end-to-end test's Game half.
 - PREM-P accepts or amends this in Platform (the cross-repository note in the header); a Platform change
@@ -162,11 +186,12 @@ refresh_after:         RFC 3339 UTC
 - `entitlement_state` is the producer's lifecycle state. Game derives its class from the absolute
   times (consumer contract §8.3) and, where the two differ, the more restrictive wins (§8.2): for
   example `NOT_YET_EFFECTIVE` with a start in the past still reads as not effective.
-- An unknown `producer_profile` fails closed for benefit. PREM-P and PREM-1 each record the
-  compatibility pair (`producer_profile`, `product_version`) they support, as consumer contract §4
-  requires, and the end-to-end test checks both records.
-- Unknown `schema`, `product_id` or `product_version` fail closed for benefit (consumer contract
-  §4).
+- An unknown or downgraded `producer_profile` is `INVALID_OR_CONFLICTING` (§3.1; consumer
+  contract §8.1 rule 4). PREM-P and PREM-1 each record the compatibility pair (`producer_profile`,
+  `product_version`) they support, as consumer contract §4 requires, and the end-to-end test checks
+  both records.
+- An unknown `schema`, `product_id` or `product_version` is `INVALID_OR_CONFLICTING` likewise
+  (§3.1; consumer contract §4, §8.1 rule 4).
 
 ## 5. Requested Premium product policy (PREM-P decides)
 
@@ -182,8 +207,9 @@ The consumer contract makes these Platform's product/version policy; Game reques
 Game requests `refresh_after` = issue + 40 minutes (set by Platform in the snapshot). A pull that
 fails suspends Premium benefits (never login) at once as `AUTHORITY_UNAVAILABLE` (§3.1), not at
 `authority_valid_until`; the lease cutoff is only the separate expiry for evidence that is never
-refreshed. Benefits return when a pull succeeds; nothing is lost, D73/D76 already define benefits
-checked at use, and neither an unavailable class nor a lapsed lease relocates a character (§6).
+refreshed. Benefits return when a pull succeeds (not while a §3.1 conflict marker is set); nothing
+is lost, D73/D76 already define benefits checked at use, and neither an unavailable class nor a
+lapsed lease relocates a character (§6).
 
 **Time.** Game evaluates the absolute times against the node's clock, synchronized by NTP, with
 uncertainty at most `max_clock_skew`; a node whose clock is not synchronized treats Premium as not
@@ -197,13 +223,20 @@ current (consumer contract §7, ENT-CDF-04).
   A snapshot naming another `entitlement_id` than before opens a new row and never lowers the
   account high water; a snapshot with no entitlement (`NONE`) advances the account high water and
   reads as Free, so an older `ACTIVE` snapshot can never come back.
-- `premium_current(account, now)` is true only for `CURRENT_AUTHORITY` (§8.3); every other class is
-  Free. Every Premium check in Game (PREM-2..5, the depot limit, charms, and the Market and house
-  gates once the owner's pre-Premium answers end) reads it.
+- The account row also holds the §3.1 conflict marker and a fingerprint of the fields compared in
+  §3.1 for each accepted `authority_revision`, kept for at least 30 days (`PREMDEL0-RL-04`). PREM-1
+  records this horizon; a response whose `authority_revision` fingerprint is past it cannot be
+  compared and is rejected as stale, and PREM-1 claims no equivocation detection beyond it
+  (consumer contract §6.2). A fence whose continuity is unsafe is `INVALID_OR_CONFLICTING` too
+  (consumer contract §6.4).
+- `premium_current(account, now)` is true only for `CURRENT_AUTHORITY` (§8.3) with no conflict
+  marker; every other class is Free. Every Premium check in Game (PREM-2..5, the depot limit,
+  charms, and the Market and house gates once the owner's pre-Premium answers end) reads it.
 - `premium_entitlement_ended(account, now)` is true only when the latest accepted evidence says the
   entitlement itself ended: producer state `EXPIRED`, `REVOKED` or `NONE`, or `effective_until`
-  passed. A lease past `authority_valid_until`, missing evidence or a failed pull never makes it
-  true. PREMIUM-ACTIVATION §4.5's login relocation reads only this predicate.
+  passed. A lease past `authority_valid_until`, missing evidence, a failed pull or a semantic
+  failure (§3.1) never makes it true, and none of them clears it once true. PREMIUM-ACTIVATION
+  §4.5's login relocation reads only this predicate.
 - **Switch-over.** The owner's answers 4 and 5 (#162 5913348961) end when this consumer is
   delivered: PREM-1's activation record names the date, and the Market and house gates then read
   `premium_current`.
@@ -229,8 +262,8 @@ current (consumer contract §7, ENT-CDF-04).
 ## 9. Before-freeze checklist
 
 1. **Contract amendments:** none in this repository; PREM-P records the producer side in Platform.
-2. **Serialization:** one fence row per (account, entitlement) and one account high-water row,
-   monotonic revisions.
+2. **Serialization:** one fence row per (account, entitlement) and one account high-water row
+   (with the conflict marker and bounded revision fingerprints, §6), monotonic revisions.
 3. **Restart:** the fence and evidence are durable; a restart re-pulls before any benefit.
 4. **Typed references:** AccountId, EntitlementId, revisions, absolute UTC times.
 5. **Wire:** no client wire; a private service endpoint (§3, §3.1, §4).
