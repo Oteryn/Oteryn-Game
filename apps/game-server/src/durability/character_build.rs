@@ -18,6 +18,10 @@
 //! [`DurabilityRoot::read_character_build_state`] is the admission load (A13 §4.1): the row, or
 //! the seed when there is none. `verify_character_integrity` checks the chain at admission.
 //!
+//! The caller passes the content formula table as a [`BuildFormula`], as the XP writer takes its
+//! policy. The writer rejects an `after` whose progress already pays for a next level, computes a
+//! vocation choice itself ([`convert_vocation`], SKILLS-0 §3.3) and binds the table digest.
+//!
 //! [`skill_tries_required`], [`cumulative_progress`] and [`relevel`] are the SKILLS-0 §3.1
 //! arithmetic for the training, vocation-choice and death-loss callers: `req(L)` as Canary
 //! computes it (f64 `pow`, truncated), and cumulative sums in checked 128-bit arithmetic that
@@ -272,8 +276,53 @@ pub struct BuildChangeRequest {
     /// The stored stance key a vocation change prunes (A13 §4.2 "Stance fields", §4.4). `None`
     /// leaves the stance row unchanged.
     pub pruned_stance: Option<String>,
-    /// Digest of the content formula table and policy that produced `after` (SKILLS-0 §3.3).
-    pub policy_digest: [u8; 32],
+}
+
+/// The content formula table (SKILLS-0 §3.5) the writer checks a change against: `req(L)` per
+/// vocation and family, and the digest of the table revision, which the receipt binds as its
+/// policy digest.
+pub trait BuildFormula {
+    /// Progress needed to go from `level - 1` to `level` in `family` (0 is magic level, 1..=7 the
+    /// skills in the order of [`SKILLS`]) under `vocation`. `None` means unreachable.
+    fn required(&self, vocation: &str, family: usize, level: u16) -> Option<u64>;
+    fn digest(&self) -> [u8; 32];
+}
+
+/// SKILLS-0 §3.3: keep each family's cumulative progress under the old vocation and re-level it
+/// under `vocation`. The magic level is not capped here (DAWNPORT-1 owns the Dawnport cap).
+pub fn convert_vocation(
+    formula: &dyn BuildFormula,
+    before: &DurableBuildState,
+    vocation: &str,
+) -> Result<DurableBuildState> {
+    let mut families = before.families();
+    for (family, (level, progress)) in families.iter_mut().enumerate() {
+        let floor = if family == 0 { 0 } else { MIN_SKILL_LEVEL };
+        let total = cumulative_progress(*level, *progress, floor, |next| {
+            formula.required(&before.vocation, family, next)
+        });
+        (*level, *progress) = relevel(total, floor, |next| {
+            formula.required(vocation, family, next)
+        });
+    }
+    let mut skills = [(0, 0); 7];
+    skills.copy_from_slice(&families[1..]);
+    DurableBuildState::new(vocation, families[0], skills)
+}
+
+/// Progress is held within the current level (SKILLS-0 §3.1): no family has paid for its next
+/// reachable level without advancing.
+fn normalized(formula: &dyn BuildFormula, state: &DurableBuildState) -> bool {
+    state
+        .families()
+        .into_iter()
+        .enumerate()
+        .all(|(family, (level, progress))| {
+            level >= MAX_BUILD_LEVEL
+                || formula
+                    .required(&state.vocation, family, level + 1)
+                    .is_none_or(|required| progress < required)
+        })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -299,24 +348,33 @@ impl DurabilityRoot {
     /// reacquiring session authority; the same occurrence with another binding conflicts, and the
     /// binding is compared before replay. A new occurrence is fenced like an XP award, must start
     /// from the stored build (and stance, for a prune), and is refused while a death's respawn is
-    /// pending.
+    /// pending. `after` must hold its progress within its levels under `formula`, and a vocation
+    /// choice must be exactly the writer's own conversion of `before` (SKILLS-0 §3.3).
     pub async fn commit_character_build(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         request: BuildChangeRequest,
+        formula: &dyn BuildFormula,
     ) -> Result<BuildCommitOutcome> {
         if fence.character_lease_generation == 0
             || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
             || !request.cause.admits(&request.before, &request.after)
+            || !normalized(formula, &request.after)
             || request.pruned_stance.as_deref().is_some_and(|stance| {
                 request.cause == BuildCause::Training || !valid_revision(stance)
             })
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let binding = command_binding(&fence, &request);
+        if request.cause == BuildCause::VocationChoice
+            && convert_vocation(formula, &request.before, &request.after.vocation)? != request.after
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let policy_digest = formula.digest();
+        let binding = command_binding(&fence, &request, &policy_digest);
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -462,7 +520,7 @@ impl DurabilityRoot {
                     ))
                     .bind(request.occurrence.0.as_slice())
                     .bind(&binding)
-                    .bind(request.policy_digest.as_slice())
+                    .bind(policy_digest.as_slice())
                     .bind(&original)
                     .bind(&committed)
                     .bind(request.cause.key());
@@ -601,10 +659,14 @@ impl DurabilityRoot {
 }
 
 /// The complete intent (A13 §4.2 "Occurrence key"): character, expected revision, occurrence,
-/// cause, before and after values, the stance fields and the policy digest. Retry-local
+/// cause, before and after values, the stance fields and the formula table digest. Retry-local
 /// authority (session, connection, lease and scope generations) is excluded so a replay after a
 /// lost response matches.
-fn command_binding(fence: &CurrentCharacterGameplayFence, request: &BuildChangeRequest) -> Vec<u8> {
+fn command_binding(
+    fence: &CurrentCharacterGameplayFence,
+    request: &BuildChangeRequest,
+    policy_digest: &[u8; 32],
+) -> Vec<u8> {
     let mut semantic = vec![COMMAND_BINDING_VERSION];
     semantic.extend_from_slice(&request.occurrence.0);
     semantic.extend_from_slice(fence.character_id.as_bytes());
@@ -621,7 +683,7 @@ fn command_binding(fence: &CurrentCharacterGameplayFence, request: &BuildChangeR
             semantic.extend_from_slice(stance.as_bytes());
         }
     }
-    semantic.extend_from_slice(&request.policy_digest);
+    semantic.extend_from_slice(policy_digest);
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
     let mut binding = Vec::with_capacity(33);
     binding.push(COMMAND_BINDING_VERSION);
@@ -729,9 +791,43 @@ pub fn relevel(cumulative: u64, floor: u16, req: impl Fn(u16) -> Option<u64>) ->
 #[cfg(test)]
 mod tests {
     use super::{
-        BuildCause, DurableBuildState, MAX_BUILD_PROGRESS, MIN_SKILL_LEVEL, cumulative_progress,
-        relevel, skill_tries_required,
+        BuildCause, BuildFormula, DurableBuildState, MAX_BUILD_PROGRESS, MIN_SKILL_LEVEL,
+        convert_vocation, cumulative_progress, normalized, relevel, skill_tries_required,
     };
+
+    /// Skills: base 50, multiplier 2.0 without a vocation and 1.1 with one. Magic: 100 x L.
+    struct Table;
+
+    impl BuildFormula for Table {
+        fn required(&self, vocation: &str, family: usize, level: u16) -> Option<u64> {
+            match (family, vocation) {
+                (0, _) => Some(100 * u64::from(level)),
+                (_, "none") => skill_tries_required(50, 2.0, level),
+                _ => skill_tries_required(50, 1.1, level),
+            }
+        }
+
+        fn digest(&self) -> [u8; 32] {
+            [1; 32]
+        }
+    }
+
+    #[test]
+    fn vocation_choice_keeps_cumulative_progress_under_the_new_multipliers() {
+        let mut skills = [(10, 0); 7];
+        // Sword 50 + 100 + 3 = 153 tries without a vocation.
+        skills[2] = (12, 3);
+        let before = DurableBuildState::new("none", (2, 40), skills).unwrap_or_default();
+        let after = convert_vocation(&Table, &before, "knight").unwrap_or_default();
+        // As a knight 153 = 50 + 55 + 48, below req(13) = 60; magic keeps (2, 40).
+        assert_eq!(after.vocation(), "knight");
+        assert_eq!(after.skills()[2], (12, 48));
+        assert_eq!(after.magic(), (2, 40));
+        assert!(normalized(&Table, &after));
+        skills[2] = (10, 50);
+        let unpaid = DurableBuildState::new("knight", (0, 0), skills).unwrap_or_default();
+        assert!(!normalized(&Table, &unpaid), "50 tries pay for level 11");
+    }
 
     #[test]
     fn req_truncates_the_f64_power_and_stops_below_the_bound() {

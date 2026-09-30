@@ -46,8 +46,13 @@ The writer half of CHAR-BUILD-1 (A13 §4.1, §4.2, §4.6; SKILLS-0 §3.1-§3.3).
     training prune, a `before` that is not the stored build or a pruned stance that is not the
     stored key (`BuildStateMismatch`, a new `CharacterProgressionError` variant), and a pending
     respawn.
+  - The caller passes the content formula table as a `BuildFormula` (per-vocation `req(L)` and the
+    table digest), as the XP writer takes its policy. The writer computes a `vocation_choice`
+    itself (`convert_vocation`: cumulative progress kept and re-levelled under the new vocation,
+    SKILLS-0 §3.3) and rejects any other `after`. It rejects an `after` in which a family's
+    progress already pays for its next level (SKILLS-0 §3.1).
   - The binding covers the occurrence, character, expected revision, cause, before and after, the
-    stance fields and the policy digest. A revision mismatch fails closed (QUEST-STATE-0 §5.2,
+    stance fields and the table digest, which the receipt stores as its policy digest. A revision mismatch fails closed (QUEST-STATE-0 §5.2,
     CHAR-REV-SEQ-1).
   - `reconcile_character_build`: resolves an outcome by occurrence and never reacquires authority.
   - `read_character_build_state`: the admission load. It returns the row, or the seed when there
@@ -68,16 +73,24 @@ The writer half of CHAR-BUILD-1 (A13 §4.1, §4.2, §4.6; SKILLS-0 §3.1-§3.3).
 
 - The admission load is the durability read. Wiring it into `CasterState` is W2b, which adds
   `Vocation::None` (A13 §5).
-- The writer does not recompute a `vocation_choice` re-level. The caller computes `after` with
-  `cumulative_progress` and `relevel` from the content formula table (W2b, DAWNPORT-1) and binds
-  that table in `policy_digest`. SQL checks only the direction (SKILLS-0 §3.3).
+- The content formula table itself (W2b, SKILLS-0 §3.5) implements `BuildFormula`; the tests use
+  a fixed table.
 - `req(L)` is the SKILLS-0 skill formula. The magic-level mana formula is W2b's (A13 §4.5). The
   arithmetic takes `req` as a closure for that reason.
 - No revision sequencer exists on `main` (#1373 is the decision). The writer follows its rule:
   it includes the revision in the binding and does not retry on a mismatch.
-- Size: `character_build.rs` has about 610 non-comment, non-test lines after rustfmt, above the
+- Size: `character_build.rs` has about 660 non-comment, non-test lines after rustfmt, above the
   ~500 guide. The #1393 scope and its carried findings are one unit. The arithmetic (about 60
   lines plus unit tests) can move to its own PR if the control plane wants that.
+
+## Repair (Codex P1 on `76aa21e6`)
+
+The frozen `76aa21e6` trusted the caller's `vocation_choice` `after`. Codex P1 (#1411,
+`character_build.rs:235`) is accepted: SKILLS-0 §3.3 has the writer compute the conversion, and
+the red run showed a choice to sword (11, 0) from the seed committing. The repair adds the formula
+input, the conversion check and the normalized-progress check (the sibling sweep: training and
+promotion `after` values are also caller values). Both checks have a red run with the check
+removed. Replay, reconcile, fence and reload paths are unchanged and pass.
 
 ## Acceptance criteria
 
@@ -96,8 +109,9 @@ The writer half of CHAR-BUILD-1 (A13 §4.1, §4.2, §4.6; SKILLS-0 §3.1-§3.3).
 - `cargo fmt --check`; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`.
 - PostgreSQL 17.6 (docker `postgres:17.6-bookworm`): `character_authority_postgres` 908 passed;
   `--lib` 1196 passed; the full crate run is in the PR body.
-- Mutation: `verify_character_build_chain` death arm set to `WHERE false` turns
-  `build_grants_and_admission_verifier` red (restored).
+- Mutations (each restored): `verify_character_build_chain` death arm set to `WHERE false` turns
+  `build_grants_and_admission_verifier` red; removing the conversion check or the normalized
+  check turns `build_writer_is_fenced_replayed_and_reconciled` red.
 - `python3 tools/agents/validate_governance.py`; `python3 tools/repository/validate_repository_policy.py`;
   `git diff --check`.
 

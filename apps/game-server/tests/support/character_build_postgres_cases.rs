@@ -12,7 +12,8 @@ use crate::bestiary_postgres_harness::{
 use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_build::{
-    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
+    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
+    DurableBuildState, skill_tries_required,
 };
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::ConnectionGeneration;
@@ -932,9 +933,28 @@ fn change(
         before: before.clone(),
         after: after.clone(),
         pruned_stance: pruned_stance.map(str::to_owned),
-        policy_digest: [tag; 32],
     })
 }
+
+/// A test formula table: skills base 50 with multiplier 2.0 without a vocation and 1.1 with one;
+/// magic level 100 x L. `.0` is the table digest.
+struct Table([u8; 32]);
+
+impl BuildFormula for Table {
+    fn required(&self, vocation: &str, family: usize, level: u16) -> Option<u64> {
+        match (family, vocation) {
+            (0, _) => Some(100 * u64::from(level)),
+            (_, "none") => skill_tries_required(50, 2.0, level),
+            _ => skill_tries_required(50, 1.1, level),
+        }
+    }
+
+    fn digest(&self) -> [u8; 32] {
+        self.0
+    }
+}
+
+const TABLE: Table = Table([1; 32]);
 
 #[test]
 fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
@@ -994,9 +1014,20 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
                 )?,
                 "choice from a vocation",
             ),
+            (
+                2,
+                change(
+                    61,
+                    BuildCause::VocationChoice,
+                    &seed,
+                    &state("knight", (0, 0), (11, 0))?,
+                    Some("guard"),
+                )?,
+                "choice that is not the writer's conversion",
+            ),
         ] {
             let outcome = root
-                .commit_character_build(&authority, node, fence(fence_revision)?, request)
+                .commit_character_build(&authority, node, fence(fence_revision)?, request, &TABLE)
                 .await;
             assert!(
                 matches!(
@@ -1010,7 +1041,7 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
             assert_eq!(snapshot(pool).await?, before, "{case} wrote nothing");
         }
         let first = root
-            .commit_character_build(&authority, node, fence(2)?, choice.clone())
+            .commit_character_build(&authority, node, fence(2)?, choice.clone(), &TABLE)
             .await
             .map_err(debug)?;
         let BuildCommitOutcome::Committed(committed) = first else {
@@ -1026,17 +1057,15 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
         // Exact replay, even at the now stale revision, returns the receipt; the binding is
         // compared first, so changed reuse conflicts; reconciliation proves what committed.
         let replay = root
-            .commit_character_build(&authority, node, fence(2)?, choice.clone())
+            .commit_character_build(&authority, node, fence(2)?, choice.clone(), &TABLE)
             .await
             .map_err(debug)?;
         assert_eq!(
             replay,
             BuildCommitOutcome::AlreadyCommitted(committed.clone())
         );
-        let mut reused = choice.clone();
-        reused.policy_digest = [9; 32];
         let conflict = root
-            .commit_character_build(&authority, node, fence(3)?, reused)
+            .commit_character_build(&authority, node, fence(3)?, choice.clone(), &Table([9; 32]))
             .await;
         assert!(
             matches!(
@@ -1065,7 +1094,7 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
         let trained = state("knight", (1, 20), (12, 7))?;
         let training = change(62, BuildCause::Training, &knight, &trained, None)?;
         let outcome = root
-            .commit_character_build(&authority, node, fence(3)?, training)
+            .commit_character_build(&authority, node, fence(3)?, training, &TABLE)
             .await
             .map_err(debug)?;
         assert!(matches!(outcome, BuildCommitOutcome::Committed(_)));
@@ -1091,9 +1120,19 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
                 )?,
                 "training prunes",
             ),
+            (
+                change(
+                    63,
+                    BuildCause::Training,
+                    &trained,
+                    &state("knight", (1, 20), (12, 60))?,
+                    None,
+                )?,
+                "sword tries that pay for level 13",
+            ),
         ] {
             let outcome = root
-                .commit_character_build(&authority, node, fence(4)?, request)
+                .commit_character_build(&authority, node, fence(4)?, request, &TABLE)
                 .await;
             assert!(
                 matches!(outcome, Err(CharacterProgressionError::InvalidInput)),
@@ -1102,7 +1141,7 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
         }
         let stale_copy = change(64, BuildCause::Training, &knight, &trained, None)?;
         let outcome = root
-            .commit_character_build(&authority, node, fence(4)?, stale_copy)
+            .commit_character_build(&authority, node, fence(4)?, stale_copy, &TABLE)
             .await;
         assert!(
             matches!(outcome, Err(CharacterProgressionError::BuildStateMismatch)),
@@ -1125,7 +1164,7 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
         ] {
             let request = change(tag, BuildCause::Training, &trained, &next, None)?;
             let outcome = root
-                .commit_character_build(&authority, node, stale, request)
+                .commit_character_build(&authority, node, stale, request, &TABLE)
                 .await;
             assert!(
                 matches!(outcome, Err(CharacterProgressionError::AuthorityRejected)),
@@ -1148,7 +1187,7 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
             None,
         )?;
         let pending = root
-            .commit_character_build(&authority, node, fence(5)?, promotion.clone())
+            .commit_character_build(&authority, node, fence(5)?, promotion.clone(), &TABLE)
             .await;
         assert!(
             matches!(pending, Err(CharacterProgressionError::RespawnPending)),
@@ -1157,7 +1196,7 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
         expect_committed(pool, "respawn", &consume_pending()).await?;
         // r6 promotion; the receipt takes level and experience from the state the death left.
         let outcome = root
-            .commit_character_build(&authority, node, fence(5)?, promotion.clone())
+            .commit_character_build(&authority, node, fence(5)?, promotion.clone(), &TABLE)
             .await
             .map_err(debug)?;
         assert!(matches!(outcome, BuildCommitOutcome::Committed(_)));
