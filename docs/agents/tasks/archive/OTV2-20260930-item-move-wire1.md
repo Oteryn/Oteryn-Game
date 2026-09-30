@@ -25,7 +25,9 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20260930-item-move-wire1.md
 public_contracts:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
-depends_on: []
+depends_on:
+  - "OTV2-20260930-item-move-wire0 (PR #1344: this decision amends it and uses its handles; merge
+    after it, then merge main and add the back-pointer)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -86,6 +88,10 @@ protocol review.
   order amendment and the lock order.
 - Control-plane rule (#162 5912405163): the DUR-03, composition and MOVE-RL-11 edits read
   "pending on acceptance of ITEM-MOVE-WIRE-1".
+- Independent review of `6370eb44` (5911722424): FIX, 2 medium and 1 low, all answered: D222 cited
+  in §7.3 and in MOVE-RL-11 (with an "Amended by D222" pointer at D87); `depends_on` names #1344,
+  whose replay and handle-reissue rules cover the new destinations and slot handles; the dropped-item
+  counter goes down on pick-up and `WorldReset`, with optional shard rows.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

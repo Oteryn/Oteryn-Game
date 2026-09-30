@@ -132,8 +132,11 @@ How does a player equip and unequip items, and drop and pick up items on the gro
 - **Limits.** `ITEMMOVE1-RL-01` loose items per tile: 10. `ITEMMOVE1-RL-02` dropped items per
   channel: 20,000, with an alarm at 80%. A drop over a limit is `BLOCKED`. The per-tile limit takes
   a real row lock on the tile.
-- **Visibility.** D87's canonical order is amended so that actors (players and creatures) rank
-  before items; within each group the order is unchanged. Dropped items can then never push an
+- **Counter upkeep.** The per-channel count of dropped items goes down in the same transaction as
+  a pick-up of a dropped item and as each `WorldReset` retirement of one, so it always equals the
+  live dropped rows of the channel. To avoid one hot row, the count may be kept in a fixed number of shard rows per channel, summed for the limit check.
+- **Visibility.** D87's canonical order is amended by the owner's D222 (#162 5911768800) so that
+  actors (players and creatures) rank before items; within each group the order is unchanged. Dropped items can then never push an
   actor out of a snapshot (§7.3).
 - **Reset.** Dropped items follow D191: they survive a crash and are retired at the planned world
   reset by `WorldReset`. No new sink.
@@ -190,7 +193,10 @@ membership.
 
 ### 7.1 ITEM-MOVE-WIRE-0
 
-Its §3 "out" list and §5 destinations are extended by §3 to §5 here, under the new capability. A
+Its §3 "out" list and §5 destinations are extended by §3 to §5 here, under the new capability.
+ITEM-MOVE-WIRE-0's replay rule (the committed result looked up by CommandRef before the handle is
+resolved, the intent bound to the ItemInstanceId) and its handle reissue on every reconnect
+snapshot also cover the `EQUIPMENT` and `GROUND` destinations and the slot handles of domain 9. A
 back-pointer is added to it when this PR integrates after #1344.
 
 ### 7.2 Composition decision §3.1
@@ -201,10 +207,11 @@ and by DUR-03 §32 for their scope. Rule 4's lock order is extended after `chara
 items in ItemInstanceId order, the container-slot row that the deferred `0011` placement check
 takes, then the Ground tile row and the per-channel counter.
 
-### 7.3 MOVE-RL-11 §4.3 (D87)
+### 7.3 MOVE-RL-11 §4.3 (D87, amended by D222)
 
-The canonical order becomes: actors (players and creatures) before items, then floor distance,
-Chebyshev distance and entity identity as before. The 256 ceiling and the degrade and resync
+The owner decided this as D222 (#162 5911768800, verbatim "54 a"), which amends D87. The canonical
+order becomes: actors (players and creatures) before items, then floor distance, Chebyshev distance
+and entity identity as before. The 256 ceiling and the degrade and resync
 dispositions are unchanged.
 
 ## 8. Rejected options
