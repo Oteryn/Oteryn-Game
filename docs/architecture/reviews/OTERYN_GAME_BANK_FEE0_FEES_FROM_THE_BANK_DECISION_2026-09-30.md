@@ -165,7 +165,7 @@ How does a fee fall back to the bank when the carried coins are not enough?
 
 ## 9. Before-freeze checklist
 
-1. **Contract amendments:** §6.
+1. **Contract amendments:** §6, each written pending on acceptance of BANK-FEE-0 (#162 5912405163).
 2. **Serialization:** the fee transaction as today, then the balance row lock.
 3. **Restart:** replay by the fee's occurrence, including the bank part.
 4. **Typed references:** the existing fee causes; the payer's AccountId and WorldId; the fee
