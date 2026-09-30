@@ -14,7 +14,7 @@ owner: owner-directed Claude Code session
 created_at: 2026-09-30
 updated_at: 2026-09-30
 owned_paths:
-  - tools/content-schema/item-authoring/{lower_wiki_stats_packet.py,test_lower_wiki_stats_packet.py}
+  - tools/content-schema/item-authoring/{lower_wiki_stats_packet.py,test_lower_wiki_stats_packet.py,README.md}
   - docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json
   - apps/game-server/src/content/{item_stats_promotion.rs,mod.rs}
   - apps/game-server/examples/materialize_content_world_project_v2.rs
@@ -23,6 +23,7 @@ owned_paths:
   - tools/content-census/g4_item_wave1_stage.py   # v2 values supersede frozen Wave 1 candidates
   - content/world/** and the content tree (regenerated)
   - docs/agents/tasks/archive/OTV2-20260930-item-sem-2b-1-item-stats-promotion.md
+  - .github/workflows/item-authoring-schema.yml   # owner 1a (2026-09-30): packet test step and triggers only
 public_contracts:
   - DUR04-REFERENCE-ITEM-PROFILE-V1 (limits unchanged)
 jira: null   # sync pending (coordinator batch)
@@ -46,10 +47,12 @@ jira: null   # sync pending (coordinator batch)
 - PROVEN: DUR04 item profile limits hold (reference artifact tests pass unchanged).
 - Superseded: #1329 (bare-id snapshot keys, pickupable/marketable) was closed; #1325 had already fixed `main`.
   Pickupable and marketable move to 2c.
+- DONE (owner decision 1a, 2026-09-30): the item-authoring CI lane runs `test_lower_wiki_stats_packet.py`
+  (fixtures and committed packet drift) and triggers on the packet and the content Item definitions. The
+  authorization covers that change only.
 
 ## Next
 
 - 2b-2: requirements (level, vocation, hands, slot) into `equipment.patterns`.
 - 2b-3: modifiers (skills, leech, critical hit, resistances).
 - 2c: forge classification, light, blocking, usable, pickupable, marketable (model and contract review first).
-- Owner question pending: add `test_lower_wiki_stats_packet.py` to the item-authoring CI lane (workflow edit).
