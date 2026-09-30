@@ -1,8 +1,8 @@
 # Achievement Display Contract V1
 
 - Status: Contract candidate. Owner direction 2026-09-30, recorded verbatim on #162 (owner decision record,
-  comment 5911933242); the control plane assigned D223-D228 (display-1 to display-6). Needs exact-head independent review (wire
-  contract, D49 display amendment) before it is accepted.
+  comment 5911933242); the control plane assigned D223-D228 (display-1 to display-6). Needs exact-head
+  independent review (wire contract, D49 display amendment) before it is accepted.
 - Owner decision record: <https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5911933242>
 - Date: 2026-09-30
 - Issue: #162; lane `ACHIEVEMENT` (D126)
