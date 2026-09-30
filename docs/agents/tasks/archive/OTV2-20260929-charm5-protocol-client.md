@@ -129,6 +129,15 @@ Repair round 1 (2026-09-30, after merging `origin/main` at `54c9ca18`):
   6. HARDENING: removed the registry check that soft-reserved types and domains 4 and 5; it moves into the
      acceptance PR (§8 step 1).
   7. OUT_OF_SCOPE: §2 states that the content generation is fixed per connection.
+- Round 2 on `53d10a61` (PR comment 5910583237): FIX, proposal text only. The Sol ruling (#162 comment
+  5907282001) already accepted the IDs, so the proposal adopts it:
+  1. MEDIUM: the Status line and §2 record capability 1 `BESTIARY_CHARMS_V1`, command types 4 and 5, domains 4 and
+     5, and capability gating. Without the capability, commands 4 and 5 are refused as unsupported.
+  2. MEDIUM: §4 revisions follow the ruling:
+     - every admission, reconnect, resume and transfer starts with a full snapshot;
+     - `base_revision` is the last revision received on this connection;
+     - a commit that does not change a domain sends no delta for it.
+  3. LOW: §3 records the charms bound of 490 bytes. Sol must acknowledge it on #162 before the registry PR.
 
 ## Closeout
 

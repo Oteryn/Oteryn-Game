@@ -2,8 +2,10 @@
 
 - Date: 2026-09-29; revised 2026-09-30 after the independent protocol review of `a7ceccaa` (PR #1301) and owner
   decisions D168 to D170
-- Status: **PROPOSAL**. It needs protocol-owner assignment of the IDs, owner acceptance and independent protocol
-  review before any registry, proto file, session or server composition change.
+- Status: **IDs ACCEPTED by the protocol owner** (Sol ruling, #162 comment 5907282001): capability 1
+  `BESTIARY_CHARMS_V1`, command types 4 and 5, state domains 4 and 5, bounds 21504 and 488 bytes, and
+  `CHARM5-RL-01` to `CHARM5-RL-05`. The charms bound is now 490 bytes (§3); Sol must acknowledge that change on
+  #162 before the registry PR. Nothing is registered yet (§8).
 - Authority: none. This document changes no protocol or resource registry, proto file, DDL, content or production
   state. The codecs that implement it (`crates/protocol-oteryn/src/{bestiary,charm}.rs`) are not reachable from any
   session or connection until the IDs are registered.
@@ -38,10 +40,8 @@ and every rule decision (CHARM-2 and CHARM-3 own them).
 
 ## 2. Proposed IDs, identifiers and limits
 
-The protocol owner assigns IDs. On `main@4ea220fa` the next free ones are command types 4 and 5 and state domains 4
-and 5. The names below use those numbers only as proposals and reserve nothing: if PROF-WIRE-1 or another accepted
-wire takes them first, the acceptance PR renumbers this proposal and checks there that the IDs it registers are free
-(§8).
+The protocol owner assigned these IDs in the Sol ruling (#162 comment 5907282001). They are registered only by the
+acceptance PR, which also checks that they are still free (§8).
 
 | ID | Name | Kind | Payload | Result |
 |---|---|---|---|---|
@@ -50,17 +50,14 @@ wire takes them first, the acceptance PR renumbers this proposal and checks ther
 | 4 | `CHARACTER_BESTIARY` | state domain; delta type 1, snapshot type 1 | `BestiaryViewV1` | — |
 | 5 | `CHARACTER_CHARMS` | state domain; delta type 1, snapshot type 1 | `CharmViewV1` | — |
 
-**Core or capability-gated (D168 precedent).** Recommendation: **capability-gated.** The protocol owner decides;
-this recommendation is pending that acceptance.
+**Capability-gated (D168 precedent, Sol ruling).** Command types 4 and 5 and domains 4 and 5 belong to capability
+1 `BESTIARY_CHARMS_V1`:
 
-- The reviewer and the control plane recommend one optional capability, proposed as `CYCLOPEDIA_CHARMS_V1` (ID
-  assigned by the protocol owner), that covers command types 4 and 5 and domains 4 and 5 together.
+- Without the capability selected, the server sends no snapshot or delta of domains 4 and 5, and refuses command types
+  4 and 5 as unsupported.
 - It is consistent with PROFICIENCY: D168 accepted the PROFICIENCY-0 wire as a capability-gated snapshot and delta.
 - It doubles as the D170 release gate. The server does not offer the capability until CHARM-6 ships, so no client
   sees or sends charm traffic before unassign and reset exist, and no composition flag of its own is needed.
-- Without the capability selected, the server sends no snapshot or delta of domains 4 and 5, and command types 4 and 5
-  are unregistered for the session (FND-02 `Rejected`).
-- A core registration would reach every client at once and would need its own release switch to honour D170.
 
 Identifiers:
 
@@ -132,7 +129,7 @@ message CharmStateV1 {
 }
 
 // StateDelta.payload of domain 5 delta type 1 and StateDomainSnapshot.payload of snapshot type 1.
-// At most 490 bytes: 32 entries of at most 15 bytes, two balances of at most 4 bytes, and the slot
+// At most 490 bytes (Sol accepted 488 before the slot limit; the 490 needs Sol's acknowledgement on #162): 32 entries of at most 15 bytes, two balances of at most 4 bytes, and the slot
 // limit of at most 2 bytes.
 message CharmViewV1 {
   repeated CharmStateV1 charms = 1;      // strictly ascending by charm, at most 32
@@ -230,27 +227,20 @@ message CharmAssignResultV1 {
 - **Authority.** The client proposes; CHARM-3 decides. Each command is one Character transaction under the
   session-generation fence (`CurrentCharacterGameplayFence`), validated against the derived balance. A result is
   sent only after that transaction committed or was refused. The new state then arrives through domain 5.
-- **Domain revisions.** The revision of domains 4 and 5 is the **CharacterRevision**, not a per-domain counter:
-  - `StateDomainSnapshot.revision` is the CharacterRevision the view was read at, in the same transaction as the view.
-  - `StateDelta.base_revision` is the revision of the domain's last state sent in this GameSession, and
-    `new_revision` is the CharacterRevision the new view was read at.
-  - Why: every writer of this state advances the CharacterRevision under the Character root lock: CHARM-2 for kill
-    counters, and CHARM-3 exactly once for each command (#1307). It is therefore monotonic, durable and never reused, as
+- **Domain revisions.** The revision of domains 4 and 5 is the **CharacterRevision**, not a per-domain counter.
+  Delta continuity never crosses a connection (Sol ruling):
+  - Every admission, reconnect, resume and transfer starts with a full snapshot of both domains. Its
+    `StateDomainSnapshot.revision` is the CharacterRevision the view was read at, in the same transaction as the view.
+  - A `StateDelta` is sent only when a commit changes that domain's view. Its `base_revision` is the last revision the
+    client received for the domain on this connection, and its `new_revision` is the CharacterRevision the new view was
+    read at. A commit that does not change the domain, such as an XP award, sends no delta.
+  - Why the CharacterRevision: every writer of this state advances it under the Character root lock (CHARM-2 for kill
+    counters, CHARM-3 exactly once for each command, #1307). It is therefore monotonic, durable and never reused, as
     FND-02 §15 requires, with no new counter to store. The existing domains follow the same rule where the state has
     a durable authority revision: `WORLD_OBJECT_OVERLAY` uses the committed entry's revision and `ACTOR_VITALS` the
-    actor state's revision. A per-domain counter would need its own durable column and a new migration.
-  - Other Character writes, such as an XP award, also advance the CharacterRevision. The domain revision then jumps.
-    FND-02 needs only monotonic revisions and `base_revision` equal to the client's applied revision, so the client
-    applies such a delta as usual. The server need not send a delta when only other Character state changed.
-  - Resume of the same GameSession: the client reports its applied revisions (`ResyncRequest`). If a domain's
-    revision equals the current CharacterRevision, nothing is sent. Otherwise the server sends one delta from the
-    client's revision to the current one, carrying the full view. That is exact for both domains: a domain-5 delta
-    replaces the view, and a domain-4 delta that lists every counted race is a complete upsert, because counters
-    never decrease.
-  - Transfer to another Channel or node, and any new connection, starts with fresh snapshots at the current
-    CharacterRevision. The server never sends a delta across a change of content generation.
-  - A client revision above the current CharacterRevision cannot occur without a rollback. The server answers it
-    with a snapshot, never a delta.
+    actor state's revision.
+  - Because other Character writes also advance the CharacterRevision, consecutive domain revisions may jump. FND-02
+    needs only monotonic revisions and `base_revision` equal to the client's applied revision.
   - The port reads each view and its CharacterRevision in one transaction. CHARM-3's `read_character_charm_state`
     returns no revision today; the composition task adds that read.
 - **Malformed intents.** As for the other commands, a payload that does not decode gets the `REJECTED` disposition
@@ -306,11 +296,11 @@ Recorded in the CHARM-0 packet §8 (PR #1295); decision-register numbers are ass
 ## 8. On acceptance
 
 1. Register the command types and domains the protocol owner assigns in `PROTOCOL_OTERYN_V1_REGISTRY.json` with the
-   byte bounds of §3, the capability of §2 if the owner accepts it, and `CHARM5-RL-01` to `CHARM5-RL-05` in
+   byte bounds of §3, capability 1 `BESTIARY_CHARMS_V1` of §2, and `CHARM5-RL-01` to `CHARM5-RL-05` in
    `RESOURCE_LIMITS_REGISTRY.json`. That PR adds the test that the IDs are free or registered under these names.
 2. Move §3 into `docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto` and point the codec tests at the registry
    entries, as `actor_spell` does.
 3. Compose: route the commands in `gameplay_transport/connection.rs` through the adapter, bind the port to CHARM-2 and
    CHARM-3, and add the session calls and domain routing for the client. **Composition stays off until CHARM-6
    ships (D170):** no server routes command types 4 and 5 or sends domains 4 and 5 to a player before unassign and
-   reset exist. With the recommended capability, that means the server does not offer it until then.
+   reset exist. With the capability, that means the server does not offer it until then.
