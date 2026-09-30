@@ -81,10 +81,15 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
-/// WO-2 catalogue shards beside the legacy package: `(directory, shard prefix)`. Their
-/// bytes are pinned by `build_catalogue.py --check`, not by this package inventory.
-const WORLD_CATALOGUE_SHARDS: [(&str, &str); 2] =
-    [("terrain/", "terrain-"), ("objects/", "objects-")];
+/// WO-2 and Area catalogue shards beside the legacy package: `(directory, shard prefix)`.
+/// Their bytes are pinned by `build_catalogue.py --check` and `build_areas.py build --check`,
+/// not by this package inventory.
+const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
+    ("terrain/", "terrain-"),
+    ("objects/", "objects-"),
+    ("areas/cities/", "areas-"),
+    ("areas/regions/", "areas-"),
+];
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
