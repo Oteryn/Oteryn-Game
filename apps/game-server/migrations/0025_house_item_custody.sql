@@ -54,6 +54,11 @@ CREATE TABLE game_item_house_reclaim_provenance (
         CHECK (game_character_is_uuid_v7(placement_transaction_id)),
     provenance_revision NUMERIC(20,0) NOT NULL
         CHECK (provenance_revision BETWEEN 1 AND 18446744073709551615),
+    -- The physical transaction that last inserted or updated this row, stamped
+    -- by trigger (never caller-supplied). A new location row needs a provenance
+    -- written in its own transaction, so a replacement row can never reuse an
+    -- unchanged provenance and its old placement transaction.
+    written_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
     FOREIGN KEY (item_instance_id, world_id, house_key, placement_transaction_id)
         REFERENCES game_item_house_interior_locations
             (item_instance_id, world_id, house_key, placed_transaction_id)
@@ -81,7 +86,8 @@ BEGIN
                                    WHERE p.item_instance_id = h.item_instance_id
                                      AND p.world_id = h.world_id
                                      AND p.house_key = h.house_key
-                                     AND p.placement_transaction_id = h.placed_transaction_id)) THEN
+                                     AND p.placement_transaction_id = h.placed_transaction_id
+                                     AND p.written_xact_id = pg_current_xact_id())) THEN
         RAISE EXCEPTION 'HouseInterior item must commit with its HousingReclaimProvenance'
             USING ERRCODE = '23514';
     END IF;
@@ -208,11 +214,23 @@ CREATE TRIGGER game_item_house_reclaim_provenance_no_truncate BEFORE TRUNCATE
     ON game_item_house_reclaim_provenance
     FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 
+CREATE FUNCTION game_item_house_reclaim_provenance_stamp_xact() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    NEW.written_xact_id := pg_current_xact_id();
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER game_item_house_reclaim_provenance_stamp_xact BEFORE INSERT OR UPDATE
+    ON game_item_house_reclaim_provenance FOR EACH ROW
+    EXECUTE FUNCTION game_item_house_reclaim_provenance_stamp_xact();
+
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_item_house_interior_provenance_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_house_reclaim_provenance_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_location_exclusive(UUID) SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_location_exclusivity_guard() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_item_house_reclaim_provenance_stamp_xact() SET search_path = %I, pg_temp', current_schema());
 END $$;
 
 -- The guard does not re-check rows that already exist, so the migration
@@ -233,6 +251,7 @@ FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_item_house_interior_provenance_proven(),
     game_item_house_reclaim_provenance_guard(),
+    game_item_house_reclaim_provenance_stamp_xact(),
     game_item_location_exclusive(UUID),
     game_item_location_exclusivity_guard()
 FROM PUBLIC;

@@ -86,6 +86,10 @@ set, so `0025` needs no renumber.
 - Codex P2 4149559640 on `1c6de1de` (a delete and reinsert of the provenance bypasses the update
   guard): accepted and repaired in the next candidate. A provenance delete now fails at commit
   while its item still has a house row; two cases (same and other subject) and one mutation.
+- Codex P2 4149964145 on `79ebae5c` (a replacing row reuses the old placement transaction with an
+  unchanged provenance): accepted and repaired in the next candidate. The provenance carries a
+  trigger-stamped `written_xact_id`; a new location row needs a provenance written in its own
+  physical transaction. One case and one mutation.
 
 ## Closeout
 

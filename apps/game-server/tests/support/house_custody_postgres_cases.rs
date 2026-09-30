@@ -471,6 +471,29 @@ fn house_location_and_provenance_are_one_to_one() -> TestResult {
         .await?;
         insert_location(&mut tx, &world, &items[0], HOUSE, 8).await?;
         assert!(tx.commit().await.is_err());
+        // Nor can the replacing row reuse the old placement transaction with
+        // the provenance untouched: the provenance must be written in the
+        // same transaction as the new row.
+        let mut tx = connection.begin().await?;
+        let old: String = sqlx::query_scalar(
+            "DELETE FROM game_item_house_interior_locations WHERE item_instance_id = $1::uuid \
+             RETURNING placed_transaction_id::text",
+        )
+        .bind(&items[0])
+        .fetch_one(&mut *tx)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_item_house_interior_locations(item_instance_id, world_id, house_key, \
+               spatial_position, stack_ordinal, placed_transaction_id) \
+             VALUES ($1::uuid, $2::uuid, $3, '\\x0100020007'::bytea, 9, $4::uuid)",
+        )
+        .bind(&items[0])
+        .bind(&world)
+        .bind(HOUSE)
+        .bind(&old)
+        .execute(&mut *tx)
+        .await?;
+        assert!(message(tx.commit().await)?.contains("HousingReclaimProvenance"));
         // A revision bump that does not name a new placement is rejected.
         let bumped = sqlx::query(
             "UPDATE game_item_house_reclaim_provenance SET provenance_revision = 3 \
