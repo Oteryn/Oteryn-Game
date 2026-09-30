@@ -1,16 +1,21 @@
 {
  "applied_meaning": {
+  "EXCLUDED": "D165 26a: excluded from live content, no record is minted",
   "PENDING_MINT": "approved, but the id has no Item record and no engine binding (client-only list A ids; WorldObject routes): the minting lane (WO-2 / item authoring) applies it when the record is authored",
+  "WorldObject route non_pickupable_blocking_prop (engine_items.NON_PICKUPABLE_BLOCKING_PROP_IDS)": "D165 27a: id 9132 routes to WorldObject in the converter",
   "tools/content-schema/item-authoring/owner-item-family-decisions.json": "engine row with a Crystal binding: the decision is the converter's last classifier"
  },
  "counts": {
   "APPROVED_HIGH|PENDING_MINT": 165,
   "APPROVED_HIGH|tools/content-schema/item-authoring/owner-item-family-decisions.json": 11,
+  "APPROVED_OWNER_D165|EXCLUDED": 1,
+  "APPROVED_OWNER_D165|PENDING_MINT": 36,
+  "APPROVED_OWNER_D165|WorldObject route non_pickupable_blocking_prop (engine_items.NON_PICKUPABLE_BLOCKING_PROP_IDS)": 1,
+  "APPROVED_OWNER_D165|tools/content-schema/item-authoring/owner-item-family-decisions.json": 3,
   "APPROVED_REVERIFIED|PENDING_MINT": 46,
-  "APPROVED_REVERIFIED|tools/content-schema/item-authoring/owner-item-family-decisions.json": 3,
-  "DISPUTED_OWNER|None": 41
+  "APPROVED_REVERIFIED|tools/content-schema/item-authoring/owner-item-family-decisions.json": 3
  },
- "owner_decision": "Q13d (#162, 2026-09-29): 176 HIGH rows approved; MEDIUM and LOW rows re-verified by the ITEM-ID-1 writer, clear ones approved, disputed ids returned to the owner",
+ "owner_decision": "Q13d (#162, 2026-09-29): 176 HIGH rows approved; MEDIUM and LOW rows re-verified by the ITEM-ID-1 writer, clear ones approved, disputed ids returned to the owner; D165 (2026-09-30) decided all 41 disputed rows (status APPROVED_OWNER_D165)",
  "reverification": "TibiaWiki (tibia.fandom.com MediaWiki API, read live 2026-09-29, unpinned) and client 15.30 2dfa943b appearance flags; profile vocabulary profile-catalog.json and engine_items.PRIMARYTYPE_PROFILE",
  "rows": [
   {
@@ -170,7 +175,7 @@
    "status": "APPROVED_HIGH"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "LOW",
    "family": "Item",
    "group": "A-decoration-LOW",
@@ -178,7 +183,7 @@
    "key": "oteryn:item.tibia.i49156",
    "list": "A",
    "name": "sand toys",
-   "profile": "decoration",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "Exact page Sand Toys (49156) has empty primarytype, no notes, no backlinks; flags usable+multiuse only. Name alone does not fix the class.",
     "options": [
@@ -188,7 +193,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Sand_Toys"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -225,7 +230,7 @@
    "status": "APPROVED_REVERIFIED"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-decoration-MEDIUM",
@@ -233,7 +238,7 @@
    "key": "oteryn:item.tibia.i50335",
    "list": "A",
    "name": "guardian statue",
-   "profile": "decoration",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "Exact-itemid page 'Guardian Statue (Quest)' (50335) has primarytype 'Quest Items' -> quest_item (Mystery of the Valley Quest); proposal used the immobile 8008/8009 statue page. Client market category is decoration.",
     "options": [
@@ -243,7 +248,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Guardian_Statue_(Quest)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -705,7 +710,7 @@
    "status": "APPROVED_HIGH"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -723,10 +728,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Love_Elixir_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -744,10 +749,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Chaos_Critical_Dice_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -765,10 +770,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Magic_Hat_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -786,10 +791,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Bard_Doll_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -807,10 +812,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Aylie_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -828,10 +833,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Aurora's_Collection_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -849,7 +854,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/The_Dragon_Spirit_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -1124,7 +1129,7 @@
    "status": "APPROVED_REVERIFIED"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -1142,10 +1147,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Beaver_of_Wisdom_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -1163,10 +1168,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/War_Backpack_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -1184,10 +1189,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Bonelord_Tome_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -1205,10 +1210,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Wicked_Witch_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-event_collectible-MEDIUM",
@@ -1226,7 +1231,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Tibiapedia_(Replica)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -1577,7 +1582,7 @@
    "status": "APPROVED_HIGH"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "LOW",
    "family": "Item",
    "group": "A-material_valuable-LOW",
@@ -1585,7 +1590,7 @@
    "key": "oteryn:item.tibia.i50051",
    "list": "A",
    "name": "Rotrender's sceptre",
-   "profile": "material_valuable",
+   "profile": "tool",
    "reverification": {
     "evidence": "Page 'Rotrender's Sceptre' (50051, 50052): objectclass Weapons, empty primarytype, Rotrender boss loot; flavortext 'Growth is this wicked sceptre's gift, coins are the tribute it demands' (usable, no weapon flags), so its function is unknown.",
     "options": [
@@ -1595,10 +1600,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Rotrender's_Sceptre"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "LOW",
    "family": "Item",
    "group": "A-material_valuable-LOW",
@@ -1606,7 +1611,7 @@
    "key": "oteryn:item.tibia.i50052",
    "list": "A",
    "name": "Rotrender's sceptre",
-   "profile": "material_valuable",
+   "profile": "tool",
    "reverification": {
     "evidence": "Page 'Rotrender's Sceptre' (50051, 50052): objectclass Weapons, empty primarytype, Rotrender boss loot; flavortext 'Growth is this wicked sceptre's gift, coins are the tribute it demands' (usable, no weapon flags), so its function is unknown.",
     "options": [
@@ -1616,10 +1621,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Rotrender's_Sceptre"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-material_valuable-MEDIUM",
@@ -1627,7 +1632,7 @@
    "key": "oteryn:item.tibia.i43946",
    "list": "A",
    "name": "abridged promotion scroll",
-   "profile": "material_valuable",
+   "profile": "progression_material",
    "reverification": {
     "evidence": "Exact-itemid page 'Abridged Promotion Scroll' (43946): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
     "options": [
@@ -1637,10 +1642,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Abridged_Promotion_Scroll"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-material_valuable-MEDIUM",
@@ -1648,7 +1653,7 @@
    "key": "oteryn:item.tibia.i43947",
    "list": "A",
    "name": "basic promotion scroll",
-   "profile": "material_valuable",
+   "profile": "progression_material",
    "reverification": {
     "evidence": "Exact-itemid page 'Basic Promotion Scroll' (43947): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
     "options": [
@@ -1658,10 +1663,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Basic_Promotion_Scroll"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-material_valuable-MEDIUM",
@@ -1669,7 +1674,7 @@
    "key": "oteryn:item.tibia.i43948",
    "list": "A",
    "name": "revised promotion scroll",
-   "profile": "material_valuable",
+   "profile": "progression_material",
    "reverification": {
     "evidence": "Exact-itemid page 'Revised Promotion Scroll' (43948): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
     "options": [
@@ -1679,10 +1684,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Revised_Promotion_Scroll"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-material_valuable-MEDIUM",
@@ -1690,7 +1695,7 @@
    "key": "oteryn:item.tibia.i43949",
    "list": "A",
    "name": "extended promotion scroll",
-   "profile": "material_valuable",
+   "profile": "progression_material",
    "reverification": {
     "evidence": "Exact-itemid page 'Extended Promotion Scroll' (43949): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
     "options": [
@@ -1700,10 +1705,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Extended_Promotion_Scroll"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-material_valuable-MEDIUM",
@@ -1711,7 +1716,7 @@
    "key": "oteryn:item.tibia.i43950",
    "list": "A",
    "name": "advanced promotion scroll",
-   "profile": "material_valuable",
+   "profile": "progression_material",
    "reverification": {
     "evidence": "Exact-itemid page 'Advanced Promotion Scroll' (43950): primarytype 'Valuables' -> material_valuable, but the usable scroll grants Wheel of Destiny promotion points, and the reason itself names progression_material. The owner picks which rule wins (the blessing-charm precedent favoured the function).",
     "options": [
@@ -1721,10 +1726,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Advanced_Promotion_Scroll"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-progression_material-MEDIUM",
@@ -1732,7 +1737,7 @@
    "key": "oteryn:item.tibia.i48419",
    "list": "A",
    "name": "Podzilla's Finest",
-   "profile": "progression_material",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "Page 'Podzilla's Finest' (48419) has an empty type; per 'Petrified Leaf' notes, 20 Processed Blue Tea Leaves are exchanged with Petaloid for Podzilla's Finest, which only rarely yields the Rootwalker 2nd-addon item, so it is at best an indirect addon currency.",
     "options": [
@@ -1742,10 +1747,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Podzilla's_Finest"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-progression_material-MEDIUM",
@@ -1753,7 +1758,7 @@
    "key": "oteryn:item.tibia.i48420",
    "list": "A",
    "name": "processed blue tea leaves",
-   "profile": "progression_material",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "Page 'Processed Blue Tea Leaves' (48420) has an empty type; per 'Petrified Leaf' notes, 20 are exchanged for Podzilla's Finest (rare Petrified Leaf addon item). It is an indirect addon currency, not itself an addon unlock.",
     "options": [
@@ -1763,7 +1768,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Processed_Blue_Tea_Leaves"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -2868,7 +2873,7 @@
    "status": "APPROVED_HIGH"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "LOW",
    "family": "Item",
    "group": "A-quest_item-LOW",
@@ -2876,7 +2881,7 @@
    "key": "oteryn:item.tibia.i43356",
    "list": "A",
    "name": "restorative goo",
-   "profile": "quest_item",
+   "profile": "material_valuable",
    "reverification": {
     "evidence": "No wiki page or search hit; client has no description, only usable+take flags. Only the id block suggests a quest item.",
     "options": [
@@ -2885,18 +2890,18 @@
     ],
     "verdict": "DISPUTED"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "EXCLUDED",
    "confidence": "LOW",
-   "family": "Item",
+   "family": "Excluded",
    "group": "A-quest_item-LOW",
    "id": 44044,
    "key": "oteryn:item.tibia.i44044",
    "list": "A",
    "name": "test voodoo skull",
-   "profile": "quest_item",
+   "profile": null,
    "reverification": {
     "evidence": "Page 'Test Voodoo Skull' (44044): status ts-only, a Test Server helper sold by Testserver Assistant; precedent 52864 test proficiency catalyst was authored as tool. The owner decides between quest_item, tool, or excluding it from live content.",
     "options": [
@@ -2907,10 +2912,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Test_Voodoo_Skull"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "LOW",
    "family": "Item",
    "group": "A-quest_item-LOW",
@@ -2918,7 +2923,7 @@
    "key": "oteryn:item.tibia.i48118",
    "list": "A",
    "name": "bioluminescent root end",
-   "profile": "quest_item",
+   "profile": "light_source",
    "reverification": {
     "evidence": "Page 'Bioluminescent Root End' (48118): empty type, flavortext 'An organic communication device', light 4/65, no notes or article backlinks. No quest is proven.",
     "options": [
@@ -2928,10 +2933,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Bioluminescent_Root_End"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "LOW",
    "family": "Item",
    "group": "A-quest_item-LOW",
@@ -2939,7 +2944,7 @@
    "key": "oteryn:item.tibia.i51293",
    "list": "A",
    "name": "ancient orc fetish",
-   "profile": "quest_item",
+   "profile": "decoration",
    "reverification": {
     "evidence": "Page 'Ancient Orc Fetish' (51293): empty type, no notes, no article backlinks; 'The Orc King' page does not mention it. Client has take only.",
     "options": [
@@ -2949,7 +2954,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Ancient_Orc_Fetish"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -3054,7 +3059,7 @@
    "status": "APPROVED_REVERIFIED"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-quest_item-MEDIUM",
@@ -3062,7 +3067,7 @@
    "key": "oteryn:item.tibia.i44045",
    "list": "A",
    "name": "empty essence flask",
-   "profile": "quest_item",
+   "profile": "tool",
    "reverification": {
     "evidence": "Exact page 'Empty Essence Flask (Rotten)' (44045): empty type, flavortext 'It can contain rotten essence.', no notes or article backlinks. No quest use is documented; it could be a quest item or a collecting tool.",
     "options": [
@@ -3072,10 +3077,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Empty_Essence_Flask_(Rotten)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-quest_item-MEDIUM",
@@ -3083,7 +3088,7 @@
    "key": "oteryn:item.tibia.i44046",
    "list": "A",
    "name": "empty essence flask",
-   "profile": "quest_item",
+   "profile": "tool",
    "reverification": {
     "evidence": "Exact page 'Empty Essence Flask (Dark)' (44046): empty type, flavortext 'It can contain dark energy.', no notes or article backlinks. No quest use is documented; it could be a quest item or a collecting tool.",
     "options": [
@@ -3093,7 +3098,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Empty_Essence_Flask_(Dark)"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -3164,7 +3169,7 @@
    "status": "APPROVED_REVERIFIED"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-quest_item-MEDIUM",
@@ -3172,7 +3177,7 @@
    "key": "oteryn:item.tibia.i48513",
    "list": "A",
    "name": "amber infused insect heart",
-   "profile": "quest_item",
+   "profile": "material_valuable",
    "reverification": {
     "evidence": "Exact page 'Amber Infused Insect Heart' (48513): empty type, no notes, no backlinks; 'Amber with a Bug' (32624, Valuables) does not mention it. The only quest signal is sibling 48512 Insect Tarsus (Quest Items).",
     "options": [
@@ -3182,10 +3187,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Amber_Infused_Insect_Heart"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-quest_item-MEDIUM",
@@ -3193,7 +3198,7 @@
    "key": "oteryn:item.tibia.i49910",
    "list": "A",
    "name": "pine cone",
-   "profile": "quest_item",
+   "profile": "plant",
    "reverification": {
     "evidence": "Exact page 'Pine Cone' (49910, 15.00): empty type, no notes and no article backlinks. The claimed Ape City Quest link is not confirmed.",
     "options": [
@@ -3203,7 +3208,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Pine_Cone"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -3363,7 +3368,7 @@
    "status": "APPROVED_HIGH"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "LOW",
    "family": "Item",
    "group": "A-tool-LOW",
@@ -3371,7 +3376,7 @@
    "key": "oteryn:item.tibia.i48475",
    "list": "A",
    "name": "magic bag of magic chests",
-   "profile": "tool",
+   "profile": "decoration",
    "reverification": {
     "evidence": "Page 'Magic Bag of Magic Chests' (48475): empty type, flavortext 'Use exclusively on empty and flat ground to create a magic chest'; linked only from 'Bags'. It is unclear whether this is a utility or a furniture/decoration kit.",
     "options": [
@@ -3381,10 +3386,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Magic_Bag_of_Magic_Chests"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-tool-MEDIUM",
@@ -3392,7 +3397,7 @@
    "key": "oteryn:item.tibia.i43738",
    "list": "A",
    "name": "pocket sundial",
-   "profile": "tool",
+   "profile": "material_valuable",
    "reverification": {
     "evidence": "Page 'Pocket Sundial' (43738): empty type; it is the opened state of 'Closed Pocket Sundial' (43888), whose primarytype 'Creature Products' maps to material_valuable (NPC-sellable loot), and it auto-closes after 10 s.",
     "options": [
@@ -3402,10 +3407,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Pocket_Sundial"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-tool-MEDIUM",
@@ -3413,7 +3418,7 @@
    "key": "oteryn:item.tibia.i43930",
    "list": "A",
    "name": "pocket sundial",
-   "profile": "tool",
+   "profile": "material_valuable",
    "reverification": {
     "evidence": "Page 'Pocket Sundial' (43738): empty type; it is the opened state of 'Closed Pocket Sundial' (43888), whose primarytype 'Creature Products' maps to material_valuable (NPC-sellable loot), and it auto-closes after 10 s.",
     "options": [
@@ -3423,10 +3428,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Pocket_Sundial"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-tool-MEDIUM",
@@ -3434,7 +3439,7 @@
    "key": "oteryn:item.tibia.i51030",
    "list": "A",
    "name": "wooden stake",
-   "profile": "tool",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "Page 'Wooden Stake' (5941, Tools -> tool) is usable+multiuse+market, but 51030 is take-only and sits beside 51031 Empowered Stake (Quest Items, 15.10), so it is probably a quest variant.",
     "options": [
@@ -3444,10 +3449,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Wooden_Stake"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-transformation_item-MEDIUM",
@@ -3455,7 +3460,7 @@
    "key": "oteryn:item.tibia.i44527",
    "list": "A",
    "name": "spirit container",
-   "profile": "transformation_item",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "Page 'Spirit Container' (5884): 'Enchanted Items' -> transformation_item, but 5884 is stackable/market/NPC-sold and not usable, while this id is usable+multiuse and non-market (13.20 block). The flags do not match, so it may be a quest variant.",
     "options": [
@@ -3465,10 +3470,10 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Spirit_Container"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
-   "applied": null,
+   "applied": "PENDING_MINT",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "A-transformation_item-MEDIUM",
@@ -3476,7 +3481,7 @@
    "key": "oteryn:item.tibia.i44528",
    "list": "A",
    "name": "spirit container",
-   "profile": "transformation_item",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "Page 'Spirit Container' (5884): 'Enchanted Items' -> transformation_item, but 5884 is stackable/market/NPC-sold and not usable, while this id is usable+multiuse and non-market (13.20 block). The flags do not match, so it may be a quest variant.",
     "options": [
@@ -3486,7 +3491,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Spirit_Container"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
@@ -3535,7 +3540,7 @@
    "status": "APPROVED_REVERIFIED"
   },
   {
-   "applied": null,
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
    "confidence": "MEDIUM",
    "family": "Item",
    "group": "B-key-MEDIUM",
@@ -3543,7 +3548,7 @@
    "key": "oteryn:item.tibia.i54262",
    "list": "B",
    "name": "key",
-   "profile": "key",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "No itemid wiki page ('Key' redirects to 'Keys' class page); client usable/multiuse/take with no description. The reason itself leaves the quest link unproven and names quest_item.",
     "options": [
@@ -3552,7 +3557,7 @@
     ],
     "verdict": "DISPUTED"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
@@ -3663,7 +3668,7 @@
    "status": "APPROVED_HIGH"
   },
   {
-   "applied": null,
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
    "confidence": "LOW",
    "family": "Item",
    "group": "C-document-LOW",
@@ -3671,7 +3676,7 @@
    "key": "oteryn:item.tibia.i23547",
    "list": "C",
    "name": "arena certificate",
-   "profile": "document",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "No wiki page for 23547; sibling 'Arena Certificates' (23548) is an immobile 'Utilities' board. Client usable + lenshelp 1112, description 'An arena certificate', no write flag. Readable paper is a guess.",
     "options": [
@@ -3681,7 +3686,7 @@
     "verdict": "DISPUTED",
     "wiki_url": "https://tibia.fandom.com/wiki/Arena_Certificates"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
@@ -3725,7 +3730,7 @@
    "status": "APPROVED_REVERIFIED"
   },
   {
-   "applied": null,
+   "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
    "confidence": "LOW",
    "family": "Item",
    "group": "C-trash-LOW",
@@ -3733,7 +3738,7 @@
    "key": "oteryn:item.tibia.i21212",
    "list": "C",
    "name": "the ashes of a device",
-   "profile": "trash",
+   "profile": "quest_item",
    "reverification": {
     "evidence": "No wiki page; client description 'It seems this device has just disintegrated', take only. Only an analogy supports trash, and the reason names quest_item as an alternative.",
     "options": [
@@ -3742,7 +3747,7 @@
     ],
     "verdict": "DISPUTED"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
@@ -3779,7 +3784,7 @@
    "status": "APPROVED_REVERIFIED"
   },
   {
-   "applied": null,
+   "applied": "WorldObject route non_pickupable_blocking_prop (engine_items.NON_PICKUPABLE_BLOCKING_PROP_IDS)",
    "confidence": "MEDIUM",
    "family": "WorldObject",
    "group": "C-world_object-MEDIUM",
@@ -3796,7 +3801,7 @@
     ],
     "verdict": "DISPUTED"
    },
-   "status": "DISPUTED_OWNER"
+   "status": "APPROVED_OWNER_D165"
   },
   {
    "applied": "PENDING_MINT",
