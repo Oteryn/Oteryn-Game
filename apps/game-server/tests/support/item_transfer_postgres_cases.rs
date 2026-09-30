@@ -482,6 +482,17 @@ impl Harness {
         key: &str,
         quantity: u32,
     ) -> TestResult<[u8; 16]> {
+        self.mint_definition(authority, definition("Item", key), quantity)
+            .await
+    }
+
+    /// [`Self::mint`] of an item with an explicit definition revision.
+    pub(crate) async fn mint_definition(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        item: TypedDefinitionRef,
+        quantity: u32,
+    ) -> TestResult<[u8; 16]> {
         let actor = self.next_actor.get();
         self.next_actor.set(actor + 1);
         let request = ItemMintRequest {
@@ -495,7 +506,7 @@ impl Harness {
                 "fixture:purpose.drop".into(),
                 0,
             ),
-            item: definition("Item", key),
+            item,
             quantity,
             ground: GroundPlacement {
                 spatial_position: vec![1, 2, 3],

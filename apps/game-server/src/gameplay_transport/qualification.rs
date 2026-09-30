@@ -1130,6 +1130,9 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         )
         .map_err(|e| format!("native entry door runtime: {e:?}"))?,
     );
+    // C2: the same chest injection the production boot sequence performs.
+    let chest = crate::interaction_chest_use::with_entry_chest(&door_content)
+        .map_err(|e| format!("native entry chest content: {e:?}"))?;
     let spells = crate::spell::cast::v1_spell_book()?;
     let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
         .map_err(|e| format!("achievement catalogue: {e:?}"))?;
@@ -1238,6 +1241,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             runtime: &runtime,
             movement_cells: &movement_cells,
             door: &door,
+            chest: &chest,
             spells: &spells,
             achievements: &achievements,
         },
