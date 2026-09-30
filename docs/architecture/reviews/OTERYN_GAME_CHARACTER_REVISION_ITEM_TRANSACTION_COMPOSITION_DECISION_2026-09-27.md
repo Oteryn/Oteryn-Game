@@ -188,6 +188,14 @@ accepter by its terminal accept recorded in the cause, with its GameSessionId, l
 generations pinned at that accept. Both `character_root` rows are locked in `character_id` order,
 then the items in ItemInstanceId order. No `CharacterRevision` advances.
 
+**Amendment (STARTER-BACKPACK-0, 2026-09-30), pending on acceptance of STARTER-BACKPACK-0.** Rule 1
+also covers a starter grant (`OTERYN_GAME_STARTER_BACKPACK0_STARTER_GRANT_DECISION_2026-09-30.md`
+§5): the container-slot location it mints into and its `game_character_starter_grants` row, a
+DUR-03 cause record keyed by the Character. Rules 2 and 3 apply in a server-originated variant: the
+cause lock is the grant key (re-read after the `character_root` lock), and the fence is the admitted
+session's `CurrentCharacterItemFence` without a CommandRef, whose Character and World must equal the
+grant's; no synthetic CommandId is created. Rules 4-6 apply unchanged.
+
 ## 4. Rejected options
 
 - **Put every item transaction into the `CharacterRevision` chain** with a closed union of typed
@@ -239,6 +247,11 @@ entry on another Account. They are DUR-03 value records keyed by the bank operat
 receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: after
 `character_root`, the main backpack, its coin entries, then the balance rows in `account_id` order.
 
+**Quest obligation amendment (pending on acceptance of QUEST-STATE-0, #1373;
+`OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md` §5.4).** Rule 1 also covers a
+`game_character_quest_obligations` row written by a reward-claim transaction: an obligation outside
+the revision chain, like the pending arrival; the claim still advances no `CharacterRevision`.
+
 ## 6. Handback
 
 ```yaml
@@ -260,6 +273,17 @@ remaining_unknowns:
   - RewardClaim physical schema and cooldown identity
 next_action: "#162 validates this exact head, routes the required independent review and integrates it through the governed Merge Queue."
 ```
+
+**Market amendment (pending on acceptance of MARKET-0, #162 5912405163;
+`OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md`).** When MARKET-0 is accepted, rule 1
+also covers Market escrow, Inbox and offer records: a market transaction advances no
+`CharacterRevision`. Rule 2 fences only the acting Character of a player command; a
+counterparty's Inbox, escrow and bank balance change without its fence, because no runtime owns
+them, and its Inbox counter row lock takes the place of its `character_root` lock. Matching and
+expiry steps have no acting Character: they take the recovery fence and admission relations only.
+Rule 4's lock order becomes: `character_root`, the ware's book row, the offers by `offer_id`, the
+items by ItemInstanceId, the container-slot row, the Inbox counters by CharacterId, then the balance
+rows by `account_id`.
 
 ## 7. Protected integration
 

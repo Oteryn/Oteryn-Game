@@ -10,6 +10,7 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+use crate::ability::creature_bite::{CreatureBiteVitals, FlooredDamage, floor_creature_damage};
 use crate::ability::{AbilityOccurrence, RevisionSet};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use crate::spell::SpellBook;
@@ -171,6 +172,28 @@ impl ChannelSpellStates {
         self.actors
             .iter()
             .position(|(present, session, _)| *present == actor && *session == game_session_id)
+    }
+}
+
+/// GAME-AI-01 slice §4.6/§4.7: the vitals owner's side of a creature bite. One floored hit is one
+/// compare-committed vitals revision; a hit that removes nothing (health already 1) writes nothing
+/// and reports the current revision.
+impl CreatureBiteVitals for ChannelSpellStates {
+    fn apply_creature_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        magnitude: u32,
+    ) -> Option<(FlooredDamage, u64)> {
+        let state = self.get(runtime, target, target_session)?;
+        let Some((next, damage)) = state.after_creature_damage(magnitude) else {
+            let unchanged = floor_creature_damage(state.vitals().health, magnitude);
+            return (unchanged.applied == 0).then_some((unchanged, state.revision()));
+        };
+        let revision = next.revision();
+        self.commit(runtime, target, target_session, next)
+            .then_some((damage, revision))
     }
 }
 
@@ -592,5 +615,58 @@ pub(crate) mod tests {
             druids.monk_save_values(&druid_runtime, druid, druid_session, now(0)),
             None
         );
+    }
+
+    /// GAME-AI-01 slice §4.6/§4.7: a creature bite reaches the real vitals owner as one floored
+    /// vitals revision, and a hit at health 1 writes nothing.
+    #[test]
+    fn a_creature_bite_lowers_real_vitals_to_the_floor_of_one() {
+        use crate::ability::AiAbilityAdapter;
+        use crate::ability::creature_bite::{
+            CreatureBiteDefinition, CreatureBiteLedger, ReentryProtection, commit_ai_bite,
+        };
+        use crate::foundation::MovementLocalPosition;
+        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+
+        let (mut runtime, actor, session) = runtime_with_player(0x31);
+        let at = |x, y| MovementLocalPosition { x, y, floor: 7 };
+        runtime
+            .initialize_movement_test_position(actor, at(10, 10))
+            .expect("player position");
+        let creature = runtime.admit_test_creature(at(11, 10)).expect("creature");
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("vitals");
+        wound(&mut states, actor, session, 5);
+        let mut ledger = CreatureBiteLedger::default();
+        let mut bite = |sequence, micros| {
+            commit_ai_bite(
+                &mut ledger,
+                &runtime,
+                &mut states,
+                AiAbilityAdapter::bite(creature, sequence, actor, session),
+                CreatureBiteDefinition::new(2_000_000, 8).expect("definition"),
+                RevisionSet::new(
+                    "ruleset:ai-v1",
+                    "content:1",
+                    "world:ai-v1",
+                    "formula:bite-v1",
+                    "simulation:v1",
+                )
+                .expect("revisions"),
+                ReentryProtection {
+                    protected_until: None,
+                },
+                OwnerTime::from_micros(micros),
+            )
+        };
+        let first = bite(0, 0).expect("first bite");
+        assert_eq!((first.damage.applied, first.damage.health_after), (4, 1));
+        assert_eq!(first.vitals_revision, 2);
+        let second = bite(1, 2_000_000).expect("second bite");
+        assert_eq!((second.damage.applied, second.vitals_revision), (0, 2));
+        let (revision, vitals) = observe_vitals(&runtime, &states, actor, session).expect("vitals");
+        assert_eq!((revision, vitals.health), (2, 1));
     }
 }

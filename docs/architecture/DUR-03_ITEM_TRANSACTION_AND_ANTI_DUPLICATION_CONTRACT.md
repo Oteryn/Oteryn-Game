@@ -707,6 +707,21 @@ Owning combat/loot/content architecture also declares whether visible runtime lo
 
 No surface becomes accepted merely because DUR-03 supplies transaction/custody primitives.
 
+**Market amendment (pending on acceptance of MARKET-0, #162 5912405163;
+`reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md`).** When MARKET-0 is accepted,
+the market row is filled by two §5.2 custody families, `MarketOfferEscrow {offer_id, ordinal}`
+(World-scoped, owned by the Market) and `CharacterInbox {character_id, ordinal}` (Character + World),
+and by a buy offer's `escrow_gold` as §18 non-item value in custody. Its shapes (place, accept,
+cancel, expire, match, Inbox out) move whole items as `TRANSFER` lines with at most one §12 split
+(`SPLIT_MERGE_QUANTITY`, a §11.3 planned output identity), gold as `TRANSFER` value lines, and the
+placing fee as one `BURN` value line under the Market variant of `FeeBurnCause`. The owner
+admitted that fee source, paid from the bank (D178; #162 5913348961); MARKET-0 carries it into
+§39.3 and the gold fee decision §4.4 as pending amendments. A held credit (MARKET-0 §6) is §18
+non-item value in custody on the offer, like `escrow_gold`. For those
+shapes only, it supersedes the §39.1 exclusions of non-item accounts, multiple touched items and
+burn combined with other lines, and the §39.1 and §39.3 source and destination limits, within the
+MARKET-0 §9 rows (100 touched items, 3 value lines). Every other obligation is unchanged.
+
 ## 39. Mandatory durable evidence boundary
 
 ADR-0006 requires durable audit for security-relevant durable item/currency mutation. DUR-03 therefore requires ANL-compatible durable transaction evidence sufficient to reconcile every effect whose owning value/security policy declares mandatory audit.
@@ -750,7 +765,9 @@ aggregate payload for each distinct logical transaction:
   live after, established in typed `Ground` custody with applicable corpse
   association/provenance. (The reward-chest and D3 amendments in §39.3 each admit
   one named shape whose only location is a `Container` entry instead — no Ground
-  custody, no separate TRANSFER for that placement.)
+  custody, no separate TRANSFER for that placement. The starter grant amendment, pending on
+  acceptance of STARTER-BACKPACK-0, admits one whose only location is the empty
+  `CharacterEquipment` container slot.)
 - `TRANSFER`: that already-existing live ItemInstance moves from typed `Ground`
   custody to direct-root `CharacterInventory`, preserving identity, type and
   quantity and leaving exactly one authoritative immediate location. (The D3
@@ -1041,6 +1058,22 @@ that a MINT establishes typed Ground custody before a separate TRANSFER. For thi
 - mint into an existing stack stays excluded (§39.1).
 Every other §39 obligation is unchanged.
 
+**Starter grant amendment (STARTER-BACKPACK-0), pending on acceptance of STARTER-BACKPACK-0.**
+`reviews/OTERYN_GAME_STARTER_BACKPACK0_STARTER_GRANT_DECISION_2026-09-30.md` §5-§6 admits, in the
+`STARTER-1` child, one bounded MINT shape and for it supersedes the same §39.1-§39.3 statements as
+the reward chest amendment above. For this shape:
+- the source cause is `StarterGrant {character_id, template_key}`, server-originated with no
+  CommandRef, whose occurrence identity is the `game_character_starter_grants` key: once per
+  Character and template, forever; the template is the one named by the root's
+  `starter_template_revision`;
+- the first and only location is the Character's empty `CharacterEquipment` container slot (D80);
+  no Ground custody and no TRANSFER; an occupied slot mints nothing;
+- the audit evidence is a `OneItemTransactionV1` `starter_grant` operation: before, the nonexistence
+  of the grant row and of the slot item; after, the live item in the slot, its type and quantity 1,
+  and the committed grant row, all from one physical transaction;
+- mint into an existing stack stays excluded (§39.1).
+Every other §39 obligation is unchanged.
+
 **Corpse container amendment (D3).** `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1` (owner decisions
 D111-D113, `reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md` §4)
 admits, for creature-death loot only, the following besides the destinations already listed
@@ -1298,6 +1331,12 @@ authority, conservation) is unchanged.
   and envelope measured within the ANL ceilings, other rows unchanged. The rows, schema and field
   numbers are registered by GOLD-FEE-1, not here.
 
+
+**Market fee amendment (MARKET-0), pending on acceptance of MARKET-0 (#1367).** The owner admitted the Market
+placing fee as a sink paid from the bank (D238, #162 5913348961), as D178 requires. The
+`FeeBurnCause` variant `MarketFee {offer_id, occurrence}` is one `FEE_DEBIT` value line of class
+BURN on the placer's (Account, World) balance, with no item line
+(`reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §4).
 
 **Bank fee amendment (BANK-FEE-0), pending on acceptance of BANK-FEE-0.**
 `reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`, once accepted, admits a bank part for the

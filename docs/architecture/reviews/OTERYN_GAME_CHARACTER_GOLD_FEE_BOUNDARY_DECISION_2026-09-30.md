@@ -233,6 +233,11 @@ FeeBurnCause = CharmUnassign { charm: CharmKey, occurrence: CharmCommandOccurren
 - The fee amount, discounts and eligibility belong to the source (CHARM-6 for CharmUnassign);
   DUR-03 only conserves the value.
 
+**Amendment (MARKET-0, owner decision D238), pending on acceptance of MARKET-0 (#1367).** The variant
+`MarketFee {offer_id, occurrence}` is added: 2% of the offer total, 20 to 1,000,000 gold, paid only
+from the bank as one `FEE_DEBIT` entry referencing a Market operation, never from coins and never a
+`0023` fee record (`OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §3.2, §4).
+
 **Amendment (NPC-0, 2026-09-30, owner decision D208, Q1a on #162 5909366267).** Two variants are added:
 `NpcTrade(NpcTradeCause {npc, offer, side, occurrence})` for the coins of an NPC BUY (its `side`
 is always BUY) and

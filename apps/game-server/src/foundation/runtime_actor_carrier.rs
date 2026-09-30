@@ -1442,6 +1442,31 @@ impl ChannelRuntimeV1 {
             .collect()
     }
 
+    /// AI-4 (GAME-AI-01 slice §4.6): true only while `actor` names a live (`health > 0`)
+    /// creature generation of this runtime. A player, a stale or dead generation, a vacant slot
+    /// or another scope is false.
+    pub(crate) fn contains_live_creature(&self, actor: ExactActorRef) -> bool {
+        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
+            return false;
+        };
+        matches!(
+            &self.carrier.slots[index],
+            Slot::CreatureOccupied { generation, health, .. }
+                if *generation == actor.0.actor_local_generation.0 && *health > 0
+        )
+    }
+
+    /// AI-4 (§4.6): the current position of a live creature or committed player actor, read in
+    /// the owner work item that uses it. A value snapshot, never an authority token.
+    pub(crate) fn read_actor_position(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.carrier
+            .read_position(&self.continuity, actor.0)
+            .map(MovementPositionSnapshot)
+    }
+
     /// Unactivated Combat proof: one exclusive borrow of the physical Channel
     /// owner. It grants no scheduler, production activation or corpse lifetime.
     pub(crate) fn borrow_combat_death(&mut self) -> CurrentOwnerCombatDeath<'_> {
@@ -1549,14 +1574,7 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
         position: MovementLocalPosition,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
-        let context = PreProductionPositionContext {
-            world_id: self.binding.world_id,
-            channel_id: self.binding.channel_id,
-            scope_generation: self.binding.scope_generation,
-            coordinate_frame_marker: 11,
-            map_revision_marker: 12,
-            content_generation_marker: 13,
-        };
+        let context = self.test_position_context();
         self.carrier
             .initialize_position(
                 &self.continuity,
@@ -1569,6 +1587,48 @@ impl ChannelRuntimeV1 {
                 },
             )
             .map(MovementPositionSnapshot)
+    }
+
+    #[cfg(test)]
+    const fn test_position_context(&self) -> PreProductionPositionContext {
+        PreProductionPositionContext {
+            world_id: self.binding.world_id,
+            channel_id: self.binding.channel_id,
+            scope_generation: self.binding.scope_generation,
+            coordinate_frame_marker: 11,
+            map_revision_marker: 12,
+            content_generation_marker: 13,
+        }
+    }
+
+    /// Test only: one live creature at `position`, under the same synthetic context as
+    /// [`Self::initialize_movement_test_position`]. Spawn realization is AI-2's carrier path.
+    #[cfg(test)]
+    pub(crate) fn admit_test_creature(
+        &mut self,
+        position: MovementLocalPosition,
+    ) -> Result<ExactActorRef, CarrierError> {
+        let context = self.test_position_context();
+        let actor =
+            self.carrier
+                .admit_creature(&self.continuity, ActorState(0), "test:creature", 20)?;
+        self.carrier.initialize_position(
+            &self.continuity,
+            actor,
+            context,
+            LocalPosition {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            },
+        )?;
+        Ok(ExactActorRef(actor))
+    }
+
+    /// Test only: despawn one actor, so its generation goes stale.
+    #[cfg(test)]
+    pub(crate) fn remove_test_actor(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
+        self.carrier.remove(&self.continuity, actor.0).map(|_| ())
     }
 
     pub(crate) fn reserve_fresh_session(
@@ -3460,6 +3520,11 @@ mod ability_exact_actor_resolution_tests;
 #[allow(clippy::expect_used)]
 #[path = "channel_owner_ability_commit_tests.rs"]
 mod channel_owner_ability_commit_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "channel_owner_creature_bite_tests.rs"]
+mod channel_owner_creature_bite_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]

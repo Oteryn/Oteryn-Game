@@ -4,7 +4,7 @@
   "kind": "ruleset",
   "owner": "Character progression/Item",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "XP/unlock/perk/rank rules; Item definitions retain static proficiency capability."
+  "notes": "Weapon Proficiency progression rules (progression.json: thresholds, Mastery, kill credit and points); perk trees are content/proficiencies and Item bindings content/proficiencies/bindings.json."
 }
