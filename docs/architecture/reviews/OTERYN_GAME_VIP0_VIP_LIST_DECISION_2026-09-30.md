@@ -4,8 +4,8 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
   persistence, security and privacy) and protected integration. Owner question V1 (§14) is
   answered: c) consent first, plus a "hide my status" setting (§5.1); VIP-1 and VIP-2 are
-  unblocked (architect ruling R3, §13). Question V2 (§14) is open; until it is answered, the
-  fail-closed rule of §3 applies.
+  unblocked (architect ruling R3, §13). Owner question V2 (§14) is answered: only the inviting
+  character sees the status (§3).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30): build the VIP list now, full Tibia Global parity.
   CHAT-0 and PARTY-PVP-0 left the VIP list to its own decision.
@@ -106,7 +106,7 @@ are online, without learning more than Tibia shows and without breaking the soci
 - An accepted entry shows the target's name and a **coarse status: online on this World, or
   offline**. It never shows `ChannelId`, instance, node, position, level, vocation, guild or the
   target's Account. An entry without consent shows only `UNCONFIRMED` (§7).
-- **Who sees it** (fail-closed until V2, §14): the target accepted an invitation that named the
+- **Who sees it** (owner answer V2, §14): the target accepted an invitation that named the
   inviting character, so the status is shown only to sessions of that character, not to the other
   characters of the watcher's Account that share the list.
 - Accepting grants only this coarse status. The rest of the baseline's consent-based contact layer
@@ -144,7 +144,11 @@ are online, without learning more than Tibia shows and without breaking the soci
   row, re-reads the receipt under that lock, checks caps and the rate bucket, writes, advances
   `revision`, and inserts the receipt with the outcome **in the same transaction**. A target's
   consent operation (§5.1) is receipted in the acting Account's own list (created on first write)
-  and also locks, after its own `game_character_roots` row, the watcher's list row it changes. Every outcome
+  and also locks, after its own `game_character_roots` row, the watcher's list row it changes. **Lock
+  order:** a transaction that needs two list rows (a consent operation: the acting Account's and
+  the watcher's) takes the `game_character_roots` rows first, then both list rows in ascending
+  (`account_id`, `world_id`) order, before any read under lock, so reciprocal accepts cannot
+  deadlock; a single-list operation takes one row. Every outcome
   is receipted, refusals included (an `UNKNOWN_NAME` add has consumed a token), so a commit
   followed by a node failure replays the first result instead of executing again.
 - Receipts are deleted with their list; their retention bound is reserved as `VIP0-RL-12`.
@@ -192,7 +196,7 @@ are online, without learning more than Tibia shows and without breaking the soci
   been rewritten; no job is needed.
 - **Hide my status `{shown | hidden}`**, by the target on its own consent rows: the
   `vip_status` column of `game_character_social_settings` (PARTY-PVP-0 §3; a missing row reads
-  `SHOWN`). The write first locks its own `game_character_roots` row FOR UPDATE and, after its
+  `SHOWN`; the same row carries `vip_consent_revision`, §5.1 below). The write first locks its own `game_character_roots` row FOR UPDATE and, after its
   commit, sends a presence hint for the character (§8.2). While it is `HIDDEN`, every watcher,
   accepted ones included, sees `OFFLINE`, with no login or logout announcement.
 - Invitations and accepted watchers are addressed by a per-session handle and shown by the
@@ -200,6 +204,18 @@ are online, without learning more than Tibia shows and without breaking the soci
 - Each consent operation is one transaction under the target's rule 2 fence, receipted and
   rate-limited like any VIP operation (§4, §9); it advances the watcher list's `revision`, whose
   list hint (§7) refreshes the watcher's sessions.
+- **Target-side consent view.** The target's view (pending invitations, accepted watchers) is
+  derived from other Accounts' rows, so it has its own revision: `vip_consent_revision` on the
+  target's `game_character_social_settings` row (created on first write). Every change to what
+  that view shows advances it in the same transaction, under the target's `game_character_roots`
+  lock already held: an add that writes `PENDING`, accept, reject, revoke, a watcher's Remove of a
+  `PENDING` or `ACCEPTED` entry, and the deletion of a list. An add written as `NONE` (blocked or
+  capped) changes nothing the target sees and advances nothing. After the commit the writer sends
+  a relay hint `{kind: vip_consent, character_id, revision}` (advisory, bounded like any relay
+  line); a node holding a session of that character re-reads the consent view and revision from
+  the rows and sends delta 5, dropping a hint whose revision it has already sent. Expiry rewrites
+  no row, so the client hides an invitation at its `expires_at` and the reconcile (§8.2) re-sends
+  the view when the revision or an expiry changed. A lost hint is corrected at the reconcile.
 
 ## 6. Caps and Premium (VIP-1)
 
@@ -277,8 +293,16 @@ are online, without learning more than Tibia shows and without breaking the soci
   a node re-reads the statuses of all its watched targets in one query and sends the differences
   **without** `announce`. A lost hint is thus corrected within 60 s, and a stale login is never
   announced.
-- While a node's listener is down, it sends no status changes and answers writes
-  `VIP_UNAVAILABLE`; the reconcile after reconnect restores truth.
+- **Fail closed on visibility.** Hints are at-most-once, so a lost `SHOWN` to `HIDDEN` hint must
+  not keep an `ONLINE` on screen. A node sends or keeps `ONLINE` for a watcher only while it has
+  confirmed the target's visibility (`vip_status`, session row and the entry's consent) in the last
+  `VIP0-RL-16` (10 s): every `VIP0-RL-16` it re-reads these rows for its watched targets that it
+  shows `ONLINE` (one indexed query, only those targets) and demotes to `OFFLINE` (hidden) or
+  `UNCONFIRMED` (consent gone) at the first read that says so. The full reconcile of all watched
+  targets stays at `VIP0-RL-09` (60 s).
+- While a node's listener is down, it cannot confirm: it sends `UNCONFIRMED` for every entry it
+  shows `ONLINE`, sends no other status change and answers writes `VIP_UNAVAILABLE`; the reconcile
+  after reconnect restores truth (without `announce`).
 
 ### 8.3 Privacy
 
@@ -293,7 +317,7 @@ are online, without learning more than Tibia shows and without breaking the soci
   are not logged at ordinary levels, as FND-02 §20 treats private chat.
 - The `vip_status` setting filters at the watcher's node before sending; a change to `HIDDEN`
   takes effect on the next status evaluation, at once on its presence hint and at the latest at
-  the reconcile (`VIP0-RL-09`).
+  the next `VIP0-RL-16` visibility confirmation (10 s), after which no stale `ONLINE` remains.
 
 ## 9. Rate limits (VIP-1)
 
@@ -333,6 +357,7 @@ are online, without learning more than Tibia shows and without breaking the soci
 | `VIP0-RL-13` pending VIP invitations per target | 20 (Oteryn choice, as `PARTYPVP0-RL-29`) |
 | `VIP0-RL-14` VIP invitation lifetime | 7 days (Oteryn choice) |
 | `VIP0-RL-15` accepted VIP watchers per target | 100 (Oteryn choice, the Premium list cap) |
+| `VIP0-RL-16` visibility confirmation for a shown `ONLINE` | 10 s (architect ruling R4) |
 | VIP operation | 1 transaction, 1 receipt, 0 items, 0 value lines, 0 `CharacterRevision`, 1 relay hint |
 
 ## 12. Rejected options
@@ -376,6 +401,13 @@ under an unaccepted model; b) VIP-1 after V1 (recommended: fail closed, no redes
 an unaccepted model). **Ruled b)**. V1 is answered (§14), so VIP-1 may be allocated; the
 invitation state lives on the entry row (§4), with no new table.
 
+**R4. Hiding must fail closed.** a) Accept up to 60 s of stale `ONLINE` after a lost hint: rejected,
+it discloses after the target used a privacy control; b) a 10 s visibility confirmation for shown
+`ONLINE` entries plus `UNCONFIRMED` while the listener is down (recommended: bounded, cheap, no
+cross-node acknowledgement); c) a synchronous cross-node acknowledgement of every hide: new
+infrastructure. **Ruled b)**. Owner question raised in the report: is a residual window of up to
+10 s acceptable, or must hiding wait for a cross-node acknowledgement?
+
 ## 14. Owner questions
 
 **V1. May the VIP list show online status without the target's consent?** The social baseline
@@ -400,11 +432,15 @@ visible only after the watched character accepts the VIP invitation, and the wat
 can hide its status even from accepted watchers (§3, §5.1, §8.1). A declared difference from
 Global.
 
-**V2 (open). Does one acceptance cover the whole watcher list?** The list is shared by the
+**V2 (answered). Does one acceptance cover the whole watcher list?** The list is shared by the
 watcher Account's characters on the World (R1), but the target accepted an invitation that named
 one character. a) Only the inviting character sees the status (the fail-closed rule applied until
 answered, §3); b) every character of the watcher's Account on the World sees it, which the target
 cannot know. The store keeps `inviter_character_id`, so b) needs no store change.
+
+Owner answer (2026-09-30, #162): only the inviting character sees the status. This is option a)
+above; on #162 it was asked with the letters reversed and answered as "1b". The rule of §3 is
+binding and is no longer a fail-closed placeholder.
 
 ## 15. Decision test
 
@@ -414,7 +450,7 @@ cannot know. The store keeps `inviter_character_id`, so b) needs no store change
   function per operation, one command, one domain, one presence hint kind on the existing relay, one
   reconcile query per node per minute.
 - **Superseding evidence:** official Global values for description length, icons, group names,
-  over-cap behaviour after Premium ends, and pending or training status; owner answer V2.
+  over-cap behaviour after Premium ends, and pending or training status.
 - **Deliberately not decided:** exact channel for contacts, account-wide contacts, privacy
   settings beyond `vip_status`, exercise training, rename and deletion themselves, "Report Name",
   legacy import.
