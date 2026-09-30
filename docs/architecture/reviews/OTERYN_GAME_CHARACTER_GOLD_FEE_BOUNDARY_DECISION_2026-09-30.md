@@ -111,6 +111,9 @@ change outputs** (one platinum stack and one gold stack) beside at most 20 input
   and `DUR03-RL-03` stays 0.
 - Player-facing charm release may follow stage 1 (D170 gate, now satisfiable by stage 1).
 
+**Amendment (BANK-FEE-0, 2026-09-30), pending on acceptance of BANK-FEE-0.** Stage 2 is decided in
+`OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`: coins first, then the bank.
+
 ### 4.2 Denominations, payment plan and change (D175, D176)
 
 Coins are exactly three definitions, with a closed worth table in gold units:
@@ -133,6 +136,9 @@ arithmetic is exact, unsigned 64-bit and checked (the reachable maximum is 20 x 
 
 1. `T` = sum of `quantity x worth` over eligible inputs. If `T < F`, reject
    (`InsufficientFunds`); nothing is written, including the Character change.
+   *Amendment (BANK-FEE-0, pending on acceptance):* for a non-junior payer, `T < F` instead burns every eligible input
+   whole, mints no change, and debits `F - T` from the payer's bank balance; only a balance below
+   `F - T` rejects. `F` is then bounded by `T` plus the bank maximum, not 20,000,000.
 2. Order inputs by worth ascending, then by display order (highest placement ordinal first, B3
    §4.1). With remaining `R = F`, walk the inputs while `R > 0`: burn `k = min(quantity,
    ceil(R / worth))` units; if `k x worth >= R`, the change is `C = k x worth - R` and `R = 0`,
@@ -203,6 +209,11 @@ entries. One transaction still carries every line, one TransactionId fixes the o
 a replay of the same occurrence returns the first outcome. This is the architect's reading of D177
 for sources the owner admitted with Q1a (#162 5909366267).
 
+**Amendment (BANK-FEE-0, 2026-09-30), pending on acceptance of BANK-FEE-0.** The one receipt also
+binds the bank debit, and the
+transaction also writes the bank `FEE_DEBIT` ledger entry, locking the balance row after the coin
+entries (`OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md` §4).
+
 **Burn first with refund** (Q38 b) is rejected: it creates a window where gold is gone and the
 Character change is not made, and a compensation path.
 
@@ -245,6 +256,9 @@ evidence:
 - cause, `F`, the worth table key set, and the conservation summary of §4.2;
 - WorldId, runtime scope, the Character and its committed `CharacterRevision`, compatible
   definition revisions, and safe fence references without secrets.
+
+*Amendment (BANK-FEE-0, pending on acceptance):* the event also carries one value line for a bank part (kind
+`FEE_DEBIT`, class BURN), and an event of a fee paid wholly from the bank has no burn line.
 
 The schema (a new closed operation of the native item transaction family), field numbers and
 registry entries are not defined here; GOLD-FEE-1 registers them under the §39.2 non-candidate,

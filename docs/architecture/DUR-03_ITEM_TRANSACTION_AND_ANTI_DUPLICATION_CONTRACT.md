@@ -1266,6 +1266,15 @@ authority, conservation) is unchanged.
   numbers are registered by GOLD-FEE-1, not here.
 
 
+**Bank fee amendment (BANK-FEE-0), pending on acceptance of BANK-FEE-0.**
+`reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`, once accepted, admits a bank part for the
+fee shapes above, for those shapes only: it supersedes the §39.1 exclusion of non-item accounts; the
+conservation becomes `burned - change + bank_debit = F`; a non-junior payer whose coins are worth
+less than `F` burns every eligible coin whole with no change and pays `F - T` from its bank balance
+(BANK-0) instead of being rejected; the bank part is one `FEE_DEBIT` value line of class BURN
+under the fee's own `FeeBurnCause` (§15, §18), counted by `DUR03-RL-03-FEE`; `DUR03-RL-03` stays 0
+for coin-only fees; a fee paid wholly from the bank has no burn line.
+
 **NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
 (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes
 built on the gold fee amendment above. The owner admitted NPC buying, selling and travel as value
