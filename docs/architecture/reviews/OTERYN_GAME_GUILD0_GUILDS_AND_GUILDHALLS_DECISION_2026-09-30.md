@@ -128,12 +128,14 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
   required until PREM-1 delivers `premium_current`; from then on founding and every move into
   levels 1 and 2 require it (`NOT_PREMIUM`), and a lapse keeps the rank.
 - **Invite `{character}` / revoke.** By levels 1 and 2; the target is of the same World and not a
-  member of this guild; at most `GUILD0-RL-08` (500) open invitations per guild and at most `GUILD0-RL-17` (50) open
-  invitations per target character across all guilds (`INVITATION_LIMIT`, architect ruling).
+  member of this guild; at most `GUILD0-RL-08` (500) invitation rows per guild and at most `GUILD0-RL-17` (50)
+  invitation rows per target character across all guilds, counting expired retained rows
+  (`INVITATION_LIMIT`, architect ruling). Inside the invite transaction, expired rows of that target
+  character (at most 50) are deleted first, so an expired row never blocks a new invitation.
 - **Accept.** By the invited character, which is in no guild; it joins at the lowest level. At most
   `GUILD0-RL-05` (2,000, `PARITY_PENDING`: Tibia has no limit) members per guild; a further join is
-  `GUILD_FULL`. Accepting removes the character's other invitations: at most `GUILD0-RL-17` (50) rows, so one
-  transaction stays bounded.
+  `GUILD_FULL`. Accepting removes the character's other invitation rows, expired or not: at most `GUILD0-RL-17` (50)
+  rows in total, so one transaction stays bounded.
 - **Leave.** Any member but the leader.
 - **Exclude `{character}`.** By levels 1 and 2, of a member at a strictly lower level.
 - **Set rank `{character, level}`.** The actor's level `a`, the target's current level `t` and new
@@ -185,8 +187,9 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
 2. The guild balance is paid out (§5.3).
 3. Steps remove members and invitations, at most 100 per step, keyed by (guild, step).
 4. The last step frees the leadership rows and sets `DISBANDED`; the name is free. A deferred
-   guard refuses `DISBANDED` while the guild balance is not 0 or any member, invitation, guildhall
-   or guildhall bid of the guild remains (fail closed; the step retries).
+   guard refuses `DISBANDED` while the guild balance is not 0 or any member, invitation or guildhall
+   of the guild remains, or any guildhall bid of the guild is open (`HELD`; fail closed, the step
+   retries). Retained terminal bid rows (`RELEASED`, `WON`) are history and do not block.
 
 ### 3.5 Characters and Accounts
 
@@ -262,6 +265,12 @@ profile (purpose `GUILD_ACTIVITY`, bank entries also `ECONOMY_LEDGER`).
   (architect ruling, `GUILD0-RL-19`): a deposit or credit that would break it is refused
   `BALANCE_LIMIT`, so returning guild escrow to its source always fits and never blocks auction
   cleanup or disband.
+  The same holds for the account part (architect ruling, `GUILD0-RL-20`): a deferred guard on the
+  funding Account keeps `balance + sum(escrow_account_gold of open guildhall bids funded by it)` at
+  most the hard ceiling (`HOUSEOWN0-RL-13`). A credit that would break it is refused
+  `BALANCE_LIMIT` by its own system (Market, house, bank), so returning `escrow_account_gold` to
+  `funding_account_id` always fits. This is reserve headroom only: no new custody or recovery
+  protocol.
 - `game_guild_bank_entries`: immutable, the BANK-0 entry shape keyed by guild instead of Account:
   kinds `GUILD_DEPOSIT`, `GUILD_WITHDRAW`, `GUILDHALL_BID_RESERVE`, `GUILDHALL_BID_RELEASE`,
   `GUILDHALL_PRICE`, `GUILDHALL_RENT`, `GUILD_DISBAND_PAYOUT`; amount, before and after, acting
@@ -458,6 +467,7 @@ belongs to the house interior runtime, which admits only characters with house a
 | `GUILD0-RL-17` open invitations per target character | 50 |
 | `GUILD0-RL-18` deadline gate | transactions cannot activate or cure a guild past its deadline |
 | `GUILD0-RL-19` guild balance plus outstanding guild escrow | at most `BANK0-RL-01` |
+| `GUILD0-RL-20` funding Account balance plus outstanding guildhall account escrow | at most 9,000,000,000,000,000 |
 | `GUILD0-RL-09` guilds per job pass | 100 |
 | `GUILD0-RL-10` activity log window | 30 days |
 | `GUILD0-RL-11` Premium leaders and vices required | 5, once PREM-1 delivers Premium (G1 a) |
