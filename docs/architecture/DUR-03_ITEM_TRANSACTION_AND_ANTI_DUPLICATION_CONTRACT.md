@@ -126,6 +126,24 @@ Ground {
 
 Future world-shared spatial state or downstream custody such as house/trade/market/depot/mail/reward custody is introduced only as a separately typed/versioned family with named owner and explicit WorldId/scope semantics.
 
+**Amendment (HOUSE-CUSTODY-0, 2026-09-30).** The first such family is admitted:
+
+```text
+HouseInterior {
+  world_id: WorldId
+  house_ref: {family: House, key, revision}
+  spatial_position: native WorldTilePosition (a tile of that house)
+  stack_ordinal: typed ordinal
+}
+```
+
+- It is World-scoped, with no `ChannelId`. Its owner is the Game housing domain (EXP-HOUSES-01).
+- Its writes are fenced by a `House {world, house}` runtime scope.
+- Every placement writes `HousingReclaimProvenance` in the same transaction.
+- Its player writers stay closed until the house has an owner and an ACL grant.
+
+See `reviews/OTERYN_GAME_HOUSE_CUSTODY0_HOUSE_ITEM_CUSTODY_DECISION_2026-09-30.md`.
+
 ### 5.3 `TypedDomainCustody` is not one generic variant
 
 `TypedDomainCustody` is an architecture registry concept. Each accepted custody family defines its own stable semantic type/key, owner, scope, legal reference shape, lifecycle/compatibility and authorization boundary.
@@ -1291,8 +1309,10 @@ unchanged.
   step 2, which is idempotent, then step 3. The old bundle never boots over a half-retired
   Ground.
 
-  No house custody family exists yet, so Ground items on house tiles are retired as well, until
-  a house contract admits such a family and its exemption.
+  Only Ground roots and their entries are retired. `HouseInterior` items (HOUSE-CUSTODY-0) and
+  their containers are never touched. Ground items on house tiles (a house without an owner) are
+  retired like any other Ground item. Activation is refused while a `HouseInterior` item sits on
+  a tile that the new map revision removes (EXP-HOUSES-01 §14.7).
 - **Registration.** MAP-OVERLAY-1 registers:
   - the proto and registry fields of both shapes;
   - the reset record;

@@ -201,9 +201,13 @@ built, eight things must be fixed:
   - After an unplanned restart, the channel rebuilds them into its overlay from their durable
     locations, so a crash loses no item.
   - The rebuild fails closed if an item's `map_revision` differs from the active bundle digest.
-  - At the planned world reset they are retired, as in a Tibia server save (§4.7). House tiles
-    are included until HOUSE-CUSTODY-0 admits a house custody family under EXP-HOUSES-01, which
-    already makes house items World-level durable state (owner answer, house tiles a).
+  - At the planned world reset they are retired, as in a Tibia server save (§4.7).
+- **House tiles** (HOUSE-CUSTODY-0, amending this section).
+  - The tiles of a house without an owner are ordinary map tiles. Ground items there are
+    retired at the reset (owner answer, house tiles a).
+  - The tiles of an owned house are served by its World-scoped interior runtime, not by the
+    channel overlay. Items there use the `HouseInterior` family and are never retired by a
+    reset.
 - **Picking up a map-authored item** (DUR-03 §39.3 amendment).
   - **Eligible items.** A top-level entry that is pickupable and has no action, unique, door,
     depot or teleport binding and no contents. Everything else stays in place.
@@ -318,7 +322,7 @@ built, eight things must be fixed:
 | MAP-LOAD-1 | Reader, compact model, budgets | MAP-BUNDLE-1 |
 | MAP-OVERLAY-1 | Overlay, Ground rebuild, map-item MINT, reset retirement | MAP-LOAD-1; DUR-03 §39.3 amendment accepted |
 | MAP-CUTOVER-1 | Boot from the bundle through a first reset, fixture world, draft gate | MAP-LOAD-1; MAP-OVERLAY-1 |
-| HOUSE-CUSTODY-0 | Architect decision: the DUR-03 house item custody family and its reset exemption, under EXP-HOUSES-01 | before any house becomes ownable |
+| HOUSE-CUSTODY-0 | Decided in this PR (`reviews/OTERYN_GAME_HOUSE_CUSTODY0_HOUSE_ITEM_CUSTODY_DECISION_2026-09-30.md`); implementation child HOUSE-CUSTODY-1 | this ADR |
 | MAP-WIRE-1 | Item overlay and Ground state domain, viewport snapshots. Needed before a playable release, because clients cannot see pickups or hidden origins without it; may run in parallel. | owner acceptance |
 
 ## 6. Rejected options

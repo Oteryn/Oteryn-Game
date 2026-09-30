@@ -21,6 +21,7 @@ owned_paths:
   - docs/architecture/ADR-0021-world-map-runtime-loading.md
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
+  - docs/architecture/reviews/OTERYN_GAME_HOUSE_CUSTODY0_HOUSE_ITEM_CUSTODY_DECISION_2026-09-30.md
   - docs/agents/tasks/archive/OTV2-20260930-adr0021-world-map-runtime-loading.md
 public_contracts:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
@@ -87,6 +88,9 @@ No code, migration or content change is made.
   - the first pass found 8 material findings;
   - the second found 4 new material problems;
   - all are fixed before freeze (ADR §8).
+- HOUSE-CUSTODY-0 was added to this PR at the owner's direct request (2026-09-30): the
+  `HouseInterior` family, reclaim provenance, the `House` scope kind, closed transfer shapes and
+  the reset exemption. HOUSE-CUSTODY-1 implements it.
 - Owner answer on house tiles: a. Ground items on house tiles are retired at a reset until
   HOUSE-CUSTODY-0.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
