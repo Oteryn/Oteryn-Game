@@ -6991,9 +6991,16 @@
    "arbitration": [
     {
      "chosen": "canary",
+     "colours": {
+      "body": 10,
+      "feet": 81,
+      "head": 2,
+      "legs": 22
+     },
      "fact": "definition.outfit",
      "image": "File:Ambassador Manop.gif",
-     "rule": "WIKI_IMAGE",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 3.33,
      "sha1": "d1687add015f0258ef76549b74ae23a53e60e7d3"
     },
     {
@@ -7035,10 +7042,10 @@
    "presentation": {
     "outfit": {
      "addons": 1,
-     "body": 9,
-     "feet": 63,
-     "head": 40,
-     "legs": 63,
+     "body": 10,
+     "feet": 81,
+     "head": 2,
+     "legs": 22,
      "look_type": 1816,
      "mount": null
     },
@@ -57331,6 +57338,10 @@
      "fact": "definition.outfit",
      "image": "File:Enpa-Deia Pema.gif",
      "rule": "WIKI_IMAGE",
+     "scores": {
+      "canary": 62.57,
+      "crystal": 71.8
+     },
      "sha1": "f3b2891090a2faf249a40a378ff87b3b65d5e9cc"
     },
     {
@@ -57639,9 +57650,16 @@
    "arbitration": [
     {
      "chosen": "canary",
+     "colours": {
+      "body": 3,
+      "feet": 81,
+      "head": 2,
+      "legs": 41
+     },
      "fact": "definition.outfit",
      "image": "File:Enpa Rudra.gif",
-     "rule": "WIKI_IMAGE",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 31.64,
      "sha1": "82a635859c0aa2e635492ab2fecbf11ff962f80b"
     },
     {
@@ -57677,10 +57695,10 @@
    "presentation": {
     "outfit": {
      "addons": 3,
-     "body": 9,
-     "feet": 63,
-     "head": 40,
-     "legs": 63,
+     "body": 3,
+     "feet": 81,
+     "head": 2,
+     "legs": 41,
      "look_type": 1816,
      "mount": null
     },
@@ -74114,9 +74132,16 @@
    "arbitration": [
     {
      "chosen": "canary",
+     "colours": {
+      "body": 0,
+      "feet": 20,
+      "head": 41,
+      "legs": 58
+     },
      "fact": "definition.outfit",
      "image": "File:Gareth.gif",
-     "rule": "WIKI_IMAGE",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 29.88,
      "sha1": "987161bfb6872869531d7d6a2e7b86383791d538"
     }
    ],
@@ -74150,7 +74175,7 @@
      "body": 0,
      "feet": 20,
      "head": 41,
-     "legs": 39,
+     "legs": 58,
      "look_type": 132,
      "mount": null
     },
@@ -116855,7 +116880,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "crystal",
+     "colours": {
+      "body": 94,
+      "feet": 0,
+      "head": 95,
+      "legs": 86
+     },
+     "fact": "definition.outfit",
+     "image": "File:Leonora.gif",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 18.99,
+     "sha1": "f8500a396c36de9fb4b36fa649c07df1fe5ecd6d"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.leonora",
@@ -116885,7 +116925,7 @@
      "addons": 0,
      "body": 94,
      "feet": 0,
-     "head": 114,
+     "head": 95,
      "legs": 86,
      "look_type": 1861,
      "mount": null
@@ -116899,9 +116939,7 @@
      "sha256": "97aea6b569e0f94c700d79a05cd5df8dd1cfbf5c5211c0b2ac9d340259e93d26"
     }
    },
-   "source_unconfirmed": [
-    "outfit"
-   ],
+   "source_unconfirmed": [],
    "trade_service": {
     "currency": null,
     "identity": {
@@ -158508,6 +158546,20 @@
   {
    "arbitration": [
     {
+     "chosen": "crystal",
+     "colours": {
+      "body": 2,
+      "feet": 19,
+      "head": 94,
+      "legs": 3
+     },
+     "fact": "definition.outfit",
+     "image": "File:Raubritter Battler.gif",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 9.19,
+     "sha1": "322276869e799d5ec801d55f79434b94c965c286"
+    },
+    {
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
@@ -158541,7 +158593,7 @@
    "presentation": {
     "outfit": {
      "addons": 0,
-     "body": 19,
+     "body": 2,
      "feet": 19,
      "head": 94,
      "legs": 3,
@@ -158558,7 +158610,6 @@
     }
    },
    "source_unconfirmed": [
-    "outfit",
     "text"
    ],
    "trade_service": null,
@@ -158628,6 +158679,20 @@
   {
    "arbitration": [
     {
+     "chosen": "crystal",
+     "colours": {
+      "body": 2,
+      "feet": 0,
+      "head": 94,
+      "legs": 21
+     },
+     "fact": "definition.outfit",
+     "image": "File:Raubritter Chastigator.gif",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 31.62,
+     "sha1": "363f336c02dd0793411309ba17a36a0b7e4b292b"
+    },
+    {
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
@@ -158661,8 +158726,8 @@
    "presentation": {
     "outfit": {
      "addons": 0,
-     "body": 19,
-     "feet": 78,
+     "body": 2,
+     "feet": 0,
      "head": 94,
      "legs": 21,
      "look_type": 1902,
@@ -158678,7 +158743,6 @@
     }
    },
    "source_unconfirmed": [
-    "outfit",
     "text"
    ],
    "trade_service": null,
@@ -158690,6 +158754,20 @@
   },
   {
    "arbitration": [
+    {
+     "chosen": "crystal",
+     "colours": {
+      "body": 2,
+      "feet": 19,
+      "head": 94,
+      "legs": 3
+     },
+     "fact": "definition.outfit",
+     "image": "File:Raubritter Guard.gif",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 9.2,
+     "sha1": "7d36cfbd9d8c2ddbceb2204c883edf14fe2d4340"
+    },
     {
      "chosen": "wiki",
      "fact": "placements",
@@ -158724,7 +158802,7 @@
    "presentation": {
     "outfit": {
      "addons": 0,
-     "body": 19,
+     "body": 2,
      "feet": 19,
      "head": 94,
      "legs": 3,
@@ -158741,7 +158819,6 @@
     }
    },
    "source_unconfirmed": [
-    "outfit",
     "text"
    ],
    "trade_service": null,
@@ -158944,6 +159021,20 @@
   {
    "arbitration": [
     {
+     "chosen": "crystal",
+     "colours": {
+      "body": 2,
+      "feet": 19,
+      "head": 94,
+      "legs": 3
+     },
+     "fact": "definition.outfit",
+     "image": "File:Raubritter Post.gif",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 9.2,
+     "sha1": "b20e850f6884bc37de61b91eff78a69b9f130707"
+    },
+    {
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
@@ -158977,7 +159068,7 @@
    "presentation": {
     "outfit": {
      "addons": 0,
-     "body": 19,
+     "body": 2,
      "feet": 19,
      "head": 94,
      "legs": 3,
@@ -158994,7 +159085,6 @@
     }
    },
    "source_unconfirmed": [
-    "outfit",
     "text"
    ],
    "trade_service": null,
@@ -159006,6 +159096,20 @@
   },
   {
    "arbitration": [
+    {
+     "chosen": "crystal",
+     "colours": {
+      "body": 70,
+      "feet": 52,
+      "head": 94,
+      "legs": 33
+     },
+     "fact": "definition.outfit",
+     "image": "File:Raubritter Purifier.gif",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 28.13,
+     "sha1": "0c6552c7b148397beabe10be8c5426f642e9fa12"
+    },
     {
      "chosen": "wiki",
      "fact": "placements",
@@ -159040,10 +159144,10 @@
    "presentation": {
     "outfit": {
      "addons": 0,
-     "body": 19,
-     "feet": 78,
+     "body": 70,
+     "feet": 52,
      "head": 94,
-     "legs": 21,
+     "legs": 33,
      "look_type": 1902,
      "mount": null
     },
@@ -159057,7 +159161,6 @@
     }
    },
    "source_unconfirmed": [
-    "outfit",
     "text"
    ],
    "trade_service": null,
@@ -159196,6 +159299,20 @@
   {
    "arbitration": [
     {
+     "chosen": "crystal",
+     "colours": {
+      "body": 2,
+      "feet": 19,
+      "head": 94,
+      "legs": 3
+     },
+     "fact": "definition.outfit",
+     "image": "File:Raubritter Thug.gif",
+     "rule": "WIKI_IMAGE_FIT",
+     "score": 9.19,
+     "sha1": "6ead53bc3e0af773ccb82882458ba66cfff884bb"
+    },
+    {
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
@@ -159229,7 +159346,7 @@
    "presentation": {
     "outfit": {
      "addons": 0,
-     "body": 19,
+     "body": 2,
      "feet": 19,
      "head": 94,
      "legs": 3,
@@ -159246,7 +159363,6 @@
     }
    },
    "source_unconfirmed": [
-    "outfit",
     "text"
    ],
    "trade_service": null,
@@ -238381,7 +238497,7 @@
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
  "tibiopedia_facts_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
  "totals": {
-  "arbitrated_facts": 1511,
+  "arbitrated_facts": 1518,
   "candidates": 1112,
   "held:DEFINITION_CONFLICT": 1,
   "held:EMPTY_SLUG": 1,

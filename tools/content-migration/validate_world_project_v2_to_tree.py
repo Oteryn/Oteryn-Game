@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1476, "Presentation": 2578, "Behavior": 2578, "Loot": 1029, "Ability": 5886, "Effect": 4489, "Formula": 4806,
+    "Creature": 1476, "Presentation": 2586, "Behavior": 2586, "Loot": 1029, "Ability": 5886, "Effect": 4489, "Formula": 4806,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
@@ -23,16 +23,16 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1102
-NPC_BINDING_COUNT = 2352
+NPC_COUNT = 1110
+NPC_BINDING_COUNT = 2376
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 61
-DIALOGUE_COUNT = 715
+DIALOGUE_COUNT = 694
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
 PROFICIENCY_COUNT = 443
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
 class ValidationError(RuntimeError):

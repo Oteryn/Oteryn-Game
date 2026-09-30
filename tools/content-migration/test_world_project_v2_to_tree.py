@@ -16,11 +16,11 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 33567, "Mount": 252,
-    "Creature": 1476, "Presentation": 2578, "Behavior": 2578, "Loot": 1029, "Ability": 5886, "Effect": 4489, "Formula": 4806,
-    "NPC": 1102, "Dialogue": 715, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
+    "Creature": 1476, "Presentation": 2586, "Behavior": 2586, "Loot": 1029, "Ability": 5886, "Effect": 4489, "Formula": 4806,
+    "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
     "Proficiency": 443,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1476, "Encounter": 61, "NPC": 2352}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1476, "Encounter": 61, "NPC": 2376}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -42,9 +42,9 @@ assert "imports/canary/bindings/creatures.json" in paths
 assert "imports/tibiawiki/bindings/creatures.json" in paths
 assert all(not path.startswith("content/world/") for path in paths)
 
-assert manifest["families"]["NPC"] == {"records": 1102, "index": "content/npcs/definitions/index.json"}
-assert manifest["families"]["Dialogue"] == {"records": 715, "index": "content/dialogues/definitions/index.json"}
-assert manifest["families"]["Service.Trade"] == {"records": 322, "index": "content/services/trade/index.json"}
+assert manifest["families"]["NPC"] == {"records": 1110, "index": "content/npcs/definitions/index.json"}
+assert manifest["families"]["Dialogue"] == {"records": 694, "index": "content/dialogues/definitions/index.json"}
+assert manifest["families"]["Service.Trade"] == {"records": 324, "index": "content/services/trade/index.json"}
 assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "content/services/travel/index.json"}
 assert manifest["families"]["Charm"] == {"records": 25, "index": "content/charms/index.json"}
 assert "Charm" in project["migrated_families"] and "Charm" not in project["next_population_families"]

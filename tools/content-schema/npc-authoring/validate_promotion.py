@@ -17,7 +17,10 @@ Semantic rules:
   plain source offer;
 - D16: 'D16' always; rule 'WIKI_MAJORITY_ARBITER' (with tibiopedia_facts_sha256) names a plain `trade.<item>`
   offer, a provenance source and 2-3 sorted wikis; rules 'WIKI_IMAGE' / 'OWNER_REVIEW' are exactly the
-  DEFINITION_REVIEWED row of that NPC and field (`definition.<field>`), choosing one of two sources;
+  DEFINITION_REVIEWED row of that NPC and field (`definition.<field>`), choosing one of two sources, and a row with
+  `colours` (WIKI_IMAGE_FIT) puts those colours on the outfit; a single-source WIKI_IMAGE_FIT row is exactly the
+  WIKI_IMAGE_FIT table entry and the outfit carries its colours; `source_unconfirmed` is the SOURCE_UNCONFIRMED row of
+  a single-source Crystal NPC, without 'outfit' once WIKI_IMAGE_FIT settles it;
 - each candidate identity is family NPC, key `oteryn:npc.<slug>` (D4) and revision 'definition-r1';
   the key suffix equals the slug of `name` (same slug() as promotion_candidates.py);
 - candidate keys are unique and the candidates list is sorted by key;
@@ -221,7 +224,9 @@ def candidate_errors(candidate, index):
             errs.append(f"{plabel}: revision {entry['revision']!r} is not the D14 supplement revision of a listed file")
     unconfirmed = candidate.get('source_unconfirmed')
     table_row = promotion_candidates.SOURCE_UNCONFIRMED.get((provenance.get('crystal') or {}).get('key'))
-    expected_unconfirmed = list(table_row) if table_row is not None and list(provenance) == ['crystal'] else None
+    expected_unconfirmed = ([kind for kind in table_row if not (kind == 'outfit'
+                                                             and candidate.get('name') in promotion_candidates.WIKI_IMAGE_FIT)]
+                            if table_row is not None and list(provenance) == ['crystal'] else None)
     if unconfirmed != expected_unconfirmed:
         errs.append(f'{label}: source_unconfirmed {unconfirmed!r} != the D16 table row {expected_unconfirmed!r}')
     fan_confirmed = any(row.get('rule') == 'FAN_WIKI_CONFIRMED' for row in candidate.get('arbitration') or [])
@@ -337,11 +342,21 @@ def candidate_errors(candidate, index):
                              f"provenance has {sorted(provenance)}")
             if candidate.get('wiki') is None:
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
-        elif rule in ('WIKI_IMAGE', 'OWNER_REVIEW'):
+        elif rule == 'WIKI_IMAGE_FIT' and candidate.get('name') in promotion_candidates.WIKI_IMAGE_FIT:
+            fit = promotion_candidates.WIKI_IMAGE_FIT[candidate['name']]
+            outfit = (candidate.get('presentation') or {}).get('outfit') or {}
+            if row != {'fact': 'definition.outfit', 'rule': rule, 'chosen': 'crystal', **fit} or list(provenance) != ['crystal']:
+                errs.append(f"{alabel}: WIKI_IMAGE_FIT row is not the D16 fit of this single-source NPC")
+            elif any(outfit.get(region) != colour for region, colour in fit['colours'].items()):
+                errs.append(f"{alabel}: outfit colours are not the fitted wiki colours {fit['colours']!r}")
+        elif rule in ('WIKI_IMAGE', 'OWNER_REVIEW', 'WIKI_IMAGE_FIT'):
             field = fact[len('definition.'):] if isinstance(fact, str) and fact.startswith('definition.') else None
             reviewed = promotion_candidates.DEFINITION_REVIEWED.get(candidate.get('name'), {}).get(field)
             if reviewed is None or {k: v for k, v in row.items() if k != 'fact'} != reviewed:
                 errs.append(f"{alabel}: {rule} row is not the reviewed {field!r} decision for this NPC (D16)")
+            elif 'colours' in reviewed and any(((candidate.get('presentation') or {}).get('outfit') or {}).get(region)
+                                               != colour for region, colour in reviewed['colours'].items()):
+                errs.append(f"{alabel}: outfit colours are not the fitted wiki colours {reviewed['colours']!r}")
             elif len(provenance) != 2 or chosen not in provenance:
                 errs.append(f"{alabel}: {rule} chooses {chosen!r} between two sources, provenance has {sorted(provenance)}")
         elif rule == 'WIKI_MAJORITY_ARBITER':
@@ -413,7 +428,7 @@ def candidate_errors(candidate, index):
             errs.append(f"{alabel}: rule {rule!r} not in "
                          f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_CONFIRMED', 'WIKI_MAJORITY_PRICE', "
                          f"'WIKI_POSITION', 'WIKI_PRICE', 'WIKI_SPELLING', 'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER', "
-                         f"'WIKI_IMAGE', 'OWNER_REVIEW']")
+                         f"'WIKI_IMAGE', 'OWNER_REVIEW', 'WIKI_IMAGE_FIT']")
 
     # D13 offers: a wiki-origin offer and its WIKI_OFFER row come together, one row per offer
     wiki_offer_facts = sorted(f"trade.{offer.get('source_item_id')}.{offer.get('direction')}"

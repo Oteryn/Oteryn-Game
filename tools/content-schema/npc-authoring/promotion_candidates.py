@@ -107,7 +107,8 @@ LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
 WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
                            'WIKI_CONFIRMED', 'WIKI_PRICE', 'WIKI_MAJORITY_PRICE', 'WIKI_OFFER',
-                           'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER', 'WIKI_IMAGE', 'OWNER_REVIEW')  # kept in the output
+                           'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER', 'WIKI_IMAGE', 'OWNER_REVIEW',
+                           'WIKI_IMAGE_FIT')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
@@ -115,18 +116,22 @@ SPELLING_MIN_LENGTH = 10
 # SHA-1), the movement from the owner's observation; any other conflicting field still holds the NPC
 DEFINITION_REVIEWED = {
     'Ambassador Manop': {
-        'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Ambassador Manop.gif',
-                   'sha1': 'd1687add015f0258ef76549b74ae23a53e60e7d3'},
+        'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Ambassador Manop.gif',
+                   'sha1': 'd1687add015f0258ef76549b74ae23a53e60e7d3', 'score': 3.33,
+                   'colours': {'head': 2, 'body': 10, 'legs': 22, 'feet': 81}},
         'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30'}},
-    'Enpa Rudra': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Enpa Rudra.gif',
-                              'sha1': '82a635859c0aa2e635492ab2fecbf11ff962f80b'}},
+    'Enpa Rudra': {'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Enpa Rudra.gif',
+                              'sha1': '82a635859c0aa2e635492ab2fecbf11ff962f80b', 'score': 31.64,
+                              'colours': {'head': 2, 'body': 3, 'legs': 41, 'feet': 81}}},
     'Enpa-Deia Pema': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Enpa-Deia Pema.gif',
-                                  'sha1': 'f3b2891090a2faf249a40a378ff87b3b65d5e9cc'}},
+                                  'sha1': 'f3b2891090a2faf249a40a378ff87b3b65d5e9cc',
+                                  'scores': {'canary': 62.57, 'crystal': 71.8}}},
     'Flickering Soul': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30'}},
     'Omrabas': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30'}},
     'Storkus': {'outfit': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30'}},
-    'Gareth': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Gareth.gif',
-                          'sha1': '987161bfb6872869531d7d6a2e7b86383791d538'}},
+    'Gareth': {'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Gareth.gif',
+                          'sha1': '987161bfb6872869531d7d6a2e7b86383791d538', 'score': 29.88,
+                          'colours': {'head': 41, 'body': 0, 'legs': 58, 'feet': 20}}},
     'Grumpy Stone': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'crystal', 'image': 'File:Grumpy Stone.gif',
                                 'sha1': 'd2b356e031104e639ce29494f5e9b1862d12f5da'}},
 }
@@ -169,6 +174,18 @@ SOURCE_UNCONFIRMED = {
     'crystal:npc/swashbuckling_lion_archer': ('outfit', 'text', 'walk'),
     'crystal:npc/szallar_mandar': ('text', 'walk'),
     'crystal:npc/weary_lion_knight': ('outfit', 'text', 'walk'),
+}
+# D16: outfit colours fitted to the TibiaWiki image of a single-source NPC whose Crystal colours are marked TODO
+# (render from the client sprites, per-region palette fit; a source colour stays where it fits as well, a region under
+# 30 visible pixels never changes); only fits scoring 35 or better are kept, the rest stay source_unconfirmed outfits
+WIKI_IMAGE_FIT = {
+    'Leonora': {'image': 'File:Leonora.gif', 'sha1': 'f8500a396c36de9fb4b36fa649c07df1fe5ecd6d', 'score': 18.99, 'colours': {'head': 95, 'body': 94, 'legs': 86, 'feet': 0}},
+    'Raubritter Battler': {'image': 'File:Raubritter Battler.gif', 'sha1': '322276869e799d5ec801d55f79434b94c965c286', 'score': 9.19, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Chastigator': {'image': 'File:Raubritter Chastigator.gif', 'sha1': '363f336c02dd0793411309ba17a36a0b7e4b292b', 'score': 31.62, 'colours': {'head': 94, 'body': 2, 'legs': 21, 'feet': 0}},
+    'Raubritter Guard': {'image': 'File:Raubritter Guard.gif', 'sha1': '7d36cfbd9d8c2ddbceb2204c883edf14fe2d4340', 'score': 9.2, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Post': {'image': 'File:Raubritter Post.gif', 'sha1': 'b20e850f6884bc37de61b91eff78a69b9f130707', 'score': 9.2, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Purifier': {'image': 'File:Raubritter Purifier.gif', 'sha1': '0c6552c7b148397beabe10be8c5426f642e9fa12', 'score': 28.13, 'colours': {'head': 94, 'body': 70, 'legs': 33, 'feet': 52}},
+    'Raubritter Thug': {'image': 'File:Raubritter Thug.gif', 'sha1': '6ead53bc3e0af773ccb82882458ba66cfff884bb', 'score': 9.19, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
 }
 # D16: the wikis' name of an Item whose registered name differs (folded wiki name -> folded registered name)
 WIKI_ITEM_NAMES = {'straw mat foot section': 'straw bed foot section'}
@@ -696,8 +713,14 @@ class Builder:
         for field in [f for f in conflicts if f in DEFINITION_REVIEWED.get(name, {})]:  # D16
             row = DEFINITION_REVIEWED[name][field]
             definition[field] = definition_facts(bundles[row['chosen']])[field]
+            if 'colours' in row:  # WIKI_IMAGE_FIT: the colours read from the wiki image
+                definition[field] = {**definition[field], **row['colours']}
             arbitration.append({'fact': f'definition.{field}', **row})
             conflicts.remove(field)
+        if name in WIKI_IMAGE_FIT and list(sources) == ['crystal']:  # D16
+            fit = WIKI_IMAGE_FIT[name]
+            definition['outfit'] = {**definition['outfit'], **fit['colours']}
+            arbitration.append({'fact': 'definition.outfit', 'rule': 'WIKI_IMAGE_FIT', 'chosen': 'crystal', **fit})
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))
         placements, problem = self.merge_placements(bundles, wiki, arbitration)
@@ -755,7 +778,8 @@ class Builder:
                            for s, b in sorted(bundles.items())},
             'wiki': {'pageid': wiki['pageid'], 'revid': wiki['revid']} if wiki else None,
             'arbitration': [a for a in arbitration if a['rule'] in WIKI_ARBITRATION_RULES],
-            **({'source_unconfirmed': list(SOURCE_UNCONFIRMED[sources['crystal']])}
+            **({'source_unconfirmed': [kind for kind in SOURCE_UNCONFIRMED[sources['crystal']]
+                                       if not (kind == 'outfit' and name in WIKI_IMAGE_FIT)]}
                if list(sources) == ['crystal'] and sources['crystal'] in SOURCE_UNCONFIRMED else {}),
             'left_out': left_out,
         }

@@ -836,5 +836,47 @@ class PromotionValidatorTests(unittest.TestCase):
             None, None, {'oteryn:item.registry.i1': 'rope', 'oteryn:item.tibia.i3003': 'rope'})
         self.assertEqual(builder.registry_keys, {'rope': 'oteryn:item.registry.i1'})
 
+    # -- D16: wiki majority confirms an offer; reviewed definitions; unconfirmed Crystal facts -----
+
+    def test_majority_arbiter_confirms_a_one_sided_offer(self):
+        # Fandom and Tibiopedia list the Crystal-only offer's buy price; Tibiopedia alone its sell price
+        builder = promotion_candidates.Builder(
+            {'npcs': [], 'trade': {'ahmet': [{'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': None}]}},
+            {'records': [{'source_item_id': 3483, 'native_key': 'oteryn:item.registry.i1', 'native_revision': 'r1'}]},
+            {'pages': []}, {'pages': [{'title': 'NPC: Ahmet', 'name': 'Ahmet', 'trades': {
+                'SellToPlayer': {'Fishing Rod': [150]}, 'BuyFromPlayer': {'Fishing Rod': [40]}}}]},
+            {'oteryn:item.registry.i1': 'fishing rod'})
+        offer = {'client_id': 3483, 'server_item_id': None, 'count': None, 'sub_type': None,
+                 'item_name': 'fishing rod', 'buy_price': 150, 'sell_price': 40, 'stock_gate': None}
+        present = {'crystal': offer}
+        self.assertEqual(builder.majority_arbiter('Ahmet', (3483, None, None), present, {
+            'fishing rod': {'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': None}}),
+            ('crystal', ['fandom', 'tibiopedia']))
+        # a price the majority contradicts, or a gated offer, confirms nothing
+        for changed in ({'buy_price': 120}, {'stock_gate': {'storage': 1}}):
+            self.assertIsNone(builder.majority_arbiter('Ahmet', (3483, None, None), {'crystal': {**offer, **changed}}, {
+                'fishing rod': {'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': None}}))
+
+    def test_wiki_item_alias(self):
+        self.assertEqual(promotion_candidates.wiki_item('Straw Mat Foot Section'), 'straw bed foot section')
+        self.assertEqual(promotion_candidates.wiki_item('Straw Mat Head Section'), 'straw mat head section')
+
+    def test_reviewed_definitions_and_fits_are_in_the_sample(self):
+        report = load_sample()
+        manop = find_candidate(report, 'Ambassador Manop')
+        self.assertEqual({k: manop['presentation']['outfit'][k] for k in ('head', 'body', 'legs', 'feet')},
+                         {'head': 2, 'body': 10, 'legs': 22, 'feet': 81})
+        self.assertEqual(manop['movement']['walk_interval_ms'], 2000)
+        self.assertEqual(find_held(report, 'Testserver Assistant')['reason'], 'DEFINITION_CONFLICT')
+        thug = find_candidate(report, 'Raubritter Thug')
+        self.assertEqual(thug['source_unconfirmed'], ['text'])
+        self.assertTrue(any(row['rule'] == 'WIKI_IMAGE_FIT' for row in thug['arbitration']))
+        broken = copy.deepcopy(report)
+        find_candidate(broken, 'Raubritter Thug')['presentation']['outfit']['body'] += 1
+        self.assertTrue(validate_promotion.errors(broken))
+        broken = copy.deepcopy(report)
+        find_candidate(broken, 'Brewmaster Bhaan')['source_unconfirmed'] = ['walk']
+        self.assertTrue(validate_promotion.errors(broken))
+
 if __name__ == '__main__':
     unittest.main()
