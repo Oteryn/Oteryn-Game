@@ -11,7 +11,7 @@ None of this is a placement, the runtime `LocalObject` overlay or runtime serial
 
 | File | Purpose |
 |---|---|
-| `terrain.schema.json` | One Terrain record (WO-0 §4.2): `kind` (ground, border, wall, field), walkability, ground speed, projectile and sight blocking, floor change, automap, field type, client projection and provenance. It also holds the shared KNOWN/UNKNOWN wrappers. |
+| `terrain.schema.json` | One Terrain record (WO-0 §4.2): `kind` (ground, border, wall, field, roof), an optional `behavior` marker (trash_holder, teleport), walkability, ground speed, projectile and sight blocking, floor change, automap, field type, client projection and provenance. It also holds the shared KNOWN/UNKNOWN wrappers. |
 | `world-object.schema.json` | One WorldObject record (WO-0 §4.3): `kind` (object, door, ladder, bed, container_fixture, teleport, corpse, decoration), collision, movability, placement, floor change, fluid source, and kind-specific `bed`, `corpse` and `door` sections. |
 | `routed-item-pointer.schema.json` | The WO-0 §4.1 typed `routed_to {family, key, revision}` pointer that a routed Item record carries. A bare key, a family other than Terrain or WorldObject, and a materializable Item are all rejected. |
 | `world_objects.py` | The D93 key rule, the D94 exclusions, the record builders, the validator (`--validate RECORD...`) and the census. `--check` diffs an in-memory regeneration against the committed sample. `--records DIR` also writes every record, for local inspection only. |
@@ -43,16 +43,22 @@ None of this is a placement, the runtime `LocalObject` overlay or runtime serial
 - **Corpses.** Decay target, duration and container capacity stay on the routed Item record (WO-0 §4.3). A
   WorldObject corpse only records the corpse and player-corpse flags.
 - **Kind.** The first matching rule decides the kind. When no rule matches, the kind is UNKNOWN; it is never guessed.
-  Pinned Crystal has 299 Terrain tiles (roofs and floors without a ground or border flag) and 21 WorldObject magic
-  fields with UNKNOWN kind. The census lists them under `unknown_kind_examples` and `type_outside_family` as the
-  decision's "contested routes".
+  Owner decisions WO-2c (2026-09-30) resolved the WO-0 "contested routes":
+  - 1a: a Terrain tile named as a roof, with no ground, border or wall flag, is kind `roof` (234 tiles);
+  - 2a, 4a: a Terrain tile whose `items.xml` `type` is `trashholder` or `teleport` keeps its own kind and carries a
+    typed `behavior` marker (`trash_holder`, `teleport`) for Interaction, which owns the behaviour;
+  - 3a, 5a: magic fields route to Terrain `field` and fixed carpets to WorldObject `decoration` (converter routes
+    `magic_field` and `fixed_carpet`, see the item-authoring README).
+
+  65 Terrain tiles (mosaics, unbanked floors, leaves) still have no rule and stay UNKNOWN under
+  `unknown_kind_examples`.
 
 ## Pinned Crystal census (`ff7ede5`)
 
-- After D149, **21,330 records**: 8,545 Terrain and 12,785 WorldObject (128 placeholder slots excluded). This
+- After D149, **21,330 records**: 8,548 Terrain and 12,782 WorldObject (128 placeholder slots excluded). This
   matches D94's "about 21.4k".
-- Terrain: 3,779 border, 2,197 ground, 2,166 wall, 104 field, 299 UNKNOWN.
-- WorldObject: 5,654 object, 3,358 corpse, 2,766 decoration, 728 door, 192 bed, 49 teleport, 17 ladder, 21 UNKNOWN.
+- Terrain: 3,761 border, 2,197 ground, 2,166 wall, 234 roof, 125 field, 65 UNKNOWN.
+- WorldObject: 5,654 object, 3,358 corpse, 2,784 decoration, 728 door, 192 bed, 49 teleport, 17 ladder.
 
 ```sh
 python world_objects.py --source <crystalserver checkout at ff7ede5>          # write the sample

@@ -166,6 +166,29 @@ def test_terrain_kinds_in_rule_order():
         fire["field"] == {"state": "KNOWN", "value": {"field_type": "fire"}},
         fire["field"],
     )
+    roof = world_objects.build_terrain(
+        300,
+        "oteryn:item.tibia.i300",
+        "primarytype_world_object",
+        {"name": "tiled roof", "attrs": {"primarytype": "artificial tiles"}},
+        {"id": 300, "flags": {"flags.unmove": True, "flags.unpass": True}},
+        META,
+    )
+    check(roof["kind"] == {"state": "KNOWN", "value": "roof"}, roof["kind"])
+    check(
+        world_objects.validate_record(roof) == [], world_objects.validate_record(roof)
+    )
+    swamp = terrain(attrs={"type": "trashholder"}, flags={"flags.bank": True})
+    check(swamp["kind"]["value"] == "ground", swamp["kind"])
+    check(
+        swamp["behavior"] == {"state": "KNOWN", "value": "trash_holder"},
+        swamp.get("behavior"),
+    )
+    check(swamp["provenance"]["fields"]["behavior"] == ["items_xml:type"], swamp)
+    check(
+        world_objects.validate_record(swamp) == [], world_objects.validate_record(swamp)
+    )
+    check("behavior" not in terrain(), "no behaviour without an items.xml type")
     tile = terrain(
         attrs={"primarytype": "artificial tiles"}, flags={"flags.unmove": True}
     )
@@ -238,6 +261,7 @@ def test_world_object_kinds_and_sections():
         ("ladder", "ladder"),
         ("teleport", "teleport"),
         ("depot", "container_fixture"),
+        ("carpet", "decoration"),
     ):
         check(
             world_object(attrs={"type": type_value})["kind"]["value"] == kind,
@@ -258,10 +282,15 @@ def test_type_outside_family_is_unknown_and_reported():
         "wo",
     )
     check(
-        world_objects.type_outside_family("Terrain", {"type": "trashholder"})
-        == "trashholder",
+        world_objects.type_outside_family("Terrain", {"type": "rewardchest"})
+        == "rewardchest",
         "t",
     )
+    for type_value in ("trashholder", "teleport"):
+        check(
+            world_objects.type_outside_family("Terrain", {"type": type_value}) is None,
+            f"{type_value} is a Terrain behaviour (WO-2c)",
+        )
     check(
         world_objects.type_outside_family("Terrain", {"type": "magicfield"}) is None,
         "field ok",

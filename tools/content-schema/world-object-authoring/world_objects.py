@@ -54,7 +54,7 @@ EXCLUDED_ROUTES = {
     ("WorldObject", "no_client_appearance"),
     ("Fluid", "fluid_type_without_appearance"),
 }
-TERRAIN_KINDS = ("ground", "border", "wall", "field")
+TERRAIN_KINDS = ("ground", "border", "wall", "field", "roof")
 WORLD_OBJECT_KINDS = (
     "object",
     "door",
@@ -75,8 +75,12 @@ WORLD_OBJECT_TYPE_KINDS = {
     "mailbox": "container_fixture",
     "trashholder": "container_fixture",
     "rewardchest": "container_fixture",
+    "carpet": "decoration",  # owner decision WO-2c 5a
 }
 TERRAIN_FIELD_TYPES = {"magicfield"}
+# items.xml `type` on a Terrain tile -> the Interaction behaviour it carries (owner
+# decisions WO-2c 2a, 4a): the tile stays its own kind; Interaction owns the behaviour.
+TERRAIN_BEHAVIORS = {"trashholder": "trash_holder", "teleport": "teleport"}
 HOOK_DIRECTIONS = {1: "south", 2: "east"}  # appearances.proto HOOK_TYPE
 SCHEMA_FILES = {
     "Terrain": "terrain.schema.json",
@@ -198,7 +202,7 @@ class Facts:
 # --- kind rules ---------------------------------------------------------------------
 
 
-def terrain_kind(attrs, flags):
+def terrain_kind(attrs, flags, name=""):
     """WO-0 §4.2 kind, first matching rule wins; None when no rule applies."""
     if attrs.get("type") in TERRAIN_FIELD_TYPES or "field" in attrs:
         return "field"
@@ -210,6 +214,9 @@ def terrain_kind(attrs, flags):
         return "wall"
     if attrs.get("primarytype") == "fields":
         return "field"
+    # Owner decision WO-2c 1a: a tile named as a roof, with no ground, border or wall flag.
+    if "roof" in name.lower().split():
+        return "roof"
     return None
 
 
@@ -239,7 +246,8 @@ def type_outside_family(family, attrs):
     if type_value is None:
         return None
     if family == "Terrain":
-        return None if type_value in TERRAIN_FIELD_TYPES else type_value
+        expressed = TERRAIN_FIELD_TYPES | set(TERRAIN_BEHAVIORS)
+        return None if type_value in expressed else type_value
     return None if type_value in WORLD_OBJECT_TYPE_KINDS else type_value
 
 
@@ -264,7 +272,8 @@ def provenance(source_meta, item_id, item_key, owner, reason, facts):
 
 def build_terrain(item_id, item_key, reason, xml_record, appearance, source_meta):
     facts = Facts(xml_record, appearance)
-    kind = terrain_kind(facts.attrs, facts.flags)
+    name = (xml_record.get("name") if xml_record else None) or ""
+    kind = terrain_kind(facts.attrs, facts.flags, name)
     if kind is not None:
         facts._note("kind", "converter:terrain_kind")
     unpass = facts.flag("walkable", "flags.unpass")
@@ -295,6 +304,10 @@ def build_terrain(item_id, item_key, reason, xml_record, appearance, source_meta
             if field_type["state"] == "KNOWN"
             else field_type
         )
+    behavior = TERRAIN_BEHAVIORS.get(facts.attrs.get("type"))
+    if behavior is not None:
+        facts._note("behavior", "items_xml:type")
+        record["behavior"] = known(behavior)
     record["provenance"] = provenance(
         source_meta, item_id, item_key, "Terrain", reason, facts
     )

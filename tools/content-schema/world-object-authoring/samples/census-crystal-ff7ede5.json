@@ -6,25 +6,25 @@
   "no_appearance": {},
   "records": {
     "by_family": {
-      "Terrain": 8545,
-      "WorldObject": 12785
+      "Terrain": 8548,
+      "WorldObject": 12782
     },
     "by_kind": {
-      "Terrain:UNKNOWN": 299,
-      "Terrain:border": 3779,
-      "Terrain:field": 104,
+      "Terrain:UNKNOWN": 65,
+      "Terrain:border": 3761,
+      "Terrain:field": 125,
       "Terrain:ground": 2197,
+      "Terrain:roof": 234,
       "Terrain:wall": 2166,
-      "WorldObject:UNKNOWN": 21,
       "WorldObject:bed": 192,
       "WorldObject:corpse": 3358,
-      "WorldObject:decoration": 2766,
+      "WorldObject:decoration": 2784,
       "WorldObject:door": 728,
       "WorldObject:ladder": 17,
       "WorldObject:object": 5654,
       "WorldObject:teleport": 49
     },
-    "digest_sha256": "10f9256fa0098ac0bf3c1cc2624e5689d15a158a80221378059c76ee2dee768d",
+    "digest_sha256": "bcc82e43124ba4c0d368e57d1a138626e33d46424528ef49593e574b28a39e81",
     "examples": {
       "Terrain:UNKNOWN": [
         "oteryn:terrain.tibia.i571",
@@ -37,24 +37,24 @@
         "oteryn:terrain.tibia.i292"
       ],
       "Terrain:field": [
+        "oteryn:terrain.tibia.i105",
         "oteryn:terrain.tibia.i1716",
-        "oteryn:terrain.tibia.i1717",
-        "oteryn:terrain.tibia.i2127"
+        "oteryn:terrain.tibia.i1717"
       ],
       "Terrain:ground": [
         "oteryn:terrain.tibia.i100",
         "oteryn:terrain.tibia.i101",
         "oteryn:terrain.tibia.i103"
       ],
+      "Terrain:roof": [
+        "oteryn:terrain.tibia.i1153",
+        "oteryn:terrain.tibia.i1154",
+        "oteryn:terrain.tibia.i1155"
+      ],
       "Terrain:wall": [
         "oteryn:terrain.tibia.i230",
         "oteryn:terrain.tibia.i232",
         "oteryn:terrain.tibia.i240"
-      ],
-      "WorldObject:UNKNOWN": [
-        "oteryn:world-object.tibia.i105",
-        "oteryn:world-object.tibia.i2118",
-        "oteryn:world-object.tibia.i2119"
       ],
       "WorldObject:bed": [
         "oteryn:world-object.tibia.i694",
@@ -95,12 +95,14 @@
     "total": 21330
   },
   "routes": {
-    "Terrain:ground_or_border": 3443,
+    "Terrain:ground_or_border": 3425,
+    "Terrain:magic_field": 21,
     "Terrain:primarytype_world_object": 5102,
     "WorldObject:appearance_placeholder_slot": 128,
     "WorldObject:corpse": 3344,
     "WorldObject:corpse_decoration": 14,
-    "WorldObject:immovable_unclassified": 8450,
+    "WorldObject:fixed_carpet": 18,
+    "WorldObject:immovable_unclassified": 8429,
     "WorldObject:non_pickupable_blocking_prop": 1,
     "WorldObject:primarytype_world_object": 976
   },
@@ -126,57 +128,23 @@
     "repository": "zimbadev/crystalserver",
     "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
   },
-  "type_outside_family": {
-    "Terrain:carpet": {
-      "examples": [
-        "oteryn:terrain.tibia.i26122",
-        "oteryn:terrain.tibia.i36496",
-        "oteryn:terrain.tibia.i36939"
-      ],
-      "items": 18
-    },
-    "Terrain:teleport": {
-      "examples": [
-        "oteryn:terrain.tibia.i516",
-        "oteryn:terrain.tibia.i628",
-        "oteryn:terrain.tibia.i878"
-      ],
-      "items": 11
-    },
-    "Terrain:trashholder": {
-      "examples": [
-        "oteryn:terrain.tibia.i622",
-        "oteryn:terrain.tibia.i629",
-        "oteryn:terrain.tibia.i630"
-      ],
-      "items": 103
-    },
-    "WorldObject:magicfield": {
-      "examples": [
-        "oteryn:world-object.tibia.i105",
-        "oteryn:world-object.tibia.i2118",
-        "oteryn:world-object.tibia.i2119"
-      ],
-      "items": 21
-    }
-  },
+  "type_outside_family": {},
   "unknown_facts": {
-    "Terrain:blocks_projectile": 8543,
-    "Terrain:field": 87,
-    "Terrain:floor_change": 8387,
-    "Terrain:kind": 299,
+    "Terrain:blocks_projectile": 8545,
+    "Terrain:field": 90,
+    "Terrain:floor_change": 8390,
+    "Terrain:kind": 65,
     "WorldObject:bed.female_sleeper": 192,
     "WorldObject:bed.female_transform_to": 110,
     "WorldObject:bed.male_sleeper": 192,
     "WorldObject:bed.male_transform_to": 47,
-    "WorldObject:collision.blocks_projectile": 12379,
+    "WorldObject:collision.blocks_projectile": 12377,
     "WorldObject:door.house_guests": 728,
     "WorldObject:door.level": 684,
-    "WorldObject:floor_change": 12499,
-    "WorldObject:fluid_source.fluid_name": 11380,
-    "WorldObject:kind": 21,
-    "WorldObject:placement.rotate_to": 12699,
-    "WorldObject:placement.walk_stack": 12785
+    "WorldObject:floor_change": 12496,
+    "WorldObject:fluid_source.fluid_name": 11377,
+    "WorldObject:placement.rotate_to": 12696,
+    "WorldObject:placement.walk_stack": 12782
   },
   "unknown_kind_examples": {
     "Terrain": [
@@ -185,13 +153,6 @@
       "oteryn:terrain.tibia.i589",
       "oteryn:terrain.tibia.i590",
       "oteryn:terrain.tibia.i591"
-    ],
-    "WorldObject": [
-      "oteryn:world-object.tibia.i105",
-      "oteryn:world-object.tibia.i2118",
-      "oteryn:world-object.tibia.i2119",
-      "oteryn:world-object.tibia.i2120",
-      "oteryn:world-object.tibia.i2121"
     ]
   }
 }

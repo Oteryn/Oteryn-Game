@@ -6,5 +6,5 @@
   "repository": "Oteryn/Oteryn-Game",
   "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Terrain definitions: 8545 records, one per Tibia id routed to Terrain by the item converter at zimbadev/crystalserver@ff7ede5 (WO-0 D93/D94, A12 §4.6), built by tools/content-schema/world-object-authoring/build_catalogue.py."
+  "notes": "Terrain definitions: 8548 records, one per Tibia id routed to Terrain by the item converter at zimbadev/crystalserver@ff7ede5 (WO-0 D93/D94, A12 §4.6), built by tools/content-schema/world-object-authoring/build_catalogue.py."
 }
