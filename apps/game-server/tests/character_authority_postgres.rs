@@ -1881,7 +1881,7 @@ mod character_stance_postgres_cases;
 #[path = "support/reward_claim_mint_postgres_cases.rs"]
 mod reward_claim_mint_postgres_cases;
 
-// CHARM-2 Bestiary kill progress (migration 0018) shares its cases and their
+// CHARM-2 Bestiary kill progress (migration 0019) shares its cases and their
 // harness with the focused standalone target through the same protected lane.
 #[allow(dead_code)]
 #[path = "support/bestiary_postgres_harness.rs"]

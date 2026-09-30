@@ -1,4 +1,4 @@
-//! CHARM-2: typed, fenced Bestiary kill progress (migration 0018).
+//! CHARM-2: typed, fenced Bestiary kill progress (migration 0019).
 //!
 //! One credited kill of a Bestiary race is one Character semantic
 //! transaction: it advances the global CharacterRevision by one (DUR-02
@@ -7,8 +7,9 @@
 //! and level are unchanged. A kill at the race's final threshold is
 //! saturated: nothing is written and the revision does not advance.
 //!
-//! The write is fenced exactly like the R7 P03 XP writer
-//! (`character_progression`): recovery fence, admission relation locks, the
+//! The write uses the R7 P03 XP writer's own fence
+//! (`character_progression::assert_gameplay_fence`): recovery fence,
+//! admission relation locks, the
 //! live FND-04 session/lease/scope, the current scope assignment and node
 //! incarnation, the locked live root at the expected CharacterRevision and
 //! the current Game-owned interpretation, all in the writing transaction.
@@ -16,15 +17,18 @@
 //! occurrence or that the kill was credited; `combat::death_reward` does.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+use super::character_progression::{
+    CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
+    state_matches_root, stored_context_matches, uuid_text, valid_revision,
+};
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
-use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::progression::ProgressionRevisionContext;
 use crate::domain::{CharacterId, CharacterRevision};
-use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::RuntimeScopeRefV1;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -32,7 +36,6 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, BestiaryProgressError>;
 const COMMAND_BINDING_VERSION: u8 = 1;
 const RACE_BINDING_VERSION: u8 = 1;
-const MAX_REVISION_BYTES: usize = 128;
 
 /// The (death, character) reward occurrence a kill is recorded under: the
 /// same UUIDv7 the XP award of that death uses, in its own receipt kind.
@@ -191,9 +194,11 @@ impl DurabilityRoot {
                         return Ok(Ok(BestiaryKillOutcome::AlreadyCommitted(committed)));
                     }
 
+                    // The XP writer's own fence, so the two writes are fenced
+                    // identically.
                     let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         Ok(root) => root,
-                        Err(error) => return Ok(Err(error)),
+                        Err(error) => return Ok(Err(fence_error(error))),
                     };
                     let root_revision = root.revision;
 
@@ -454,166 +459,20 @@ impl DurabilityRoot {
     }
 }
 
-/// Current Character root facts proven under the gameplay fence.
-struct FencedCharacterRoot {
-    revision: u64,
-    profile_revision: String,
-    ruleset_revision: String,
-    content_revision: String,
-}
-
-/// The complete current gameplay fence, identical to the R7 P03 XP writer's
-/// `character_progression::assert_gameplay_fence` (which is private to that
-/// module). The caller has already asserted the recovery fence and taken the
-/// admission relation locks in this transaction.
-async fn assert_gameplay_fence(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    fence: &CurrentCharacterGameplayFence,
-    node: &NodeIncarnationProof,
-) -> std::result::Result<
-    std::result::Result<FencedCharacterRoot, BestiaryProgressError>,
-    DurabilityError,
-> {
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Ok(Err(BestiaryProgressError::AuthorityRejected));
-    };
-    let session = sqlx::query(
-        "SELECT account_id::text FROM game_durability_reconnect_sessions \
-         WHERE game_session_id = encode($1,'hex')::uuid \
-           AND character_id = encode($2,'hex')::uuid \
-           AND world_id = encode($3,'hex')::uuid \
-           AND runtime_scope_kind = 1 \
-           AND runtime_scope_world_id = encode($3,'hex')::uuid \
-           AND runtime_scope_channel_id = encode($4,'hex')::uuid \
-           AND runtime_scope_instance_id IS NULL \
-           AND current_generation = $5::text::numeric(20,0) \
-           AND character_lease_generation = $6::text::numeric(20,0) \
-           AND scope_ownership_generation = $7::text::numeric(20,0) \
-           AND session_state IN (1,2) FOR SHARE",
-    )
-    .bind(fence.game_session_id.as_bytes().as_slice())
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
-    .bind(fence.connection_generation.get().to_string())
-    .bind(fence.character_lease_generation.to_string())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(session) = session else {
-        return Ok(Err(BestiaryProgressError::AuthorityRejected));
-    };
-    let account_text: String = session.try_get("account_id")?;
-
-    let key = scope_key(world_id, channel_id);
-    let fact = node.fact();
-    let assignment = sqlx::query(
-        "SELECT 1 FROM game_runtime_scope_assignments \
-         WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
-           AND ownership_generation = $4::text::numeric(20,0) \
-           AND holder_node_id = encode($5,'hex')::uuid \
-           AND holder_registration_revision = $6::text::numeric(20,0) \
-         FOR SHARE",
-    )
-    .bind(key.as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .bind(fact.node_id().as_bytes().as_slice())
-    .bind(fact.registration_revision().to_string())
-    .fetch_optional(&mut **tx)
-    .await?;
-    if assignment.is_none() || !prove_current_incarnation(tx, node).await? {
-        return Ok(Err(BestiaryProgressError::AuthorityRejected));
-    }
-
-    let guards_ok: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 \
-           FROM game_durability_admission_character_guards c \
-           JOIN game_durability_admission_account_guards a \
-             ON a.account_id = c.account_id \
-           JOIN game_durability_admission_runtime_guards g \
-             ON g.scope_key = $1 \
-          WHERE c.character_id = encode($2,'hex')::uuid \
-            AND c.account_id = $3::uuid \
-            AND c.world_id = encode($4,'hex')::uuid \
-            AND c.eligible \
-            AND c.lease_generation = $5::text::numeric(20,0) \
-            AND c.holder_game_session_id = encode($6,'hex')::uuid \
-            AND a.presence_character_id = c.character_id \
-            AND a.holder_game_session_id = c.holder_game_session_id \
-            AND g.ready \
-            AND g.ownership_generation = $7::text::numeric(20,0))",
-    )
-    .bind(key.as_slice())
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(&account_text)
-    .bind(world_id.as_bytes().as_slice())
-    .bind(fence.character_lease_generation.to_string())
-    .bind(fence.game_session_id.as_bytes().as_slice())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .fetch_one(&mut **tx)
-    .await?;
-    if !guards_ok {
-        return Ok(Err(BestiaryProgressError::AuthorityRejected));
-    }
-
-    let root = sqlx::query(
-        "SELECT account_id::text, world_id::text, character_revision::text, \
-                profile_revision, ruleset_revision, content_revision, \
-                starter_template_revision \
-           FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
-          FOR UPDATE",
-    )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(root) = root else {
-        return Ok(Err(BestiaryProgressError::AuthorityRejected));
-    };
-    if root.try_get::<String, _>("account_id")? != account_text
-        || uuid_text(root.try_get("world_id")?)? != *world_id.as_bytes()
-    {
-        return Ok(Err(BestiaryProgressError::AuthorityRejected));
-    }
-    let root_revision = numeric_u64(&root, "character_revision")?;
-    if root_revision != fence.expected_character_revision.get() {
-        return Ok(Err(BestiaryProgressError::CharacterRevisionMismatch));
-    }
-
-    let current = sqlx::query(
-        "SELECT profile_revision, ruleset_revision, content_revision, \
-                starter_template_revision \
-           FROM game_character_interpretations \
-          ORDER BY interpretation_revision DESC LIMIT 1 FOR SHARE",
-    )
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(current) = current else {
-        return Ok(Err(BestiaryProgressError::ProgressionContextMismatch));
-    };
-    for column in [
-        "profile_revision",
-        "ruleset_revision",
-        "content_revision",
-        "starter_template_revision",
-    ] {
-        if root.try_get::<String, _>(column)? != current.try_get::<String, _>(column)? {
-            return Ok(Err(BestiaryProgressError::ProgressionContextMismatch));
+/// The shared fence refuses with `AuthorityRejected`,
+/// `CharacterRevisionMismatch` or `ProgressionContextMismatch`; any other
+/// refusal it might add later still fails closed as an authority rejection.
+fn fence_error(error: CharacterProgressionError) -> BestiaryProgressError {
+    match error {
+        CharacterProgressionError::CharacterRevisionMismatch => {
+            BestiaryProgressError::CharacterRevisionMismatch
         }
+        CharacterProgressionError::ProgressionContextMismatch => {
+            BestiaryProgressError::ProgressionContextMismatch
+        }
+        CharacterProgressionError::Unavailable(error) => BestiaryProgressError::Unavailable(error),
+        _ => BestiaryProgressError::AuthorityRejected,
     }
-    Ok(Ok(FencedCharacterRoot {
-        revision: root_revision,
-        profile_revision: root.try_get("profile_revision")?,
-        ruleset_revision: root.try_get("ruleset_revision")?,
-        content_revision: root.try_get("content_revision")?,
-    }))
 }
 
 fn validate_request(
@@ -641,15 +500,6 @@ fn all_revisions(request: &BestiaryKillRequest) -> impl Iterator<Item = &str> {
         request.reward_revision.as_str(),
     ]
     .into_iter()
-}
-
-fn valid_revision(value: &str) -> bool {
-    let mut bytes = value.bytes();
-    value.len() <= MAX_REVISION_BYTES
-        && bytes
-            .next()
-            .is_some_and(|byte| byte.is_ascii_alphanumeric())
-        && bytes.all(|byte| byte.is_ascii_alphanumeric() || b"._:-".contains(&byte))
 }
 
 fn push_text(encoded: &mut Vec<u8>, value: &str) -> Result<()> {
@@ -744,60 +594,6 @@ fn decode_receipt(
         kill_count_before: count("kill_count_before")?,
         kill_count_after: count("kill_count_after")?,
     })
-}
-
-fn stored_context_matches(
-    row: &sqlx::postgres::PgRow,
-    context: &ProgressionRevisionContext<String>,
-    policy_revision: &str,
-    reward_revision: &str,
-) -> bool {
-    [
-        ("profile_revision", context.profile.as_str()),
-        ("ruleset_revision", context.ruleset.as_str()),
-        ("content_revision", context.content.as_str()),
-        ("simulation_revision", context.simulation.as_str()),
-        ("evidence_revision", context.evidence.as_str()),
-        ("declaration_revision", context.declaration.as_str()),
-        ("policy_revision", policy_revision),
-        ("reward_revision", reward_revision),
-    ]
-    .into_iter()
-    .all(|(column, expected)| row.try_get::<String, _>(column).ok().as_deref() == Some(expected))
-}
-
-fn state_matches_root(row: &sqlx::postgres::PgRow, root: &FencedCharacterRoot) -> bool {
-    row.try_get::<String, _>("profile_revision").ok().as_deref()
-        == Some(root.profile_revision.as_str())
-        && row.try_get::<String, _>("ruleset_revision").ok().as_deref()
-            == Some(root.ruleset_revision.as_str())
-        && row.try_get::<String, _>("content_revision").ok().as_deref()
-            == Some(root.content_revision.as_str())
-}
-
-fn numeric_u64(
-    row: &sqlx::postgres::PgRow,
-    column: &str,
-) -> std::result::Result<u64, DurabilityError> {
-    row.try_get::<String, _>(column)?
-        .parse()
-        .map_err(|_| DurabilityError::InvalidStoredState)
-}
-
-fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
-    let hex: String = value
-        .chars()
-        .filter(|character| *character != '-')
-        .collect();
-    if hex.len() != 32 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let mut out = [0_u8; 16];
-    for (index, byte) in out.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-    }
-    Ok(out)
 }
 
 #[cfg(test)]

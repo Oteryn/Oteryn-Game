@@ -1,4 +1,4 @@
-// CHARM-2 Bestiary kill progress (migration 0018,
+// CHARM-2 Bestiary kill progress (migration 0019,
 // `durability::bestiary_progress`). Every wrapper provides the same
 // path-loaded crate root and the `bestiary_postgres_harness` module.
 

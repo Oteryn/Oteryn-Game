@@ -17,8 +17,9 @@
 --     (XP, death, stance or Bestiary kill), exactly one receipt per revision,
 --     plus the per-race kill chain and the progress rows.
 -- The 0009/0016/0017 tables, their CHECKs, the 0017 state guard (its equal
--- arm already admits a Bestiary successor) and the revision-one initializer
--- path are unchanged.
+-- arm already admits a Bestiary successor), the 0018 runtime grant and the
+-- revision-one initializer path are unchanged. The replaced consistency guard
+-- is the current one (0017; 0018 changes no function body).
 
 -- `before` and `after` of level and experience are equal so the cross-kind
 -- chain reads uniformly. `final_kill_threshold` is the bound of the race's
