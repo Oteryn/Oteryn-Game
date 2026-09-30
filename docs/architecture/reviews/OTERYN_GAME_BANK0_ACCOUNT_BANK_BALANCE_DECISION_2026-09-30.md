@@ -6,9 +6,8 @@
   recommended answer as a reversible assumption.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to start the bank ("bank i depozyt (drugi etap opłat, pełna
-  zgodność handlu z Tibią)", 2026-09-30) and the owner answer **1b** (one balance per Account
-  within one World), given in the architect session on 2026-09-30 and recorded on #162 with this
-  PR for a D-number
+  zgodność handlu z Tibią)", 2026-09-30) and the owner answer **1b** (verbatim record on #162
+  5912593702: "Wspólne dla wszystkich postaci konta"; "within one World" is the architect's reading)
 - Builds on: the gold fee decision (D174-D178, §4.2 worth table), migrations `0005`, `0010`,
   `0012`, `0022`, `0023`, DUR-03 §15, §17, §18, §20, §23.1, §28, §39.1 and §39.3, the game event
   foundation registry (retention profiles), GAME-ITEM-01 §9, the composition decision §3, NPC-0
@@ -82,9 +81,11 @@ Where does a bank balance live, and how do deposit, withdraw and transfer work?
 
 **Owner decision**
 
-- **1b:** one balance per Account within one World, shared by the Account's characters on that
-  World. It is a declared Reference difference from Global's per-character account, as D45 is
-  for quest completion.
+- **1b** (#162 5912593702, verbatim: question "Bank: saldo na postać czy na całe konto?", answer
+  b "Wspólne dla wszystkich postaci konta"): one balance shared by the Account's characters. The
+  architect reads it as within one World, because Worlds are separate economies (ADR-0010 §6). It
+  is a declared Reference difference from Global's per-character account, as D45 is for quest
+  completion.
 
 ## 3. Storage (BANK-1)
 
@@ -267,7 +268,8 @@ a) Yes, fully; b) no bank use until it leaves the island, coins only (recommende
 ## 12. Before-freeze checklist
 
 1. **Contract amendments:** DUR-03 §18 and §39.1; the composition decision §3 (paragraph before
-   its §6); the scope matrix bank row. NPC-0 §5.1's occurrence rule is extended to the bank service (§6).
+   its §6); the scope matrix bank row. Each is written "pending on acceptance of BANK-0" (#162
+   5912405163). NPC-0 §5.1's occurrence rule is extended to the bank service (§6).
 2. **Serialization:** one transaction per operation, the lock order of §4.1, replay by occurrence
    and binding.
 3. **Restart:** balances, operations, ledger and lines are durable.

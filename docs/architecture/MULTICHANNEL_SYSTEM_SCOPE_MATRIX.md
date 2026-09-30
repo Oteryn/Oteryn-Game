@@ -62,7 +62,7 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | Shared experience | `ChannelRuntime` | Channel | Authoritative immediate | Only eligible colocated members | Local effect |
 | Direct player trade | `ChannelRuntime` + durable transaction | Channel | Idempotent transactional | Same channel only | Local interaction |
 | Market | Market service/domain | World | Strong durable | One economy across all channels | Shared |
-| Bank | Game bank ledger (BANK-0) | Account + World (owner answer 1b) | Strong durable, immutable ledger | Same balance on all channels of the World; another World has its own | Shared |
+| Bank | Character/account domain | Character or Account | Strong durable | Same balance on all channels | Shared |
 | Depot | Character/world persistence | Character + World | Strong durable | Same contents on all channels | Shared |
 | Mail/parcels | World service/domain | World | Idempotent transactional | Cross-channel delivery | Shared |
 | Quest progress | Character persistence | Character | Strong durable | Same progress on all channels | Shared |
@@ -90,6 +90,11 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | Metrics | Observability system | GameNode/Channel/World labels | Eventual | Aggregated without becoming authority | Non-authoritative |
 | Channel directory | World Registry | World | Health-driven/eventual with guarded admission | Lists and routes channels | Shared control plane |
 | Game Session | Gateway/session issuer | Character + World + Channel | Strong, short-lived | Frozen to selected channel | Mandatory binding |
+
+**Pending on acceptance of BANK-0** (`reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md`):
+the Bank row becomes "Game bank ledger (BANK-0); Account + World (owner answer 1b, #162
+5912593702); strong durable, immutable ledger; the same balance on all channels of the World,
+another World has its own; shared".
 
 ## Required identity envelope
 

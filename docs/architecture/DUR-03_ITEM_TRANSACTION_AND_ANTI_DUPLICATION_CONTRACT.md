@@ -437,7 +437,9 @@ For each asset:
 
 Exact SQL scalar/business policy is deferred.
 
-**Amendment (BANK-0, 2026-09-30).** `reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md` §5 names the first non-item asset: bank gold, an
+**Amendment (BANK-0, 2026-09-30), pending on acceptance of BANK-0.**
+`reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md` §5, once accepted, names
+the first non-item asset: bank gold, an
 integer balance per (Account, World) with an immutable ledger, converted to and from coins by the
 gold fee worth table. Its BANK-1 child admits, for these shapes only: a deposit (coin inputs and up
 to two change outputs as `CONVERSION` lines, and one credit `CONVERSION` value line), a withdrawal
