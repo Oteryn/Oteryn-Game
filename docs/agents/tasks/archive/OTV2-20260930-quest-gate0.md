@@ -83,6 +83,10 @@ No code, migration or content change is made.
 - Codex round-1 repair (four P1): fail-closed unknown tracks (§3.3); successor §6.1, §6.2 and §7
   accepted (§4); every transition refusal checked before any burn and the D42 `RewardClaim` row
   in the exchange transaction (§5.4). Validators re-run PASS on the repaired tree.
+- Codex round-2 repair (two P1, one P2): over-limit trigger firings refuse their root before commit (§4);
+  quest XP passes the active progression policy's `reward_revision`, the quest content revision kept
+  as provenance, and content requires `1 <= n <= QUESTGATE0-RL-05` (§5.5). Validators re-run PASS
+  on the repaired tree.
 
 ## Closeout
 

@@ -177,8 +177,12 @@ declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated 
   trigger's tick and do not wait.
 - **Items.** An interaction hands out items only through a `RewardClaim` (the CHEST-1 path, D40)
   and takes carried items only through the §5.4 exchange. It never mints or burns by itself.
-- **Bounds.** Trigger firings per character are limited by `QUESTGATE0-RL-03`; a firing over the
-  limit runs no child.
+- **Bounds.** Trigger firings per character are limited by `QUESTGATE0-RL-03`. The limit is
+  checked before the root commits, never after: a `USE`, move, push or relocation child whose
+  firing would exceed it is refused before commit (architect ruling, fail closed). The `USE`
+  changes nothing, the move or push is refused and the character stays on its tile, and a
+  relocation child is `REJECTED`; no child runs and no firing is dropped. A firing is never
+  discarded after its root has committed.
 
 ## 5. NPC quest dialogue (NPC-QUEST-1)
 
@@ -239,11 +243,17 @@ QUEST-STATE-0 §4 codes) selects the node's refusal reply and writes nothing.
 
 ### 5.5 Experience (QUEST-XP-1)
 
-- A transition may declare `experience: n` (content, checked `i64`, at most `QUESTGATE0-RL-05`).
-  The committing transition writes `game_character_quest_xp_obligations` (character, receipt key,
-  amount, UUIDv7 occurrence) in its own transaction.
-- The runtime then submits the XP award in the same sequencer slot with that occurrence and
-  `reward_revision` = the quest's pinned content revision. The XP writer deletes the obligation in
+- A transition may declare `experience: n` (content, checked `i64` with
+  `1 <= n <= QUESTGATE0-RL-05`). Content validation refuses zero, a negative value or a value over
+  the bound at compile time; a quest with such a transition is not admitted.
+- The committing transition writes `game_character_quest_xp_obligations` (character, receipt key,
+  amount, UUIDv7 occurrence, the quest's pinned content revision as provenance) in its own
+  transaction.
+- The runtime then submits the XP award in the same sequencer slot with that occurrence and the
+  active progression policy, its `policy_revision` and its `reward_revision`
+  (`request.reward_revision == request.policy.reward_revision`,
+  `character_progression.rs:763-774`). The quest content revision stays in the obligation as
+  provenance and is never passed as `reward_revision`. The XP writer deletes the obligation in
   its transaction; a guard allows the delete only with the XP receipt naming it. The award keeps
   its own receipt and revision advance (rule 6 unchanged).
 - Pending XP obligations are requested again at admission, like quest obligations. An XP refusal
@@ -314,7 +324,7 @@ blessings wait for their owners' decisions; a node that needs one stays held.
 | `QUESTGATE0-RL-02` outcomes per dialogue node | 1 transition and 1 claim or exchange |
 | `QUESTGATE0-RL-03` trigger firings per character per second | 10 |
 | `QUESTGATE0-RL-04` burn lines per exchange | 8 |
-| `QUESTGATE0-RL-05` experience per transition | 100,000,000 |
+| `QUESTGATE0-RL-05` experience per transition | 1 to 100,000,000 |
 | `QUESTGATE0-RL-06` tracked missions | 10 (`PARITY_PENDING`) |
 | `QUESTGATE0-RL-07` quests per list projection | 1,024 (as `QUESTSTATE0-RL-05`) |
 | `QUESTGATE0-RL-08` missions per quest line and payload bytes | measured by QUEST-LOG-WIRE-1 over the catalogue |
