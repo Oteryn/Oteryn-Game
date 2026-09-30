@@ -218,6 +218,9 @@ Actual BUY/SELL is a later composition with the accepted value owners:
 
 The smallest first trade fixture SHOULD use sufficient explicit physical-currency/value state so it does not need to exercise bank fallback unless that bank path is separately ready and target-evidenced.
 
+**Amendment (BANK-FEE-0, 2026-09-30).** The bank owner is BANK-0, and the fallback rule is
+`reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`. The first trade fixture may still exclude it.
+
 ## 10. Interaction boundary
 
 GAME-INTERACTION remains a generic occurrence/proposal/reconciliation helper, not the NPC business owner.
