@@ -182,6 +182,12 @@ equipment slots are not covered until their own decisions.
   transactions carry no XP, so it would change D42's meaning. DUR-03 §39.3 declines it. A genuine
   XP award that happens to share a transaction with item effects is a different case (§3.6).
 
+**Amendment (DEPOT-0, 2026-09-30).** Rule 1 also covers `CharacterDepot` locations of the acting
+character (`OTERYN_GAME_DEPOT0_CHARACTER_DEPOT_DECISION_2026-09-30.md` §7.2): an item-only
+transaction between its backpack and its depot does not advance `CharacterRevision`. No runtime scope owns the depot, so rule 2's DUR-03 §32 binding does not apply.
+Rule 4's lock order: `character_root`, then the items in ItemInstanceId order, then the
+container-slot row.
+
 ## 5. Decision test
 
 - **Must decide now?** YES. It blocks step 2 of the reward-chest order of work (DUR-03 and
