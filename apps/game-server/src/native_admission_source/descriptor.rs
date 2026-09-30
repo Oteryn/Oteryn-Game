@@ -24,6 +24,10 @@ pub enum Operation {
     ReadCharacterBootstrapIntentV1,
     /// Node runtime-status report (`oteryn-game-native-runtime-status-v1` §3).
     ReportRuntimeStatusV1,
+    /// `ListCharactersForAccount` snapshot (`oteryn-game-list-characters-for-account-v1` §3).
+    PublishAccountCharactersV1,
+    /// `ListCharactersForAccount` liveness watermark (same contract, §5.1).
+    PublishProjectionWatermarkV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -38,13 +42,20 @@ impl Operation {
                 "/internal/v1/game-auth/character-bootstrap-intents/read"
             }
             Self::ReportRuntimeStatusV1 => "/internal/v1/game-auth/native-runtime-status",
+            Self::PublishAccountCharactersV1 => "/internal/v1/game-auth/native-account-characters",
+            Self::PublishProjectionWatermarkV1 => {
+                "/internal/v1/game-auth/native-account-characters/watermark"
+            }
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
-    /// for the runtime-status report.
+    /// for the runtime-status report, `LCA-REQUEST-BYTES` and
+    /// `LCA-WATERMARK-BYTES` for the account-characters projection.
     pub const fn request_bytes_max(self) -> usize {
         match self {
             Self::ReportRuntimeStatusV1 => super::runtime_status::REPORT_BYTES,
+            Self::PublishAccountCharactersV1 => super::account_characters::SNAPSHOT_BYTES,
+            Self::PublishProjectionWatermarkV1 => super::account_characters::WATERMARK_BYTES,
             Self::ReadAccountSecurityV1
             | Self::ReadFreshSigningTrustV1
             | Self::ReadRecoveryAccountSecurityV2
