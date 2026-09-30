@@ -51,6 +51,16 @@
       "state_domains": [4, 5],
       "offered": false,
       "offer_gate": "D170: the server does not offer this capability before CHARM-6 (unassign and reset) ships. Without it selected, domains 4 and 5 are never sent and command types 4 and 5 are refused as unsupported."
+    },
+    {
+      "id": 6,
+      "name": "WORLD_SPATIAL_ENTITIES",
+      "owner_decision": "MOVE-RL-11-VISIBILITY-V1 (D84-D87, #162 comment 5875312123), VIS-2",
+      "owner": "current ChannelRuntime",
+      "command_types": [],
+      "state_domains": [1],
+      "offered": false,
+      "offer_gate": "VIS-3: the server does not offer this capability before the connection composes the VIS-1 interest set. Without it selected, domain 1 carries only the v1 types (own actor) and type 2 is never sent."
     }
   ],
   "command_types": [
@@ -114,6 +124,13 @@
           "name": "WORLD_SPATIAL_DELTA_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialDeltaV1",
           "max_payload_bytes": 64
+        },
+        {
+          "id": 2,
+          "name": "WORLD_SPATIAL_ENTITIES_DELTA_V2",
+          "capability": 6,
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialEntitiesDeltaV2",
+          "max_payload_bytes": 33792
         }
       ],
       "snapshot_types": [
@@ -122,6 +139,13 @@
           "name": "WORLD_SPATIAL_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialSnapshotV1",
           "max_payload_bytes": 64
+        },
+        {
+          "id": 2,
+          "name": "WORLD_SPATIAL_ENTITIES_SNAPSHOT_V2",
+          "capability": 6,
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialEntitiesSnapshotV2",
+          "max_payload_bytes": 33792
         }
       ]
     },
