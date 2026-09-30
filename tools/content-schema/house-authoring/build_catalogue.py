@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Build the House catalogue in content/houses/ (OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1 §3).
 
 The records come from `convert_houses.convert` over the committed client 15.30 staging, the
