@@ -64,7 +64,9 @@ does a hit do?
 - Protocol numbers: `main` registers command types 1-3 and domains 1-3. #162 reserves capabilities
   1-2 (5907282001), command types 7-8, domains 7-8 and capability 3 (5909366267), and command
   type 9, domains 9 and 11 and capability 4 with domain 10 released (5910888594, PR #1344, not
-  merged). The next free are command type 10, domain 10 and capability 5.
+  merged). The control-plane ledger (#162 5912405163) records command type 10 and domain 10 for
+  this decision, gives capability 5 to `DEPOT_V1`, and names command type 11 and capability 7 (once
+  6 is confirmed) as the next free numbers.
 
 **OTS_HYPOTHESIS_ONLY** (Canary `04b83b51`, for the formulas of §5)
 
@@ -98,12 +100,13 @@ does a hit do?
 
 | Kind | Id | Name | Content |
 |---|---|---|---|
-| capability | 5 | `ATTACK_V1` | gates everything below |
+| capability | at allocation | `ATTACK_V1` | gates everything below; its number is reserved on #162 when ATTACK-WIRE-1 is allocated (5 went to `DEPOT_V1`) |
 | command type | 10 | `ATTACK_TARGET_INTENT` | `{target: {actor_id, generation} or none}`; none stops attacking |
 | command type | 11 | `FIGHT_MODES_INTENT` | `{fight_mode: OFFENSIVE, BALANCED or DEFENSIVE; chase: STAND or CHASE; secure: bool}` |
 | state domain | 10 | `ACTOR_COMBAT_STATE` | the own actor's current target (or none), fight mode, chase, secure and in-fight flag |
 
-- The numbers are #162 reservations; ATTACK-WIRE-1 re-checks them at allocation.
+- Command type 10 and domain 10 are in the #162 ledger (5912405163); command type 11 is the next
+  free and is requested for `FIGHT_MODES_INTENT`; the capability number is reserved at allocation.
 - The target is the D85 identity of a creature visible to the session (VIS-2). A target that is
   not visible, not a creature, or in a protection zone is refused, and so is any target while the
   attacker stands in a protection zone.

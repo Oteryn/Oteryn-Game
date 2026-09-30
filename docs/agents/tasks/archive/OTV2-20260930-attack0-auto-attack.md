@@ -32,7 +32,7 @@ external_repositories: []
 ATTACK-0 lets a player pick a creature target and fight it, and lets creatures hit back
 (architect programme plan, #162 5910870596, M1).
 
-- **Wire.** Capability 5 `ATTACK_V1`, command types 10 `ATTACK_TARGET_INTENT` and 11
+- **Wire.** Capability `ATTACK_V1` (number at allocation; 5 went to `DEPOT_V1`), command types 10 `ATTACK_TARGET_INTENT` and 11
   `FIGHT_MODES_INTENT`, state domain 10 `ACTOR_COMBAT_STATE` (#162 reservations, re-checked at
   allocation).
 - **Runtime.** One target per actor; one swing occurrence per 2,000 ms deadline
@@ -81,6 +81,8 @@ No code, migration or content change is made.
   added; formula citations completed and moved onto the spell formula engine; time-based blocks;
   attacker protection zone; in-fight deadline owner; all charm hooks and independent cooldown;
   SPELL-TARGET-1 split out; dependencies and protocol reservations stated).
+- Protocol ledger update (#162 5912405163): capability 5 is `DEPOT_V1`; this decision's capability
+  number is reserved at allocation, and command type 11 is requested.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
