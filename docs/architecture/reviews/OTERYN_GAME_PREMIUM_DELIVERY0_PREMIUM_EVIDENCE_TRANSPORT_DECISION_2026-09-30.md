@@ -126,17 +126,24 @@ nonce:                 echo of the request nonce
 account_id:            AccountId
 product_id:            "oteryn.premium_time"
 product_version:       1
-entitlement_id:        EntitlementId, or null when the account has none
+entitlement_id:        EntitlementId, or null (NONE only)
 entitlement_state:     ACTIVE | NOT_YET_EFFECTIVE | EXPIRED | REVOKED | NONE
-lifecycle_revision:    u64, monotonic per entitlement
+lifecycle_revision:    u64, monotonic per entitlement; 0 (NONE only)
 authority_revision:    u64, monotonic per account snapshot series
-effective_from:        RFC 3339 UTC, absolute
-effective_until:       RFC 3339 UTC, absolute (the paid-up end of Premium time)
+effective_from:        RFC 3339 UTC, absolute; null (NONE only)
+effective_until:       RFC 3339 UTC, absolute (the paid-up end of Premium time); null (NONE only)
 authority_issued_at:   RFC 3339 UTC
 authority_valid_until: RFC 3339 UTC, at most issued_at + max_authority_lease
 refresh_after:         RFC 3339 UTC
 ```
 
+- **The `NONE` variant** (an account that has never held a Premium entitlement) is closed:
+  `entitlement_id` null, `lifecycle_revision` 0, `effective_from` and `effective_until` null;
+  every other field, including the four authority fields, is present and carries the same rules as
+  for any snapshot, so a `NONE` advances the account fence (§6) like any other. Any other
+  combination fails closed: a null in a non-`NONE` state, a non-null interval, entitlement id or
+  non-zero `lifecycle_revision` in `NONE`. Game's class for `NONE` is Free. An account that once
+  held Premium never returns to `NONE`: its merged entitlement stays `EXPIRED` or `REVOKED`.
 - Several Premium grants are merged by Platform into one account-level entitlement with a stable
   `entitlement_id` and one interval; Game never adds intervals itself.
 - Every new snapshot for an account carries a strictly higher `authority_revision`, including a
