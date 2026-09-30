@@ -158,7 +158,12 @@ an `flags.unmove=true` entry (formal schema §5a: immovable map geometry — wal
 borders, top decorations, doors/stairs/ramps/windows — with no Item family profile) is
 also routed to `routed_non_item` instead of staying `family_profile_unresolved`: owner
 `Terrain`/reason `ground_or_border` when `flags.bank`, `flags.fullbank` or `flags.clip` is
-set, otherwise owner `WorldObject`/reason `immovable_unclassified`. An `unmove=false` (or
+set, otherwise owner `WorldObject`/reason `immovable_unclassified`. Owner decisions WO-2c
+(2026-09-30) refine this for two `type` values: a fixed carpet (`type="carpet"`) is owner
+`WorldObject`/reason `fixed_carpet` even with `flags.clip` (18 Crystal ids), and an unbanked
+magic field (`type="magicfield"`) is owner `Terrain`/reason `magic_field` (21). A carpet or
+field that resolves an Item family (for example a placeable house carpet or a campfire)
+stays an Item. An `unmove=false` (or
 absent) entry with no resolved family keeps `family_profile_unresolved`, since that case
 stays editorial backlog rather than a known non-Item owner decision.
 

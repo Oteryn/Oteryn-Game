@@ -102,6 +102,11 @@ fn is_unshared_successor_shard(locator: &str) -> bool {
             .any(|(document, _, _)| document.starts_with(directory))
     })
 }
+/// WO-2 catalogue shards beside the legacy package: `(directory, shard prefix)`. Their
+/// bytes are pinned by `build_catalogue.py --check`, not by this package inventory; they are
+/// successor shards (`is_successor_shard`) and must be populated.
+const WORLD_CATALOGUE_SHARDS: [(&str, &str); 2] =
+    [("terrain/", "terrain-"), ("objects/", "objects-")];
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
@@ -256,6 +261,7 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     let root = project_root();
     let mut files = Vec::new();
     collect_files(&root, &root, &mut files);
+    let files_seen = files.clone();
     let (successors, mut actual): (Vec<_>, Vec<_>) = files.into_iter().partition(|locator| {
         SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()) || is_successor_shard(locator)
     });
@@ -263,6 +269,14 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
         .into_iter()
         .filter(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()))
         .collect();
+    for (directory, prefix) in WORLD_CATALOGUE_SHARDS {
+        assert!(
+            files_seen
+                .iter()
+                .any(|locator| locator.starts_with(&format!("{directory}{prefix}"))),
+            "{directory} catalogue is populated"
+        );
+    }
     markers.sort();
     actual.sort();
     assert_eq!(markers, SUCCESSOR_TREE_MARKERS);
@@ -1001,11 +1015,15 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         assert_eq!(payload["path"], path);
         assert_eq!(payload["kind"], node["kind"], "{path}");
         assert_eq!(payload["owner"], node["owner"], "{path}");
+        let populated_catalogue = WORLD_CATALOGUE_SHARDS
+            .iter()
+            .any(|(directory, _)| *directory == locator);
         assert!(
-            matches!(
-                payload["population_state"].as_str(),
-                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT")
-            ),
+            match payload["population_state"].as_str() {
+                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT") => true,
+                Some("POPULATED") => populated_catalogue,
+                _ => false,
+            },
             "{path}"
         );
     }

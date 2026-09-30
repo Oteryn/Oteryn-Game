@@ -5,6 +5,8 @@ on:
     paths:
       - tools/content-schema/item-authoring/**
       - tools/content-schema/world-object-authoring/**
+      - content/world/terrain/**
+      - content/world/objects/**
       - tools/content-schema/validate_item_master_schema.py
       - tools/content-schema/test_validate_item_master_schema.py
       - imports/tibiawiki/bindings/items.json
@@ -132,6 +134,23 @@ jobs:
       - name: WorldObject and Terrain authoring tests
         working-directory: tools/content-schema/world-object-authoring
         run: python test_world_objects.py
+
+      - name: WorldObject and Terrain catalogue drift against pinned Crystal
+        working-directory: tools/content-schema/world-object-authoring
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/crystal-catalogue"
+          read -r REPO REV POOL < <(cd ../item-authoring && python -c '
+          from engine_items import ENGINES, DELIVERY_POOL_PATH
+          c = ENGINES["crystal"]
+          print(c["repository"], c["revision"], DELIVERY_POOL_PATH["crystal"])')
+          # The loader verifies every file against its pinned digest.
+          for path in data/items/items.xml data/items/appearances.dat "$POOL"; do
+            mkdir -p "$SRC/$(dirname "$path")"
+            curl -fsSL --retry 5 --retry-delay 2 \
+              "https://raw.githubusercontent.com/$REPO/$REV/$path" -o "$SRC/$path"
+          done
+          python build_catalogue.py --source "$SRC" --check
 
       - name: Item Master census
         working-directory: .

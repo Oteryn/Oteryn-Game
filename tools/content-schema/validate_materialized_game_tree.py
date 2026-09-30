@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import json
+import re
 import sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
@@ -14,6 +15,11 @@ WORLD_STATES={"READY_UNPOPULATED","LEGACY_COMPAT_PRESENT"}
 SHARED_WITH_LOCATOR="content/world/worlds/"
 SHARED_MAX_SHARDS=1
 FAMILY_INDEX="OTERYN_FAMILY_INDEX/v1"
+# WO-2: the Terrain and WorldObject catalogues are populated beside the legacy package. They keep
+# the plain directory marker (population_state POPULATED); their shards are pinned by
+# world-object-authoring/build_catalogue.py --check.
+POPULATED_WORLD_CATALOGUES={"content/world/terrain/":"terrain-","content/world/objects/":"objects-"}
+CATALOGUE_SHARD=re.compile(r"^(terrain|objects)-\d{5}-\d{5}\.json$")
 class ValidationError(RuntimeError): pass
 def req(ok: bool, code: str)->None:
     if not ok: raise ValidationError(code)
@@ -32,7 +38,11 @@ def world_successor_files(dirs: list[dict])->list[str]:
         payload=json.loads((ROOT/LEGACY_ROOT/marker).read_text(encoding="utf-8"))
         if payload.get("schema")==FAMILY_INDEX:
             files|={shard[len(LEGACY_ROOT):] for shard in payload["shards"]}
+    for path in POPULATED_WORLD_CATALOGUES:
+        files|={n[len(LEGACY_ROOT):] for n in catalogue_shards(path)}
     return sorted(files)
+def catalogue_shards(path: str)->list[str]:
+    return sorted(path+f.name for f in (ROOT/path).iterdir() if CATALOGUE_SHARD.match(f.name))
 def legacy_locators()->set[str]:
     manifest=json.loads((ROOT/LEGACY_ROOT/"manifest.json").read_text(encoding="utf-8"))
     return {"project.json","manifest.json","content.lock.json"}|{row["locator"] for row in manifest["documents"]}
@@ -86,8 +96,13 @@ def main()->int:
             else:
                 req(payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1",f"WORLD_MARKER_SCHEMA:{path}")
                 req(payload.get("kind")==node["kind"],f"KIND_MISMATCH:{path}")
-                req(payload.get("population_state") in WORLD_STATES,f"WORLD_MARKER_STATE:{path}")
-                req(local=={"index.json"}|locators,f"WORLD_STRAY_FILE:{path}")
+                catalogue=path in POPULATED_WORLD_CATALOGUES
+                req(payload.get("population_state") in WORLD_STATES|({"POPULATED"} if catalogue else set()),f"WORLD_MARKER_STATE:{path}")
+                if catalogue:
+                    req(not locators and catalogue_shards(path),f"WORLD_CATALOGUE_EMPTY:{path}")
+                    req(all(CATALOGUE_SHARD.match(n) and n.startswith(POPULATED_WORLD_CATALOGUES[path]) for n in local-{"index.json"}),f"WORLD_STRAY_FILE:{path}")
+                else:
+                    req(local=={"index.json"}|locators,f"WORLD_STRAY_FILE:{path}")
         if payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1":
             req(payload.get("path")==path,f"PATH_MISMATCH:{path}")
             req(payload.get("owner")==node["owner"],f"OWNER_MISMATCH:{path}")
