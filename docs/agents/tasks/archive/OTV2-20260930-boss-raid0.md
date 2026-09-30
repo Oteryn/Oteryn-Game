@@ -87,6 +87,7 @@ persistence review; BOSS-REWARD-1 economy and security review; BOSS-WIRE-1 proto
 - Codex round-2 repair: 200-entry contribution accumulator before top-50 selection (§7,
   `BOSSRAID0-RL-10b`); session-fenced reward continuation in the credited character's own admitted
   session (§8.1, §12, composition amendment).
+- Codex round 3 (#1407, 3 P1, 0 P2): INACTIVE clock state and atomic per-epoch reset draw (§5); firing DONE requires a terminal run per target channel or the deadline (§4.4); the 200-entry accumulator covers Bosstiary non-reward bosses (§7, RL-10b).
 - Owner answer applied (2026-09-30, #162): R4a, the slot swap fee as a D178 gold sink, coins then
   bank, first change per reset epoch free (§10.3, brief, §14, §16). Validators re-run PASS.
 

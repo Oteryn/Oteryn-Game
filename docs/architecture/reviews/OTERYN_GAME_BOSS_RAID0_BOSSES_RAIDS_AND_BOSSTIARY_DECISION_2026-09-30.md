@@ -182,15 +182,17 @@ does not run.
 - **Restart.** A new generation that finds a run claimed by an older generation marks it `LOST`
   and does not re-run it: no duplicate boss, no repeated announcement (D52's rule, applied to raid
   creatures). A channel that activates after the firing does not join it.
-- A firing is `DONE` when every run is terminal or its last wave plus `despawn_after_s` has
-  passed. A `WorldReset` cancels running firings; raid creatures go with the overlay.
+- A firing is `DONE` only when a terminal run row exists for every channel in its durable target
+  channel set (a channel with no row is not terminal, so an empty run table never completes a
+  firing), or when the firing's last wave plus `despawn_after_s` has passed; at that deadline a
+  target channel with no row is recorded `LOST` and the firing closes. A `WorldReset` cancels running firings; raid creatures go with the overlay.
 
 ## 5. Open-world boss spawns (BOSS-1)
 
 - A spawn whose creature has a `bosstiary` block or `reward_boss` is a **boss spawn**. Its content
   gives `respawn {min_s, max_s}` or `at_reset {chance}`.
-- `game_boss_spawn_clocks`: (World, ChannelId, spawn key) with `cycle`, state `DUE` or `ALIVE`,
-  `due_at`, and `owner_generation`: the scope ownership generation that realized the `ALIVE`
+- `game_boss_spawn_clocks`: (World, ChannelId, spawn key) with `cycle`, state `DUE`, `ALIVE` or `INACTIVE`,
+  `reset_epoch`, `due_at`, and `owner_generation`: the scope ownership generation that realized the `ALIVE`
   boss. Each channel keeps its own clock (the scope matrix spawn row).
 - At activation, under its new scope ownership generation, the channel realizes a boss spawn
   when:
@@ -207,7 +209,13 @@ does not run.
   cycle). If the generation ends first, the death was not committed, so the clock is still `ALIVE`
   under the ended generation and the next owner realizes the boss again (above). A restart therefore never gives a free boss and never loses a dead one's
   timer.
-- `at_reset`: at reset activation the draw decides per (clock, epoch) whether the boss is `DUE`.
+- `at_reset`: the first activation of a channel in a new reset epoch performs the draw once per
+  (clock, epoch), by compare-and-set on the clock's old `reset_epoch`, and the transition
+  overwrites whatever state the clock had (`DUE`, `ALIVE` of an ended generation, or `INACTIVE`):
+  a true draw sets `DUE` with `due_at` = the reset time, a false draw sets `INACTIVE`. Both
+  record the new `reset_epoch`. Activation realizes only `DUE` and an `ALIVE` clock of an ended
+  generation in the same epoch, never `INACTIVE`, so a failed draw cannot spawn the boss until the
+  next reset epoch's draw (an `ALIVE` clock from a previous epoch is overwritten, not recovered).
 
 ## 6. Boss rooms (BOSS-ROOM-1)
 
@@ -286,7 +294,9 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 - At the death commit, the credited set is the top `BOSSRAID0-RL-10` (50, D109) accumulator
   entries with score > 0 by the order above, and each score is fixed in the death record (§8.1).
 - Non-reward bosses keep D121 corpse loot with the D112 window and the party right (PARTY-PVP-0
-  §5.3). Their Bosstiary credit uses CHARM-0's 5-minute damage rule, up to 50 principals.
+  §5.3). Their Bosstiary credit uses CHARM-0's 5-minute damage rule, up to 50 principals, tracked by
+  the same bounded accumulator (damage only): the 200-entry `BOSSRAID0-RL-10b` accumulator applies
+  to every boss spawn actor, `reward_boss` or `bosstiary`, not to reward bosses alone.
 
 ## 8. Reward chest (BOSS-REWARD-1)
 
@@ -444,7 +454,7 @@ definition's `*_points`).
 | `BOSSRAID0-RL-08` admission arrival window | 30 s |
 | `BOSSRAID0-RL-09` boss room time limit | content, at most 2 h |
 | `BOSSRAID0-RL-10` contributors per reward boss | 50 (D109), the top contributors by score (§7) |
-| `BOSSRAID0-RL-10b` contribution accumulator per reward boss life | 200 distinct characters; lowest cumulative total evicted when full (§7) |
+| `BOSSRAID0-RL-10b` contribution accumulator per boss life (reward or Bosstiary) | 200 distinct characters; lowest cumulative total evicted when full (§7) |
 | `BOSSRAID0-RL-11` reward entries per character per death | 16 (D77 per character) |
 | `BOSSRAID0-RL-12` reward MINTs per step | 100 |
 | `BOSSRAID0-RL-13` reward expiry | 7 days (`PARITY_PENDING`) |
