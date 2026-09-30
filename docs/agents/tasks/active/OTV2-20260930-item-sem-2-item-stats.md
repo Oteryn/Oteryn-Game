@@ -51,12 +51,13 @@ silent and never where it disagrees.
 
 ## 2a facts
 
-- PROVEN (capture 2026-09-30T09:13:32Z): 9,980 `Infobox Object` pages, 9,354 with an item id; 13,826 item ids carry
-  at least one admitted stat; 12,560 of them are Items in content. 185 ids are listed by more than one page (kept as
+- PROVEN (capture 2026-09-30T09:13:32Z): 9,980 `Infobox Object` pages, 9,354 with an item id; 13,878 item ids carry
+  at least one admitted stat (keyed by Tibia id; ids without an Item record stay evidence only). 185 ids are listed by more than one page (kept as
   separate observations). 6 pages have a malformed `itemid` and are reported, not captured.
 - Coverage among content Items: weight 6,379; required level 1,269; upgrade classification 983; vocation 840;
   hands 737; defense 733; attack 643; imbuement slots 632; attributes 504; armor 470; resistances 417.
-- Only admitted infobox parameters (`STAT_PARAMS`) and page/revision identity are stored; no article text.
+- Only admitted infobox parameters (`STAT_PARAMS`, incl. pickupable and marketable) and page/revision identity are
+  stored; no article text.
 
 ## Owner decisions (2026-09-30, given directly to this writer)
 

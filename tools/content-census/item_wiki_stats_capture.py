@@ -7,7 +7,7 @@ revision of each, parses the infobox and keeps, for every integer in its `itemid
 the raw value of each admitted stat parameter (`STAT_PARAMS`: requirements, hands and
 slot, attack and elemental attacks, defense, armor, range, hit chance, imbuement slots,
 upgrade classification, leech and critical hit, the `attrib` and `resist` texts, weight,
-charges, duration, stackability and similar). Nothing else is stored: no article text,
+charges, duration, stackability, pickupability, marketability and similar). Nothing else is stored: no article text,
 notes, prices, drop lists or images, only page and revision identity, digests and the raw
 field observations.
 
@@ -78,8 +78,10 @@ STAT_PARAMS = (
     "manaleech_am",
     "manaleech_ch",
     "mantra",
+    "marketable",
     "mlrequired",
     "objectclass",
+    "pickupable",
     "primarytype",
     "range",
     "resist",
