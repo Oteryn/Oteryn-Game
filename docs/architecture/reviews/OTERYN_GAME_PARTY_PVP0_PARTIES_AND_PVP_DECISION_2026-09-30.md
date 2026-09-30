@@ -215,10 +215,11 @@ party row; member rows by CharacterId; invitation rows; consent rows.
 ### 4.2 Node cache
 
 - Each node keeps a `PartyView` per party with a local member: members, leader, shared-XP flag,
-  `revision`, and each member's presence record (§4.4). After a commit, the writer sends a sealed
-  hint `{party_id, revision}` on the CHAT-0 World relay, with the presence record the transaction
-  wrote, if any. The hint is advisory and at most once: it only makes a node re-read or update
-  sooner; no rule depends on receiving it.
+  `revision`, and each member's presence record (§4.4). After a commit (a presence write
+  included), the writer sends a sealed hint `{party_id, revision}` on the CHAT-0 World relay. The
+  hint carries no other content, and no node sends or applies anything from it: it only makes a
+  node re-read that party's rows sooner. It is advisory and at most once; no rule depends on
+  receiving it.
 - **Full refresh** (architect ruling): at node start, at every relay (re)connect, and when a hint
   or a party-chat line (§4.3) shows a revision the node did not apply in order, the node re-reads
   from the durable rows every local character's `game_party_members` row and each such party's
@@ -233,10 +234,10 @@ party row; member rows by CharacterId; invitation rows; consent rows.
   transaction has committed the character is not party-ready (below); a failed one is retried and
   the character stays not party-ready meanwhile. A node drops a view when it has no local member of
   it.
-- **Bounded staleness:** a node also re-reads the `revision` and the members' `presence_revision`
-  of all its cached parties in one query every `PARTYPVP0-RL-26` (5 s) and refreshes any view that
-  differs, so a hint lost to a writer crash or a dropped listener is caught. A view not confirmed
-  within twice that interval is stale.
+- **Bounded staleness:** a node also re-reads the `revision` and the members' presence records
+  (§4.4) of all its cached parties in one query every `PARTYPVP0-RL-26` (5 s) and replaces any view
+  that differs, so a hint lost to a writer crash or a dropped listener is caught. A view not
+  confirmed within twice that interval is stale.
 - **Party readiness:** a node is ready for parties only after its full refresh has completed and
   while its views are confirmed. While a node or a view is not ready, it fails toward less
   disclosure and no shared benefit: party commands answer `PARTY_UNAVAILABLE`; shared experience
@@ -294,39 +295,49 @@ party row; member rows by CharacterId; invitation rows; consent rows.
   record would change), accept (the first record), a
   channel-visibility change (§4.1) and the cleanup job's `OFFLINE` (§4.1); leave, logout and
   removal delete it with the row. Every write advances `presence_revision`, so each channel move
-  gives a new revision. As sent, a record is `{world_id, party_id, character_id,
-  presence_revision, revision, state, channel}`, where `revision` is the party `revision` read
-  under that lock: the membership and authorization epoch. A `HIDDEN` or `OFFLINE` record carries
+  gives a new revision. As read for output, a record is `{world_id, party_id, character_id,
+  presence_revision, revision, state, channel}`, where `revision` is its party's current
+  `revision` in that read: the membership and authorization epoch. A `HIDDEN` or `OFFLINE` record carries
   no channel.
 - **Invalidation before exposure.** Every change that ends a viewer's authorization to see a
   member's channel (the member's leave, logout or removal, or its switch to `HIDDEN`) advances the
   party `revision` in the same transaction that deletes the record or writes it `HIDDEN`, under
   the party row FOR UPDATE. A later record carrying a channel is written under the same lock, so
-  it commits after the invalidation and carries a newer `revision`; its writer sends its hint only
-  after its commit. A node applies a hinted record only when its view is confirmed at that
-  record's `revision` and the record's `presence_revision` is newer than the one it holds; a
-  record with a newer `revision` is not applied but triggers the §4.2 refresh from the durable
-  rows, which already hold the invalidation; an older one is dropped. A durable read replaces
-  every record. So the invalidation reaches a view before any record carrying the new channel,
-  and a stale record never re-exposes a channel after a leave, a removal or a switch to `HIDDEN`.
-- **Ordered delivery to the client.** The `PARTY` domain sends each member's presence with the
-  pair (the view's `revision`, the record's `presence_revision`), in order on the session. The
-  client applies a new record only when its pair is newer than the one it holds and drops an older
-  one. A removal, or the node's fallback entry ("online on this World", offline) carrying the held
-  pair, always applies; the node lifts a fallback only by resending the record it holds (the same
-  pair) or a newer one, never an older one.
-- **Uncertain presence fails toward less disclosure.** A node shows a remote member's exact
+  it commits after the invalidation and carries a newer `revision`.
+- **Output only from a durable read** (architect ruling). Every outbound message that carries a
+  remote member's exact channel is built from a durable read of that member's row
+  (`presence_revision`, state and channel) together with its party's current `revision`, the same
+  read that produces the message: the §4.2 full refresh, admission or channel-entry read, the read
+  a hint triggers, or the `PARTYPVP0-RL-26` check. A cached or hinted record is never sent. A read
+  whose result is older (by `revision`, then `presence_revision`) than the node's view is
+  discarded. A message that has no read of its own to be built from (a snapshot between reads, for
+  example) shows the member as "online on this World" until the next read. So any read that sees a
+  record carrying a new channel also sees the invalidation before it, and after a leave, a
+  removal or a switch to `HIDDEN` commits, no message built from a later read carries the old
+  channel; no node builds exact-channel output from a cache.
+- **Ordered delivery to the client.** The `PARTY` domain sends each member's presence with the key
+  (`view_generation`, `revision`, `presence_revision`), in order on the session. `view_generation`
+  is issued by the node, monotonic per party view and per session; the client starts over with the
+  full `PARTY` snapshot sent at channel entry from the admission read. The client applies an entry
+  only when its key is newer than the one it holds and drops an older one; a removal always
+  applies. Entering the fallback below bumps `view_generation`, and so does lifting it, which
+  re-sends the record from a fresh durable read, so the recovery entry is always newer and is
+  applied.
+- **Uncertain presence fails toward less disclosure.** A node sends a remote member's exact
   channel only while its view is ready (§4.2), its last `PARTYPVP0-RL-26` check (5 s) confirmed
-  the view and the next check is not overdue. Otherwise (a relay (re)connect or a revision gap until the
-  refresh completes, a failed check, a view not confirmed in time) and for a record naming the
-  viewer's own channel while the member's actor is not present there (a member in transit), the
-  view shows "online on this World" until a fresh record or durable read arrives.
-- **Declared gap (CHAT-0 relay).** The relay is at most once and unacknowledged, so a lost
-  invalidating hint is found by the next `PARTYPVP0-RL-26` check, not at once: a node that already
-  shows a member's channel may keep showing that old channel for at most one interval (5 s) plus
-  that check's read after the member's leave, removal or switch to `HIDDEN`. It never shows a new channel meanwhile, and no
-  stale record re-exposes one. An acknowledged, ordered fan-out that would close this interval is
-  a CHAT-0 amendment (a later chat child), not part of this PR; the exact channel stays visible
+  the view and the next check is not overdue. Otherwise (a relay (re)connect or a revision gap
+  until the refresh completes, a failed read, a view not confirmed in time) and for a record
+  naming the viewer's own channel while the member's actor is not present there (a member in
+  transit), it enters the fallback: it sends "online on this World" with a new `view_generation`
+  and lifts it only with a durable read begun after the fallback started.
+- **Client display (declared).** The node sends nothing on the invalidating commit itself; the
+  hint only makes it read sooner, and the relay is at most once. So a client that has already
+  received a member's exact channel keeps displaying that value until the next read reaches its
+  node: the hint's read, or at the latest the next `PARTYPVP0-RL-26` check (5 s, plus that read),
+  which delivers the new state or the fallback. This is client display of a value already
+  received, not a new disclosure: no node sends that channel again after a read that sees the
+  change. An acknowledged, ordered relay fan-out (a CHAT-0 amendment by a later chat child) would
+  only shorten this latency; it is optional and not a privacy fix. The exact channel stays visible
   in PARTY-1 v1 (owner decision 3b).
 - **Channel visibility** (the social baseline lets the observed player hide its exact channel):
   for a member whose `channel_visibility` is `HIDDEN`, other members get only "online on this
@@ -625,7 +636,7 @@ the action. Reaching level 21 needs no write.
   (any combat lock, §4.1), `RATE_LIMITED`,
   `PARTY_UNAVAILABLE`, plus the common results.
 - **Domain `PARTY`:** members (§4.4), each with its presence (exact channel, "online on this
-  World" or offline) and its `(revision, presence_revision)` pair, leader, shared-XP state (on, off, or the failing member),
+  World" or offline) and its (`view_generation`, `revision`, `presence_revision`) key, leader, shared-XP state (on, off, or the failing member),
   the character's pending unexpired invitations (at most `PARTYPVP0-RL-29`) with the inviter's name
   and expiry, its own blocked list and its `party_invites` and `channel_visibility` settings.
 - **`PVP_INTENT`:** `join_aggression {actor}`. **`FIGHT_MODES_INTENT`** gains `expert_mode` in a
@@ -672,7 +683,7 @@ the action. Reaching level 21 needs no write.
 | `PARTYPVP0-RL-23` point row retention | 45 days |
 | `PARTYPVP0-RL-24` aggression relations per actor | 64 |
 | `PARTYPVP0-RL-25` PvP contributors per victim | 16 full (plus 64 compact, `PARTYPVP0-RL-32`) |
-| `PARTYPVP0-RL-26` `PartyView` revision check | every 5 s (party and presence revisions); stale after 10 s unconfirmed; a remote member's exact channel shown only while the last check confirmed the view and the next is not overdue |
+| `PARTYPVP0-RL-26` `PartyView` revision check | every 5 s (party and presence revisions); stale after 10 s unconfirmed; a remote member's exact channel sent only from a durable read and only while the last check confirmed the view and the next is not overdue; a client may display a received channel until the next check |
 | `PARTYPVP0-RL-27` durable PvP deadline write-ahead | 10 s beyond the 60 s block |
 | `PARTYPVP0-RL-28` blocked characters per character | 100 |
 | `PARTYPVP0-RL-29` open invitations per invitee | 20 |
@@ -748,8 +759,8 @@ configured with it (§6.1, §7).
 - **Superseding evidence:** an official source for the thresholds, the activity window, the
   unfair-fight formula or the retro rules.
 - **Deliberately not decided:** guild wars, arenas and PvP zones, the Party Finder, the Party Hunt
-  Analyser, Retro Worlds, Death Redemption, blessing sales (DEATH-4), an acknowledged ordered
-  relay fan-out for presence invalidation (CHAT-0, §4.4 declared gap).
+  Analyser, Retro Worlds, Death Redemption, blessing sales (DEATH-4), an acknowledged relay
+  fan-out (CHAT-0; an optional latency improvement, §4.4).
 
 ## 18. Before-freeze checklist
 
@@ -770,7 +781,8 @@ configured with it (§6.1, §7).
    cleanup transaction.
 7. **World type:** the PvP children build and test `OPTIONAL` and `OPEN`; the first World's
    ruleset has `pvp_type` `OPTIONAL` (owner answer P1).
-8. **Presence:** a remote member's exact channel comes only from a revisioned presence record,
-   applied in order; every leave, removal or switch to `HIDDEN` advances the party `revision` in
-   the invalidating transaction; uncertain presence shows "online on this World"; health and mana
-   stay channel-local (§4.4, owner decision 3b).
+8. **Presence:** a remote member's exact channel is sent only from a durable read of its
+   revisioned presence record, never from a cache or a hint; clients order entries by
+   (`view_generation`, `revision`, `presence_revision`); every leave, removal or switch to
+   `HIDDEN` advances the party `revision` in the invalidating transaction; uncertain presence
+   shows "online on this World"; health and mana stay channel-local (§4.4, owner decision 3b).

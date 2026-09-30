@@ -119,8 +119,14 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 - Owner answers (2026-09-30, #162 5919339646): A1 confirms the P1 reading; P2 b keeps `HARDCORE`
   as an unused v1 value (§6.1, §16); validators re-run PASS.
 - Owner decision 3b (2026-09-30, #162): remote members' exact channel shown in PARTY-1 v1 via revisioned presence with ordered invalidation.
-  Applied in §3, §4.1, §4.2, §4.4, §11, §13, §15, §17 and §18; declared gap: a lost invalidating relay hint is caught by the next 5 s check (CHAT-0);
-  validators re-run PASS.
+  Applied in §3, §4.1, §4.2, §4.4, §11, §13, §15, §17 and §18; validators re-run PASS.
+- Codex round 6 (3b repair review, #1402, 1 P1, 1 P2): fixed 4149608988 (hints carry no content
+  and only trigger reads; every message carrying a remote exact channel is built from a durable
+  read of the member row and the party revision, never from a cache or hint; the only residual is
+  client display of an already-received value until the next 5 s check; an acknowledged CHAT-0
+  fan-out is an optional latency improvement, §4.2, §4.4); fixed 4149608990 (a node-issued
+  `view_generation` per party view and session leads the client ordering key, bumped on entering
+  and lifting the fallback, §4.4, §11); validators re-run PASS.
 
 ## Closeout
 
