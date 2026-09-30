@@ -23,7 +23,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| MAP-WIRE-2 | hard (protocol), protocol and security review | capability `MAP_STATE_V1`, domain `MAP_TILES` (§4-§7), the `MapItemRef` handle (§6), the bounds and their measurement (§8) | MAP-LOAD-1; MAP-OVERLAY-1; VIS-2 |
+| MAP-WIRE-2 | hard (protocol), protocol and security review | capability `MAP_STATE_V1`, domain `MAP_TILES` (§4-§7), the `map_item_handle` (§6), the bounds and their measurement (§8) | MAP-LOAD-1; MAP-OVERLAY-1; VIS-2 |
 | MAP-CLIENT-1 | client lane | the native client's decoder and renderer for `MAP_TILES`, drawing the combined tile order (§5) | MAP-WIRE-2 |
 
 ## 1. Question
@@ -70,23 +70,26 @@ overlay hides or moves, and the items players leave on the ground?
   - the client item type (the appearance id already in the client artifact);
   - count or subtype, only where the appearance needs it (stackables, fluids);
   - its stack position (§5);
-  - `placement_key`, only for items the client can act on (usable, movable, containers, doors,
-    or with a domain-2 state), as a `MapItemRef` (§6).
+  - a per-session `map_item_handle` (§6), only for items the client can act on (usable, movable,
+    containers, doors, or with a domain-2 state); `placement_key` itself never leaves the server.
 
   Nothing else leaves the server: action, unique, door and depot ids, reward bindings, teleport
   destinations, text and descriptions (sent only by Look), house membership, protection-zone and
   no-logout flags, `build_class`.
 - Only a `production` bundle is ever described; draft areas cannot reach a client.
-- `placement_key` must be opaque: MAP-BUNDLE-1 proves it is not derivable from legacy action or
-  unique ids.
-- **Owned house tiles** are described by the house interior runtime (HOUSE-RUNTIME-0); until then
-  no house can be owned, so every tile is an overlay tile.
+- `placement_key` stays server-side; MAP-BUNDLE-1 still proves it is not derivable from legacy
+  action or unique ids, because domain 2 keys on it.
+- **Owned house tiles** (HOUSE-CUSTODY-0 §13.5 gives their view to this contract): their base
+  entries are described by `MAP_TILES` like any tile, with the house interior runtime as the source
+  of what is hidden; `HouseInterior` items are durable custody and travel as domain 1 entities,
+  exactly like Ground items (§4). HOUSE-RUNTIME-0 supplies the runtime, not a new wire.
 - **Map revision.** Each snapshot names the bundle digest (`map_revision`) once; it differs from
   `content_generation` and changes only at a planned reset, when every session ends.
 
 ## 4. Base items and domain 1
 
-- Player items on the ground (DUR-03 custody) are domain 1 entities only (D85); `MAP_TILES` never
+- Player items on the ground and in house interiors (DUR-03 custody) are domain 1 entities only
+  (D85); `MAP_TILES` never
   carries them. The overlay's `added` items are not on the wire: no accepted command produces a
   volatile added item today; a later producer amends this contract.
 - **Pickup of a map item.** While its MINT is in doubt the origin stays described. After the MINT
@@ -103,15 +106,31 @@ overlay hides or moves, and the items players leave on the ground?
   4. other items: base items (`MAP_TILES`) and ground items (domain 1) in one sequence, newest on
      top. A base item's position is its compiler order; a domain 1 ground item carries a position
      in the same space, assigned on drop above every existing one.
-- The client draws in this order and shows at most the first 10 things of a tile, as Tibia;
-  the server bounds each source (§8), so nothing depends on the cut.
+- `MAP_TILES` describes, per tile, at most `MAPW1-RL-01` (10) base items: the first 10 in this
+  order (ground, top items, then other items newest first); the rest of a tile's up to 26 base
+  entries are not sent, as Tibia sends at most 10 things. Domain 1 bounds ground items per
+  snapshot (D85's 256). The client draws the combined order and shows the first 10 things; the cut
+  is display only and changes no server state.
 
 ## 6. Handles
 
-- `MapItemRef {position, placement_key, tile_revision}` names a base item on the wire. It is a new
-  source variant of command 9 (ITEM-MOVE-WIRE-0 §4.1) and of USE-WIRE-V1's use target, refused
-  with a typed stale result when `tile_revision` differs. Which moves it enables stays with
-  ITEM-MOVE-WIRE-1 §9; pickup follows DUR-03 §39.1.
+- **`map_item_handle`** follows ITEM-MOVE-WIRE-0 §4.1: a per-session u64, issued in snapshots and
+  deltas for actionable base items, reissued in every snapshot (so after every reconnect, transfer
+  or floor change), and answered `STALE` when old. The server maps it to (`overlay_incarnation`,
+  position, `placement_key`, `tile_revision`).
+- **`tile_revision`**: u32 per tile per channel overlay, raised by every overlay change of that
+  tile. **`overlay_incarnation`**: a u64 the channel draws at every start or restart, different per
+  channel. A handle binds both, so a restart (volatile overlay lost) or a transfer to another
+  channel makes every old handle `STALE`; a counter that restarts never matches an old handle.
+- It is a new source variant of command 9 (ITEM-MOVE-WIRE-0 §4.1) and of USE-WIRE-V1's use target:
+  `map_item {handle}`, 9 bytes. Which moves it enables stays with ITEM-MOVE-WIRE-1 §9.
+- **Replay of a pickup.** No ItemInstanceId exists before the MINT. The command's replay binding is
+  (CommandRef, `overlay_incarnation`, `placement_key`); the MINT plans the new item's identity in
+  that transaction (DUR-03 §11.3, §39.1) and records it with the CommandRef, so a replay returns the
+  first outcome with the same ItemInstanceId, and a replay after a restart finds the recorded
+  outcome, never a second MINT.
+- **Look** on an item without a handle names `{position, stack position}` of the last described
+  state; a tile changed since then answers `STALE`.
 
 ## 7. Snapshots and deltas (MAP-WIRE-2)
 
@@ -122,17 +141,22 @@ overlay hides or moves, and the items players leave on the ground?
 - **Snapshot** (`AREA_SNAPSHOT`): one repeated list per floor, each with its origin and its tiles
   in row-major order; `map_revision` once. Triggers: admission, reconnect, channel transfer, floor
   change, teleport, respawn, and any movement whose delta would pass `MAPW1-RL-04`.
+- **Snapshot rate.** At most one snapshot in flight per session; triggers while one is in flight
+  coalesce into one pending snapshot of the latest area. At most `MAPW1-RL-05` (4) snapshots per
+  10 s per session; a further trigger waits for the window, and step deltas meanwhile are dropped
+  because the pending snapshot supersedes them.
 - **Deltas:**
   - `AREA_ENTER` for one step on the same floor, cardinal or diagonal: the new origin and the
     entering row, column or both on every visible floor; the client drops what left the area.
-  - `TILE_SET`: one tile's full description after an overlay change.
+  - `TILE_SET`: one tile's full description after an overlay change; at most `MAPW1-RL-06`
+    (1,024) per sync unit, beyond which the server sends a snapshot instead.
 - **Revision:** one domain revision per GameSession (FND-02 §15), stored in the resume state
   (`resume.rs`) like the other domains and kept above any seen across a reconnect.
 
 ## 8. Bounds (MAP-WIRE-2 registers and measures)
 
-Worst case per encoded item 22 bytes (type 4, count 4, stack position 3, `MapItemRef` 11) and per
-tile 10 items; the largest configurable area is 36 × 28 (MOVE-RL-11).
+Worst case per encoded item 22 bytes (type 4, count 4, stack position 3, handle 10 with its tag;
+positions are implicit in the per-floor lists) and per tile 10 items; the largest configurable area is 36 × 28 (MOVE-RL-11).
 
 | Row | Value |
 |---|---|
@@ -140,6 +164,8 @@ tile 10 items; the largest configurable area is 36 × 28 (MOVE-RL-11).
 | `MAPW1-RL-02` tiles per floor list | 36 × 28 = 1,008, under FND-02's 4,096 |
 | `MAPW1-RL-03` snapshot | 8 floors × 1,008 × 226 bytes ≈ 1.82 MB worst, in 4 chunks, under 16 MiB with the other domains |
 | `MAPW1-RL-04` `AREA_ENTER` | a diagonal step at 36 × 28: 63 × 8 tiles × 226 bytes ≈ 114 KB, under 256 KiB |
+| `MAPW1-RL-05` snapshots per session | 4 per 10 s, one in flight, coalesced |
+| `MAPW1-RL-06` `TILE_SET` per sync unit | 1,024 |
 
 - Before activation, MAP-WIRE-2 measures on B3 and records on #162: typical and p99 bytes of a
   login snapshot and of a cardinal and a diagonal step, and server time per description.
@@ -184,10 +210,10 @@ Under the Global-parity rule, b applies unless the owner chooses a.
 
 ## 13. Before-freeze checklist
 
-1. **Contract amendments:** MAP-WIRE-2 adds the `MapItemRef` source to ITEM-MOVE-WIRE-0 §4.1 and
+1. **Contract amendments:** MAP-WIRE-2 adds the `map_item {handle}` source to ITEM-MOVE-WIRE-0 §4.1 and
    USE-WIRE-V1, and registers the domain, rows and capability; no FND-02 or FND-04 change.
 2. **Serialization:** one domain revision per committed overlay change; a map-item pickup publishes
    with its domain 1 entity in one sync unit.
 3. **Restart:** descriptions rebuild from the bundle and the overlay, which ADR-0021 rebuilds.
-4. **Typed references:** `placement_key`, `MapItemRef`, `map_revision`, native `FloorId`.
+4. **Typed references:** `placement_key`, `map_item_handle`, `overlay_incarnation`, `tile_revision`, `map_revision`, native `FloorId`.
 5. **Wire:** §3-§9.
