@@ -4,7 +4,8 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   protocol, security and privacy) and protected integration. It builds on DEPOT-0, MARKET-0
   (`CharacterInbox`), HOUSE-OWN-0, CHAT-0, ITEM-MOVE-WIRE-0 and -1 and MAP-WIRE-1, and integrates
-  after them. Owner questions Q1 and Q2 (§14) are open; nothing else waits for them.
+  after them. Owner questions Q1 and Q2 (§14) are open. Q1 gates MAIL-SYSTEM-1; Q2 gates MAIL-1
+  and MAIL-PARCEL-1, which are not allocated until Q2 is answered. The other children do not wait.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to build the mail system now, with full Tibia Global parity
   (2026-09-30); HOUSE-OWN-0 §5's "shown on login until a mail system exists"
@@ -27,9 +28,9 @@
 |---|---|---|---|
 | MAIL-CONTENT-1 | content lane | parcel, letter, label and stamped definitions (§3.1), the stamp rule, the base map's mailboxes as `container_fixture` bindings, the system letter texts | WO-1; MAP-LOAD-1 |
 | MAIL-TEXT-1 | hard, security and privacy review | the item text store and the text write transaction (§4) | ITEM-MOVE-1; MAIL-CONTENT-1 |
-| MAIL-1 | hard, persistence review | mail operations, letter posting, the stamp transform, the mail event, the Inbox mail ceiling and the posting rate (§5, §6, §8) | INBOX-1; ITEM-MOVE-2a; MAIL-TEXT-1; MAIL-CONTENT-1 |
+| MAIL-1 | hard, persistence review | mail operations, letter posting, the stamp transform, the mail event, the Inbox mail ceiling and the posting rate (§5, §6, §8) | owner answer Q2; INBOX-1; ITEM-MOVE-2a; MAIL-TEXT-1; MAIL-CONTENT-1 |
 | MAIL-WIRE-1 | impl, protocol review | capability `MAIL_V1`, the `MAILBOX` destination, the text view and write command, the mail notice (§9) | ITEM-VIEW-1; MAP-WIRE-2; MAIL-1 |
-| MAIL-PARCEL-1 | hard, persistence review | parcel posting as a container tree, parcel trees in the Inbox, the parcel-child out-shape (§7) | MAIL-1; the bags child of BAGS-0 |
+| MAIL-PARCEL-1 | hard, persistence review | parcel posting as a container tree, parcel trees in the Inbox, the parcel-child out-shape (§7) | owner answer Q2; MAIL-1; the bags child of BAGS-0 |
 | MAIL-SYSTEM-1 | hard, persistence review | system letters minted into the Inbox, first the rent warning (§10) | owner answer Q1a; MAIL-1; HOUSE-1 |
 
 BAGS-0 (containers with contents in the main backpack, B3 RL-05 above 0) is not written yet. A
@@ -158,7 +159,8 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   difference (`PARITY_PENDING`) that creates no Ground item.
 - **Allowed recipients.** Any character of the World: oneself, another character of the same
   Account, offline characters, characters on another channel. Mail moves no bank value, so
-  BANK-0 §4.3's same-Account refusal does not apply. Juniors: owner question Q2.
+  BANK-0 §4.3's same-Account refusal does not apply. Juniors: owner question Q2; MAIL-1 and
+  MAIL-PARCEL-1 are not allocated until it is answered, so no junior rule ships unanswered.
 - **Delivery is instant**, in the posting transaction, as in Tibia and Canary:
   1. the letter leaves the sender's backpack entry and becomes a new `CharacterInbox` entry of the
      recipient (TRANSFER);
