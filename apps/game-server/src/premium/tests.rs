@@ -141,6 +141,27 @@ fn responses_outside_the_compatibility_record_fail_closed() {
     assert_eq!(rejected(&[("product_version", 2.into())]), Unsupported);
     let profile = serde_json::json!("oteryn.entitlement.profile_b.v2");
     assert_eq!(rejected(&[("producer_profile", profile)]), Unsupported);
+    // A future version that also adds members is still Unsupported, while it is bound.
+    let v2 = serde_json::json!("oteryn.premium_snapshot.v2");
+    assert_eq!(
+        rejected(&[("schema", v2.clone()), ("tier", 2.into())]),
+        Unsupported
+    );
+    assert_eq!(
+        rejected(&[("product_version", 2.into()), ("tier", 2.into())]),
+        Unsupported
+    );
+    assert_eq!(
+        rejected(&[("schema", v2.clone()), ("nonce", "0".repeat(32).into())]),
+        SnapshotRejection::Malformed
+    );
+    assert_eq!(
+        rejected(&[
+            ("schema", v2),
+            ("account_id", canonical_uuid([0x62; 16]).into())
+        ]),
+        SnapshotRejection::Malformed
+    );
     let long_lease = serde_json::json!("2026-09-30T13:00:01Z");
     assert_eq!(
         rejected(&[("authority_valid_until", long_lease)]),

@@ -11,8 +11,8 @@
 //!   the account conflicting, stickily, even below the high water (§6.2 rule 4);
 //! - a revision below the high water that was never stored is stale;
 //! - a higher authority revision that lowers an entitlement's `lifecycle_revision`, or repeats
-//!   it with other lifecycle facts (product, entitlement, effective window; not the state), is a
-//!   conflict too.
+//!   it with other lifecycle facts (product, entitlement, effective window, revocation; not a
+//!   time-derived state), is a conflict too.
 //!
 //! Every outcome returns the durable view after the transaction. The caller authorizes benefit
 //! only from that view (fence before authorize, §6.3); this module holds no Premium policy.
@@ -70,12 +70,15 @@ pub struct PremiumEvidence {
 
 impl PremiumEvidence {
     /// The entitlement's lifecycle facts: what may change only with a new `lifecycle_revision`.
-    /// The state is not one of them: NOT_YET_EFFECTIVE -> ACTIVE -> EXPIRED follows from elapsed
-    /// time, which PREMIUM-DELIVERY-0 §4 does not make the producer version, so the state of the
-    /// newer snapshot (by `authority_revision`) wins.
+    /// Of the state only revocation is one (PREMIUM-DELIVERY-0 §4: the revision rises with each
+    /// revocation change). NOT_YET_EFFECTIVE -> ACTIVE -> EXPIRED can follow from elapsed time
+    /// alone, so there the state of the newer snapshot (by `authority_revision`) wins.
     fn lifecycle_fingerprint(&self) -> [u8; 32] {
         let mut hash = Sha256::new();
-        hash.update([FINGERPRINT_VERSION]);
+        hash.update([
+            FINGERPRINT_VERSION,
+            u8::from(self.state == EntitlementState::Revoked),
+        ]);
         for text in [
             &self.product_id,
             self.entitlement_id.as_deref().unwrap_or(""),
@@ -472,13 +475,21 @@ mod tests {
     }
 
     #[test]
-    fn state_is_authority_content_but_not_a_lifecycle_fact() {
+    fn only_revocation_of_the_state_is_a_lifecycle_fact() {
         let base = active();
         for state in [EntitlementState::NotYetEffective, EntitlementState::Expired] {
             let other = PremiumEvidence { state, ..active() };
             assert_eq!(other.lifecycle_fingerprint(), base.lifecycle_fingerprint());
             assert_ne!(other.fingerprint(), base.fingerprint());
         }
+        let revoked = PremiumEvidence {
+            state: EntitlementState::Revoked,
+            ..active()
+        };
+        assert_ne!(
+            revoked.lifecycle_fingerprint(),
+            base.lifecycle_fingerprint()
+        );
         let changes: [fn(&mut PremiumEvidence); 5] = [
             |e| e.product_id.push('x'),
             |e| e.product_version += 1,

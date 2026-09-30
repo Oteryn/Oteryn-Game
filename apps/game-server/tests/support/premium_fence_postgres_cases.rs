@@ -233,6 +233,32 @@ fn premium_time_derived_state_is_not_a_lifecycle_change() -> TestResult {
         assert_eq!(accept(root, &end).await?, ("conflict", 5, Active, true));
         assert_eq!(harness.count("game_premium_evidence").await?, 1);
         Ok(())
+    })?;
+    run("premium_revocation_facts", async |harness, root| {
+        use EntitlementState::Revoked;
+        accept(root, &evidence(5, 1, Active)).await?;
+        assert_eq!(
+            accept(root, &evidence(6, 2, Revoked)).await?,
+            ("accepted", 6, Revoked, false)
+        );
+        // A revocation change needs a new lifecycle revision (PREMIUM-DELIVERY-0 §4): ACTIVE
+        // again under the revoked one does not re-authorize.
+        assert_eq!(
+            accept(root, &evidence(7, 2, Active)).await?,
+            ("conflict", 6, Revoked, true)
+        );
+        assert_eq!(harness.count("game_premium_evidence").await?, 2);
+        Ok(())
+    })?;
+    run("premium_unversioned_revoke", async |_, root| {
+        use EntitlementState::Revoked;
+        accept(root, &evidence(5, 1, Active)).await?;
+        // A revoke under the same lifecycle revision contradicts the ACTIVE one: fail closed.
+        assert_eq!(
+            accept(root, &evidence(6, 1, Revoked)).await?,
+            ("conflict", 5, Active, true)
+        );
+        Ok(())
     })
 }
 

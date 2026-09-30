@@ -25,12 +25,16 @@ pub enum SnapshotRejection {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Wire {
+    #[allow(dead_code)] // required member, bound and classified on the untyped map
     schema: String,
     producer_revision: String,
     producer_profile: String,
+    #[allow(dead_code)] // required member, bound and classified on the untyped map
     nonce: String,
+    #[allow(dead_code)] // required member, bound and classified on the untyped map
     account_id: String,
     product_id: String,
+    #[allow(dead_code)] // required member, bound and classified on the untyped map
     product_version: u64,
     entitlement_id: Option<String>,
     entitlement_state: String,
@@ -53,24 +57,32 @@ pub fn validate(
     if body.len() > MAX_SNAPSHOT_BYTES {
         return Err(Malformed);
     }
-    // Duplicate and unknown members fail the typed parse; the untyped one proves the nullable
-    // `entitlement_id` is present rather than defaulted.
+    // The untyped parse binds the response and classifies its compatibility record before the
+    // strict one, so a future version that also adds members is Unsupported, not Malformed. It
+    // also proves the nullable `entitlement_id` is present rather than defaulted. Duplicate and
+    // unknown members then fail the typed parse.
     let members: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(body).map_err(|_| Malformed)?;
-    let wire: Wire = serde_json::from_slice(body).map_err(|_| Malformed)?;
-    if !members.contains_key("entitlement_id")
-        || nonce.is_empty()
-        || wire.nonce != nonce
-        || wire.account_id != canonical_uuid(account_id)
+    let text = |key: &str| members.get(key).and_then(serde_json::Value::as_str);
+    if nonce.is_empty()
+        || text("nonce") != Some(nonce)
+        || text("account_id") != Some(canonical_uuid(account_id).as_str())
     {
         return Err(Malformed);
     }
-    if wire.schema != SNAPSHOT_SCHEMA
-        || wire.product_id != PRODUCT_ID
-        || wire.product_version != u64::from(PRODUCT_VERSION)
-        || wire.producer_profile != PRODUCER_PROFILE
+    if text("schema") != Some(SNAPSHOT_SCHEMA)
+        || text("product_id") != Some(PRODUCT_ID)
+        || members
+            .get("product_version")
+            .and_then(serde_json::Value::as_u64)
+            != Some(u64::from(PRODUCT_VERSION))
+        || text("producer_profile") != Some(PRODUCER_PROFILE)
     {
         return Err(Unsupported);
+    }
+    let wire: Wire = serde_json::from_slice(body).map_err(|_| Malformed)?;
+    if !members.contains_key("entitlement_id") {
+        return Err(Malformed);
     }
     let state = match wire.entitlement_state.as_str() {
         "ACTIVE" => EntitlementState::Active,
