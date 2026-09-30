@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-spell-present-0
-pr: "the PR named in the #162 FREEZE_SHA entry"
+pr: 1406
 base_sha: a6a054e6
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -95,12 +95,21 @@ determinism review.
   liveness ack. Validators PASS.
 - Codex round 4 (#1406, 0 P1, 1 P2): §10 the first-ack corrective delta repeats every pre-ack entry,
   including already expired ones, so early-expiring cooldowns are corrected too. Validators PASS.
+- Codex round 5 (final batched round) (#1406, 0 P1, 2 P2):
+  - 4149450888 (P2, first-ack correction duplicates): fixed. §10 the corrective delta keeps only
+    the latest value per `{kind, id}`, an expired value only as a tombstone when no newer value
+    exists; every snapshot and delta holds at most one entry per key (a repeated key fails
+    closed), so `SPELLPRES0-RL-04` holds.
+  - 4149450899 (P2, console lines need names): fixed by declared deferral. §11 the client writes
+    only console lines that name no other actor; lines naming another actor and the spell words'
+    console line wait for the name contract (§6, §17, PRESENT-CLIENT-1 row); floating numbers and
+    words above the caster still show. Validators PASS.
 - Owner answer applied (2026-09-30, #162): P1a, the 15.30 sound files are included (§12, the
   PRESENT-CONTENT-1 and PRESENT-CLIENT-1 brief rows, §3 sound id check). Validators re-run PASS.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1406. Merge commit/result: its squash merge.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

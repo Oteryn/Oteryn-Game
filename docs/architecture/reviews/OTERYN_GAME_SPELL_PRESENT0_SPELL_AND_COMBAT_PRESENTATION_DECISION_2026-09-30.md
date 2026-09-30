@@ -29,7 +29,7 @@
 | PRESENT-WIRE-1 | impl, protocol review | capability `PRESENTATION_V1`, domains `WORLD_PRESENTATION` and `ACTOR_COOLDOWNS`, the result `detail`, codecs, bounds and rows (§4, §7, §8, §9) | this decision; VIS-2 |
 | SPELL-PRESENT-1 | spell lane, combat review | server emission for casts: spell words, the refusal smoke, cooldown state, the result `detail` (§6-§8) | PRESENT-WIRE-1; PRESENT-CONTENT-1; SPELL-D4 composition |
 | COMBAT-PRESENT-1 | combat lane, combat and determinism review | emission from the Ability commit: impact, area, projectile and hit effects, damage, heal, mana and experience numbers, block effects, condition ticks, sound cues (§5) | PRESENT-WIRE-1; PRESENT-CONTENT-1; ATTACK-1; COND-1 for ticks |
-| PRESENT-CLIENT-1 | client lane (client owner) | drawing effects and projectiles, floating numbers, orange spell words, the cooldown bar, refusal texts, sound playback (§11, §12) | PRESENT-WIRE-1; PRESENT-CONTENT-1 for sound |
+| PRESENT-CLIENT-1 | client lane (client owner) | drawing effects and projectiles, floating numbers, orange spell words above the caster, the cooldown bar, refusal texts, sound playback, console lines that name no other actor (§11, §12) | PRESENT-WIRE-1; PRESENT-CONTENT-1 for sound |
 
 Later, each with its own decision: parameter spells' words (`exura sio "name"`), rune use
 presentation, blood splashes and other volatile ground items, the analyser windows, durable
@@ -195,7 +195,8 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
 
 - **Words only on success.** A cast whose PRIMARY COMMIT succeeds speaks; a refused cast speaks
   nothing, as in Tibia. The words are the spell's own words from content (never text the player
-  typed), shown in orange above the caster and in the local chat console.
+  typed), shown in orange above the caster. Their local console line names the caster, so it
+  waits for actor names on the wire (§11, §17).
 - **Range.** CHAT-0's `say` range: players on the caster's floor within ±8 × ±6 tiles
   (`SPELLPRES0-RL-06`), whether or not they hold `CHAT_V1`.
 - **Refusal smoke.** A refused cast sends the caster its result (§8) and emits `POFF` at the
@@ -274,12 +275,18 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
   `rtt_ms` in each snapshot and delta beside `server_now_ms`. No new message or probe is added;
   before the first ack of the connection generation `rtt_ms` is 0 and
   the message is marked `rtt_estimated = false`. When that first ack arrives, the server sends one
-  corrective delta that repeats every entry the server sent in a pre-ack message since the
-  baseline snapshot, including entries that have since expired (same `expires_at_ms`; the server
-  keeps that list only until the first ack, bounded by `SPELLPRES0-RL-04`), with the measured
-  `rtt_ms` and `rtt_estimated = true`. The client recomputes each entry under the corrected offset
-  and drops one whose `remaining` is 0, so a cooldown that expired before the first ack is also
-  corrected and a restored cooldown never lingers for the whole delivery delay.
+  corrective delta holding, for each `{kind, id}` the server sent in a pre-ack message since the
+  baseline snapshot, only the latest value it sent for that key (same `expires_at_ms`): a value
+  that has since expired is repeated as a tombstone only when no newer value for that key exists,
+  and a superseded value is never repeated. The server keeps one latest value per key only until
+  the first ack, so the list and the delta stay within `SPELLPRES0-RL-04`. The delta carries the
+  measured `rtt_ms` and `rtt_estimated = true`. The client recomputes each entry under the
+  corrected offset and drops one whose `remaining` is 0, so a cooldown that expired before the
+  first ack is also corrected, a renewed cooldown is never overwritten by its expired value, and a
+  restored cooldown never lingers for the whole delivery delay.
+- **One entry per key.** Every snapshot and delta holds at most one entry per `{kind, id}`; the
+  client applies an entry by replacing the value it holds for that key. A message with a repeated
+  key is malformed and fails closed.
 - **Client countdown.** On each snapshot or delta the client takes the RTT-adjusted sample
   `offset = server_now_ms - (local_receipt_ms - rtt_ms / 2)` from its own monotonic clock,
   crediting half the round trip as delivery delay. A snapshot (a new runtime clock) resets the
@@ -298,10 +305,16 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
 ## 11. Client (PRESENT-CLIENT-1)
 
 - It draws effects and projectiles from `appearances.dat`, floating numbers by colour, orange
-  spell words above the caster and in the local console, the cooldown bar and the refusal texts.
+  spell words above the caster, the cooldown bar and the refusal texts.
 - It honours the source class in its own-and-others effect options.
-- It builds the console line of a `value_text` ("A rat loses 5 hitpoints due to your attack.")
-  from the actor names it knows; names on the wire are not decided here (§17).
+- **Console lines and names.** VIS-2 entries carry no name (MOVE-RL-11 §4.2) and names on the
+  wire are not decided here (§17). In v1 the client writes a console line only when the line names
+  no actor other than the observer ("You lose 5 hitpoints.", "You gained 100 experience
+  points."). Every console line that names another actor (`value_text` with a target or attacker
+  other than the observer, as in "A rat loses 5 hitpoints due to your attack.", and the spell
+  words' console line, the caster's own included) is deferred with the name contract; the
+  floating numbers and the words above the caster still show. The client never derives a name from an appearance, a race or any
+  other field.
 - It never infers damage, legality or cooldowns from events; state comes from the domains.
 - It plays the `sound` events from the committed 15.30 sound files (§12).
 
@@ -370,8 +383,9 @@ included (§12).
   binding table and one content field.
 - **Superseding evidence:** measured batch bytes over budget (§9); an official statement of ranges
   or colours.
-- **Deliberately not decided:** actor names on the wire (VIS-2 has none; the console line waits
-  for it); parameter spell words; rune use; blood splashes and other volatile ground items
+- **Deliberately not decided:** actor names on the wire (VIS-2 has none; every console line that
+  names another actor, and the spell words' console line, wait for it, §11); parameter spell
+  words; rune use; blood splashes and other volatile ground items
   (MAP-WIRE-1 §4); the analyser windows; durable cooldowns (the manual freezes them offline;
   SPELL-D2 keeps them runtime-only); item-use exhaustion (ITEM-USE-0).
 
