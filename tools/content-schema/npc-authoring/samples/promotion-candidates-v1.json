@@ -3834,6 +3834,9 @@
        "key": "oteryn:item.registry.i00020423",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 410
+      },
       "source_item_id": 21198,
       "sub_type": null,
       "unit_price": 430
@@ -11653,6 +11656,10 @@
        "key": "oteryn:item.ammunition.arrow",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 3,
+       "tibiopedia": 2
+      },
       "source_item_id": 3447,
       "sub_type": null,
       "unit_price": 2
@@ -14574,6 +14581,9 @@
        "key": "oteryn:item.registry.i00003057",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 4
+      },
       "source_item_id": 3174,
       "sub_type": null,
       "unit_price": 20
@@ -14646,6 +14656,9 @@
        "key": "oteryn:item.registry.i00003158",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 10
+      },
       "source_item_id": 3277,
       "sub_type": null,
       "unit_price": 9
@@ -14681,6 +14694,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003173",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 30
       },
       "source_item_id": 3294,
       "sub_type": null,
@@ -14862,6 +14878,9 @@
        "key": "oteryn:item.registry.i00003321",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 10
+      },
       "source_item_id": 3457,
       "sub_type": null,
       "unit_price": 9
@@ -14885,6 +14904,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00032813",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 350
       },
       "source_item_id": 35562,
       "sub_type": null,
@@ -15253,6 +15275,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -15264,6 +15290,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -15549,6 +15579,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003057",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 4
       },
       "source_item_id": 3174,
       "sub_type": null,
@@ -20124,6 +20157,10 @@
        "key": "oteryn:item.registry.i00002772",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 3,
+       "tibiopedia": 4
+      },
       "source_item_id": 2875,
       "sub_type": null,
       "unit_price": 3
@@ -20629,6 +20666,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -20640,6 +20681,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -23925,6 +23970,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00008581",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 1500
       },
       "source_item_id": 8774,
       "sub_type": null,
@@ -39035,6 +39083,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -39046,6 +39098,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -40139,6 +40195,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -40150,6 +40210,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -40991,6 +41055,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00007903",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 7500,
+       "tibiopedia": 5000
       },
       "source_item_id": 8093,
       "sub_type": null,
@@ -49560,6 +49628,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -49571,6 +49643,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -55739,6 +55815,9 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -59552,6 +59631,59 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "tibiopedia",
+     "fact": "identity",
+     "pages": {
+      "tibiopedia": {
+       "sha256": "6f668c65e6dcc3b2231aeb80afad5c042457a758dd09745a1c56a834e0306ff9",
+       "url": "https://tibiopedia.pl/npcs/Exhausted_Lion_Knight"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.exhausted_lion_knight",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 0
+   },
+   "name": "Exhausted Lion Knight",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 78,
+     "feet": 57,
+     "head": 0,
+     "legs": 57,
+     "look_type": 1317,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/exhausted_lion_knight",
+     "sha256": "198bbba4be0586f269236c50c1e3a781566f8d03d44f4ece31c5c0e24ade9baf"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -59615,6 +59747,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
       },
       "source_item_id": 3503,
       "sub_type": null,
@@ -68870,6 +69006,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -68881,6 +69021,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -70945,6 +71089,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003168",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 40,
+       "tibiopedia": 335
       },
       "source_item_id": 3289,
       "sub_type": null,
@@ -74657,6 +74805,9 @@
        "key": "oteryn:item.registry.i00024899",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 500
+      },
       "source_item_id": 25737,
       "sub_type": null,
       "unit_price": 800
@@ -74788,6 +74939,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00029180",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 50000
       },
       "source_item_id": 30061,
       "sub_type": null,
@@ -75987,6 +76141,10 @@
        "key": "oteryn:item.registry.i00003347",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 40,
+       "tibiopedia": 30
+      },
       "source_item_id": 3483,
       "sub_type": null,
       "unit_price": 40
@@ -76213,6 +76371,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -76224,6 +76386,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -86035,6 +86201,9 @@
        "key": "oteryn:item.registry.i00031449",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 20
+      },
       "source_item_id": 32477,
       "sub_type": null,
       "unit_price": 40
@@ -86046,6 +86215,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00031450",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 25
       },
       "source_item_id": 32478,
       "sub_type": null,
@@ -86059,6 +86231,9 @@
        "key": "oteryn:item.registry.i00031451",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 20
+      },
       "source_item_id": 32479,
       "sub_type": null,
       "unit_price": 40
@@ -86071,6 +86246,9 @@
        "key": "oteryn:item.registry.i00031452",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 10
+      },
       "source_item_id": 32480,
       "sub_type": null,
       "unit_price": 40
@@ -86082,6 +86260,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00031453",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 100
       },
       "source_item_id": 32481,
       "sub_type": null,
@@ -86143,6 +86324,9 @@
        "key": "oteryn:item.registry.i00031458",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 20
+      },
       "source_item_id": 32486,
       "sub_type": null,
       "unit_price": 40
@@ -86155,6 +86339,9 @@
        "key": "oteryn:item.registry.i00031459",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 25
+      },
       "source_item_id": 32487,
       "sub_type": null,
       "unit_price": 40
@@ -86166,6 +86353,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00031460",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 20
       },
       "source_item_id": 32488,
       "sub_type": null,
@@ -86190,6 +86380,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00031462",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 100
       },
       "source_item_id": 32490,
       "sub_type": null,
@@ -91683,6 +91876,59 @@
   {
    "arbitration": [
     {
+     "chosen": "tibiopedia",
+     "fact": "identity",
+     "pages": {
+      "tibiopedia": {
+       "sha256": "bb4cd718c5ca669ce2e2538913a440dc3566b0501a8084c66f831fe83b04567a",
+       "url": "https://tibiopedia.pl/npcs/Hardened_Lion_Archer"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.hardened_lion_archer",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Hardened Lion Archer",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 2,
+     "body": 78,
+     "feet": 57,
+     "head": 0,
+     "legs": 57,
+     "look_type": 1316,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/hardened_lion_archer",
+     "sha256": "b38e388a7c29fe927d040be6b73d291ff3dacb2fa21080a23f272b72430b85db"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
+  },
+  {
+   "arbitration": [
+    {
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
@@ -93226,6 +93472,9 @@
        "key": "oteryn:item.equipment.steel_shield",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 30
+      },
       "source_item_id": 3409,
       "sub_type": null,
       "unit_price": 80
@@ -93442,6 +93691,9 @@
        "key": "oteryn:item.registry.i00003444",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 4
+      },
       "source_item_id": 3582,
       "sub_type": null,
       "unit_price": 3
@@ -93513,6 +93765,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00007458",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "tibiopedia": 50
       },
       "source_item_id": 7644,
       "sub_type": null,
@@ -93891,6 +94146,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -93902,6 +94161,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -96106,6 +96369,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003456",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 11
       },
       "source_item_id": 3594,
       "sub_type": null,
@@ -104621,6 +104888,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -104632,6 +104903,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -111363,6 +111638,9 @@
        "key": "oteryn:item.registry.i00030535",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 260
+      },
       "source_item_id": 31561,
       "sub_type": null,
       "unit_price": 950
@@ -115535,6 +115813,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -115546,6 +115828,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -115822,6 +116108,9 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003450",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 0
       },
       "source_item_id": 3588,
       "sub_type": null,
@@ -117179,6 +117468,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00002893",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 50,
+       "tibiopedia": 60
       },
       "source_item_id": 3003,
       "sub_type": null,
@@ -120425,6 +120718,10 @@
        "key": "oteryn:item.registry.i00002752",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 20
+      },
       "source_item_id": 2854,
       "sub_type": null,
       "unit_price": 20
@@ -120484,6 +120781,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00002776",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 1,
+       "tibiopedia": 4
       },
       "source_item_id": 2880,
       "sub_type": null,
@@ -120689,6 +120990,10 @@
        "key": "oteryn:item.registry.i00003317",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 25,
+       "tibiopedia": 50
+      },
       "source_item_id": 3453,
       "sub_type": null,
       "unit_price": 50
@@ -120748,6 +121053,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003321",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 20,
+       "tibiopedia": 50
       },
       "source_item_id": 3457,
       "sub_type": null,
@@ -130100,6 +130409,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -130111,6 +130424,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -131948,6 +132265,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -131959,6 +132280,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -134842,6 +135167,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -134853,6 +135182,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -141619,6 +141952,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -141630,6 +141967,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -147059,6 +147400,59 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "tibiopedia",
+     "fact": "identity",
+     "pages": {
+      "tibiopedia": {
+       "sha256": "fd9ce0c45599eedb90f4c18b0ee30115686d88b3c3677a164510260dfc19e042",
+       "url": "https://tibiopedia.pl/npcs/Persevering_Lion_Archer"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.persevering_lion_archer",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Persevering Lion Archer",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 2,
+     "body": 78,
+     "feet": 57,
+     "head": 0,
+     "legs": 57,
+     "look_type": 1316,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/persevering_lion_archer",
+     "sha256": "3462c455810de263d241a96adbdf12626e871e168565b1e6dc09f340fa525a82"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -149982,6 +150376,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00007903",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 7500,
+       "tibiopedia": 5000
       },
       "source_item_id": 8093,
       "sub_type": null,
@@ -156638,6 +157036,59 @@
   {
    "arbitration": [
     {
+     "chosen": "tibiopedia",
+     "fact": "identity",
+     "pages": {
+      "tibiopedia": {
+       "sha256": "cd74340286ff43a5ee3d8e6952cdd0ccefb96915cf26149362686ee2012bede1",
+       "url": "https://tibiopedia.pl/npcs/Raubritter_Chastener"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.raubritter_chastener",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Raubritter Chastener",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 19,
+     "feet": 78,
+     "head": 94,
+     "legs": 21,
+     "look_type": 1902,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/raubritter_chastener",
+     "sha256": "ae3204d1ba86dc2470c89372757f23de4448acce246b7f805815cc0a75a26d28"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
+  },
+  {
+   "arbitration": [
+    {
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
@@ -157290,6 +157741,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -157301,6 +157756,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -158161,6 +158620,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -158172,6 +158635,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -171462,6 +171929,75 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "br",
+     "fact": "identity",
+     "pages": {
+      "br": {
+       "pageid": 66099,
+       "revid": 431273
+      },
+      "tibiopedia": {
+       "sha256": "d218de2e841499344808038cc65381981ccd40528f17fb366e29e017a47071d5",
+       "url": "https://tibiopedia.pl/npcs/S'Zallar_M'Andar"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "br",
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.s_zallar_m_andar",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": null,
+    "walk_radius": null
+   },
+   "name": "S'Zallar M'Andar",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 32703,
+      "y": 31592,
+      "z": 7
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 0,
+     "feet": 0,
+     "head": 0,
+     "legs": 0,
+     "look_type": 115,
+     "mount": null
+    },
+    "speech_bubble": 1
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/szallar_mandar",
+     "sha256": "83bd1c9c99a53cabe23ab044fa5cc0c89f66879b1be2a61fd0ae78ea45a52bd4"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -177144,6 +177680,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003168",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 40,
+       "tibiopedia": 335
       },
       "source_item_id": 3289,
       "sub_type": null,
@@ -184097,6 +184637,59 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "tibiopedia",
+     "fact": "identity",
+     "pages": {
+      "tibiopedia": {
+       "sha256": "117ef58452d64c1342862b501d280eba350f16e80378ece6b44f97d3ec6e8c92",
+       "url": "https://tibiopedia.pl/npcs/Stranded_Lion_Knight"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.stranded_lion_knight",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 0
+   },
+   "name": "Stranded Lion Knight",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 78,
+     "feet": 57,
+     "head": 0,
+     "legs": 57,
+     "look_type": 1317,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/stranded_lion_knight",
+     "sha256": "459188bda50e6827144f626490f99ec5e271e79dfaeb0d8fcb2120d02a57b0ef"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -185563,6 +186156,59 @@
     "pageid": 4885,
     "revid": 1178783
    }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "tibiopedia",
+     "fact": "identity",
+     "pages": {
+      "tibiopedia": {
+       "sha256": "67d34b435bd89ffe297612e5da03c0cbee4e0556f28d4d62daa65b38fbefc475",
+       "url": "https://tibiopedia.pl/npcs/Swashbuckling_Lion_Archer"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.swashbuckling_lion_archer",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 3
+   },
+   "name": "Swashbuckling Lion Archer",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 2,
+     "body": 78,
+     "feet": 57,
+     "head": 0,
+     "legs": 57,
+     "look_type": 1316,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/swashbuckling_lion_archer",
+     "sha256": "ceaa9ed7c1071dc42255ddce99390a6f9bbb0b4d1d1ea13805562009151e3479"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
   },
   {
    "arbitration": [],
@@ -195012,6 +195658,9 @@
        "key": "oteryn:item.registry.i00027693",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 9
+      },
       "source_item_id": 28568,
       "sub_type": null,
       "unit_price": 720
@@ -195334,6 +195983,64 @@
     "pageid": 6379,
     "revid": 1114155
    }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "br",
+     "fact": "identity",
+     "pages": {
+      "br": {
+       "pageid": 66457,
+       "revid": 431389
+      },
+      "tibiopedia": {
+       "sha256": "9b6963cca9eba7bd424fadba633f57dde85ee33909ddf837dd61e36b635692fa",
+       "url": "https://tibiopedia.pl/npcs/The_Silent_Oarsman"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "br",
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.the_silent_oarsman",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 0
+   },
+   "name": "The Silent Oarsman",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 0,
+     "feet": 0,
+     "head": 0,
+     "legs": 0,
+     "look_type": 18,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/the_silent_oarsman",
+     "sha256": "f5ef38e86546148b0c2d9c4573d9f35e0f038dfaa8da289f4066a5cc0d6935c7"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
   },
   {
    "arbitration": [],
@@ -211235,6 +211942,10 @@
        "key": "oteryn:item.registry.i00003366",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 10,
+       "tibiopedia": 15
+      },
       "source_item_id": 3503,
       "sub_type": null,
       "unit_price": 15
@@ -211246,6 +211957,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00003368",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 5,
+       "tibiopedia": 8
       },
       "source_item_id": 3505,
       "sub_type": null,
@@ -211557,6 +212272,59 @@
     "pageid": 60971,
     "revid": 852261
    }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "tibiopedia",
+     "fact": "identity",
+     "pages": {
+      "tibiopedia": {
+       "sha256": "abc7d61a1380c796e1e14507c131e9633cb91cc2ac78f9698119c14992567d91",
+       "url": "https://tibiopedia.pl/npcs/Weary_Lion_Knight"
+      }
+     },
+     "rule": "FAN_WIKI_CONFIRMED",
+     "wikis": [
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.weary_lion_knight",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 0
+   },
+   "name": "Weary Lion Knight",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 78,
+     "feet": 57,
+     "head": 0,
+     "legs": 57,
+     "look_type": 1317,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/weary_lion_knight",
+     "sha256": "c628a7626a4e7dc08eb359c2ac3e0505498aa4c414a5abfbdb894ed1bade947d"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": null
   },
   {
    "arbitration": [],
@@ -225197,6 +225965,9 @@
        "key": "oteryn:item.registry.i00031566",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 250
+      },
       "source_item_id": 32596,
       "sub_type": null,
       "unit_price": 310000
@@ -227740,6 +228511,10 @@
        "family": "Item",
        "key": "oteryn:item.registry.i00036879",
        "revision": "definition-r1"
+      },
+      "parity_pending": {
+       "fandom": 7500,
+       "tibiopedia": 95000
       },
       "source_item_id": 48256,
       "sub_type": null,
@@ -234192,6 +234967,10 @@
        "key": "oteryn:item.registry.i00002780",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "fandom": 3,
+       "tibiopedia": 2
+      },
       "source_item_id": 2884,
       "sub_type": null,
       "unit_price": 2
@@ -235068,7 +235847,8 @@
   "D11",
   "D12",
   "D13",
-  "D14"
+  "D14",
+  "D15"
  ],
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "held": [
@@ -235251,78 +236031,6 @@
    }
   },
   {
-   "detail": null,
-   "name": "Exhausted Lion Knight",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/exhausted_lion_knight"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Hardened Lion Archer",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/hardened_lion_archer"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Persevering Lion Archer",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/persevering_lion_archer"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Raubritter Chastener",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/raubritter_chastener"
-   }
-  },
-  {
-   "detail": null,
-   "name": "S'Zallar M'Andar",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/szallar_mandar"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Stranded Lion Knight",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/stranded_lion_knight"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Swashbuckling Lion Archer",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/swashbuckling_lion_archer"
-   }
-  },
-  {
-   "detail": null,
-   "name": "The Silent Oarsman",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/the_silent_oarsman"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Weary Lion Knight",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/weary_lion_knight"
-   }
-  },
-  {
    "detail": "placeholder outfit in the summer-update source",
    "name": "Dhira",
    "reason": "SUPPLEMENT_HELD",
@@ -235495,8 +236203,8 @@
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
  "tibiopedia_facts_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
  "totals": {
-  "arbitrated_facts": 1432,
-  "candidates": 1095,
+  "arbitrated_facts": 1441,
+  "candidates": 1104,
   "held:DEFINITION_CONFLICT": 9,
   "held:EMPTY_SLUG": 1,
   "held:KEY_COLLISION": 2,
@@ -235504,7 +236212,6 @@
   "held:OWNER_REJECTED": 2,
   "held:PLACEMENT_CONFLICT_NO_WIKI_POSITION": 1,
   "held:REMOVED_FROM_GAME": 5,
-  "held:SINGLE_SOURCE_NOT_ON_WIKI": 9,
   "held:SUPPLEMENT_HELD": 13,
   "held:UNPLACED": 7,
   "left_out_offers": 219,
