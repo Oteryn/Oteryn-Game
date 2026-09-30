@@ -31,7 +31,7 @@
 | RUNE-CAST-1 | spell lane, combat review | rune resolution, the frozen cast and its application through the ability pipeline; the 18 direct runes of §9 (§6, §8) | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1 |
 | RUNE-CONJ-1 | hard, persistence, combat and protocol review | the `ConjureCause` BURN and MINT with the receipt-recorded mana and soul debit, the holds, two cast dispositions under `RUNE_USE_V1` (§10) | RUNE-1; the instant cast composition (SPELL-D4) |
 | FIELD-1 | hard (combat), combat review | the runtime field overlay, `create_item`, decay, step-in conditions, blocking walls (§11) | COND-1; RUNE-CAST-1 |
-| FIELD-WIRE-1 | impl, protocol review | field entities in VIS-2 (§11.4) | VIS-2; FIELD-1 |
+| FIELD-WIRE-1 | impl, protocol review | capability `WORLD_SPATIAL_FIELDS`, the `FIELD` kind in a new `world_spatial_v1` schema revision (§11.4) | VIS-2; FIELD-1 |
 
 Later, each with its own decision: runes against players (PARTY-PVP-0, which also owns the 10 s
 login rule and the PZ block), the six native-behaviour runes of §9, conjuring ammunition and food
@@ -192,6 +192,12 @@ The DUR-03 burn commits (§5). A known abort releases every hold: nothing was pa
   not checked again: the rune left at PREPARE. A dead or vanished target is not hit.
 - **A position** takes the area at the frozen position. Creatures are those on its tiles now.
   Object creation re-checks each tile (§11).
+- **Protection-zone filter at application (`RUNEUSE0-C3`).** For an aggressive rune, every tile
+  of the frozen area that is in a protection zone is dropped before its creatures are taken, and a
+  creature target that now stands on a protection-zone tile is not hit. ATTACK-0 (a target in a
+  protection zone is refused) thus holds for every victim, not only for the target or centre tile
+  checked at PREPARE (§8 step 5). If no eligible creature or tile remains, the cast is still cast
+  (below). Non-aggressive runes are not filtered.
 - **A cast that lands on nobody is still cast.** The unit is spent and the cooldowns stand. This
   is the one declared difference from Global. Tibia checks and applies at one instant; here the
   application follows by the commit time (`RUNEUSE0-RL-03`). Architect ruling R1 (§15).
@@ -348,6 +354,19 @@ Fields travel as VIS-2 entities in domain 1, after actors in the D222 order, wit
 index and a position. Creation and expiry emit deltas. FIELD-WIRE-1 amends the MOVE-RL-11 decision
 at allocation.
 
+- **Capability gate (`RUNEUSE0-C4`).** `world_spatial_v1.proto` closes `EntityKind` at `PLAYER`,
+  `CREATURE`, `CORPSE` and `GROUND_ITEM`, and a VIS-2 client fails closed on an unknown enum value
+  (domain 1, snapshot and delta type 2, capability 6 `WORLD_SPATIAL_ENTITIES`). Fields therefore
+  are sent only to a session that negotiated a new optional capability `WORLD_SPATIAL_FIELDS`,
+  which requires capability 6; its number is reserved on #162 at allocation. FIELD-WIRE-1 adds
+  `ENTITY_KIND_FIELD` in a new schema revision of domain 1 (snapshot and delta type 3, the type 2
+  messages with the field kind, its field rules and the entity cap unchanged), and a session with
+  the capability receives type 3 in place of type 2.
+- **Without the capability** fields are omitted: no field entity, no type 3 payload, and the type
+  2 stream is exactly as today. The field still acts in the simulation (§11.3); its effect on a
+  creature is presented only through the existing condition and damage presentation. Architect
+  ruling R3 (§15).
+
 ## 12. Rows (registered by each child before implementation)
 
 | Row | Value |
@@ -384,7 +403,7 @@ at allocation.
 **Global parity kept:** single-use runes in stacks of 100; conjuring one blank rune into several;
 level and magic level gates; use-with on a creature, a tile or self, from a hotkey without opening
 a container; shared cooldown groups with instant spells; offensive runes refused in a protection
-zone; fields that burn, poison, shock, block and decay; healing runes on self and own summons.
+zone, and harming no creature standing in one (`RUNEUSE0-C3`); fields that burn, poison, shock, block and decay; healing runes on self and own summons.
 
 **Declared differences:**
 - A rune whose target dies or leaves within the commit time is spent (§6.3, R1).
@@ -392,6 +411,7 @@ zone; fields that burn, poison, shock, block and decay; healing runes on self an
 - Hotkeys search only main backpack direct entries (`PARITY_PENDING`, as ITEM-USE-0).
 - Conjuring with no room, field on a PZ tile, and one field per tile are `PARITY_PENDING`.
 - Fields vanish at a channel restart, not only at server save.
+- A session without `WORLD_SPATIAL_FIELDS` does not see fields (§11.4, R3).
 
 ## 15. Architect ruling (owner rule 5905825574)
 
@@ -413,11 +433,18 @@ the MINT, and the holds settle or release only from that durable outcome, never 
 Rejected: finalizing holds on the ambiguity bound (charges for an aborted mint) and releasing
 them on the bound (a free mint). DUR-02 durable vitals move the debit into the same transaction.
 
+**R3. Fields for a client without the field schema.** The current VIS-2 schema has no field kind,
+and a client rejects an unknown kind. a) Omit fields for that session (recommended: the accepted
+type 2 stream is unchanged and nothing undecodable is sent); b) present them through a magic
+effect: no such presentation contract exists yet, so it would be a new wire surface in any case;
+c) send them as `GROUND_ITEM`: misrepresents a non-item as value (D38). **Ruled a)**, gated by
+`RUNEUSE0-C4` (§11.4).
+
 ## 16. Decision test
 
 - **Must decide now:** YES. The owner asked for runes now; the spell cast contract lists rune use
   and conjure as not castable, and ITEM-USE-0 deferred them here.
-- **Minimum sufficient:** one capability, one field-4 arm, four dispositions, one `ItemUseCause`
+- **Minimum sufficient:** two capabilities (`RUNE_USE_V1`, `WORLD_SPATIAL_FIELDS`), one field-4 arm, four dispositions, one `ItemUseCause`
   variant, one conjure cause, one rune slot, a runtime field overlay; the ability pipeline, the
   spell core and ITEM-USE-0's handles and hotkey form are reused.
 - **Superseding evidence:** official Global values for reach, fields per tile and
@@ -429,7 +456,7 @@ them on the bound (a free mint). DUR-02 durable vitals move the debit into the s
 
 1. **Contract amendments:** DUR-03 §15, §39.1 and §39.3; ITEM-USE-0 §4.2; the spell cast
    contract §5 and §6; the spell authoring schema §6. Each is written "pending on acceptance of
-   RUNE-USE-0". The capability number is reserved at allocation.
+   RUNE-USE-0". The capability numbers are reserved at allocation.
 2. **Serialization:** one rune slot per actor; pending cooldowns and holds; reserved S; one
    item-only DUR-03 transaction before the effect; rule 2 fence; replay by CommandRef; conjure
    holds settle or release only from the durable receipt (`RUNEUSE0-C2`).
@@ -437,6 +464,8 @@ them on the bound (a free mint). DUR-02 durable vitals move the debit into the s
 4. **Typed references:** handles, definition indexes, D85 identities, SPELL-D7 positions,
    `ProductionKey` in audit.
 5. **Wire:** §4, capability `RUNE_USE_V1`; the two conjure dispositions under it, else
-   `NOT_AVAILABLE` (§10, `RUNEUSE0-C1`); §11.4 at FIELD-WIRE-1.
+   `NOT_AVAILABLE` (§10, `RUNEUSE0-C1`); §11.4 at FIELD-WIRE-1, field entities only under
+   `WORLD_SPATIAL_FIELDS`, else omitted (`RUNEUSE0-C4`). Both capability numbers are reserved at
+   allocation.
 6. **Split work:** one unit per use; one reagent unit and one result stack per conjure; at most
    25 fields per cast.
