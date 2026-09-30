@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-player-trade-0
-pr: "exact PR in the #162 FREEZE_SHA entry"
+pr: "#1365"
 base_sha: 5dcfb724
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -24,7 +24,9 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20260930-player-trade0.md
 public_contracts:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
-depends_on: []
+depends_on:
+  - "#1344 ITEM-MOVE-WIRE-0 (merged)"
+  - "#1354 ITEM-MOVE-WIRE-1 (merged)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -85,6 +87,11 @@ review.
   non-pickupable, room before removal, no merge), the container-slot exclusion, a broad cancel rule,
   wire refusals and the full lock order. Its two owner questions were Global-parity applications
   and are recorded as architect rulings.
+- Review of `4c83b475` (#1365 5913700136: 1 MEDIUM, 3 LOW; and 5912908965's conditions), all answered
+  in one push: the `TRANSFERRING` reservations are in-memory with crash safety from the swap's own
+  checks and occurrence replay; logout, death or kick during `TRANSFERRING`; the partner's offer
+  shown only after the counter-offer (Canary parity); a 120 s trade timeout; `depends_on` #1344 and
+  #1354; the owner direction recorded on #162 5914137757.
 - Amendments follow the control-plane rule (#162 5912405163): pending on acceptance.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 

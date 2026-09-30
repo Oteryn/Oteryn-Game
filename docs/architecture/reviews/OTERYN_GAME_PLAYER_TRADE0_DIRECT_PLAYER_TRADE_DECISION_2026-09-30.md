@@ -5,7 +5,8 @@
   persistence and security) and protected integration. It extends ITEM-MOVE-WIRE-0 (PR #1344) and
   ITEM-MOVE-WIRE-1 (PR #1354) and integrates after them.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
-- Answers: the owner's direction to start player trade (2026-09-30, "handel między graczami")
+- Answers: the owner's direction to start player trade (2026-09-30, "handel między graczami",
+  verbatim record on #162 5914137757)
 - Builds on: the scope matrix row "Direct player trade: ChannelRuntime + durable transaction,
   Channel, same channel only"; DUR-03 §7, §11.3, §28, §31, §34 and §39; GAME-ITEM-01 §4.7; B3
   (D80-D83); ITEM-MOVE-WIRE-0 and -1; the composition decision §3 rules 2-4; FND-02 §13.3 and §15;
@@ -80,8 +81,9 @@ How do two players exchange items safely?
   - `cancel`.
 - **`trade_id`.** The server issues one when the second offer exists. Any change cancels the
   trade, so a new trade has a new id; simultaneous accepts of the same id both count.
-- **Domain `PLAYER_TRADE`**, on both sessions: the trade id, partner, both offers (definition,
-  count, sub-type), each side's acceptance, the state (`OFFERED`, `READY`, `TRANSFERRING`, `CLOSED`)
+- **Domain `PLAYER_TRADE`**, on both sessions: the trade id, partner, the session's own offer, and
+  the partner's offer only once the session has made its own (Canary parity: a partner sees the
+  offer after its counter-offer; `game.cpp:5967-5976`), each offer as (definition, count, sub-type), each side's acceptance, the state (`OFFERED`, `READY`, `TRANSFERRING`, `CLOSED`)
   and, when closed, the reason (`COMPLETED`, `CANCELLED`, `NO_ROOM`, `STALE`, `REJECTED`).
   Runtime-local; revision monotonic per GameSession (FND-02 §15).
 - **Results** (at most 4 bytes): `OFFERED`, `ACCEPTED` (waiting for the partner), `COMPLETED`,
@@ -91,7 +93,12 @@ How do two players exchange items safely?
 ## 4. Trade session (TRADE-1, runtime)
 
 - **Owner.** The channel runtime holds at most one trade per actor, both actors on the same
-  channel. Nothing durable is written before completion.
+  channel. Nothing durable is written before the swap: the `TRANSFERRING` reservations below are
+  in-memory runtime reservations, not DUR-03 reservation rows. After a crash they are gone; safety
+  then rests on the swap transaction itself (§5 re-checks both sources and both free entries under
+  lock) and on replaying the trade occurrence, which returns the first outcome.
+- **Timeout.** A trade in `OFFERED` or `READY` closes as `CANCELLED` after `TRADE0-RL-02` (120 s)
+  without a new offer or accept, so no player can hold another in `PARTNER_BUSY`.
 - **Start.** The partner is another player, visible to the session, within 2 tiles on the same
   floor with a sight line, not oneself, and with no open trade (`PARITY_PENDING`).
 - **Offers.** One whole item per side from the offerer's main backpack direct entries (equipped
@@ -112,6 +119,10 @@ How do two players exchange items safely?
   would touch the reserved items or entries are refused, a channel transfer is delayed, a cancel is
   refused, and a reconnect keeps the trade (DUR-03 §31). Only the database outcome closes it; an
   ambiguous outcome keeps the reservations until reconciliation.
+- **Logout, death or kick during `TRANSFERRING`.** The swap already holds both fences, taken at the
+  accept, so it commits or aborts on its own. A logout or kick of either side waits for the outcome
+  before the session closes (bounded by the transaction timeout); a death is processed after the
+  outcome, serialized on `character_root`. Either way the other side sees the outcome.
 
 ## 5. Swap (TRADE-1, persistence)
 
@@ -161,6 +172,7 @@ How do two players exchange items safely?
 | `DUR03-RL-06-TRADE` participants / effect work units | 2 / 6 |
 | `DUR03-RL-07-TRADE` envelope / payload | measured for the two-line event within the ANL ceilings; a value above 9,216 / 7,936 bytes returns the shape for a new decision |
 | `TRADE0-RL-01` trade commands per actor per second | measured and registered by TRADE-WIRE-1 |
+| `TRADE0-RL-02` idle trade timeout | 120 s in `OFFERED` or `READY` |
 
 ## 7. Other amendments
 
