@@ -97,7 +97,7 @@ const EVENT_SCHEMA_REVISION: i64 = mint_audit::EVENT_SCHEMA_REVISION as i64;
 pub const ACHIEVEMENT_SOURCE_KIND: &str = "oteryn:reward-claim";
 
 /// The chest's achievement and the caller's lookup of its key in the world's
-/// current catalogue (no runtime catalogue loader exists).
+/// current catalogue (`crate::achievement_catalogue`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RewardClaimAchievement {
     pub key: String,
