@@ -96,7 +96,7 @@ built, eight things must be fixed:
 | 6a | The new families are the only source for the full world. Draft areas load behind a testing and preproduction flag and block release. `native_entry_room` stays a fixture. There is no dual loading. |
 | 7a | A new base activates only at a planned world reset. |
 | 8a | The budgets of §4.8 are accepted as initial gates, and the first compact-model measurement confirms them. |
-| House tiles (a) | Until a house item custody family exists, Ground items on house tiles are retired at the reset like any other Ground item. The house custody family is a follow-up decision under the accepted EXP-HOUSES-01 (HOUSE-CUSTODY-0, §5). |
+| House tiles (a) | Ground items on the tiles of a house without an owner are retired at the reset like any other Ground item. Items in an owned house use the `HouseInterior` family decided by HOUSE-CUSTODY-0 (§4.4, §5). |
 
 ## 3. Facts
 
@@ -208,9 +208,12 @@ built, eight things must be fixed:
   - The tiles of an owned house are served by its World-scoped interior runtime, not by the
     channel overlay. Items there use the `HouseInterior` family and are never retired by a
     reset.
+  - Map-authored items on house tiles are never pickupable, so a reset cannot respawn them into
+    an owned house. Before any house can become owned, the ownership child decides what happens
+    to live Ground items on its tiles in each channel (HOUSE-CUSTODY-0 §3.5).
 - **Picking up a map-authored item** (DUR-03 §39.3 amendment).
-  - **Eligible items.** A top-level entry that is pickupable and has no action, unique, door,
-    depot or teleport binding and no contents. Everything else stays in place.
+  - **Eligible items.** A top-level entry that is pickupable, is not on a house tile, and has no
+    action, unique, door, depot or teleport binding and no contents. Everything else stays in place.
   - **Pickup.** A MINT into Ground at the item's current tile, of the whole origin entry, followed
     by the ordinary Ground-to-inventory TRANSFER.
   - **Cause.** `MapItemMaterialization {world, channel, base bundle digest, placement_key, reset
@@ -320,9 +323,9 @@ built, eight things must be fixed:
 | MAP-SPIKE-0 | Benchmark and evidence | this ADR |
 | MAP-BUNDLE-1 | Compiler, format doc, key resolution, drafts, limits | this ADR; #1160 and #1170 merged; A12 item keys |
 | MAP-LOAD-1 | Reader, compact model, budgets | MAP-BUNDLE-1 |
-| MAP-OVERLAY-1 | Overlay, Ground rebuild, map-item MINT, reset retirement | MAP-LOAD-1; DUR-03 §39.3 amendment accepted |
+| MAP-OVERLAY-1 | Overlay, Ground rebuild, map-item MINT, reset retirement with the HOUSE-CUSTODY-0 preflight and recheck | MAP-LOAD-1; DUR-03 §39.3 amendment accepted |
 | MAP-CUTOVER-1 | Boot from the bundle through a first reset, fixture world, draft gate | MAP-LOAD-1; MAP-OVERLAY-1 |
-| HOUSE-CUSTODY-0 | Decided in this PR (`reviews/OTERYN_GAME_HOUSE_CUSTODY0_HOUSE_ITEM_CUSTODY_DECISION_2026-09-30.md`); implementation child HOUSE-CUSTODY-1 | this ADR |
+| HOUSE-CUSTODY-0 | Decided in this PR (`reviews/OTERYN_GAME_HOUSE_CUSTODY0_HOUSE_ITEM_CUSTODY_DECISION_2026-09-30.md`); implementation child HOUSE-CUSTODY-1 (storage only). MAP-OVERLAY-1 builds its reset preflight and recheck. | none |
 | MAP-WIRE-1 | Item overlay and Ground state domain, viewport snapshots. Needed before a playable release, because clients cannot see pickups or hidden origins without it; may run in parallel. | owner acceptance |
 
 ## 6. Rejected options
@@ -353,7 +356,7 @@ built, eight things must be fixed:
   - Reference evidence that ground items survive a server save, which would change §4.4
     retirement into restoration, a policy change only;
   - a product need for a persistent world.
-- **Deliberately not decided:** the reset schedule, house item persistence, depots, the client
+- **Deliberately not decided:** the reset schedule, depots, the client
   bundle, instances, and the bundle byte layout (MAP-BUNDLE-1 format document).
 
 ## 8. Before-freeze checklist

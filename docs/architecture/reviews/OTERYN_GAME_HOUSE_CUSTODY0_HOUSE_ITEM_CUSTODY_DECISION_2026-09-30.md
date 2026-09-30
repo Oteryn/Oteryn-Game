@@ -6,10 +6,10 @@
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the follow-up named by ADR-0021 (house tiles, owner answer a) and the owner's direct
   request of 2026-09-30 to decide it now and have a worker implement it
-- Builds on: EXP-HOUSES-01 (accepted) §4.1, §4.3, §5, §14, §19 and §20; DUR-03 §5 and §39.3;
+- Builds on: EXP-HOUSES-01 (accepted) §4.1, §5, §14, §15, §16 and §19; DUR-03 §5 and §39.3;
   ADR-0021 §4.4 and §4.7
-- Amends: DUR-03 §5.2 (the `HouseInterior` family, in this PR); ADR-0021 §4.4 (house tiles, in
-  this PR)
+- Amends: DUR-03 §5.2 (the `HouseInterior` family) and §39.3 (reset preflight); ADR-0021 §4.4,
+  the house-tiles owner-answer row and §7 (all in this PR)
 - Runtime, migration and production authority: NONE. HOUSE-CUSTODY-1 needs its own #162
   allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -18,28 +18,25 @@
 
 - **HOUSE-CUSTODY-1** (durability lane, `oteryn-hard-worker`, persistence review). Owned paths:
   - the next free migration;
-  - `apps/game-server/src/durability/**` (house custody module);
   - its `*_postgres` tests.
-- It builds:
-  - the `HouseInterior` location table, exclusive with every other location family (§3.1);
-  - the `HousingReclaimProvenance` table, written in the same transaction as every placement
-    (§3.2);
-  - a runtime scope kind `House {world, house}` in the scope-assignment model, with the same
-    generation fence as a channel scope (§3.3);
-  - the one-item TRANSFER shapes in and out of `HouseInterior` (§3.4). They stay closed to
-    players until a house has an owner (§3.5).
-- It also:
-  - makes `WorldReset` retirement skip `HouseInterior` (§3.6);
-  - extends `verify_character_integrity` if it reads item locations;
-  - grants and revokes as `0017` does.
-- **Tests:**
-  - an item has exactly one location across all families;
-  - a placement without provenance fails;
-  - a stale house generation writes nothing;
-  - a reset leaves `HouseInterior` untouched;
-  - the player writer refuses while the house has no owner;
-  - replay and conflict.
-- Binding: §3 of this document; EXP-HOUSES-01 §14 and §19; DUR-03 §5.2 (as amended).
+- It builds one migration, storage only:
+  - the `HouseInterior` location table (§3.1): revision-free `HouseId`, an ordinal unique per
+    `(world, house, position)`;
+  - the `HousingReclaimProvenance` table (§3.2): primary key `item_instance_id`, 1:1 with a live
+    `HouseInterior` row (deferred), FK to `character_roots` with `ON DELETE RESTRICT`;
+  - one deferred item-level exclusivity guard on every location table (§3.3);
+  - **no runtime grants** on the house tables (§3.5).
+- It does not build a scope kind, a runtime writer, transfer shapes or reset code. Those belong to
+  the house interior runtime child and to MAP-OVERLAY-1 (§4).
+- **Tests** (`_postgres`):
+  - a live item has exactly one row across all location tables, and a retired item has none;
+  - a `HouseInterior` row without its provenance, or a provenance without its row, fails at
+    commit;
+  - a second provenance for the same item fails;
+  - two items with the same `(world, house, position, ordinal)` fail;
+  - the runtime role cannot read or write the house tables;
+  - deleting a `character_roots` row referenced by a provenance fails.
+- Binding: §3 of this document; EXP-HOUSES-01 §14 and §15; DUR-03 §5.2 (as amended).
 
 ## 1. Question
 
@@ -54,17 +51,27 @@ decision exists (owner answer, house tiles a).
 - EXP-HOUSES-01 (accepted):
   - §4.1: a house belongs to one World and not to a Channel. Its durable item and container state
     exists once across all Channels.
-  - §5.1 and §5.4: one authoritative interior runtime per active house, fenced by generation.
-    Instance primitives may be reused, but `HouseId` stays the identity.
-  - §14: every item entering housing gets `HousingReclaimProvenance` in the same transaction,
-    naming the placing Character or a typed domain subject. Without one, the placement fails
-    closed.
+  - §5.1 and §5.2: one authoritative interior runtime per active house, fenced by generation.
+    Instance primitives may be reused, but `HouseId` stays the stable identity.
+  - §5.3: entry into a house is an explicit handoff from the origin Channel.
+  - §14.1 to §14.3: every item entering housing gets `HousingReclaimProvenance` in the same
+    transaction. The Character subject comes only from the placer's own inventory, equipment or
+    container custody. Without a subject, the placement fails closed. Old provenance is retired
+    only when the next transfer commits.
+  - §15: a `CharacterId` referenced by a provenance is part of the deletion and World-transfer
+    guard.
   - §19: one authoritative location, no copy per Channel, and no destruction of forgotten items.
 - DUR-03 §5.2: house custody must be "a separately typed/versioned family with named owner and
   explicit WorldId/scope semantics". §5.3 forbids generic custody.
 - ADR-0001 §7: house ownership is World-level state.
-- The House content family (#1285, #1298) holds house keys, tiles and doors. No ownership,
-  rent or ACL runtime exists yet.
+- Each existing DUR-03 shape guard counts a fixed list of location tables (`0011`, `0013`,
+  `0014`). No guard sees a new table.
+- `game_item_container_entries` requires a `character_id` and a `container_slots` parent.
+
+**DERIVED / CANDIDATE**
+
+- The House content family (#1285, #1298) has a CANDIDATE schema and an unpopulated
+  `content/houses/`. Its source data lists 2,534 wall tiles shared by two houses.
 
 **UNKNOWN**
 
@@ -79,98 +86,138 @@ decision exists (owner answer, house tiles a).
 
   ```text
   HouseInterior {
-    world_id: WorldId,
-    house_ref: {family: House, key, revision},
+    house_id: HouseId {world_id, house_key},
     spatial_position: native WorldTilePosition,
-    stack_ordinal: u8
+    stack_ordinal: NUMERIC(20)
   }
   ```
 
-- It is World-scoped, with no `ChannelId`. The position must be one of the house's tiles in the
-  active content revision.
-- Nested items use the existing `Container` family under a `HouseInterior` root.
-- An item is in exactly one location family at a time, enforced across all location tables.
-- The owner is the Game housing domain (EXP-HOUSES-01 §22.1).
+- `HouseId` is revision-free: the World and the House content key. A content revision bump does
+  not change it.
+- It is World-scoped, with no `ChannelId`. The owner is the Game housing domain
+  (EXP-HOUSES-01 §22.1).
+- **Tile of the house.** The position must be a tile assigned to exactly this house, and to no
+  other house, in the active bundle. Shared wall tiles are never house tiles. The check runs at
+  every write and at every rebuild. A rebuild fails closed when a row's house or tile is missing
+  from the active bundle.
+- **Ordinal.** As in `0011`: taken as the highest plus one under the house lock, unique per
+  `(world, house, position)`, never renumbered.
+- **No contents.** Only items without contents may enter in this slice. Containers under a house
+  root need a later decision.
+- **Exclusivity.** A live item is in exactly one location family (§3.3).
 
 ### 3.2 Reclaim provenance
 
-- Every transaction that makes an item's location `HouseInterior`, or a container under it, also
-  writes `HousingReclaimProvenance {world, house_ref, item, reclaim_subject, placement
-  transaction, revision}` (EXP-HOUSES-01 §14.2).
-- In the first slice the subject is the placing `CharacterId`. A typed-domain subject needs its
-  own later decision.
-- A placement that cannot name a subject fails closed. The provenance is not a location and
-  grants no authority.
+- Every transaction that makes an item's location `HouseInterior` also writes
+  `HousingReclaimProvenance {house_id, item_instance_id, reclaim_subject, placement_transaction_id,
+  provenance_revision}` (EXP-HOUSES-01 §14.2).
+- In the first slice the subject is the placing `CharacterId`, taken from the placer's own
+  `CharacterInventory` or `CharacterEquipment` source (§14.3). A typed-domain subject needs its
+  own later decision. A placement without a subject fails closed.
+- At most one live provenance exists per item. It is deleted in the same transaction in which the
+  item leaves `HouseInterior`. The transfer receipt is the audit record. A same-house tile move
+  keeps it and bumps the revision.
+- The referenced `CharacterId` is guarded under EXP-HOUSES-01 §15: character deletion or World
+  transfer cannot proceed while a provenance names the Character, until that workflow settles it.
+- The provenance is not a location and grants no authority.
 
-### 3.3 Writer and fence
+### 3.3 Exclusivity guard
 
-- House item writes are fenced by a runtime scope of kind `House {world, house}`. It uses the
-  existing scope-assignment writer and generation model, next to the `(world, channel)` kind.
-- One live generation per house matches the one interior runtime (EXP-HOUSES-01 §5.1). A stale
-  generation writes nothing.
-- Character-side locks (`character_root`) apply as for other TRANSFERs.
+- One deferred item-level guard covers every location table that exists at its migration:
+  `game_item_ground_locations`, `game_item_container_slots`, `game_item_container_entries`,
+  `game_item_corpse_container_entries` and the new `HouseInterior` table.
+- A live item has exactly one row across them. A retired item has none.
+- Any later location family joins this guard in its own migration.
 
-### 3.4 Transfer shapes
+### 3.4 Writer, fence and transfer shapes (house interior runtime child)
 
-- One-item TRANSFER from `CharacterInventory`, `CharacterEquipment` or Ground to `HouseInterior`,
-  with provenance.
-- One-item TRANSFER from `HouseInterior` to `CharacterInventory`; the provenance is retired in
-  the same transaction.
-- One-item TRANSFER between tiles of the same house; the provenance is kept.
-- Stack merge, split, container moves and cross-house moves follow the existing DUR-03 shapes when
-  admitted. They are not admitted by this decision.
+These are fixed now and built by the house interior runtime child, not by HOUSE-CUSTODY-1.
+
+- **Fence.** One live generation per `HouseId`, matching the one interior runtime
+  (EXP-HOUSES-01 §5.1). It reuses the `Instance` runtime scope bound to `HouseId` (§5.2). That
+  child changes `0003` and `0006`:
+  - a scope kind column and a house column, with `channel_id` nullable;
+  - a tagged `scope_key` CHECK (`\x02` for a house);
+  - `IS DISTINCT FROM` in the immutability guard;
+  - house-scoped grants;
+  - the writer accepting the `Instance` scope;
+  - ADR-0021 reset step 2 filtering by kind.
+  A stale generation writes nothing. Character-side `character_root` locks apply as for other
+  TRANSFERs.
+- **Shapes**, each one item and one transaction with its provenance:
+  - from `CharacterInventory` or `CharacterEquipment` to `HouseInterior`;
+  - from `HouseInterior` to `CharacterInventory`;
+  - between tiles of the same house.
+- Ground is not a source: it has no Character subject (§14.3), and the fence would span a channel
+  runtime and a house runtime, against the explicit entry handoff (§5.3).
+- Stack merge, split, containers and cross-house moves are not admitted by this decision.
 
 ### 3.5 Closed until ownership
 
-- The player-facing writers are admitted only for a house that has an owner and an ACL grant to
-  the acting Character, under EXP-HOUSES-01 §16. Neither exists yet.
-- Until then the family, provenance, fence and shapes exist and are tested with fixtures, but
-  every player command refuses them. House tiles keep ADR-0021 rule a (Ground, retired at reset).
+- Player writers are admitted only for a house that has an owner and an ACL storage grant to the
+  acting Character (EXP-HOUSES-01 §16.3, §16.4).
+- Until the child that opens them, the runtime role has no grant on the house tables. The closure
+  is enforced by the database, not only by Rust.
+- House tiles keep ADR-0021 rule a (Ground, retired at the reset).
+- **Gate for the ownership child.** Before any house can become owned, that child decides what
+  happens to live Ground items on the house's tiles in each channel. Map-authored items on house
+  tiles are never pickupable (ADR-0021 §4.4), so a reset cannot respawn them into an owned house.
 
 ### 3.6 World reset
 
 - `WorldReset` retires only Ground roots and their container entries (DUR-03 §39.3). It never
-  touches `HouseInterior` or containers under it.
-- An owned house's tiles are served by its interior runtime, not by the channel overlay. Items
-  dropped there become `HouseInterior`, not Ground.
-- A new map revision that removes a house tile holding items needs the EXP-HOUSES-01 §14.7
-  content fence and evacuation before activation. The reset refuses to activate while such an
-  item exists.
+  touches `HouseInterior`.
+- **Target check.** Every live `HouseInterior` row's `(house_key, position)` must be a tile of the
+  same house in the target bundle. A removed house, a re-keyed house, a removed tile and a tile
+  moved to another house all fail it.
+- **Preflight.** The check runs before reset step 1. A failure aborts the reset cleanly: no
+  record, no closed admission.
+- **Recheck.** Step 4 repeats the check in its own transaction, under a lock that blocks
+  `HouseInterior` inserts. A failure there leaves the record RETIRING. Only an EXP-HOUSES-01
+  §14.7 evacuation clears it.
+- Until the house runtime exists the table is empty, so the check is trivially true. MAP-OVERLAY-1
+  builds the preflight, the recheck and a test that the reset touches only Ground.
 
 ## 4. Delivery
 
 | Child | Scope | Depends on |
 |---|---|---|
-| HOUSE-CUSTODY-1 | Migration, guards, provenance, house scope kind, transfer shapes (closed to players), reset exemption, tests | this decision; ADR-0021 accepted |
-| House ownership, ACL, interior runtime | EXP-HOUSES-01 children; they open the §3.5 gate | HOUSE-CUSTODY-1 |
+| HOUSE-CUSTODY-1 | One migration: `HouseInterior`, provenance, exclusivity guard, no runtime grants, `_postgres` tests | this decision |
+| MAP-OVERLAY-1 | Reset preflight, step-4 recheck, "reset touches only Ground" test (§3.6) | ADR-0021 accepted |
+| House interior runtime | Scope kind, `0003`/`0006` changes, writer, transfer shapes (§3.4) | HOUSE-CUSTODY-1; EXP-HOUSES-01 runtime decision |
+| House ownership and ACL | Opens §3.5, decides the Ground-on-house-tiles gate | house interior runtime |
 
 ## 5. Rejected options
 
 - **House items as Ground with an exemption flag.** Ground is channel-scoped, while house items
   are World-scoped (EXP-HOUSES-01 §4.1). A flag would create copies per channel.
 - **A generic "domain custody" row.** DUR-03 §5.3 forbids it.
-- **Waiting with the family until ownership exists.** The owner asked for it now, and the reset
-  exemption needs the family to exist.
+- **`house_ref` with a content revision.** A revision bump would orphan every stored item
+  (EXP-HOUSES-01 §5.2).
+- **Building the scope kind and shapes now.** Nothing can reach them before the interior runtime
+  and ownership exist (playable-first). They are fixed here and built with their first caller.
+- **Docs only, no migration.** The owner asked for the worker now. The storage slice is small,
+  and it makes the exclusivity guard cover house rows from the start.
 
 ## 6. Decision test
 
 - **Must decide now:** YES, by owner request. It also fixes the ADR-0021 reset boundary before
   any house can be owned.
-- **Minimum sufficient:** one location family, one provenance record, one scope kind and three
-  transfer shapes, closed to players.
+- **Minimum sufficient:** one table, one provenance table and one guard, with no runtime access.
 - **Superseding evidence:** an EXP-HOUSES-01 runtime decision that needs a different fence, or a
   storage budget that needs capacity rows.
-- **Deliberately not decided:** ownership, ACL, rent, auctions, storage budgets and the
-  interior runtime.
+- **Deliberately not decided:** ownership, ACL, rent, auctions, storage budgets, containers in
+  houses, the Ground-on-house-tiles question and the interior runtime.
 
 ## 7. Before-freeze checklist
 
-1. **Contract amendments:** DUR-03 §5.2 and ADR-0021 §4.4 are amended in this PR.
-2. **Serialization:** one live house-scope generation, plus `character_root` locks.
-3. **Restart:** the durable location and provenance are enough. The interior runtime rebuilds
-   from them.
-4. **Typed references:** `house_ref` is `{family, key, revision}`, and the provenance names its
-   transaction.
+1. **Contract amendments:** DUR-03 §5.2 and §39.3, and ADR-0021 §4.4, the owner-answer row and
+   §7, are amended in this PR.
+2. **Serialization:** the exclusivity guard now. One live house generation plus `character_root`
+   locks later (§3.4).
+3. **Restart:** the durable location and provenance are enough. A rebuild fails closed on a
+   missing house or tile.
+4. **Typed references:** a revision-free `HouseId`. The provenance names its transaction.
 5. **Wire:** none. House views belong to MAP-WIRE-1 and the house runtime.
 6. **Split work:** every shape is one transaction, with the provenance written in the same
    transaction.

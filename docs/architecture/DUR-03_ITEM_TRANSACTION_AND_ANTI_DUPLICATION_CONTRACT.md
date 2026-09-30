@@ -130,17 +130,21 @@ Future world-shared spatial state or downstream custody such as house/trade/mark
 
 ```text
 HouseInterior {
-  world_id: WorldId
-  house_ref: {family: House, key, revision}
-  spatial_position: native WorldTilePosition (a tile of that house)
-  stack_ordinal: typed ordinal
+  house_id: HouseId {world_id, house_key}   (revision-free)
+  spatial_position: native WorldTilePosition (a tile of exactly this house in the active bundle)
+  stack_ordinal: typed ordinal, unique per (world, house, position)
 }
 ```
 
 - It is World-scoped, with no `ChannelId`. Its owner is the Game housing domain (EXP-HOUSES-01).
-- Its writes are fenced by a `House {world, house}` runtime scope.
-- Every placement writes `HousingReclaimProvenance` in the same transaction.
-- Its player writers stay closed until the house has an owner and an ACL grant.
+- Only items without contents may enter it until a later decision admits containers.
+- Every placement writes `HousingReclaimProvenance` in the same transaction, at most one live
+  provenance per item.
+- One deferred item-level guard across every location table keeps a live item in exactly one
+  location.
+- Its writers are fenced by one live generation per `HouseId`, delivered with the house interior
+  runtime. Player writers stay closed until the house has an owner and an ACL storage grant, and
+  until then the runtime role has no grant on the house tables.
 
 See `reviews/OTERYN_GAME_HOUSE_CUSTODY0_HOUSE_ITEM_CUSTODY_DECISION_2026-09-30.md`.
 
@@ -1270,8 +1274,9 @@ unchanged.
 
 - **Map-item materialization.**
   - **Eligibility.** Only a top-level map-authored entry qualifies, and only if its definition
-    is pickupable and it carries no `action`, `unique`, `door`, `depot` or `teleport` binding
-    and no contents. Every other map-authored item is never pickupable.
+    is pickupable, it is not on a house tile, and it carries no `action`, `unique`, `door`,
+    `depot` or `teleport` binding and no contents. Every other map-authored item is never
+    pickupable.
   - **Provenance.** The pickup is the player's command (`CommandRef`), under the channel's live
     scope-ownership fence.
   - **Cause.** `MapItemMaterialization {world_id, channel_id, base_bundle_digest, placement_key,
@@ -1309,10 +1314,13 @@ unchanged.
   step 2, which is idempotent, then step 3. The old bundle never boots over a half-retired
   Ground.
 
-  Only Ground roots and their entries are retired. `HouseInterior` items (HOUSE-CUSTODY-0) and
-  their containers are never touched. Ground items on house tiles (a house without an owner) are
-  retired like any other Ground item. Activation is refused while a `HouseInterior` item sits on
-  a tile that the new map revision removes (EXP-HOUSES-01 §14.7).
+  Only Ground roots and their entries are retired. `HouseInterior` items (HOUSE-CUSTODY-0) are
+  never touched. Ground items on the tiles of a house without an owner are retired like any other
+  Ground item. Every live `HouseInterior` row's `(house_key, position)` must be a tile of the same
+  house in the target bundle. That check runs as a preflight before step 1, where a failure
+  aborts the reset without a record, and again inside the step-4 transaction under a lock that
+  blocks `HouseInterior` inserts, where a failure keeps the record RETIRING until an
+  EXP-HOUSES-01 §14.7 evacuation.
 - **Registration.** MAP-OVERLAY-1 registers:
   - the proto and registry fields of both shapes;
   - the reset record;

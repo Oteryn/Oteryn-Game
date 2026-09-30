@@ -89,10 +89,14 @@ No code, migration or content change is made.
   - the second found 4 new material problems;
   - all are fixed before freeze (ADR §8).
 - HOUSE-CUSTODY-0 was added to this PR at the owner's direct request (2026-09-30): the
-  `HouseInterior` family, reclaim provenance, the `House` scope kind, closed transfer shapes and
-  the reset exemption. HOUSE-CUSTODY-1 implements it.
-- Owner answer on house tiles: a. Ground items on house tiles are retired at a reset until
-  HOUSE-CUSTODY-0.
+  revision-free `HouseInterior` family, reclaim provenance, one item-level exclusivity guard, the
+  reset preflight and recheck, and the fence and shapes fixed for the house interior runtime child.
+  HOUSE-CUSTODY-1 implements the storage slice only.
+- HOUSE-CUSTODY-0 self-review (`oteryn-hard-worker`, read-only) on `1f6f8cba`: 5 material, 4
+  evidence gaps and 5 hardening findings, all fixed before freeze (revision-free `HouseId`, no
+  Ground source, reset preflight, one exclusivity guard, storage-only slice, no runtime grants).
+- Owner answer on house tiles: a. Ground items on the tiles of a house without an owner are
+  retired at a reset.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ## Context checkpoint
