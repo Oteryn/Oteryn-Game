@@ -24,7 +24,7 @@ owned_paths:
   - tools/content-schema/house-authoring/README.md
   - docs/agents/tasks/archive/OTV2-20260930-house-catalogue-owner-contract.md
 public_contracts: [docs/architecture/OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1.md]
-depends_on: [OTV2-20260929-house-authoring-schema-candidate, OTV2-20260929-house-doors]
+depends_on: [OTV2-20260929-house-authoring-schema-candidate, OTV2-20260929-house-doors, OTV2-20260930-adr0021-world-map-runtime-loading]   # PR #1315 (ADR-0021, HOUSE-CUSTODY-0) integrates first
 blocks: []
 external_repositories: []
 jira: null   # sync pending (coordinator batch)
