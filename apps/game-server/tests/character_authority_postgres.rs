@@ -666,18 +666,33 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
             }
         ]
     );
-    assert!(
+    let body = oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
+        "oteryn:character-authority:primary",
+        &snapshot,
+    )?;
+    // A retry of the same (epoch, revision) is byte-identical, however much
+    // later it reads: `source_observed_at` is when the revision was assigned
+    // (0028), so a lost acknowledgement never becomes a 409.
+    tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
+    let retry = root
+        .next_account_characters_snapshot(&authority)
+        .await
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("the unacknowledged snapshot is still queued")?;
+    assert_eq!(
         oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
             "oteryn:character-authority:primary",
-            &snapshot
-        )
-        .is_ok()
+            &retry,
+        )?,
+        body
     );
     let facts = root
         .account_characters_watermark_facts(&authority)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(facts.projection_epoch, 1);
+    // Never later than the read.
+    assert!(retry.source_observed_at * 1000 <= facts.now_ms);
     assert!(
         facts
             .oldest_undelivered_ms
