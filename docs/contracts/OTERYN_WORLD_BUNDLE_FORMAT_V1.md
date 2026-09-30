@@ -62,7 +62,7 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 | `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
 | `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
 
-`palette[i].key` is the stable World Project key, `family` is `item` or `terrain` (OPEN-1),
+`palette[i].key` is the stable World Project key, `family` is `item` or `terrain`,
 and `id` is the compact id of that key in `identity.content_revision`. The palette holds only
 entries that some kept item uses, in ascending order of their World Project palette index, so
 two builds of the same input produce the same palette.

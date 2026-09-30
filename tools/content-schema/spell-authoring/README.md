@@ -24,6 +24,8 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `cooldown-groups.json` | S9: the declared closed catalogue of cooldown groups and their roles (primary, secondary); `validate_spell.py` rejects any other group. |
 | `official-changes.json` | S11/S24 evidence: official changes that decide a BR/Fandom conflict (fact, date, source URL); field `removed` blocks a spell an announcement removed. |
 | `chain-behaviours.json` | S23: accepted chain parameters of player spells (`Ability.chain`), with their sources. |
+| `party-behaviours.json` | S27 C.3: accepted `party_buff` parameters of the party spells, with their sources; an entry with `blocked` keeps its spell blocked. |
+| `guard-behaviours.json` | S27 B.5/C.5/D.3: the exact Canary `onCastSpell` guards the core now expresses with spell fields (`targeting.allowed_targets`) or extra effects; `spell_scripts.py` evaluates such a script to its single Combat. |
 | `wheel-augments.json` | S6/S24 evidence: Wheel of Destiny spell augments (I/II) and revelation perk stages, each with its source (official news, Fandom revision, or Canary as hypothesis) and superseded values. |
 | `samples/spell-readiness-p2.json` | `convert_spells.py --readiness`: per spell `ready`/`blocked`, its blockers and the bundle SHA-256 (bundles are not committed). |
 | `samples/starter-bundles/` | The P3 starter spells converted by `convert_spells.py --only ... --out`; validated in CI with their manifests. The `conversion` CI job checks out the pinned sources and requires the census, readiness, verification report and starter bundles to reproduce byte for byte. |

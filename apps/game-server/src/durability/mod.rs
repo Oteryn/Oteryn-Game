@@ -5,6 +5,7 @@
 //! resulting request asynchronously and consume its completion as new input.
 
 pub mod account_achievement;
+pub mod account_characters_projection;
 pub mod admission_authority_guards;
 mod admission_journal;
 pub mod bestiary_progress;
@@ -366,6 +367,24 @@ mod native_admission_source_linkage {
         let _ = DurabilityRoot::pending_native_source_publications;
         let _ = DurabilityRoot::record_native_source_descriptor_issuance;
         let _ = DurabilityRoot::read_native_admission_source_registration;
+    }
+}
+
+#[cfg(test)]
+mod account_characters_projection_linkage {
+    use super::DurabilityRoot;
+    use super::account_characters_projection::{AccountCharactersStore, MAX_CHARACTER_TRANSACTION};
+
+    #[test]
+    fn account_characters_projection_api_is_linked() {
+        assert_eq!(
+            MAX_CHARACTER_TRANSACTION,
+            super::DB_PASS_DEADLINE + std::time::Duration::from_secs(1)
+        );
+        let _ = std::mem::size_of::<AccountCharactersStore<'_, '_, '_, '_>>();
+        let _ = DurabilityRoot::next_account_characters_snapshot;
+        let _ = DurabilityRoot::clear_account_characters;
+        let _ = DurabilityRoot::account_characters_watermark_facts;
     }
 }
 

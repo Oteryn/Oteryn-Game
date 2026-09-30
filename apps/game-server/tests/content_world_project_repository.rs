@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "3689791ba6efc88197a6f478223a425599f67ccabff2f29945963d095d1bb066",
+        "785b0cd0e00281ff21be200b4ee362696207681ec4bffae3845585fad13c66b1",
     ),
     (
         "definitions/declarations.json",
-        14_938_464,
-        "4b13f55ec1cc2f3985c47de27e265a069cca3729e6cd675e874be2bf01be0756",
+        14_978_644,
+        "f2e1f3f4b576afc7236572f4bed971739aea02e7f9ee99a97d99c1ad05ade31e",
     ),
     (
         "definitions/reference.json",
-        21_316_331,
-        "2aeef18975a6d2e07bae8322ae886b1246b3e6c18ef7c72975f998a5aeafc048",
+        21_340_928,
+        "aa725ca7a221827c3b82b4669a3a1ff4b0a9dc6e4cba329715e38857730baa1a",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "9bad2c17c819472ba9076b772614699b836af4ab9b82fb3c2104348d67d6539f",
+        "453ef73b5bc47172e26bea5cd753a336200e9c0e26f5414e38bcc59dafc64c6c",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "e124fbcc70899b09f2d909b8967a3925a2d53c2c21d4a5a9c8f1e28f474ab975",
+        "cc020f99e9297788aece801e25fda46013677ee750a61f2523a353de8d809ea6",
     ),
     (
         "provenance/imports.json",
         32_476,
-        "d91343f3e0bbc2d053b272ac59df4856e18ae720987c788d14dc3c11afa35c11",
+        "9cfea686489e26573ff653b60c4f3fecbcc0bbb3115921de3470e740a85e47f3",
     ),
     (
         "provenance/sources.json",
-        1_299_026,
-        "c384023117ceb182e8b48f8ed800de85be6fac5527f3a6f22bf29179580a9f7c",
+        1_302_374,
+        "ed7f771557094fa003f14ff7ba2ead030395466c255458fc7ff5be9420d2be1e",
     ),
     (
         "worlds/world.json",
@@ -81,24 +81,33 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
+/// WO-2 and Area catalogue shards beside the legacy package: `(directory, shard prefix)`.
+/// Their bytes are pinned by `build_catalogue.py --check` and `build_areas.py build --check`,
+/// not by this package inventory.
+const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
+    ("terrain/", "terrain-"),
+    ("objects/", "objects-"),
+    ("areas/cities/", "areas-"),
+    ("areas/regions/", "areas-"),
+];
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "317f66009654b7950a303aee8127aeb79afaec10826f735a5f9ad31f78dd4d4b";
+const TREE_SHA256: &str = "075970804d89f2eba988dba0b86c2595a32cf60c19e0050fc447a3b73704daa0";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
 const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1476;
-const CREATURE_RECORDS: usize = 20638;
-const CREATURE_PROFILES: usize = 19693;
+const CREATURES: usize = 1479;
+const CREATURE_RECORDS: usize = 20693;
+const CREATURE_PROFILES: usize = 19745;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1094;
-const NPC_RECORDS: usize = 2188;
-const NPC_DECLARATIONS: usize = 2179;
-const NPC_DIALOGUES: usize = 707;
-const NPC_BINDINGS: usize = 2344;
+const NPCS: usize = 1102;
+const NPC_RECORDS: usize = 2204;
+const NPC_DECLARATIONS: usize = 2195;
+const NPC_DIALOGUES: usize = 715;
+const NPC_BINDINGS: usize = 2352;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -233,6 +242,22 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     let root = project_root();
     let mut files = Vec::new();
     collect_files(&root, &root, &mut files);
+    let (catalogue_shards, files): (Vec<_>, Vec<_>) = files.into_iter().partition(|locator| {
+        WORLD_CATALOGUE_SHARDS.iter().any(|(directory, prefix)| {
+            locator
+                .strip_prefix(directory)
+                .and_then(|name| name.strip_prefix(prefix))
+                .is_some_and(|name| !name.contains('/') && name.ends_with(".json"))
+        })
+    });
+    for (directory, prefix) in WORLD_CATALOGUE_SHARDS {
+        assert!(
+            catalogue_shards
+                .iter()
+                .any(|locator| locator.starts_with(&format!("{directory}{prefix}"))),
+            "{directory} catalogue is populated"
+        );
+    }
     let (mut markers, mut actual): (Vec<_>, Vec<_>) = files
         .into_iter()
         .partition(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()));
@@ -278,7 +303,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r7");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r8");
     assert_eq!(project.imports().len(), 11);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -602,7 +627,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(v2.sources[10].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[9];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r7");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r8");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[8].key, v2.sources[5].key);
     assert_eq!(v2.sources[8].import_batch_id, npc_import.batch_id);
@@ -957,11 +982,15 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         assert_eq!(payload["path"], path);
         assert_eq!(payload["kind"], node["kind"], "{path}");
         assert_eq!(payload["owner"], node["owner"], "{path}");
+        let populated_catalogue = WORLD_CATALOGUE_SHARDS
+            .iter()
+            .any(|(directory, _)| *directory == locator);
         assert!(
-            matches!(
-                payload["population_state"].as_str(),
-                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT")
-            ),
+            match payload["population_state"].as_str() {
+                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT") => true,
+                Some("POPULATED") => populated_catalogue,
+                _ => false,
+            },
             "{path}"
         );
         world_markers.push(format!("{locator}index.json"));

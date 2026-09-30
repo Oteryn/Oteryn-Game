@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/map-bundle-1a
-pr: "exact PR in the #162 READY_FOR_REVIEW handback"
+pr: "1338"
 base_sha: a795d5fe
 head_sha: "exact frozen head in the #162 READY_FOR_REVIEW handback"
 final_head_sha: "exact frozen head in the #162 READY_FOR_REVIEW handback"
@@ -125,6 +125,7 @@ production path. The ADR-0021 §4.8 security review of the bundle reader applies
   - a deterministic reseal-and-flip reader test; "stacking order" is now "payload order";
   - OPEN-1 to OPEN-3 updated to the architect's answers (#162 5910173902); OPEN-4 stays open.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
+- Repair round 2 (review 5913455352): merged origin/main (registry rows from #1330 LCFA-1 and this PR both kept; 331 + 325 -> 335 unique ids), dropped the stale OPEN-1 pointer in the format document. The frozen head is the one named in the #162 handback.
 
 ## Context checkpoint
 

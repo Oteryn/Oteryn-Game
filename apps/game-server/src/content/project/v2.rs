@@ -5,8 +5,10 @@ use super::*;
 
 mod creature;
 mod encounter;
+mod proficiency;
 pub use creature::*;
 pub use encounter::*;
+pub use proficiency::*;
 
 pub const WORLD_PROJECT_V2_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2";
 pub const WORLD_PROJECT_V2_ROOT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_ROOT/v2";
@@ -64,6 +66,7 @@ pub enum ProjectV2Family {
     Outfit,
     Mount,
     Charm,
+    Proficiency,
     Item,
     Creature,
     Ability,
@@ -95,6 +98,8 @@ impl ProjectV2Family {
             DefinitionFamily::Formula => Self::Formula,
             DefinitionFamily::Loot => Self::Loot,
             DefinitionFamily::Behavior => Self::Behavior,
+            // `parse_family` never yields RewardClaim; its authoring home is `content/interactions/`.
+            DefinitionFamily::RewardClaim => Self::Interaction,
         })
     }
 }
@@ -207,6 +212,11 @@ pub enum ProjectV2Declaration {
         ranks: Vec<ProjectV2CharmRank>,
         fields: Vec<ProjectV2CandidateField>,
     },
+    Proficiency {
+        identity: ProjectV2Identity,
+        levels: Vec<ProjectV2ProficiencyLevel>,
+        fields: Vec<ProjectV2CandidateField>,
+    },
     #[serde(rename = "NPC")]
     Npc {
         identity: ProjectV2Identity,
@@ -275,6 +285,7 @@ impl ProjectV2Declaration {
             Self::Outfit { .. } => ProjectV2Family::Outfit,
             Self::Mount { .. } => ProjectV2Family::Mount,
             Self::Charm { .. } => ProjectV2Family::Charm,
+            Self::Proficiency { .. } => ProjectV2Family::Proficiency,
             Self::Npc { .. } => ProjectV2Family::Npc,
             Self::Dialogue { .. } => ProjectV2Family::Dialogue,
             Self::Service { .. } => ProjectV2Family::Service,
@@ -295,6 +306,7 @@ impl ProjectV2Declaration {
             | Self::Outfit { identity, .. }
             | Self::Mount { identity, .. }
             | Self::Charm { identity, .. }
+            | Self::Proficiency { identity, .. }
             | Self::Npc { identity, .. }
             | Self::Dialogue { identity, .. }
             | Self::Service { identity, .. }
@@ -315,6 +327,7 @@ impl ProjectV2Declaration {
             | Self::Outfit { fields, .. }
             | Self::Mount { fields, .. }
             | Self::Charm { fields, .. }
+            | Self::Proficiency { fields, .. }
             | Self::Npc { fields, .. }
             | Self::Dialogue { fields, .. }
             | Self::Service { fields, .. }
@@ -335,6 +348,7 @@ impl ProjectV2Declaration {
             | Self::Outfit { fields, .. }
             | Self::Mount { fields, .. }
             | Self::Charm { fields, .. }
+            | Self::Proficiency { fields, .. }
             | Self::Npc { fields, .. }
             | Self::Dialogue { fields, .. }
             | Self::Service { fields, .. }
@@ -1040,35 +1054,6 @@ impl ProjectV2AugmentBinding {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ProjectV2ProficiencyLevel {
-    pub level: u8,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub perks: Vec<ProjectV2AugmentBinding>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ProjectV2PerkShaping {
-    pub max_rank: u8,
-    pub replace_slots: u8,
-    pub refine_enabled: bool,
-    pub reshape_enabled: bool,
-    pub clear_enabled: bool,
-    pub lunar_ascension_enabled: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cost_service: Option<ProjectV2DefinitionRef>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ProjectV2WeaponProficiencyProfile {
-    pub levels: Vec<ProjectV2ProficiencyLevel>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub shaping: Option<ProjectV2PerkShaping>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct ProjectV2ItemAuthoring {
     pub item: ProjectV2DefinitionRef,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1111,15 +1096,6 @@ impl ProjectV2ItemAuthoring {
             lifecycle.enchant_interactions.sort();
             lifecycle.destroy_interactions.sort();
         }
-        if let Some(proficiency) = &mut self.proficiency {
-            proficiency.levels.sort_by_key(|level| level.level);
-            for level in &mut proficiency.levels {
-                level.perks.sort_by(|left, right| left.key.cmp(&right.key));
-                for perk in &mut level.perks {
-                    perk.canonicalize();
-                }
-            }
-        }
     }
 }
 
@@ -1143,6 +1119,10 @@ pub struct ProjectV2ServiceOffer {
     /// Fluid or charge subtype of the offered Item.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sub_type: Option<u16>,
+    /// `PARITY_PENDING` (NPC authoring D15): the wikis dispute this source price and no two agree; the source price
+    /// stays until an official source settles it.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub parity_pending: bool,
 }
 
 impl ProjectV2ServiceOffer {
@@ -2087,6 +2067,9 @@ fn validate_v2_declaration(
                 validate_v2_candidate_fields(&rank.fields)?;
             }
         }
+        ProjectV2Declaration::Proficiency { levels, .. } => {
+            validate_v2_proficiency_levels(levels, limits)?;
+        }
         ProjectV2Declaration::Service {
             offers,
             recipes,
@@ -2841,63 +2824,7 @@ fn validate_v2_state(
             validate_v2_augment(augment, &require_ref, limits)?;
         }
         if let Some(proficiency) = &item.proficiency {
-            if proficiency.levels.is_empty() {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Item proficiency requires at least one level",
-                ));
-            }
-            limits.check(
-                "v2 Item proficiency levels",
-                proficiency.levels.len(),
-                limits.max_reference_records,
-            )?;
-            if proficiency
-                .levels
-                .windows(2)
-                .any(|pair| pair[0].level == 0 || pair[0].level >= pair[1].level)
-                || proficiency
-                    .levels
-                    .last()
-                    .is_some_and(|level| level.level == 0)
-            {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Item proficiency levels are not positive sorted and unique",
-                ));
-            }
-            for level in &proficiency.levels {
-                limits.check(
-                    "v2 Item proficiency perks",
-                    level.perks.len(),
-                    limits.max_reference_records,
-                )?;
-                if level
-                    .perks
-                    .windows(2)
-                    .any(|pair| pair[0].key >= pair[1].key)
-                {
-                    return Err(ProjectError::InvalidProject(
-                        "v2 Item proficiency perks are not key sorted and unique",
-                    ));
-                }
-                for perk in &level.perks {
-                    validate_v2_augment(perk, &require_ref, limits)?;
-                }
-            }
-            if let Some(shaping) = &proficiency.shaping {
-                if shaping.max_rank == 0 {
-                    return Err(ProjectError::InvalidProject(
-                        "v2 Item perk shaping max rank must be positive",
-                    ));
-                }
-                if let Some(service) = &shaping.cost_service {
-                    if service.family != ProjectV2Family::Service {
-                        return Err(ProjectError::InvalidProject(
-                            "v2 Item perk shaping Service family mismatch",
-                        ));
-                    }
-                    require_ref(service)?;
-                }
-            }
+            validate_v2_item_proficiency(proficiency, &require_ref)?;
         }
         limits.check(
             "v2 Item on-use interactions",

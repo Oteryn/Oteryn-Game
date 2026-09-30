@@ -144,6 +144,8 @@ def validate(monster,deps,catalog=None,manifest=None):
             variant=abilities.get(ident('Ability',ref))
             if variant is None:errors.append('ability/variants: variant needs a local Ability payload')
             elif 'variants' in variant:errors.append('ability/variants: a variant cannot have variants')
+        if 'windup' in ability and (not ability['needs_target'] or any(k in ability for k in ('area','variants','chain','encounter'))):
+            errors.append('ability/windup: only on a single-target Ability without area, variants, chain or encounter')
         matrix=ability.get('area',{}).get('matrix',{})
         for orientation,rows in matrix.items():
             if len({len(r) for r in rows})!=1:errors.append('ability/area/matrix/'+orientation+': rows must have equal length')

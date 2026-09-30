@@ -6771,6 +6771,93 @@
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Decoded entries of one bundle, container contents included",
       "unit": "entries"
+    },
+    {
+      "id": "LCA-CHARACTERS",
+      "owner_contract": "OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md",
+      "resource": "CharacterSummary entries in one PublishAccountCharactersV1 snapshot",
+      "unit": "entries",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The snapshot read fetches at most 65 Character rows (one more than the bound) in one statement; a list above 64 refuses the snapshot instead of truncating it. A wire bound, not a product slot quota.",
+      "client_visible": false,
+      "boundary_tests": [
+        "64 entries with 64-byte names encode within LCA-REQUEST-BYTES",
+        "65 entries are refused before any exchange"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/account_characters.rs",
+        "apps/game-server/src/durability/account_characters_projection.rs"
+      ],
+      "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
+    },
+    {
+      "id": "LCA-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md",
+      "resource": "Encoded PublishAccountCharactersV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 16384,
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The body is encoded from grammar-checked fields (at most 64 entries of at most 209 bytes plus the envelope) and its length is checked before the exchange opens a connection.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the worst-case 64-entry snapshot encodes within 16384 bytes",
+        "a body above 16384 bytes is refused before the exchange opens a connection"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/account_characters.rs"
+      ],
+      "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
+    },
+    {
+      "id": "LCA-WATERMARK-BYTES",
+      "owner_contract": "OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md",
+      "resource": "Encoded PublishProjectionWatermarkV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Fixed member set of bounded decimal strings and a source authority of at most 128 bytes; the length is checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the contract watermark fixture encodes within 512 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/account_characters.rs"
+      ],
+      "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
+    },
+    {
+      "id": "LCA-INFLIGHT",
+      "owner_contract": "OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md",
+      "resource": "Concurrent projection publications per publisher",
+      "unit": "publications",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The publisher sends sequentially on its own TransientCapacity; no queue beyond the one exchange is retained.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the publisher performs one exchange per step and never overlaps two"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/account_characters.rs"
+      ],
+      "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
     }
   ]
 }

@@ -52,9 +52,13 @@ TIBIACOM_NAMES = {'invisibility': 'invisible', 'paralyze rune': 'paralyse rune',
 OFFICIAL = ROOT / 'official-changes.json'
 # S23: accepted chain parameters of player spells (OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md).
 CHAINS = json.loads((ROOT / 'chain-behaviours.json').read_text(encoding='utf-8'))['spells']
+# S27 C.3: accepted party_buff parameters of the party spells (OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md).
+PARTY = json.loads((ROOT / 'party-behaviours.json').read_text(encoding='utf-8'))
+# S27 B.5/C.5/D.3: onCastSpell guards now expressed by spell fields (guard-behaviours.json).
+GUARDS = json.loads((ROOT / 'guard-behaviours.json').read_text(encoding='utf-8'))['spells']
 CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
-REVISION = 'spell-p2-r12'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells; r12: S26 Harmony role
+REVISION = 'spell-p2-r14'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells; r12: S26 Harmony role; r13: S27 party_buff; r14: S27 accepted guards, Train Party (D213)
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -287,7 +291,8 @@ class Execution:
     def __init__(self, source, root):
         self.source, self.root = source, root
         self.converter = canary_batch.Converter(root, {}, {}, {}, {})
-        self.converter.spell_scripts = spell_scripts.SpellScripts(root, player_chains=True)
+        self.converter.spell_scripts = spell_scripts.SpellScripts(
+            root, player_chains=True, accepted_guards={n: {g['canary_body']} for n, g in GUARDS.items()})
         self.converter.pending_definitions = set()
         self.tag = SOURCES[source]['tag']
         self.canonical = self.converter  # S18: replaced by the Canary 15.30 tables once both sources exist
@@ -338,6 +343,12 @@ class Execution:
         for ability_key, combat_index in zip(keys, order):
             local = []
             combat = info['combats'][combat_index]
+            guard = GUARDS.get(str(record['name']).lower(), {})
+            dropped = guard.get('drop_params', []) if guard.get('spell_type') == record['spell_type'] else []
+            if dropped:
+                combat = {**combat, 'params': {k: v for k, v in combat['params'].items() if k not in dropped},
+                          'param_calls': [c for c in combat['param_calls'] if c[0] not in dropped]}
+                local.append('S27: ' + ', '.join(dropped) + ' is not authored (guard-behaviours.json).')
             chain = None
             if 'CALLBACK_PARAM_CHAINVALUE' in combat['callbacks']:
                 chain = CHAINS.get(str(record['name']).lower())
@@ -654,6 +665,10 @@ class Bundle:
         mana = self.field(base + '/costs/mana', 'mana', 'mana', pages if carrier == 'instant' else {}, required=False)
         if isinstance(mana, int):
             costs['mana'] = mana
+        elif mana == 'varies' and 'base_mana' in PARTY['spells'].get(self.name, {}):
+            self.row('mapped', 'mana', base + '/costs/mana', 'S27 C.3: the wiki mana varies; the party_buff parameters '
+                     'define it and costs.mana is 0.', source=next(iter(self.records)), method='mana')
+            costs['mana'] = 0
         elif mana == 'varies':
             self.row('unresolved_semantics', 'mana', resolution='the wiki mana varies (party spells); a native '
                      'behaviour must define it.', source=next(iter(self.records)), method='mana')
@@ -801,6 +816,11 @@ class Bundle:
                      'without a cast direction; not applied.', source=next(iter(self.records)))
         if self.field(base + 'cast_at_position', None, 'optionalTarget', pages, transform=bool, required=False):
             t['cast_at_position'] = True
+        guard = self.guard().get('targeting')
+        if guard:
+            t.update(guard)
+            self.row('mapped', 'onCastSpell', base + 'allowed_targets', 'S27: the onCastSpell target guard as '
+                     + json.dumps(guard, sort_keys=True) + ' (guard-behaviours.json).', source=next(iter(self.records)))
         return t
 
     def rune(self, pages):
@@ -868,7 +888,9 @@ class Bundle:
                          'Player:conjureItem(reagent, result, count) is the S2 conjure execution.', source=source,
                          kind='script')
             return {'conjure': body}
-        plain = {s for s, t in tiers.items() if t in ('plain_combat', 'random_combat')}
+        if self.name in PARTY['spells']:
+            return self.party_buff(PARTY['spells'][self.name], deps)
+        plain = {s for s, t in tiers.items() if t in ('plain_combat', 'random_combat') or self.guard()}
         if not plain:
             patterns = sorted({p for r in self.records.values() for p in r['cast'].get('patterns', [])})
             self.row('unresolved_semantics', 'onCastSpell', resolution='custom script; needs a native behaviour (S7): '
@@ -912,6 +934,17 @@ class Bundle:
                          + ('consumes the wiki base power' if with_power and base_power else 'is used')
                          + f'; the {other} formula is superseded.', source=other, method='setCallback')
         key, dep, items, notes = converted[chosen]
+        guard = self.guard()
+        if guard:
+            ability = next(a for a in dep['abilities'] if a['identity']['key'] == key)
+            for extra in guard.get('extra_effects', []):
+                effect_key = f'{key}/effect-{extra["suffix"]}'
+                dep['effects'].append({'identity': ident(effect_key),
+                                       **{k: v for k, v in extra.items() if k != 'suffix'}})
+                ability['effects'].append(ref('Effect', effect_key))
+            self.row('resolved_native_behavior', 'onCastSpell', '/spell/spell/execution/ability', 'S27: the '
+                     'onCastSpell guard is expressed by spell fields and effects from guard-behaviours.json ('
+                     + guard['sources'] + ')', source=chosen, kind='script')
         self.notes.update(notes)
         deps.update(dep)
         self.catalog.update(items)
@@ -919,6 +952,30 @@ class Bundle:
                  f'Plain combat converted with the monster combat_ability rules ({chosen}).', source=chosen,
                  method='setCallback' if deps['formulas'] else None, kind='script')
         return {'ability': ref('Ability', key)}
+
+    def guard(self):
+        """S27: the accepted onCastSpell guard of this spell and carrier (guard-behaviours.json), or {}."""
+        guard = GUARDS.get(self.name, {})
+        return guard if guard.get('spell_type') == next(iter(self.records.values()))['spell_type'] else {}
+
+    def party_buff(self, party, deps):
+        """S27 C.3: the party_buff execution from party-behaviours.json; the scripts are custom in both sources."""
+        if 'blocked' in party:
+            self.row('unresolved_semantics', 'onCastSpell', resolution=party['blocked'], source=next(iter(self.records)),
+                     kind='script')
+            return {'native_behavior': {'key': 'unresolved', 'parameters': {'patterns': ['party']}}}
+        condition = party['condition']
+        key = f'candidate:spell/{slug(self.name)}/effect-{condition["type"]}'
+        deps['effects'].append({'identity': ident(key), 'operation': 'condition', 'duration_ms': 120000,
+                                'condition': {**condition, 'lifetime': 'fixed_duration', 'buff_spell': True}})
+        for source in self.records:
+            self.row('resolved_native_behavior', 'onCastSpell', '/spell/spell/execution/native_behavior',
+                     'S27 C.3: party_buff from party-behaviours.json (' + party['sources'] + ')', source=source,
+                     kind='script')
+        return {'native_behavior': {'key': 'party_buff', 'parameters': {
+            'area': PARTY['area'], 'same_floor': True, 'min_affected': 2, 'requires_party': True,
+            'mana': {'mode': 'scaled', 'base': party['base_mana'], 'falloff': 0.9, 'rounding': 'up'},
+            'effect': ref('Effect', key)}}}
 
 
 # ------------------------------------------------------------------------------------------------
