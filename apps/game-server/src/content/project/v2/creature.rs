@@ -442,6 +442,9 @@ pub struct ProjectV2AbilityDetails {
     pub path_requirement: Option<ProjectV2PathRequirement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chain: Option<ProjectV2Chain>,
+    /// SW-1: the effects run `delay_ms` after the cast on the caster's target at that moment.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub windup: Option<ProjectV2Windup>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cast_cue: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -472,6 +475,13 @@ pub enum ProjectV2AbilityArea {
 pub struct ProjectV2PathRequirement {
     pub max_search_tiles: u16,
     pub clear_sight: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2Windup {
+    pub delay_ms: u32,
+    pub caster_asset_binding: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1454,6 +1464,20 @@ pub(super) fn validate_ability_details(
         if let Some(binding) = &chain.chain_asset_binding {
             asset_binding(binding, limits)?;
         }
+    }
+    if let Some(windup) = &details.windup {
+        if windup.delay_ms == 0
+            || !details.needs_target
+            || details.area.is_some()
+            || !details.variants.is_empty()
+            || details.chain.is_some()
+            || details.encounter.is_some()
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Ability windup needs a positive delay and a single target without area, variants, chain or encounter",
+            ));
+        }
+        asset_binding(&windup.caster_asset_binding, limits)?;
     }
     for cue in [&details.cast_cue, &details.impact_cue]
         .into_iter()
