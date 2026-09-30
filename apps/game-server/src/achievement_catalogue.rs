@@ -5,7 +5,8 @@
 //! shard, record, key or revision, or a duplicate key, fails the whole catalogue closed; nothing is
 //! skipped. A granter resolves a key with [`AchievementCatalogue::lookup`] into the
 //! [`AchievementCatalogueLookup`] the grant path takes (§3): `Earnable` at the record's revision,
-//! `Retired`, or `Absent`.
+//! `Retired`, or `Absent`. [`AchievementCatalogue::unbound_reward_claim_achievements`] is the
+//! §3.3 Content validation of the reward-claim granters against it.
 //!
 //! Only the facts the grant path needs are kept (key, revision, retired). The complete record
 //! schema is checked offline by `tools/content-schema/achievement-authoring/`.
@@ -14,6 +15,7 @@ use std::collections::BTreeMap;
 
 use serde::Deserialize;
 
+use crate::content::{CanonicalReferencePlayableContent, ReferenceDefinitionKind};
 use crate::durability::account_achievement::{AchievementCatalogueLookup, valid_catalogue_entry};
 
 /// Every `content/achievements/achievements-*.json` shard, in file-name order. A unit test keeps
@@ -123,6 +125,32 @@ impl AchievementCatalogue {
 
     pub(crate) fn len(&self) -> usize {
         self.entries.len()
+    }
+
+    /// Content validation (contract §3.3): the achievement keys that `content`'s RewardClaim
+    /// placements name and this catalogue lacks, in Content order. A retired key binds (§3.4);
+    /// the server refuses a Content activation with any unbound key.
+    pub(crate) fn unbound_reward_claim_achievements<'a>(
+        &self,
+        content: &'a CanonicalReferencePlayableContent,
+    ) -> Vec<&'a str> {
+        self.unbound(
+            content
+                .definitions
+                .iter()
+                .filter_map(|definition| match &definition.kind {
+                    ReferenceDefinitionKind::RewardClaim(claim) => Some(claim),
+                    _ => None,
+                })
+                .flat_map(|claim| &claim.placements)
+                .filter_map(|entry| entry.achievement.as_deref()),
+        )
+    }
+
+    fn unbound<'a>(&self, keys: impl IntoIterator<Item = &'a str>) -> Vec<&'a str> {
+        keys.into_iter()
+            .filter(|key| self.lookup(key) == AchievementCatalogueLookup::Absent)
+            .collect()
     }
 }
 
@@ -237,6 +265,25 @@ mod tests {
             catalogue.lookup("oteryn:achievement/the_more_the_merrier"),
             AchievementCatalogueLookup::Retired
         );
+        Ok(())
+    }
+
+    #[test]
+    fn only_a_key_the_catalogue_lacks_is_unbound() -> TestResult {
+        let catalogue = AchievementCatalogue::embedded().map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            catalogue.unbound([
+                "oteryn:achievement/annihilator",
+                "oteryn:achievement/the_more_the_merrier",
+                "oteryn:achievement/not_in_the_catalogue",
+                "canary:achievement/annihilator",
+            ]),
+            [
+                "oteryn:achievement/not_in_the_catalogue",
+                "canary:achievement/annihilator"
+            ]
+        );
+        assert!(catalogue.unbound([]).is_empty());
         Ok(())
     }
 

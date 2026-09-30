@@ -6,8 +6,8 @@ under the accepted housing architecture
 
 Static House definitions for `content/houses/` (owner `House/Area` in
 [`OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md`](../../../docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md)).
-CANDIDATE only: not a WorldProject/v2 contract, not runtime activation, and
-`content/houses/` stays `READY_UNPOPULATED` until the schema is accepted.
+CANDIDATE schema: not a WorldProject/v2 contract and not runtime activation.
+`content/houses/` is `POPULATED` by `build_catalogue.py` (see Catalogue).
 
 Runtime House state (owner, rent payment, ACL/access lists, auction, custody) is
 World/persistence state by the tree contract and is **not** modeled here. Rent
@@ -86,6 +86,7 @@ not exist.
 | `otbm_tile_check.py` | local-only: pinned `world.otbm` House tiles and doors → `samples/otbm-tile-check.json` (cell order and door evidence) |
 | `wiki_br_houses.py` | TibiaWiki BR `fetch` / `facts` / `compare` / `self-test` |
 | `convert_houses.py` | `extract-crystal`: pinned `world-house.xml` → `samples/crystal-world-house-00ce02a5.json`; `extract-door-items`: pinned `items.xml` → `samples/crystal-door-item-ids-00ce02a5.json`; `convert`: joins it with `imports/cipsoft-staticdata/houses/` (digest-checked), validates all 995 houses, writes `samples/conversion-report.json` |
+| `build_catalogue.py` | builds `content/houses/houses-*.json` (995 records, shards of 500) from `convert`, keeps the key and revision of every committed record by `provenance.source_id`, validates the whole catalogue; `--check` regenerates it byte for byte |
 
 ```text
 pip install -r requirements.txt -r requirements-dev.txt
@@ -122,6 +123,15 @@ Against the engine map (`otbm_tile_check.py`): 5,037 of 5,156 engine House doors
 client doors and 834 houses have identical door sets. The engine `entrance` is next to a
 door for 968 houses, so it is the tile in front of the front door. Beds stay a count: the
 official layout has no bed items, and bed positions come with the world map placements.
+
+## Catalogue
+
+`content/houses/` holds the 995 client 15.30 houses (878 private houses, 66 guildhalls,
+51 shops; 117,226 tiles, 5,372 doors) under the House catalogue owner contract, §3 source
+precedence. `build_catalogue.py` is the only writer: a rebuild keeps every committed key
+and revision, so a later client rename changes `name`, never the key. The divergences
+reported for review are in `samples/conversion-report.json` (engine `size` for 812 houses,
+one engine name, 27 entrances not next to a door, 10 not next to a House tile).
 
 ## Identity stability
 

@@ -1105,9 +1105,19 @@ async fn boot_and_serve(
     let spells = crate::spell::cast::v1_spell_book()
         .map_err(|_| BootError::ContentActivation("spell book"))?;
     // ACHIEVEMENT: the Achievement catalogue loads with the Content activation as well; a
-    // malformed catalogue refuses readiness. The chest USE dispatch will take it from here.
-    let _achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+    // malformed catalogue, or activated Content whose RewardClaim names an achievement the
+    // catalogue lacks (contract §3.3), refuses readiness. The chest USE dispatch will take it
+    // from here.
+    let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
         .map_err(|_| BootError::ContentActivation("achievement catalogue"))?;
+    if !achievements
+        .unbound_reward_claim_achievements(&door_content)
+        .is_empty()
+    {
+        return Err(BootError::ContentActivation(
+            "reward claim achievement not in the catalogue",
+        ));
+    }
     // #162 5868482467 (M2b): bind the entry room's one door `LocalObjectRuntime` once, at
     // Channel activation, from this exact activated content — never from a value a later
     // `USE_INTENT` is validating against it. `scope`/`generation` are this same activation's
