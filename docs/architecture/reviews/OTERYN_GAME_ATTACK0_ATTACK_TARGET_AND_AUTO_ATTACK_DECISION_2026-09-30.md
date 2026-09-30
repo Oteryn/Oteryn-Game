@@ -64,9 +64,10 @@ does a hit do?
 - Protocol numbers: `main` registers command types 1-3 and domains 1-3. #162 reserves capabilities
   1-2 (5907282001), command types 7-8, domains 7-8 and capability 3 (5909366267), and command
   type 9, domains 9 and 11 and capability 4 with domain 10 released (5910888594, PR #1344, not
-  merged). The control-plane ledger (#162 5912405163) records command type 10 and domain 10 for
-  this decision, gives capability 5 to `DEPOT_V1`, and names command type 11 and capability 7 (once
-  6 is confirmed) as the next free numbers.
+  merged). The control plane confirmed domain 10 for this decision (5911720221), reserved command
+  type 10 for `ACCOUNT_ACHIEVEMENTS_QUERY` (5912071646) and capability 5 for `DEPOT_V1`
+  (5912405163), and names command type 11 and capability 7 (once 6 is confirmed) as the next free
+  numbers.
 
 **OTS_HYPOTHESIS_ONLY** (Canary `04b83b51`, for the formulas of §5)
 
@@ -93,7 +94,8 @@ does a hit do?
 
 **Owner-trusted fan source**
 
-- The TibiaPal damage calculator, which the owner tested and trusts (#162, 2026-09-29), is the
+- The TibiaPal damage calculator, which the owner tested and trusts (#162 5905825574 and
+  5905851791), is the
   parity oracle for these formulas.
 
 ## 3. Wire (ATTACK-WIRE-1)
@@ -101,12 +103,13 @@ does a hit do?
 | Kind | Id | Name | Content |
 |---|---|---|---|
 | capability | at allocation | `ATTACK_V1` | gates everything below; its number is reserved on #162 when ATTACK-WIRE-1 is allocated (5 went to `DEPOT_V1`) |
-| command type | 10 | `ATTACK_TARGET_INTENT` | `{target: {actor_id, generation} or none}`; none stops attacking |
-| command type | 11 | `FIGHT_MODES_INTENT` | `{fight_mode: OFFENSIVE, BALANCED or DEFENSIVE; chase: STAND or CHASE; secure: bool}` |
+| command type | at allocation (11 proposed) | `ATTACK_TARGET_INTENT` | `{target: {actor_id, generation} or none}`; none stops attacking |
+| command type | at allocation (12 proposed) | `FIGHT_MODES_INTENT` | `{fight_mode: OFFENSIVE, BALANCED or DEFENSIVE; chase: STAND or CHASE; secure: bool}` |
 | state domain | 10 | `ACTOR_COMBAT_STATE` | the own actor's current target (or none), fight mode, chase, secure and in-fight flag |
 
-- Command type 10 and domain 10 are in the #162 ledger (5912405163); command type 11 is the next
-  free and is requested for `FIGHT_MODES_INTENT`; the capability number is reserved at allocation.
+- Domain 10 is confirmed (5911720221). The two command types and the capability are reserved on
+  #162 when ATTACK-WIRE-1 is allocated; 11 and 12 are proposed, the next free after command type
+  10 went to `ACCOUNT_ACHIEVEMENTS_QUERY`.
 - The target is the D85 identity of a creature visible to the session (VIS-2). A target that is
   not visible, not a creature, or in a protection zone is refused, and so is any target while the
   attacker stands in a protection zone.
@@ -117,8 +120,12 @@ does a hit do?
 - Fight modes are runtime-only, as in Tibia, where the client sends them at login: the defaults
   are balanced, stand and secure on.
 - Domain 10 is owned by the channel runtime; its revision is monotonic per GameSession (FND-02
-  §15), with a snapshot at every admission, reconnect and channel transfer. The target is cleared
-  on reconnect and transfer.
+  §15), with a snapshot at every admission, reconnect and channel transfer.
+- **Reconnect.** The in-fight deadline and its flag belong to the runtime actor and survive a
+  reconnect to the same GameSession, as FND-ID-01 requires ("reconnect must not ... clear
+  combat/PZ/logout locks"); a player cannot escape the logout block by reconnecting. Only the attack
+  target is cleared on reconnect and transfer: it is a client selection, not a lock, and clearing
+  it stops swings without shortening any block. The client sets it again.
 - Damage stays visible through the target's health percentage in domain 1 (D85). A dedicated
   combat-effects view (numbers, animations) is a later wire decision.
 - Limits (ATTACK-WIRE-1 registers them): `ATTACK0-RL-01` target changes per second,
@@ -136,7 +143,9 @@ does a hit do?
 - **Timer.** Every attack interval (2,000 ms) while the target is valid, the actor swings once
   through the GAME-ABILITY-01 pipeline as one typed ability, `AutoAttack`. Catch-up policy
   `DEADLINE_STATE`: at most one swing per due deadline, never a backlog, as Canary never replays
-  a missed interval. Nothing else deals auto-attack damage.
+  a missed interval. After a stall the next deadline counts from the time the swing actually ran,
+  not from the missed schedule (Canary sets `lastAttack` to the execution time), so a stall never
+  shortens the next interval. Nothing else deals auto-attack damage.
 - **Cooldowns.** The attack interval is independent of spell and spell-group cooldowns.
 - **Validity.** Visible, a creature, alive, on the same floor, adjacent (1 tile), neither actor in
   a protection zone. Out of range, the swing waits. A dead or vanished target clears the target.
@@ -213,8 +222,9 @@ does a hit do?
 1. **Contract amendments:** none. SPELL-D7's `ATTACK_TARGET` resolves to the §4 target through
    SPELL-TARGET-1.
 2. **Serialization:** runtime-only, inside the channel owner's tick; one occurrence per swing.
-3. **Restart:** the target, fight modes and in-fight deadline are runtime state and reset on
-   reconnect.
+3. **Restart:** the target, fight modes and in-fight deadline are runtime-actor state. The
+   deadline and flag survive a same-GameSession reconnect; the target is cleared; a new runtime
+   actor starts without them.
 4. **Typed references:** the target is the D85 identity; weapons are A12 keys.
 5. **Wire:** §3, capability-gated.
 6. **Split work:** one swing per due deadline, one ability invocation per swing.
