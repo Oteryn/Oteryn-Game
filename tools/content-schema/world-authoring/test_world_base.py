@@ -522,13 +522,15 @@ class ConvertAndValidateTest(unittest.TestCase):
         base, blobs = self.teleport_map()
         links, reasons = convert.teleport_links(base)
         extra = ((1002, 1001, 7), 1949, (1001, 1001, 7))
-        with mock.patch.object(
-            convert,
-            "teleport_links",
-            return_value=(links + Counter({extra: 1}), reasons),
+        with (
+            mock.patch.object(
+                convert,
+                "teleport_links",
+                return_value=(links + Counter({extra: 1}), reasons),
+            ),
+            self.assertRaisesRegex(convert.ConvertError, "not on the base map"),
         ):
-            with self.assertRaisesRegex(convert.ConvertError, "not on the base map"):
-                convert.build(blobs, ITEMS_BY_SERVER_ID)
+            convert.build(blobs, ITEMS_BY_SERVER_ID)
         # a teleport no rule names is excluded as no_transition
         linked = +links
         del linked[((1001, 1001, 7), 1949, (1002, 1001, 7))]
