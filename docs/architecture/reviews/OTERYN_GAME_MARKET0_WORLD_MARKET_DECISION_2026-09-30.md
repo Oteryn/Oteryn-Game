@@ -99,6 +99,13 @@ How do players of one World buy and sell items through the Market, safely across
   no changed charges, duration, text or contents.
 - `trade_as` merging is deferred; each definition key is its own ware.
 
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3-§4).** A second ware kind is added: the virtual Tibia Coin ware
+`oteryn:market.tibia_coin`, one book per World, never an Item or ItemInstance and never in the
+depot, escrow or Inbox. Its coins stay on Platform: a coin sell offer claims a Platform hold, and
+fills move held coins by SETTLE instructions. The Market fee applies unchanged; the Premium gate
+of §4 does not apply to coin offers (Global).
+
 ### 3.2 Numbers
 
 - `amount` 1 to 64,000 (`MARKET0-RL-02`); `piece_price` 1 to 999,999,999,999; `total =
@@ -314,6 +321,11 @@ is measured by MARKET-1 against the audit envelope before implementation.
   one page (32 entries) in domain 11, and command 9 takes an Inbox entry handle as source, with the
   main backpack or `DEPOT {box}` as destination.
 - The Market view closes with the depot view.
+
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§8).** Capability `MARKET_COINS_V1`, requiring `MARKET_V1`, lists the coin ware, adds the
+Account's coin balance to `MARKET_QUERY` (display only) and the results `NOT_ENOUGH_COINS` and
+`COINS_UNAVAILABLE`; its number is reserved on #162 at allocation.
 
 ## 11. Declared Reference differences
 
