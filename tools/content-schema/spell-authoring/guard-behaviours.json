@@ -1,0 +1,50 @@
+{
+  "schema": "oteryn.spell-guard-behaviours.v1",
+  "note": "S27: onCastSpell guards the core now expresses with spell fields (OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md B.5, C.5, D.3; task OTV2-20260930-spell-sp-conv-2). Only the exact Canary 99902524 body listed here is accepted (spell_scripts accepted_guards); the script's single Combat is the execution, the guard becomes the listed fields, and the extra effects are added to the Ability. A changed body or another source's custom body stays custom.",
+  "spells": {
+    "nature's embrace": {
+      "canary_body": "if creature:isPlayer() and var:getNumber() == creature:getId() then creature:sendCancelMessage(\"You can't cast this spell to yourself.\") creature:getPosition():sendMagicEffect(CONST_ME_POFF) return false else return combat:execute(creature, var) end",
+      "targeting": {
+        "allowed_targets": "not_self",
+        "needs_target": true,
+        "self_target": false
+      },
+      "sources": "B.5: BR436996 (not on self), Canary and Crystal (\"You can't cast this spell to yourself.\"). Crystal's body also runs the Shared Conservation stance heal (a stance behaviour, not authored here) and stays custom.",
+      "spell_type": "instant"
+    },
+    "intense healing rune": {
+      "canary_body": "if var:getNumber() ~= creature:getId() then creature:sendCancelMessage(\"You can only use this rune on yourself.\") creature:getPosition():sendMagicEffect(CONST_ME_POFF) return false end return combat:execute(creature, var)",
+      "targeting": {
+        "allowed_targets": "self_or_own_summons"
+      },
+      "sources": "D.3: F1189630 (self or summoned and convinced creatures) over Canary self only (S3/S21, D.3 Q7 as accepted by the Part D core); N8833 no other characters. COMBAT_PARAM_TARGETCASTERORTOPMOST (only the top creature of a used tile; D.3 step 2) is not authored: the Part D core takes the rune target from the Target Resolver, and Effect.affects.top_creature_only without kind is a monster schema change (D.3 remainder).",
+      "spell_type": "rune",
+      "drop_params": [
+        "COMBAT_PARAM_TARGETCASTERORTOPMOST"
+      ]
+    },
+    "ultimate healing rune": {
+      "canary_body": "local player = Player(creature) if not player then return false end local vocation = player:getVocation():getName():lower() if vocation == \"exalted monk\" then player:sendCancelMessage(\"Your vocation cannot use this rune.\") player:getPosition():sendMagicEffect(CONST_ME_POFF) return false end if var:getNumber() ~= player:getId() then player:sendCancelMessage(\"You can only use this rune on yourself.\") player:getPosition():sendMagicEffect(CONST_ME_POFF) return false end return combat:execute(player, var)",
+      "targeting": {
+        "allowed_targets": "self_or_own_summons"
+      },
+      "sources": "B.5/D.3: F1189629 (users knight, paladin, sorcerer, druid: both monks refused through the rune vocations) and self or summoned creatures over Canary self only (D.3 Q7); N8833. COMBAT_PARAM_TARGETCASTERORTOPMOST (only the top creature of a used tile; D.3 step 2) is not authored: the Part D core takes the rune target from the Target Resolver, and Effect.affects.top_creature_only without kind is a monster schema change (D.3 remainder).",
+      "spell_type": "rune",
+      "drop_params": [
+        "COMBAT_PARAM_TARGETCASTERORTOPMOST"
+      ]
+    },
+    "cancel magic shield": {
+      "canary_body": "creature:removeCondition(CONDITION_MANASHIELD) return combat:execute(creature, var)",
+      "extra_effects": [
+        {
+          "suffix": "remove-manashield",
+          "operation": "remove_condition",
+          "removed_condition": "manashield"
+        }
+      ],
+      "sources": "C.5: Canary and Crystal creature:removeCondition(CONDITION_MANASHIELD) before the combat; the condition key follows the converter's name for CONDITION_MANASHIELD (the Magic Shield condition). Q23 (shield required?) stays open; the Canary reading (no shield needed) is used.",
+      "spell_type": "instant"
+    }
+  }
+}
