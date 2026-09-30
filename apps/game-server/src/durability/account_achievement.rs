@@ -14,7 +14,7 @@
 //! The catalogue check is an input: the granter resolves the key against the
 //! world's current compatible catalogue and passes the result
 //! ([`AchievementCatalogueLookup`]). No runtime catalogue loader exists yet;
-//! the step-4 granter provides the lookup from its Content. A key the
+//! the reward-claim MINT (step 4) takes the lookup from its caller. A key the
 //! catalogue lacks fails the granting transaction closed; a retired key is a
 //! no-op and the granting transaction continues.
 //!
@@ -23,6 +23,7 @@
 
 use super::DurabilityError;
 use super::character_progression::{uuid_text, valid_revision};
+use super::reward_claim_mint::RewardClaimFenceChecked;
 use crate::domain::CharacterId;
 use sqlx::Row;
 
@@ -115,25 +116,40 @@ impl std::fmt::Display for AchievementGrantError {
 
 impl std::error::Error for AchievementGrantError {}
 
-/// Evidence that a durability writer holds its complete Character fence,
-/// ending with the `character_root` row lock, in the transaction it passes to
-/// [`record_achievement_grant`]. Only durability writers can create it.
+/// Evidence that the granter holds its complete Character fence, ending with
+/// the `character_root` row lock, in the transaction it passes to
+/// [`record_achievement_grant`]: the fenced Character and the id of the
+/// transaction that checked the fence. Neither `Clone` nor `Copy`; the grant
+/// consumes it and rejects it in any other transaction.
 #[derive(Debug)]
 pub struct FencedGrantingCharacter {
     character_id: CharacterId,
+    transaction: String,
 }
 
 impl FencedGrantingCharacter {
-    /// Call only after the writer's fence succeeded in the same transaction.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the first granter (contract §5 step 4) creates it"
-        )
-    )]
-    pub(super) const fn after_fence(character_id: CharacterId) -> Self {
-        Self { character_id }
+    /// The only production token: the witness exists only in
+    /// `reward_claim_mint::admit`, right after its complete item fence
+    /// returned true in `tx`.
+    pub(super) async fn after_fence(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        character_id: CharacterId,
+        _fenced: RewardClaimFenceChecked,
+    ) -> std::result::Result<Self, DurabilityError> {
+        Self::in_transaction(tx, character_id).await
+    }
+
+    async fn in_transaction(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        character_id: CharacterId,
+    ) -> std::result::Result<Self, DurabilityError> {
+        let transaction: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+            .fetch_one(&mut **tx)
+            .await?;
+        Ok(Self {
+            character_id,
+            transaction,
+        })
     }
 }
 
@@ -144,7 +160,7 @@ type Pass<T> = std::result::Result<std::result::Result<T, AchievementGrantError>
 /// the granter must drop its transaction uncommitted.
 pub async fn record_achievement_grant(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    granter: &FencedGrantingCharacter,
+    granter: FencedGrantingCharacter,
     request: &AchievementGrantRequest,
 ) -> Pass<AchievementGrantOutcome> {
     if !valid_request(request) {
@@ -159,13 +175,16 @@ pub async fn record_achievement_grant(
     };
     let character = granter.character_id.as_bytes().as_slice();
 
-    // The granter's own row lock (re-entrant here); the account comes from
-    // the locked root, never from the caller.
+    // The granter's own row lock (re-entrant here), only in the transaction
+    // that checked the fence; the account comes from the locked root, never
+    // from the caller.
     let account: Option<String> = sqlx::query_scalar(
         "SELECT account_id::text FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
+          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
+            AND pg_current_xact_id()::text = $2 FOR UPDATE",
     )
     .bind(character)
+    .bind(&granter.transaction)
     .fetch_optional(&mut **tx)
     .await?;
     let Some(account) = account else {
@@ -269,7 +288,7 @@ async fn load_fact(
 }
 
 /// `oteryn:achievement/<slug>`, the catalogue schema's key grammar.
-fn valid_key(key: &str) -> bool {
+pub(super) fn valid_key(key: &str) -> bool {
     key.len() <= MAX_KEY_BYTES
         && key.strip_prefix(KEY_PREFIX).is_some_and(|slug| {
             slug.split('_').all(|part| {
@@ -292,8 +311,8 @@ fn valid_request(request: &AchievementGrantRequest) -> bool {
 }
 
 /// Test-only granting transaction: the XP writer's complete gameplay fence,
-/// then each request in order, committed together or not at all. The first
-/// granter (contract §5 step 4) replaces it in production.
+/// then each request in order, committed together or not at all. In
+/// production the reward-claim MINT is the granter (contract §5 step 4).
 #[cfg(test)]
 mod granting_harness {
     use super::*;
@@ -333,16 +352,76 @@ mod granting_harness {
                         {
                             return Ok(Err(AchievementGrantError::AuthorityRejected));
                         }
-                        let granter = FencedGrantingCharacter::after_fence(fence.character_id);
                         let mut outcomes = Vec::with_capacity(requests.len());
                         for request in &requests {
-                            match record_achievement_grant(&mut tx, &granter, request).await? {
+                            let granter = FencedGrantingCharacter::in_transaction(
+                                &mut tx,
+                                fence.character_id,
+                            )
+                            .await?;
+                            match record_achievement_grant(&mut tx, granter, request).await? {
                                 Ok(outcome) => outcomes.push(outcome),
                                 Err(error) => return Ok(Err(error)),
                             }
                         }
                         commit_semantic_transaction(tx, deadline).await?;
                         Ok(Ok(outcomes))
+                    })
+                })
+                .await?
+        }
+
+        /// Negative only: a token minted after the complete fence in one
+        /// committed transaction, presented in a second transaction under the
+        /// same complete fence, which commits whatever the grant wrote.
+        pub(crate) async fn commit_test_achievement_grant_with_foreign_token(
+            &self,
+            authority: &ReconciledCharacterAuthority<'_, '_>,
+            node: &NodeIncarnationProof,
+            fence: CurrentCharacterGameplayFence,
+            request: AchievementGrantRequest,
+        ) -> std::result::Result<AchievementGrantOutcome, AchievementGrantError> {
+            let recovery = authority
+                .record_for(self)
+                .map_err(|_| AchievementGrantError::AuthorityRejected)?;
+            let (first_recovery, first_node) = (recovery.clone(), node.clone());
+            let token = self
+                .try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, &first_recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        if assert_gameplay_fence(&mut tx, &fence, &first_node)
+                            .await?
+                            .is_err()
+                        {
+                            return Ok(Err(AchievementGrantError::AuthorityRejected));
+                        }
+                        let token =
+                            FencedGrantingCharacter::in_transaction(&mut tx, fence.character_id)
+                                .await?;
+                        commit_semantic_transaction(tx, deadline).await?;
+                        Ok(Ok(token))
+                    })
+                })
+                .await??;
+            let node = node.clone();
+            self.try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, &recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        if assert_gameplay_fence(&mut tx, &fence, &node)
+                            .await?
+                            .is_err()
+                        {
+                            return Ok(Err(AchievementGrantError::AuthorityRejected));
+                        }
+                        let outcome = record_achievement_grant(&mut tx, token, &request).await?;
+                        commit_semantic_transaction(tx, deadline).await?;
+                        Ok(outcome)
                     })
                 })
                 .await?
@@ -363,6 +442,12 @@ mod tests {
                 event_id: vec![1; 16],
             },
         }
+    }
+
+    /// The PostgreSQL targets drive the negative harness.
+    #[test]
+    fn the_foreign_token_harness_is_linked() {
+        let _ = crate::durability::DurabilityRoot::commit_test_achievement_grant_with_foreign_token;
     }
 
     #[test]

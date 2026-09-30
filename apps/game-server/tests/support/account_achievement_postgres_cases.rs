@@ -308,6 +308,43 @@ fn a_stale_character_fence_writes_neither_request_nor_fact() -> TestResult {
     })
 }
 
+/// Only the fenced token's own transaction is changed: the same complete
+/// current fence holds in both transactions, the request is valid and new.
+#[test]
+fn a_token_minted_in_another_transaction_writes_neither_request_nor_fact() -> TestResult {
+    run("foreign", async |harness, root| {
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+        let outcome = root
+            .commit_test_achievement_grant_with_foreign_token(
+                &authority,
+                &harness.node,
+                fence(1)?,
+                earnable(COOKIES, 60),
+            )
+            .await;
+        assert!(
+            matches!(outcome, Err(AchievementGrantError::AuthorityRejected)),
+            "{outcome:?}"
+        );
+        assert_eq!(counts(harness).await?, (0, 0));
+        assert_eq!(harness.root_revision().await?, "1");
+        // The same request with a token of its own transaction grants.
+        granted(
+            root.commit_test_achievement_grants(
+                &authority,
+                &harness.node,
+                fence(1)?,
+                vec![earnable(COOKIES, 60)],
+            )
+            .await
+            .map_err(debug)?,
+        )?;
+        assert_eq!(counts(harness).await?, (1, 1));
+        Ok(())
+    })
+}
+
 #[test]
 fn an_unknown_key_fails_closed_and_a_retired_key_is_a_no_op() -> TestResult {
     run("catalogue", async |harness, root| {

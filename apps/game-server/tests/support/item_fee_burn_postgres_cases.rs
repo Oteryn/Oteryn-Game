@@ -137,7 +137,7 @@ impl Harness {
         harness
             .seed(&format!(
                 "INSERT INTO game_character_roots VALUES ({character}, {account}, {world}, 1, 1, \
-                   'profile-1', 'ruleset-1', 'content-1', 'starter-1'); \
+                   'profile-1', 'ruleset-1', 'content-1', 'starter-1', 'Fee Hero'); \
                  INSERT INTO game_character_progression_state VALUES ({character}, 1, 50, 1000, \
                    'profile-1', 'ruleset-1', 'content-1', 'simulation-1', 'evidence-1', \
                    'declaration-1', 'policy-1', 'reward-1'); \

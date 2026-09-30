@@ -641,6 +641,63 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         first
     );
 
+    // LCFA-1: the bootstrap queued its account's snapshot in the same
+    // transaction; the publisher reads it, clears it on acknowledgement, and
+    // the watermark then has no undelivered change.
+    let snapshot = root
+        .next_account_characters_snapshot(&authority)
+        .await
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("bootstrap queued no projection snapshot")?;
+    assert_eq!(snapshot.account_id, uuid(id(31)));
+    assert_eq!(
+        (snapshot.projection_epoch, snapshot.projection_revision),
+        (1, 1)
+    );
+    assert_eq!(
+        snapshot.characters,
+        vec![
+            oteryn_game_server::native_admission_source::account_characters::CharacterSummary {
+                character_id: uuid(*first.character_id.as_bytes()),
+                world_id: uuid(id(90)),
+                name: name_for(21),
+                availability:
+                    oteryn_game_server::native_admission_source::account_characters::Availability::Available,
+            }
+        ]
+    );
+    assert!(
+        oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
+            "oteryn:character-authority:primary",
+            &snapshot
+        )
+        .is_ok()
+    );
+    let facts = root
+        .account_characters_watermark_facts(&authority)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(facts.projection_epoch, 1);
+    assert!(
+        facts
+            .oldest_undelivered_ms
+            .is_some_and(|oldest| oldest <= facts.now_ms)
+    );
+    root.clear_account_characters(&authority, &snapshot.account_id, 1, 1)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(
+        root.next_account_characters_snapshot(&authority)
+            .await
+            .map_err(|e| format!("{e:?}"))?
+            .is_none()
+    );
+    let facts = root
+        .account_characters_watermark_facts(&authority)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(facts.oldest_undelivered_ms, None);
+
     // A superseded incarnation cannot mutate; its successor can.
     allow(&root, &node, 33).await?;
     let successor = register(&root, 2, Some(1)).await?;
@@ -654,6 +711,15 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     assert_eq!(
         count(&pool, "SELECT count(*) FROM game_character_roots").await?,
         1
+    );
+    // The refused (fenced) mutation queued no projection change either.
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_account_projection_outbox"
+        )
+        .await?,
+        0
     );
     let node = successor;
     root.claim_native_admission_source_custody(&node)
@@ -2198,6 +2264,11 @@ mod bestiary_progress_postgres_cases;
 // harness included above.
 #[path = "support/account_achievement_postgres_cases.rs"]
 mod account_achievement_postgres_cases;
+
+// LCFA-1 `ListCharactersForAccount` outbox, revision and epoch (migration 0024)
+// share their cases with the protected PostgreSQL lane.
+#[path = "support/account_characters_projection_postgres_cases.rs"]
+mod account_characters_projection_postgres_cases;
 
 // Combat D2b creature death -> loot MINT + R7 P03 XP composition shares its
 // cases with the focused standalone target through the same protected lane.

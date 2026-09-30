@@ -77,6 +77,9 @@ def our_spell_values(spell):
               'cooldown': spell.get('cooldown_ms'), 'basepower': spell.get('base_power')}
     mana = costs.get('mana')
     values['mana'] = mana if isinstance(mana, int) else 'varies' if mana is not None else None
+    native = spell.get('execution', {}).get('native_behavior', {})
+    if native.get('key') == 'party_buff' and native['parameters']['mana'].get('mode') == 'scaled':
+        values['mana'] = 'varies'  # S27 C.3: the party_buff parameters scale the mana with the members.
     for index, group in enumerate(groups[:2]):
         values['cooldowngroup' + ('2' if index else '')] = group.get('cooldown_ms')
         values['subclass' if index == 0 else 'secondarygroup'] = group_key(group.get('group'))

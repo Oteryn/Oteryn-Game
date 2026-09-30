@@ -765,6 +765,7 @@ fn item_candidate() -> ProjectV2Draft {
                 currency: None,
                 count: None,
                 sub_type: None,
+                parity_pending: false,
             }],
             recipes: vec![],
             routes: vec![],
