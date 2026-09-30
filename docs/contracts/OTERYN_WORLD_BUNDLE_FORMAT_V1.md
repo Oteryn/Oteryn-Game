@@ -279,8 +279,10 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
   native position with the same flags, house and zones, and every entry must keep its depth,
   attributes and palette key. The only exceptions are the rules above: subtrees under keys the
   resolver calls provisional are skipped, (0,0,0) teleports are dropped, and teleport floors are
-  native. The bundle holds no other tile, and `skipped_provisional_keys` is exactly the set of
-  provisional keys met. The run on #1170 head `2ffba017` (with #1160 `ee19179e` merged in) stops, as it
+  native. Every teleport is checked again against the Transition.Teleport family, and every
+  record must meet its attribute. The bundle holds no other tile, `skipped_provisional_keys` is
+  exactly the set of provisional keys met, and `dropped_teleports` is exactly the set of
+  placement keys derived from the source. The run on #1170 head `2ffba017` (with #1160 `ee19179e` merged in) stops, as it
   must, at the first real-destination orphan. In a scratch copy with only those six
   attributes removed, as the content fix will do, it compiles a non-production bundle in 37 s
   with a peak RSS of 3.8 GB:

@@ -383,12 +383,15 @@ pub struct Equivalence {
 /// native position with the same flags, house and zones, and every entry keeps its depth,
 /// attributes and palette key, except the rules of the format document: a subtree under a key
 /// `resolver` calls provisional is left out, a (0,0,0) teleport is dropped, and a teleport floor
-/// is native. The bundle holds no other tile, and `skipped_provisional_keys` is exactly the set of
-/// provisional keys met.
+/// is native. Every teleport is checked again against `families` (§4.5), and every Transition
+/// record must meet its attribute. The bundle holds no other tile, `skipped_provisional_keys` is
+/// exactly the set of provisional keys met, and `dropped_teleports` is exactly the set of
+/// placement keys of the kept top-level entries that lost a (0,0,0) teleport.
 pub fn equivalence(
     regions: &[Vec<u8>],
     palette: &[String],
     resolver: &dyn KeyResolver,
+    families: &Families,
     bundle: &[u8],
 ) -> Result<Equivalence, Error> {
     let read = bundle::read(bundle)?;
@@ -400,11 +403,12 @@ pub fn equivalence(
     }
     let resolved: Vec<Resolution> = palette.iter().map(|key| resolver.resolve(key)).collect();
     let mut provisional = BTreeSet::new();
+    let (mut dropped, mut records_met) = (BTreeSet::new(), BTreeSet::new());
     let (mut report, mut budget) = (Equivalence::default(), bundle::BUNDLE_BUDGET);
     let mut seen = BTreeSet::new();
     for data in regions {
         let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
-        let floor = native_floor(region.z)?;
+        let (z, floor) = (region.z, native_floor(region.z)?);
         for (sx, sy, tiles) in region.sectors {
             let at = (floor, sy, sx);
             if !seen.insert(at) {
@@ -418,7 +422,17 @@ pub fn equivalence(
                 return differs(format!("sector {at:?} has another tile count"));
             }
             for (source, tile) in tiles.iter().zip(compiled) {
-                let expected = source_entries(source, palette, &resolved, &mut report)?;
+                let mut context = Context {
+                    palette,
+                    resolved: &resolved,
+                    families,
+                    z,
+                    floor,
+                    dropped: &mut dropped,
+                    records_met: &mut records_met,
+                    report: &mut report,
+                };
+                let expected = context.entries(source)?;
                 provisional.extend(source.items.iter().filter_map(|item| {
                     let at = item.palette as usize;
                     (resolved.get(at) == Some(&Resolution::Provisional)).then(|| &palette[at])
@@ -452,6 +466,15 @@ pub fn equivalence(
             total - report.tiles
         ));
     }
+    if records_met.len() != families.teleports.len() {
+        return differs("a Transition record meets no teleport attribute".into());
+    }
+    if !dropped
+        .into_iter()
+        .eq(read.manifest.dropped_teleports.iter().copied())
+    {
+        return differs("dropped_teleports is not the set of dropped placement keys".into());
+    }
     if !provisional
         .into_iter()
         .eq(read.manifest.skipped_provisional_keys.iter())
@@ -463,36 +486,70 @@ pub fn equivalence(
 
 type Entry<'a> = (Option<&'a str>, u8, crate::sector::Attrs);
 
-/// The entries a source tile compiles to under the format rules [`equivalence`] names.
-fn source_entries<'a>(
-    tile: &Tile,
+/// What [`equivalence`] derives one source tile from.
+struct Context<'a, 'b> {
     palette: &'a [String],
-    resolved: &[Resolution],
-    report: &mut Equivalence,
-) -> Result<Vec<Entry<'a>>, Error> {
-    let mut items = Vec::with_capacity(tile.items.len());
-    let mut skip_below: Option<u8> = None;
-    for item in &tile.items {
-        if skip_below.is_some_and(|depth| item.depth <= depth) {
-            skip_below = None;
-        }
-        let key = palette.get(item.palette as usize).map(String::as_str);
-        let own = resolved.get(item.palette as usize);
-        if skip_below.is_some() || own == Some(&Resolution::Provisional) {
-            skip_below = skip_below.or(Some(item.depth));
-            report.skipped_entries += 1;
-            continue;
-        }
-        let mut attrs = item.attrs.clone();
-        attrs.teleport = match attrs.teleport {
-            Some((0, 0, 0)) => {
-                report.dropped_teleports += 1;
-                None
+    resolved: &'b [Resolution],
+    families: &'b Families,
+    z: u8,
+    floor: i8,
+    dropped: &'b mut BTreeSet<u64>,
+    records_met: &'b mut BTreeSet<LegacyPosition>,
+    report: &'b mut Equivalence,
+}
+
+impl<'a> Context<'a, '_> {
+    /// The entries a source tile compiles to under the format rules [`equivalence`] names.
+    fn entries(&mut self, tile: &Tile) -> Result<Vec<Entry<'a>>, Error> {
+        let differs = |what: String| Error::Format(format!("equivalence: {what}"));
+        let from = (tile.x, tile.y, self.z);
+        let mut items = Vec::with_capacity(tile.items.len());
+        let mut skip_below: Option<u8> = None;
+        // Kept top-level entries so far; the last one owns the contents that follow it.
+        let mut top_level = 0u8;
+        for item in &tile.items {
+            if skip_below.is_some_and(|depth| item.depth <= depth) {
+                skip_below = None;
             }
-            Some((x, y, z)) => Some((x, y, native_floor(z)? as u8)),
-            None => None,
-        };
-        items.push((key, item.depth, attrs));
+            // The Transition rule holds for every attribute, a skipped one included (§4.5).
+            let record = self.families.teleports.get(&from);
+            let teleport = match (item.attrs.teleport, record) {
+                (None, _) => None,
+                (Some(to), Some(record)) if to == *record => {
+                    self.records_met.insert(from);
+                    let (x, y, to_z) = to;
+                    Some(Some((x, y, native_floor(to_z)? as u8)))
+                }
+                (Some((0, 0, 0)), None) => Some(None),
+                (Some(to), _) => {
+                    return Err(differs(format!("teleport at {from:?} to {to:?} disagrees")));
+                }
+            };
+            let key = self.palette.get(item.palette as usize).map(String::as_str);
+            let own = self.resolved.get(item.palette as usize);
+            if skip_below.is_some() || own == Some(&Resolution::Provisional) {
+                skip_below = skip_below.or(Some(item.depth));
+                self.report.skipped_entries += 1;
+                continue;
+            }
+            if item.depth == 0 {
+                top_level = top_level.saturating_add(1);
+            }
+            let mut attrs = item.attrs.clone();
+            if let Some(teleport) = teleport {
+                attrs.teleport = teleport;
+                if teleport.is_none() {
+                    self.report.dropped_teleports += 1;
+                    let ordinal = top_level
+                        .checked_sub(1)
+                        .ok_or_else(|| differs(format!("content without an entry at {from:?}")))?;
+                    let placement = bundle::placement_key(self.floor, tile.x, tile.y, ordinal)
+                        .ok_or_else(|| differs(format!("no placement key at {from:?}")))?;
+                    self.dropped.insert(placement);
+                }
+            }
+            items.push((key, item.depth, attrs));
+        }
+        Ok(items)
     }
-    Ok(items)
 }

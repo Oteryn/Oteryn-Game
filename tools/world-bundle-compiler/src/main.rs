@@ -138,7 +138,13 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
         families: &project.families,
     };
     let compiled = compile::compile(&input, &registry)?;
-    let proof = equivalence(&project.regions, &palette, &registry, &compiled.bytes)?;
+    let proof = equivalence(
+        &project.regions,
+        &palette,
+        &registry,
+        &project.families,
+        &compiled.bytes,
+    )?;
     fs::write(out, &compiled.bytes)
         .map_err(|e| Error::Format(format!("{}: {e}", out.display())))?;
     let digest: String = compiled.digest.iter().map(|b| format!("{b:02x}")).collect();

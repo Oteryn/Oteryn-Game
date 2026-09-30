@@ -62,6 +62,21 @@ Repair candidate after returning to AUTHORING; all four findings fixed:
 Real-map rerun on #1170 `2ffba017` (scratch strip of the six orphans): same digest `fa65ffb1…`,
 19,373,519 tiles proven, 40 s.
 
+## Review round 2 (Codex review 5371689985 of `434fca26`)
+
+Repair candidate after returning to AUTHORING; both P1 findings fixed in `compile.rs`:
+
+- `equivalence` derives the placement keys of the dropped (0,0,0) teleports from the source and
+  requires `manifest.dropped_teleports` to equal them exactly.
+- `equivalence` takes the families and applies the Transition rule again, independently of the
+  compiler: a mismatch, a record on a (0,0,0) tile, a real destination without a record, or an
+  unmet record fails the proof.
+
+Real-map rerun: same digest `fa65ffb1…`, 1,577 dropped keys matched, 41 s.
+
+Architect ruling 5918085982 confirmed the stated assumptions 1 and 2 below, and noted 5,995
+provisional keys as superseding "five" in ADR-0021 §4.5.
+
 ## Stated assumptions (reversible; for the control plane)
 
 - An Item key that no catalogue record points at is a plain Item and resolves to `item`

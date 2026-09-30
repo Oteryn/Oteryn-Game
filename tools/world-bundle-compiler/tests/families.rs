@@ -236,21 +236,39 @@ fn family_shards_load_in_the_native_frame_and_fail_closed() -> TestResult {
 fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
     let regions = [region(map())?];
     let compiled = build(map(), &families())?;
-    let proof = equivalence(&regions, &keys(), &Resolver, &compiled.bytes)?;
+    let proof = equivalence(&regions, &keys(), &Resolver, &families(), &compiled.bytes)?;
     // The provisional entry and its content, a dropped teleport, are left out.
     assert_eq!((proof.tiles, proof.dropped_teleports), (4, 2));
     assert_eq!((proof.entries, proof.skipped_entries), (5, 2));
     // Another source, or a palette that names other keys, is not equivalent.
     let mut other = map();
     other[0].flags = 1;
-    assert!(equivalence(&[region(other)?], &keys(), &Resolver, &compiled.bytes).is_err());
+    assert!(
+        equivalence(
+            &[region(other)?],
+            &keys(),
+            &Resolver,
+            &families(),
+            &compiled.bytes
+        )
+        .is_err()
+    );
     let swapped: Vec<String> = ["item:bag", "item:teleport", "donor:99"]
         .map(String::from)
         .to_vec();
-    assert!(equivalence(&regions, &swapped, &Resolver, &compiled.bytes).is_err());
+    assert!(equivalence(&regions, &swapped, &Resolver, &families(), &compiled.bytes).is_err());
     let mut fewer = map();
     fewer.pop();
-    assert!(equivalence(&[region(fewer)?], &keys(), &Resolver, &compiled.bytes).is_err());
+    assert!(
+        equivalence(
+            &[region(fewer)?],
+            &keys(),
+            &Resolver,
+            &families(),
+            &compiled.bytes
+        )
+        .is_err()
+    );
     // A resolution other than the manifest's, or a provisional set the source does not give,
     // is not equivalent either: the proof reads the resolver, not the bundle's claims.
     struct Other;
@@ -262,11 +280,30 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
             }
         }
     }
-    assert!(equivalence(&regions, &keys(), &Other, &compiled.bytes).is_err());
+    assert!(equivalence(&regions, &keys(), &Other, &families(), &compiled.bytes).is_err());
     let read = bundle::read(&compiled.bytes)?;
     let mut manifest = read.manifest.clone();
     manifest.skipped_provisional_keys.push("donor:x".into());
     let claimed = bundle::write(&manifest, &read.sectors)?;
-    assert!(equivalence(&regions, &keys(), &Resolver, &claimed).is_err());
+    assert!(equivalence(&regions, &keys(), &Resolver, &families(), &claimed).is_err());
+    // A manifest that omits a dropped teleport key is not equivalent: its entry would be
+    // materialized.
+    let mut manifest = read.manifest.clone();
+    manifest.dropped_teleports.pop();
+    let omitted = bundle::write(&manifest, &read.sectors)?;
+    assert!(equivalence(&regions, &keys(), &Resolver, &families(), &omitted).is_err());
+    // The Transition rule is checked again from the families: a record to elsewhere, a
+    // record on a (0,0,0) tile, a missing record and an unmet record all fail.
+    let mut elsewhere = families();
+    elsewhere.teleports.insert((3, 1, 7), (9, 8, 6));
+    let mut on_zero = families();
+    on_zero.teleports.insert((1, 1, 7), (0, 0, 0));
+    let mut missing = families();
+    missing.teleports.clear();
+    let mut unmet = families();
+    unmet.teleports.insert((7, 7, 7), (9, 9, 6));
+    for wrong in [elsewhere, on_zero, missing, unmet] {
+        assert!(equivalence(&regions, &keys(), &Resolver, &wrong, &compiled.bytes).is_err());
+    }
     Ok(())
 }
