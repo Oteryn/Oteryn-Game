@@ -5,7 +5,7 @@
   economy, persistence, protocol, privacy and cross-repository integration), protected
   integration here, and the matching Platform change accepted in `Oteryn/Oteryn-Platform`
   (MKTCOIN-P). It extends MARKET-0 and integrates after it. Owner questions C1-C3 (§12) are
-  answered: C1 a, C2 b, C3 a.
+  answered: C1 a, C2 b, C3 a; the owner confirmed the C2 chargeback rule (§5, §12).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: MARKET-0 owner answer Q2b (Tibia Coins on the Market, "as in Tibia", #162 5913348961)
   and the owner direction of 2026-09-30 (build now, full Tibia Global parity)
@@ -164,7 +164,8 @@ key; the same key with other content is an integrity conflict.
 | `SETTLE {instruction_id, hold_key, claim_key, maker_offer_id, taker_operation_id, to_account, amount}` | moves coins from the hold to `to_account`, transferable | integrity faults only (the settlement fence below); over `MKTCOIN0-RL-11` it is deferred, not applied |
 | `RELEASE {instruction_id, hold_key, amount}` | returns coins from the hold to its account | only an integrity fault |
 | `ABORT {instruction_id, hold_key or claim_key, cancelled_amount, settle_count, settle_sum}` | after the key's `settle_count` SETTLEs are applied (`MKTCOIN0-ABORT-ORDER`), releases exactly `cancelled_amount` of a hold or ends exactly `cancelled_amount` of a claim, or records a tombstone so a late `HOLD` or `CLAIM` with that key is refused | an integrity fault only (`MKTCOIN0-ABORT-ORDER`); before its watermark it is deferred, not applied |
-| `STATUS {hold_key, instruction_ids}` | the hold's amount, settled, released, state, a recall flag, and which of the named instruction ids (at most 16 per call) Platform has applied | none |
+| `STATUS {key_kind HOLD or CLAIM, key, instruction_ids}` | for a hold: amount, settled, released, state, a recall flag; for a claim: amount, settled, ended (aborted) amount, state (`OPEN`, `SETTLED`, `ABORTED`, `UNKNOWN`), including a deferred ABORT; and which of the named instruction ids (at most 16 per call) Platform has applied | none |
+| `ENUMERATE {world, applied_since, cursor}` | pages the SETTLE, RELEASE and ABORT receipts Platform applied for the World since `applied_since`: `instruction_id`, keys, amount, applied time (used only by the Game-restore cut, §5) | none |
 | `BALANCE {account}` | total and transferable coins, for display only | unavailable |
 
 - **No minting:** Platform refuses any SETTLE or RELEASE that would take a hold below zero, so
@@ -206,7 +207,7 @@ key; the same key with other content is an integrity conflict.
   difference, more SETTLEs than `settle_count`, or a nonzero watermark on an unknown key is an
   integrity fault that moves nothing and alarms; Game's reconciler reports it as
   `MARKET_COIN_MISMATCH`. An ABORT of an unknown
-  key with a zero watermark records the tombstone. A deferred ABORT is reported by `STATUS` and is
+  key with a zero watermark records the tombstone. A deferred ABORT is reported by `STATUS` (hold or claim) and is
   pending, not a mismatch (§7).
 - **Defence in depth against a compromised Game server:** the service identity can only HOLD,
   CLAIM, SETTLE, RELEASE, ABORT and read; it can never credit coins without a hold and a claim.
@@ -227,12 +228,26 @@ key; the same key with other content is an integrity conflict.
   refused `COINS_UNAVAILABLE`, instructions deferred) until a reconciliation against Game's
   operation, instruction and acknowledgement records re-creates every missing tombstone and
   receipt; a difference it cannot re-create is `MARKET_COIN_MISMATCH`.
+- **Game-side restore (`MKTCOIN0-GAME-RESTORE`).** A Game database restore to a point before
+  a SETTLE, RELEASE or ABORT that Platform already applied would roll back Game's gold transfer,
+  counters, outbox row and instruction id while Platform keeps the coin movement, and Game could
+  not find it by key. The restore is therefore a coordinated cut: the operator records the restore
+  point (the restored state's last committed time) before reopening; the Market coin service
+  (all coin offer placing, accepting, matching and the deliverer) stays closed, and Platform
+  refuses HOLD and CLAIM for the World with `COINS_UNAVAILABLE`, until Game has paged `ENUMERATE`
+  for the World from that restore point minus the replay horizon (`MKTCOIN0-RL-14`) and matched
+  every returned `instruction_id` to a restored instruction record. An applied instruction
+  unknown to the restored Game is an orphan settlement: its offer stays frozen, it raises
+  `MARKET_COIN_MISMATCH`, and it is corrected only by a reviewed compensating operation on the
+  owning side (DUR-03 §26), never by a direct edit and never by reissuing the instruction. A
+  restored instruction Platform never applied is resent normally. The service reopens only with
+  zero unexplained differences. `ENUMERATE` and the World refusal are MKTCOIN-P requirements.
 - **Recall:** Platform may flag an open hold (fraud, account closure). Game sees the flag through
   `STATUS` and runs a cancel step for that offer (fee kept). Coins already settled stay settled.
 - **Platform-side coin history:** Platform writes "sold on Market" and "bought on Market" entries
   from SETTLE; Game sends AccountIds, amounts, the WorldId and the operation id, and no
   character name, CharacterId or counterparty name.
-- **Chargeback (stated assumption on owner answer C2 b, pending owner confirmation):** chargeback
+- **Chargeback (owner answer C2 b, confirmed by the owner 2026-09-30, #162):** chargeback
   handling stays with Platform, which acts on the paying Account; it never reverses an applied
   SETTLE or any Market trade, so the other party is kept whole.
 - **External dependency (not edited here):** Platform's Wallet contract (its MODULE_CATALOG
@@ -284,12 +299,16 @@ refused CLAIM can only be `ACCOUNT_BLOCKED`, which ends the operation `FAILED`.
   SETTLE, RELEASE and ABORT wait in the outbox. An instruction
   unacknowledged after `MKTCOIN0-RL-05` (15 minutes) raises an alarm. Nothing is lost or doubled.
 - **Reconciliation (`MKTCOIN0-RECONCILE`):** a daily job (and one on demand) checks each open or
-  recently ended hold, `MKTCOIN0-RL-06` holds per pass. It asks `STATUS` with the hold's
-  unacknowledged outbox instruction ids; each one Platform reports applied is marked
+  recently ended hold and claim, `MKTCOIN0-RL-06` keys per pass. It asks `STATUS` with the
+  key's kind and unacknowledged outbox instruction ids; each one Platform reports applied is marked
   acknowledged first. The expected Platform state is then Game's acknowledged snapshot: Game's
-  `hold_amount`, settled and released counts and state minus the effects of the instructions still
+  `hold_amount` (or `claim_amount`), settled, released and ended (aborted) counts and state
+  minus the effects of the instructions still
   unapplied. Only a difference from that snapshot raises `MARKET_COIN_MISMATCH`; a difference
-  explained by pending outbox instructions is normal lag and does nothing. A mismatch stops fills
+  explained by pending outbox instructions is normal lag and does nothing. A claim Platform reports `UNKNOWN`, or
+  not `OPEN` while its buy offer is open, is a mismatch found here before a further fill can
+  commit its gold transfer; an ended claim must show `ABORTED` with the amount Game's ABORT
+  named. A mismatch stops fills
   of that offer and is corrected only by a reviewed compensating operation on the owning side
   (DUR-03 §26), never by a direct edit.
 - **Audit:** the market event (MARKET-0 §8) gains the hold key, coins moved, instruction ids and
@@ -318,7 +337,7 @@ refused CLAIM can only be `ACCOUNT_BLOCKED`, which ends the operation `FAILED`.
 | `MKTCOIN0-RL-03` `COIN_HOLD_PENDING` age before the reconciler aborts | 60 s |
 | `MKTCOIN0-RL-04` instruction retry backoff | 1 s doubling to 5 minutes |
 | `MKTCOIN0-RL-05` unacknowledged instruction alarm | 15 minutes |
-| `MKTCOIN0-RL-06` holds per reconciliation pass | 1,000 |
+| `MKTCOIN0-RL-06` holds and claims per reconciliation pass | 1,000 |
 | `MKTCOIN0-RL-07` Platform response size | 1,024 bytes; larger or malformed fails closed |
 | `MKTCOIN0-RL-08` HOLD or CLAIM calls in flight per Account | 1 |
 | `MKTCOIN0-RL-09` coin instructions per Game transaction | 2 (a fill with a held credit: SETTLE, RELEASE) |
@@ -366,7 +385,7 @@ balance, not the Inbox; anonymous offers; the 100 offer limit; coin trades in th
 - Junior characters cannot trade coins; same-Account offers are refused (from MARKET-0).
 - A coin book per World while coins are per Account.
 - Every coin is transferable, with no payment-risk lock; chargebacks never reverse a Market trade
-  (C2 b, the chargeback part a stated assumption).
+  (C2 b, the chargeback part confirmed by the owner).
 - Coin trading goes live on test Worlds first, on production Worlds only after Platform's payment
   policy is accepted (C3 a).
 
@@ -406,8 +425,9 @@ Owner answers (2026-09-30, #162, Q10-Q12):
 
 - C1 — Owner answer (2026-09-30, #162): a — the Tibia Coins are the current Oteryn Coins of the
   Platform Wallet, with a transferable part.
-- C2 — Owner answer (2026-09-30, #162): b — every coin is transferable. Stated assumption pending
-  owner confirmation: chargeback handling stays with Platform and does not reverse Market trades.
+- C2 — Owner answer (2026-09-30, #162): b — every coin is transferable. Chargeback handling stays with
+  Platform and does not reverse Market trades (stated as an assumption, confirmed by the owner on
+  2026-09-30, #162 A2).
 - C3 — Owner answer (2026-09-30, #162): a — test Worlds first; production Worlds once Platform
   accepts the payment policy.
 
@@ -417,8 +437,7 @@ Owner answers (2026-09-30, #162, Q10-Q12):
 - **Minimum sufficient:** one virtual ware, one hold or claim per offer or accept, three
   instruction kinds, one outbox, one reconciler, one capability, two results; MARKET-0's book, fee, gold
   escrow, locks and jobs are reused, and Platform's existing Wallet reserve pattern is extended.
-- **Superseding evidence:** official Global coin amount steps; an owner correction of the C2
-  chargeback assumption.
+- **Superseding evidence:** official Global coin amount steps.
 - **Deliberately not decided:** coin gifts, Store purchases, payments, prices, the world transfer
   rule, statistics, Tournament Coins.
 

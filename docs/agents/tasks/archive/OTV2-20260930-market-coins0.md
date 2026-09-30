@@ -52,7 +52,7 @@ owner answer Q2b; owner direction, 2026-09-30).
   a display-only balance line.
 - **Owner questions C1-C3** (answered): C1 a, the Wallet's Oteryn Coins with a transferable part;
   C2 b, every coin transferable (chargeback stays with Platform and never reverses a Market
-  trade: a stated assumption); C3 a, test Worlds first, production after Platform accepts its
+  trade: confirmed by the owner, A2); C3 a, test Worlds first, production after Platform accepts its
   payment policy.
 
 No code, migration, content or Platform change is made.
@@ -99,6 +99,11 @@ protocol review; the instruction payload privacy review.
   (`MKTCOIN0-SETTLE-SIDES`); task record PR and closeout state.
 - Owner answers (2026-09-30, #162 Q10-Q12): C1 a, C2 b (chargeback stated assumption), C3 a;
   Platform requirements kept as MKTCOIN-P contract dependencies; validators re-run PASS.
+- Codex round 3 (#1412, 2 P1, 0 P2): STATUS and reconciliation now cover claim keys and their
+  settled/aborted state (§5, §7); Game-side restore defined as a coordinated cut with ENUMERATE
+  (MKTCOIN0-GAME-RESTORE, §5; MKTCOIN-P dependency); validators re-run PASS.
+- Owner confirmation A2 (2026-09-30, #162 5919339646): the C2 chargeback rule is confirmed (§5,
+  §12, §13); validators re-run PASS.
 
 ## Closeout
 
@@ -113,7 +118,7 @@ protocol review; the instruction payload privacy review.
 last_progress: PR oteryn/oteryn-game#1412 opened; in review (Codex round-2 repair authored)
 status: completed
 branch: claude/arch-market-coins-0
-owner_action_required: "confirm the C2 chargeback assumption"
+owner_action_required: null
 blocker: null
 next_action: "#162 freezes the updated head of #1412, validates it and routes independent review"
 ```
