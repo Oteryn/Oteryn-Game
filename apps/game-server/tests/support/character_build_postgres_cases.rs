@@ -1,12 +1,21 @@
 // CHAR-BUILD-1a cases (migration 0030, A13 §4.1-§4.2 and §4.6 as amended by SKILLS-0
-// §3.1-§3.2 and §3.6). The build writer follows in CHAR-BUILD-1b, so every Character transaction
-// here is the exact SQL a writer must issue (root successor, state successor, receipt, build row
-// and, for a prune, the stance row), committed as one PostgreSQL transaction on the CHARM-2
-// harness. The admission verifier (#1271 F4) runs through `open_character_authority`.
+// §3.1-§3.2 and §3.6). The guard cases issue the exact SQL a writer must (root successor, state
+// successor, receipt, build row and, for a prune, the stance row), committed as one PostgreSQL
+// transaction on the CHARM-2 harness, so every guard branch is reached independently of the
+// writer. The admission verifier (#1271 F4) runs through `open_character_authority`. The
+// CHAR-BUILD-1b writer, reconcile and admission load (`durability::character_build`) run in
+// `build_writer_is_fenced_replayed_and_reconciled`.
 
 use crate::bestiary_postgres_harness::{
-    CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, id, runtime,
+    CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
 };
+use crate::domain::CharacterId;
+use crate::durability::DurabilityRoot;
+use crate::durability::character_build::{
+    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
+};
+use crate::durability::character_progression::CharacterProgressionError;
+use crate::foundation::ConnectionGeneration;
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
@@ -567,6 +576,25 @@ fn build_guard_rejects_each_inconsistent_write() -> TestResult {
         let keep = Change::new(69, 3, "promotion", knight, knight.vocation("elite_knight"));
         expect_committed(pool, "promotion r4", &keep.commit()).await?;
 
+        // #1393 LOW: a death with correct build fields that leaves the build row unchanged.
+        let elite = knight.vocation("elite_knight");
+        let trained = elite.with(0, (0, 5));
+        expect_committed(
+            pool,
+            "training r5",
+            &Change::new(70, 4, "training", elite, trained).commit(),
+        )
+        .await?;
+        let lost = trained.with(0, (0, 2));
+        let without_row = death(71, 5, (1000, 900), Some((trained, lost)));
+        expect_rejected(pool, "death without its row update", &without_row, BUILD).await?;
+        expect_committed(
+            pool,
+            "death with its row r6",
+            &format!("{without_row}{}", row_write(&lost, 6, 71)),
+        )
+        .await?;
+
         // Immutability, no delete, no truncate.
         for (case, script, rule) in [
             (
@@ -785,17 +813,43 @@ fn build_grants_and_admission_verifier() -> TestResult {
                 .map_err(debug)?,
         );
 
+        // r4 a death takes mana from the death receipt's build fields; r5 trains on from its
+        // `after`, so both sides of the death join the build chain only through the verifier's
+        // death arm (#1393 MEDIUM).
+        let lost = knight.with(0, (0, 10));
+        expect_committed(
+            pool,
+            "death with loss r4",
+            &format!(
+                "{}{}",
+                death(62, 3, (1000, 900), Some((trained, lost))),
+                row_write(&lost, 4, 62)
+            ),
+        )
+        .await?;
+        expect_committed(pool, "respawn", &consume_pending()).await?;
+        let mut after_death = Change::new(63, 4, "training", lost, lost.with(0, (0, 20)));
+        after_death.at = (50, 900);
+        expect_committed(pool, "training r5", &after_death.commit()).await?;
+        drop(
+            harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?,
+        );
+
         // #1271 F4: each named verifier check fails admission closed on planted state.
         for (case, tamper, repair) in [
             (
                 "row differs from the latest receipt",
-                "UPDATE game_character_build_state SET mana_spent = 31",
-                "UPDATE game_character_build_state SET mana_spent = 30",
+                "UPDATE game_character_build_state SET mana_spent = 21",
+                "UPDATE game_character_build_state SET mana_spent = 20",
             ),
             (
                 "row names another occurrence",
-                "UPDATE game_character_build_state SET committed_character_revision = 2",
-                "UPDATE game_character_build_state SET committed_character_revision = 3",
+                "UPDATE game_character_build_state SET committed_character_revision = 4",
+                "UPDATE game_character_build_state SET committed_character_revision = 5",
             ),
             (
                 "build chain gap",
@@ -803,6 +857,27 @@ fn build_grants_and_admission_verifier() -> TestResult {
                   WHERE committed_character_revision = 3",
                 "UPDATE game_character_build_receipts SET mana_spent_before = 0 \
                   WHERE committed_character_revision = 3",
+            ),
+            (
+                "death build before off the chain",
+                "UPDATE game_character_death_receipts SET mana_spent_before = 31 \
+                  WHERE committed_character_revision = 4",
+                "UPDATE game_character_death_receipts SET mana_spent_before = 30 \
+                  WHERE committed_character_revision = 4",
+            ),
+            (
+                "death build after off the chain",
+                "UPDATE game_character_death_receipts SET mana_spent_after = 11 \
+                  WHERE committed_character_revision = 4",
+                "UPDATE game_character_death_receipts SET mana_spent_after = 10 \
+                  WHERE committed_character_revision = 4",
+            ),
+            (
+                "death build vocation off the chain",
+                "UPDATE game_character_death_receipts SET vocation = 'paladin' \
+                  WHERE committed_character_revision = 4",
+                "UPDATE game_character_death_receipts SET vocation = 'knight' \
+                  WHERE committed_character_revision = 4",
             ),
             (
                 "first receipt off the seed",
@@ -834,6 +909,280 @@ fn build_grants_and_admission_verifier() -> TestResult {
                     .map_err(debug)?,
             );
         }
+        Ok(())
+    })
+}
+
+fn state(vocation: &str, magic: (u16, u64), sword: (u16, u64)) -> TestResult<DurableBuildState> {
+    let mut skills = [(10, 0); 7];
+    skills[2] = sword;
+    Ok(DurableBuildState::new(vocation, magic, skills).map_err(debug)?)
+}
+
+fn change(
+    tag: u8,
+    cause: BuildCause,
+    before: &DurableBuildState,
+    after: &DurableBuildState,
+    pruned_stance: Option<&str>,
+) -> TestResult<BuildChangeRequest> {
+    Ok(BuildChangeRequest {
+        occurrence: BuildOccurrence::from_bytes(id(tag)).map_err(debug)?,
+        cause,
+        before: before.clone(),
+        after: after.clone(),
+        pruned_stance: pruned_stance.map(str::to_owned),
+        policy_digest: [tag; 32],
+    })
+}
+
+#[test]
+fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
+    run("build_writer", async |harness| {
+        let pool = &harness.pool;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let root: &DurabilityRoot = &harness.root;
+        let node = &harness.node;
+        let character = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+        let seed = DurableBuildState::default();
+        assert_eq!(
+            root.read_character_build_state(&authority, character)
+                .await
+                .map_err(debug)?,
+            seed,
+            "no row loads the seed"
+        );
+        assert!(BuildOccurrence::from_bytes([7; 16]).is_err());
+
+        // r2 a stance the Dawnport choice prunes (A13 §4.4).
+        expect_committed(pool, "stance r2", &toggle(60, 1, Some("guard"))).await?;
+        let knight = state("knight", (0, 0), (10, 0))?;
+        let choice = change(
+            61,
+            BuildCause::VocationChoice,
+            &seed,
+            &knight,
+            Some("guard"),
+        )?;
+        let before = snapshot(pool).await?;
+        for (fence_revision, request, case) in [
+            (1, choice.clone(), "stale revision"),
+            (
+                2,
+                change(
+                    61,
+                    BuildCause::VocationChoice,
+                    &seed,
+                    &knight,
+                    Some("shield"),
+                )?,
+                "another stance",
+            ),
+            (
+                2,
+                change(
+                    61,
+                    BuildCause::VocationChoice,
+                    &knight,
+                    &knight.clone(),
+                    None,
+                )?,
+                "choice from a vocation",
+            ),
+        ] {
+            let outcome = root
+                .commit_character_build(&authority, node, fence(fence_revision)?, request)
+                .await;
+            assert!(
+                matches!(
+                    outcome,
+                    Err(CharacterProgressionError::CharacterRevisionMismatch
+                        | CharacterProgressionError::BuildStateMismatch
+                        | CharacterProgressionError::InvalidInput)
+                ),
+                "{case}: {outcome:?}"
+            );
+            assert_eq!(snapshot(pool).await?, before, "{case} wrote nothing");
+        }
+        let first = root
+            .commit_character_build(&authority, node, fence(2)?, choice.clone())
+            .await
+            .map_err(debug)?;
+        let BuildCommitOutcome::Committed(committed) = first else {
+            return Err(format!("unexpected first commit: {first:?}").into());
+        };
+        assert_eq!(committed.committed_character_revision.get(), 3);
+        assert_eq!(committed.pruned_stance.as_deref(), Some("guard"));
+        assert_eq!(
+            snapshot(pool).await?,
+            format!("3|3|3|knight:0:0:10:0:3:{}|-:3", uuid_text(61))
+        );
+
+        // Exact replay, even at the now stale revision, returns the receipt; the binding is
+        // compared first, so changed reuse conflicts; reconciliation proves what committed.
+        let replay = root
+            .commit_character_build(&authority, node, fence(2)?, choice.clone())
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            replay,
+            BuildCommitOutcome::AlreadyCommitted(committed.clone())
+        );
+        let mut reused = choice.clone();
+        reused.policy_digest = [9; 32];
+        let conflict = root
+            .commit_character_build(&authority, node, fence(3)?, reused)
+            .await;
+        assert!(
+            matches!(
+                conflict,
+                Err(CharacterProgressionError::ConflictingOccurrence)
+            ),
+            "{conflict:?}"
+        );
+        assert_eq!(
+            root.reconcile_character_build(&authority, choice.occurrence)
+                .await
+                .map_err(debug)?,
+            Some(committed)
+        );
+        assert_eq!(
+            root.reconcile_character_build(
+                &authority,
+                BuildOccurrence::from_bytes(id(79)).map_err(debug)?
+            )
+            .await
+            .map_err(debug)?,
+            None
+        );
+
+        // r4 training advances magic level and sword in one receipt.
+        let trained = state("knight", (1, 20), (12, 7))?;
+        let training = change(62, BuildCause::Training, &knight, &trained, None)?;
+        let outcome = root
+            .commit_character_build(&authority, node, fence(3)?, training)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, BuildCommitOutcome::Committed(_)));
+        let before = snapshot(pool).await?;
+
+        // Rejected before any write: the wrong direction, a training prune, a stale copy.
+        for (request, case) in [
+            (
+                change(63, BuildCause::Training, &trained, &knight, None)?,
+                "training lowers",
+            ),
+            (
+                change(63, BuildCause::Training, &trained, &trained, None)?,
+                "training without progress",
+            ),
+            (
+                change(
+                    63,
+                    BuildCause::Training,
+                    &trained,
+                    &state("knight", (1, 21), (12, 7))?,
+                    Some("guard"),
+                )?,
+                "training prunes",
+            ),
+        ] {
+            let outcome = root
+                .commit_character_build(&authority, node, fence(4)?, request)
+                .await;
+            assert!(
+                matches!(outcome, Err(CharacterProgressionError::InvalidInput)),
+                "{case}: {outcome:?}"
+            );
+        }
+        let stale_copy = change(64, BuildCause::Training, &knight, &trained, None)?;
+        let outcome = root
+            .commit_character_build(&authority, node, fence(4)?, stale_copy)
+            .await;
+        assert!(
+            matches!(outcome, Err(CharacterProgressionError::BuildStateMismatch)),
+            "{outcome:?}"
+        );
+
+        // A stale fence writes nothing: each case changes exactly one fact.
+        let next = state("knight", (1, 30), (12, 7))?;
+        let mut other_connection = fence(4)?;
+        other_connection.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        let mut other_lease = fence(4)?;
+        other_lease.character_lease_generation = 2;
+        let mut other_session = fence(4)?;
+        other_session.game_session_id =
+            crate::foundation::GameSessionId::decode(&id(51)).map_err(debug)?;
+        for (tag, stale, case) in [
+            (65, other_connection, "another connection generation"),
+            (66, other_lease, "another lease generation"),
+            (67, other_session, "another game session"),
+        ] {
+            let request = change(tag, BuildCause::Training, &trained, &next, None)?;
+            let outcome = root
+                .commit_character_build(&authority, node, stale, request)
+                .await;
+            assert!(
+                matches!(outcome, Err(CharacterProgressionError::AuthorityRejected)),
+                "{case}: {outcome:?}"
+            );
+        }
+        assert_eq!(
+            snapshot(pool).await?,
+            before,
+            "rejected writes wrote nothing"
+        );
+
+        // r5 a death with its respawn pending: no build change commits until it is consumed.
+        expect_committed(pool, "death r5", &death(68, 4, (1000, 900), None)).await?;
+        let promotion = change(
+            69,
+            BuildCause::Promotion,
+            &trained,
+            &state("elite_knight", (1, 20), (12, 7))?,
+            None,
+        )?;
+        let pending = root
+            .commit_character_build(&authority, node, fence(5)?, promotion.clone())
+            .await;
+        assert!(
+            matches!(pending, Err(CharacterProgressionError::RespawnPending)),
+            "{pending:?}"
+        );
+        expect_committed(pool, "respawn", &consume_pending()).await?;
+        // r6 promotion; the receipt takes level and experience from the state the death left.
+        let outcome = root
+            .commit_character_build(&authority, node, fence(5)?, promotion.clone())
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, BuildCommitOutcome::Committed(_)));
+
+        // The admission verifier accepts the writer's chain, and a restarted root loads it.
+        let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+        assert!(restarted.maintain_ready_once().await?);
+        let reopened = restarted
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            restarted
+                .read_character_build_state(&reopened, character)
+                .await
+                .map_err(debug)?,
+            promotion.after
+        );
+        let experience: (i64, i64) = sqlx::query_as(
+            "SELECT experience_before, experience_after FROM game_character_build_receipts \
+              WHERE committed_character_revision = 6",
+        )
+        .fetch_one(pool)
+        .await?;
+        assert_eq!(experience, (900, 900));
         Ok(())
     })
 }
