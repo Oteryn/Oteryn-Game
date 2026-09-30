@@ -103,11 +103,11 @@ const CREATURES: usize = 1479;
 const CREATURE_RECORDS: usize = 20693;
 const CREATURE_PROFILES: usize = 19745;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1102;
-const NPC_RECORDS: usize = 2204;
-const NPC_DECLARATIONS: usize = 2195;
-const NPC_DIALOGUES: usize = 715;
-const NPC_BINDINGS: usize = 2352;
+const NPCS: usize = 1110;
+const NPC_RECORDS: usize = 2220;
+const NPC_DECLARATIONS: usize = 2184;
+const NPC_DIALOGUES: usize = 694;
+const NPC_BINDINGS: usize = 2376;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -300,7 +300,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r8");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r9");
     assert_eq!(project.imports().len(), 11);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -624,7 +624,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(v2.sources[10].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[9];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r8");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r9");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[8].key, v2.sources[5].key);
     assert_eq!(v2.sources[8].import_batch_id, npc_import.batch_id);
