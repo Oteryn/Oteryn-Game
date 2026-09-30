@@ -287,11 +287,11 @@ rows by `account_id`.
 
 **Amendment (pending on acceptance of PARTY-PVP-0;
 `reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md` §3, §6.2 and §9).** Once
-accepted, rule 1 also covers party, member and invitation rows and the PvP consequence rows (PvP
-state, unjustified points, revenge marks): World social state and PvP-domain rows keyed by a
+accepted, rule 1 also covers party, member and invitation rows, the social block and party-invite
+setting rows, and the PvP consequence rows (PvP state, unjustified points, revenge marks): World social state and PvP-domain rows keyed by a
 Character, like the GAME-CHANNEL-01 §9 guard, not Character progression. They advance no
-`CharacterRevision`. Party commands and the Adventurer's Blessing forfeit take rule 2's session
-fence; PvP rows of a death commit inside the victim's death transaction.
+`CharacterRevision`. Party and consent commands, the durable PvP deadline write and the Adventurer's
+Blessing forfeit take rule 2's session fence; PvP rows of a death commit inside the victim's death transaction.
 
 ## 7. Protected integration
 

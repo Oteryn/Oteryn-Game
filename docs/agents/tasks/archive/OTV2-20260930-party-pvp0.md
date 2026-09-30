@@ -87,6 +87,9 @@ PVP-RT-1 and PARTY-XP-1 combat review; PVP-WIRE-1 protocol review; PARTY-1 priva
 - `python3 tools/agents/validate_governance.py`: PASS on the draft authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the draft authoring tree.
 - `git diff --cached --check`: clean.
+- Codex round-1 repair (PR #1402, 5 P1): durable PvP block deadlines, leader succession and
+  leader-only party end, shared-XP remote members excluded, invite block/privacy check, `PartyView`
+  full refresh and bounded staleness; validators re-run PASS.
 
 ## Closeout
 

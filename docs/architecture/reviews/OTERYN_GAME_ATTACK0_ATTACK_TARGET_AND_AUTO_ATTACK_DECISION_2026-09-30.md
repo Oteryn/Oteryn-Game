@@ -143,7 +143,8 @@ accepted, a character is a valid target where PARTY-PVP-0 §7 allows it: the Wor
 no protection zone, post-login immunity, party and guild immunity, secure mode and the black skull
 rule, checked in the GAME-ABILITY-01 legality stage, with the refusal `PVP_REFUSED {reason}`;
 `secure` takes effect; `FIGHT_MODES_INTENT` gains `expert_mode` behind `PVP_V1`. The §4 logout block
-is joined by PARTY-PVP-0's PZ block and 15-minute kill block (§8.1). Until PVP-1, PVP-RT-1,
+is joined by PARTY-PVP-0's PZ block and 15-minute kill block (§8.1); a PvP-sourced logout block is
+also written ahead durably and restored at admission, so a node crash does not end it. Until PVP-1, PVP-RT-1,
 PVP-DEATH-1 and PVP-WIRE-1 land, the first slice stays creatures only.
 
 ## 4. Runtime (ATTACK-1)

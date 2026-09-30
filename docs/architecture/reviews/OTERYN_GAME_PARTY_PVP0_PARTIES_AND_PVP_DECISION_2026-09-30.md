@@ -25,11 +25,11 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| PARTY-1 | hard, persistence, security and privacy review | party, member and invitation tables; invite, accept, decline, revoke, leave, pass leadership, shared-XP toggle; the node `PartyView` cache and the relay change hint; the cleanup job (§3, §4) | this decision; CHAT-2 |
+| PARTY-1 | hard, persistence, security and privacy review | party, member, invitation and consent tables; invite (with the consent check), accept, decline, revoke, leave, succession, pass leadership, shared-XP toggle, block and party-invite setting; the node `PartyView` cache, full refresh and revision check, and the relay change hint; the cleanup job (§3, §4) | this decision; CHAT-2 |
 | PARTY-XP-1 | hard (combat), combat review | shared-experience eligibility and split on the D118 XP slice; party immunity in area effects; the party loot right; the `PartyView` query for `party_buff` and the monk party rules (§5) | PARTY-1; the D118 XP lane; D3-4 |
 | PARTY-CHAT-1 | impl, security review | one party room per party on the CHAT-0 World relay (§4.3) | PARTY-1; CHAT-2 |
 | PVP-1 | hard, persistence and security review | PvP state, unjustified point and revenge mark tables; skull evaluation in the death transaction; the World cleanup job; the `rulesets/pvp/` and `rulesets/party/` rows (§6, §9) | DEATH-1; PARTY-1 |
-| PVP-RT-1 | hard (combat), combat and security review | PvP legality in the GAME-ABILITY-01 legality stage; aggression relations; white and yellow skulls; logout, PZ and kill blocks; the damage factor; the PvP damage ledger; kill classification; Join Aggression; friendly fire (§7, §8) | ATTACK-1; COND-1; PVP-1 |
+| PVP-RT-1 | hard (combat), combat and security review | PvP legality in the GAME-ABILITY-01 legality stage; aggression relations; white and yellow skulls; logout, PZ and kill blocks and their durable write-ahead and restore; the damage factor; the PvP damage ledger; kill classification; Join Aggression; friendly fire (§7, §8) | ATTACK-1; COND-1; PVP-1 |
 | PVP-DEATH-1 | hard (persistence), persistence review | the PvP variants of the death outcome: PvP death, red and black skull loss, Twist of Fate, Adventurer's Blessing, black skull respawn (§10) | DEATH-1; DEATH-3; PVP-1 |
 | PVP-BLOCK-1 | impl, movement review | walking through characters and expert-mode blocking (§7.5) | PVP-RT-1; SPEED-1 |
 | PVP-WIRE-1 | impl, protocol review | capabilities `PARTY_V1` and `PVP_V1`, the party and PvP commands and domains, VIS-2 skull, shield and frame fields (§11) | PARTY-1; PVP-RT-1; VIS-2; ATTACK-WIRE-1 |
@@ -111,12 +111,22 @@ zone cannot attack (`combat.cpp:327-329`); in-fight lasts 60 s, refreshed by hit
     member's World equal to the party's.
   - `game_party_invitations`: (party, invitee), `seq`, `created_at`. At most `PARTYPVP0-RL-02`
     (50) per party.
+- **Consent rows** (the social baseline's block list and privacy control; Character + World,
+  strong durable, until a later contacts contract takes them over unchanged):
+  `game_character_social_blocks` (`character_id`, `blocked_character_id`) primary key, at most
+  `PARTYPVP0-RL-28` (100) per character; `game_character_social_settings`: `character_id` primary
+  key, `party_invites` (`ANYONE`, the Global default, or `NOBODY`). A missing settings row reads as
+  `ANYONE`. They advance no `CharacterRevision` (composition rule 1 amendment).
 - **Party size** `PARTYPVP0-RL-01` (50, D109).
 - **No `CharacterRevision` advance**: party rows are World social state (the scope matrix), not
   Character state (composition rule 1 amendment).
 - **Lifetime.** A party exists from the first invitation to its end. It ends when it has no
-  member but the leader and no invitation; its rows are deleted. A PartyId is never reused, and no
-  party history is kept (Tibia keeps none).
+  member but the leader and no invitation, or when its last member leaves or is removed (leave,
+  logout or the cleanup job, §4.1); its invitations and rows are deleted in that transaction. A
+  PartyId is never reused, and no party history is kept (Tibia keeps none).
+- **Invariant, checked by the deferred guard at commit:** a party row exists only with its leader
+  as a member; no transaction commits a party without a leader member or an invitation without its
+  party.
 
 ## 4. Party operations, cache and chat (PARTY-1, PARTY-CHAT-1)
 
@@ -130,26 +140,56 @@ rows by CharacterId; invitation rows.
 - **Invite `{target actor}`.** The target is a character visible to the actor (VIS-2, so on the
   same channel), not in a party. An actor without a party creates one and becomes leader. Only the
   leader invites. At most `PARTYPVP0-RL-03` (10) invitations per character per minute.
+- **Invite consent check** (architect ruling; the social baseline's block list and privacy
+  control). Right after the visibility check and before any other target check or write, the
+  transaction reads the target's consent rows (§3) FOR SHARE: when the target has blocked the actor
+  or its `party_invites` is `NOBODY`, the invite is refused with `NOT_VISIBLE`, the same result, the
+  same empty payload and the same path (no party created, no row written, the rate-limit counter
+  charged as for any refusal) as a target that is not available, so a refusal never tells the actor
+  that it is blocked or which setting applies.
+- **Block `{target actor}`, unblock `{handle}`, party invites `{anyone | nobody}`** by the
+  character on its own consent rows. A block also deletes, in the same transaction, an open
+  invitation to the blocker from a party the blocked character leads.
 - **Revoke `{invitee}`** by the leader; **decline** by the invitee.
 - **Accept `{party}`.** The invitee holds a valid invitation and is in no party; it joins with
   the invitation's `seq`. Accepting removes its other invitations. The members need not be on the
   same channel (PartyId baseline).
-- **Leave.** Refused while the member's logout block runs (§8.1). A leaving leader passes to the
-  remaining member with the lowest `seq`.
+- **Leave.** Refused while the member's logout block runs (§8.1). A leaving leader passes by the
+  succession rule.
+- **Succession rule** (architect ruling), for a leader that leaves, logs out or is removed by the
+  cleanup job: leadership passes to the longest-standing online remaining member, the one with a
+  session row in state 1 or 2 and the lowest `seq` (the manual's earliest invited); without an
+  online member, to the remaining member with the lowest `seq`. With no remaining member the party
+  ends: the same transaction deletes its invitations and its party row (§3 lifetime), so the leader
+  guard is never violated.
 - **Pass leadership `{member}`** by the leader, to any member.
 - **Shared experience `{on | off}`** by the leader.
-- **Logout** removes the member in the logout transaction. A channel switch keeps membership: it is
-  not a logout (PartyId baseline).
+- **Logout** removes the member in the logout transaction, a leader by the succession rule. A
+  channel switch keeps membership: it is not a logout (PartyId baseline).
 - **Cleanup job** (World job, recovery fence and admission relations only): removes a member
-  whose Character has no session row in state 1 or 2 for `PARTYPVP0-RL-08` (60 s), which covers a
-  node crash and outlasts a channel switch.
+  whose Character has no session row in state 1 or 2 for `PARTYPVP0-RL-08` (60 s), a leader by the
+  succession rule, which covers a node crash and outlasts a channel switch.
 
 ### 4.2 Node cache
 
 - Each node keeps a `PartyView` per party with a local member: members, leader, shared-XP flag,
   `revision`. After a commit, the writer sends a sealed hint `{party_id, revision}` on the CHAT-0
-  World relay; nodes re-read the rows. A node whose listener is down is not ready for parties:
-  party commands answer `PARTY_UNAVAILABLE`, and shared experience is off for its members.
+  World relay. The hint is advisory and at most once: it only makes a node re-read sooner; no rule
+  depends on receiving it.
+- **Full refresh** (architect ruling): at node start, at every relay (re)connect, and when a hint
+  or a party-chat line (§4.3) shows a revision the node did not apply in order, the node re-reads
+  from the durable rows every local character's `game_party_members` row and each such party's
+  rows at their current `revision`, and replaces its views.
+- **Bounded staleness:** a node also re-reads the `revision` of all its cached parties in one query
+  every `PARTYPVP0-RL-26` (5 s) and refreshes any view that differs, so a hint lost to a writer
+  crash or a dropped listener is caught. A view not confirmed within twice that interval is stale.
+- **Party readiness:** a node is ready for parties only after its full refresh has completed and
+  while its views are confirmed. While a node or a view is not ready, it fails toward less
+  disclosure and no shared benefit: party commands answer `PARTY_UNAVAILABLE`; shared experience
+  is off (XP by damage share); `members_in_area` (§5.2) returns no member; the `PARTY` domain and
+  the party shield send no member channel or health; and PvP legality refuses a character target
+  whose party relation to the actor comes from a stale view (`PVP_REFUSED {PARTY_STATE}`; an area
+  effect skips it), so neither a stale immunity nor a stale non-membership decides harm.
 - Durable checks (loot, §5.3) read rows, never the cache.
 
 ### 4.3 Party chat (PARTY-CHAT-1)
@@ -167,22 +207,26 @@ rows by CharacterId; invitation rows.
 
 ## 5. Party benefits (PARTY-XP-1)
 
-All benefits are channel-local: only members on the same channel count (scope matrix).
+All benefits are channel-local: only members on the same channel count (scope matrix). Members on
+another channel are excluded, never failing participants: they neither receive a benefit nor turn
+it off for the colocated members.
 
 ### 5.1 Shared experience
 
+- **Participants** of a kill are the party's members on the kill's channel; members on other
+  channels are excluded (above) and get no share.
 - **Eligible** at a kill when the leader enabled it and, on the kill's channel: the leader is
-  present; every member of the party is on that channel within `PARTYPVP0-RL-04` (30 tiles,
-  Chebyshev, any floor) of the leader; the lowest level × 3 ≥ the highest level × 2
-  (`PARTYPVP0-RL-05`); every member was active within `PARTYPVP0-RL-06` (2 minutes: healed a
-  member or attacked an aggressive monster; the D118 UNKNOWN, `PARITY_PENDING`); the leader is not
-  under a PZ block. The manual's "battle sign" is read as the PZ block, because the logout block
+  present; every participant is within `PARTYPVP0-RL-04` (30 tiles, Chebyshev, any floor) of the
+  leader; over the participants, the lowest level × 3 ≥ the highest level × 2 (`PARTYPVP0-RL-05`);
+  every participant was active within `PARTYPVP0-RL-06` (2 minutes: healed a member or attacked
+  an aggressive monster; the D118 UNKNOWN, `PARITY_PENDING`); the leader is not under a PZ block. The manual's "battle sign" is read as the PZ block, because the logout block
   runs whenever a party hunts (`PARITY_PENDING`).
-- **Split** (D118): the bonus of `PARTYPVP0-RL-07` over the base XP, a summon's share first, then
-  equal shares rounded up; a stamina-reduced share is removed without changing others. Each member's
+- **Split** (D118), among the participants only: the bonus of `PARTYPVP0-RL-07` (vocations counted
+  over the participants) over the base XP, a summon's share first, then equal shares rounded up; a stamina-reduced share is removed without changing others. Each member's
   award is its own XP receipt on its own Character sequencer (CHAR-REV-SEQ-1); reward principals
   per death at most 50 (D109). Soul points as D118.
-- **Off:** any failed condition turns it off for the kill, and XP goes by damage share. The
+- **Off:** any failed condition of a participant turns it off for the kill, and XP goes by damage
+  share. The
   level-up stickiness of the manual follows from re-evaluating at every kill.
 
 ### 5.2 Party immunity and buffs
@@ -215,14 +259,15 @@ All benefits are channel-local: only members on the same channel count (scope ma
 Character + World, strong durable, one state on every channel (the scope matrix row):
 
 - `game_character_pvp_state`: `character_id` primary key, `world_id`, `skull` (`NONE`, `RED`,
-  `BLACK`), `skull_until`, `kill_block_until`, `adventurer_forfeited`, `revision`.
+  `BLACK`), `skull_until`, `kill_block_until`, `logout_block_until`, `pz_block_until`,
+  `white_skull_until`, `adventurer_forfeited`, `revision`.
 - `game_character_unjustified_points`: (`character_id`, `death_occurrence_id`) primary key,
   `victim_character_id`, `points_milli` (1 to 1,000), `committed_at`.
 - `game_character_revenge_marks` (orange): (`victim_character_id`, `killer_character_id`,
   `death_occurrence_id`), `expires_at` = +7 days (`PARTYPVP0-RL-17`), `avenged_at`.
 - **No `CharacterRevision` advance** (composition rule 1 amendment): like the GAME-CHANNEL-01 §9
   anti-hopping guard, these are PvP-domain consequence rows keyed by a Character, not Character
-  progression. They are written by death transactions (§9) and one runtime write (§10.4).
+  progression. They are written by death transactions (§9) and two runtime writes (§8.1, §10.4).
 - **Effective skull** is read lazily: `skull` if `skull_until` is later than the database clock,
   else none. A World job deletes point rows older than `PARTYPVP0-RL-23` (45 days) and expired
   marks, at most 100 per pass.
@@ -243,7 +288,8 @@ fields and condition ticks: no second combat path. A summon's actions are its ow
 4. **Post-login immunity:** an actor admitted less than `PARTYPVP0-RL-10` (10 s) ago cannot start
    aggression; it may answer an aggressor. Re-entry protection stays PvE only.
 5. **Party and guild:** members of the same party or guild (GUILD-1) cannot harm each other,
-   except friendly fire (§7.4).
+   except friendly fire (§7.4). A party relation read from a stale `PartyView` refuses
+   (`PARTY_STATE`, §4.2).
 6. **Secure mode** (ATTACK-0 `secure`, always off on Hardcore): no offensive effect on an unmarked
    character; an area effect skips it.
 7. **Black skull:** a black-skulled attacker cannot harm an unmarked character.
@@ -283,9 +329,25 @@ attack, the mode is locked to Red Fist. A black skull cannot select Red Fist.
   and stepping onto a protection-zone tile. Later violence refreshes the 60 s blocks, which can
   outlast it.
 - **Combat lock** (the scope matrix row) is the union of the three. It blocks logout (FND-ID-01
-  sees the blocker), leaving a party and a voluntary channel switch (GAME-CHANNEL-01 §8). The
-  runtime blocks survive a same-GameSession reconnect with the actor (ATTACK-0); a node crash ends
-  them; the kill block survives everything and is re-read at admission.
+  sees the blocker), leaving a party and a voluntary channel switch (GAME-CHANNEL-01 §8).
+- **Durable PvP deadlines** (architect ruling; the scope matrix makes the combat lock Character +
+  World, strong, and GAME-CHANNEL-01 §8 and §25 forbid reducing a PvP consequence). A PvP-sourced
+  logout block (a hit dealt to or taken from a character or its summon), a PZ block and a white
+  skull are written ahead to `game_character_pvp_state` (`logout_block_until`, `pz_block_until`,
+  `white_skull_until`): when the runtime would set or refresh one of them past its stored value,
+  one transaction under the acting Character's rule 2 session fence first writes the database
+  clock + 60 s + `PARTYPVP0-RL-27` (10 s) for the attacker's and the target's affected columns
+  (rows in CharacterId order, missing rows inserted, never lowered), and only then does the action
+  take effect; a failed write refuses the action. A stored deadline is therefore never earlier than
+  the runtime one, and a character writes at most once per `PARTYPVP0-RL-27` while fighting.
+- **Admission and restart:** every admission, readmission after a node crash, reconnect and
+  channel entry reads the row and restores the runtime logout block, PZ block and white skull to
+  the stored deadlines still in the future, with the kill block. A crash can lengthen a block by
+  at most `PARTYPVP0-RL-27`, never shorten or clear one. Aggression relations (§8.2) stay runtime:
+  after a crash a restored white skull marks the character toward everyone, and yellow skulls and
+  retaliation rights are rebuilt only by new aggression, which can add consequences to a
+  retaliating character but never removes the aggressor's. A PvE-only in-fight deadline stays as
+  ATTACK-0 defines it.
 
 ### 8.2 Aggression relations
 
@@ -293,7 +355,7 @@ attack, the mode is locked to Red Fist. A black skull cannot select Red Fist.
   its deadline (the aggressor's PZ block) and whether it was first. At most `PARTYPVP0-RL-24` (64)
   per actor; the oldest expired goes first; a full set refuses new aggression.
 - **White skull:** a character with aggression toward an unmarked character, while its PZ block
-  runs (Open only).
+  runs (Open only); after a readmission, until the restored `white_skull_until` (§8.1).
 - **Yellow skull** (private, viewer-relative): shown to a viewer on a marked character that
   attacked the viewer first while that aggression runs.
 - **Orange skull** (private): shown to the victim, and to the killer, on a killer with an
@@ -377,11 +439,13 @@ the action. Reaching level 21 needs no write.
   reserved on #162 at allocation.
 - **`PARTY_INTENT`** (a oneof; an empty oneof is `REJECTED`): `invite {actor}`, `revoke {name}`,
   `accept {invitation}`, `decline {invitation}`, `leave`, `pass_leadership {name}`,
-  `shared_xp {enabled}`. Invitations are addressed by a per-session handle, never a PartyId or
+  `shared_xp {enabled}`, `block {actor}`, `unblock {handle}`, `party_invites {anyone | nobody}`. Invitations are addressed by a per-session handle, never a PartyId or
   CharacterId. Results: `OK`, `NOT_LEADER`, `ALREADY_IN_PARTY`, `PARTY_FULL`, `NOT_INVITED`,
-  `NOT_VISIBLE`, `LOGOUT_BLOCKED`, `RATE_LIMITED`, `PARTY_UNAVAILABLE`, plus the common results.
+  `NOT_VISIBLE` (also a block or `party_invites` refusal, §4.1), `LOGOUT_BLOCKED`, `RATE_LIMITED`,
+  `PARTY_UNAVAILABLE`, plus the common results.
 - **Domain `PARTY`:** members (§4.4), leader, shared-XP state (on, off, or the failing member),
-  the character's pending invitations with the inviter's name.
+  the character's pending invitations with the inviter's name, its own blocked list and
+  `party_invites` setting.
 - **`PVP_INTENT`:** `join_aggression {actor}`. **`FIGHT_MODES_INTENT`** gains `expert_mode` in a
   new revision behind `PVP_V1` (ATTACK-WIRE-1's command).
 - **Domain `PVP`:** own effective skull and its end, points per window against both thresholds,
@@ -426,8 +490,12 @@ the action. Reaching level 21 needs no write.
 | `PARTYPVP0-RL-23` point row retention | 45 days |
 | `PARTYPVP0-RL-24` aggression relations per actor | 64 |
 | `PARTYPVP0-RL-25` PvP contributors per victim | 16 |
+| `PARTYPVP0-RL-26` `PartyView` revision check | every 5 s; stale after 10 s unconfirmed |
+| `PARTYPVP0-RL-27` durable PvP deadline write-ahead | 10 s beyond the 60 s block |
+| `PARTYPVP0-RL-28` blocked characters per character | 100 |
 | Party operation | 1 transaction, 0 items, 0 value lines, 1 relay hint |
 | PvP additions to a death | at most 17 state rows, 16 point rows, 16 mark rows; no value lines |
+| PvP deadline write | 1 transaction, at most 2 state rows, per character at most once per 10 s |
 
 ## 14. Rejected options
 
@@ -455,8 +523,9 @@ Blessing; black skull respawn; no XP for PvP kills. D60 is superseded by the own
 2026-09-30. Declared differences: at most 50 members (D109) and bounded invitations; benefits only
 for members on the same channel; the "battle sign" read as the PZ block; the 2-minute activity
 window, the assist share and the lower-bound thresholds (`PARITY_PENDING`); no unfair-fight
-reduction until a source; no Retro types yet; no green skull; runtime blocks end at a node crash
-while the kill block survives.
+reduction until a source; no Retro types yet; no green skull; a block list and a party-invite
+setting (social baseline); a node crash can lengthen a PvP block by up to 10 s, never shorten it,
+and ends yellow skulls and retaliation relations.
 
 ## 16. Owner questions
 
@@ -469,7 +538,7 @@ c) Hardcore PvP: no skulls, no restrictions.
 
 - **Must decide now:** YES. The owner asked for parties and PvP now; ATTACK-0, the first player
   death decision, CONDITIONS-0, D3 and D118 wait for them.
-- **Minimum sufficient:** three party tables, three PvP tables, rules in the existing legality
+- **Minimum sufficient:** three party tables, two consent tables, three PvP tables, rules in the existing legality
   stage, PvP fields in the existing death transaction, two wire capabilities.
 - **Superseding evidence:** an official source for the thresholds, the activity window, the
   unfair-fight formula or the retro rules; owner answer P1.
@@ -482,10 +551,12 @@ c) Hardcore PvP: no skulls, no restrictions.
    DEATH-0 §3.1, D3 §4.4, the composition decision and the scope matrix, each written "pending on
    acceptance of PARTY-PVP-0".
 2. **Serialization:** §4.1's and §9's lock orders; World jobs lock rows before re-checking them.
-3. **Restart:** party and PvP rows are durable and keyed; runtime blocks follow ATTACK-0; the kill
-   block and skulls survive every restart.
+3. **Restart:** party and PvP rows are durable and keyed; PvP logout and PZ blocks, the white
+   skull, the kill block and skulls survive every restart (§8.1); a PvE-only in-fight deadline
+   follows ATTACK-0; a node rebuilds its `PartyView`s before party readiness (§4.2).
 4. **Typed references:** PartyId with WorldId, CharacterId, `PlayerDeathOccurrence`, actor ids on
    the wire; never a PartyId or CharacterId from a client as authority.
 5. **Wire:** §11, capabilities `PARTY_V1` and `PVP_V1`.
 6. **Split work:** one party per transaction; PvP rows only inside the victim's death transaction;
-   at most 100 rows per cleanup pass.
+   at most 100 rows per cleanup pass; a leader-only party ends in the leader's leave, logout or
+   cleanup transaction.

@@ -105,9 +105,12 @@ another World has its own; shared".
 **Amendment (pending on acceptance of PARTY-PVP-0;
 `reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md` §3-§9).** Party membership
 lives in Game tables per World (UUIDv7 PartyId), ordered by the party row, and survives a channel
-switch; shared experience, party loot and party buffs count only members on the same channel. Combat
-lock is ATTACK-0's logout block, the runtime PZ block and a durable 15-minute kill block; skull and
-frag state are the PvP state, unjustified point and revenge mark tables. The World PvP type is a
+switch; shared experience, party loot and party buffs count only members on the same channel, and
+members on another channel are excluded, not failing participants. Combat lock is the logout
+block, the PZ block and the 15-minute kill block; their PvP deadlines and the white skull are
+written ahead durably in the PvP state row and restored at admission, so a crash or readmission
+never shortens them. Skull and frag state are the PvP state, unjustified point and revenge mark
+tables. The World PvP type is a
 ruleset field.
 
 ## Required identity envelope
