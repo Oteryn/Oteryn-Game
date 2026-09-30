@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1360
 allocation_comment: "#162 5910691466 (point 2, H-1)"
 base_branch: main
 branch: claude/eager-pasteur-eobvo3
