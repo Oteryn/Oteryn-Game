@@ -187,7 +187,8 @@ CharacterDepot { character_id: CharacterId, box: 1..17, ordinal: NUMERIC(20) }
 Character + World scope, no channel and no runtime scope; the 17 boxes are fixed compartments, not
 items. Its DEPOT-1 child admits two one-item TRANSFER shapes, superseding the §39.1 and §39.3
 source and destination limits for them only: a main backpack direct entry into a box, and a depot entry
-out to the main backpack's container slot or a new direct entry (no merge). Corpse and Ground sources are refused. The table joins the
+out to the main backpack's container slot or a new direct entry (no merge). Corpse and Ground
+sources are refused. The table joins the
 HOUSE-CUSTODY-0 item-level exclusivity guard.
 
 ## 6. Runtime simulation authority versus durable recoverability
