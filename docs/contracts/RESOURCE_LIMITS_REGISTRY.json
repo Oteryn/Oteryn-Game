@@ -4950,25 +4950,25 @@
     },
     {
       "id": "MOVE-RL-11",
-      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
       "resource": "Semantic entities in one WORLD_SPATIAL_VISIBILITY snapshot or delta",
       "unit": "entities per snapshot or delta",
-      "hard_maximum": 1,
+      "hard_maximum": 256,
       "configurable_range": {
-        "minimum": 1,
-        "maximum": 1
+        "minimum": 256,
+        "maximum": 256
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "The first child carries only the session's own actor; a second entity is refused before encoding.",
+      "allocation_impact": "A snapshot carries at most 256 entities (nearest first, own actor always included); a delta at most 256 entries, a larger change is a snapshot. Encoders refuse the 257th before encoding.",
       "client_visible": true,
       "boundary_tests": [
-        "max=1: the own actor is carried in a snapshot or delta",
-        "max+1=2: a second entity cannot be encoded by the first-child payload schema"
+        "max=256: a snapshot of 256 entities (own actor included) encodes within 33,792 bytes and decodes",
+        "max+1=257: encode and decode both refuse the 257th entity"
       ],
       "consumers": [
-        "WORLD_SPATIAL_VISIBILITY state domain 1, delta type 1, snapshot type 1"
+        "WORLD_SPATIAL_VISIBILITY state domain 1, snapshot type 2 and delta type 2 (capability 6 WORLD_SPATIAL_ENTITIES)"
       ],
-      "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
+      "notes": "Re-decided from 1 in D87 (decision section 4.4), registered with the VIS-2 schema revision. Sessions without capability 6 keep the v1 own-actor-only types."
     },
     {
       "id": "MOVE-RL-08",
@@ -4991,7 +4991,7 @@
         "movement::interest::diff_interest",
         "movement::interest::INTEREST_DELTA_ENTRIES_MAX"
       ],
-      "notes": "Re-decided in D87. Decision section 4.4; #162 comment 5875958040. Wire consumer arrives with VIS-2 (new WORLD_SPATIAL revision); MOVE-RL-11 remains 1 until then."
+      "notes": "Re-decided in D87. Decision section 4.4; #162 comment 5875958040. Wire consumer: VIS-2 WORLD_SPATIAL type 2 (capability 6)."
     },
     {
       "id": "MOVE-RL-09",
@@ -5037,7 +5037,7 @@
         "movement::interest::InterestIndex::query_with",
         "movement::interest::VISIBILITY_QUERY_RESULTS_MAX"
       ],
-      "notes": "Equals the future MOVE-RL-11 value (D87). Decision section 4.4; #162 comment 5875958040. Wire consumer arrives with VIS-2 (new WORLD_SPATIAL revision); MOVE-RL-11 remains 1 until then."
+      "notes": "Equals the future MOVE-RL-11 value (D87). Decision section 4.4; #162 comment 5875958040. Wire consumer: VIS-2 WORLD_SPATIAL type 2 (capability 6)."
     },
     {
       "id": "MOVE-VIEW-WIDTH",
@@ -6543,8 +6543,8 @@
     {
       "allocation_impact": "Checked on the input length before any header field is trusted; the u32 offsets need the file below 4 GiB.",
       "boundary_tests": [
-        "a bundle of exactly 1 GiB is size-accepted",
-        "a bundle over 1 GiB is rejected before parsing"
+        "a bundle is size-accepted at a reduced file_bytes cap equal to its length (ReadCaps)",
+        "the same bundle is rejected before parsing at a cap one byte smaller; a zero-filled input one byte over 1 GiB is rejected by read()"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -6589,8 +6589,8 @@
     {
       "allocation_impact": "Checked from the header, and the table must fit inside the file before any row is read or the sector list is reserved.",
       "boundary_tests": [
-        "1,048,576 rows are count-accepted",
-        "a count over 1,048,576 is rejected before the table is read"
+        "a bundle is count-accepted at a reduced sectors cap equal to its row count (ReadCaps)",
+        "the same bundle is rejected at a cap one row smaller, and a header count over 1,048,576 is rejected by read() before the table is read"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -6612,7 +6612,7 @@
     {
       "allocation_impact": "raw_length is checked against 16 MiB and against 1,024 times compressed_length before decompression; decompression writes into exactly raw_length bytes and the output must be exactly that long. The compressed frame is bounded by the file size.",
       "boundary_tests": [
-        "a 16 MiB payload is accepted",
+        "a payload is accepted at a reduced sector_raw_bytes cap equal to the largest raw_length (ReadCaps), and rejected at one byte less",
         "raw_length over 16 MiB is rejected before decompression",
         "raw_length over 1,024 times the frame length is rejected before decompression",
         "a frame that decompresses to a length other than raw_length is rejected"
@@ -6637,8 +6637,8 @@
     {
       "allocation_impact": "Running total checked per row before that sector is decompressed.",
       "boundary_tests": [
-        "a running total of 1 GiB is accepted",
-        "the row that takes the total over 1 GiB is rejected before decompression"
+        "a bundle is accepted at a reduced total_raw_bytes cap equal to its payload total (ReadCaps)",
+        "at a cap one byte smaller, the row that takes the total over it is rejected before decompression"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -6881,6 +6881,117 @@
         "game server channel runtime"
       ],
       "notes": "CHAR-POSITION-0 \u00a73.2, pending on acceptance of CHAR-POSITION-0; the final write at logout does not depend on this interval."
+    },
+    {
+      "id": "CHARM5-RL-01",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Bestiary races in one BestiaryViewV1, and the largest race index",
+      "unit": "races per view",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 1025th entry or a race index above 1024 before allocating for it; the whole view is at most 21504 bytes (state domain 4). A server view over the bound is a server fault and is never truncated.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: a view of 1024 races at race index 1024 encodes and decodes",
+        "max+1=1025: a 1025th entry or race index 1025 is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/bestiary.rs MAX_BESTIARY_VIEW_ENTRIES, MAX_BESTIARY_RACE",
+        "crates/protocol-oteryn/src/charm.rs CharmAssignIntentV1.race and CharmStateV1.assigned_race"
+      ],
+      "notes": "833 Bestiary races in the captured staticdata (CHARM-0 section 2). CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-02",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest Bestiary kill threshold in BestiaryRaceProgressV1",
+      "unit": "kills",
+      "hard_maximum": 100000,
+      "configurable_range": {
+        "minimum": 100000,
+        "maximum": 100000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A threshold or kill count above 100000 is refused in both directions; it bounds each varint to 3 bytes.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=100000: a final threshold of 100000 round-trips",
+        "max+1=100001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/bestiary.rs MAX_BESTIARY_KILL_THRESHOLD"
+      ],
+      "notes": "The captured definitions top out at 5000. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-03",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Charms in one CharmViewV1, the largest charm index, and the largest assignment slot limit",
+      "unit": "charms per view",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 33rd entry, a charm index above 32 or a slot limit above 32 before allocating for it; the whole view is at most 554 bytes (state domain 5).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=32: a view of 32 charms at charm index 32 with slot limit 32 is exactly 554 bytes and round-trips",
+        "max+1=33: a 33rd entry, charm index 33 or slot limit 33 is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARMS, MAX_CHARM"
+      ],
+      "notes": "25 charms in the candidate catalogue. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-04",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest single charm stage cost in CharmStateV1.next_stage_cost",
+      "unit": "Charm Points or Minor Charm Echoes",
+      "hard_maximum": 100000,
+      "configurable_range": {
+        "minimum": 100000,
+        "maximum": 100000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A cost above 100000 is refused in both directions.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=100000: a next stage cost of 100000 round-trips",
+        "max+1=100001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARM_STAGE_COST"
+      ],
+      "notes": "CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-05",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest available balance of Charm Points or Minor Charm Echoes in CharmViewV1",
+      "unit": "Charm Points or Minor Charm Echoes",
+      "hard_maximum": 1000000,
+      "configurable_range": {
+        "minimum": 1000000,
+        "maximum": 1000000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A balance above 1000000 is refused in both directions.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1000000: both balances at 1000000 round-trip",
+        "max+1=1000001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARM_BALANCE"
+      ],
+      "notes": "Earned Charm Points are at most 1024 x 100. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
     }
   ]
 }

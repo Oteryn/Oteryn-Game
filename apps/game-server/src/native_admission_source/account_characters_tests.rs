@@ -204,9 +204,10 @@ impl ReportClock for Clock {
     fn unix_now(&self) -> i64 {
         0
     }
+    /// Virtual time: the clock jumps when the sleep is first polled.
     fn sleep(&self, duration: Duration) -> impl Future<Output = ()> + Send {
-        *self.0.lock().unwrap() += duration;
-        std::future::ready(())
+        let clock = self.0.clone();
+        async move { *clock.lock().unwrap() += duration }
     }
 }
 
@@ -342,4 +343,107 @@ fn watermark_is_sent_on_its_period_even_while_snapshots_fail() {
             .count()
             <= 1
     );
+}
+
+/// Each store call takes `cost` on the clock.
+struct SlowStore {
+    clock: Clock,
+    cost: Duration,
+    inner: Arc<Mutex<Store>>,
+}
+
+impl ProjectionStore for SlowStore {
+    async fn next_snapshot(&mut self) -> Result<Option<AccountSnapshot>, ()> {
+        self.clock.sleep(self.cost).await;
+        self.inner.next_snapshot().await
+    }
+    async fn clear(&mut self, account: &str, epoch: u64, revision: u64) -> Result<(), ()> {
+        self.clock.sleep(self.cost).await;
+        self.inner.clear(account, epoch, revision).await
+    }
+    async fn watermark_facts(&mut self) -> Result<WatermarkFacts, ()> {
+        self.clock.sleep(self.cost).await;
+        self.inner.watermark_facts().await
+    }
+}
+
+/// Watermark exchanges are refused after `watermark_cost`, or never complete;
+/// snapshot exchanges never complete.
+struct HangingSink {
+    clock: Clock,
+    watermark_cost: Option<Duration>,
+    watermarks: Vec<Duration>,
+    snapshots: Vec<String>,
+}
+
+impl ProjectionSink for HangingSink {
+    async fn send(&mut self, operation: Operation, body: &str) -> Result<Delivery, NotDelivered> {
+        match (operation, self.watermark_cost) {
+            (Operation::PublishProjectionWatermarkV1, Some(cost)) => {
+                self.watermarks.push(self.clock.elapsed());
+                self.clock.sleep(cost).await;
+            }
+            (Operation::PublishProjectionWatermarkV1, None) => {
+                self.watermarks.push(self.clock.elapsed());
+                std::future::pending::<()>().await;
+            }
+            _ => {
+                self.snapshots.push(body.into());
+                std::future::pending::<()>().await;
+            }
+        }
+        Err(NotDelivered::Unavailable)
+    }
+}
+
+#[test]
+fn watermarks_stay_within_the_gap_bound_in_the_worst_case() {
+    // Every store call takes the maximum transaction duration; exchanges take
+    // their full compiled bound (1 + 2 + 3 s) or never complete.
+    for watermark_cost in [Some(Duration::ZERO), Some(Duration::from_secs(6)), None] {
+        let clock = Clock::default();
+        let store = Arc::new(Mutex::new(Store::default()));
+        store.lock().unwrap().queued.push(snapshot(vec![]));
+        let mut publisher = Publisher::new(
+            clock.clone(),
+            SlowStore {
+                clock: clock.clone(),
+                cost: MAX_TX,
+                inner: store.clone(),
+            },
+            HangingSink {
+                clock: clock.clone(),
+                watermark_cost,
+                watermarks: vec![],
+                snapshots: vec![],
+            },
+            AUTHORITY.into(),
+            MAX_TX,
+        );
+        // The `run` loop, on virtual time.
+        while clock.elapsed() < Duration::from_secs(120) {
+            if !block_on(publisher.step()) {
+                let wait = publisher
+                    .watermark_due
+                    .saturating_sub(clock.elapsed())
+                    .min(IDLE);
+                block_on(clock.sleep(wait));
+            }
+        }
+        let sink = &publisher.sink;
+        assert!(sink.watermarks.len() >= 12, "{watermark_cost:?}");
+        for pair in sink.watermarks.windows(2) {
+            assert!(
+                pair[1] - pair[0] <= MAX_WATERMARK_GAP,
+                "{watermark_cost:?}: {pair:?}"
+            );
+        }
+        // A cut exchange is not delivered: nothing is cleared, and every retry
+        // of the same pair carries the same body.
+        assert!(store.lock().unwrap().cleared.is_empty());
+        if watermark_cost == Some(Duration::ZERO) {
+            assert!(!sink.snapshots.is_empty());
+        }
+        assert!(sink.snapshots.windows(2).all(|pair| pair[0] == pair[1]));
+    }
 }

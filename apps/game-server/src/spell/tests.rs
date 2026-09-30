@@ -54,6 +54,7 @@ fn book() -> SpellBook {
 
 fn caster(vocation: Vocation, level: u32, magic_level: u32, mana: u32) -> CasterState {
     CasterState {
+        harmony_multiplier: super::harmony::HarmonyMultiplier::ONE,
         vocation,
         level,
         magic_level,
@@ -545,12 +546,73 @@ fn a_chain_spell_is_admitted_and_needs_the_world_facts() {
     );
 }
 
+/// S26 with SPELL-D8 §8.2 H-live: the runtime actor owns Harmony, so a monk-only builder or
+/// spender is admitted with its role; an unknown role or a non-monk vocation still fails closed.
 #[test]
-fn a_harmony_spell_is_not_admitted() {
+fn a_harmony_role_is_admitted_only_for_monk_spells() {
     let (spell, dependencies) = STARTER[0];
-    let mut spell: Value = serde_json::from_str(spell).expect("spell");
     let dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
-    spell["spell"]["harmony_role"] = Value::String("builder".into());
-    let error = spell_from_bundle(&spell, &dependencies).expect_err("harmony admitted");
-    assert!(error.to_string().contains("Harmony"), "{error}");
+    let with = |role: &str, vocations: Value| {
+        let mut spell: Value = serde_json::from_str(spell).expect("spell");
+        spell["spell"]["harmony_role"] = Value::String(role.into());
+        spell["spell"]["requirements"]["vocations"] = vocations;
+        spell_from_bundle(&spell, &dependencies)
+    };
+    let monks = || serde_json::json!(["monk", "exalted_monk"]);
+    assert_eq!(
+        with("builder", monks()).expect("builder").harmony_role,
+        Some(HarmonyRole::Builder)
+    );
+    assert_eq!(
+        with("spender", monks()).expect("spender").harmony_role,
+        Some(HarmonyRole::Spender)
+    );
+    let unknown = with("focus", monks()).expect_err("unknown role admitted");
+    assert!(unknown.to_string().contains("harmony_role"), "{unknown}");
+    let foreign =
+        with("builder", serde_json::json!(["monk", "druid"])).expect_err("druid builder admitted");
+    assert!(foreign.to_string().contains("monks only"), "{foreign}");
+    let plain: Value = serde_json::from_str(spell).expect("spell");
+    assert_eq!(
+        spell_from_bundle(&plain, &dependencies)
+            .expect("plain")
+            .harmony_role,
+        None
+    );
+}
+
+/// §A.2 step 3b: a spender's damage bounds are each multiplied and truncated before the roll;
+/// a builder's and any other spell's are not.
+#[test]
+fn only_a_spender_scales_its_damage_bounds_by_the_harmony_multiplier() {
+    let book = book();
+    let base = book.spoken("exori frigo").expect("exori frigo").spell;
+    let multiplier = harmony::HarmonyMultiplier::new(100, 3, false, true).expect("multiplier");
+    let sorcerer = CasterState {
+        harmony_multiplier: multiplier,
+        ..caster(Vocation::MasterSorcerer, 100, 50, 100)
+    };
+    let none = Cooldowns::default();
+    let bounds = |role: Option<HarmonyRole>| {
+        let spell = SpellDefinition {
+            harmony_role: role,
+            ..base.clone()
+        };
+        let low = resolve_cast(&spell, &sorcerer, &none, at(0), false, &mut lowest).expect("cast");
+        let high =
+            resolve_cast(&spell, &sorcerer, &none, at(0), false, &mut highest).expect("cast");
+        let magnitude = |effects: &[ResolvedEffect]| match effects {
+            [ResolvedEffect::Damage { magnitude, .. }] => Some(*magnitude),
+            _ => None,
+        };
+        (magnitude(&low.effects), magnitude(&high.effects))
+    };
+    assert_eq!(bounds(None), (Some(98), Some(143)));
+    assert_eq!(bounds(Some(HarmonyRole::Builder)), (Some(98), Some(143)));
+    // B = 7 + 0.005 * 100 = 7.5 percent, x4 at three charges: m = 1.3 exactly.
+    assert_eq!(multiplier.apply(98), 127);
+    assert_eq!(
+        bounds(Some(HarmonyRole::Spender)),
+        (Some(multiplier.apply(98)), Some(multiplier.apply(143)))
+    );
 }

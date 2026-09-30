@@ -69,7 +69,7 @@ Snapshot request, exact member set, no unknown, duplicate or `null` members, nes
 - `account_id`: canonical lowercase Platform `AccountId` (UUIDv7, Platform ADR 0028; Game never mints it).
 - `characters`: 0..64 entries, sorted by `character_id` ascending, unique. An empty list is a valid snapshot.
 - `projection_epoch`, `projection_revision`: canonical non-zero decimal uint64 strings (§5).
-- `source_observed_at`: canonical decimal Unix seconds at which the snapshot was read.
+- `source_observed_at`: canonical decimal Unix seconds at which the snapshot was read. Every retry of the same `(projection_epoch, projection_revision)` publication is byte-identical: Game takes `source_observed_at` from when that revision was assigned (never later than the read), not from the retry.
 - `source_authority`: the configured Character Authority namespace, 1..128 of `[A-Za-z0-9._:/-]`.
 - Serialization: raw UTF-8, no string escapes (names exclude `"`, `\` and control characters), no insignificant whitespace.
 
