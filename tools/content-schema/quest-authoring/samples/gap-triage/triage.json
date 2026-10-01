@@ -67,14 +67,14 @@
   "unresolved_lines": 2017,
   "unresolved_conditions": 1759,
   "blocked_children": 487,
-  "reference_gaps": 87,
-  "total_unresolved_items": 4350,
+  "reference_gaps": 73,
+  "total_unresolved_items": 4336,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3738
+   "bespoke": 3724
   },
-  "quests_triaged": 250,
+  "quests_triaged": 268,
   "quests_with_bespoke_work": 105,
   "quests_fully_covered_by_owners_and_mechanisms": 1,
   "interactions_unlinked_to_a_quest": 47
@@ -447,7 +447,7 @@
    "counts": {
     "owner_pending": 20,
     "shared_mechanism": 2,
-    "bespoke": 87
+    "bespoke": 80
    },
    "owners_needed": [
     "boss_cooldown",
@@ -462,7 +462,7 @@
     "owner:condition",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:87"
+    "bespoke:80"
    ]
   },
   {
@@ -483,7 +483,7 @@
    "counts": {
     "owner_pending": 5,
     "shared_mechanism": 0,
-    "bespoke": 52
+    "bespoke": 51
    },
    "owners_needed": [
     "creature_removal",
@@ -493,12 +493,24 @@
    "to_finish": [
     "owner:creature_removal",
     "owner:scheduler",
-    "bespoke:52"
+    "bespoke:51"
    ]
   },
   {
    "quest": "canary:quest/blood_herb_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/bored_mini_world_change",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -569,7 +581,7 @@
    "counts": {
     "owner_pending": 5,
     "shared_mechanism": 0,
-    "bespoke": 28
+    "bespoke": 27
    },
    "owners_needed": [
     "scheduler"
@@ -577,8 +589,20 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:28"
+    "bespoke:27"
    ]
+  },
+  {
+   "quest": "canary:quest/chyllfroest_mini_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/circle_room_quest",
@@ -1257,7 +1281,7 @@
    "counts": {
     "owner_pending": 24,
     "shared_mechanism": 7,
-    "bespoke": 140
+    "bespoke": 139
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1274,7 +1298,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:140"
+    "bespoke:139"
    ]
   },
   {
@@ -1545,6 +1569,18 @@
    ]
   },
   {
+   "quest": "canary:quest/horse_station_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/hot_cuisine_quest",
    "kind": "storyline",
    "counts": {
@@ -1571,6 +1607,18 @@
    "to_finish": [
     "bespoke:7"
    ]
+  },
+  {
+   "quest": "canary:quest/hunting_for_tokens",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/in_service_of_yalahar_quest",
@@ -2165,6 +2213,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/pilgrimage_of_ashes",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/plate_armor_quest",
    "kind": "reward_only",
    "counts": {
@@ -2415,6 +2475,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/sanctuary_of_the_lizard_god",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/scale_armor_quest",
    "kind": "reward_only",
    "counts": {
@@ -2566,6 +2638,30 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/skull_of_ratha",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/small_health_potion",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/soil_guardian_outfits_quest",
    "kind": "script_only",
    "counts": {
@@ -2647,6 +2743,18 @@
    ]
   },
   {
+   "quest": "canary:quest/stampede_mini_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/steal_from_thieves_quest",
    "kind": "script_only",
    "counts": {
@@ -2707,6 +2815,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/swamp_fever_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/thais_lighthouse_quest",
    "kind": "script_only",
    "counts": {
@@ -2719,6 +2839,18 @@
    "to_finish": [
     "bespoke:13"
    ]
+  },
+  {
+   "quest": "canary:quest/thawing_mini_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/the_ancient_tombs_quest",
@@ -2834,7 +2966,7 @@
    "counts": {
     "owner_pending": 30,
     "shared_mechanism": 1,
-    "bespoke": 165
+    "bespoke": 163
    },
    "owners_needed": [
     "condition",
@@ -2849,7 +2981,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:165"
+    "bespoke:163"
    ]
   },
   {
@@ -3001,6 +3133,18 @@
     "owner:kv_state",
     "bespoke:8"
    ]
+  },
+  {
+   "quest": "canary:quest/the_mages_tower_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/the_mummys_curse_world_change",
@@ -3306,6 +3450,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/thornfire_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/threatened_dreams_quest",
    "kind": "storyline",
    "counts": {
@@ -3499,6 +3655,18 @@
    ]
   },
   {
+   "quest": "canary:quest/tutorial",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/unnatural_selection_quest",
    "kind": "storyline",
    "counts": {
@@ -3592,7 +3760,7 @@
    "counts": {
     "owner_pending": 2,
     "shared_mechanism": 0,
-    "bespoke": 8
+    "bespoke": 7
    },
    "owners_needed": [
     "condition",
@@ -3602,7 +3770,7 @@
    "to_finish": [
     "owner:condition",
     "owner:scheduler",
-    "bespoke:8"
+    "bespoke:7"
    ]
   },
   {
@@ -3676,6 +3844,30 @@
    ]
   },
   {
+   "quest": "crystalserver:quest/afflicted_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/ancient_aucar_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "crystalserver:quest/berserk_potion_quest",
    "kind": "reward_only",
    "counts": {
@@ -3715,6 +3907,18 @@
   },
   {
    "quest": "crystalserver:quest/dream_warrior_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/feral_trappers_quest",
    "kind": "script_only",
    "counts": {
     "owner_pending": 0,
@@ -3805,7 +4009,7 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 3,
-    "bespoke": 36
+    "bespoke": 35
    },
    "owners_needed": [],
    "mechanisms_needed": [
@@ -3813,8 +4017,20 @@
    ],
    "to_finish": [
     "mechanism:kill_reward_fanout",
-    "bespoke:36"
+    "bespoke:35"
    ]
+  },
+  {
+   "quest": "crystalserver:quest/within_the_tides_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   }
  ],
  "interactions_unlinked": [

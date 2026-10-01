@@ -12031,6 +12031,1466 @@
           "classification": "OTS_HYPOTHESIS_ONLY"
         }
       ]
+    },
+    {
+      "wiki": {
+        "title": "Bored Mini World Change",
+        "pageid": 76210,
+        "revid": 845015,
+        "rev_timestamp": "2021-05-26T21:30:21Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Bored Mini World Change",
+        "key": "bored_mini_world_change",
+        "source_paths": [
+          "data/scripts/creaturescripts/monster/giant_spider_wyda_death.lua",
+          "npc/wyda.lua"
+        ],
+        "basis": "GiantSpiderWyda death grants the named Someone's Bored achievement; Wyda blood-herb exchange can grant Torn Teddy.",
+        "coverage_gap": "The registered death handler has no accepted-source monster attachment found. World activation/schedule and BloodHerb collection remain unbound; these are separate reward components, not a proven complete event.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/creaturescripts/monster/giant_spider_wyda_death.lua",
+            "blob_sha256": "4b78cf145d150264e8630ec73381e66b0fa4e1dca855292b93505805acacf0c2",
+            "line": 7,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/wyda.lua",
+            "blob_sha256": "a06d546d93554b191479f0dd6afef2a190a1752db2adea343aa0fb8d0f7795a8",
+            "line": 116,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/creaturescripts/monster/giant_spider_wyda_death.lua",
+            "blob_sha256": "4b78cf145d150264e8630ec73381e66b0fa4e1dca855292b93505805acacf0c2",
+            "line": 7,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/wyda.lua",
+            "blob_sha256": "050e67f4379e4ea89c8ad0ce4c7293ef433fa4e5fec01ec1f1b08a286c7a4d14",
+            "line": 114,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data/scripts/creaturescripts/monster/giant_spider_wyda_death.lua",
+          "blob_sha256": "4b78cf145d150264e8630ec73381e66b0fa4e1dca855292b93505805acacf0c2",
+          "line": 7,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/wyda.lua",
+          "blob_sha256": "a06d546d93554b191479f0dd6afef2a190a1752db2adea343aa0fb8d0f7795a8",
+          "line": 116,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data/scripts/creaturescripts/monster/giant_spider_wyda_death.lua",
+          "blob_sha256": "4b78cf145d150264e8630ec73381e66b0fa4e1dca855292b93505805acacf0c2",
+          "line": 7,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/wyda.lua",
+          "blob_sha256": "050e67f4379e4ea89c8ad0ce4c7293ef433fa4e5fec01ec1f1b08a286c7a4d14",
+          "line": 114,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "The registered death handler has no accepted-source monster attachment found. World activation/schedule and BloodHerb collection remain unbound; these are separate reward components, not a proven complete event."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior"
+    },
+    {
+      "wiki": {
+        "title": "Hunting for Tokens Quest",
+        "pageid": 64417,
+        "revid": 885774,
+        "rev_timestamp": "2021-09-18T10:00:13Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Hunting for Tokens Quest",
+        "key": "hunting_for_tokens",
+        "source_paths": [
+          "npc/jorge.lua"
+        ],
+        "basis": "Jorge implements the souvenir exchange for 20 silver raid tokens; exact wiki spoiler names Jorge.",
+        "coverage_gap": "Token acquisition/hunting activities and full reward branches remain untranscribed. The exchange is shared NPC behavior, not proof of every quest prerequisite.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/jorge.lua",
+            "blob_sha256": "db22eb41606fa8e4f54e540a3e5b3c1f2cd4bdab58793800d28eb0579b90b672",
+            "line": 128,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/jorge.lua",
+            "blob_sha256": "db22eb41606fa8e4f54e540a3e5b3c1f2cd4bdab58793800d28eb0579b90b672",
+            "line": 129,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/jorge.lua",
+            "blob_sha256": "127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+            "line": 126,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/jorge.lua",
+            "blob_sha256": "127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+            "line": 127,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/jorge.lua",
+          "blob_sha256": "db22eb41606fa8e4f54e540a3e5b3c1f2cd4bdab58793800d28eb0579b90b672",
+          "line": 128,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/jorge.lua",
+          "blob_sha256": "db22eb41606fa8e4f54e540a3e5b3c1f2cd4bdab58793800d28eb0579b90b672",
+          "line": 129,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/jorge.lua",
+          "blob_sha256": "127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+          "line": 126,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/jorge.lua",
+          "blob_sha256": "127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+          "line": 127,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Token acquisition/hunting activities and full reward branches remain untranscribed. The exchange is shared NPC behavior, not proof of every quest prerequisite."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior"
+    },
+    {
+      "wiki": {
+        "title": "Tutorial",
+        "pageid": 66614,
+        "revid": 791148,
+        "rev_timestamp": "2020-02-29T11:44:15Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Tutorial",
+        "key": "tutorial",
+        "source_paths": [
+          "npc/menesto.lua"
+        ],
+        "basis": "Menesto implements the Dawnport greeting ration and ready-message stage; exact wiki specification names Menesto.",
+        "coverage_gap": "Initial guard reads Storage.Tutorial while writes use Storage.Dawnport.Tutorial; preserve separate keys and source behavior. Full starter equipment/tutorial graph and all rewards remain unbound.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/menesto.lua",
+            "blob_sha256": "968632a7e84dc96e777b75a37c3308e7a9e52a7470138d4054bfdd23b3530d89",
+            "line": 69,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/menesto.lua",
+            "blob_sha256": "968632a7e84dc96e777b75a37c3308e7a9e52a7470138d4054bfdd23b3530d89",
+            "line": 90,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/menesto.lua",
+            "blob_sha256": "fe5d29600e2428b691000edbf43eeafcc4b9a59ae2d938ec3b7bd27c38ec4541",
+            "line": 67,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/menesto.lua",
+            "blob_sha256": "fe5d29600e2428b691000edbf43eeafcc4b9a59ae2d938ec3b7bd27c38ec4541",
+            "line": 88,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/menesto.lua",
+          "blob_sha256": "968632a7e84dc96e777b75a37c3308e7a9e52a7470138d4054bfdd23b3530d89",
+          "line": 69,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/menesto.lua",
+          "blob_sha256": "968632a7e84dc96e777b75a37c3308e7a9e52a7470138d4054bfdd23b3530d89",
+          "line": 90,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/menesto.lua",
+          "blob_sha256": "fe5d29600e2428b691000edbf43eeafcc4b9a59ae2d938ec3b7bd27c38ec4541",
+          "line": 67,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/menesto.lua",
+          "blob_sha256": "fe5d29600e2428b691000edbf43eeafcc4b9a59ae2d938ec3b7bd27c38ec4541",
+          "line": 88,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Initial guard reads Storage.Tutorial while writes use Storage.Dawnport.Tutorial; preserve separate keys and source behavior. Full starter equipment/tutorial graph and all rewards remain unbound."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior"
+    },
+    {
+      "wiki": {
+        "title": "Chyllfroest Mini World Change",
+        "pageid": 76214,
+        "revid": 797728,
+        "rev_timestamp": "2020-04-01T15:42:23Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Chyllfroest Mini World Change",
+        "key": "chyllfroest_mini_world_change",
+        "source_paths": [
+          "scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua"
+        ],
+        "basis": "Ursagrodon frozen-creature use action provides the wiki-named mount component, with explicit April/May date guard and ice transforms.",
+        "coverage_gap": "Seasonal world activation, map access, creature population and complete event lifecycle remain unbound. Shared Tinder Box quest component must not be treated as a complete independent quest.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua",
+            "blob_sha256": "f700b8b89790e7780bdcd78b446aa55dfcd4ae0d88881cd32f182adfd4ef6972",
+            "line": 52,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua",
+            "blob_sha256": "f700b8b89790e7780bdcd78b446aa55dfcd4ae0d88881cd32f182adfd4ef6972",
+            "line": 61,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua",
+            "blob_sha256": "f700b8b89790e7780bdcd78b446aa55dfcd4ae0d88881cd32f182adfd4ef6972",
+            "line": 52,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua",
+            "blob_sha256": "f700b8b89790e7780bdcd78b446aa55dfcd4ae0d88881cd32f182adfd4ef6972",
+            "line": 61,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua",
+          "blob_sha256": "f700b8b89790e7780bdcd78b446aa55dfcd4ae0d88881cd32f182adfd4ef6972",
+          "line": 52,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua",
+          "blob_sha256": "f700b8b89790e7780bdcd78b446aa55dfcd4ae0d88881cd32f182adfd4ef6972",
+          "line": 61,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua",
+          "blob_sha256": "f700b8b89790e7780bdcd78b446aa55dfcd4ae0d88881cd32f182adfd4ef6972",
+          "line": 52,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua",
+          "blob_sha256": "f700b8b89790e7780bdcd78b446aa55dfcd4ae0d88881cd32f182adfd4ef6972",
+          "line": 61,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Seasonal world activation, map access, creature population and complete event lifecycle remain unbound. Shared Tinder Box quest component must not be treated as a complete independent quest."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior"
+    },
+    {
+      "wiki": {
+        "title": "Sanctuary of the Lizard God Quest",
+        "pageid": 68839,
+        "revid": 1198612,
+        "rev_timestamp": "2026-08-01T21:41:29Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Sanctuary of the Lizard God Quest",
+        "key": "sanctuary_of_the_lizard_god",
+        "source_paths": [
+          "scripts/quests/dawnport/movements_legion_helmet.lua"
+        ],
+        "basis": "Dedicated registered Dawnport movement checks the exact SanctuaryOfTheLizardGod.LizardGodTeleport track before entering the sanctuary.",
+        "coverage_gap": "Sacrifice/storage writer, full rewards, map binding and quest prerequisites remain untranscribed; presence of entry gate proves only this component.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/dawnport/movements_legion_helmet.lua",
+            "blob_sha256": "a7cf7c209db46901532df0685d5d2cb744995f264c1e2938ebf79f4a3540ef1d",
+            "line": 9,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/dawnport/movements_legion_helmet.lua",
+            "blob_sha256": "a7cf7c209db46901532df0685d5d2cb744995f264c1e2938ebf79f4a3540ef1d",
+            "line": 20,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/dawnport/movements_legion_helmet.lua",
+            "blob_sha256": "b56229ae037e3b843278caa578e3752cd3d55e96cbaeabdca759a81e7068019f",
+            "line": 20,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dawnport/movements_legion_helmet.lua",
+          "blob_sha256": "a7cf7c209db46901532df0685d5d2cb744995f264c1e2938ebf79f4a3540ef1d",
+          "line": 9,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dawnport/movements_legion_helmet.lua",
+          "blob_sha256": "a7cf7c209db46901532df0685d5d2cb744995f264c1e2938ebf79f4a3540ef1d",
+          "line": 20,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dawnport/movements_legion_helmet.lua",
+          "blob_sha256": "b56229ae037e3b843278caa578e3752cd3d55e96cbaeabdca759a81e7068019f",
+          "line": 20,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Sacrifice/storage writer, full rewards, map binding and quest prerequisites remain untranscribed; presence of entry gate proves only this component."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior"
+    },
+    {
+      "wiki": {
+        "title": "Skull of Ratha Quest",
+        "pageid": 3782,
+        "revid": 756266,
+        "rev_timestamp": "2019-03-06T02:01:09Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Skull of Ratha Quest",
+        "key": "skull_of_ratha",
+        "source_paths": [
+          "npc/mortimer.lua"
+        ],
+        "basis": "Mortimer implements the explicitly named Skull of Ratha return (Item3207) and ExplorerSociety.SkullOfRatha.Bag1 update.",
+        "coverage_gap": "Full acquisition/chest and reward graph remain unbound to this new source slice. Shared Explorer Society NPC file is not exclusive quest ownership.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/mortimer.lua",
+            "blob_sha256": "5b49779e4a751cdba6d3ce4c8727ced8c1265228a4697160cccdc61127f3c3bc",
+            "line": 609,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/mortimer.lua",
+            "blob_sha256": "5b49779e4a751cdba6d3ce4c8727ced8c1265228a4697160cccdc61127f3c3bc",
+            "line": 611,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/mortimer.lua",
+            "blob_sha256": "faf48aefb54604c94216f6394ee3e3d6381a07840fdf666d9551f7ea1f822d2b",
+            "line": 562,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/mortimer.lua",
+            "blob_sha256": "faf48aefb54604c94216f6394ee3e3d6381a07840fdf666d9551f7ea1f822d2b",
+            "line": 564,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/mortimer.lua",
+          "blob_sha256": "5b49779e4a751cdba6d3ce4c8727ced8c1265228a4697160cccdc61127f3c3bc",
+          "line": 609,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/mortimer.lua",
+          "blob_sha256": "5b49779e4a751cdba6d3ce4c8727ced8c1265228a4697160cccdc61127f3c3bc",
+          "line": 611,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/mortimer.lua",
+          "blob_sha256": "faf48aefb54604c94216f6394ee3e3d6381a07840fdf666d9551f7ea1f822d2b",
+          "line": 562,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/mortimer.lua",
+          "blob_sha256": "faf48aefb54604c94216f6394ee3e3d6381a07840fdf666d9551f7ea1f822d2b",
+          "line": 564,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Full acquisition/chest and reward graph remain unbound to this new source slice. Shared Explorer Society NPC file is not exclusive quest ownership."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior"
+    },
+    {
+      "wiki": {
+        "title": "Pilgrimage of Ashes Quest",
+        "pageid": 37207,
+        "revid": 843918,
+        "rev_timestamp": "2021-05-26T20:29:27Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Pilgrimage of Ashes Quest",
+        "key": "pilgrimage_of_ashes",
+        "source_paths": [
+          "npc/edala.lua",
+          "npc/eremo.lua",
+          "npc/humphrey.lua",
+          "npc/norf.lua",
+          "npc/pydar.lua"
+        ],
+        "basis": "Five wiki-named pilgrimage NPCs register executable StdModule.bless dialogues for the named blessings; this is the blessing-purchase component.",
+        "coverage_gap": "Blessing module implementation/admission, Kawill prerequisite, global pilgrimage ordering and costs/discounts are not fully transcribed. Source blessing IDs stay source-qualified; no canonical blessing binding is inferred.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/norf.lua",
+            "blob_sha256": "81f40f3b23e92face3a072131230636d2ca00779a180ab5d59c7d141c448f239",
+            "line": 52,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/humphrey.lua",
+            "blob_sha256": "88460c236b5d2e26da2ea58d90bf257a183beb8ce5c1dbd4c05c25bf23e1d657",
+            "line": 57,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/edala.lua",
+            "blob_sha256": "8cd61297cfff3e4e2fd5962072b546baee47f08f33fd73d80d712712fce69cb0",
+            "line": 81,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/pydar.lua",
+            "blob_sha256": "8803cefb49bbcea2e38c3bcb5f8092a1577f071648a6a243613d5396126adccf",
+            "line": 57,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/eremo.lua",
+            "blob_sha256": "74f65d53cc63d12fc5ef174625a384a52d9db3b6a66214d972380e18d622db44",
+            "line": 81,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/norf.lua",
+            "blob_sha256": "3e85f0fddde51d6e35320b3941ef43bdf9adfa3049d8612def7e65a86c30754e",
+            "line": 50,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/humphrey.lua",
+            "blob_sha256": "7e2d71541d51451cbca533b2f01c2560395a368096ee0af7300b845c84c3c47b",
+            "line": 55,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/edala.lua",
+            "blob_sha256": "3be11d553dd42e4abc8d70c8b2bc1b5bb9995b8e9ba5f62dbbd5dc9dec9d5d18",
+            "line": 79,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/pydar.lua",
+            "blob_sha256": "0fee606c573f0dacb1695a60fc2a36cad211c5741214cc8927ec119735be34c2",
+            "line": 55,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/eremo.lua",
+            "blob_sha256": "132039a8d790af142e964d624e1516648a6d6a318c159534db9c84805648401d",
+            "line": 79,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/norf.lua",
+          "blob_sha256": "81f40f3b23e92face3a072131230636d2ca00779a180ab5d59c7d141c448f239",
+          "line": 52,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/humphrey.lua",
+          "blob_sha256": "88460c236b5d2e26da2ea58d90bf257a183beb8ce5c1dbd4c05c25bf23e1d657",
+          "line": 57,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/edala.lua",
+          "blob_sha256": "8cd61297cfff3e4e2fd5962072b546baee47f08f33fd73d80d712712fce69cb0",
+          "line": 81,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/pydar.lua",
+          "blob_sha256": "8803cefb49bbcea2e38c3bcb5f8092a1577f071648a6a243613d5396126adccf",
+          "line": 57,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/eremo.lua",
+          "blob_sha256": "74f65d53cc63d12fc5ef174625a384a52d9db3b6a66214d972380e18d622db44",
+          "line": 81,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/norf.lua",
+          "blob_sha256": "3e85f0fddde51d6e35320b3941ef43bdf9adfa3049d8612def7e65a86c30754e",
+          "line": 50,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/humphrey.lua",
+          "blob_sha256": "7e2d71541d51451cbca533b2f01c2560395a368096ee0af7300b845c84c3c47b",
+          "line": 55,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/edala.lua",
+          "blob_sha256": "3be11d553dd42e4abc8d70c8b2bc1b5bb9995b8e9ba5f62dbbd5dc9dec9d5d18",
+          "line": 79,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/pydar.lua",
+          "blob_sha256": "0fee606c573f0dacb1695a60fc2a36cad211c5741214cc8927ec119735be34c2",
+          "line": 55,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/eremo.lua",
+          "blob_sha256": "132039a8d790af142e964d624e1516648a6d6a318c159534db9c84805648401d",
+          "line": 79,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Blessing module implementation/admission, Kawill prerequisite, global pilgrimage ordering and costs/discounts are not fully transcribed. Source blessing IDs stay source-qualified; no canonical blessing binding is inferred."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior"
+    },
+    {
+      "wiki": {
+        "title": "Swamp Fever World Change",
+        "pageid": 54559,
+        "revid": 844892,
+        "rev_timestamp": "2021-05-26T21:10:08Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Swamp Fever World Change",
+        "key": "swamp_fever_world_change",
+        "source_paths": [
+          "npc/ottokar.lua"
+        ],
+        "basis": "Ottokar exchanges medicine pouch12517 for belongings12413 and requests Doctor! Doctor! progress; wiki specification names Ottokar.",
+        "coverage_gap": "World scheduler/state and medicine acquisition remain unbound. Achievement call argument100 is preserved source API data, not an invented quest count or completion condition.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/ottokar.lua",
+            "blob_sha256": "a7de12332a06e28f1d520d6d057544c3722ad9f1f4a02000ff87de3529b6d0f8",
+            "line": 72,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/ottokar.lua",
+            "blob_sha256": "a7de12332a06e28f1d520d6d057544c3722ad9f1f4a02000ff87de3529b6d0f8",
+            "line": 74,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/ottokar.lua",
+            "blob_sha256": "fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951",
+            "line": 70,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/ottokar.lua",
+            "blob_sha256": "fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951",
+            "line": 72,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/ottokar.lua",
+          "blob_sha256": "a7de12332a06e28f1d520d6d057544c3722ad9f1f4a02000ff87de3529b6d0f8",
+          "line": 72,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/ottokar.lua",
+          "blob_sha256": "a7de12332a06e28f1d520d6d057544c3722ad9f1f4a02000ff87de3529b6d0f8",
+          "line": 74,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/ottokar.lua",
+          "blob_sha256": "fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951",
+          "line": 70,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/ottokar.lua",
+          "blob_sha256": "fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951",
+          "line": 72,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "World scheduler/state and medicine acquisition remain unbound. Achievement call argument100 is preserved source API data, not an invented quest count or completion condition."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior"
+    },
+    {
+      "wiki": {
+        "title": "Small Health Potion Quest",
+        "pageid": 3154,
+        "revid": 1043985,
+        "rev_timestamp": "2023-10-30T18:29:29Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Small Health Potion Quest",
+        "key": "small_health_potion",
+        "source_paths": [
+          "npc/billy.lua"
+        ],
+        "basis": "Exact Fandom spoiler3578/rev748299 names Billy, pan and Small Health Potion; both pinned NPCs register the guarded pan3466-to-potion7876 exchange.",
+        "coverage_gap": "Pan acquisition and all quest/map prerequisites remain unbound. This component is Billy's exchange; historical coverage Hyacinth references point to Rookie Guard and are not reused as this quest identity.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/billy.lua",
+            "blob_sha256": "d86c890158a4fc9ee39cb4550443fe3c866f09d82c35be8aa08b02861ba4cb84",
+            "line": 140,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/billy.lua",
+            "blob_sha256": "d86c890158a4fc9ee39cb4550443fe3c866f09d82c35be8aa08b02861ba4cb84",
+            "line": 141,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/billy.lua",
+            "blob_sha256": "f90393f8de233261ab8736672e26eb77323eeb96467da312c50f36ba54239728",
+            "line": 138,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/billy.lua",
+            "blob_sha256": "f90393f8de233261ab8736672e26eb77323eeb96467da312c50f36ba54239728",
+            "line": 139,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/billy.lua",
+          "blob_sha256": "d86c890158a4fc9ee39cb4550443fe3c866f09d82c35be8aa08b02861ba4cb84",
+          "line": 140,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/billy.lua",
+          "blob_sha256": "d86c890158a4fc9ee39cb4550443fe3c866f09d82c35be8aa08b02861ba4cb84",
+          "line": 141,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/billy.lua",
+          "blob_sha256": "f90393f8de233261ab8736672e26eb77323eeb96467da312c50f36ba54239728",
+          "line": 138,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/billy.lua",
+          "blob_sha256": "f90393f8de233261ab8736672e26eb77323eeb96467da312c50f36ba54239728",
+          "line": 139,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Pan acquisition and all quest/map prerequisites remain unbound. This component is Billy's exchange; historical coverage Hyacinth references point to Rookie Guard and are not reused as this quest identity."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior",
+      "wiki_component_witnesses": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3578,
+          "revid": 748299,
+          "content_sha256": "59033befb3eac959cded571cef6870ef7168bd4a33e6e102455f64f66d5d5cca",
+          "line": 2,
+          "line_sha256": "4033e51f4063e6677f8ca0ad6e49f09ac9652cdf488faff6d8ffa3f02f583a97",
+          "matching_entities": [
+            "Billy",
+            "Small Health Potion",
+            "pan"
+          ],
+          "source_fact_pointer": "/source_fact_entries/0",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3578,
+          "revid": 748299,
+          "content_sha256": "59033befb3eac959cded571cef6870ef7168bd4a33e6e102455f64f66d5d5cca",
+          "line": 3,
+          "line_sha256": "43633cb7a23594a9773ba90b50c9970a29aade2b434839d6f2fecd083b36f21c",
+          "matching_entities": [
+            "pan"
+          ],
+          "source_fact_pointer": "/source_fact_entries/1",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3578,
+          "revid": 748299,
+          "content_sha256": "59033befb3eac959cded571cef6870ef7168bd4a33e6e102455f64f66d5d5cca",
+          "line": 9,
+          "line_sha256": "5ee1da9bca741b735a46231b250ae2360b517c0b3fb11830015b9d4022a205ce",
+          "matching_entities": [
+            "Billy"
+          ],
+          "source_fact_pointer": "/source_fact_entries/2",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        }
+      ]
+    },
+    {
+      "wiki": {
+        "title": "Stampede Mini World Change",
+        "pageid": 76265,
+        "revid": 845239,
+        "rev_timestamp": "2021-05-26T21:36:38Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "Stampede Mini World Change",
+        "key": "stampede_mini_world_change",
+        "source_paths": [
+          "data/scripts/creaturescripts/monster/terrified_elephant_death.lua",
+          "monster/mammals/terrified_elephant.lua"
+        ],
+        "basis": "Exact Fandom spoiler76266/rev887155 names Terrified Elephant and Trail of the Ape God. Crystal registers TerrifiedElephantDeath in the monster event list; its handler counts deaths on character storage283226 and requests the achievement at five.",
+        "coverage_gap": "Only Crystal has the accepted death handler and attachment. World-change activation, spawn/raid lifecycle and map localization remain unbound. Preserve historical Canary IMPLEMENTED flag as a separate unverified baseline; do not infer its attachment or substitute Water Buffalo/Swamp Beast.",
+        "source_evidence": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/creaturescripts/monster/terrified_elephant_death.lua",
+            "blob_sha256": "88d4a52d50523a9b31470db68a17152c50bf569205f3abd534b8cadf40522108",
+            "line": 24,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/creaturescripts/monster/terrified_elephant_death.lua",
+            "blob_sha256": "88d4a52d50523a9b31470db68a17152c50bf569205f3abd534b8cadf40522108",
+            "line": 21,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/monster/mammals/terrified_elephant.lua",
+            "blob_sha256": "4438ef9e404599f9aaad6ccd3bc09dc05998d0e24712504a45a40207a55f9aec",
+            "line": 17,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data/scripts/creaturescripts/monster/terrified_elephant_death.lua",
+          "blob_sha256": "88d4a52d50523a9b31470db68a17152c50bf569205f3abd534b8cadf40522108",
+          "line": 24,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data/scripts/creaturescripts/monster/terrified_elephant_death.lua",
+          "blob_sha256": "88d4a52d50523a9b31470db68a17152c50bf569205f3abd534b8cadf40522108",
+          "line": 21,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/monster/mammals/terrified_elephant.lua",
+          "blob_sha256": "4438ef9e404599f9aaad6ccd3bc09dc05998d0e24712504a45a40207a55f9aec",
+          "line": 17,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Only Crystal has the accepted death handler and attachment. World-change activation, spawn/raid lifecycle and map localization remain unbound. Preserve historical Canary IMPLEMENTED flag as a separate unverified baseline; do not infer its attachment or substitute Water Buffalo/Swamp Beast."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior",
+      "wiki_component_witnesses": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 76266,
+          "revid": 887155,
+          "content_sha256": "ed904b4e6c1ebf413c8ad466b1f5c194664ca4eebbd4713e4c00fcba0896ce33",
+          "line": 8,
+          "line_sha256": "85824f64e8923ad6218d711668e18d0a4d92030307b6fd9a5c85b58a57fdb24f",
+          "matching_entities": [
+            "Terrified Elephant"
+          ],
+          "source_fact_pointer": "/source_fact_entries/1",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 76266,
+          "revid": 887155,
+          "content_sha256": "ed904b4e6c1ebf413c8ad466b1f5c194664ca4eebbd4713e4c00fcba0896ce33",
+          "line": 10,
+          "line_sha256": "f976da643633a2182423a24d5ac308ccb654d9d2e8f4be9cf7140c7938c3a176",
+          "matching_entities": [
+            "Trail of the Ape God"
+          ],
+          "source_fact_pointer": "/source_fact_entries/2",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        }
+      ]
+    },
+    {
+      "wiki": {
+        "title": "The Mage's Tower World Change",
+        "pageid": 54564,
+        "revid": 844897,
+        "rev_timestamp": "2021-05-26T21:10:16Z",
+        "in_quest_log": false
+      },
+      "curator_entry": {
+        "title": "The Mage's Tower World Change",
+        "key": "the_mages_tower_world_change",
+        "source_paths": [
+          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua"
+        ],
+        "basis": "Exact Fandom spoiler55046/rev1095409 names Energized Raging Mage, Raging Mage and Yielothax. Both donors implement the event death/kill components with character775558 and world673003/775559 scopes.",
+        "coverage_gap": "Full world scheduler, map/creature event attachment, kill-participant eligibility and native world-state admission remain unbound. Existing script defect with getSpectators destructuring/#t remains source behavior, not repaired by transcription; global storages never become Character tracks.",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+            "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+            "line": 11,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+            "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+            "line": 18,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+            "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+            "line": 11,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+            "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+            "line": 18,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+          "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+          "line": 11,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+          "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+          "line": 18,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+          "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+          "line": 11,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+          "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+          "line": 18,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "action": "add partial source-backed script_only catalogue component; not complete/playable assertion",
+      "remaining_global_fields": [
+        "Full world scheduler, map/creature event attachment, kill-participant eligibility and native world-state admission remain unbound. Existing script defect with getSpectators destructuring/#t remains source behavior, not repaired by transcription; global storages never become Character tracks."
+      ],
+      "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior",
+      "wiki_component_witnesses": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "line": 4,
+          "line_sha256": "c372b7222f0ba2581f7dcbfd60cea96b04e767a781dff467a11e778b7c13ce6c",
+          "matching_entities": [
+            "Raging Mage",
+            "Yielothax"
+          ],
+          "source_fact_pointer": "/source_fact_entries/0",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "line": 16,
+          "line_sha256": "eeee082427b01c86995d0632a591d606f5c3b23992483e1d3e35a1ecc405d851",
+          "matching_entities": [
+            "Energized Raging Mage",
+            "Raging Mage",
+            "Yielothax"
+          ],
+          "source_fact_pointer": "/source_fact_entries/4",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "line": 19,
+          "line_sha256": "a2b9b4dc8c94263920d93c221df0b4fb95f88bfb283d6a167e5254c9329dc6ea",
+          "matching_entities": [
+            "Raging Mage",
+            "Yielothax"
+          ],
+          "source_fact_pointer": "/source_fact_entries/5",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "line": 20,
+          "line_sha256": "f63cada410987842ee69d245b0b6db5509a1811275522954028899a250486464",
+          "matching_entities": [
+            "Raging Mage",
+            "Yielothax"
+          ],
+          "source_fact_pointer": "/source_fact_entries/6",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "line": 21,
+          "line_sha256": "144352ea7a2204392f303e83460fa7dd37217ba4e79e0d48e664948d851ee261",
+          "matching_entities": [
+            "Energized Raging Mage",
+            "Raging Mage"
+          ],
+          "source_fact_pointer": "/source_fact_entries/7",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "line": 22,
+          "line_sha256": "86d00534e4acb621ce189a5957b4698ad74244651d4400eafa6f3971483d4d4d",
+          "matching_entities": [
+            "Raging Mage"
+          ],
+          "source_fact_pointer": "/source_fact_entries/8",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "line": 23,
+          "line_sha256": "0a9237429f08149c19e648b7ecaf70a4e2137939461ecc569754b3f2b9e9c184",
+          "matching_entities": [
+            "Raging Mage",
+            "Yielothax"
+          ],
+          "source_fact_pointer": "/source_fact_entries/9",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "line": 26,
+          "line_sha256": "e0ec3d12b8f21e396d7d5e0fcc9412627c3889d2866f18932b688e4939587ca2",
+          "matching_entities": [
+            "Yielothax"
+          ],
+          "source_fact_pointer": "/source_fact_entries/10",
+          "historical_acquisition_verified": true,
+          "raw_body_rechecked": false
+        }
+      ]
     }
   ],
   "npc_fact_candidates": [

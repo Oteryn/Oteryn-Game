@@ -387,8 +387,8 @@
       "per_stage": 468,
       "fixed": 38
     },
-    "progress_tracks": 1163,
-    "tracks_written_by_both_servers": 803,
+    "progress_tracks": 1425,
+    "tracks_written_by_both_servers": 1028,
     "tracks_without_a_writer": 158,
     "transitions": 1746,
     "transitions_by_owner": {
@@ -415,22 +415,22 @@
     "transitions_in_both_servers": 1345,
     "storyline_quests_linked_to_wiki": 52,
     "reward_only_quests_absorbed": 25,
-    "script_only_quests": 89,
-    "catalogue_quests": 257,
+    "script_only_quests": 100,
+    "catalogue_quests": 268,
     "by_status": {
       "mapped": 529
     },
     "requirements_parsed": {
-      "quests_with_wiki_requirements": 251,
+      "quests_with_wiki_requirements": 262,
       "premium": {
-        "parsed": 249,
+        "parsed": 260,
         "partial": 2
       },
       "min_level": {
         "none": 2,
         "note": 4,
-        "parsed": 229,
-        "range": 5,
+        "parsed": 239,
+        "range": 6,
         "uncertain": 4,
         "varies": 1
       }
@@ -466,6 +466,22 @@
   "quest_source_aliases": [],
   "source_checks": {
     "progress_track_unknowns": [
+      {
+        "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar_access",
+        "storage_declaration": "UNKNOWN: no exact Storage declaration for crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar_access"
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u15_10/bloody_tusks/into_the_vampires_lair",
+        "storage_declaration": "UNKNOWN: no exact Storage declaration for crystalserver:quest-progress/quest/u15_10/bloody_tusks/into_the_vampires_lair"
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u15_10/bloody_tusks/the_blood_ritual",
+        "storage_declaration": "UNKNOWN: no exact Storage declaration for crystalserver:quest-progress/quest/u15_10/bloody_tusks/the_blood_ritual"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/druid_outfits/default_start",
+        "storage_declaration": "UNKNOWN: no exact Storage declaration for canary:quest-progress/quest/u7_8/druid_outfits/default_start"
+      },
       {
         "key": "canary:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
         "owner": "UNKNOWN: Shared KnightwatchTowerDoor41014 is written by both Nightmare DreamMaster and Brotherhood BoneMaster source branches (Canary NPC writerL124/L128 and CrystalL94/L99). Distinct BR/Fandom quest pages; unique quest owner UNKNOWN. No collapse into Nightmare merely from Storage namespace."
@@ -815,6 +831,100 @@
           "scripts/actions/mounts/mounts.lua"
         ],
         "coverage_gap": "World scheduler/lifecycle/locality are unbound. Firefighter check is nested in wolf-spawn branch; Coal and Flintstone reward delivery remain unknown.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/bored_mini_world_change",
+        "source_paths": [
+          "data/scripts/creaturescripts/monster/giant_spider_wyda_death.lua",
+          "npc/wyda.lua"
+        ],
+        "coverage_gap": "The registered death handler has no accepted-source monster attachment found. World activation/schedule and BloodHerb collection remain unbound; these are separate reward components, not a proven complete event.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/hunting_for_tokens",
+        "source_paths": [
+          "npc/jorge.lua"
+        ],
+        "coverage_gap": "Token acquisition/hunting activities and full reward branches remain untranscribed. The exchange is shared NPC behavior, not proof of every quest prerequisite.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/tutorial",
+        "source_paths": [
+          "npc/menesto.lua"
+        ],
+        "coverage_gap": "Initial guard reads Storage.Tutorial while writes use Storage.Dawnport.Tutorial; preserve separate keys and source behavior. Full starter equipment/tutorial graph and all rewards remain unbound.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/chyllfroest_mini_world_change",
+        "source_paths": [
+          "scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua"
+        ],
+        "coverage_gap": "Seasonal world activation, map access, creature population and complete event lifecycle remain unbound. Shared Tinder Box quest component must not be treated as a complete independent quest.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/sanctuary_of_the_lizard_god",
+        "source_paths": [
+          "scripts/quests/dawnport/movements_legion_helmet.lua"
+        ],
+        "coverage_gap": "Sacrifice/storage writer, full rewards, map binding and quest prerequisites remain untranscribed; presence of entry gate proves only this component.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/skull_of_ratha",
+        "source_paths": [
+          "npc/mortimer.lua"
+        ],
+        "coverage_gap": "Full acquisition/chest and reward graph remain unbound to this new source slice. Shared Explorer Society NPC file is not exclusive quest ownership.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/pilgrimage_of_ashes",
+        "source_paths": [
+          "npc/edala.lua",
+          "npc/eremo.lua",
+          "npc/humphrey.lua",
+          "npc/norf.lua",
+          "npc/pydar.lua"
+        ],
+        "coverage_gap": "Blessing module implementation/admission, Kawill prerequisite, global pilgrimage ordering and costs/discounts are not fully transcribed. Source blessing IDs stay source-qualified; no canonical blessing binding is inferred.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/swamp_fever_world_change",
+        "source_paths": [
+          "npc/ottokar.lua"
+        ],
+        "coverage_gap": "World scheduler/state and medicine acquisition remain unbound. Achievement call argument100 is preserved source API data, not an invented quest count or completion condition.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/small_health_potion",
+        "source_paths": [
+          "npc/billy.lua"
+        ],
+        "coverage_gap": "Pan acquisition and all quest/map prerequisites remain unbound. This component is Billy's exchange; historical coverage Hyacinth references point to Rookie Guard and are not reused as this quest identity.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/stampede_mini_world_change",
+        "source_paths": [
+          "data/scripts/creaturescripts/monster/terrified_elephant_death.lua",
+          "monster/mammals/terrified_elephant.lua"
+        ],
+        "coverage_gap": "Only Crystal has the accepted death handler and attachment. World-change activation, spawn/raid lifecycle and map localization remain unbound. Preserve historical Canary IMPLEMENTED flag as a separate unverified baseline; do not infer its attachment or substitute Water Buffalo/Swamp Beast.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/the_mages_tower_world_change",
+        "source_paths": [
+          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua"
+        ],
+        "coverage_gap": "Full world scheduler, map/creature event attachment, kill-participant eligibility and native world-state admission remain unbound. Existing script defect with getSpectators destructuring/#t remains source behavior, not repaired by transcription; global storages never become Character tracks.",
         "classification": "UNKNOWN"
       }
     ],

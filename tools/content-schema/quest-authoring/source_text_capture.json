@@ -4,7 +4,7 @@
   "scope": "source_reference_prose_only; no native or runtime admission",
   "source_checks": [],
   "summary": {
-    "captured_texts": 1609,
+    "captured_texts": 1617,
     "parsed_lua_files": 13319,
     "unparsed_lua_files": 0
   },
@@ -34159,6 +34159,44 @@
       "reference": {
         "length": 18,
         "placeholders": [],
+        "sha256": "2127fd544bf95e3c86685c6708178c664118e78f56f7e9caadd7c303ab4cc785"
+      },
+      "sources": [
+        {
+          "blob_sha256": "537ca05d1a604acc5a8df9da4cbf122da128dffcf400e88080898ac96d65e9e4",
+          "decoder": "lua_tables._string/v1",
+          "line": 586,
+          "literal_sha256": "09402e21eaf803d5f9dfaa3a5f7cc3dc3dbd996e54d46728cbe982c8757ccd4e",
+          "path": "data-otservbr-global/npc/jean_pierre.lua",
+          "raw_literal": "\"hydra tongue salad\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+          "decoder": "lua_tables._string/v1",
+          "line": 711,
+          "literal_sha256": "09402e21eaf803d5f9dfaa3a5f7cc3dc3dbd996e54d46728cbe982c8757ccd4e",
+          "path": "data-global/npc/jean_pierre.lua",
+          "raw_literal": "\"hydra tongue salad\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        }
+      ],
+      "text": "hydra tongue salad"
+    },
+    {
+      "reference": {
+        "length": 18,
+        "placeholders": [],
         "sha256": "4408f1a24e0382d84c79fdcaa68cb75a6ad6113a0736db9366007bb6756b9b45"
       },
       "sources": [
@@ -34440,6 +34478,44 @@
         }
       ],
       "text": "shadows-of-yalahar"
+    },
+    {
+      "reference": {
+        "length": 18,
+        "placeholders": [],
+        "sha256": "c08d35997865ce8b5495e42bac2b7a0587322115c72298263747e494278c3531"
+      },
+      "sources": [
+        {
+          "blob_sha256": "537ca05d1a604acc5a8df9da4cbf122da128dffcf400e88080898ac96d65e9e4",
+          "decoder": "lua_tables._string/v1",
+          "line": 641,
+          "literal_sha256": "e9c40d1074e10c9723d5cf63910dcb6ec951e63309e26748913bdf7357782acb",
+          "path": "data-otservbr-global/npc/jean_pierre.lua",
+          "raw_literal": "\"demonic candy ball\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+          "decoder": "lua_tables._string/v1",
+          "line": 777,
+          "literal_sha256": "e9c40d1074e10c9723d5cf63910dcb6ec951e63309e26748913bdf7357782acb",
+          "path": "data-global/npc/jean_pierre.lua",
+          "raw_literal": "\"demonic candy ball\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        }
+      ],
+      "text": "demonic candy ball"
     },
     {
       "reference": {
@@ -36416,6 +36492,44 @@
         }
       ],
       "text": "You're inside the orc fortress! Now you need to find a kitchen and something that looks like a soup cauldron. Use the wasp poison on the cauldron to create an evil surprise for Kraknaknork."
+    },
+    {
+      "reference": {
+        "length": 19,
+        "placeholders": [],
+        "sha256": "1b6cc7a84005adaf039638fbe3264709e100826a94cbf2b9191efb1feb813e06"
+      },
+      "sources": [
+        {
+          "blob_sha256": "537ca05d1a604acc5a8df9da4cbf122da128dffcf400e88080898ac96d65e9e4",
+          "decoder": "lua_tables._string/v1",
+          "line": 631,
+          "literal_sha256": "4a0d5e55af40480c30900b3a6b36e0609046fec82b04f23abbde459597c3a7e5",
+          "path": "data-otservbr-global/npc/jean_pierre.lua",
+          "raw_literal": "\"coconut shrimp bake\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+          "decoder": "lua_tables._string/v1",
+          "line": 765,
+          "literal_sha256": "4a0d5e55af40480c30900b3a6b36e0609046fec82b04f23abbde459597c3a7e5",
+          "path": "data-global/npc/jean_pierre.lua",
+          "raw_literal": "\"coconut shrimp bake\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        }
+      ],
+      "text": "coconut shrimp bake"
     },
     {
       "reference": {
@@ -39541,6 +39655,44 @@
       "reference": {
         "length": 20,
         "placeholders": [],
+        "sha256": "75d87266c123464748dae25f733e500802a64fd143b6e752a31a8d1ce81646dd"
+      },
+      "sources": [
+        {
+          "blob_sha256": "537ca05d1a604acc5a8df9da4cbf122da128dffcf400e88080898ac96d65e9e4",
+          "decoder": "lua_tables._string/v1",
+          "line": 591,
+          "literal_sha256": "f8763937d4ced789f4307f3b053c7ea815eb419851b895a5ab3a0db35c3a8685",
+          "path": "data-otservbr-global/npc/jean_pierre.lua",
+          "raw_literal": "\"roasted dragon wings\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+          "decoder": "lua_tables._string/v1",
+          "line": 717,
+          "literal_sha256": "f8763937d4ced789f4307f3b053c7ea815eb419851b895a5ab3a0db35c3a8685",
+          "path": "data-global/npc/jean_pierre.lua",
+          "raw_literal": "\"roasted dragon wings\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        }
+      ],
+      "text": "roasted dragon wings"
+    },
+    {
+      "reference": {
+        "length": 20,
+        "placeholders": [],
         "sha256": "995986f9040bf7858e14fa84303e2fd225c284a5a800aeaaa91d5ada26135c54"
       },
       "sources": [
@@ -39644,6 +39796,72 @@
         }
       ],
       "text": "rottinwood-wallcount"
+    },
+    {
+      "reference": {
+        "length": 20,
+        "placeholders": [],
+        "sha256": "af005a3c2592d16b4c1049a8506d02a949e443753b252cb3e961531a84b7ad2d"
+      },
+      "sources": [
+        {
+          "blob_sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+          "decoder": "lua_tables._string/v1",
+          "line": 83,
+          "literal_sha256": "90ad4519cd999f1bc0a25cedc66e1901fdf7bdd4ffea84a5d3a0126c26066d86",
+          "path": "data-otservbr-global/npc/aurita.lua",
+          "raw_literal": "\"empty starlight vial\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "ccbaf002cb72953179516c3cd920f683378ffaf01148d8c5d6cab9c5f807baa8",
+          "decoder": "lua_tables._string/v1",
+          "line": 58,
+          "literal_sha256": "90ad4519cd999f1bc0a25cedc66e1901fdf7bdd4ffea84a5d3a0126c26066d86",
+          "path": "data-otservbr-global/npc/black_bert.lua",
+          "raw_literal": "\"empty starlight vial\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "d4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c",
+          "decoder": "lua_tables._string/v1",
+          "line": 56,
+          "literal_sha256": "90ad4519cd999f1bc0a25cedc66e1901fdf7bdd4ffea84a5d3a0126c26066d86",
+          "path": "data-global/npc/black_bert.lua",
+          "raw_literal": "\"empty starlight vial\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "d8a1fe20f4ec11245498191b0269ca76ca5949c92db529e640faacc87a57ea35",
+          "decoder": "lua_tables._string/v1",
+          "line": 80,
+          "literal_sha256": "90ad4519cd999f1bc0a25cedc66e1901fdf7bdd4ffea84a5d3a0126c26066d86",
+          "path": "data-global/npc/aurita.lua",
+          "raw_literal": "\"empty starlight vial\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        }
+      ],
+      "text": "empty starlight vial"
     },
     {
       "reference": {
@@ -40458,6 +40676,44 @@
       "reference": {
         "length": 22,
         "placeholders": [],
+        "sha256": "c88370d5c4d25816d93a43d6a8d050a138d0bb8a50991f0bdd9726fbd253b00e"
+      },
+      "sources": [
+        {
+          "blob_sha256": "537ca05d1a604acc5a8df9da4cbf122da128dffcf400e88080898ac96d65e9e4",
+          "decoder": "lua_tables._string/v1",
+          "line": 601,
+          "literal_sha256": "2ce6515c3547a86bda619b7e1f90f319223e66f610c388b3fb23ba37801311c0",
+          "path": "data-otservbr-global/npc/jean_pierre.lua",
+          "raw_literal": "\"banana chocolate shake\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+          "decoder": "lua_tables._string/v1",
+          "line": 729,
+          "literal_sha256": "2ce6515c3547a86bda619b7e1f90f319223e66f610c388b3fb23ba37801311c0",
+          "path": "data-global/npc/jean_pierre.lua",
+          "raw_literal": "\"banana chocolate shake\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        }
+      ],
+      "text": "banana chocolate shake"
+    },
+    {
+      "reference": {
+        "length": 22,
+        "placeholders": [],
         "sha256": "d845091f3fb98bdce501fba735bb536a8c765d5d4297b3c56ebb14a10bfd7d3e"
       },
       "sources": [
@@ -40667,6 +40923,44 @@
         }
       ],
       "text": "In the south-east of Tiquanda is a small settlement of the lizard people. Beneath the newly constructed temple there, the lizards hide the urn. Acquire an ancient urn which is some sort of relic to the lizard people of Tiquanda."
+    },
+    {
+      "reference": {
+        "length": 23,
+        "placeholders": [],
+        "sha256": "978239a3e3f58846d6ddeb320a4a22dd005017470333b7f9497d9cf1d311b307"
+      },
+      "sources": [
+        {
+          "blob_sha256": "537ca05d1a604acc5a8df9da4cbf122da128dffcf400e88080898ac96d65e9e4",
+          "decoder": "lua_tables._string/v1",
+          "line": 646,
+          "literal_sha256": "0f94b467d7030b94240cb8416a9f2fdcb1c585ecd0f44aabc918e064cf894007",
+          "path": "data-otservbr-global/npc/jean_pierre.lua",
+          "raw_literal": "\"sweet mangonaise elixir\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+          "decoder": "lua_tables._string/v1",
+          "line": 783,
+          "literal_sha256": "0f94b467d7030b94240cb8416a9f2fdcb1c585ecd0f44aabc918e064cf894007",
+          "path": "data-global/npc/jean_pierre.lua",
+          "raw_literal": "\"sweet mangonaise elixir\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        }
+      ],
+      "text": "sweet mangonaise elixir"
     },
     {
       "reference": {
@@ -41498,6 +41792,44 @@
         }
       ],
       "text": "You broke the fifth seal."
+    },
+    {
+      "reference": {
+        "length": 25,
+        "placeholders": [],
+        "sha256": "d449598034c28cf84db4991b81fdf0bb2acba9b3208466f55ce866083c94eb88"
+      },
+      "sources": [
+        {
+          "blob_sha256": "537ca05d1a604acc5a8df9da4cbf122da128dffcf400e88080898ac96d65e9e4",
+          "decoder": "lua_tables._string/v1",
+          "line": 596,
+          "literal_sha256": "b78a6ec395632d72245fc6ecc5211bb526e274ca83a963b67d273ec1e036db03",
+          "path": "data-otservbr-global/npc/jean_pierre.lua",
+          "raw_literal": "\"tropical fried terrorbird\"",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source": "canary",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        },
+        {
+          "blob_sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+          "decoder": "lua_tables._string/v1",
+          "line": 723,
+          "literal_sha256": "b78a6ec395632d72245fc6ecc5211bb526e274ca83a963b67d273ec1e036db03",
+          "path": "data-global/npc/jean_pierre.lua",
+          "raw_literal": "\"tropical fried terrorbird\"",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source": "crystalserver",
+          "source_read_mode": "raw_utf8",
+          "text_transform": "identity",
+          "token_kind": "string"
+        }
+      ],
+      "text": "tropical fried terrorbird"
     },
     {
       "reference": {

@@ -42,8 +42,8 @@
     "unresolved_conditions": 1759,
     "by_status": {
       "conflict": 1,
-      "mapped": 215,
-      "unresolved_semantics": 1005
+      "mapped": 218,
+      "unresolved_semantics": 1002
     }
   },
   "undeclared_progress_tracks": [],
@@ -809,7 +809,7 @@
     },
     {
       "destination": "canary:interaction/bigfoot_burden/actions_extractor",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -923,7 +923,7 @@
     },
     {
       "destination": "canary:interaction/bigfoot_burden/actions_pig",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -20858,7 +20858,7 @@
     },
     {
       "destination": "canary:interaction/what_a_foolish_quest/action_contract",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "the servers differ; D25 decides for canary (wiki silent: Canary requires Contract storage exactly 1; crystal's '<1' check allows reuse after progress.)",
       "sources": [
         {
@@ -21537,12 +21537,6 @@
     },
     {
       "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_02/forgotten_knowledge/baby_dragon",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/forgotten_knowledge/movements_challenger"
-    },
-    {
-      "field": "condition.quest_stage.progress",
       "key": "canary:quest-progress/quest/u11_02/forgotten_knowledge/diamond_servant_counter",
       "reason": "progress track not declared",
       "record": "canary:interaction/forgotten_knowledge/movements_servant_teleport"
@@ -21624,12 +21618,6 @@
       "key": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/permission",
       "reason": "progress track not declared",
       "record": "canary:interaction/the_dream_courts_quest/movements_acess_teleports"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/has_bait",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_dream_courts_quest/movements_spider_summon"
     },
     {
       "field": "condition.quest_stage.progress",
@@ -21759,18 +21747,6 @@
     },
     {
       "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u8_1/what_afoolish_quest/contract",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/what_a_foolish_quest/action_contract"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/children_of_the_revolution/movements_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
       "key": "canary:quest-progress/quest/u8_54/the_new_frontier/corruption_hole",
       "reason": "progress track not declared",
       "record": "canary:interaction/the_new_frontier/movement_corruption_hole"
@@ -21786,48 +21762,6 @@
       "key": "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/wote10",
       "reason": "progress track not declared",
       "record": "canary:interaction/wrath_of_the_emperor/movements_boss_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_crystal_keeper",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/bigfoot_burden/actions_crystal"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_grindstone_hunt",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/bigfoot_burden/actions_stone"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_matchmaker",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/bigfoot_burden/actions_matchmaker"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_mushroom_digger",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/bigfoot_burden/actions_pig"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_raiders_of_the_lost_spark",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/bigfoot_burden/actions_extractor"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_spore_gathering",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/bigfoot_burden/actions_spores"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_tinkers_bell",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/bigfoot_burden/actions_repair"
     },
     {
       "field": "condition.quest_stage.progress",
@@ -21894,24 +21828,6 @@
       "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
       "reason": "progress track not declared",
       "record": "crystalserver:interaction/the_dream_courts/actions_portal_nightmare_beast"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/has_bait",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/the_dream_courts/movements_spider_summon"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/quest/u15_24/targuna/burning_heart/turnips_reward",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/targuna/actions_reliable_ram"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/quest/u8_4/blood_brothers/vengoth_access",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/blood_brothers_quest/actions_julius_map"
     }
   ]
 }

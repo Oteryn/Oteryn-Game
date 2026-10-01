@@ -8009,7 +8009,7 @@
             {
               "when": {
                 "quest_stage": {
-                  "progress": "crystalserver:quest-progress/quest/u8_4/blood_brothers/vengoth_access",
+                  "progress": "canary:quest-progress/quest/u8_4/blood_brothers/vengoth_access",
                   "op": "~=",
                   "value": 1
                 },
@@ -83083,7 +83083,7 @@
                 {
                   "when": {
                     "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/has_bait",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/has_bait",
                       "op": "==",
                       "value": 1
                     },

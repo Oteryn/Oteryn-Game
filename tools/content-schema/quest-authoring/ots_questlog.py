@@ -327,6 +327,20 @@ def unique_track_prefix(paths, prefixes):
     return nearest[0] if len({tuple(sorted(prefixes[p])) for p in nearest}) == 1 else None
 
 
+def npc_auxiliary_prefix(found, prefix):
+    """Retain a single NPC writer family's source progress; broad version roots,
+    mixed callers and colliding normalized paths do not prove a quest owner."""
+    entries = list(found['transitions'].values())
+    paths = {path for _, path in found['paths']}
+    if (not prefix or not entries or len(paths) != 1
+            or any(entry['owner'] != 'npc' for entry in entries)
+            or len({entry['script'] for entry in entries}) != 1):
+        return False
+    parts = prefix.split('/')
+    version_root = len(parts) >= 2 and parts[0] == 'quest' and re.fullmatch(r'u\d+(?:_\d+)*', parts[1])
+    return len(parts) >= (3 if version_root else 2)
+
+
 def auxiliary_tracks(index, progress, catalogue, gates, repos):
     """Declare every track a quest script writes outside the missions (D35): seal doors, counters, cooldowns.
 
@@ -356,12 +370,14 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
         found = index.get(key_norm, {'count': Counter(), 'transitions': {}, 'paths': set()})
         scripts = sorted({t['script'] for t in found['transitions'].values() if t['script'].startswith('scripts/quests/')})
         npc_owned = exclusive_npc_writers(found, TRACK_OWNERS.get(key_norm, {}))
-        if key_norm in declared or (not scripts and key_norm not in gate_tracks and not npc_owned):
-            continue
         owner = {}
         source_paths = {path for _, path in found['paths']} | {
             g['condition']['progress'].split('/', 1)[1] for g in gate_tracks.get(key_norm, [])}
         prefix = unique_track_prefix(source_paths, prefixes)
+        npc_prefix_owned = npc_auxiliary_prefix(found, prefix)
+        if key_norm in declared or (not scripts and key_norm not in gate_tracks
+                                   and not npc_owned and not npc_prefix_owned):
+            continue
         by_directory = set().union(*(directories.get(s.split('/')[2], set()) for s in scripts))
         gate_owners = {g['quest']['key'] for g in gate_tracks.get(key_norm, [])
                        if g.get('quest') and g['quest']['key'] in catalogue_keys}
@@ -419,7 +435,7 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
         out.append({'key': f'{server}:quest-progress/{path}', 'missions': [], 'start_of': [],
                     'read_by_gates': sorted(g['identity']['key'] for g in gates if g['condition'].get('progress')
                                             and norm(g['condition']['progress'].split('/', 1)[1]) == key_norm),
-                    **merge_source_checks(owner, storage_evidence(source_storage, f'{server}:quest-progress/{path}', key_norm in gate_tracks)), 'writes': {n: found['count'][n] for n in repos},
+                    **merge_source_checks(owner, storage_evidence(source_storage, f'{server}:quest-progress/{path}', key_norm in gate_tracks or npc_prefix_owned)), 'writes': {n: found['count'][n] for n in repos},
                     'transitions': [progress_transition(t) for t in mission_transitions(found)]})
     # Gates retain their exact source-qualified track keys. A matching path under
     # another namespace is an explicit alias of the transcription, not numeric-ID equality.

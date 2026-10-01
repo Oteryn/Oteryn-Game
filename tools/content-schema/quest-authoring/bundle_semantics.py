@@ -51,7 +51,8 @@ def reference_gaps(data):
                     if target and target.get('identity', {}).get('revision') != node['revision']:
                         raise ValueError('internal reference revision mismatch: ' + key + path)
                 for field, value in node.items():
-                    if isinstance(value, str) and ':quest-progress/' in value and field != 'key':
+                    if (isinstance(value, str) and field != 'key'
+                            and re.fullmatch(r'(?:canary|crystalserver):quest-progress/[a-z0-9_]+(?:/[a-z0-9_]+)*', value)):
                         check(COLLECTIONS[name], key, path + '/' + field, 'Progress', value)
             if name == 'progress':
                 for field in ('start_of', 'auxiliary_of'):

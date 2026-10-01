@@ -670,6 +670,23 @@
           }
         ]
       }
+    },
+    {
+      "wiki_title": "Research and Development Quest",
+      "wiki_pageid": 50757,
+      "wiki_revid": 844599,
+      "target_key": "canary:quest/spirithunters_quest",
+      "mission_keys": [
+        "method",
+        "first_mission",
+        "second_mission"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact Fandom spoiler50758/rev891400 Missions1–3 name Spectulus/Sinclair, measurement device and spirit cage. Pinned donor Spirithunters Method/First Mission/Second Mission share Mission01 stages1–6 and the exact device4049/cage4050 NPC handlers. Represents this mission slice only; full prerequisites, item names and runtime admission remain unknown. Existing source malformed getStorageValue(Mission01 == 1) is preserved, not repaired by the link.",
+      "evidence": {
+        "wiki_path": "samples/wiki-source-specs/source-specs-105.enriched.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
     }
   ]
 }

@@ -173,3 +173,16 @@ raw_body_rechecked:false, line_spans_rechecked:false, source_revision_verified:f
 and historical_acquisition_verified:true. This recorded provenance is not a
 signature, a fresh online proof or native/gameplay admission. Raw wiki bodies,
 acquisition browser payloads and the donor C++ witness remain unpublished.
+
+The next bulk SOURCE batch retains single-NPC auxiliary writes under exact,
+uniquely owned mission families. Broad release prefixes, mixed NPC callers,
+symbolic collisions and stale curated writer guards never infer an owner.
+It adds262 progress tracks,333 transitions and754 pinned write occurrences
+across35 existing quest owners; all old progress records are preserved. Eight
+new literal hashes are captured, with1617/1617 referenced SOURCE texts known.
+Eleven further partial quest components and one existing three-mission family
+link reduce unbound wiki titles98 to86. Their coverage holds remain explicit.
+The resulting donor packet contains268 quests,1425 tracks,3462 non-alias
+transitions and6545 write occurrences; it still contains185 quests with gaps
+and74 missing reference occurrences. Native Quest field readiness remains43/67.
+These counts describe the prepared data candidate, not merged or playable content.

@@ -6685,6 +6685,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/bored_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Bored Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Bored Mini World Change",
+        "pageid": 76210,
+        "revid": 845015
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/brotherhood_outfits_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -7461,6 +7484,29 @@
         "pageid": 41842,
         "revid": 683807
       },
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/chyllfroest_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Chyllfroest Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Chyllfroest Mini World Change",
+        "pageid": 76214,
+        "revid": 797728
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
@@ -14173,6 +14219,29 @@
       },
       "requirements": {
         "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/hunting_for_tokens",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Hunting for Tokens Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Hunting for Tokens Quest",
+        "pageid": 64417,
+        "revid": 885774
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
         "min_level": 0
       }
     },
@@ -25197,6 +25266,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/pilgrimage_of_ashes",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Pilgrimage of Ashes Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Pilgrimage of Ashes Quest",
+        "pageid": 37207,
+        "revid": 843918
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/plate_armor_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -26241,6 +26333,32 @@
       "requirements": {
         "premium": false,
         "min_level": 35
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/sanctuary_of_the_lizard_god",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Sanctuary of the Lizard God Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Sanctuary of the Lizard God Quest",
+        "pageid": 68839,
+        "revid": 1198612
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "2 - 20"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "range"
       }
     },
     {
@@ -29215,6 +29333,52 @@
     },
     {
       "identity": {
+        "key": "canary:quest/skull_of_ratha",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Skull of Ratha Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Skull of Ratha Quest",
+        "pageid": 3782,
+        "revid": 756266
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/small_health_potion",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Small Health Potion Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Small Health Potion Quest",
+        "pageid": 3154,
+        "revid": 1043985
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/soil_guardian_outfits_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -29858,6 +30022,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/stampede_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Stampede Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Stampede Mini World Change",
+        "pageid": 76265,
+        "revid": 845239
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/steal_from_thieves_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -30011,6 +30198,29 @@
           "revision": "canary-04b83b51+crystalserver-9f5a72c6"
         }
       ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/swamp_fever_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Swamp Fever World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Swamp Fever World Change",
+        "pageid": 54559,
+        "revid": 844892
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
@@ -40046,6 +40256,29 @@
       "requirements": {
         "premium": true,
         "min_level": 35
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_mages_tower_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Mage's Tower World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Mage's Tower World Change",
+        "pageid": 54564,
+        "revid": 844897
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -57423,6 +57656,29 @@
       },
       "requirements": {
         "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/tutorial",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Tutorial",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Tutorial",
+        "pageid": 66614,
+        "revid": 791148
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
         "min_level": 0
       }
     },
