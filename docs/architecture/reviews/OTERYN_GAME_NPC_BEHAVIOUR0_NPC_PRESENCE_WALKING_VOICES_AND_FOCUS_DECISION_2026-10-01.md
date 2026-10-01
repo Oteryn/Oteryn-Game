@@ -21,7 +21,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| NPC-ACTOR-1 | impl, determinism review | NPC runtime actors per channel from the bundle placements (§3); the NPC think (§4); walking (§5); the turn toward the queue head (§7) | NPC-PLACE-1; CREATURE-MOVE-1; SPEED-1; NPC-WIRE-1 |
+| NPC-ACTOR-1 | impl, determinism review | NPC runtime actors per channel from the bundle placements (§3); the NPC think (§4); walking (§5); the turn toward the newest customer (§7) | NPC-PLACE-1; CREATURE-MOVE-1; SPEED-1; NPC-WIRE-1 |
 | NPC-TALK-2 | impl | the customer queue, the range check and the walk-away close in GAME-NPC-SERVICE (§7; the NPC-0 §4.1 amendment) | NPC-TALK-1 |
 | NPC-VIS-1 | impl, protocol review | entity kind 5 `Npc` in `world_spatial_v1.proto` `EntityKind` (capability 6) before it is offered; VIS-3 depends on it (§3.2) | VIS-2 |
 | NPC-VOICE-1 | impl | voices as local speech (§6) | CHAT-1; NPC-ACTOR-1 |
