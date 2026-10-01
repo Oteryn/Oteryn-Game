@@ -578,9 +578,21 @@ def validate(item, dependencies, manifest=None):
             errors,
         )
     imbuement = item.get("imbuement", {})
+    unique(
+        imbuement.get("allowed_family_tiers", []),
+        ("family", "tier"),
+        "item/imbuement/allowed_family_tiers",
+        errors,
+    )
+    unique(
+        imbuement.get("allowed_family_max_tiers", []),
+        ("family",),
+        "item/imbuement/allowed_family_max_tiers",
+        errors,
+    )
     allowed_imbuements = {
         entry["family"] for entry in imbuement.get("allowed_family_tiers", [])
-    }
+    } | {entry["family"] for entry in imbuement.get("allowed_family_max_tiers", [])}
     excluded_imbuements = set(imbuement.get("excluded_families", []))
     if allowed_imbuements & excluded_imbuements:
         errors.append("item/imbuement: family cannot be both allowed and excluded")

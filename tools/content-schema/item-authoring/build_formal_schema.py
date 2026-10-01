@@ -766,6 +766,16 @@ def build_item_schema():
         {
             "slot_count": integer(),
             "allowed_family_tiers": array(use("imbuementTier")),
+            "allowed_family_max_tiers": array(
+                obj(
+                    {
+                        "family": text(pattern=r"^[a-z][a-z0-9_]*$"),
+                        "max_tier": integer(1, 3),
+                    },
+                    ("family", "max_tier"),
+                ),
+                minimum=1,
+            ),
             "excluded_families": array(text(pattern=r"^[a-z][a-z0-9_]*$"), unique=True),
         },
         ("slot_count",),
@@ -1275,6 +1285,34 @@ def build_item_schema():
                 "family_profile_basis": ["family_profile_evidence"],
                 "family_profile_evidence": ["family_profile_basis"],
             },
+            allOf=[
+                {
+                    "if": {
+                        "properties": {"family_profile": {"const": profile}},
+                        "required": ["family_profile"],
+                    },
+                    "then": {
+                        "properties": {
+                            "taxonomy": {
+                                "properties": {
+                                    "item_class": {
+                                        "enum": {
+                                            "weapon_distance": ["weapon", "ammunition"],
+                                            "food": ["food", "consumable"],
+                                            "fluid": [
+                                                "fluid",
+                                                "container",
+                                                "fluid_container",
+                                            ],
+                                        }.get(profile, [item_class])
+                                    }
+                                }
+                            }
+                        }
+                    },
+                }
+                for profile, item_class in engine_items.PROFILE_ITEM_CLASS.items()
+            ],
         ),
         "$defs": d,
     }

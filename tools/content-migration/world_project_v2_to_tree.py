@@ -10,6 +10,8 @@ from pathlib import Path
 from collections import Counter
 from typing import Any
 
+from item_taxonomy import build_taxonomy, taxonomy_inputs
+
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 ITEM_SHARD_SIZE = 500
@@ -168,18 +170,16 @@ def main() -> int:
     })
 
     definitions_by_target = {target_id(row["identity"]): row for row in reference["records"]}
-    taxonomy_rows = []
+    taxonomy_rows = build_taxonomy(
+        definitions_by_target, authoring_by_target, family_assignments, *taxonomy_inputs(ROOT)
+    )
     relation_rows = []
-    for key, authoring in sorted(authoring_by_target.items()):
-        if "taxonomy" in authoring:
-            taxonomy_rows.append({
-                "target": authoring["item"],
-                "source_taxonomy": authoring["taxonomy"],
-                "family_profile": family_assignments.get(authoring["taxonomy"]["primary"]),
-            })
-        relations = capability_relations(definitions_by_target[key], authoring)
+    for key, definition in sorted(definitions_by_target.items()):
+        if key[0] != "Item":
+            continue
+        relations = capability_relations(definition, authoring_by_target.get(key))
         if relations:
-            relation_rows.append({"source": authoring["item"], "relations": relations})
+            relation_rows.append({"source": definition["identity"], "relations": relations})
     wave1_facts = [
         {
             "target": canonical_item_target(item["target"], item_aliases),
@@ -275,7 +275,8 @@ def main() -> int:
         },
         "content/items/taxonomy/items.json": {
             "schema": "OTERYN_ITEM_TAXONOMY/v1",
-            "family_profile_contract": "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json#family_assignments",
+            "family_profile_contract": "tools/content-schema/item-authoring/profile-catalog.json",
+            "legacy_family_profile_contract": "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json#family_assignments",
             "records": taxonomy_rows,
         },
         "content/items/relations/items.json": {

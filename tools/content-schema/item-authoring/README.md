@@ -1,5 +1,14 @@
 # Item authoring schema candidate v4
 
+The 2026-10-01 continuation validates profile/taxonomy class consistency while retaining
+the admitted ammunition, consumable and fluid-container class variants. Common capability
+absence remains a warning under the authoring contract; a warning-free profile is not proof
+of complete source coverage. The engine converter retains nested imbuement family ceilings
+as `allowed_family_max_tiers` (`family`, `max_tier`), distinct from exact allowed tier pairs.
+Missing children remain unknown; malformed or duplicate family ceilings block conversion.
+These are source-backed authoring observations, not native runtime imbuement admission.
+`test_engine_items.py` also runs the nested-limit regression tests used by CI.
+
 This package turns the Item Master Schema v1 census into an executable authoring
 contract. It validates one portable Item definition, not a placed map object and not a
 mutable item instance.

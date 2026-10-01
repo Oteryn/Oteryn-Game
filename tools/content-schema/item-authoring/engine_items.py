@@ -160,6 +160,30 @@ def read_verified_artifact(source_root, relative_path, expected_digest):
 
 # --- items.xml -----------------------------------------------------------------
 
+IMBUEMENT_SOURCE_FAMILIES = {
+    "life leech",
+    "mana leech",
+    "critical hit",
+    "elemental damage",
+    "elemental protection holy",
+    "elemental protection death",
+    "elemental protection ice",
+    "elemental protection energy",
+    "elemental protection earth",
+    "elemental protection fire",
+    "skillboost shielding",
+    "skillboost club",
+    "skillboost sword",
+    "skillboost axe",
+    "skillboost distance",
+    "skillboost magic level",
+    "skillboost fist",
+    "paralysis removal",
+    "paralysis deflection",
+    "increase capacity",
+    "increase speed",
+}
+
 
 def load_items_xml(text):
     """Expand fromid/toid ranges; split root vs. nested `script` sub-attributes."""
@@ -168,6 +192,7 @@ def load_items_xml(text):
     for node in root.iter("item"):
         root_attrs = {}
         script_attrs = {}
+        imbuement_limits = []
         for attribute in node.findall("attribute"):
             key = attribute.get("key", "").lower()
             if key == "script":
@@ -176,12 +201,18 @@ def load_items_xml(text):
                     script_attrs.setdefault(child_key, child.get("value"))
                 continue
             root_attrs.setdefault(key, attribute.get("value"))
+            if key == "imbuementslot":
+                imbuement_limits.extend(
+                    {"family": child.get("key"), "max_tier": child.get("value")}
+                    for child in attribute.findall("attribute")
+                )
         attrs = {**script_attrs, **root_attrs}
         record = {
             "name": node.get("name"),
             "article": node.get("article"),
             "plural": node.get("plural"),
             "attrs": attrs,
+            "imbuement_limits": imbuement_limits,
         }
         if node.get("id") is not None:
             ids = [int(node.get("id"))]
@@ -904,6 +935,7 @@ PRIMARYTYPE_PROFILE.update(
     {
         "decorations": PRIMARYTYPE_PROFILE["decoration"],
         "lamps": PRIMARYTYPE_PROFILE["illumination"],
+        "fist fighting weapons": "weapon_melee",
     }
 )
 PROFILE_ITEM_CLASS = {
@@ -1877,6 +1909,7 @@ IMPLEMENTED_FIELDS = {
     "flags.unwrap",
     "flags.wrapkit",
     "imbuementslot",
+    "imbuementslot.allowed_family_max_tiers",
     "flags.light",
     "light.brightness",
     "light.color",
@@ -2452,6 +2485,8 @@ def convert_item(sources, item_id):
     note("appearance.name", bool(appearance and appearance.get("name")))
     note("appearance.description", bool(appearance and appearance.get("description")))
     note("appearance.frame_group", bool(appearance and appearance.get("frame_groups")))
+    limits = xml_record.get("imbuement_limits", []) if xml_record else []
+    note("imbuementslot.allowed_family_max_tiers", bool(limits))
 
     non_item = non_item_route(xml_record, attrs, flags, item_id)
     if non_item is not None:
@@ -3141,6 +3176,29 @@ def convert_item(sources, item_id):
     # imbuement
     if "imbuementslot" in attrs:
         item["imbuement"] = {"slot_count": to_int(attrs["imbuementslot"])}
+        if limits:
+            converted_limits = []
+            for entry in limits:
+                family = entry.get("family")
+                tier = entry.get("max_tier")
+                if (
+                    not isinstance(family, str)
+                    or family.lower() not in IMBUEMENT_SOURCE_FAMILIES
+                    or not isinstance(tier, str)
+                    or not re.fullmatch(r"[1-3]", tier)
+                ):
+                    break
+                converted_limits.append(
+                    {"family": family.lower().replace(" ", "_"), "max_tier": int(tier)}
+                )
+            else:
+                families = [entry["family"] for entry in converted_limits]
+                if len(set(families)) == len(families):
+                    item["imbuement"]["allowed_family_max_tiers"] = sorted(
+                        converted_limits, key=lambda entry: entry["family"]
+                    )
+            if "allowed_family_max_tiers" not in item["imbuement"]:
+                demote_to_converter_missing("imbuementslot.allowed_family_max_tiers")
 
     # fluid: flags.liquidcontainer marks the item itself as the vessel that holds a
     # fluid (schema role "container"), distinct from role "content" (a poured-out fluid

@@ -60,6 +60,9 @@ schema is absent. Profile membership and capability completeness are separate qu
 
 ## Item audit findings
 
+The table records the pre-continuation baseline. The implementation continuation at the end
+states which findings have subsequently been repaired and which remain open.
+
 | ID | Classification | Finding and consequence |
 |---|---|---|
 | I1 | PROVEN | Taxonomy covers 164/34,031 definitions: 153 have recognized profiles and 11 `Armas de Arremesso` rows have a null profile. 33,867 definitions lack taxonomy; only four of the 22 profiles are represented. This is incomplete classification, not proof that the other families have no items. |
@@ -247,3 +250,44 @@ the 582 missing imbuement relations, nested restriction loss, 27 capacity disagr
 held map identities and unverified 15.33 appearances remain open within their original
 evidence scopes. Your Inbox / Your Store Inbox capacities were not requalified. No missing
 field was turned into false or zero; OTS remains `OtsHypothesisOnly`.
+
+## Implementation continuation — taxonomy and imbuement batch
+
+The owner requested continued categorization, schema repair and source-backed Item enrichment.
+This batch repairs the Wave-1-only iteration that caused I1/I4, plus the nested-data loss in
+I7 and the inconsistent profile/taxonomy acceptance illustrated in I2.
+
+- Navigation taxonomy now has **9,335** records across **all 22 profiles**, compared with 164
+  records / four represented profiles. The eleven BR throwing-weapon rows now resolve to
+  `weapon_distance`. The additional 9,171 rows carry exact wiki snapshot/page/revision/digest
+  provenance and require agreement among every observation with a primary category.
+- Existing BR taxonomy remains authoritative for its retained rows. Unrecognized and conflicting
+  wiki categories are held; appearance-only Items and existing Terrain/WorldObject owners are
+  excluded from the supplement. Native identities, source bindings and gameplay semantics are
+  unchanged by this navigation enrichment.
+- Capability relations now examine every current Item definition. All **656** Items with known
+  positive imbuement slots have their ruleset relation: the **582** missing relations are repaired.
+  Total relation sources are **729**, with **803** edges including retained forge/enchanting facts.
+- XML parsing preserves nested imbuement children. Authoring uses explicit family **maximum-tier**
+  records, with a closed source-name set, bounds and duplicate-family checks. It does not flatten
+  a tier ceiling into an exact-only whitelist. Absent or malformed data cannot become an empty
+  allowed-family list. Native runtime promotion of these restrictions remains separate.
+- Schema validation rejects a taxonomy class inconsistent with its family, while preserving
+  admitted class variants. Common capability absence intentionally remains a warning under the
+  accepted authoring contract; this batch does not claim a profile completeness gate.
+
+Focused validation: tree generator/validator and materialized tree validator; tree tests and
+four taxonomy boundary regressions; 252 formal-schema checks; 599 engine checks plus three
+nested-limit regressions; item-authoring Ruff checks and formatting. These validate this
+bounded batch, not full-world gameplay or the remaining requirement/modifier imports.
+
+The retained source-qualified map catalogues own **21,330** current Item pointers. After the
+wiki taxonomy supplement, **3,366** definitions have neither navigation classification nor
+an existing Terrain/WorldObject owner. XML comparison at Crystal catalogue `ff7ede5`, Crystal
+summer `00ce02a5` and Canary `04b83b51` gives **2,727** unanimous family hypotheses among
+present engine observations, **11** disagreements (including classified versus unclassified),
+and **628** remaining unknowns. These hypotheses are not automatically admitted classifications;
+the engines may share source dependency, and unsupported wiki categories require qualification.
+I5/I9/I10, seven unpopulated rulesets, capacity/stackability conflicts, native restriction
+admission, held identities and map runtime work remain open. Requirements enrichment follows
+as a separate bounded implementation batch.
