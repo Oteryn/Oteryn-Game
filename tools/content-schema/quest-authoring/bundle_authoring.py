@@ -8,19 +8,22 @@ from pathlib import Path
 import jsonschema
 from referencing import Registry, Resource
 import bundle_semantics as semantics
+import source_texts
+import source_text_authoring
 
 LOCAL = Path(__file__).resolve().parent
 SCHEMAS = {'quest_content.schema.json':'oteryn:schema/quest-content/v1',
            'interaction.schema.json':'oteryn:schema/interaction/v1',
            'quest_catalogue.schema.json':'oteryn:schema/quest-catalogue/v1',
            'quest_progress.schema.json':'oteryn:schema/quest-progress-source/v1',
-           'quest_bundle.schema.json':'oteryn:schema/quest-source-bundle/v1'}
+           'quest_bundle.schema.json':'oteryn:schema/quest-source-bundle/v1',
+           'source_text.schema.json':'oteryn:schema/source-text/v1'}
 INPUTS = {'quests':'questlog/quests.json','progress':'questlog/progress.json',
           'interactions':'interactions/interactions.json','gates':'doors/gates.json',
           'claims':'chests/claims.json','wiki_catalogue':'catalogue/catalogue.json',
           'readiness':'readiness/readiness.json','questlog_manifest':'questlog/manifest.json',
           'interactions_manifest':'interactions/manifest.json','gates_manifest':'doors/manifest.json',
-          'claims_manifest':'chests/manifest.json'}
+          'claims_manifest':'chests/manifest.json','source_texts':'source_texts/source_texts.json'}
 
 
 def read(path):
@@ -37,19 +40,19 @@ def digest(path):
 
 def schema_provenance(tool_root, schema_root):
     return [{'id':identity,'path':'tools/content-schema/quest-authoring/'+name,
-             'sha256':digest((schema_root if name in ('quest_progress.schema.json','quest_bundle.schema.json') else tool_root)/name)}
+             'sha256':digest((schema_root if name in ('quest_progress.schema.json','quest_bundle.schema.json','source_text.schema.json') else tool_root)/name)}
             for name,identity in sorted(SCHEMAS.items())]
 
 
 def tool_provenance():
     return [{'path':'tools/content-schema/quest-authoring/'+name,'sha256':digest(LOCAL/name)}
-            for name in ('bundle_authoring.py','bundle_semantics.py')]
+            for name in ('bundle_authoring.py','bundle_semantics.py','source_texts.py','source_text_authoring.py')]
 
 
 def offline_validator(tool_root, schema_root):
     registry, schemas = Registry(), {}
     for filename, identity in SCHEMAS.items():
-        path=(schema_root if filename in ('quest_progress.schema.json','quest_bundle.schema.json') else tool_root)/filename
+        path=(schema_root if filename in ('quest_progress.schema.json','quest_bundle.schema.json','source_text.schema.json') else tool_root)/filename
         schema=read(path)
         schema.setdefault('$id',identity)
         if schema['$id'] != identity:
@@ -81,6 +84,10 @@ def validate(bundle, validator, trusted_schemas=None):
         raise ValueError('incomplete exact input provenance')
     if {row['id'] for row in bundle['schema_provenance']} != set(SCHEMAS.values()):
         raise ValueError('incomplete offline schema provenance')
+    source_text_authoring.validate(bundle['source_texts'],LOCAL,'registry')
+    actual=[{'reference':r['reference'],'references':r['references']} for r in bundle['source_texts']['texts']]
+    if actual!=source_texts.wanted(bundle):
+        raise ValueError('missing or stale exact source text reference inventory')
     pins={(r['repository'],r['revision']) for r in bundle['sources']}
     for track in bundle['progress']:
         for transition in track['transitions']:
@@ -123,6 +130,10 @@ def build(tool_root, samples_root, schema_root):
     docs={role:read(samples_root/path) for role,path in INPUTS.items()}
     data={name:docs[name][name] for name in semantics.COLLECTIONS}
     data['wiki_catalogue']=docs['wiki_catalogue']
+    data['source_texts']=docs['source_texts']
+    expected_texts=source_text_authoring.build(samples_root,LOCAL/'source_text_capture.json',schema_root)
+    if data['source_texts']!=expected_texts:
+        raise ValueError('source text registry differs from committed capture and exact local references')
     data['interaction_source_conflicts']=[{'interaction':e['destination'],'classification':'CONFLICT',
                                            'source_witnesses':e['sources'],'alternatives':e['conflict_alternatives']}
                                           for e in docs['interactions_manifest']['entries'] if e.get('conflict_alternatives')]

@@ -25,7 +25,8 @@
     "quest_gaps",
     "reference_gaps",
     "unassigned_gaps",
-    "summary"
+    "summary",
+    "source_texts"
   ],
   "properties": {
     "schema": {
@@ -465,7 +466,8 @@
                     "source_readiness_missing",
                     "reported_source_gap",
                     "source_reference_gap",
-                    "wiki_source_conflict"
+                    "wiki_source_conflict",
+                    "source_text_unknown"
                   ]
                 },
                 "record": {
@@ -554,7 +556,8 @@
               "source_readiness_missing",
               "reported_source_gap",
               "source_reference_gap",
-              "wiki_source_conflict"
+              "wiki_source_conflict",
+              "source_text_unknown"
             ]
           },
           "record": {
@@ -630,6 +633,9 @@
           "minimum": 0
         }
       }
+    },
+    "source_texts": {
+      "$ref": "oteryn:schema/source-text/v1#/$defs/registry"
     }
   }
 }

@@ -9,6 +9,8 @@ from unittest.mock import patch
 
 import bundle_authoring as b
 import bundle_semantics as s
+import source_texts
+import source_text_authoring
 
 ROOT=Path(__file__).resolve().parent
 
@@ -32,6 +34,9 @@ def fixture():
           'quests':[],'fresh_acquisition_summary':{},'source_access_checks':[],'unavailable_source_pages':[]}
     data={'quests':[quest],'progress':[progress],'interactions':[],'gates':[],'claims':[],
           'wiki_catalogue':wiki,'interaction_source_conflicts':[]}
+    data['source_texts']=source_texts.registry(data,{'texts':[]})
+    data['source_texts']['capture_provenance']={'path':'tools/content-schema/quest-authoring/source_text_capture.json','sha256':b.digest(ROOT/'source_text_capture.json')}
+    data['source_texts']['input_provenance']=[{'role':role,'path':rel,'sha256':'0'*64} for role,rel in sorted(source_text_authoring.INPUTS.items())]
     evidence={'reported_readiness':[],'coverage_holds':[],'deferred_owners':[]}
     value={'schema':'OTERYN_QUEST_SOURCE_BUNDLE/v1','classification':'OTS_HYPOTHESIS_ONLY',
            'scope':'source_inventory_only; no native or runtime authority','canonical_admission':'NOT_ASSESSED','runtime_readiness':'UNKNOWN',
@@ -104,6 +109,9 @@ class SourceBackedTests(unittest.TestCase):
         for role,rel in b.INPUTS.items():
             path=self.samples/rel;path.parent.mkdir(parents=True,exist_ok=True)
             path.write_text(json.dumps(docs[role])+'\n')
+        text_registry=source_text_authoring.build(self.samples,ROOT/'source_text_capture.json',ROOT)
+        (self.samples/b.INPUTS['source_texts']).parent.mkdir(parents=True,exist_ok=True)
+        (self.samples/b.INPUTS['source_texts']).write_text(source_text_authoring.encoded(text_registry))
         self.value=b.build(ROOT,self.samples,ROOT)
     def install_conflict(self, missing_progress=None):
         key='canary:interaction/example/action'
@@ -130,6 +138,8 @@ class SourceBackedTests(unittest.TestCase):
              'conflict_alternatives':alternatives}]}}
         for role,doc in docs.items():
             (self.samples/b.INPUTS[role]).write_text(json.dumps(doc)+'\n')
+        (self.samples/b.INPUTS['source_texts']).write_text(source_text_authoring.encoded(
+            source_text_authoring.build(self.samples,ROOT/'source_text_capture.json',ROOT)))
         self.value=b.build(ROOT,self.samples,ROOT)
         return alternatives
     def test_full_typed_conflict_alternatives_preserved_and_strictly_validated(self):

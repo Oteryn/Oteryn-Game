@@ -4,6 +4,7 @@ import json
 import hashlib
 import re
 from pathlib import Path
+import source_texts
 
 COLLECTIONS = {'quests': 'Quest', 'progress': 'Progress', 'interactions': 'Interaction',
                'gates': 'Gate', 'claims': 'RewardClaim'}
@@ -187,6 +188,8 @@ def derive(data, evidence):
                     if claim.get('quest'):owners.add(claim['quest']['key'])
         interaction_owners[conflict['interaction']].update(owners)
         add(owners,'source_coverage_hold',conflict['interaction'],'CONFLICT: full donor alternative interaction graphs preserved; no native effect chosen')
+    for gap in source_texts.unresolved_gaps(data):
+        add(gap['owners'],'source_text_unknown',gap['record'],gap['reason'])
     for hold in evidence['coverage_holds']:
         add([hold['quest']], 'source_coverage_hold', hold['record'], hold['reason'])
     for hold in evidence['deferred_owners']:

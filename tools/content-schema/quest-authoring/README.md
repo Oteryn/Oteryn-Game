@@ -123,3 +123,24 @@ Standalone validation reports STRUCTURAL_ONLY / NOT_VERIFIED for input provenanc
 Source-backed validation deterministically reconstructs the entire packet from
 local samples and reports VERIFIED_AGAINST_LOCAL_INPUTS. Neither mode establishes
 native admission or runtime readiness. The offline runner checks regeneration.
+
+SOURCE prose is preserved in a separate strict text registry, keyed by exact
+UTF-8 digest, Unicode length and placeholders already used by the source data.
+Pinned Lua literal witnesses include raw tokens, source blob hashes and explicit
+decoding/normalization evidence. Quest graph admission remains independent.
+
+```sh
+# Acquisition only, requiring the exact donor commits documented above:
+python source_text_authoring.py --capture-source --canary <checkout> --crystal <checkout>
+# Portable offline regeneration and checks from the committed capture:
+python source_text_authoring.py
+python source_text_authoring.py --check
+python bundle_authoring.py
+python run_checks.py
+```
+
+Offline checks verify recorded literal decoding and exact local packet inputs.
+Original donor-file membership remains captured acquisition provenance rather
+than a claim of independently verified remote contents during offline checks.
+Missing literal evidence is UNKNOWN and contributes an owned source gap; a
+known text body does not resolve reward-carrier or quest-identity conflicts.
