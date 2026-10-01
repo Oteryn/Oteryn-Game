@@ -2,9 +2,9 @@
  "close_tiles": 10,
  "evidence": "REFERENCE_CROSSCHECK_ONLY",
  "inputs": {
-  "admission_sha256": "ddfb90e197a29b19693c315fa1b4d00c8df2967891c19b6ba39cadd5db78fe47",
-  "candidates_sha256": "5b31919e93f902ff8b4ce811ea0b1b8b51c9c229a0db2ce054630df41b0cccce",
-  "dialogues_sha256": "ea3ada9f4e54425b3ea96d94960b37a9256bf36e368c600a9518304cf3c6aef6",
+  "admission_sha256": "74cb17b45e073702ef36b09bb35f86bb259d264b437d20219a68a83d1f82d333",
+  "candidates_sha256": "c895b8976078abf6f63402aa93565657d94660aee7420c1be6799fddff02f54f",
+  "dialogues_sha256": "182063117ccc43558e2abdc39af3c3830117b3ae2256231c26c517e8e784ee7b",
   "facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
@@ -1538,8 +1538,17 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 3,
-    "status": "BR_ONLY"
+    "matched": 0,
+    "only_br": [
+     "SellToPlayer:blank imbuement scroll",
+     "SellToPlayer:etcher",
+     "BuyFromPlayer:heavy old tome"
+    ],
+    "status": "DIFFER",
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00037693",
+     "SellToPlayer:oteryn:item.registry.i00037694"
+    ]
    }
   },
   {
@@ -2192,6 +2201,28 @@
      6
     ],
     "status": "CLOSE"
+   }
+  },
+  {
+   "br": {
+    "pageid": 63965,
+    "revid": 423708,
+    "title": "Ambassador Manop"
+   },
+   "name": "Ambassador Manop",
+   "npc": "oteryn:npc.ambassador_manop",
+   "position": {
+    "br": [
+     32058,
+     31898,
+     4
+    ],
+    "ours": [
+     32057,
+     31898,
+     4
+    ],
+    "status": "NEAR"
    }
   },
   {
@@ -4795,6 +4826,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00010101",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -4862,6 +4895,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -6044,6 +6079,7 @@
      "SellToPlayer:oteryn:item.registry.i00000038",
      "SellToPlayer:oteryn:item.registry.i00000042",
      "SellToPlayer:oteryn:item.registry.i00000044",
+     "SellToPlayer:oteryn:item.registry.i00000046",
      "SellToPlayer:oteryn:item.registry.i00000051",
      "SellToPlayer:oteryn:item.registry.i00000057",
      "SellToPlayer:oteryn:item.registry.i00000062",
@@ -7041,6 +7077,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00011078",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -7135,6 +7173,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -7152,10 +7192,6 @@
     "pageid": 66140,
     "revid": 431288,
     "title": "Brewmaster Bhaan"
-   },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 11
    },
    "name": "Brewmaster Bhaan",
    "npc": "oteryn:npc.brewmaster_bhaan",
@@ -8908,6 +8944,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -9001,6 +9039,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -12483,10 +12523,6 @@
   },
   {
    "br": null,
-   "dialogue": {
-    "status": "NO_BR_PAGE",
-    "texts": 12
-   },
    "name": "Drunken Sailor",
    "npc": "oteryn:npc.drunken_sailor"
   },
@@ -13662,13 +13698,6 @@
     "revid": 431286,
     "title": "Eldoran the Ambitious"
    },
-   "dialogue": {
-    "br_lines": 27,
-    "matched": 24,
-    "near": 0,
-    "status": "CHECKED",
-    "texts": 28
-   },
    "name": "Eldoran the Ambitious",
    "npc": "oteryn:npc.eldoran_the_ambitious",
    "position": {
@@ -14007,13 +14036,6 @@
     "revid": 433429,
     "title": "Emiliana"
    },
-   "dialogue": {
-    "br_lines": 32,
-    "matched": 13,
-    "near": 1,
-    "status": "CHECKED",
-    "texts": 28
-   },
    "name": "Emiliana",
    "npc": "oteryn:npc.emiliana",
    "position": {
@@ -14122,6 +14144,88 @@
    "npc": "oteryn:npc.emperor_rehal",
    "position": {
     "status": "MATCH"
+   },
+   "trade": {
+    "br_offers": 1,
+    "status": "BR_ONLY"
+   }
+  },
+  {
+   "br": {
+    "pageid": 63964,
+    "revid": 435644,
+    "title": "Enpa-Deia Pema"
+   },
+   "name": "Enpa-Deia Pema",
+   "npc": "oteryn:npc.enpa_deia_pema",
+   "position": {
+    "status": "MATCH"
+   },
+   "trade": {
+    "matched": 0,
+    "only_br": [
+     "SellToPlayer:boots of enlightenment",
+     "SellToPlayer:coned hat of enlightenment",
+     "SellToPlayer:fists of enlightenment",
+     "SellToPlayer:harmony amulet",
+     "SellToPlayer:jo staff",
+     "SellToPlayer:legs of enlightenment",
+     "SellToPlayer:light jo staff",
+     "SellToPlayer:nunchaku of enlightenment",
+     "SellToPlayer:plain monk robe",
+     "SellToPlayer:robe of enlightenment",
+     "SellToPlayer:sai of enlightenment",
+     "BuyFromPlayer:boots of enlightenment",
+     "BuyFromPlayer:coned hat of enlightenment",
+     "BuyFromPlayer:fists of enlightenment",
+     "BuyFromPlayer:legs of enlightenment",
+     "BuyFromPlayer:nunchaku of enlightenment",
+     "BuyFromPlayer:robe of enlightenment",
+     "BuyFromPlayer:sai of enlightenment"
+    ],
+    "status": "DIFFER",
+    "uncomparable": [
+     "BuyFromPlayer:oteryn:item.registry.i00037589",
+     "BuyFromPlayer:oteryn:item.registry.i00037590",
+     "BuyFromPlayer:oteryn:item.registry.i00037591",
+     "BuyFromPlayer:oteryn:item.registry.i00037593",
+     "BuyFromPlayer:oteryn:item.registry.i00037594",
+     "BuyFromPlayer:oteryn:item.registry.i00037595",
+     "BuyFromPlayer:oteryn:item.registry.i00037596",
+     "BuyFromPlayer:oteryn:item.registry.i00037637",
+     "SellToPlayer:oteryn:item.registry.i00037536",
+     "SellToPlayer:oteryn:item.registry.i00037552",
+     "SellToPlayer:oteryn:item.registry.i00037580",
+     "SellToPlayer:oteryn:item.registry.i00037589",
+     "SellToPlayer:oteryn:item.registry.i00037590",
+     "SellToPlayer:oteryn:item.registry.i00037591",
+     "SellToPlayer:oteryn:item.registry.i00037593",
+     "SellToPlayer:oteryn:item.registry.i00037594",
+     "SellToPlayer:oteryn:item.registry.i00037595",
+     "SellToPlayer:oteryn:item.registry.i00037596"
+    ]
+   }
+  },
+  {
+   "br": {
+    "pageid": 63956,
+    "revid": 424117,
+    "title": "Enpa Rudra"
+   },
+   "name": "Enpa Rudra",
+   "npc": "oteryn:npc.enpa_rudra",
+   "position": {
+    "br": [
+     33604,
+     31447,
+     6
+    ],
+    "ours": [
+     33605,
+     31444,
+     6
+    ],
+    "status": "NEAR"
    },
    "trade": {
     "br_offers": 1,
@@ -14550,6 +14654,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00010069",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -14619,6 +14725,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -14801,10 +14909,6 @@
   },
   {
    "br": null,
-   "dialogue": {
-    "status": "NO_BR_PAGE",
-    "texts": 3
-   },
    "name": "Exhausted Lion Knight",
    "npc": "oteryn:npc.exhausted_lion_knight"
   },
@@ -15906,10 +16010,6 @@
     "revid": 432114,
     "title": "Fitzduncan"
    },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 10
-   },
    "name": "Fitzduncan",
    "npc": "oteryn:npc.fitzduncan",
    "position": {
@@ -15953,6 +16053,25 @@
    },
    "name": "Flavius",
    "npc": "oteryn:npc.flavius",
+   "position": {
+    "status": "MATCH"
+   }
+  },
+  {
+   "br": {
+    "pageid": 49386,
+    "revid": 385226,
+    "title": "Flickering Soul"
+   },
+   "dialogue": {
+    "br_lines": 36,
+    "matched": 1,
+    "near": 0,
+    "status": "CHECKED",
+    "texts": 1
+   },
+   "name": "Flickering Soul",
+   "npc": "oteryn:npc.flickering_soul",
    "position": {
     "status": "MATCH"
    }
@@ -16216,6 +16335,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00020408",
      "BuyFromPlayer:oteryn:item.registry.i00021109",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -16283,6 +16404,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -17334,6 +17457,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003326",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -17380,6 +17505,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -17622,6 +17749,32 @@
      32059,
      31882,
      4
+    ],
+    "status": "NEAR"
+   }
+  },
+  {
+   "br": {
+    "pageid": 40970,
+    "revid": 355575,
+    "title": "Gareth"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
+   "name": "Gareth",
+   "npc": "oteryn:npc.gareth",
+   "position": {
+    "br": [
+     33305,
+     32139,
+     8
+    ],
+    "ours": [
+     33305,
+     32141,
+     8
     ],
     "status": "NEAR"
    }
@@ -19950,6 +20103,22 @@
   },
   {
    "br": {
+    "pageid": 40984,
+    "revid": 359854,
+    "title": "Grumpy Stone"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 15
+   },
+   "name": "Grumpy Stone",
+   "npc": "oteryn:npc.grumpy_stone",
+   "position": {
+    "status": "MATCH"
+   }
+  },
+  {
+   "br": {
     "pageid": 47142,
     "revid": 353303,
     "title": "Guard Bazaya"
@@ -19965,13 +20134,6 @@
     "pageid": 66130,
     "revid": 431282,
     "title": "Guard Captain Hartford"
-   },
-   "dialogue": {
-    "br_lines": 15,
-    "matched": 12,
-    "near": 0,
-    "status": "CHECKED",
-    "texts": 16
    },
    "name": "Guard Captain Hartford",
    "npc": "oteryn:npc.guard_captain_hartford",
@@ -20006,10 +20168,6 @@
     "pageid": 66152,
     "revid": 431300,
     "title": "Guard Post"
-   },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 7
    },
    "name": "Guard Post",
    "npc": "oteryn:npc.guard_post",
@@ -21080,6 +21238,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003326",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -21119,6 +21279,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -21827,6 +21989,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -21894,6 +22058,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -21906,10 +22072,6 @@
   },
   {
    "br": null,
-   "dialogue": {
-    "status": "NO_BR_PAGE",
-    "texts": 3
-   },
    "name": "Hardened Lion Archer",
    "npc": "oteryn:npc.hardened_lion_archer"
   },
@@ -27372,10 +27534,6 @@
     "revid": 431301,
     "title": "Lieutenant Harlan"
    },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 15
-   },
    "name": "Lieutenant Harlan",
    "npc": "oteryn:npc.lieutenant_harlan",
    "position": {
@@ -29680,6 +29838,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -29748,6 +29908,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -30567,6 +30729,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -30637,6 +30801,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -33551,6 +33717,35 @@
   },
   {
    "br": {
+    "pageid": 30023,
+    "revid": 412926,
+    "title": "Omrabas"
+   },
+   "dialogue": {
+    "br_lines": 39,
+    "matched": 4,
+    "near": 0,
+    "status": "CHECKED",
+    "texts": 5
+   },
+   "name": "Omrabas",
+   "npc": "oteryn:npc.omrabas",
+   "position": {
+    "br": [
+     33019,
+     32452,
+     9
+    ],
+    "ours": [
+     33020,
+     32454,
+     9
+    ],
+    "status": "NEAR"
+   }
+  },
+  {
+   "br": {
     "pageid": 11421,
     "revid": 401871,
     "title": "Omur"
@@ -34837,10 +35032,6 @@
   },
   {
    "br": null,
-   "dialogue": {
-    "status": "NO_BR_PAGE",
-    "texts": 3
-   },
    "name": "Persevering Lion Archer",
    "npc": "oteryn:npc.persevering_lion_archer"
   },
@@ -36562,10 +36753,6 @@
     "revid": 431291,
     "title": "Raubritter Battler"
    },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
-   },
    "name": "Raubritter Battler",
    "npc": "oteryn:npc.raubritter_battler",
    "position": {
@@ -36577,10 +36764,6 @@
     "pageid": 66141,
     "revid": 431289,
     "title": "Raubritter Chastener (NPC)"
-   },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
    },
    "name": "Raubritter Chastener",
    "npc": "oteryn:npc.raubritter_chastener",
@@ -36601,10 +36784,6 @@
     "revid": 431294,
     "title": "Raubritter Chastigator"
    },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
-   },
    "name": "Raubritter Chastigator",
    "npc": "oteryn:npc.raubritter_chastigator",
    "position": {
@@ -36617,10 +36796,6 @@
     "revid": 431299,
     "title": "Raubritter Guard"
    },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
-   },
    "name": "Raubritter Guard",
    "npc": "oteryn:npc.raubritter_guard",
    "position": {
@@ -36632,10 +36807,6 @@
     "pageid": 66145,
     "revid": 431293,
     "title": "Raubritter Guardsman"
-   },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
    },
    "name": "Raubritter Guardsman",
    "npc": "oteryn:npc.raubritter_guardsman",
@@ -36660,10 +36831,6 @@
     "pageid": 66142,
     "revid": 431290,
     "title": "Raubritter Patrol"
-   },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
    },
    "name": "Raubritter Patrol",
    "npc": "oteryn:npc.raubritter_patrol",
@@ -36699,10 +36866,6 @@
     "revid": 431295,
     "title": "Raubritter Purifier"
    },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
-   },
    "name": "Raubritter Purifier",
    "npc": "oteryn:npc.raubritter_purifier",
    "position": {
@@ -36714,10 +36877,6 @@
     "pageid": 66148,
     "revid": 431296,
     "title": "Raubritter Sentinel"
-   },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
    },
    "name": "Raubritter Sentinel",
    "npc": "oteryn:npc.raubritter_sentinel",
@@ -36731,10 +36890,6 @@
     "revid": 431297,
     "title": "Raubritter Sentry"
    },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
-   },
    "name": "Raubritter Sentry",
    "npc": "oteryn:npc.raubritter_sentry",
    "position": {
@@ -36746,10 +36901,6 @@
     "pageid": 66150,
     "revid": 431298,
     "title": "Raubritter Thug"
-   },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 2
    },
    "name": "Raubritter Thug",
    "npc": "oteryn:npc.raubritter_thug",
@@ -37419,6 +37570,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -37513,6 +37666,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -38367,6 +38522,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003326",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -38405,6 +38562,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -38836,6 +38995,7 @@
     ],
     "status": "DIFFER",
     "uncomparable": [
+     "BuyFromPlayer:oteryn:item.registry.i00003147",
      "BuyFromPlayer:oteryn:item.registry.i00003148",
      "BuyFromPlayer:oteryn:item.registry.i00003149",
      "BuyFromPlayer:oteryn:item.registry.i00003150",
@@ -38862,11 +39022,14 @@
      "BuyFromPlayer:oteryn:item.registry.i00003326",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
      "BuyFromPlayer:oteryn:item.weapon.club.mace",
      "BuyFromPlayer:oteryn:item.weapon.sword.fire",
+     "SellToPlayer:oteryn:item.registry.i00003147",
      "SellToPlayer:oteryn:item.registry.i00003148",
      "SellToPlayer:oteryn:item.registry.i00003149",
      "SellToPlayer:oteryn:item.registry.i00003151",
@@ -38899,6 +39062,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -39291,6 +39456,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -39358,6 +39525,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -39958,13 +40127,6 @@
     "revid": 431281,
     "title": "Second in Command Demeron"
    },
-   "dialogue": {
-    "br_lines": 10,
-    "matched": 10,
-    "near": 0,
-    "status": "CHECKED",
-    "texts": 14
-   },
    "name": "Second in Command Demeron",
    "npc": "oteryn:npc.second_in_command_demeron",
    "position": {
@@ -40440,6 +40602,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -40506,6 +40670,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -41926,10 +42092,6 @@
     "revid": 431287,
     "title": "Steward Volkmar"
    },
-   "dialogue": {
-    "status": "NO_BR_TRANSCRIPT",
-    "texts": 14
-   },
    "name": "Steward Volkmar",
    "npc": "oteryn:npc.steward_volkmar",
    "position": {
@@ -41937,11 +42099,33 @@
    }
   },
   {
-   "br": null,
-   "dialogue": {
-    "status": "NO_BR_PAGE",
-    "texts": 3
+   "br": {
+    "pageid": 11286,
+    "revid": 402394,
+    "title": "Storkus"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
+   "name": "Storkus",
+   "npc": "oteryn:npc.storkus",
+   "position": {
+    "br": [
+     32590,
+     31961,
+     7
+    ],
+    "ours": [
+     32589,
+     31962,
+     7
+    ],
+    "status": "NEAR"
+   }
+  },
+  {
+   "br": null,
    "name": "Stranded Lion Knight",
    "npc": "oteryn:npc.stranded_lion_knight"
   },
@@ -42306,10 +42490,6 @@
   },
   {
    "br": null,
-   "dialogue": {
-    "status": "NO_BR_PAGE",
-    "texts": 3
-   },
    "name": "Swashbuckling Lion Archer",
    "npc": "oteryn:npc.swashbuckling_lion_archer"
   },
@@ -45702,6 +45882,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -45769,6 +45951,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -46310,6 +46494,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -46372,6 +46558,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -46708,6 +46896,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003326",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -46752,6 +46942,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -47950,10 +48142,6 @@
   },
   {
    "br": null,
-   "dialogue": {
-    "status": "NO_BR_PAGE",
-    "texts": 3
-   },
    "name": "Weary Lion Knight",
    "npc": "oteryn:npc.weary_lion_knight"
   },
@@ -48566,6 +48754,8 @@
      "BuyFromPlayer:oteryn:item.registry.i00003424",
      "BuyFromPlayer:oteryn:item.registry.i00017111",
      "BuyFromPlayer:oteryn:item.registry.i00037538",
+     "BuyFromPlayer:oteryn:item.registry.i00037539",
+     "BuyFromPlayer:oteryn:item.registry.i00037540",
      "BuyFromPlayer:oteryn:item.weapon.axe.hand",
      "BuyFromPlayer:oteryn:item.weapon.blade.dagger",
      "BuyFromPlayer:oteryn:item.weapon.club.battle_hammer",
@@ -48662,6 +48852,8 @@
      "SellToPlayer:oteryn:item.registry.i00036123",
      "SellToPlayer:oteryn:item.registry.i00036124",
      "SellToPlayer:oteryn:item.registry.i00037538",
+     "SellToPlayer:oteryn:item.registry.i00037539",
+     "SellToPlayer:oteryn:item.registry.i00037540",
      "SellToPlayer:oteryn:item.registry.i00037607",
      "SellToPlayer:oteryn:item.registry.i00037608",
      "SellToPlayer:oteryn:item.registry.i00037609",
@@ -52144,29 +52336,29 @@
  ],
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
-  "dialogue:admitted": 715,
-  "dialogue:br_only": 178,
-  "dialogue:checked": 373,
-  "dialogue:matched": 2889,
-  "dialogue:near": 353,
-  "dialogue:no_br_page": 14,
-  "dialogue:no_br_page_texts": 82,
-  "dialogue:no_br_transcript": 328,
-  "dialogue:no_br_transcript_texts": 2736,
+  "dialogue:admitted": 694,
+  "dialogue:br_only": 185,
+  "dialogue:checked": 371,
+  "dialogue:matched": 2835,
+  "dialogue:near": 352,
+  "dialogue:no_br_page": 7,
+  "dialogue:no_br_page_texts": 52,
+  "dialogue:no_br_transcript": 316,
+  "dialogue:no_br_transcript_texts": 2676,
   "dialogue:no_text_matched": 65,
-  "dialogue:texts": 5916,
+  "dialogue:texts": 5836,
   "matched_by_position_alias": 8,
   "no_br_page": 20,
-  "npcs": 1102,
+  "npcs": 1110,
   "position:CLOSE": 98,
-  "position:MATCH": 234,
+  "position:MATCH": 237,
   "position:MISMATCH": 36,
-  "position:NEAR": 682,
+  "position:NEAR": 687,
   "position:NO_BR_POSITION": 1,
   "position:NO_PLACEMENT": 4,
   "position:OTHER_FLOOR": 27,
   "trade:BR_ONLY": 52,
-  "trade:DIFFER": 309,
+  "trade:DIFFER": 311,
   "trade:NO_BR_TRADE": 8
  }
 }

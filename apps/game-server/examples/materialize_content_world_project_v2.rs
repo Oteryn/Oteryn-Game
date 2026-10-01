@@ -124,11 +124,11 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "ddfb90e197a29b19693c315fa1b4d00c8df2967891c19b6ba39cadd5db78fe47";
+const NPC_STAGED_SHA256: &str = "74cb17b45e073702ef36b09bb35f86bb259d264b437d20219a68a83d1f82d333";
 const NPC_STAGE_TOOL_SHA256: &str =
     "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff";
 const NPC_CANDIDATES_SHA256: &str =
-    "5b31919e93f902ff8b4ce811ea0b1b8b51c9c229a0db2ce054630df41b0cccce";
+    "c895b8976078abf6f63402aa93565657d94660aee7420c1be6799fddff02f54f";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
     "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42";
 const NPC_ITEM_MAP_SHA256: &str =
@@ -147,16 +147,16 @@ const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
 const CRYSTAL_SUPPLEMENT_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3f";
 const CRYSTAL_SUPPLEMENT_BUNDLES_SHA256: &str =
     "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5";
-const NPC_COUNT: usize = 1102;
-const NPC_RECORDS: usize = 2204;
-const NPC_DECLARATIONS: usize = 2195;
+const NPC_COUNT: usize = 1110;
+const NPC_RECORDS: usize = 2220;
+const NPC_DECLARATIONS: usize = 2184;
 const NPC_DIALOGUE_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json");
 const NPC_DIALOGUE_STAGED_SHA256: &str =
-    "ea3ada9f4e54425b3ea96d94960b37a9256bf36e368c600a9518304cf3c6aef6";
-const NPC_DIALOGUES: usize = 715;
-const NPC_DIALOGUE_NODES: usize = 6377;
-const NPC_BINDINGS: usize = 2352;
+    "182063117ccc43558e2abdc39af3c3830117b3ae2256231c26c517e8e784ee7b";
+const NPC_DIALOGUES: usize = 694;
+const NPC_DIALOGUE_NODES: usize = 6306;
+const NPC_BINDINGS: usize = 2376;
 const CREATURE_COUNT: usize = 1503;
 const CREATURE_RECORDS: usize = 21069;
 const CREATURE_PROFILES: usize = 20097;
@@ -1578,7 +1578,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         return Err("staged NPC admission counts drifted".into());
     }
     let import = ImportBatch {
-        batch_id: "g4-npc-wave-a-tibiawiki-r8".to_owned(),
+        batch_id: "g4-npc-wave-a-tibiawiki-r9".to_owned(),
         source_repository: "tibia.fandom.com".to_owned(),
         source_revision: NPC_WIKI_REVISION.to_owned(),
         source_artifact_sha256: NPC_WIKI_SNAPSHOT_SHA256.to_owned(),
@@ -1586,7 +1586,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_FANDOM_SNAPSHOT/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r8".to_owned(),
+        mapper_revision: "npc-admission-r9".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1607,7 +1607,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_TIBIAWIKI_BR_FACTS/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r8".to_owned(),
+        mapper_revision: "npc-admission-r9".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1628,7 +1628,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_TIBIOPEDIA_FACTS/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r8".to_owned(),
+        mapper_revision: "npc-admission-r9".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1649,7 +1649,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_AUTHORING_CANDIDATE/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r8".to_owned(),
+        mapper_revision: "npc-admission-r9".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1867,7 +1867,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     bindings.extend(npc_bindings);
     let mut draft = ProjectV2Draft {
         core: ProjectDraft {
-            project_revision: "g4-npc-wave-a-r8".to_owned(),
+            project_revision: "g4-npc-wave-a-r9".to_owned(),
             package_key: "oteryn:content.world-project".to_owned(),
             semantic_schema_version: "reference-schema-v1".to_owned(),
             licensing_metadata: "PENDING".to_owned(),

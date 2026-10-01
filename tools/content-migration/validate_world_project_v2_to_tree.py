@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1503, "Presentation": 2605, "Behavior": 2605, "Loot": 1056, "Ability": 6000, "Effect": 4599, "Formula": 4905,
+    "Creature": 1503, "Presentation": 2613, "Behavior": 2613, "Loot": 1056, "Ability": 6000, "Effect": 4599, "Formula": 4905,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
@@ -24,11 +24,11 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1102
-NPC_BINDING_COUNT = 2352
+NPC_COUNT = 1110
+NPC_BINDING_COUNT = 2376
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 61
-DIALOGUE_COUNT = 715
+DIALOGUE_COUNT = 694
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
@@ -38,7 +38,7 @@ PROFICIENCY_BINDING_COUNT = 664  # 642 + 22 bound by the ITEM-ADD-1 donor epoch-
 REWARD_CLAIM_COUNT = 231
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
 class ValidationError(RuntimeError):

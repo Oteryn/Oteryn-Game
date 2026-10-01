@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "0625f7dced78cc5fc2b0306f0abf822f7cf92623ddd6a557b4a56d55c67d3a46",
+        "97ca45a0995d063bbbfd9e3b58a56b98efe8b2a1d682336a0d0528833eb4d150",
     ),
     (
         "definitions/declarations.json",
-        15_148_655,
-        "de1cdcc83139f6d450e3cb5582afdbc441454e9f03053e449721d3df3ceebde1",
+        15_148_142,
+        "01c03a2c2c73ad28d82756a5aebac0ad75bfbf1bd263f1488accf21319917722",
     ),
     (
         "definitions/reference.json",
-        22_535_813,
-        "cd48d6f0b8962af2c786c33537dec1d186245922c50e368ea588de2b6e25184d",
+        22_538_307,
+        "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1937,
-        "882af607ce573163149dd6bddf992dec4bf135af1a756f24f1e47b3711a11b36",
+        1_937,
+        "f2afbb2eaa7b1b4914f503c907186ed77c4123c5ab00df3cc1325e0b2cf39a04",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "d991665ce4bd5d46c501800da4d6802661169efb71468ec8b73d6e8652f40e32",
+        "e44ea14fb1c1df14a077177e28c056905b1d79564c52f0f03e324a3d34bb1345",
     ),
     (
         "provenance/imports.json",
         33_077,
-        "768cf9e368f452d2f1c8993b5a9740331b8d7f27b0edb4170d9eda3d5206bf6e",
+        "a6865cf27269c6d3cabb80b9b7895aab202d11d829675e7fda17b1c2cda89763",
     ),
     (
         "provenance/sources.json",
-        1_311_236,
-        "cd42efbf61510743ceeb5c7206f2909ea22a2ee7be176aff593807627fcbc98b",
+        1_317_786,
+        "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1",
     ),
     (
         "worlds/world.json",
@@ -107,7 +107,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "2489e59c2684b4d6502e1cf135cf080b74a411940fcbdf8226f11fa55c7a2f1a";
+const TREE_SHA256: &str = "563578738baafc89398ca94f5e4324f6a0718f1533332f163cdb81ec79443139";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -118,11 +118,11 @@ const CREATURES: usize = 1503;
 const CREATURE_RECORDS: usize = 21069;
 const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1102;
-const NPC_RECORDS: usize = 2204;
-const NPC_DECLARATIONS: usize = 2195;
-const NPC_DIALOGUES: usize = 715;
-const NPC_BINDINGS: usize = 2352;
+const NPCS: usize = 1110;
+const NPC_RECORDS: usize = 2220;
+const NPC_DECLARATIONS: usize = 2184;
+const NPC_DIALOGUES: usize = 694;
+const NPC_BINDINGS: usize = 2376;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -319,7 +319,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r8");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r9");
     assert_eq!(project.imports().len(), 12);
     let provenance = &project.imports()[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -664,7 +664,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(v2.sources[10].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[10];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r8");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r9");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[8].key, v2.sources[5].key);
     assert_eq!(v2.sources[8].import_batch_id, npc_import.batch_id);

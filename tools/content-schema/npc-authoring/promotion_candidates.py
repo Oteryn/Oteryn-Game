@@ -107,10 +107,89 @@ LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
 WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
                            'WIKI_CONFIRMED', 'WIKI_PRICE', 'WIKI_MAJORITY_PRICE', 'WIKI_OFFER',
-                           'FAN_WIKI_CONFIRMED')  # kept in the output
+                           'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER', 'WIKI_IMAGE', 'OWNER_REVIEW',
+                           'WIKI_IMAGE_FIT')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
+# D16: definition conflicts settled in review (owner, 2026-09-30): the outfit from the TibiaWiki image (file and its
+# SHA-1), the movement from the owner's observation; any other conflicting field still holds the NPC
+DEFINITION_REVIEWED = {
+    'Ambassador Manop': {
+        'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Ambassador Manop.gif',
+                   'sha1': 'd1687add015f0258ef76549b74ae23a53e60e7d3', 'score': 3.29,
+                   'colours': {'head': 2, 'body': 10, 'legs': 22, 'feet': 81}},
+        'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30', 'decision': '#162 5915795451'}},
+    'Enpa Rudra': {'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Enpa Rudra.gif',
+                              'sha1': '82a635859c0aa2e635492ab2fecbf11ff962f80b', 'score': 31.63,
+                              'colours': {'head': 2, 'body': 3, 'legs': 41, 'feet': 81}}},
+    # both image fits score above 35, so the owner chose the Canary look (2a, #1358 5917959278)
+    'Enpa-Deia Pema': {'outfit': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30',
+                                  'decision': '#1358 5917959278'}},
+    'Flickering Soul': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30', 'decision': '#162 5915795451'}},
+    'Omrabas': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30', 'decision': '#162 5915795451'}},
+    'Storkus': {'outfit': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30', 'decision': '#162 5915795451'}},
+    'Gareth': {'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Gareth.gif',
+                          'sha1': '987161bfb6872869531d7d6a2e7b86383791d538', 'score': 30.15,
+                          'colours': {'head': 41, 'body': 0, 'legs': 58, 'feet': 20}}},
+    'Grumpy Stone': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'crystal', 'image': 'File:Grumpy Stone.gif',
+                                'sha1': 'd2b356e031104e639ce29494f5e9b1862d12f5da'}},
+}
+# D16: the facts a single-source Crystal file itself marks unconfirmed ("TODO" at the pinned revision: guessed outfit
+# colours, dialogue Crystal wrote itself, a walk setting); recorded on the candidate as `source_unconfirmed`. The
+# dialogue stage never stages such text; the owner chose on 2026-09-30 to keep these NPCs with generated replies
+SOURCE_UNCONFIRMED = {
+    'crystal:npc/brewmaster_bhaan': ('outfit', 'text', 'walk'),
+    'crystal:npc/captain_indigo': ('outfit',),
+    'crystal:npc/captain_marie-denise_banner': ('outfit',),
+    'crystal:npc/dragon_ancestor_spirit': ('text', 'walk'),
+    'crystal:npc/drunken_sailor': ('outfit', 'text', 'walk'),
+    'crystal:npc/eldoran_the_ambitious': ('outfit', 'text'),
+    'crystal:npc/emiliana': ('outfit', 'text'),
+    'crystal:npc/exhausted_lion_knight': ('outfit', 'text', 'walk'),
+    'crystal:npc/fitzduncan': ('outfit', 'text', 'walk'),
+    'crystal:npc/guard_captain_hartford': ('outfit', 'text'),
+    'crystal:npc/guard_post': ('outfit', 'text', 'walk'),
+    'crystal:npc/hardened_lion_archer': ('outfit', 'text', 'walk'),
+    'crystal:npc/leonora': ('outfit',),
+    'crystal:npc/lieutenant_harlan': ('outfit', 'text', 'walk'),
+    'crystal:npc/lizzie': ('outfit',),
+    'crystal:npc/persevering_lion_archer': ('outfit', 'text', 'walk'),
+    'crystal:npc/raubritter_battler': ('outfit', 'text'),
+    'crystal:npc/raubritter_chastener': ('outfit', 'text'),
+    'crystal:npc/raubritter_chastigator': ('outfit', 'text'),
+    'crystal:npc/raubritter_guard': ('outfit', 'text'),
+    'crystal:npc/raubritter_guardsman': ('outfit', 'text'),
+    'crystal:npc/raubritter_honour_guard': ('outfit', 'text'),
+    'crystal:npc/raubritter_patrol': ('outfit', 'text', 'walk'),
+    'crystal:npc/raubritter_post': ('outfit', 'text'),
+    'crystal:npc/raubritter_purifier': ('outfit', 'text'),
+    'crystal:npc/raubritter_sentinel': ('outfit', 'text'),
+    'crystal:npc/raubritter_sentry': ('outfit', 'text'),
+    'crystal:npc/raubritter_thug': ('outfit', 'text'),
+    'crystal:npc/second_in_command_demeron': ('outfit', 'text'),
+    'crystal:npc/sterling': ('outfit',),
+    'crystal:npc/steward_volkmar': ('outfit', 'text', 'walk'),
+    'crystal:npc/stranded_lion_knight': ('outfit', 'text', 'walk'),
+    'crystal:npc/swashbuckling_lion_archer': ('outfit', 'text', 'walk'),
+    'crystal:npc/szallar_mandar': ('text', 'walk'),
+    'crystal:npc/weary_lion_knight': ('outfit', 'text', 'walk'),
+}
+# D16: outfit colours fitted to the TibiaWiki image of a single-source NPC whose Crystal colours are marked TODO
+# (render from the client sprites, per-region palette fit; a source colour stays where it fits as well, a region under
+# 30 visible pixels never changes); only fits scoring 35 or less (lower is better) are kept, the rest stay
+# source_unconfirmed outfits
+WIKI_IMAGE_FIT = {
+    'Leonora': {'image': 'File:Leonora.gif', 'sha1': 'f8500a396c36de9fb4b36fa649c07df1fe5ecd6d', 'score': 19.06, 'colours': {'head': 95, 'body': 94, 'legs': 86, 'feet': 0}},
+    'Raubritter Battler': {'image': 'File:Raubritter Battler.gif', 'sha1': '322276869e799d5ec801d55f79434b94c965c286', 'score': 12.76, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Chastigator': {'image': 'File:Raubritter Chastigator.gif', 'sha1': '363f336c02dd0793411309ba17a36a0b7e4b292b', 'score': 34.4, 'colours': {'head': 94, 'body': 2, 'legs': 21, 'feet': 0}},
+    'Raubritter Guard': {'image': 'File:Raubritter Guard.gif', 'sha1': '7d36cfbd9d8c2ddbceb2204c883edf14fe2d4340', 'score': 13.01, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Post': {'image': 'File:Raubritter Post.gif', 'sha1': 'b20e850f6884bc37de61b91eff78a69b9f130707', 'score': 13.01, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Purifier': {'image': 'File:Raubritter Purifier.gif', 'sha1': '0c6552c7b148397beabe10be8c5426f642e9fa12', 'score': 30.95, 'colours': {'head': 94, 'body': 70, 'legs': 33, 'feet': 52}},
+    'Raubritter Thug': {'image': 'File:Raubritter Thug.gif', 'sha1': '6ead53bc3e0af773ccb82882458ba66cfff884bb', 'score': 13.11, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+}
+# D16: the wikis' name of an Item whose registered name differs (folded wiki name -> folded registered name)
+WIKI_ITEM_NAMES = {'straw mat foot section': 'straw bed foot section'}
 # Owner decision 2026-09-27: these source-only NPCs exist only in that OT server, not in Tibia,
 # and are never promoted by any rule (wiki confirmation, base-name, spelling or otherwise).
 OWNER_REJECTED = {
@@ -250,6 +329,11 @@ def route_fact(row):
     return (json.dumps(row['destination'], sort_keys=True), row['price'], row['premium'], row['min_level'], row['gate'])
 
 
+def wiki_item(name):
+    """D16: a wiki item name folded, under its registered name where the wikis name the Item differently."""
+    return WIKI_ITEM_NAMES.get(fold(name), fold(name))
+
+
 def registry_item_names():
     """Folded registered names of the committed Item definitions, by Item key. The pinned candidate packets are
     history naming retired Item keys (ITEM-ID-1b, A12), so each retired key that aliases to a named definition in
@@ -293,7 +377,7 @@ class Builder:
             for direction, items in page['trades'].items():
                 trades[direction] = {}
                 for item, prices in items.items():  # every BR row of the offer, each with its own price
-                    trades[direction].setdefault(fold(item), []).extend(prices)
+                    trades[direction].setdefault(wiki_item(item), []).extend(prices)
             for label in (page['title'], page['name']):
                 self.br_trade.setdefault(fold(label), trades)
                 if not page.get('removed') and 'pageid' in page:  # D15: a BR page confirms an NPC unless removed
@@ -301,7 +385,7 @@ class Builder:
         # D13: Tibiopedia trade lists, keyed the same way (its page name is the title without "NPC: ")
         self.tibiopedia_trade, self.tibiopedia_pages = {}, {}
         for page in (tibiopedia_facts or {}).get('pages', []):
-            trades = {direction: {fold(item): prices for item, prices in items.items()}
+            trades = {direction: {wiki_item(item): prices for item, prices in items.items()}
                       for direction, items in page['trades'].items()}
             for label in (page['name'], page['title']):
                 if label:
@@ -310,7 +394,8 @@ class Builder:
                         self.tibiopedia_pages.setdefault(fold(label), {'url': page['url'], 'sha256': page['sha256']})
         self.wiki_npcs = snapshot['npcs']
         self.wiki = build_wiki_index(self.wiki_npcs)
-        self.wiki_trade = snapshot.get('trade', {})
+        self.wiki_trade = {npc: [dict(row, item=WIKI_ITEM_NAMES.get(fold(row['item']), row['item'])) for row in rows]
+                           for npc, rows in snapshot.get('trade', {}).items()}
         self.items = {row['source_item_id']: row for row in item_map['records']}
         self.source_ids = {row['native_key']: row['source_item_id'] for row in item_map['records']}
         # D13 looks each offer up under its registered Item name (folded), by Item key
@@ -410,6 +495,43 @@ class Builder:
         row = self.items.get(source_item_id)
         return row and {'family': 'Item', 'key': row['native_key'], 'revision': row['native_revision']}
 
+    def majority_arbiter(self, name, key, present, fandom):
+        """D16: the source whose plain, ungated offer two of the three wikis confirm, with those wikis and the status of
+        each priced direction; else None (the offer stays left out). A direction is confirmed when the wiki majority
+        states the source's price there; no direction may carry a price the majority contradicts; the source confirmed
+        in the most directions wins, and a tie between different offers decides nothing. The whole offer is admitted
+        (owner 1c, #1358 5917959278); a direction no majority confirms is UNCONFIRMED and names its stating source."""
+        item = self.item_ref(key[0])
+        if not self.tibiopedia_trade or item is None or key[1] or key[2] is not None:
+            return None
+        item_name = self.registry_names.get(item['key'])
+        ranked = {}
+        for source, offer in present.items():
+            if offer['stock_gate']:
+                continue
+            confirmed, wikis, directions = 0, set(), []
+            for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
+                if price is None:
+                    continue
+                majority, by = self.majority_price(name, direction, item_name, fandom)
+                if majority is not None and majority != price:
+                    break
+                if majority is not None:
+                    confirmed, wikis = confirmed + 1, wikis | set(by)
+                    directions.append({'direction': direction, 'price': price, 'status': 'CONFIRMED', 'wikis': by})
+                else:
+                    directions.append({'direction': direction, 'price': price, 'status': 'UNCONFIRMED',
+                                       'stated_by': source})
+            else:
+                if confirmed:
+                    ranked[source] = (confirmed, (offer['buy_price'], offer['sell_price']), sorted(wikis), directions)
+        best = max((value[0] for value in ranked.values()), default=0)
+        winners = {source: value for source, value in ranked.items() if value[0] == best}
+        if not winners or len({value[1] for value in winners.values()}) != 1:
+            return None
+        chosen = sorted(winners)[0]
+        return chosen, winners[chosen][2], winners[chosen][3]
+
     def merge_offers(self, bundles, name, arbitration, left_out):
         per_source = {source: source_offers(b) for source, b in bundles.items()}
         wiki = {row['item'].lower(): row for row in self.wiki_trade.get(normalize_name(name), [])}
@@ -425,9 +547,16 @@ class Builder:
                 agreeing = [s for s, o in present.items() if row
                             and (o['buy_price'] is None or o['buy_price'] == row['buy_price'])
                             and (o['sell_price'] is None or o['sell_price'] == row['sell_price'])]
-                if agreeing and len({facts[s] for s in agreeing}) == 1:
+                decided = bool(agreeing) and len({facts[s] for s in agreeing}) == 1
+                majority = None if decided else self.majority_arbiter(name, key, present, wiki)
+                if decided:
                     chosen = sorted(agreeing)[0]
                     arbitration.append({'fact': label, 'rule': 'WIKI_ARBITER', 'chosen': chosen})
+                elif majority:
+                    chosen, wikis, directions = majority
+                    arbitration.append({'fact': label, 'rule': 'WIKI_MAJORITY_ARBITER', 'chosen': chosen, 'wikis': wikis,
+                                        'item_name': self.registry_names.get(self.item_ref(key[0])['key']),
+                                        'directions': directions})
                 else:
                     left_out.append({'fact': label, 'reason': 'OFFER_UNCONFIRMED' if len(present) == 1
                                      else 'OFFER_CONFLICT_WIKI_UNDECIDED'})
@@ -589,6 +718,17 @@ class Builder:
                 arbitration.append({'fact': 'identity', 'rule': 'FAN_WIKI_CONFIRMED', 'chosen': sorted(pages)[0],
                                     'wikis': sorted(pages), 'pages': pages})
         definition, conflicts = self.merge_definition(bundles, arbitration)
+        for field in [f for f in conflicts if f in DEFINITION_REVIEWED.get(name, {})]:  # D16
+            row = DEFINITION_REVIEWED[name][field]
+            definition[field] = definition_facts(bundles[row['chosen']])[field]
+            if 'colours' in row:  # WIKI_IMAGE_FIT: the colours read from the wiki image
+                definition[field] = {**definition[field], **row['colours']}
+            arbitration.append({'fact': f'definition.{field}', **row})
+            conflicts.remove(field)
+        if name in WIKI_IMAGE_FIT and list(sources) == ['crystal']:  # D16
+            fit = WIKI_IMAGE_FIT[name]
+            definition['outfit'] = {**definition['outfit'], **fit['colours']}
+            arbitration.append({'fact': 'definition.outfit', 'rule': 'WIKI_IMAGE_FIT', 'chosen': 'crystal', **fit})
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))
         placements, problem = self.merge_placements(bundles, wiki, arbitration)
@@ -646,6 +786,9 @@ class Builder:
                            for s, b in sorted(bundles.items())},
             'wiki': {'pageid': wiki['pageid'], 'revid': wiki['revid']} if wiki else None,
             'arbitration': [a for a in arbitration if a['rule'] in WIKI_ARBITRATION_RULES],
+            **({'source_unconfirmed': [kind for kind in SOURCE_UNCONFIRMED[sources['crystal']]
+                                       if not (kind == 'outfit' and name in WIKI_IMAGE_FIT)]}
+               if list(sources) == ['crystal'] and sources['crystal'] in SOURCE_UNCONFIRMED else {}),
             'left_out': left_out,
         }
         return record
@@ -715,7 +858,7 @@ def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_fac
         'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY',
         'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else [])
         + (['D13'] if tibiopedia_bytes else []) + (['D14'] if supplement_digest else [])
-        + (['D15'] if tibiopedia_bytes else []),
+        + (['D15'] if tibiopedia_bytes else []) + ['D16'],
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         **({'br_facts_sha256': hashlib.sha256(br_facts_bytes).hexdigest()} if br_facts_bytes else {}),
