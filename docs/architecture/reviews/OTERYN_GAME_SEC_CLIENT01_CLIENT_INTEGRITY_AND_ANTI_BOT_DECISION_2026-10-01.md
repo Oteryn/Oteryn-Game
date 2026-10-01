@@ -42,9 +42,13 @@ observed; no telemetry field can carry a key code, text, a screen position outsi
 or a process list; disabling optional crash diagnostics changes nothing here; a non-empty
 `client_attestation` is ignored; a build leaving the admitted set keeps its corpus until its last
 session and challenge end, and a session whose corpus is absent is not challenged and yields no
-observation; a rotation record at or below the persisted floor, or signed by a release key, is
-rejected; a revoked key's manifests stop being accepted; raw telemetry past its retention is
-purged; a production scope without the §5.1 gate met does not offer `INPUT_TELEMETRY_V1`.
+observation; a rotation record at or below the floor, or signed by a release key, is rejected; a
+revoked key's manifests stop being accepted; after a database restore to a revision below the trust
+log head, no challenge is sent until the node has re-applied the log up to its head; an answer after
+the deadline yields `MISSING` and nothing more; a second telemetry summary within
+`SECCLIENT01-RL-13` of the last accepted one is not ingested and is coalesced; every artifact past
+its §5.1 retention is purged; a production scope without the §5.1 gate met does not offer
+`INPUT_TELEMETRY_V1`.
 
 Later, each with its own decision: client attestation (the reserved slot, §7), a third-party
 anti-cheat or kernel component (rejected for now, §9), sanctions and ban waves (OPS-GM-01).
@@ -95,10 +99,20 @@ automatically?
     trust root public key is pinned in the Game node build.
   - *Ordering:* `revision` is a uint64 that rises by exactly one per record, and `previous_revision`
     must equal the node's current revision. A node applies records in order only.
-  - *Rollback floor:* the highest applied revision is persisted in the Game database. Each Game node
-    build also embeds the revision current at its build time. The effective floor is the higher of
-    the two, so neither a database restore nor a replayed record can lower it. A record at or below
-    the floor is rejected and observed as an operational security event.
+  - *Rollback floor and its anchor:* the highest applied revision is persisted in the Game
+    database, and each Game node build embeds the revision current at its build time. A record at
+    or below the higher of the two is rejected and observed as an operational security event. The
+    database can be restored, so it is not the anchor. The anchor is the release pipeline's
+    **trust log**: an append-only publication of every trust record, outside the Game database
+    and never restored with it.
+  - *Fail closed:* at start and every `SECCLIENT01-RL-14` (1 hour), a node reads the trust log
+    head and applies any missing records in order. The trust store is `VERIFIED` only while its
+    revision equals the head the node last read within `SECCLIENT01-RL-14`. Otherwise it is
+    `UNVERIFIED`: the log could not be read, the head is ahead, or the database revision is behind
+    the log after a restore. While it is `UNVERIFIED`, the node sends no challenge and records no
+    challenge outcome. A database restore therefore cannot reinstate a revoked key. Admission is
+    unaffected, because the trust store feeds only challenge evidence and build admission belongs
+    to PROD-COMPAT-01.
   - *Emergency revocation:* a compromised release key is listed in `revoked_keys` of the next record,
     published out of the release train. On applying it, manifests signed only by a revoked key stop
     being accepted and their builds count as unknown; PROD-COMPAT-01 decides whether those builds
@@ -165,8 +179,10 @@ ban is always server-side.
 - Within the first `SECCLIENT01-RL-01` (5 s) after `ServerAccepted`, the node sends one challenge
   for the session's declared `client_build_id`, with a fresh random nonce and a region drawn from
   that build's corpus.
-- The answer is checked against the corpus. The outcome is one of `VALID`, `WRONG`, `LATE`
-  (after `SECCLIENT01-RL-02`, 10 s) or `MISSING`.
+- The answer is checked against the corpus. The outcome is `VALID` or `WRONG` when the first reply
+  carrying the challenge id arrives before the deadline `SECCLIENT01-RL-02` (10 s). The outcome is
+  `MISSING` when the deadline passes first. A reply after the deadline is an unsolicited reply (see
+  below), so the arrival time alone decides the outcome.
 - **One terminal outcome per server-issued challenge.** The first reply carrying the outstanding
   challenge id, or the deadline, ends the challenge, and exactly one observation is recorded.
 - **Unsolicited replies.** A reply with an unknown, expired or already answered id has no outcome
@@ -191,6 +207,13 @@ not challenged.
 
 - Capability **`INPUT_TELEMETRY_V1`**: the client sends one `InputSummaryV1` every
   `SECCLIENT01-RL-04` (60 s) of play, at most `SECCLIENT01-RL-05` (2 KiB).
+- **Server-owned windows.** The node, not the client, decides which summaries count. A summary is
+  accepted only if at least `SECCLIENT01-RL-13` (45 s) of play has passed since the session's last
+  accepted summary, or since admission for the first one. An accepted summary is ingested and
+  stamped with the node's own window bounds; any time the client claims is ignored. Any other
+  summary is not ingested. The node counts such summaries and records them as one coalesced
+  `TELEMETRY_EXCESS {count}` observation per session per `SECCLIENT01-RL-09` window, plus a final
+  one at session end. A summary is missing when no summary is accepted for twice `RL-04` of play.
 - **Closed content**, statistical only, about input inside the game window: counts and fixed-bucket
   histograms of inter-press intervals for game actions (by action class, never by key code), of
   pointer movement speed and path curvature between actions, of the delay between a server event
@@ -203,9 +226,9 @@ not challenged.
   client summaries, which a bot can fake.
 - **Not optional diagnostics.** Input telemetry is a gameplay protocol obligation of the native
   and browser profiles, disclosed in the privacy policy (`DATA-PRIVACY-01`); it is separate from
-  the opt-out crash diagnostics, whose non-adverse rule (ANL-03 §14) is unchanged. A summary that
-  is missing or malformed while the capability is selected is itself recorded as an observation
-  (it is a protocol fault, not an opted-out diagnostic).
+  the opt-out crash diagnostics, whose non-adverse rule (ANL-03 §14) is unchanged. A missing or
+  malformed summary while the capability is selected is a protocol fault, not an opted-out
+  diagnostic. It is counted into the same coalesced observation as excess summaries.
 - **Privacy class:** `SECURITY_SENSITIVE` (ANL-03 §14), pseudonymous by AnalyticsActorId. Retention
   follows §5.1.
 
@@ -227,13 +250,22 @@ by SEC-CHAL-1 for challenge outcomes.
 | Legal hold | Only by an explicit hold record naming who set it, the reason, the scope and an expiry. The record is audited, and the held rows are purged at expiry. | Same as raw events. |
 | Rollout and rollback | Profile revision 1. A revision that adds purpose, a role, a field or retention needs a new revision of this decision. A shorter retention applies at the next purge. A rollback never keeps a row longer than the profile in force when it was collected allows. | Same as raw events. |
 
-**Cases.** Evidence copied into a case follows the case profile that `OPS-GM-01` accepts. Until that
-profile is accepted no case is opened, which matches the alpha phase (§6).
+**The other artifacts (ANL-03 §14.6).** These have the same purpose, class, legal hold and rollout
+rules as `SECCLIENT01-RAW-1`, and are purged by the same daily purge:
+
+| Artifact | Profile | Ordinary retention (ceiling) | Roles and limits |
+|---|---|---|---|
+| Detector features (per-actor values derived from raw events) | `SECCLIENT01-FEAT-1` | the shorter of the source raw rows' retention and `SECCLIENT01-RL-06` | detector service only; deleted with their source rows on account deletion |
+| Signal dispositions (the team's or a GM's audited verdict on a signal, including alpha review without a case) | `SECCLIENT01-DISP-1` | `SECCLIENT01-RL-15` (1 year) from the disposition | security analyst role writes; detector service reads them for calibration only, without AnalyticsActorId once the signal is purged |
+| Case evidence | `OPS-GM-01`'s case profile | per that profile | **Prohibited until that profile is accepted**: no case is opened and nothing is copied into one |
+| Identity-resolution logs (each mapping of an AnalyticsActorId to an account or character, with who, why and which signal or case) | `SECCLIENT01-IDRES-1` | `SECCLIENT01-RL-16` (2 years) | written by the resolution service; read only by the security audit role; resolution is allowed only for a signal under review or a case |
+| Exports (data subject responses; nothing else) | `SECCLIENT01-EXPORT-1` | the response copy is kept `SECCLIENT01-RL-17` (30 days) after delivery | prepared by the privacy role and delivered to the player only; any other export is prohibited |
 
 **Production collection gate.** A production scope opens the offer gate of `INPUT_TELEMETRY_V1`,
 which also turns on the requirement of §4.1 for that scope, only when both of these hold:
 
-- these profiles are bound in the ANL retention registry;
+- every profile of §5.1 except the case profile is bound in the ANL retention registry:
+  `RAW-1`, `FEAT-1`, `SIG-1`, `DISP-1`, `IDRES-1` and `EXPORT-1`;
 - `DATA-PRIVACY-01`'s disclosure of this telemetry is published.
 
 Until then the capability is not offered there, nothing is collected, and native clients are not
@@ -249,8 +281,8 @@ no challenge.
 - **Challenge outcomes are never sanction evidence on their own (§4.0).** A `WRONG` outcome flags
   the character for review, as owner answer 5b says. The case is labelled "release possession
   only", and a GM cannot sanction from it: a sanction needs server-side evidence, meaning server
-  timing or behaviour the server observed. `LATE` and `MISSING` only add context to a case opened
-  for another reason. `VALID` never clears anyone.
+  timing or behaviour the server observed. `MISSING` only adds context to a case opened for
+  another reason. `VALID` never clears anyone.
 - **Alpha:** detectors run and calibrate; signals are reviewed by the team, no ban waves.
 - **Before open beta:** signals above a detector's threshold open a case in the `OPS-GM-01` queue
   with its evidence; a GM decides, and sanctions are applied in waves on a schedule
@@ -286,6 +318,11 @@ no challenge.
 | `SECCLIENT01-RL-10` detector signal retention | 180 days |
 | `SECCLIENT01-RL-11` minimum distinct actors in a calibration aggregate | 50 |
 | `SECCLIENT01-RL-12` calibration aggregate retention | 2 years |
+| `SECCLIENT01-RL-13` minimum play between accepted telemetry summaries | 45 s |
+| `SECCLIENT01-RL-14` trust log check interval and freshness | 1 hour |
+| `SECCLIENT01-RL-15` signal disposition retention | 1 year |
+| `SECCLIENT01-RL-16` identity-resolution log retention | 2 years |
+| `SECCLIENT01-RL-17` data subject response copy retention | 30 days |
 
 Each with max and max+1 tests.
 
@@ -327,7 +364,8 @@ None. Owner answer 5b set the layers, the timing and the privacy limits.
    set). Applied in this PR. Registry, proto and event registrations are the children's (§4.1).
 2. **Serialization:** challenges and summaries are session messages; outcomes are events, never
    state changes.
-3. **Restart:** nothing durable but ANL events and the trust record floor; a challenge in flight at
+3. **Restart:** nothing durable but ANL events and the trust record floor; after a restart or a
+   database restore the trust store is `UNVERIFIED` until the trust log is re-read; a challenge in flight at
    a restart is `MISSING` and ignored by detectors (a known restart window); retiring corpora are
    dropped and their sessions are no longer challenged.
 4. **Typed references:** build ids from signed manifests; AnalyticsActorId for analytics.
