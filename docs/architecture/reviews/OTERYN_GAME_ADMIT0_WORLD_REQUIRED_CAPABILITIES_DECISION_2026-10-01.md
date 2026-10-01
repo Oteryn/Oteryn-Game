@@ -25,7 +25,8 @@
 Tests (FND-04A §12, FND-04B §26, FND-04C §9 fixtures): a bootstrap without a required capability is
 refused with `ADMISSION_CAPABILITY_REQUIRED` and consumes no nonce; a refusal never precedes
 authentication; with the capability it is selected; a reconnect and a recovery without it are
-refused with their codes; a boot whose closure holds an unregistered, cyclic or unoffered id fails;
+refused with their codes; a boot whose closure holds an unregistered, cyclic or unoffered id, or lacks a floor member the
+build offers, fails (an empty list included);
 a channel without the field set never applies a player field effect.
 
 ## 1. Question
@@ -72,9 +73,14 @@ hurt or block its character, without making those capabilities core protocol for
 - **Operator rule:** a changed list is deployed with a new `world_policy_revision` token. Safety does
   not depend on it: every check runs against the current scope generation's set, and the Platform
   needs only the token (D5).
-- Every public World's channels under WORLD-INTERACTION-0 declare `MAP_STATE_V1`,
-  `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1` (owner answer 4a). An empty list behaves as
-  today.
+- **Mandatory floor (owner answer 4a, D272), enforced at boot, not by the operator.** The floor is
+  a build constant: those of `MAP_STATE_V1`, `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1` that
+  this build offers (registered, offer gate open). Boot validation (§3.2) fails closed for **every
+  channel scope** whose effective set does not contain the whole floor; no World classification,
+  declared list or default exempts a channel, so no public channel can publish readiness with an
+  empty or incomplete set. A build that offers none of the three has an empty floor and behaves as
+  today; a development scope that must run without them uses a build with their offer gates
+  closed.
 
 ### 3.2 Closure and boot validation
 
@@ -83,7 +89,8 @@ hurt or block its character, without making those capabilities core protocol for
 - At boot the node computes the **effective set**: the closure of the declared list under
   `requires`. Boot fails closed (the scope does not publish readiness) if the closure holds an
   unregistered id, a cycle, or an id this build does not offer (its offer gate is closed): a
-  required capability must be one the server can serve.
+  required capability must be one the server can serve. It also fails closed if the effective set
+  lacks any member of the mandatory floor (§3.1).
 - The effective set is fixed for the scope's ownership generation. A changed list takes effect only
   with a new boot, that is a new ownership generation. **Premise:** node-boot D3's stop-then-start
   replacement, under which a session reaches a new channel generation only through fresh admission,
