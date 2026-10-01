@@ -98,7 +98,9 @@ Source stack S (quantity q), asked amount `c` (q when absent), destination D.
 ### 4.1 Receivers
 
 - **Main backpack and containers:** B3 §4.4 / BAGS-0 §6: the first compatible stack with room in the
-  container's display order, never S itself.
+  container's display order, never S itself. When the destination container is S's own container,
+  there is no receiver at all (Canary does not autostack within one container, §2, §4.3): the move
+  only splits into a new entry.
 - **Ground:** the tile's top Ground item when it is a compatible stack with room (RANGED-0 §6.1.2),
   rechecked at commit under the tile row lock (§5.2).
 - **An equipment slot:** the slot's item, by the four cases of §4.4.
@@ -119,7 +121,9 @@ Source stack S (quantity q), asked amount `c` (q when absent), destination D.
   destination applies to a whole-item move, else 0. Those checks are a free entry (minus entries
   reserved by a PLAYER-TRADE-0 swap), `BAGS0-RL-01` depth and `BAGS0-RL-02` tree size,
   `GAMEITEM01-REACHABLE-ITEMS`, the DEPOT-0 item counts, the Inbox counters, and for a Ground tile
-  or a Ground-rooted tree `ITEMMOVE1-RL-01` and `ITEMMOVE1-RL-02`.
+  or a Ground-rooted tree `ITEMMOVE1-RL-01` and `ITEMMOVE1-RL-02`. Every count is the **net count
+  after the move**: a whole S (`m = q`) that leaves the same tile, container or tree it lands in
+  adds nothing, so a lower Ground S moved whole onto its own full tile still passes.
 - `m = min(c, room + new)`. `m = 0` is refused with the destination's existing result (`NO_ROOM`,
   `BLOCKED`, `SLOT_MISMATCH`). `n = min(room, m)` merges into the receiver; `m − n` becomes a new
   item. With the capability this replaces B3 §4.4's refusal "when no free entry" by Canary's
