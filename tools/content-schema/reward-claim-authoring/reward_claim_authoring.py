@@ -125,9 +125,28 @@ def stack_problem(definition: dict | None, count: int) -> str | None:
     if definition["stack_class"] == "StackCapable":
         # D82 admits 100 when no smaller maximum is proven. Keep portable
         # ReferenceItemField encoding in sync with validate_reward_claim_count.
-        stack = definition.get("semantics", {}).get("stack", {})
-        maximum = stack.get("value", {}).get("stack_max", {}) if stack.get("state") == "KNOWN" else {}
-        limit = maximum.get("value") if maximum.get("state") == "KNOWN" else 100
+        semantics = definition.get("semantics", {})
+        unsupported = "StackCapable Item has unsupported stack maximum fields"
+        if not isinstance(semantics, dict):
+            return unsupported
+        stack = semantics.get("stack", {"state": "UNKNOWN"})
+
+        def valid_field(field):
+            return isinstance(field, dict) and (
+                field.get("state") == "UNKNOWN" and set(field) == {"state"}
+                or field.get("state") == "KNOWN" and set(field) == {"state", "value"}
+            )
+
+        if not valid_field(stack):
+            return unsupported
+        maximum = {"state": "UNKNOWN"}
+        if stack["state"] == "KNOWN":
+            if not isinstance(stack["value"], dict) or "stack_max" not in stack["value"]:
+                return unsupported
+            maximum = stack["value"]["stack_max"]
+        if not valid_field(maximum):
+            return unsupported
+        limit = maximum["value"] if maximum["state"] == "KNOWN" else 100
         if type(limit) is not int or not 1 <= limit <= 100:
             return "StackCapable Item has unsupported stack maximum"
         if count > limit:

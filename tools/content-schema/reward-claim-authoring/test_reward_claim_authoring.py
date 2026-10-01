@@ -215,6 +215,23 @@ def test_legacy_uid_collision_is_server_scoped_and_must_be_reported() -> None:
     assert rca.validate(records, items()) == []
 
 
+def test_malformed_stack_fields_never_default_or_crash() -> None:
+    invalid = [{"state": "KNOWN"}, {"state": "KNOWN", "value": None},
+               {"state": "KNOWN", "value": "bad"},
+               {"state": "UNKNOWN", "value": {}},
+               {"state": "KNOWN", "value": {"stack_max": None}},
+               {"state": "KNOWN", "value": {"stack_max": {"state": "KNOWN"}}}]
+    claim = pilot_claim("bad", "canary:item/3031", 1)
+    for field in invalid:
+        known = items()
+        known[COIN]["semantics"] = {"stack": field}
+        assert "unsupported" in rca.stack_problem(known[COIN], 1)
+        records, checks = rca.build_records([claim], manifest_for(claim), known)
+        assert records[0]["definition"]["readiness"] == "waiting_item_semantics"
+        records[0]["definition"]["readiness"] = "ready"
+        assert any("marked ready" in e for e in rca.validate(records, known, checks))
+
+
 def test_committed_content_is_valid() -> None:
     assert rca.committed_errors() == []
     index = json.loads((rca.ROOT / rca.INDEX_PATH).read_text(encoding="utf-8"))

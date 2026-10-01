@@ -38,7 +38,9 @@ Canonical records remain 231, with 27 ready and 204 waiting. The Canary 6117
 collision retains both claim/position bindings. The Quest index is regenerated
 to keep its exact RewardClaim provenance hash current.
 
-Local checks PASS: 10 RewardClaim tests, 83 Quest regressions, 262 schema cases,
+Independent review also exposed malformed KNOWN/UNKNOWN stack envelopes; the helper
+now rejects these explicitly instead of crashing or silently selecting default100.
+Local checks PASS: 11 RewardClaim tests, 83 Quest regressions, 262 schema cases,
 all semantic/deterministic content checks, Ruff 0.13.3 EXE, governance and
 repository policy (59 workflows). Final PR/SHA and frozen-head CI evidence are
 recorded on GitHub after guarded publication. Coordinator owns review dispatch,
