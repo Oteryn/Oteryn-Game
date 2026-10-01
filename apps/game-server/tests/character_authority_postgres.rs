@@ -24,6 +24,9 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/premium/mod.rs"]
+mod premium;
 
 use durability::DurabilityRoot;
 use durability::character_authority::CharacterAuthorityError;
@@ -2290,6 +2293,11 @@ mod account_achievement_postgres_cases;
 // share their cases with the protected PostgreSQL lane.
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
+
+// PREM-1a Premium consumer fence (migration 0029) runs in the same protected lane, on the
+// CHARM-2 harness included above.
+#[path = "support/premium_fence_postgres_cases.rs"]
+mod premium_fence_postgres_cases;
 
 // CHAR-BUILD-1a build state, build receipts and death build fields (migration
 // 0030) and their admission verifier checks, on the CHARM-2 harness included above.

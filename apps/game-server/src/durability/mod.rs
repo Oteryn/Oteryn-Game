@@ -29,6 +29,7 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod monk_state;
 pub mod native_admission_source;
+pub mod premium_fence;
 pub mod recovery_evidence_composition;
 pub mod reward_claim_mint;
 pub mod reward_claim_mint_audit;
@@ -243,6 +244,24 @@ mod monk_state_linkage {
         let _ = DurabilityRoot::commit_character_monk_state_save;
         let _ = DurabilityRoot::reconcile_character_monk_state_save;
         let _ = DurabilityRoot::read_character_monk_state;
+    }
+}
+
+#[cfg(test)]
+mod premium_fence_linkage {
+    use super::DurabilityRoot;
+    use super::premium_fence::{
+        EntitlementState, PremiumEvidence, PremiumFenceOutcome, PremiumFenceView,
+    };
+
+    #[test]
+    fn premium_fence_api_is_linked() {
+        let _ = std::mem::size_of::<EntitlementState>();
+        let _ = std::mem::size_of::<PremiumEvidence>();
+        let _ = std::mem::size_of::<PremiumFenceOutcome>();
+        let _ = std::mem::size_of::<PremiumFenceView>();
+        let _ = DurabilityRoot::accept_premium_evidence;
+        let _ = DurabilityRoot::load_premium_fence;
     }
 }
 
