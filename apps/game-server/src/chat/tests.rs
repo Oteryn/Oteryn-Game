@@ -295,18 +295,46 @@ fn a_muted_character_is_refused_before_any_other_check() {
     );
 }
 
+/// A `now` earlier than one already seen counts as the latest time seen: it refills nothing, and
+/// the mute it starts is anchored to the latest time, so it cannot end early.
 #[test]
-fn a_clock_going_backwards_refills_nothing() {
+fn a_clock_going_backwards_neither_refills_nor_shortens_a_mute() {
     let mut limiter = ChatLimiter::new(at_ms(10_000));
     for _ in 0..BUCKET_LINES {
         limiter
             .admit_local(SpeechMode::Say, LEVEL_20, at_ms(10_000))
             .expect("line");
     }
-    assert!(matches!(
+    assert_eq!(
         limiter.admit_local(SpeechMode::Say, LEVEL_20, at_ms(0)),
-        Err(ChatRefusal::Muted { .. })
-    ));
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    assert!(limiter.is_muted(at_ms(14_999)));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Say, LEVEL_20, at_ms(10_000)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Say, LEVEL_20, at_ms(15_000)),
+        Ok(())
+    );
+}
+
+#[test]
+fn a_clock_going_backwards_does_not_shorten_the_yell_cooldown() {
+    let mut limiter = ChatLimiter::new(at_ms(10_000));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, LEVEL_20, at_ms(10_000)),
+        Ok(())
+    );
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, LEVEL_20, at_ms(0)),
+        Err(ChatRefusal::Exhausted { seconds: 30 })
+    );
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, LEVEL_20, at_ms(39_999)),
+        Err(ChatRefusal::Exhausted { seconds: 1 })
+    );
 }
 
 fn greetings(list: &[&str]) -> Vec<String> {

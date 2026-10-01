@@ -59,6 +59,8 @@ pub(crate) struct ChatLimiter {
     offences: VecDeque<SemanticTimeMicros>,
     muted_until: Option<SemanticTimeMicros>,
     yell_ready_at: Option<SemanticTimeMicros>,
+    /// The latest time seen; an earlier `now` is read as this one, so no deadline moves back.
+    last_seen: SemanticTimeMicros,
 }
 
 impl ChatLimiter {
@@ -70,6 +72,7 @@ impl ChatLimiter {
             offences: VecDeque::new(),
             muted_until: None,
             yell_ready_at: None,
+            last_seen: now,
         }
     }
 
@@ -87,6 +90,8 @@ impl ChatLimiter {
         gate: YellGate,
         now: SemanticTimeMicros,
     ) -> Result<(), ChatRefusal> {
+        let now = now.max(self.last_seen);
+        self.last_seen = now;
         if let Some(until) = self.muted_until.filter(|until| *until > now) {
             return Err(ChatRefusal::Muted {
                 seconds: seconds_until(now, until),
@@ -122,7 +127,6 @@ impl ChatLimiter {
             self.refill_anchor = now;
             return;
         }
-        // A clock that goes backwards refills nothing.
         let gained = now.elapsed_since(self.refill_anchor).unwrap_or(0) / REFILL_MICROS;
         if gained == 0 {
             return;
