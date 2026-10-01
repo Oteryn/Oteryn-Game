@@ -40,6 +40,9 @@ last authoring write; validation and review apply to that frozen head.
   and comparison loop. Preserve both existing job extraction rules, semantic
   PG/SIM checks and separate protected-base approval. Tests and the PR validator
   read their expected bytes from this registry rather than duplicate hashes.
+  The hosted routing job reads that registry as an AST literal before execution;
+  it never executes candidate policy code to obtain the validator pin. Canaries
+  reject drift, duplicate/malformed bindings and candidate-core side effects.
 
 No stale draft branch is merged, rebased or published. #813/#814 closure remains
 the control plane's action after this candidate freezes. KAN-20 is an aggregate

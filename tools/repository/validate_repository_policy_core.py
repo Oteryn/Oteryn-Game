@@ -51,7 +51,7 @@ CONTROL_CONTRACT_PINS = {
         'merge gate aggregate validate job must exactly match the canonical needs/result wiring and fail-closed implementation'),
     'pr/lanes': ('.github/workflows/merge-gate.yml', 'job', 'lanes', 'c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd712a8f55bf2b0215e27caccd',
         'merge gate risk lanes must exactly match trusted-base classification and fail-closed outputs'),
-    'pr/routing_contract': ('.github/workflows/merge-gate.yml', 'job', 'routing_contract', '3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6',
+    'pr/routing_contract': ('.github/workflows/merge-gate.yml', 'job', 'routing_contract', '715eff27e2064751e1fea668eb0fb4fce47d86e21d7ab790d226c5c242bb0631',
         'merge gate routing contract job must exactly match the reviewed exact-head consumer-routing contract'),
     'pr/atlas_fullworld': ('.github/workflows/merge-gate.yml', 'job', 'atlas_fullworld', '0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40',
         'merge gate Atlas fullworld job must exactly match the reviewed exact-head evidence contract'),

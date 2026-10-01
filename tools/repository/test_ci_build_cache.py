@@ -4,6 +4,11 @@ from __future__ import annotations
 
 import importlib.util
 import hashlib
+import re
+import subprocess
+import sys
+import tempfile
+import textwrap
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -103,6 +108,41 @@ class CacheContractTests(unittest.TestCase):
                     errors = validator.validate()
                 self.assertTrue(errors)
                 self.assertFalse(any("exactly match" in error for error in errors), errors)
+
+    def test_hosted_pin_reader_uses_inert_registry_and_rejects_drift(self):
+        match = re.search(
+            r"      - name: Verify routing validator blob\n        run: \|\n(.*?)(?=\n      - name:)",
+            self.workflows["merge-gate.yml"], re.S,
+        )
+        self.assertIsNotNone(match)
+        shell = textwrap.dedent(match.group(1))
+        source = shell.split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+        data = b"print('validator fixture')\n"
+        digest = core.git_blob_sha(data)
+        target = "tools/repository/validate_pr_routing_contract.py"
+        row = (target, "blob", None, digest, "fixture")
+        cases = (
+            (row, data, False, True),
+            (row, data + b"# drift\n", False, False),
+            (("other.py", *row[1:]), data, False, False),
+            ((target, "sha256", *row[2:]), data, False, False),
+            ((target, "blob", None, "not-a-sha", "fixture"), data, False, False),
+            (row, data, True, False),
+        )
+        for binding, content, duplicate, allowed in cases:
+            with self.subTest(binding=binding, duplicate=duplicate), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                (root / target).parent.mkdir(parents=True)
+                (root / target).write_bytes(content)
+                registry = f"CONTROL_CONTRACT_PINS = {{'routing-validator': {binding!r}}}\n"
+                if duplicate:
+                    registry += registry
+                # Candidate-core code must remain inert in this pre-execution check.
+                registry += "from pathlib import Path\nPath('EXECUTED').touch()\n"
+                (root / "tools/repository/validate_repository_policy_core.py").write_text(registry, encoding="utf-8")
+                result = subprocess.run([sys.executable, "-I", "-c", source], cwd=root, capture_output=True, check=False)
+                self.assertEqual(result.returncode == 0, allowed, result.stderr.decode())
+                self.assertFalse((root / "EXECUTED").exists())
 
 
 if __name__ == "__main__":

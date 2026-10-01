@@ -408,7 +408,30 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Verify routing validator blob
-        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
+        run: |
+          python -I - <<'PY'
+          import ast
+          import hashlib
+          from pathlib import Path
+          import re
+
+          tree = ast.parse(Path('tools/repository/validate_repository_policy_core.py').read_text(encoding='utf-8'))
+          assignments = [node for node in tree.body if isinstance(node, ast.Assign)
+                         and any(isinstance(target, ast.Name) and target.id == 'CONTROL_CONTRACT_PINS'
+                                 for target in node.targets)]
+          if len(assignments) != 1:
+              raise SystemExit('expected one inert implementation-pin registry')
+          pins = ast.literal_eval(assignments[0].value)
+          path, extraction, job, expected, _diagnostic = pins['routing-validator']
+          if (path != 'tools/repository/validate_pr_routing_contract.py' or extraction != 'blob'
+                  or job is not None or not isinstance(expected, str)
+                  or re.fullmatch(r'[0-9a-f]{40}', expected) is None):
+              raise SystemExit('invalid routing-validator pin binding')
+          data = Path(path).read_bytes()
+          actual = hashlib.sha1(f'blob {len(data)}\0'.encode('ascii') + data).hexdigest()
+          if actual != expected:
+              raise SystemExit('routing validator does not match the reviewed implementation pin')
+          PY
 
       - name: Verify candidate diff whitespace
         env:
