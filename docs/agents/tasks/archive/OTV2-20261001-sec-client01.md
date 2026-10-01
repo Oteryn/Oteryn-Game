@@ -45,7 +45,7 @@ layered version (#162 5929226991).
 - **Layer 2:** `INPUT_TELEMETRY_V1` with a closed, statistical summary; server-side timing weighs
   more; no opt-out, disclosed in the privacy policy; summaries accepted by server-owned windows,
   silence recorded once per silent period; a closed list of nine artifact kinds, each with every
-  ANL-01 §16 field stated, anything else prohibited (case evidence until OPS-GM-01's profile), and a
+  ANL-01 §16 field stated, anything else prohibited (case evidence, and with it identity resolution, until a case profile exists; review stays at signal level and pseudonymous), and a
   production collection gate on their binding and the DATA-PRIVACY-01 disclosure.
 - **Layer 3:** outcomes and telemetry are ANL-01 security events; ANL-03 hypothesis signals; GM
   review and ban waves through OPS-GM-01 before open beta; nothing automatic.
