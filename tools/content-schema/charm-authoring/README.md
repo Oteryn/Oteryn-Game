@@ -115,6 +115,13 @@ Charm payloads in the supplied 15.30 client assets. The existing offline checks 
 packet and its evidence boundary; they do not execute Global Tibia. See `INTEGRATION.md` for
 the corrected consumer choices and remaining distinguishing tests.
 
+The completed browser supplement contains 97 source records and 149 qualified claims,
+including 24 full-page browser captures and 66 additional assessments. Normal Tavily search
+preceded public Chrome/CDP fallback. Its 89 literal quote checks retain capture/text/excerpt
+hashes, dates and revisions; repeated access to one revision is not independent evidence.
+The packet also retains the TibiaMaps and Exevo calculator-model comparisons. Browser
+research closes documentary gaps; it does not claim connected-runtime qualification.
+
 ## Executed TibiaPal evidence
 
 `samples/tibiapal-*-2026-10-01.json` retain the independently observed planner, description and

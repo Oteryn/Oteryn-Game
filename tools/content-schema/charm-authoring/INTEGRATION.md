@@ -183,8 +183,8 @@ the inactive boundary and rejection of OTS evidence promotion for this supplemen
 
 ## Public Global Tibia evidence and recommendation corrections
 
-`samples/charm-global-parity-2026-10-01.json` adds 73 version-scoped source records and
-83 claims from current public official documentation, community references and historical
+`samples/charm-global-parity-2026-10-01.json` contains 97 version-scoped source records and
+149 claims after the completed browser supplement from current public official documentation, community references and historical
 player observations. All 25 descriptions and all 75 costs plus 75 stage bonuses match the
 fully extracted Brazilian Charms revision 432141 (23 January 2026). Agreement of copied
 wiki pages is not independent server proof. Indexed snippets, full extracted content,
@@ -198,18 +198,20 @@ community sources, invented client proof and runtime-parity claims.
 
 | Subject | Best available Global evidence and resulting preparation |
 |---|---|
-| Cleanse | Full community documentation explicitly says 11 seconds, so the earlier “OTS only” provenance is corrected. Official indexed 2026 updates and a dated patch mirror add Hex removal on 25 August and Hex immunity on 8 September. Hex is a distinct condition; this does not prove Agony eligibility. Include Hex in the documented Global candidate profile; exact type selection, refresh and boundary ordering remain unproven. |
-| Gut | Current indexed wiki says an extra product-loot roll with 6/9/12% chance. Withdraw the probability-only Global recommendation. Keep an extra-roll candidate with a test against guaranteed products and duplicate drops; do not implement it as settled official arithmetic. |
-| Leech | A historical player test reports 227 HP and 73 mana from a 30-HP Cave Rat, contradicting an actual-HP-loss cap. Withdraw that cap as a Global recommendation. The same answer's AoE formula conflicts with other references, so its arithmetic is not adopted. Compare potential damage, actual damage, target count and rounding separately. |
-| Parry | A historical wiki quotation says the base is before player resistances, while a later player guide disagrees. Withdraw the earlier mitigated-incoming-component base (before mana-shield conversion) as a Global recommendation. Accepted monster armor behavior remains; varying player resistance under equal attacks is the distinguishing test. |
+| Cleanse | Full community documentation explicitly says 11 seconds, so the earlier “OTS only” provenance is corrected. Full official archive8935 announces both Hex removal and corresponding immunity on 25 August 2026; archive8960 reiterates immunity on 8 September. Actual enforcement between those dates was not observed. Hex is a distinct condition; this does not prove Agony eligibility. Include Hex in the documented Global candidate profile; exact type selection, refresh and boundary ordering remain unproven. |
+| Gut | Full wiki revision1084324 describes an extra product-loot roll with 6/9/12% chance; corpse-wide versus per-product draws remain unspecified. Withdraw the probability-only Global recommendation. Keep an extra-roll candidate with a test against guaranteed products and duplicate drops; do not implement it as settled official arithmetic. |
+| Leech | A historical player test reports 227 HP and 73 mana from a 30-HP Cave Rat, contradicting an actual-HP-loss cap. Withdraw that cap as a Global recommendation. The same answer's AoE formula conflicts with other references, so its arithmetic is not adopted. Full Formulae revision1205374 independently describes base Void-imbuement mana recovery: ceil each target's damage × leech × (0.1×N+0.9)/N, then sum; overkill counts, damage prey does not, critical damage does. This does not establish charm-bonus layering or the complete life-leech pipeline. |
+| Parry | Full Parry revision1084043 says the base is before player resistances, while a later player guide disagrees. Official archive4386 independently confirms monster resistance is ignored and monster armor applies, without establishing the player-side base. Withdraw the earlier mitigated-incoming-component base (before mana-shield conversion) as a Global recommendation. Accepted monster armor behavior remains; varying player resistance under equal attacks is the distinguishing test. |
 | Dodge | Historical player claims include fewer paralysis and skill-reduction effects. Withdraw independently delivered attached conditions as a Global recommendation. Condition-only, DoT and mixed attacks need direct current-version tests. |
-| Area attacks | A fully extracted official CM reply explicitly confirms Low Blow on all Diamond Arrow targets. The general auto-main/spell-each rule has official corroboration. Savage Blow and both leech exceptions have conflicting player claims, so the Low Blow reply cannot establish all four D186 exceptions as Global behavior. |
-| Carnage | Official indexed prose confirms physical 15% damage in a small radius. Community wiki plus a dated range demonstration support four cardinal tiles, a 6× level cap and no Carnage chaining. The linked video was not independently viewed; summons, armor ordering and rounding remain separate cases. |
-| Bless/Scavenge | Current community documentation supports Bless after ordinary blessings and Scavenge's positive 60/90/120% relative modifier. Bless's 86% protection example becomes 87.68% at stage 3. Exact per-domain rounding, skinning success caps and special corpses remain unproven. |
+| Area attacks | A fully extracted official CM reply explicitly confirms Low Blow on all Diamond Arrow targets. CM Liamas confirms only the Low Blow exception. Full Low Blow revision1197516 explicitly excludes Savage Blow on secondary area-ammunition targets; leech complaints remain player evidence. The CM reply cannot establish all four accepted D186 exceptions as Global behavior. |
+| Carnage | Full official archive8140 confirms physical 15% damage and a 6× level cap. Full wiki revision1188155 specifies four cardinal tiles around the corpse, player last hit, no proc from player Summon/Familiar last hits or monster-summon deaths, no Carnage chaining, armor reduction and no Physical Pierce bonus. This does not exclude nearby summoned recipients or establish fractional rounding. Public linked-video playback was accessible, but no independently reviewed frame or measured proc is used as proof. |
+| Bless/Scavenge | Full Bless revision1084311 supports application after ordinary blessings: 86% protection becomes 87.68% at stage 3. Full Scavenge revision1197613 gives 5%→8/9.5/11%, confirming a positive relative modifier; 5% is an example, not every corpse's baseline. Exact per-domain rounding, skinning success caps and special corpses remain unproven. |
 
-The official manual's generic complete-Bestiary-entry wording conflicts with specific minor
-charm documentation that says stage 2. Keep the accepted stage-2 rule and label this a
-documentation conflict, not a proven owner departure. Preserve existing floor arithmetic;
+Full official archive8140 explicitly permits minor assignment from stage 2 of the creature's
+Bestiary entry. This closes the earlier documentation gap; the generic manual overview does
+not override that specific rule. The same article confirms incremental minor costs, major
+echo awards and promotion echoes. Reset examples imply the excess-level formula
+`100000 + 11000*max(level-100,0)`; reset remains excluded scope. Preserve existing floor arithmetic;
 available round-number damage examples cannot distinguish floor, ceil and nearest rounding.
 Reset/potion/Store references remain excluded consumer work, even when newly researched.
 
@@ -224,3 +226,26 @@ client resources or live server messages contain.
 The five lanes retain exact quotations, capture hashes, version limits, contradictory models
 and concrete distinguishing cases. **Complete official runtime parity remains unproven.**
 No controlled current-server experiment or integrated Oteryn gameplay execution is claimed.
+
+## Completed browser research boundary
+
+The supplement records 24 full public-page captures, seven independently assessed reports
+and 89 literal quote checks, with source/capture/excerpt hashes and revision/date limits.
+Normal Tavily search preceded Chrome/CDP fallback for blocked or incomplete HTTP access.
+Remote Desktop was used exclusively for public internet research; repository authoring and
+publication use the ordinary workspace and GitHub API. Same-revision wiki captures close
+earlier omitted Notes, without creating independent corroboration.
+
+TibiaMaps and Exevo reports retain 9 and 11 calculator-model checks respectively. These
+validate documented models and historical scalar expressions; deployed equivalence and
+CipSoft server behavior remain unverified. Reddit remained behind
+human verification/login; the Gut video's transcript did not load. Neither is positive proof.
+The published Adrenaline speed formula and haste replacement, Fatal Hold's 30-second duration,
+Scavenge scaling, Bless order and Carnage gates are now documentary findings. Remaining
+questions concern observable rounding/event order, leech layering/divisor eligibility, Gut
+roll granularity, Fatal Hold refresh and nearby Carnage summon recipients. Hidden RNG details
+are not a prerequisite when candidate implementations have identical observable outcomes.
+
+The research preparation is complete and inactive. The allocated coordinator/consumer task
+qualifies any connected implementation; no current Global server or Oteryn combat execution
+is claimed by this packet.

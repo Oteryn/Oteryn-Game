@@ -188,3 +188,28 @@ one non-force ref update and immediate exact-head readback under bound META poli
 Existing executable modes must be preserved. Freeze and fresh candidate qualification
 follow publication; prior-head CI/review is not inherited. The task remains a draft
 preparation handoff, with current-server and connected-consumer proof explicitly absent.
+
+## Completed owner-authorized browser supplement, 2026-10-01
+
+The owner explicitly authorized public Chrome/CDP fallback on their computer and asked the
+existing six source/review workers to finish the preparation. Root returns the exclusively
+allocated task branch to AUTHORING from `3584c9a27e1a9d47422301846afd61b5106f800f` and remains
+the sole publisher. Remote Desktop is restricted to public browser research; no repository,
+system, credential or project operation is performed there.
+
+The completed packet contains 97 sources and 149 qualified claims, adding 24 full browser
+source records, 66 assessments and 89 checked literal quotations from seven lane reports.
+Same-revision fuller wiki access resolves omitted Notes, not a new independent observation.
+Official archive8140 closes the minor Bestiary-stage2 documentation gap. Archive8935 already
+announces Hex removal and immunity on25August2026;8960 reiterates immunity on8September.
+Full pages qualify Carnage last-hit/summon/armor rules, base mana-leech ceil-per-target scope,
+Scavenge fractional relative scaling and Bless ordering. TibiaMaps/Exevo model checks remain
+community evidence. Inaccessible Reddit and empty video transcripts supply no positive proof.
+
+The full-page records supersede the earlier broad documentary residuals above. Precise
+remaining behavioral questions are retained per lane; hidden RNG implementation is not a
+blocker where models are observably equivalent. Accepted contracts and inactive runtime
+boundary remain unchanged. Root selects exactly one new sole-parent API-native candidate
+from the fresh predecessor, preserves executable modes, performs one non-force branch update
+and verifies exact head before freeze and fresh qualification. This completes preparation;
+connected-runtime qualification remains the separately allocated coordinator/consumer task.
