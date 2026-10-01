@@ -497,6 +497,9 @@ quest doors, quest format §3.1) stays sealed.
   negotiate `MAP_STATE_V1`, `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1`. Until then FIELD-2's
   player effects and blocking walls stay inactive, and fields affect creatures only (RUNE-USE-0).
   Map-authored fields reach a session through `MAP_TILES`; overlay fields through VIS-2.
+- **Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md`).** ADMIT-0 is that FND-04 amendment
+  (owner answer 4a): a required capability set declared per channel scope with its
+  `world_policy_revision`, checked at admission, reconnect and recovery, and the channel guard.
 
 ## 9. Persistence, reset and determinism
 
