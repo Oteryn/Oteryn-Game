@@ -26,7 +26,7 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "c7a480ea48d0609983c00b3da865505a5fd8eea457f0118f199983d303dadaa9"
+    "source-parameters.json": "b1b5c699e2cde9b84631880a9dc1b39665f3abc9475c87a4d2efbaf8779263a0"
   },
   "progression": {
     "minimum_level": 51,
@@ -104,7 +104,7 @@
       "supreme_mod"
     ],
     "client_asset_crosswalk": "NOT_IMPLEMENTED",
-    "live_asset_fetch": "BLOCKED_NETWORK_POLICY"
+    "live_asset_fetch": "HTTP_403_ON_ORIGINAL_CDN_2026_10_01"
   },
   "topology": [
     {
@@ -22970,7 +22970,7 @@
         "stage": 2,
         "planner_value": 25.5,
         "selected_value": 22.5,
-        "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text.",
+        "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text. Live BR wiki r436992 plus Master of Decay base 30 corroborates 22.5 pp via total 52.5 minus base 30; see samples/live-source-audit.json.",
         "planner_parameter": "mastery_decay_critical_extra_damage"
       },
       {
@@ -22980,7 +22980,7 @@
         "stage": 1,
         "planner_value": 6,
         "selected_value": 4,
-        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json"
+        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 fetch still failed."
       },
       {
         "key": "augmented_thousand_fist_blows",
@@ -22989,7 +22989,7 @@
         "stage": 2,
         "planner_value": 6,
         "selected_value": 4,
-        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json"
+        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 fetch still failed."
       },
       {
         "key": "augmented_mystic_repulse",
@@ -22998,7 +22998,7 @@
         "stage": 2,
         "planner_value": 60,
         "selected_value": 40,
-        "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending"
+        "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
       },
       {
         "key": "augmented_great_fire_wave",
@@ -23007,7 +23007,7 @@
         "stage": 1,
         "planner_value": 15,
         "selected_value": 10,
-        "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending"
+        "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending Live BR wiki r423338 (published 2025-03-27) lists both +15% extra damage and +10% chance; target-version/effect-combination conflict remains pending."
       }
     ],
     "initial_gems": {
@@ -23020,14 +23020,14 @@
     "planner_unlock_states_checked": 1080,
     "planner_unlock_mismatches": 0,
     "legal_allocation_snapshots": 180,
-    "live_website_verified": false,
+    "live_website_verified": true,
     "wiki_verified": false,
     "blockers": [
       "Formal admission requires the content owner review; this candidate changes no runtime ruleset.",
       "Resolve dedication mitigation versus resistance wording in the owning decision.",
       "Bind reference parameters and area names to admitted runtime effect and Spell owners.",
       "Verify icon appearance and client-asset mappings.",
-      "Verify against the requested official/wiki sources when destination access is available."
+      "Reconcile the remaining target-version perk conflicts and requested Fandom pages; see samples/live-source-audit.json."
     ]
   }
 }

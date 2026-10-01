@@ -435,6 +435,26 @@
     "candidate_sha256": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "live_source_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "file",
+        "sha256"
+      ]
     }
   },
   "required": [
@@ -448,7 +468,8 @@
     "classification",
     "live_verification",
     "resolved_capture_limitations",
-    "candidate_sha256"
+    "candidate_sha256",
+    "live_source_audit"
   ],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Wheel reference verification evidence"

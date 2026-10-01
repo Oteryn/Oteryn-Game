@@ -235,7 +235,7 @@
           "minimum": 1
         },
         "live_website_verified": {
-          "const": false
+          "const": true
         },
         "wiki_verified": {
           "const": false

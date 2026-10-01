@@ -171,4 +171,17 @@ class WheelAuthoringTests(unittest.TestCase):
         self.assertEqual(evidence['counts']['slots'],sum(len(v['slots']) for v in self.candidate['vocations'].values()))
         self.assertEqual(evidence['source_conflicts'],self.candidate['gems']['reference_corrections'])
         self.assertFalse(evidence['live_verification']['live_global_parity_confirmed'])
+        audit_binding=evidence['live_source_audit']
+        audit_path=ROOT/audit_binding['file']
+        self.assertEqual(audit_binding['sha256'],hashlib.sha256(audit_path.read_bytes()).hexdigest())
+        audit=read(audit_path)
+        self.assertFalse(audit['live_global_parity_confirmed'])
+        self.assertFalse(audit['runtime_admitted'])
+        if self.candidate['verification']['live_website_verified']:
+            observations={o['key']:o for o in audit['http_observations']}
+            for key in ('module','library'):
+                self.assertEqual(observations[key]['status'],200)
+                self.assertEqual(observations[key]['sha256'],observations[key]['pinned_sha256'])
+                self.assertTrue(observations[key]['equals_pinned_bytes'])
+            self.assertEqual(observations['renderer']['sha256'],evidence['icon_evidence']['renderer_sha256'])
 if __name__=='__main__':unittest.main()

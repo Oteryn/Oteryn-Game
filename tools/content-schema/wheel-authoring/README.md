@@ -40,6 +40,9 @@ original JavaScript/WASM module or network access.
 - `verification.schema.json`: the closed shape of the verification record.
 - `samples/verification-evidence.json`: coverage, source classifications, observed
   icon proof and exact remaining live-verification blocks.
+- `samples/live-source-audit.json`: live Tavily source revisions/content hashes, HTTP
+  observations, bounded official facts and per-conflict outcomes. No original
+  manual, upstream module or sprite bytes are redistributed.
 - `samples/planner-allocation-snapshots.json`: 180 legal allocations.
 - `samples/planner-graph-comparison.json`: 1,080 observed unlock states with no
   differences during the tested fill sequences. This is bounded evidence, not
@@ -52,10 +55,15 @@ TibiaPal `61ffa3e0502879ccec44e59ead859e92b6d88531`, Canary
 match its main branch at `96d13eff5a1afef17b11b9abc7d574020381cc53`.
 
 No upstream C++ implementation or proprietary image files are redistributed.
-The live TibiaPal site and requested Fandom pages could not be verified because
-network access to those destinations was denied. Official facts already captured
-in `docs/reference/tibia-manual/characters.md` and the project's spell evidence
-are used with their existing provenance; this task does not claim a new wiki fetch.
+On 2026-10-01, Tavily extracted the live TibiaPal page and official character
+manual. The live-served planner module, string catalogue and renderer are
+byte-identical to the pinned TibiaPal inputs, whose complete replay passes. This
+qualifies `live_website_verified` for planner content only; it does not establish
+interactive browser behavior or current Global parity. The supplied planner code
+renders an invalid-code message. Seven requested Fandom pages failed extraction;
+`wiki_verified` remains false. BR wiki pages are separately revision-pinned
+secondary observations. The original official 8944 article failed extraction and
+returned HTTP 403; its existing project capture remains the primary evidence.
 
 ## Wheel semantics
 
@@ -131,9 +139,10 @@ Icons include the sprite URL, horizontal-square-cell layout and source index.
 Renderer source confirms horizontal-square cells for all five sprite categories.
 The bundled Revelation sheet was visually inspected: 544×34 pixels, 16 cells,
 SHA-256 recorded in `icon_evidence`, and every Revelation ID fits those cells.
-The other four sheets are absent from the upstream bundle and their server is
-blocked by the current cloud network policy. Their appearance and the live URLs
-remain unconfirmed. No client asset crosswalk is implemented by reference tooling.
+The other four sheets are absent from the upstream bundle. Fresh requests to all
+five original CDN URLs returned HTTP 403; the cause is not established. The
+missing four categories remain visually unverified. No client asset crosswalk is
+implemented by reference tooling.
 
 ## Revisions and admission
 
@@ -147,3 +156,26 @@ The authoring package creates no runtime ruleset, protocol capability, Character
 writer or native-key admission. Runtime owners must bind the effects and reference
 areas, resolve the recorded parity conflicts, verify client icons and qualify
 ruleset revision/migration behaviour before admitting it to a world.
+
+## Live continuation assessment (2026-10-01)
+
+The official manual freshly confirms the listed eligibility, operation/refusal,
+fragment-yield and grade-chain facts in `samples/live-source-audit.json`. It does
+not newly establish exact fees, the 250-gem cap, the 0.075 mitigation increment,
+initial gem count, grade costs or quest/scroll point counts. Existing
+OTS/PARITY_PENDING classifications for those values remain.
+
+The BR wiki corroborates both selected -4 s cooldowns. Lord of Destruction II
+gets additional derived corroboration: the wiki's combined 52.5% minus Master of
+Decay's base 30% gives the selected 22.5 percentage-point increment. This is
+secondary-source evidence, not a new official confirmation.
+
+Two conflicts remain open. Mystic Repulse II has three observations: planner
++60%, existing project target +40%, and BR wiki r443774 +15%. Great Fire Wave I
+has planner extra critical damage +15%, project critical chance +10%, and BR wiki
+r423338 listing both; that page's published revision is from March 2025. The
+source audit preserves all observations and their revision dates. Neither a
+secondary page nor successful access selects a new Global target version.
+The numerical candidate remains unchanged, `live_global_parity_confirmed` stays
+false, and runtime admission remains false. Independent content review and
+protected integration still belong to the active programme control plane.

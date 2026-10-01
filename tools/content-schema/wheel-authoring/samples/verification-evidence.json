@@ -28,7 +28,7 @@
     "capture": "2026-09-28 owner capture",
     "reference": "docs/reference/tibia-manual/characters.md#517-wheel-of-destiny",
     "notes_sha256": "e01d04c6d8933a829e9c8e6dad08dd50a0e7a8308361e74948284794bbf11df8",
-    "result": "REVIEWED_OWNER_CAPTURE_NOT_LIVE_FETCH"
+    "result": "REVIEWED_OWNER_CAPTURE_AND_LIVE_TAVILY_EXTRACT_FOR_LISTED_FACTS"
   },
   "icon_evidence": {
     "renderer_repository": "https://github.com/PawelKusnierek/TibiaPal",
@@ -58,7 +58,7 @@
       "supreme_mod"
     ],
     "client_asset_crosswalk": "NOT_IMPLEMENTED",
-    "live_asset_fetch": "BLOCKED_NETWORK_POLICY"
+    "live_asset_fetch": "HTTP_403_ON_ORIGINAL_CDN_2026_10_01"
   },
   "source_conflicts": [
     {
@@ -67,7 +67,7 @@
       "stage": 2,
       "planner_value": 25.5,
       "selected_value": 22.5,
-      "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text.",
+      "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text. Live BR wiki r436992 plus Master of Decay base 30 corroborates 22.5 pp via total 52.5 minus base 30; see samples/live-source-audit.json.",
       "planner_parameter": "mastery_decay_critical_extra_damage"
     },
     {
@@ -77,7 +77,7 @@
       "stage": 1,
       "planner_value": 6,
       "selected_value": 4,
-      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json"
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 fetch still failed."
     },
     {
       "key": "augmented_thousand_fist_blows",
@@ -86,7 +86,7 @@
       "stage": 2,
       "planner_value": 6,
       "selected_value": 4,
-      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json"
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 fetch still failed."
     },
     {
       "key": "augmented_mystic_repulse",
@@ -95,7 +95,7 @@
       "stage": 2,
       "planner_value": 60,
       "selected_value": 40,
-      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending"
+      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
     },
     {
       "key": "augmented_great_fire_wave",
@@ -104,30 +104,30 @@
       "stage": 1,
       "planner_value": 15,
       "selected_value": 10,
-      "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending"
+      "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending Live BR wiki r423338 (published 2025-03-27) lists both +15% extra damage and +10% chance; target-version/effect-combination conflict remains pending."
     }
   ],
   "classification": {
     "numerical_planner_reference": "CONFIRMED_PINNED_SOURCE",
     "unique_conviction_reference": "CONFIRMED_PINNED_SOURCE",
-    "official_atelier_behavior": "REVIEWED_OWNER_CAPTURE",
+    "official_atelier_behavior": "LIVE_OFFICIAL_MANUAL_CONFIRMED_WITHIN_AUDIT_FACTS",
     "fees_and_extra_points": "OTS_HYPOTHESIS_ONLY_WITH_PROJECT_CANDIDATE_DECISION",
     "loot_probabilities": "OTS_HYPOTHESIS_ONLY",
     "revealed_gem_limit": "PARITY_PENDING",
-    "live_website_and_wiki": "BLOCKED_NETWORK_POLICY",
+    "live_website_and_wiki": "LIVE_TIBIAPAL_INPUTS_CONFIRMED_BR_WIKI_PARTIAL_REQUESTED_FANDOM_FETCH_FAILED",
     "runtime_client_binding": "SEPARATE_IMPLEMENTATION",
     "official_cooldown_corrections": "CONFIRMED_PROJECT_OFFICIAL_8944_CAPTURE",
-    "great_fire_wave_and_mystic_repulse_damage": "CONFLICT_SELECTED_EXISTING_PROJECT_TARGET_EVIDENCE_LIVE_PENDING",
+    "great_fire_wave_and_mystic_repulse_damage": "CONFLICT_SELECTED_EXISTING_PROJECT_TARGET_EVIDENCE_LIVE_BR_DISAGREES",
     "special_spell_secondary_cooldown": "OTS_HYPOTHESIS_ONLY_NOT_SELECTED"
   },
   "live_verification": {
-    "tibiapal": false,
+    "tibiapal": true,
     "fandom": false,
     "static_sprite_sheets": false,
     "live_global_parity_confirmed": false,
-    "network_mode": "restricted",
-    "policy_state": "enforced",
-    "user_host_allowlist_empty": true,
+    "network_mode": "unrestricted",
+    "policy_state": "unknown",
+    "user_host_allowlist_empty": false,
     "requested_urls": [
       "https://tibia.fandom.com/wiki/Wheel_of_Destiny",
       "https://tibia.fandom.com/wiki/Wheel_of_Destiny/Conviction_Perks",
@@ -149,5 +149,9 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "20bdfae635e9e97fadb7587c3912b9b779d5d64eec13d4c739d916865d181478"
+  "candidate_sha256": "1128bc0591d78261cd8a4be6258d76d345faba292907a7d03ed646e21ba1a9db",
+  "live_source_audit": {
+    "file": "samples/live-source-audit.json",
+    "sha256": "d2384942c083b2e772141c041c0245f6ff95de7135b55d079a1f6aa93eb6ed4d"
+  }
 }

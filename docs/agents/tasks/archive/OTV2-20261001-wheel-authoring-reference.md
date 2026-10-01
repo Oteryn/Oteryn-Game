@@ -132,3 +132,44 @@ evidence and retains the differing planner parameters explicitly; live parity
 remains unconfirmed. Special Spells' Canary-only secondary cooldown is recorded
 as an unselected hypothesis. Flurry of Blows now binds the enlarged-area reference.
 The verification record is schema-validated and SHA-256-bound to the candidate.
+
+## Tavily live continuation (2026-10-01)
+
+The owner's direct request to continue PR #1435 with Tavily returns the existing
+branch to AUTHORING and supersedes frozen `65433321efa136bef99123996b461cb87842360c`.
+Live branch/PR equality and #162 STATE/latest-page reads establish no competing
+Wheel writer. The original two owned paths and sole writer remain; programme
+close-out mode is not expanded. This section supersedes historical destination
+blocks above. Review dispatch and integration stay with the control plane.
+
+- `PROVEN`: Tavily extracted TibiaPal, the official manual and separately pinned
+  BR wiki pages. Seven requested Fandom pages failed. No Fandom success is claimed.
+- `PROVEN`: live-served module, string catalogue and renderer bytes equal pinned
+  TibiaPal inputs; complete replay passes. The provided code renders an invalid
+  code message. This does not establish interactive browser behavior.
+- `PROVEN` within the fresh manual extract: the audit's listed eligibility,
+  Atelier operations/refusals, fragment ranges and effective-grade facts.
+- `DERIVED`: BR Lord of Destruction II total 52.5% minus Master of Decay base 30%
+  corroborates the selected 22.5 pp. Both -4 s cooldowns have live BR corroboration;
+  fresh original official 8944 access remains unsuccessful.
+- `CONFLICT`: Mystic Repulse II now also has BR +15% versus planner +60% and
+  selected +40%. BR Great Fire Wave I lists both critical effects, in a published
+  March 2025 revision. Two target-version conflicts remain unresolved; raw pinned
+  observations and selected numbers are preserved.
+- `UNKNOWN`: all five original sprite URLs return HTTP 403; the four missing
+  sheets remain visually unverified. Numeric fees/cap, exact mitigation, initial
+  gems, grade costs and quest/scroll points are not newly qualified.
+
+`samples/live-source-audit.json` retains extraction request IDs, revisions, content
+hashes, HTTP observations, bounded source facts and conflict outcomes. Its SHA-256
+is bound by the verification record and tested. No original manual, proprietary
+sprite bytes or upstream implementation are redistributed. Candidate changes
+are evidence/classification and the planner-content verification flag; numerical
+parameters are unchanged. Global parity, runtime admission, client asset mapping,
+independent review and protected integration remain pending.
+
+Qualification: deterministic rebuild/validation, all 60 authoring tests,
+governance validation and all 36 governance tests, pinned planner replay and
+whitespace/owned-path checks are required for the successor candidate. Its exact
+published SHA and results are reported in the PR after freeze, without a
+metadata-only follow-up commit.

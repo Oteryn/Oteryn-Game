@@ -1,0 +1,431 @@
+{
+  "schema": "OTERYN_WHEEL_LIVE_SOURCE_AUDIT/v1",
+  "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+  "superseded_reference_head": "65433321efa136bef99123996b461cb87842360c",
+  "target": "Existing project reference selection; no newly admitted Global ruleset version",
+  "tavily_sources": [
+    {
+      "url": "https://tibiapal.com/wheel-planner?subtopic=wheelofdestinyplanner&code=K0Y2AgDP4jAQA",
+      "method": "Tavily advanced extract",
+      "request_id": "a8e587fd-60e9-4e24-a973-cb111edb36a5",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "1db54fca934a63656b9c4eeb5b1aa87e70250c768cf88badb59d1e819d3f1a83",
+      "extracted_content_characters": 7040,
+      "revision_url": "NO_REVISION_REPORTED",
+      "published_revision_note": "NO_REVISION_DATE_REPORTED"
+    },
+    {
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+      "method": "Tavily advanced extract",
+      "request_id": "a26aebf1-0242-4fcb-b52c-557893277448",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "0276d5193551ed7614de6f68822c55b72932fb580d289320f7e5cbb7f534bb3f",
+      "extracted_content_characters": 64384,
+      "revision_url": "NO_REVISION_REPORTED",
+      "published_revision_note": "NO_REVISION_DATE_REPORTED"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Gem_Atelier",
+      "method": "Tavily advanced extract",
+      "request_id": "a26aebf1-0242-4fcb-b52c-557893277448",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "8d67fae0ae41537ebfe23ad1d90ab749429371b0daede6ebba4594a40542ce47",
+      "extracted_content_characters": 6769,
+      "revision_url": "NO_REVISION_REPORTED",
+      "published_revision_note": "NO_REVISION_DATE_REPORTED"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Thousand_Fist_Blows",
+      "method": "Tavily advanced extract",
+      "request_id": "a26aebf1-0242-4fcb-b52c-557893277448",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "2780447ff9291cf45403b444bdb4e0d4909d19c7d9256dd1333f8093929fd2a4",
+      "extracted_content_characters": 53333,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Thousand_Fist_Blows&oldid=443775",
+      "published_revision_note": "2 de setembro de 2026"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Mystic_Repulse",
+      "method": "Tavily advanced extract",
+      "request_id": "a26aebf1-0242-4fcb-b52c-557893277448",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "b41ef22ae4dc8ea2edbbef9dc0519cc86c9fd03e37832478f316271bfcb3c374",
+      "extracted_content_characters": 53996,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Mystic_Repulse&oldid=443773",
+      "published_revision_note": "2 de setembro de 2026"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Great_Fire_Wave",
+      "method": "Tavily advanced extract",
+      "request_id": "a26aebf1-0242-4fcb-b52c-557893277448",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "66c74d784a85f2d5a58c8b8dc38ec97e192169a306a1cf4b5bee22c6e6602594",
+      "extracted_content_characters": 56835,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Great_Fire_Wave&oldid=436038",
+      "published_revision_note": "12 de junho de 2026"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Wheel_of_Destiny",
+      "method": "Tavily advanced extract",
+      "request_id": "a26aebf1-0242-4fcb-b52c-557893277448",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "8a83340fdec823318e8dcf1eba3df94100adb5f62d62bc0440b281959cb9c4fe",
+      "extracted_content_characters": 82325,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Wheel_of_Destiny&oldid=423201",
+      "published_revision_note": "22 de mar\u00e7o de 2025"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Regular_Gem",
+      "method": "Tavily advanced extract",
+      "request_id": "2bbf037e-1c51-473a-83d5-487da9371be2",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "386a0b489eff5eba938473fce9a7bae4dd1795a5cac81c02228e5914b98aa62d",
+      "extracted_content_characters": 11499,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Regular_Gem&oldid=421816",
+      "published_revision_note": "4 de mar\u00e7o de 2025"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Lord_of_Destruction",
+      "method": "Tavily advanced extract",
+      "request_id": "2bbf037e-1c51-473a-83d5-487da9371be2",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "e7a79294197869386e7846f7065719c7677011e9da92f7513bf0064a03fd5468",
+      "extracted_content_characters": 54152,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Lord_of_Destruction&oldid=436992",
+      "published_revision_note": "17 de junho de 2026"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Greater_Gem",
+      "method": "Tavily advanced extract",
+      "request_id": "2bbf037e-1c51-473a-83d5-487da9371be2",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "386e95b77663b51deb68e2b72c57c3d87770a6fa8f6e5324ef1eb2a8797828d2",
+      "extracted_content_characters": 11443,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Greater_Gem&oldid=421814",
+      "published_revision_note": "4 de mar\u00e7o de 2025"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Lesser_Gem",
+      "method": "Tavily advanced extract",
+      "request_id": "2bbf037e-1c51-473a-83d5-487da9371be2",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "4b994b920499bedd5ee6ee89bd99b51b0742516cfb9f1952b6a0f14563679ea8",
+      "extracted_content_characters": 11581,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Lesser_Gem&oldid=421815",
+      "published_revision_note": "4 de mar\u00e7o de 2025"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Augmented_Great_Fire_Wave",
+      "method": "Tavily advanced extract",
+      "request_id": "2bbf037e-1c51-473a-83d5-487da9371be2",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "7227726d40aa949429e2c2be22dd63aeb4ca6d1b41c56a9d9476ee8e339c7e8d",
+      "extracted_content_characters": 18219,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Augmented_Great_Fire_Wave&oldid=423338",
+      "published_revision_note": "27 de mar\u00e7o de 2025"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Augmented_Thousand_Fist_Blows",
+      "method": "Tavily advanced extract",
+      "request_id": "2bbf037e-1c51-473a-83d5-487da9371be2",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "0d89494e8a62916e2b0b5d9d3027af49df56b4bfcea9c69aefe8f41468ef0470",
+      "extracted_content_characters": 18373,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Augmented_Thousand_Fist_Blows&oldid=443776",
+      "published_revision_note": "2 de setembro de 2026"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Augmented_Mystic_Repulse",
+      "method": "Tavily advanced extract",
+      "request_id": "2bbf037e-1c51-473a-83d5-487da9371be2",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "1c115420ebb56cd73bbccfc225fc868f720a13c5e870c1993d9264f8a2c9535f",
+      "extracted_content_characters": 18129,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Augmented_Mystic_Repulse&oldid=443774",
+      "published_revision_note": "2 de setembro de 2026"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Updates/13.30.14423",
+      "method": "Tavily advanced extract",
+      "request_id": "63a0ab1b-aadf-460b-97aa-969d5209e47a",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "982f361a616211769b6fba8951a161c8f75eb777c32ebd4b8ea738f172035d96",
+      "extracted_content_characters": 152520,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Updates/13.30.14423&oldid=423202",
+      "published_revision_note": "22 de mar\u00e7o de 2025"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Lesser_Guardian_Gem",
+      "method": "Tavily advanced extract",
+      "request_id": "63a0ab1b-aadf-460b-97aa-969d5209e47a",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "ec45455acedf37d5a588ff5d4a2cae59d9baf6289b7825007b1d289d455d7b9b",
+      "extracted_content_characters": 62193,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Lesser_Guardian_Gem&oldid=423279",
+      "published_revision_note": "26 de mar\u00e7o de 2025"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Master_of_Decay",
+      "method": "Tavily advanced extract",
+      "request_id": "63a0ab1b-aadf-460b-97aa-969d5209e47a",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "8eb3452ea520fed4512a89f13c3df3edd06378ada6e315892561bd34f3e8eb69",
+      "extracted_content_characters": 49062,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Master_of_Decay&oldid=436956",
+      "published_revision_note": "17 de junho de 2026"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Greater_Guardian_Gem",
+      "method": "Tavily advanced extract",
+      "request_id": "63a0ab1b-aadf-460b-97aa-969d5209e47a",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "6e8d74c51f24b74e5ab1bd8808b08f5f5803bea690374e1d4b6106e48c269815",
+      "extracted_content_characters": 64479,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Greater_Guardian_Gem&oldid=423281",
+      "published_revision_note": "26 de mar\u00e7o de 2025"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Guardian_Gem",
+      "method": "Tavily advanced extract",
+      "request_id": "63a0ab1b-aadf-460b-97aa-969d5209e47a",
+      "recorded_at": "2026-10-01T10:10:39.843213+00:00",
+      "extracted_content_sha256": "1132384dc3d1567a5e08263bc28bacefcdf9486e0fe393525149b83e0d65ce79",
+      "extracted_content_characters": 64295,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Guardian_Gem&oldid=423280",
+      "published_revision_note": "26 de mar\u00e7o de 2025"
+    }
+  ],
+  "tavily_failures": [
+    {
+      "url": "https://tibia.fandom.com/wiki/Regular_Gem",
+      "error": "Failed to fetch url",
+      "method": "Tavily advanced extract",
+      "request_id": "a8e587fd-60e9-4e24-a973-cb111edb36a5"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Lesser_Gem",
+      "error": "Failed to fetch url",
+      "method": "Tavily advanced extract",
+      "request_id": "a8e587fd-60e9-4e24-a973-cb111edb36a5"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Wheel_of_Destiny",
+      "error": "Failed to fetch url",
+      "method": "Tavily advanced extract",
+      "request_id": "a8e587fd-60e9-4e24-a973-cb111edb36a5"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Wheel_of_Destiny/Revelation_Perks",
+      "error": "Failed to fetch url",
+      "method": "Tavily advanced extract",
+      "request_id": "a8e587fd-60e9-4e24-a973-cb111edb36a5"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Wheel_of_Destiny/Conviction_Perks",
+      "error": "Failed to fetch url",
+      "method": "Tavily advanced extract",
+      "request_id": "a8e587fd-60e9-4e24-a973-cb111edb36a5"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Greater_Gem",
+      "error": "Failed to fetch url",
+      "method": "Tavily advanced extract",
+      "request_id": "a8e587fd-60e9-4e24-a973-cb111edb36a5"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Wheel_of_Destiny/Dedication_Perks",
+      "error": "Failed to fetch url",
+      "method": "Tavily advanced extract",
+      "request_id": "a8e587fd-60e9-4e24-a973-cb111edb36a5"
+    },
+    {
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8944",
+      "error": "Failed to fetch url",
+      "method": "Tavily advanced extract",
+      "request_id": "a26aebf1-0242-4fcb-b52c-557893277448"
+    }
+  ],
+  "http_observations": [
+    {
+      "key": "dedication",
+      "url": "https://static.tibia.com/images/community/wheelofdestiny/icons-skillwheel-smallperks.png",
+      "requested_at": "2026-10-01T10:05:32.459842+00:00",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "key": "conviction",
+      "url": "https://static.tibia.com/images/community/wheelofdestiny/icons-skillwheel-mediumperks.png",
+      "requested_at": "2026-10-01T10:05:32.460294+00:00",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "key": "revelation",
+      "url": "https://static.tibia.com/images/community/wheelofdestiny/icons-skillwheel-largeperks.png",
+      "requested_at": "2026-10-01T10:05:32.460648+00:00",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "key": "basic_mod",
+      "url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-basicmods.png",
+      "requested_at": "2026-10-01T10:05:32.460955+00:00",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "key": "supreme_mod",
+      "url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png",
+      "requested_at": "2026-10-01T10:05:32.461252+00:00",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "key": "official8944",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8944",
+      "requested_at": "2026-10-01T10:05:32.565878+00:00",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "key": "planner",
+      "url": "https://tibiapal.com/wheel-planner",
+      "requested_at": "2026-10-01T10:05:32.578337+00:00",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "final_url": "https://tibiapal.com/wheel-planner",
+      "sha256": "9e1b1d61282d60a7be7fba0c3563145524e7bf644bdc87fd47653bb707390898",
+      "bytes": 55073,
+      "last_modified": "Thu, 01 Oct 2026 08:35:10 GMT",
+      "etag": "\"6abe1b3e-d721\""
+    },
+    {
+      "key": "renderer",
+      "url": "https://tibiapal.com/scripts/wod-assets/wheelofdestinyplanner.min.js",
+      "requested_at": "2026-10-01T10:05:32.578975+00:00",
+      "status": 200,
+      "content_type": "application/javascript; charset=utf-8",
+      "final_url": "https://tibiapal.com/scripts/wod-assets/wheelofdestinyplanner.min.js",
+      "sha256": "4320b5e04c051678c160936c50487f15a7d8ac867529970a4b1536da3defa536",
+      "bytes": 38559,
+      "last_modified": "Thu, 01 Oct 2026 08:35:10 GMT",
+      "etag": "\"6abe1b3e-969f\""
+    },
+    {
+      "key": "module",
+      "url": "https://tibiapal.com/scripts/wod-assets/skillgrid.js",
+      "status": 200,
+      "sha256": "46b333967f6dfa7c09e1809313373a2c07d3604520ad9de1fed9990b6f0119c8",
+      "bytes": 485525,
+      "last_modified": "Thu, 01 Oct 2026 08:35:10 GMT",
+      "etag": "\"6abe1b3e-76895\"",
+      "pinned_sha256": "46b333967f6dfa7c09e1809313373a2c07d3604520ad9de1fed9990b6f0119c8",
+      "equals_pinned_bytes": true
+    },
+    {
+      "key": "library",
+      "url": "https://tibiapal.com/data/wheel-planner/SkillwheelStringsJsonLibrary.json",
+      "status": 200,
+      "sha256": "65f34804976a0c0b12e9aa8b401c4a6215dc28e108bf3546ed003d43251ac20b",
+      "bytes": 108022,
+      "last_modified": "Thu, 01 Oct 2026 08:35:10 GMT",
+      "etag": "\"6abe1b3e-1a5f6\"",
+      "pinned_sha256": "65f34804976a0c0b12e9aa8b401c4a6215dc28e108bf3546ed003d43251ac20b",
+      "equals_pinned_bytes": true
+    }
+  ],
+  "search_limit": {
+    "status": 429,
+    "result": "Search endpoint rate-limited after one successful search; extracts succeeded. No search snippet used to select a value."
+  },
+  "planner_proof": {
+    "pinned_commit": "61ffa3e0502879ccec44e59ead859e92b6d88531",
+    "live_module_equals_pinned": true,
+    "live_library_equals_pinned": true,
+    "live_renderer_equals_pinned": true,
+    "replay": "PASS: 180 slots, 20 revelations, all gem catalogues and vocation lists, five 4000-point states",
+    "scope": "Content-addressed equivalence of live-served inputs to replayed reference. Not a visual or interactive browser test. The supplied K0Y2AgDP4jAQA code rendered an invalid-code message."
+  },
+  "official_manual": {
+    "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+    "classification": "PROVEN_LIVE_EXTRACT_WITHIN_LISTED_FACTS",
+    "confirmed_facts": [
+      "Promoted Premium characters receive one point per level from level 51; removal/reset requires a temple.",
+      "Four domains with nine slices each; three resonance perks per domain activate one, two, then three gem mods.",
+      "Revealing is restricted to the character vocation; revealed gems cannot be traded.",
+      "Switching advances clockwise for a fee; locked gems cannot switch or dismantle.",
+      "Dismantling refuses a locked gem, a gem in a vessel, or the last gem of a domain.",
+      "Unrevealed/revealed fragment ranges: lesser 1-2/1-3 lesser; regular 2-4/2-5 lesser; greater 1-2/1-3 greater.",
+      "Grade upgrades apply per mod type, with effective grades limited by preceding mods; Grade IV gives one permanent point per fully enhanced mod.",
+      "Cooldown augmentation upgrades add Momentum chance rather than further cooldown reduction."
+    ],
+    "not_established": [
+      "Numeric reveal/switch fees",
+      "250 revealed-gem cap",
+      "Exact 0.075 mitigation increment",
+      "Initial eight gems",
+      "Exact grade gold/fragment costs",
+      "Quest/scroll extra-point counts",
+      "Exact loot probabilities"
+    ],
+    "scope": "Only the listed facts were compared. This is not a complete independent audit of every field."
+  },
+  "conflicts": [
+    {
+      "key": "lord_of_destruction",
+      "stage": 2,
+      "status": "DERIVED_LIVE_CORROBORATION_SELECTED_22_5",
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Lord_of_Destruction&oldid=436992",
+        "https://www.tibiawiki.com.br/wiki/Master_of_Decay"
+      ],
+      "observation": "Lord of Destruction lists combined death critical damage 45/52.5/60%; Master of Decay lists base 30%.",
+      "derivation": "52.5 - 30 = 22.5 percentage points. This supports the selected increment, not the planner description 25.5. Secondary wiki evidence, not a new official 8944 fetch."
+    },
+    {
+      "key": "augmented_mystic_repulse",
+      "stage": 1,
+      "status": "LIVE_WIKI_CORROBORATES_SELECTED_4_SECONDS",
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Augmented_Mystic_Repulse&oldid=443774"
+      ],
+      "observation": "Augment I reduces cooldown by 4 seconds.",
+      "derivation": "The existing official:8944 project capture remains the primary selection; fresh original article fetch failed."
+    },
+    {
+      "key": "augmented_thousand_fist_blows",
+      "stage": 2,
+      "status": "LIVE_WIKI_CORROBORATES_SELECTED_4_SECONDS",
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Augmented_Thousand_Fist_Blows&oldid=443776"
+      ],
+      "observation": "Augment II reduces cooldown by 4 seconds.",
+      "derivation": "The existing official:8944 project capture remains the primary selection; fresh original article fetch failed."
+    },
+    {
+      "key": "augmented_mystic_repulse",
+      "stage": 2,
+      "status": "CONFLICT_TARGET_VERSION_PENDING",
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Augmented_Mystic_Repulse&oldid=443774"
+      ],
+      "observation": "Wiki says base damage +15%; live-equivalent planner says +60%; project candidate selects +40%.",
+      "derivation": "Keep all three observations. No project value changed on secondary evidence without a reconciled target revision."
+    },
+    {
+      "key": "augmented_great_fire_wave",
+      "stage": 1,
+      "status": "CONFLICT_TARGET_VERSION_PENDING",
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Augmented_Great_Fire_Wave&oldid=423338"
+      ],
+      "observation": "Wiki lists both +15% critical extra damage and +10% non-stacking critical chance; planner only extra damage, candidate only chance. Wiki published revision is dated 27 March 2025.",
+      "derivation": "The secondary page does not establish which combination is current for the target version. Preserve the selection and conflict."
+    }
+  ],
+  "remaining": [
+    "Seven requested Fandom pages failed extraction; BR wiki is a separate source, not a successful Fandom read.",
+    "All five original CDN sheet URLs returned HTTP 403; four missing categories remain visually unverified.",
+    "Official article 8944 failed Tavily extraction and returned HTTP 403 on direct fetch.",
+    "A declared current Global target revision and primary resolution of two outstanding perk conflicts are pending.",
+    "Numeric Atelier fees, cap, exact mitigation, initial gems, grade costs and extra-point sources are not newly qualified.",
+    "Client asset crosswalk, runtime admission, independent review and protected integration remain separate pending work."
+  ],
+  "live_global_parity_confirmed": false,
+  "runtime_admitted": false
+}
