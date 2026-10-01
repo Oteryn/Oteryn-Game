@@ -94,7 +94,10 @@ Table `game_character_proficiency_modifications`, at most 2 rows per track:
   The per-track check of PROFICIENCY-0 §4.2 extends to the rows; the shared chain guard and `verify_character_integrity` count the new cause.
 - **Revisions.** A compatible definition revision keeps the modifications. An incompatible one
   whose migration changes a modified level clears that modification in its `migration` receipt
-  (PROFICIENCY-0 §4.1) with no refund (`PARITY_PENDING`).
+  (PROFICIENCY-0 §4.1) with no refund (`PARITY_PENDING`). A `migration` line then carries the
+  track's modification rows before and after for both slots (absent, unchanged or cleared), and the
+  migration CHECKs and the reconcile of PROFICIENCY-0 §4.1 cover them: reconcile recomputes, from
+  the two definition revisions, which slots must be cleared and compares them with the line.
 
 ## 4. Operations (PROF-SHAPE-1)
 
@@ -114,13 +117,25 @@ is the `character_root`, the track row and its modification rows, the forge dust
 - **Draws.** Every draw uses the SIM-DETERMINISM-01 purpose `proficiency_shaping`, bound to the
   operation's occurrence, so a retry never draws again. The reshape offer is durable and paid when
   drawn, so asking again cannot fish for better options.
-- **Value.** Dust is burned from the forge dust balance as a DUR-03 §18 value line under the new
-  closed `ProficiencyCause {track, slot, operation, occurrence}`; the orb as a one-item BURN under the
-  same cause. Amended: DUR-03 §15 and §18, IMBUE-FORGE-0 §9 (a second dust sink).
+- **Revision binding.** When an operation's occurrence is reserved, it binds the full
+  behaviour-affecting set: the definition revision, and the shaping content revision that holds the
+  pool, the odds, the costs and the rank values. The receipt stores that set. If any part has
+  changed when the transaction commits, the operation is refused `REVISION_CHANGED`, terminal for
+  that occurrence; the client starts again with a new occurrence, as in the forge (IMBUE-FORGE-0
+  §10).
+- **Value: not admitted here.** The value-spending operations (`MODIFY`, `RANK_UP`, `ORB_RANK`,
+  `RESHAPE_OFFER`) need composed DUR-03 §39.3 shapes: the proficiency receipt together with a forge
+  dust burn or a one-unit orb burn, with resource, evidence and audit bounds. This decision does not
+  admit those shapes. It reserves the cause name `ProficiencyCause {track, slot, operation,
+  occurrence}` for them. A later amendment admits each shape together with the value evidence it
+  needs (§5). Until then those four operations refuse `NOT_ADMITTED` and write nothing. `CLEAR` and
+  `RESHAPE_CHOOSE` spend nothing; they act only on rows the other operations create, so they are
+  idle until then.
 - **Gold.** If evidence shows an operation also costs gold, that is a new fee source (D178): it needs
   an owner answer before the operation is admitted. This decision admits no gold cost.
 - **Refusals** (nothing written): `NOT_IN_PROTECTION_ZONE`, `SLOT_LOCKED`, `SLOT_OCCUPIED`,
   `NO_SELECTION`, `NO_MODIFICATION`, `RANK_MAX`, `NO_PENDING_OFFER`, `OFFER_PENDING`,
+  `REVISION_CHANGED`,
   `INSUFFICIENT_DUST`, `NO_ORB`, `POOL_TOO_SMALL` (no other entry to offer), `MODIFIED_LEVEL` (a
   selection change at a modified level, §3), `STALE_REVISION` (the client's expected track revision differs),
   `NOT_ADMITTED` (§5).
@@ -130,7 +145,8 @@ is the `character_root`, the track row and its modification rows, the forge dust
 
 ## 5. Admission gate (fail closed)
 
-An operation is admitted only when its cost row, and for `MODIFY` and `RESHAPE_OFFER` the pool, the
+An operation is admitted only when two things hold. Its composed DUR-03 §39.3 shape is admitted by a
+later amendment (§4 "Value"). And its cost row, and for `MODIFY` and `RESHAPE_OFFER` the pool, the
 odds and the rank values, are `PARITY_CONFIRMED` in content (official, owner-verified TibiaPal or
 tibiatools.io, then English TibiaWiki; OTS sources are not evidence here). Until then the server
 refuses it with `NOT_ADMITTED` and writes nothing. If evidence never appears for some value, the
@@ -140,16 +156,17 @@ their state.
 
 ## 6. Catalysts (PROF-SHAPE-1)
 
-- A catalyst is used through ITEM-USE-0 on a held item: a one-unit BURN under `ProficiencyCause
-  {catalyst, occurrence}`. Its effect is a typed content record whose kind is fixed only by evidence:
-  for example a progress multiplier for a duration, or a flat progress grant to one track. The effect
-  kind and its values are a hard parity gate: until they are evidenced the use is refused
-  `NOT_ADMITTED`, and the catalyst stays a tradeable item.
-- A progress multiplier would apply at PROFICIENCY-0 §4.3 accrual, before the checkpoint, and its
-  remaining time would follow TIMED-ITEM-0's held-clock rules if it is an item state, or
-  CONDITIONS-0 if it is an actor condition. The admitting content revision states which.
+- **No catalyst is admitted by this decision.** Using one is refused `NOT_ADMITTED`, and catalysts
+  stay ordinary tradeable items. Their effect kind is not known. It might be a progress multiplier
+  for a duration, or a progress grant to a track, and the kind decides the transaction:
+  - an effect that writes durable proficiency state (a progress grant) needs one atomic transaction:
+    the catalyst burn together with a proficiency receipt. That is a composed DUR-03 §39.3 shape, not
+    an ITEM-USE-0 use;
+  - a timed multiplier applied at PROFICIENCY-0 §4.3 accrual would be a condition or an item state.
+  A later decision admits catalysts with the evidence for their effect and the matching transaction
+  shape.
 - The two catalysts the manual names (Proficiency Catalyst, Greater Proficiency Catalyst) are the
-  ones this section admits once their effects are evidenced. The Test Proficiency Catalyst
+  candidates for that decision. The Test Proficiency Catalyst
   (TibiaWiki only) is gated separately: it stays not admitted until evidence shows it exists on
   Global servers, whatever the other two's status.
 
@@ -198,16 +215,17 @@ None now. A gold cost, or a value that evidence never settles, comes back to the
 
 - **Must decide now:** YES. PROF-1 and PROF-2 are allocated (D281); without this the modification
   slots have no state, cause or transaction.
-- **Minimum sufficient:** one table, one receipt cause, six operations, one cause for dust and items,
-  and a fail-closed admission gate.
+- **Minimum sufficient:** one table, one receipt cause, six operations with their refusals, replay
+  and revision binding, a reserved cause name and a fail-closed gate; no value shape is admitted yet.
 - **Superseding evidence:** official or owner-verified costs, pools, odds and catalyst effects.
 - **Deliberately not decided:** values (§2 UNKNOWN), gold costs, the Test Proficiency Catalyst's
   Global status.
 
 ## 13. Before-freeze checklist
 
-1. **Contract amendments:** PROFICIENCY-0 §4.2 and §4.5 (modification rows and cause); DUR-03 §15 and
-   §18 (`ProficiencyCause`); IMBUE-FORGE-0 §9 (a dust sink). Applied in this PR.
+1. **Contract amendments:** PROFICIENCY-0 §4.5 (modification rows, the cause, migration lines, the
+   gate); DUR-03 §15 (the reserved `ProficiencyCause`, no shape admitted); IMBUE-FORGE-0 §9 (a future
+   dust sink). Applied in this PR.
 2. **Serialization:** one Character transaction per operation, PROFICIENCY-0's writer and chain;
    lock order root, track, dust, item.
 3. **Restart:** all state is durable; a pending offer survives restart.

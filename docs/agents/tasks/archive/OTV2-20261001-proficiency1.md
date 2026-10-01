@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-proficiency-1
-pr: "assigned at PR creation; recorded in the #162 FREEZE_SHA entry"
+pr: 1475
 base_sha: aad17f99
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -36,9 +36,11 @@ external_repositories: []
 - Up to 2 modification rows per track (slot 1 at level 3, slot 2 at Mastery), receipt cause
   `perk_modification`.
 - Operations MODIFY, RANK_UP, ORB_RANK, RESHAPE_OFFER, RESHAPE_CHOOSE, CLEAR: one Character
-  transaction each; dust and orb burns under `ProficiencyCause`; draws under
-  `proficiency_shaping`; durable paid reshape offer; replay by occurrence.
-- Catalysts: item use with a typed effect fixed only by evidence.
+  transaction each; draws under `proficiency_shaping`; durable paid reshape offer; replay by
+  occurrence; the full revision set bound at reservation (`REVISION_CHANGED`).
+- Value shapes not admitted: `ProficiencyCause` is reserved; the value operations refuse
+  `NOT_ADMITTED` until a later DUR-03 amendment admits each composed shape with its evidence.
+- Migration lines carry the modification rows; no catalyst is admitted.
 - Fail-closed admission gate until costs, pools, odds and effects are evidenced; a gold cost needs an
   owner answer (D178).
 - No owner question now.
@@ -50,7 +52,7 @@ external_repositories: []
 
 ## Closeout
 
-- PR: recorded in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1475. Review: Codex 5382980334 on `55fdf751` answered in the next head; frozen heads in the #162 FREEZE_SHA entries. Merge commit/result: its squash merge.
 - Amendments, pending on acceptance: PROFICIENCY-0 §4.5; DUR-03 §15; IMBUE-FORGE-0 §9.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
