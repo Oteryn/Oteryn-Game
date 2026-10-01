@@ -16,18 +16,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        397,
-        "a066f2959fbfbad9fd68a9a9429a9365cc4cfd3bc1701098d1d21e006bdeda12",
+        418,
+        "722606d3d1ade6e912113c1f51e59b487a11ab3d0d8a15aa103b38092566f565",
     ),
     (
         "definitions/declarations.json",
-        17_049_454,
-        "6fa670b655d396a1e9bc120e91bd57ea73f28c146c68c606dac50a7d5b33d383",
+        17_061_212,
+        "f4e25dc633af56ecd9e38ea5cf8d84f47a12122dae17e988ed7ad344f53f199e",
     ),
     (
         "definitions/reference.json",
-        22_541_939,
-        "56c872d5a036d070cce72a1156ee2a4e3e6b8698c1f7352263b93624d7e7eca9",
+        22_544_973,
+        "d3b66ce0b06c6ff61e6bbdac586e57f0ecdede3e24ef4487820db0ed031f6956",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_948,
-        "2d3fb5b1f879b83eb0611a3048653cbdb0c156eb49b344b1553ee2a4560c548e",
+        1_955,
+        "1f7037fd2198bff44398fb1fdf898aba9bd1a0f621a6feddbdb9779a647e40db",
     ),
     (
         "presentations/bindings.json",
@@ -46,18 +46,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        401,
-        "ddb2d7662b6d022358c35ab7f1a605f4089a36b2da385a2efd3f0de1d1eb5264",
+        408,
+        "8f1c4bb3218e95582d8a2375918c139e2585c0f7151f96e154c871a4134d3e5d",
     ),
     (
         "provenance/imports.json",
-        33_678,
-        "0e4fa1d9d9ecc776e545ba59b389236d0a268a4d1534e6dcee579c4d5ef82f75",
+        36_194,
+        "3b431d5d1bc20de741f6be47237a77a67f136a85e53088e8f60dd2e1dc06d89d",
     ),
     (
         "provenance/sources.json",
-        1_324_519,
-        "40c07b2f46b0df1acc26acf24ce1746f00ab14f314e457c898376d651e1a1e0c",
+        1_333_981,
+        "72e1e32586bff1e89c3493869a94a1e1c087f1b276facc7b8b3aff11c48fe2b1",
     ),
     (
         "worlds/world.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c09ad3f54b088cae5cc22a397161554571b9cb7da50811e94b158f83a42d7589";
+const TREE_SHA256: &str = "693028679c0f902c98557dc651460b7bec63acc66880d02d8c6a8ccdb16f6740";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -125,11 +125,11 @@ const CREATURES: usize = 1503;
 const CREATURE_RECORDS: usize = 21069;
 const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1122;
-const NPC_RECORDS: usize = 2244;
-const NPC_DECLARATIONS: usize = 2205;
+const NPCS: usize = 1132;
+const NPC_RECORDS: usize = 2264;
+const NPC_DECLARATIONS: usize = 2215;
 const NPC_DIALOGUES: usize = 703;
-const NPC_BINDINGS: usize = 2400;
+const NPC_BINDINGS: usize = 2430;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -152,7 +152,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 13,
+        max_import_records: 17,
         max_reimport_states: ENCOUNTERS,
     }
 }
@@ -321,9 +321,19 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-qualified-summer-r14");
-    assert_eq!(project.imports().len(), 13);
-    let provenance = &project.imports()[1];
+    assert_eq!(
+        project.project_revision(),
+        "g4-npc-qualified-summer-object-r16"
+    );
+    assert_eq!(project.imports().len(), 17);
+    let import_for = |batch: &str| {
+        project
+            .imports()
+            .iter()
+            .find(|i| i.batch_id == batch)
+            .expect("exact import batch")
+    };
+    let provenance = import_for("cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
     assert_eq!(
@@ -337,7 +347,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(provenance.candidates.is_empty());
     assert!(provenance.reimport_states.is_empty());
     // ITEM-ADD-1: the donor identity epoch 2 batch, from its pinned donor items.xml.
-    let donor_provenance = &project.imports()[0];
+    let donor_provenance = import_for("cw2-b1-donor-identity-epoch-2-r1");
     assert_eq!(
         donor_provenance.batch_id,
         "cw2-b1-donor-identity-epoch-2-r1"
@@ -357,7 +367,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert!(donor_provenance.candidates.is_empty());
     assert!(donor_provenance.reimport_states.is_empty());
-    let creature_import = &project.imports()[2];
+    let creature_import = import_for("g4-creature-canary-wave-a-r1");
     assert_eq!(creature_import.batch_id, "g4-creature-canary-wave-a-r1");
     assert_eq!(creature_import.source_repository, "opentibiabr/canary");
     assert_eq!(
@@ -375,7 +385,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             && state.local == state.baseline
             && state.decision == ReimportDecision::Unchanged
     }));
-    let creature_crystal_import = &project.imports()[3];
+    let creature_crystal_import = import_for("g4-creature-crystal-1530-r1");
     assert_eq!(
         creature_crystal_import.batch_id,
         "g4-creature-crystal-1530-r1"
@@ -389,14 +399,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
     );
     assert!(creature_crystal_import.candidates.is_empty());
-    let wiki = &project.imports()[4];
+    let wiki = import_for("g4-item-exact-165-tibiawiki-r1");
     assert_eq!(wiki.batch_id, "g4-item-exact-165-tibiawiki-r1");
     assert_eq!(
         wiki.source_artifact_sha256,
         "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
     );
     assert!(wiki.candidates.is_empty());
-    let wave1_import = &project.imports()[5];
+    let wave1_import = import_for("g4-item-wave1-tibiawiki-r1");
     assert_eq!(wave1_import.batch_id, "g4-item-wave1-tibiawiki-r1");
     assert_eq!(
         wave1_import.source_artifact_sha256,
@@ -407,7 +417,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "tibiawiki-item-wave1-snapshot:5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
     );
     assert!(wave1_import.candidates.is_empty());
-    let mount_import = &project.imports()[6];
+    let mount_import = import_for("g4-mount-252-tibiawiki-r1");
     assert_eq!(mount_import.batch_id, "g4-mount-252-tibiawiki-r1");
     assert_eq!(
         mount_import.source_revision,
@@ -561,62 +571,140 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 12);
-    assert_eq!(v2.sources[0].key, "oteryn:source.canary");
-    assert_eq!(v2.sources[0].import_batch_id, creature_import.batch_id);
-    assert_eq!(v2.sources[0].revision, creature_import.source_revision);
-    assert_eq!(v2.sources[0].sha256, creature_import.source_artifact_sha256);
+    assert_eq!(v2.sources.len(), 16);
+    let source_for = |batch: &str| {
+        v2.sources
+            .iter()
+            .find(|s| s.import_batch_id == batch)
+            .expect("exact source batch")
+    };
     assert_eq!(
-        v2.sources[0].evidence,
+        source_for("g4-creature-canary-wave-a-r1").key,
+        "oteryn:source.canary"
+    );
+    assert_eq!(
+        source_for("g4-creature-canary-wave-a-r1").import_batch_id,
+        creature_import.batch_id
+    );
+    assert_eq!(
+        source_for("g4-creature-canary-wave-a-r1").revision,
+        creature_import.source_revision
+    );
+    assert_eq!(
+        source_for("g4-creature-canary-wave-a-r1").sha256,
+        creature_import.source_artifact_sha256
+    );
+    assert_eq!(
+        source_for("g4-creature-canary-wave-a-r1").evidence,
         ProjectV2EvidenceClass::OtsHypothesisOnly
     );
     // The creature Crystal batch has its own source revision, which keeps the commit.
-    assert_eq!(v2.sources[2].key, "oteryn:source.crystalserver");
     assert_eq!(
-        v2.sources[2].import_batch_id,
+        source_for("g4-creature-crystal-1530-r1").key,
+        "oteryn:source.crystalserver"
+    );
+    assert_eq!(
+        source_for("g4-creature-crystal-1530-r1").import_batch_id,
         creature_crystal_import.batch_id
     );
     assert_eq!(
-        v2.sources[2].revision,
+        source_for("g4-creature-crystal-1530-r1").revision,
         "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
     );
     assert_eq!(
-        v2.sources[2].revision,
+        source_for("g4-creature-crystal-1530-r1").revision,
         creature_crystal_import.source_revision
     );
     assert_eq!(
-        v2.sources[2].sha256,
+        source_for("g4-creature-crystal-1530-r1").sha256,
         creature_crystal_import.source_artifact_sha256
     );
     assert_eq!(
-        v2.sources[2].evidence,
+        source_for("g4-creature-crystal-1530-r1").evidence,
         ProjectV2EvidenceClass::OtsHypothesisOnly
     );
-    assert_eq!(v2.sources[3].key, "oteryn:source.crystalserver");
-    assert_eq!(v2.sources[3].import_batch_id, provenance.batch_id);
-    assert_eq!(v2.sources[3].revision, provenance.source_revision);
-    assert_eq!(v2.sources[3].sha256, provenance.source_artifact_sha256);
     assert_eq!(
-        v2.sources[3].evidence,
+        source_for("cw2-b1-full-item-family-registry-r1").key,
+        "oteryn:source.crystalserver"
+    );
+    assert_eq!(
+        source_for("cw2-b1-full-item-family-registry-r1").import_batch_id,
+        provenance.batch_id
+    );
+    assert_eq!(
+        source_for("cw2-b1-full-item-family-registry-r1").revision,
+        provenance.source_revision
+    );
+    assert_eq!(
+        source_for("cw2-b1-full-item-family-registry-r1").sha256,
+        provenance.source_artifact_sha256
+    );
+    assert_eq!(
+        source_for("cw2-b1-full-item-family-registry-r1").evidence,
         ProjectV2EvidenceClass::OtsHypothesisOnly
     );
-    assert_eq!(v2.sources[5].key, "oteryn:source.tibiawiki");
-    assert_eq!(v2.sources[5].import_batch_id, wiki.batch_id);
-    assert_eq!(v2.sources[5].revision, wiki.source_revision);
-    assert_eq!(v2.sources[5].sha256, wiki.source_artifact_sha256);
-    assert_eq!(v2.sources[5].evidence, ProjectV2EvidenceClass::Derived);
-    assert_eq!(v2.sources[6].key, v2.sources[5].key);
-    assert_eq!(v2.sources[6].import_batch_id, wave1_import.batch_id);
-    assert_eq!(v2.sources[6].revision, wave1_import.source_revision);
-    assert_eq!(v2.sources[6].sha256, wave1_import.source_artifact_sha256);
-    assert_eq!(v2.sources[6].evidence, ProjectV2EvidenceClass::Derived);
-    assert_eq!(v2.sources[7].key, v2.sources[5].key);
-    assert_eq!(v2.sources[7].import_batch_id, mount_import.batch_id);
-    assert_eq!(v2.sources[7].revision, mount_import.source_revision);
-    assert_eq!(v2.sources[7].sha256, mount_import.source_artifact_sha256);
-    assert_eq!(v2.sources[7].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(
+        source_for("g4-item-exact-165-tibiawiki-r1").key,
+        "oteryn:source.tibiawiki"
+    );
+    assert_eq!(
+        source_for("g4-item-exact-165-tibiawiki-r1").import_batch_id,
+        wiki.batch_id
+    );
+    assert_eq!(
+        source_for("g4-item-exact-165-tibiawiki-r1").revision,
+        wiki.source_revision
+    );
+    assert_eq!(
+        source_for("g4-item-exact-165-tibiawiki-r1").sha256,
+        wiki.source_artifact_sha256
+    );
+    assert_eq!(
+        source_for("g4-item-exact-165-tibiawiki-r1").evidence,
+        ProjectV2EvidenceClass::Derived
+    );
+    assert_eq!(
+        source_for("g4-item-wave1-tibiawiki-r1").key,
+        source_for("g4-item-exact-165-tibiawiki-r1").key
+    );
+    assert_eq!(
+        source_for("g4-item-wave1-tibiawiki-r1").import_batch_id,
+        wave1_import.batch_id
+    );
+    assert_eq!(
+        source_for("g4-item-wave1-tibiawiki-r1").revision,
+        wave1_import.source_revision
+    );
+    assert_eq!(
+        source_for("g4-item-wave1-tibiawiki-r1").sha256,
+        wave1_import.source_artifact_sha256
+    );
+    assert_eq!(
+        source_for("g4-item-wave1-tibiawiki-r1").evidence,
+        ProjectV2EvidenceClass::Derived
+    );
+    assert_eq!(
+        source_for("g4-mount-252-tibiawiki-r1").key,
+        source_for("g4-item-exact-165-tibiawiki-r1").key
+    );
+    assert_eq!(
+        source_for("g4-mount-252-tibiawiki-r1").import_batch_id,
+        mount_import.batch_id
+    );
+    assert_eq!(
+        source_for("g4-mount-252-tibiawiki-r1").revision,
+        mount_import.source_revision
+    );
+    assert_eq!(
+        source_for("g4-mount-252-tibiawiki-r1").sha256,
+        mount_import.source_artifact_sha256
+    );
+    assert_eq!(
+        source_for("g4-mount-252-tibiawiki-r1").evidence,
+        ProjectV2EvidenceClass::Derived
+    );
     // D12: offer prices both wikis agree on also come from the committed TibiaWiki BR facts.
-    let npc_br_import = &project.imports()[8];
+    let npc_br_import = import_for("g4-npc-prices-tibiawiki-br-r1");
     assert_eq!(npc_br_import.batch_id, "g4-npc-prices-tibiawiki-br-r1");
     assert_eq!(npc_br_import.source_repository, "tibiawiki.com.br");
     assert_eq!(
@@ -624,13 +712,28 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
     );
     assert!(npc_br_import.candidates.is_empty());
-    assert_eq!(v2.sources[4].key, "oteryn:source.tibiawiki");
-    assert_eq!(v2.sources[4].import_batch_id, npc_br_import.batch_id);
-    assert_eq!(v2.sources[4].revision, npc_br_import.source_revision);
-    assert_eq!(v2.sources[4].sha256, npc_br_import.source_artifact_sha256);
-    assert_eq!(v2.sources[4].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(
+        source_for("g4-npc-prices-tibiawiki-br-r1").key,
+        "oteryn:source.tibiawiki"
+    );
+    assert_eq!(
+        source_for("g4-npc-prices-tibiawiki-br-r1").import_batch_id,
+        npc_br_import.batch_id
+    );
+    assert_eq!(
+        source_for("g4-npc-prices-tibiawiki-br-r1").revision,
+        npc_br_import.source_revision
+    );
+    assert_eq!(
+        source_for("g4-npc-prices-tibiawiki-br-r1").sha256,
+        npc_br_import.source_artifact_sha256
+    );
+    assert_eq!(
+        source_for("g4-npc-prices-tibiawiki-br-r1").evidence,
+        ProjectV2EvidenceClass::Derived
+    );
     // D14: NPC files Crystal added after its pinned revision come from the pinned summer-update commit.
-    let npc_supplement_import = &project.imports()[7];
+    let npc_supplement_import = import_for("g4-npc-crystal-summer-supplement-r1");
     assert_eq!(
         npc_supplement_import.batch_id,
         "g4-npc-crystal-summer-supplement-r1"
@@ -644,21 +747,24 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
     );
     assert!(npc_supplement_import.candidates.is_empty());
-    assert_eq!(v2.sources[1].key, "oteryn:source.crystalserver");
     assert_eq!(
-        v2.sources[1].import_batch_id,
+        source_for("g4-npc-crystal-summer-supplement-r1").key,
+        "oteryn:source.crystalserver"
+    );
+    assert_eq!(
+        source_for("g4-npc-crystal-summer-supplement-r1").import_batch_id,
         npc_supplement_import.batch_id
     );
     assert_eq!(
-        v2.sources[1].revision,
+        source_for("g4-npc-crystal-summer-supplement-r1").revision,
         npc_supplement_import.source_revision
     );
     assert_eq!(
-        v2.sources[1].sha256,
+        source_for("g4-npc-crystal-summer-supplement-r1").sha256,
         npc_supplement_import.source_artifact_sha256
     );
     // D13: offer prices two of three wikis agree on also come from the committed Tibiopedia facts.
-    let npc_tibiopedia_import = &project.imports()[9];
+    let npc_tibiopedia_import = import_for("g4-npc-prices-tibiopedia-r1");
     assert_eq!(
         npc_tibiopedia_import.batch_id,
         "g4-npc-prices-tibiopedia-r1"
@@ -688,15 +794,27 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         npc_tibiopedia_import.source_artifact_sha256
     );
     assert_eq!(tibiopedia_source.evidence, ProjectV2EvidenceClass::Derived);
-    let npc_import = &project.imports()[11];
+    let npc_import = import_for("g4-npc-wave-a-tibiawiki-r9");
     assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r9");
     assert!(npc_import.candidates.is_empty());
-    assert_eq!(v2.sources[8].key, v2.sources[5].key);
-    assert_eq!(v2.sources[8].import_batch_id, npc_import.batch_id);
-    assert_eq!(v2.sources[8].revision, npc_import.source_revision);
-    assert_eq!(v2.sources[8].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(
+        source_for("g4-npc-wave-a-tibiawiki-r9").key,
+        source_for("g4-item-exact-165-tibiawiki-r1").key
+    );
+    assert_eq!(
+        source_for("g4-npc-wave-a-tibiawiki-r9").import_batch_id,
+        npc_import.batch_id
+    );
+    assert_eq!(
+        source_for("g4-npc-wave-a-tibiawiki-r9").revision,
+        npc_import.source_revision
+    );
+    assert_eq!(
+        source_for("g4-npc-wave-a-tibiawiki-r9").evidence,
+        ProjectV2EvidenceClass::Derived
+    );
     // D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki.
-    let wiki_creature_import = &project.imports()[12];
+    let wiki_creature_import = import_for("g4-wiki-authored-creature-d44-r1");
     assert_eq!(
         wiki_creature_import.batch_id,
         "g4-wiki-authored-creature-d44-r1"
@@ -721,7 +839,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         wiki_creature_source.evidence,
         ProjectV2EvidenceClass::Derived
     );
-    let summer_import = &project.imports()[10];
+    let summer_import = import_for("g4-npc-summer-definition-overlay-fandom-r13");
     assert_eq!(
         summer_import.batch_id,
         "g4-npc-summer-definition-overlay-fandom-r13"
@@ -780,7 +898,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 continue;
             }
             if binding.source_key == "oteryn:source.crystalserver" {
-                assert_eq!(binding.source_revision, v2.sources[2].revision);
+                assert_eq!(
+                    binding.source_revision,
+                    source_for("g4-creature-crystal-1530-r1").revision
+                );
                 assert_eq!(binding.identity_namespace, "crystalserver/monster-file");
                 assert!(binding.external_id.starts_with("data-global/monster/"));
                 assert!(binding.target.key.starts_with("oteryn:creature."));
@@ -789,7 +910,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 continue;
             }
             assert_eq!(binding.source_key, "oteryn:source.canary");
-            assert_eq!(binding.source_revision, v2.sources[0].revision);
+            assert_eq!(
+                binding.source_revision,
+                source_for("g4-creature-canary-wave-a-r1").revision
+            );
             assert_eq!(binding.identity_namespace, "canary/monster-file");
             assert!(binding.target.key.starts_with("oteryn:creature."));
             assert!(creature_files.insert(&binding.external_id));
@@ -797,7 +921,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         }
         if binding.target.family == ProjectV2Family::Encounter {
             assert_eq!(binding.source_key, "oteryn:source.canary");
-            assert_eq!(binding.source_revision, v2.sources[0].revision);
+            assert_eq!(
+                binding.source_revision,
+                source_for("g4-creature-canary-wave-a-r1").revision
+            );
             assert_eq!(binding.identity_namespace, "canary/encounter");
             assert!(binding.target.key.starts_with("oteryn:encounter."));
             encounter_bindings += 1;
@@ -813,6 +940,17 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 ("oteryn:source.canary", "canary/npc-file")
                     | ("oteryn:source.crystalserver", "crystalserver/npc-file")
                     | ("oteryn:source.tibiawiki", "mediawiki/page_id")
+                    | ("oteryn:source.tibiawiki", "tibiopedia/npc-name")
+                    | ("oteryn:source.tibiawiki", "tibiopedia/npc-page-url")
+                    | (
+                        "oteryn:source.tibia_playerbots_project",
+                        "tibia-playerbots-project/npc-xml"
+                    )
+                    | ("oteryn:source.dakbugs", "dakbugs/npc-source-file")
+                    | (
+                        "oteryn:source.canary_mixed_tfs",
+                        "mixed_tfs/npc-source-file"
+                    )
             ));
             npc_bindings += 1;
             continue;
@@ -825,16 +963,25 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         );
         match binding.target.family {
             ProjectV2Family::Item => {
-                assert_eq!(binding.source_revision, v2.sources[5].revision);
+                assert_eq!(
+                    binding.source_revision,
+                    source_for("g4-item-exact-165-tibiawiki-r1").revision
+                );
                 assert!(item_ids.insert(&binding.external_id));
             }
             ProjectV2Family::Outfit => {
-                assert_eq!(binding.source_revision, v2.sources[7].revision);
+                assert_eq!(
+                    binding.source_revision,
+                    source_for("g4-mount-252-tibiawiki-r1").revision
+                );
                 assert!(binding.target.key.starts_with("oteryn:content.outfit."));
                 assert!(outfit_ids.insert(&binding.external_id));
             }
             ProjectV2Family::Mount => {
-                assert_eq!(binding.source_revision, v2.sources[7].revision);
+                assert_eq!(
+                    binding.source_revision,
+                    source_for("g4-mount-252-tibiawiki-r1").revision
+                );
                 assert!(binding.target.key.starts_with("oteryn:content.mount."));
                 assert!(mount_ids.insert(&binding.external_id));
             }

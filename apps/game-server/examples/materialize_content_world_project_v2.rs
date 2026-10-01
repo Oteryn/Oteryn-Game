@@ -133,10 +133,14 @@ const NPC_R5_NATIVE_REPAIRS: &[u8] = include_bytes!(
 const NPC_R5_NATIVE_REPAIRS_SHA256: &str =
     "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb";
 const NPC_R5_PROJECT_REVISION: &str = "g4-npc-source-repairs-r10";
+#[path = "npc_materializer/qualified_playerbots.rs"]
+mod npc_qualified_playerbots;
 #[path = "npc_materializer/qualified_repairs.rs"]
 mod npc_qualified_repairs;
 #[path = "npc_materializer/qualified_summer.rs"]
 mod npc_qualified_summer;
+#[path = "npc_materializer/qualified_summer_object.rs"]
+mod npc_qualified_summer_object;
 #[path = "npc_materializer/service_scope_repairs.rs"]
 mod npc_service_scope_repairs;
 #[path = "npc_materializer/transcript_repairs.rs"]
@@ -189,8 +193,8 @@ fn limits() -> ProjectEvidenceLimits {
         max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES,
         max_locator_bytes: 160,
         max_locator_segments: 8,
-        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS + 24,
-        max_import_records: 13,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS + 44,
+        max_import_records: 17,
         max_reimport_states: ENCOUNTER_COUNT,
     }
 }
@@ -2211,6 +2215,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut draft = snapshot.migrate_to_v2();
     let npc_r13_definitions = npc_qualified_summer::apply(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r16_definitions = npc_qualified_playerbots::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r17_definitions = npc_qualified_summer_object::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
@@ -2229,6 +2241,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("npc_r8_dialogues={npc_r8_dialogues}");
     println!("npc_r12_held_offers={npc_r12_held_offers}");
     println!("npc_r13_definitions={npc_r13_definitions} total_npcs=1122 total_dialogues=703");
+    println!("npc_r16_definitions={npc_r16_definitions} intermediate_npcs=1127");
+    println!("npc_r17_definitions={npc_r17_definitions} total_npcs=1132 total_dialogues=703");
     Ok(())
 }
 

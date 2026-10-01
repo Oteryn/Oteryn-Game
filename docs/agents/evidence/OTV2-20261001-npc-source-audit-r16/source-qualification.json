@@ -1,0 +1,882 @@
+{
+  "authoring_only": true,
+  "candidate_overlay": [
+    {
+      "arbitration": {
+        "fit_score": 1.352191,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "qualified_palette": {
+          "body": 63,
+          "feet": 97,
+          "head": 96,
+          "legs": 71
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12396,
+          "revid": 351896,
+          "sha256": "5c117c0f6d70df9b5d87ee35517fc463c6af15ab9c22f5b7dec55769e73bf5b6",
+          "url": "https://www.tibiawiki.com.br/images/5/56/Garzon.gif"
+        },
+        "visible_region_px": {
+          "body": 171,
+          "feet": 69,
+          "head": 141,
+          "legs": 127
+        }
+      },
+      "dialogue": null,
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.garzon",
+        "revision": "definition-r1"
+      },
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 1500,
+        "walk_radius": 2
+      },
+      "name": "Garzon",
+      "native_source": {
+        "bytes": 266,
+        "git_blob_sha": "374edb87ef75e98e9e0a28627ec8d9dbc639bb5b",
+        "local_path": "/workspace/npc-r16-research/identity/raw/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Garzon.xml",
+        "path": "server/data/npc/Garzon.xml",
+        "ref": "1afc43cf7efbf4ccc32df28ff45b726617050fa0",
+        "repository": "adrunkhuman/tibia-playerbots-project",
+        "sha256": "dc4304f0f8fcdc931b97d32396d2dea1b798b80462fa44465a8a51fe48ad0557",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Garzon.xml"
+      },
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 63,
+          "feet": 97,
+          "head": 96,
+          "legs": 71,
+          "look_type": 130,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "runtime_qualified": false,
+      "script_binding": "default.lua",
+      "services": [],
+      "source_script_binding_absent": false,
+      "wiki_confirmations": [
+        {
+          "capture_file": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+          "capture_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+          "page_facts": {
+            "implemented": "8.4",
+            "name": "Garzon",
+            "npc_lines": [],
+            "pageid": 12396,
+            "positions": [
+              [
+                32913,
+                31490,
+                7
+              ]
+            ],
+            "removed": "",
+            "revid": 351896,
+            "role": "npc",
+            "sha256": "92a40abed990c61b4f88733c45d5ad8bab6fb7ea84b3a6c62e93b3969a5f10c7",
+            "timestamp": "2022-06-19T05:09:25Z",
+            "title": "Garzon",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            }
+          },
+          "pointer": "/pages/643",
+          "source": "br",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiawiki-br-npc-0773232ddd356be2",
+            "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+          }
+        },
+        {
+          "capture_file": "imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+          "capture_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
+          "page_facts": {
+            "name": "Garzon",
+            "sha256": "a8095035a315ccfe5e493b74bc8f89ce23ef78662d4fd4160c00c48de9cd7f9c",
+            "title": "NPC: Garzon",
+            "trade": "nie",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            },
+            "url": "https://tibiopedia.pl/npcs/Garzon"
+          },
+          "pointer": "/pages/439",
+          "source": "tibiopedia",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiopedia-npc-43bfc91ec7721df1",
+            "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+          }
+        }
+      ]
+    },
+    {
+      "arbitration": {
+        "fit_score": 2.873269,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "qualified_palette": {
+          "body": 42,
+          "feet": 116,
+          "head": 115,
+          "legs": 97
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12349,
+          "revid": 351859,
+          "sha256": "4aa583c37e4443e540b95d6d40ead12b0834901ed833e73cd97513949c2df2dc",
+          "url": "https://www.tibiawiki.com.br/images/8/8f/Kito.gif"
+        },
+        "visible_region_px": {
+          "body": 114,
+          "feet": 31,
+          "head": 61,
+          "legs": 76
+        }
+      },
+      "dialogue": null,
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.kito",
+        "revision": "definition-r1"
+      },
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 1500,
+        "walk_radius": 2
+      },
+      "name": "Kito",
+      "native_source": {
+        "bytes": 241,
+        "git_blob_sha": "25f0b9c7897a1f0cf14adc4deb7c5dffe9264198",
+        "local_path": "/workspace/npc-r16-research/identity/raw/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Kito.xml",
+        "path": "server/data/npc/Kito.xml",
+        "ref": "1afc43cf7efbf4ccc32df28ff45b726617050fa0",
+        "repository": "adrunkhuman/tibia-playerbots-project",
+        "sha256": "95be55606314c3435f51b345cbbf97e275246a88b44e682437906cc67be9fe7a",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Kito.xml"
+      },
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 42,
+          "feet": 116,
+          "head": 115,
+          "legs": 97,
+          "look_type": 143,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "runtime_qualified": false,
+      "script_binding": null,
+      "services": [],
+      "source_script_binding_absent": true,
+      "wiki_confirmations": [
+        {
+          "capture_file": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+          "capture_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+          "page_facts": {
+            "implemented": "8.54",
+            "name": "Kito",
+            "npc_lines": [],
+            "pageid": 12349,
+            "positions": [
+              [
+                32996,
+                31464,
+                2
+              ]
+            ],
+            "removed": "",
+            "revid": 351859,
+            "role": "npc",
+            "sha256": "534ae5fc16e70500fa8a49bf4dffa01d93607994631bbe7fe1798782965305a8",
+            "timestamp": "2022-06-19T03:59:39Z",
+            "title": "Kito",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            }
+          },
+          "pointer": "/pages/624",
+          "source": "br",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiawiki-br-npc-0773232ddd356be2",
+            "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+          }
+        },
+        {
+          "capture_file": "imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+          "capture_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
+          "page_facts": {
+            "name": "Kito",
+            "sha256": "3bad0ea73f514957c080a32d0c9badb1c09e974c45dc270c384ec58799320d06",
+            "title": "NPC: Kito",
+            "trade": "nie",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            },
+            "url": "https://tibiopedia.pl/npcs/Kito"
+          },
+          "pointer": "/pages/661",
+          "source": "tibiopedia",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiopedia-npc-43bfc91ec7721df1",
+            "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+          }
+        }
+      ]
+    },
+    {
+      "arbitration": {
+        "fit_score": 1.16838,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "qualified_palette": {
+          "body": 115,
+          "feet": 116,
+          "head": 114,
+          "legs": 97
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12350,
+          "revid": 351861,
+          "sha256": "f86e1cbb2ffca8a72a132cd78eff9b8820322a30f61f40ee1fc74ab6581a63ea",
+          "url": "https://www.tibiawiki.com.br/images/2/2f/Makao.gif"
+        },
+        "visible_region_px": {
+          "body": 114,
+          "feet": 31,
+          "head": 61,
+          "legs": 76
+        }
+      },
+      "dialogue": null,
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.makao",
+        "revision": "definition-r1"
+      },
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 1500,
+        "walk_radius": 2
+      },
+      "name": "Makao",
+      "native_source": {
+        "bytes": 243,
+        "git_blob_sha": "dec5b3fe87b69c9169bf913bf5374d9f7ad2a4f5",
+        "local_path": "/workspace/npc-r16-research/identity/raw/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Makao.xml",
+        "path": "server/data/npc/Makao.xml",
+        "ref": "1afc43cf7efbf4ccc32df28ff45b726617050fa0",
+        "repository": "adrunkhuman/tibia-playerbots-project",
+        "sha256": "0fe6d3b84397cc2e37f4fa9bc6327f36ee495a4f16f022f4748b7ab13667d782",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Makao.xml"
+      },
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 115,
+          "feet": 116,
+          "head": 114,
+          "legs": 97,
+          "look_type": 143,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "runtime_qualified": false,
+      "script_binding": null,
+      "services": [],
+      "source_script_binding_absent": true,
+      "wiki_confirmations": [
+        {
+          "capture_file": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+          "capture_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+          "page_facts": {
+            "implemented": "8.54",
+            "name": "Makao",
+            "npc_lines": [],
+            "pageid": 12350,
+            "positions": [
+              [
+                32994,
+                31503,
+                3
+              ]
+            ],
+            "removed": "",
+            "revid": 351861,
+            "role": "npc",
+            "sha256": "3d36a24ff55a371ef615e64a4267f6b91700aa678a782be370b7008961977308",
+            "timestamp": "2022-06-19T04:00:24Z",
+            "title": "Makao",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            }
+          },
+          "pointer": "/pages/625",
+          "source": "br",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiawiki-br-npc-0773232ddd356be2",
+            "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+          }
+        },
+        {
+          "capture_file": "imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+          "capture_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
+          "page_facts": {
+            "name": "Makao",
+            "sha256": "a47318b0a5b5b1606c717e8340e60652a55672a43f62d6ab436197a15763f186",
+            "title": "NPC: Makao",
+            "trade": "nie",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            },
+            "url": "https://tibiopedia.pl/npcs/Makao"
+          },
+          "pointer": "/pages/721",
+          "source": "tibiopedia",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiopedia-npc-43bfc91ec7721df1",
+            "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+          }
+        }
+      ]
+    },
+    {
+      "arbitration": {
+        "fit_score": 1.007051,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "qualified_palette": {
+          "body": 118,
+          "feet": 114,
+          "head": 78,
+          "legs": 97
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12351,
+          "revid": 351864,
+          "sha256": "a6ef251571ebb65f22a04557c5d57db229b58975e8821accacaa77ca00d8f8b9",
+          "url": "https://www.tibiawiki.com.br/images/f/f1/Namasa.gif"
+        },
+        "visible_region_px": {
+          "body": 141,
+          "feet": 22,
+          "head": 119,
+          "legs": 70
+        }
+      },
+      "dialogue": null,
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.namasa",
+        "revision": "definition-r1"
+      },
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 1500,
+        "walk_radius": 2
+      },
+      "name": "Namasa",
+      "native_source": {
+        "bytes": 242,
+        "git_blob_sha": "89292a7faf5b7693e94837979cdc4d22a2f8f864",
+        "local_path": "/workspace/npc-r16-research/identity/raw/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Namasa.xml",
+        "path": "server/data/npc/Namasa.xml",
+        "ref": "1afc43cf7efbf4ccc32df28ff45b726617050fa0",
+        "repository": "adrunkhuman/tibia-playerbots-project",
+        "sha256": "83fc7d9d7c184b035a41b820db8ffe5d5fe1c311bb4fb822c4ef3c5202d7d4b4",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Namasa.xml"
+      },
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 118,
+          "feet": 114,
+          "head": 78,
+          "legs": 97,
+          "look_type": 147,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "runtime_qualified": false,
+      "script_binding": null,
+      "services": [],
+      "source_script_binding_absent": true,
+      "wiki_confirmations": [
+        {
+          "capture_file": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+          "capture_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+          "page_facts": {
+            "implemented": "8.54",
+            "name": "Namasa",
+            "npc_lines": [],
+            "pageid": 12351,
+            "positions": [
+              [
+                32990,
+                31497,
+                3
+              ]
+            ],
+            "removed": "",
+            "revid": 351864,
+            "role": "npc",
+            "sha256": "c042c998abcd4ad79aecc95485ff99c9bb7924e95c19f95ca185835eb074356d",
+            "timestamp": "2022-06-19T04:04:20Z",
+            "title": "Namasa",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            }
+          },
+          "pointer": "/pages/626",
+          "source": "br",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiawiki-br-npc-0773232ddd356be2",
+            "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+          }
+        },
+        {
+          "capture_file": "imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+          "capture_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
+          "page_facts": {
+            "name": "Namasa",
+            "sha256": "a9791e034667719bd6643063f89c26579ba394aff5bc7ad38a974a3a5579e0fd",
+            "title": "NPC: Namasa",
+            "trade": "nie",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            },
+            "url": "https://tibiopedia.pl/npcs/Namasa"
+          },
+          "pointer": "/pages/782",
+          "source": "tibiopedia",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiopedia-npc-43bfc91ec7721df1",
+            "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+          }
+        }
+      ]
+    },
+    {
+      "arbitration": {
+        "fit_score": 1.096122,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "qualified_palette": {
+          "body": 101,
+          "feet": 116,
+          "head": 77,
+          "legs": 96
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12352,
+          "revid": 373131,
+          "sha256": "8c81090979e60a7cf130e0f88d58f62d7ceec9c536ac8e012b1d1d1f3af12aad",
+          "url": "https://www.tibiawiki.com.br/images/e/e1/Tatak.gif"
+        },
+        "visible_region_px": {
+          "body": 114,
+          "feet": 31,
+          "head": 61,
+          "legs": 76
+        }
+      },
+      "dialogue": null,
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.tatak",
+        "revision": "definition-r1"
+      },
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 1500,
+        "walk_radius": 2
+      },
+      "name": "Tatak",
+      "native_source": {
+        "bytes": 241,
+        "git_blob_sha": "9212958ff78364f5945f1915533e204cd05e3993",
+        "local_path": "/workspace/npc-r16-research/identity/raw/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Tatak.xml",
+        "path": "server/data/npc/Tatak.xml",
+        "ref": "1afc43cf7efbf4ccc32df28ff45b726617050fa0",
+        "repository": "adrunkhuman/tibia-playerbots-project",
+        "sha256": "ca38a6b6c3086d653260d828415d994e98fa83cc1c1e1cb6bcb4bd406d0d3fd6",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Tatak.xml"
+      },
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 101,
+          "feet": 116,
+          "head": 77,
+          "legs": 96,
+          "look_type": 143,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "runtime_qualified": false,
+      "script_binding": null,
+      "services": [],
+      "source_script_binding_absent": true,
+      "wiki_confirmations": [
+        {
+          "capture_file": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+          "capture_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+          "page_facts": {
+            "implemented": "8.54",
+            "name": "Tatak",
+            "npc_lines": [],
+            "pageid": 12352,
+            "positions": [
+              [
+                33004,
+                31464,
+                3
+              ]
+            ],
+            "removed": "",
+            "revid": 373131,
+            "role": "npc",
+            "sha256": "af5913d9003d640f54c8ef01ef77cb10ed3159381ee7d939afa04ac4f7b0ab94",
+            "timestamp": "2022-11-27T15:27:14Z",
+            "title": "Tatak",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            }
+          },
+          "pointer": "/pages/627",
+          "source": "br",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiawiki-br-npc-0773232ddd356be2",
+            "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+          }
+        },
+        {
+          "capture_file": "imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+          "capture_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
+          "page_facts": {
+            "name": "Tatak",
+            "sha256": "958960b10ecc9ee214564a32d91a4ea97013a0c891826a74b6e875cabea684a2",
+            "title": "NPC: Tatak",
+            "trade": "nie",
+            "trades": {
+              "BuyFromPlayer": {},
+              "SellToPlayer": {}
+            },
+            "url": "https://tibiopedia.pl/npcs/Tatak"
+          },
+          "pointer": "/pages/1067",
+          "source": "tibiopedia",
+          "source_import": {
+            "evidence": "Derived",
+            "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+            "key": "oteryn:source.tibiawiki",
+            "revision": "tibiopedia-npc-43bfc91ec7721df1",
+            "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+          }
+        }
+      ]
+    }
+  ],
+  "excluded_semantics": [
+    "dialogue",
+    "services",
+    "placements",
+    "quest state allocation",
+    "DefaultSilent or guessed movement"
+  ],
+  "inputs": [
+    {
+      "path": "five-playerbots-identity-bridges.json",
+      "sha256": "7b8be82878e4ecd778301e3e474ef2f61a229ceb46c769d328737d42a29318f5"
+    },
+    {
+      "path": "five-current-wiki-bindings.json",
+      "sha256": "ed65117175d6acec4687ffd685e9c62d32a95f0b5734641cab72edd24f67802e"
+    },
+    {
+      "path": "/workspace/npc-r16-research/presentation/five-xml-qualified-presentations.json",
+      "sha256": "d3e38f0e383705717a31d611df70b77eb689e77a63a1c2b79a7d3da6c0ce3de4"
+    }
+  ],
+  "mature_stage_helper_sha256": "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff",
+  "native_before_sha256": "6fa670b655d396a1e9bc120e91bd57ea73f28c146c68c606dac50a7d5b33d383",
+  "native_npc_before_count": 1122,
+  "native_semantics": "EXPLICIT_XML_MOVEMENT_AND_D16_PRESENTATION; NO_GLOBAL_COMPLETENESS_CLAIM",
+  "new_imports": [
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-playerbots-xml-five-r16",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_PLAYERBOTS_XML_OVERLAY/v1",
+      "mapper": "NPC_BOUNDED_PLAYERBOTS_XML_OVERLAY/v1",
+      "mapper_revision": "npc-playerbots-xml-five-r16",
+      "mapper_sha256": "8ccb44ed014fd5b69af98ae4c5b4b6f33a9cea2bc5400638936f071b013bab43",
+      "reimport_states": [],
+      "source_artifact_sha256": "2e43d04abe177aa831a7873a205dff88551412090d10398431c5967091985811",
+      "source_generation_profile": "NPC_PINNED_XML_SOURCE_CENSUS/v1",
+      "source_repository": "adrunkhuman/tibia-playerbots-project",
+      "source_revision": "1afc43cf7efbf4ccc32df28ff45b726617050fa0"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-playerbots-wiki-images-r16",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_PLAYERBOTS_XML_OVERLAY/v1",
+      "mapper": "NPC_BOUNDED_PLAYERBOTS_XML_OVERLAY/v1",
+      "mapper_revision": "npc-playerbots-xml-five-r16",
+      "mapper_sha256": "8ccb44ed014fd5b69af98ae4c5b4b6f33a9cea2bc5400638936f071b013bab43",
+      "reimport_states": [],
+      "source_artifact_sha256": "c7bacdd3b9eecc155bfb0d2cee068bcc0de5ba39eb29f78ac373fca4beffdf4a",
+      "source_generation_profile": "NPC_FIVE_XML_WIKI_IMAGE_QUALIFICATION_FACTS/v1",
+      "source_repository": "tibiawiki.com.br",
+      "source_revision": "npc-wiki-image-qualification-c7bacdd3b9eecc15"
+    }
+  ],
+  "new_sources": [
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-playerbots-xml-five-r16",
+      "key": "oteryn:source.tibia_playerbots_project",
+      "revision": "1afc43cf7efbf4ccc32df28ff45b726617050fa0",
+      "sha256": "2e43d04abe177aa831a7873a205dff88551412090d10398431c5967091985811"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-playerbots-wiki-images-r16",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "npc-wiki-image-qualification-c7bacdd3b9eecc15",
+      "sha256": "c7bacdd3b9eecc155bfb0d2cee068bcc0de5ba39eb29f78ac373fca4beffdf4a"
+    }
+  ],
+  "predecessor_head": "8bdc12d54909c4667da63ecf56b2cae163fff34c",
+  "predecessor_status": "ROOT_SUPPLIED_R13_HEAD",
+  "reference_before_sha256": "56c872d5a036d070cce72a1156ee2a4e3e6b8698c1f7352263b93624d7e7eca9",
+  "runtime_eligible": false,
+  "schema": "NPC_BOUNDED_PLAYERBOTS_XML_OVERLAY/v1",
+  "source_census": {
+    "files": [
+      {
+        "bytes": 266,
+        "git_blob_sha": "374edb87ef75e98e9e0a28627ec8d9dbc639bb5b",
+        "path": "server/data/npc/Garzon.xml",
+        "sha256": "dc4304f0f8fcdc931b97d32396d2dea1b798b80462fa44465a8a51fe48ad0557",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Garzon.xml"
+      },
+      {
+        "bytes": 241,
+        "git_blob_sha": "25f0b9c7897a1f0cf14adc4deb7c5dffe9264198",
+        "path": "server/data/npc/Kito.xml",
+        "sha256": "95be55606314c3435f51b345cbbf97e275246a88b44e682437906cc67be9fe7a",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Kito.xml"
+      },
+      {
+        "bytes": 243,
+        "git_blob_sha": "dec5b3fe87b69c9169bf913bf5374d9f7ad2a4f5",
+        "path": "server/data/npc/Makao.xml",
+        "sha256": "0fe6d3b84397cc2e37f4fa9bc6327f36ee495a4f16f022f4748b7ab13667d782",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Makao.xml"
+      },
+      {
+        "bytes": 242,
+        "git_blob_sha": "89292a7faf5b7693e94837979cdc4d22a2f8f864",
+        "path": "server/data/npc/Namasa.xml",
+        "sha256": "83fc7d9d7c184b035a41b820db8ffe5d5fe1c311bb4fb822c4ef3c5202d7d4b4",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Namasa.xml"
+      },
+      {
+        "bytes": 241,
+        "git_blob_sha": "9212958ff78364f5945f1915533e204cd05e3993",
+        "path": "server/data/npc/Tatak.xml",
+        "sha256": "ca38a6b6c3086d653260d828415d994e98fa83cc1c1e1cb6bcb4bd406d0d3fd6",
+        "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Tatak.xml"
+      }
+    ],
+    "repository": "adrunkhuman/tibia-playerbots-project",
+    "revision": "1afc43cf7efbf4ccc32df28ff45b726617050fa0",
+    "schema": "NPC_PINNED_XML_SOURCE_CENSUS/v1"
+  },
+  "source_census_sha256": "2e43d04abe177aa831a7873a205dff88551412090d10398431c5967091985811",
+  "wiki_image_qualification_facts": {
+    "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+    "records": [
+      {
+        "fit_score": 1.352191,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "npc": "oteryn:npc.garzon",
+        "qualified_palette": {
+          "body": 63,
+          "feet": 97,
+          "head": 96,
+          "legs": 71
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12396,
+          "revid": 351896,
+          "sha256": "5c117c0f6d70df9b5d87ee35517fc463c6af15ab9c22f5b7dec55769e73bf5b6",
+          "url": "https://www.tibiawiki.com.br/images/5/56/Garzon.gif"
+        },
+        "visible_region_px": {
+          "body": 171,
+          "feet": 69,
+          "head": 141,
+          "legs": 127
+        }
+      },
+      {
+        "fit_score": 2.873269,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "npc": "oteryn:npc.kito",
+        "qualified_palette": {
+          "body": 42,
+          "feet": 116,
+          "head": 115,
+          "legs": 97
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12349,
+          "revid": 351859,
+          "sha256": "4aa583c37e4443e540b95d6d40ead12b0834901ed833e73cd97513949c2df2dc",
+          "url": "https://www.tibiawiki.com.br/images/8/8f/Kito.gif"
+        },
+        "visible_region_px": {
+          "body": 114,
+          "feet": 31,
+          "head": 61,
+          "legs": 76
+        }
+      },
+      {
+        "fit_score": 1.16838,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "npc": "oteryn:npc.makao",
+        "qualified_palette": {
+          "body": 115,
+          "feet": 116,
+          "head": 114,
+          "legs": 97
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12350,
+          "revid": 351861,
+          "sha256": "f86e1cbb2ffca8a72a132cd78eff9b8820322a30f61f40ee1fc74ab6581a63ea",
+          "url": "https://www.tibiawiki.com.br/images/2/2f/Makao.gif"
+        },
+        "visible_region_px": {
+          "body": 114,
+          "feet": 31,
+          "head": 61,
+          "legs": 76
+        }
+      },
+      {
+        "fit_score": 1.007051,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "npc": "oteryn:npc.namasa",
+        "qualified_palette": {
+          "body": 118,
+          "feet": 114,
+          "head": 78,
+          "legs": 97
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12351,
+          "revid": 351864,
+          "sha256": "a6ef251571ebb65f22a04557c5d57db229b58975e8821accacaa77ca00d8f8b9",
+          "url": "https://www.tibiawiki.com.br/images/f/f1/Namasa.gif"
+        },
+        "visible_region_px": {
+          "body": 141,
+          "feet": 22,
+          "head": 119,
+          "legs": 70
+        }
+      },
+      {
+        "fit_score": 1.096122,
+        "live_wiki_recheck_status": "UNQUALIFIED_SETUP_PAGE",
+        "npc": "oteryn:npc.tatak",
+        "qualified_palette": {
+          "body": 101,
+          "feet": 116,
+          "head": 77,
+          "legs": 96
+        },
+        "rule": "WIKI_IMAGE_FIT",
+        "source_image": {
+          "pageid": 12352,
+          "revid": 373131,
+          "sha256": "8c81090979e60a7cf130e0f88d58f62d7ceec9c536ac8e012b1d1d1f3af12aad",
+          "url": "https://www.tibiawiki.com.br/images/e/e1/Tatak.gif"
+        },
+        "visible_region_px": {
+          "body": 114,
+          "feet": 31,
+          "head": 61,
+          "legs": 76
+        }
+      }
+    ],
+    "schema": "NPC_FIVE_XML_WIKI_IMAGE_QUALIFICATION_FACTS/v1"
+  },
+  "wiki_image_qualification_sha256": "c7bacdd3b9eecc155bfb0d2cee068bcc0de5ba39eb29f78ac373fca4beffdf4a"
+}
