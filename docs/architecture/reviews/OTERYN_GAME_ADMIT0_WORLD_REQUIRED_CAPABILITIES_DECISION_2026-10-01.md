@@ -102,12 +102,18 @@ hurt or block its character, without making those capabilities core protocol for
   1. Before its commit, the transfer checks the destination scope's effective set against the
      session's declared support (refusing with `RECONNECT_CAPABILITY_REQUIRED` semantics, current
      authority preserved) and fixes the selection.
-  2. After its commit only (FND-04B: success is visible only after commit), the client receives
-     an authoritative acknowledgement that identifies the destination scope (WorldId and
-     ChannelId) and carries the selection, before the replacement snapshot and before any message
-     of a capability-gated domain; the client interprets no gated domain until it has it.
+  2. **Lifting conditions** (a closed list; the transfer's own contract, FND-04B or
+     SCOPE-HANDOFF-1, must satisfy all of them under its own independent protocol and security
+     review; ADMIT-0 designs none of them):
+     a. a post-commit acknowledgement that identifies the destination scope (WorldId and
+        ChannelId) and carries the selection (FND-04B: success is visible only after commit);
+     b. lost-acknowledgement recovery: a resume or reconnect after the commit identifies the
+        current authoritative scope, or replays the durable acknowledgement, before any snapshot
+        or gated message;
+     c. no snapshot and no message of a capability-gated domain before (a) or (b); the client
+        interprets no gated domain until it has one of them.
   3. No current wire is claimed to satisfy (2). Until FND-04B, or the transfer's own contract
-     (SCOPE-HANDOFF-1 included), defines that acknowledgement, **every** transfer into a channel
+     (SCOPE-HANDOFF-1 included), satisfies all of (2), **every** transfer into a channel
      scope is **refused**, whatever its source and whether or not the selection changes: without a
      scope-identifying acknowledgement the client could apply the destination's snapshot while
      bound to the source channel. A session recovered in a scope with an empty set therefore cannot
@@ -141,7 +147,9 @@ It runs after authentication and only against the current scope generation's set
   without a baseline.
 - **Transfers into a channel scope:** only the predicate and the selection are checked before the
   transfer commits; the acknowledgement and the replacement snapshot are emitted after commit, and
-  every transfer into a channel scope stays refused until its acknowledgement is defined (§3.2).
+  every transfer into a channel scope stays refused until its contract satisfies the closed
+  lifting conditions of §3.2 (scope acknowledgement, lost-acknowledgement recovery, no snapshot
+  before either).
 - The check reads declared support only. Support is a claim, not trust: the server still sends and
   enforces everything; the rule guarantees only that the client said it can render what can hurt
   or block it.

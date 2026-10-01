@@ -350,11 +350,13 @@ otherwise `RECOVERY_CAPABILITY_REQUIRED` with no authority mutation. A post-grac
 a GameSession selects every capability of the set. When a resumed selection differs from the
 predecessor's, reconciliation uses a replacement snapshot (FND-02 §16), never replay.
 Every transfer into a channel scope (§23 handoffs, migrations, Channel to Channel) checks the
-destination's effective required set and fixes the selection before its commit; after its commit
-only, it sends an acknowledgement that identifies the destination scope (WorldId, ChannelId) and
-carries the selection, before the replacement snapshot and any gated message. No current message
-satisfies this; until this contract or the transfer's own contract defines one, every transfer
-into a channel scope is refused, whatever its source or selection.
+destination's effective required set and fixes the selection before its commit. It is refused,
+whatever its source or selection, until this contract or the transfer's own contract satisfies
+ADMIT-0 §3.2's closed lifting conditions under independent protocol and security review: (a) a
+post-commit acknowledgement naming the scope (WorldId, ChannelId) with the selection; (b) a resume
+or reconnect after a lost acknowledgement that names the current authoritative scope or replays the
+durable acknowledgement first; (c) no snapshot or gated message before (a) or (b). No current
+message satisfies them.
 
 Platform-security and recovery key/profile trust evidence preserve FND-04A semantics:
 
