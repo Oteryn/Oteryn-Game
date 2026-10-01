@@ -164,7 +164,17 @@ jobs:
             curl -fsSL --retry 5 --retry-delay 2 \
               "https://raw.githubusercontent.com/$REPO/$REV/$path" -o "$SRC/$path"
           done
-          python build_catalogue.py --source "$SRC" --check
+          DONOR_SRC="$RUNNER_TEMP/crystal-donor-catalogue"
+          read -r DONOR_REPO DONOR_REV < <(cd ../item-authoring && python -c '
+          from donor_census import DONOR_REPOSITORY, DONOR_COMMIT
+          print(DONOR_REPOSITORY, DONOR_COMMIT)')
+          for path in data/items/items.xml data/items/appearances.dat; do
+            mkdir -p "$DONOR_SRC/$(dirname "$path")"
+            curl -fsSL --retry 5 --retry-delay 2 \
+              "https://raw.githubusercontent.com/$DONOR_REPO/$DONOR_REV/$path" \
+              -o "$DONOR_SRC/$path"
+          done
+          python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --check
 
       - name: Item Master census
         working-directory: .
