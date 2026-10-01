@@ -1,7 +1,8 @@
 //! World Project to server World Bundle compilation (ADR-0021 §4.2-§4.6).
 //!
 //! The placements are checked against the Transition.Teleport and House families
-//! ([`crate::project`]); [`parity`] reports every teleport and house disagreement at once.
+//! ([`crate::project`]); [`parity`] reports every teleport and house disagreement at once, and
+//! [`equivalence`] proves a compiled bundle tile by tile against its source.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -68,10 +69,12 @@ enum Teleport {
 }
 
 fn teleport(families: &Families, from: LegacyPosition, to: LegacyPosition) -> Teleport {
+    // A record from this tile decides first: a (0,0,0) attribute on a Transition tile is a
+    // mismatch, never a silent drop.
     match families.teleports.get(&from) {
-        _ if to == (0, 0, 0) => Teleport::ZeroDestination,
         Some(record) if *record == to => Teleport::Matched,
         Some(_) => Teleport::Mismatch,
+        None if to == (0, 0, 0) => Teleport::ZeroDestination,
         None => Teleport::NoRecord,
     }
 }
@@ -362,4 +365,257 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
         diagnostics: state.diagnostics,
         dropped_teleports: state.dropped,
     })
+}
+
+/// What [`equivalence`] compared.
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct Equivalence {
+    pub tiles: usize,
+    pub entries: usize,
+    /// Source entries left out as provisional, container contents included.
+    pub skipped_entries: usize,
+    pub dropped_teleports: usize,
+}
+
+/// Proves `bundle` equal to the compiler `input` it claims to come from (ADR-0021 §4.6, §4.8),
+/// from the source authorities rather than the compiler state or the bundle's own claims. Every
+/// source tile is at its native position with the same flags, house and zones, and every entry
+/// keeps its depth, attributes and palette key, except the rules of the format document: a
+/// subtree under a key `resolver` calls provisional is left out, a (0,0,0) teleport is dropped,
+/// and a teleport floor is native. Every key, a skipped one included, must resolve; every house
+/// id must be in the House family; every teleport is checked again against the families (§4.5),
+/// and every Transition record must meet its attribute. The bundle holds no other tile, and its
+/// whole manifest must be the one derived here: the input identity, World, build class and draft
+/// areas; the palette of exactly the kept source indices in ascending order, each with the
+/// `(family, id)` `resolver` gives it; the provisional keys met; and the placement keys of the
+/// kept top-level entries that lost a (0,0,0) teleport.
+pub fn equivalence(
+    input: &Input,
+    resolver: &dyn KeyResolver,
+    bundle: &[u8],
+) -> Result<Equivalence, Error> {
+    let read = bundle::read(bundle)?;
+    let differs = |what: String| Err(Error::Format(format!("equivalence: {what}")));
+    let (palette, families) = (input.palette, input.families);
+    let mut used = BTreeSet::new();
+    let resolved: Vec<Resolution> = palette.iter().map(|key| resolver.resolve(key)).collect();
+    let mut provisional = BTreeSet::new();
+    let (mut dropped, mut records_met) = (BTreeSet::new(), BTreeSet::new());
+    let (mut report, mut budget) = (Equivalence::default(), bundle::BUNDLE_BUDGET);
+    let mut seen = BTreeSet::new();
+    for data in input.regions {
+        let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        let (z, floor) = (region.z, native_floor(region.z)?);
+        for (sx, sy, tiles) in region.sectors {
+            let at = (floor, sy, sx);
+            if !seen.insert(at) {
+                return differs(format!("sector {at:?} given twice"));
+            }
+            let found = read
+                .sectors
+                .binary_search_by_key(&at, |s| (s.floor, s.sy, s.sx));
+            let compiled = found.map_or(&[][..], |i| &read.sectors[i].tiles[..]);
+            if compiled.len() != tiles.len() {
+                return differs(format!("sector {at:?} has another tile count"));
+            }
+            for (source, tile) in tiles.iter().zip(compiled) {
+                let mut context = Context {
+                    palette,
+                    resolved: &resolved,
+                    families,
+                    z,
+                    floor,
+                    dropped: &mut dropped,
+                    records_met: &mut records_met,
+                    used: &mut used,
+                    report: &mut report,
+                };
+                let expected = context.entries(source)?;
+                provisional.extend(source.items.iter().filter_map(|item| {
+                    let at = item.palette as usize;
+                    (resolved.get(at) == Some(&Resolution::Provisional)).then(|| &palette[at])
+                }));
+                let got: Vec<_> = tile
+                    .items
+                    .iter()
+                    .map(|item| {
+                        let key = read.manifest.palette.get(item.palette as usize);
+                        (
+                            key.map(|entry| entry.key.as_str()),
+                            item.depth,
+                            item.attrs.clone(),
+                        )
+                    })
+                    .collect();
+                let place = |t: &Tile| (t.x, t.y, t.flags, t.house, t.zones.clone());
+                if place(source) != place(tile) || got != expected {
+                    let (x, y) = (source.x, source.y);
+                    return differs(format!("tile ({x}, {y}, {floor}) differs from its source"));
+                }
+                report.tiles += 1;
+                report.entries += got.len();
+            }
+        }
+    }
+    let total: usize = read.sectors.iter().map(|s| s.tiles.len()).sum();
+    if total != report.tiles {
+        return differs(format!(
+            "{} bundle tiles have no source",
+            total - report.tiles
+        ));
+    }
+    if records_met.len() != families.teleports.len() {
+        return differs("a Transition record meets no teleport attribute".into());
+    }
+    let palette = used
+        .into_iter()
+        .map(|at| match resolver.resolve(&palette[at as usize]) {
+            Resolution::Resolved(family, id) => Ok(PaletteEntry {
+                key: palette[at as usize].clone(),
+                family,
+                id,
+            }),
+            _ => Err(Error::Format(
+                "equivalence: a kept key does not resolve".into(),
+            )),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let expected = Manifest {
+        format: bundle::FORMAT.into(),
+        min_reader_version: bundle::VERSION,
+        projection_class: "server".into(),
+        compiler_version: bundle::compiler_version(),
+        build_class: input.build_class,
+        identity: input.identity.clone(),
+        world: input.world.clone(),
+        palette,
+        draft_areas: BTreeSet::from_iter(input.draft_areas.iter().cloned())
+            .into_iter()
+            .collect(),
+        skipped_provisional_keys: provisional.into_iter().cloned().collect(),
+        dropped_teleports: dropped.into_iter().collect(),
+    };
+    let got = &read.manifest;
+    for (field, same) in [
+        ("format", expected.format == got.format),
+        (
+            "min_reader_version",
+            expected.min_reader_version == got.min_reader_version,
+        ),
+        (
+            "projection_class",
+            expected.projection_class == got.projection_class,
+        ),
+        (
+            "compiler_version",
+            expected.compiler_version == got.compiler_version,
+        ),
+        ("build_class", expected.build_class == got.build_class),
+        ("identity", expected.identity == got.identity),
+        ("world", expected.world == got.world),
+        ("palette", expected.palette == got.palette),
+        ("draft_areas", expected.draft_areas == got.draft_areas),
+        (
+            "skipped_provisional_keys",
+            expected.skipped_provisional_keys == got.skipped_provisional_keys,
+        ),
+        (
+            "dropped_teleports",
+            expected.dropped_teleports == got.dropped_teleports,
+        ),
+    ] {
+        if !same {
+            return differs(format!(
+                "manifest {field} is not the one derived from the input"
+            ));
+        }
+    }
+    // A field the list above does not name yet is still compared.
+    if expected != *got {
+        return differs("manifest is not the one derived from the input".into());
+    }
+    Ok(report)
+}
+
+type Entry<'a> = (Option<&'a str>, u8, crate::sector::Attrs);
+
+/// What [`equivalence`] derives one source tile from.
+struct Context<'a, 'b> {
+    palette: &'a [String],
+    resolved: &'b [Resolution],
+    families: &'b Families,
+    z: u8,
+    floor: i8,
+    dropped: &'b mut BTreeSet<u64>,
+    records_met: &'b mut BTreeSet<LegacyPosition>,
+    /// Kept palette indices.
+    used: &'b mut BTreeSet<u32>,
+    report: &'b mut Equivalence,
+}
+
+impl<'a> Context<'a, '_> {
+    /// The entries a source tile compiles to under the format rules [`equivalence`] names.
+    fn entries(&mut self, tile: &Tile) -> Result<Vec<Entry<'a>>, Error> {
+        let differs = |what: String| Error::Format(format!("equivalence: {what}"));
+        let from = (tile.x, tile.y, self.z);
+        if tile.house != 0 && !self.families.houses.contains(&tile.house) {
+            return Err(differs(format!(
+                "house {} at {from:?} is not in the House family",
+                tile.house
+            )));
+        }
+        let mut items = Vec::with_capacity(tile.items.len());
+        let mut skip_below: Option<u8> = None;
+        // Kept top-level entries so far; the last one owns the contents that follow it.
+        let mut top_level = 0u8;
+        for item in &tile.items {
+            if skip_below.is_some_and(|depth| item.depth <= depth) {
+                skip_below = None;
+            }
+            // The Transition rule holds for every attribute, a skipped one included (§4.5).
+            let record = self.families.teleports.get(&from);
+            let teleport = match (item.attrs.teleport, record) {
+                (None, _) => None,
+                (Some(to), Some(record)) if to == *record => {
+                    self.records_met.insert(from);
+                    let (x, y, to_z) = to;
+                    Some(Some((x, y, native_floor(to_z)? as u8)))
+                }
+                (Some((0, 0, 0)), None) => Some(None),
+                (Some(to), _) => {
+                    return Err(differs(format!("teleport at {from:?} to {to:?} disagrees")));
+                }
+            };
+            let key = self.palette.get(item.palette as usize).map(String::as_str);
+            let own = self.resolved.get(item.palette as usize);
+            // Every entry resolves, the contents of a skipped provisional entry included.
+            if matches!(own, None | Some(Resolution::Unknown)) {
+                return Err(differs(format!("unresolved palette entry at {from:?}")));
+            }
+            if skip_below.is_some() || own == Some(&Resolution::Provisional) {
+                skip_below = skip_below.or(Some(item.depth));
+                self.report.skipped_entries += 1;
+                continue;
+            }
+            if item.depth == 0 {
+                top_level = top_level.saturating_add(1);
+            }
+            let mut attrs = item.attrs.clone();
+            if let Some(teleport) = teleport {
+                attrs.teleport = teleport;
+                if teleport.is_none() {
+                    self.report.dropped_teleports += 1;
+                    let ordinal = top_level
+                        .checked_sub(1)
+                        .ok_or_else(|| differs(format!("content without an entry at {from:?}")))?;
+                    let placement = bundle::placement_key(self.floor, tile.x, tile.y, ordinal)
+                        .ok_or_else(|| differs(format!("no placement key at {from:?}")))?;
+                    self.dropped.insert(placement);
+                }
+            }
+            self.used.insert(item.palette);
+            items.push((key, item.depth, attrs));
+        }
+        Ok(items)
+    }
 }

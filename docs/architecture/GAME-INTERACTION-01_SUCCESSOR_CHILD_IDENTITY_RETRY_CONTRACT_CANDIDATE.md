@@ -13,6 +13,8 @@
 
 > **Amendment (2026-09-29).** `docs/architecture/reviews/OTERYN_GAME_D39_CHEST_USE_GAME_INTERACTION_AMENDMENT_DECISION_2026-09-29.md` accepts from this candidate only §4.1, §4.3, §5.1, §5.3 to §5.7, §17 and §19.1, and only for a player `USE` on a placed plain `once` reward chest (owner decisions D39 and D40). Everything else here stays `PROPOSED / NONCANONICAL`, including §19.2 to §19.5, nested cascades and the D37/D38 world-object owners. The `Implementation authority` line above still applies to every other interaction.
 
+> **Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §4).** The same sections, plus §6.1, §6.2, §7 and §18, are accepted for `USE`, `ON_ENTER` and `ON_LEAVE` on placed objects and tiles, with quest, D37 relocation, D38 overlay and presentation children only. Nested cascades and every other child kind stay `PROPOSED / NONCANONICAL`.
+
 ## 1. Successor boundary
 
 This candidate is a fresh bounded successor for the unchanged `GAME-INTERACTION-01` gate.

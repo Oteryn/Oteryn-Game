@@ -36,6 +36,10 @@ pub enum FoundationProtocolError {
     SnapshotLimitExceeded = 1033,
     BootstrapLimitExceeded = 1040,
     InvalidCapabilitySet = 1041,
+    /// An account's stored data contradicts the server's own content (an Achievement fact under a
+    /// key the catalogue lacks): an internal integrity fault. The client learns only that its
+    /// account data needs support; the diagnostic stays in the operator event.
+    AccountDataIntegrity = 1050,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,9 +72,9 @@ impl FoundationProtocolError {
             | Self::SnapshotLimitExceeded
             | Self::BootstrapLimitExceeded
             | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
-            Self::PayloadLimitExceeded | Self::TooManyOutstandingCommands => {
-                ProtocolDisposition::OperationTerminal
-            }
+            Self::PayloadLimitExceeded
+            | Self::TooManyOutstandingCommands
+            | Self::AccountDataIntegrity => ProtocolDisposition::OperationTerminal,
             Self::CommandOutcomeExpired
             | Self::CommandSequenceGap
             | Self::ServerSequenceGap
@@ -102,6 +106,7 @@ impl Display for FoundationProtocolError {
             Self::SnapshotLimitExceeded => "snapshot exceeds hard limit",
             Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
             Self::InvalidCapabilitySet => "invalid capability set",
+            Self::AccountDataIntegrity => "account data needs support",
         })
     }
 }
@@ -583,6 +588,33 @@ pub fn encode_command_result(
     push_scalar(&mut body, 1, command_id);
     push_scalar(&mut body, 2, status as u64);
     push_bytes(&mut body, 5, payload);
+    Ok(server_frame(
+        MessageType::CommandResult,
+        connection_generation,
+        server_sequence,
+        &body,
+    ))
+}
+
+/// Server-sequenced `REJECTED` `CommandResult` carrying an `OPERATION_TERMINAL` registered error
+/// in `error_code` and no typed payload (FND-02 §18): the command ends, the session does not.
+/// Any other disposition is refused, since it is not the outcome of one command.
+pub fn encode_command_error_result(
+    connection_generation: u64,
+    server_sequence: u64,
+    command_id: u64,
+    error: FoundationProtocolError,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if connection_generation == 0 || server_sequence == 0 || command_id == 0 {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if error.disposition() != ProtocolDisposition::OperationTerminal {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let mut body = Vec::with_capacity(16);
+    push_scalar(&mut body, 1, command_id);
+    push_scalar(&mut body, 2, CommandStatus::Rejected as u64);
+    push_scalar(&mut body, 3, u64::from(error.code()));
     Ok(server_frame(
         MessageType::CommandResult,
         connection_generation,
@@ -2199,6 +2231,7 @@ pub fn decode_framed_envelope(
     decode_wire_envelope(body)
 }
 
+pub mod account_achievements;
 pub mod actor_spell;
 pub mod bestiary;
 pub mod charm;
@@ -3541,6 +3574,71 @@ mod tests {
             FoundationProtocolError::SnapshotLimitExceeded.disposition(),
             ProtocolDisposition::SessionFatal
         );
+        assert_eq!(
+            FoundationProtocolError::AccountDataIntegrity.disposition(),
+            ProtocolDisposition::OperationTerminal
+        );
+    }
+
+    /// FND-02 §18: every code of this crate is the registry's, with the same name and default
+    /// disposition, and the registry holds no code the crate lacks.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn error_codes_match_the_registry() {
+        use FoundationProtocolError as E;
+        let registry: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
+        ))
+        .expect("protocol registry");
+        let registered: Vec<(u64, &str, &str)> = registry["error_codes"]
+            .as_array()
+            .expect("error_codes")
+            .iter()
+            .map(|entry| {
+                (
+                    entry["code"].as_u64().expect("code"),
+                    entry["name"].as_str().expect("name"),
+                    entry["default_disposition"].as_str().expect("disposition"),
+                )
+            })
+            .collect();
+        let crate_codes: Vec<(u64, &str, &str)> = [
+            (E::MalformedFrame, "MALFORMED_FRAME"),
+            (E::FrameTooLarge, "FRAME_TOO_LARGE"),
+            (E::MalformedEnvelope, "MALFORMED_ENVELOPE"),
+            (E::UnknownMessageType, "UNKNOWN_MESSAGE_TYPE"),
+            (E::ProtocolMajorMismatch, "PROTOCOL_MAJOR_MISMATCH"),
+            (E::TransportProfileMismatch, "TRANSPORT_PROFILE_MISMATCH"),
+            (E::CapabilityMismatch, "CAPABILITY_MISMATCH"),
+            (E::InvalidWireIdentifier, "INVALID_WIRE_IDENTIFIER"),
+            (E::PayloadLimitExceeded, "PAYLOAD_LIMIT_EXCEEDED"),
+            (E::StaleConnectionGeneration, "STALE_CONNECTION_GENERATION"),
+            (E::CommandOutcomeExpired, "COMMAND_OUTCOME_EXPIRED"),
+            (E::CommandSequenceGap, "COMMAND_SEQUENCE_GAP"),
+            (
+                E::TooManyOutstandingCommands,
+                "TOO_MANY_OUTSTANDING_COMMANDS",
+            ),
+            (E::ServerSequenceGap, "SERVER_SEQUENCE_GAP"),
+            (E::StateRevisionMismatch, "STATE_REVISION_MISMATCH"),
+            (E::SnapshotAssemblyInvalid, "SNAPSHOT_ASSEMBLY_INVALID"),
+            (E::SnapshotLimitExceeded, "SNAPSHOT_LIMIT_EXCEEDED"),
+            (E::BootstrapLimitExceeded, "BOOTSTRAP_LIMIT_EXCEEDED"),
+            (E::InvalidCapabilitySet, "INVALID_CAPABILITY_SET"),
+            (E::AccountDataIntegrity, "ACCOUNT_DATA_INTEGRITY"),
+        ]
+        .into_iter()
+        .map(|(error, name)| {
+            let disposition = match error.disposition() {
+                ProtocolDisposition::OperationTerminal => "OPERATION_TERMINAL",
+                ProtocolDisposition::ResyncRequired => "RESYNC_REQUIRED",
+                ProtocolDisposition::SessionFatal => "SESSION_FATAL",
+                ProtocolDisposition::TransportFatal => "TRANSPORT_FATAL",
+            };
+            (u64::from(error.code()), name, disposition)
+        })
+        .collect();
+        assert_eq!(crate_codes, registered);
     }
 
     #[test]
@@ -3792,6 +3890,69 @@ mod tests {
                 }
             );
         }
+        Ok(())
+    }
+
+    /// An operation-terminal command error: `REJECTED`, the registered code in `error_code` and no
+    /// payload, in hand-computed canonical bytes. Other dispositions are refused.
+    #[test]
+    fn command_error_result_carries_only_an_operation_terminal_code()
+    -> Result<(), FoundationProtocolError> {
+        let wire =
+            encode_command_error_result(4, 9, 300, FoundationProtocolError::PayloadLimitExceeded)?;
+        // CommandResult (8), generation 4, sequence 9, body: command 300 = ac 02, status 2,
+        // error_code 1009 = f1 07.
+        assert_eq!(
+            wire,
+            [
+                0x08, 0x08, 0x10, 0x04, 0x18, 0x09, 0x22, 0x08, 0x08, 0xac, 0x02, 0x10, 0x02, 0x18,
+                0xf1, 0x07
+            ]
+        );
+        let envelope = decode_wire_envelope(&wire)?;
+        assert_eq!(envelope.validate(Direction::ServerToClient, true), Ok(()));
+        assert_eq!(
+            decode_command_result(envelope.payload())?,
+            CommandResultView {
+                command_id: 300,
+                status: CommandStatus::Rejected,
+                error_code: 1009,
+                payload: &[],
+            }
+        );
+        // ACCOUNT_DATA_INTEGRITY 1050 = 9a 08: the code and nothing else (no payload, no text).
+        let wire =
+            encode_command_error_result(4, 9, 300, FoundationProtocolError::AccountDataIntegrity)?;
+        assert_eq!(
+            wire,
+            [
+                0x08, 0x08, 0x10, 0x04, 0x18, 0x09, 0x22, 0x08, 0x08, 0xac, 0x02, 0x10, 0x02, 0x18,
+                0x9a, 0x08
+            ]
+        );
+        assert_eq!(
+            decode_command_result(decode_wire_envelope(&wire)?.payload())?,
+            CommandResultView {
+                command_id: 300,
+                status: CommandStatus::Rejected,
+                error_code: 1050,
+                payload: &[],
+            }
+        );
+        for error in [
+            FoundationProtocolError::MalformedFrame,
+            FoundationProtocolError::UnknownMessageType,
+            FoundationProtocolError::CommandSequenceGap,
+        ] {
+            assert_eq!(
+                encode_command_error_result(4, 9, 300, error),
+                Err(FoundationProtocolError::MalformedEnvelope)
+            );
+        }
+        assert_eq!(
+            encode_command_error_result(0, 9, 300, FoundationProtocolError::PayloadLimitExceeded),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
         Ok(())
     }
 
