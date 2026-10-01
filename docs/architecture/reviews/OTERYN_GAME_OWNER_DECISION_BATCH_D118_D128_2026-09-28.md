@@ -73,13 +73,13 @@ top-damage character is gone is **UNKNOWN** (keep the 10-second window).
   hours or less XP is 50% and the top-damage character gets no loot. At 0 no XP. Regeneration
   starts after 10 minutes offline: 1 minute per 3 offline up to 39 hours, 1 per 6 from 39 to 42.
 
-**Amendment (architect ruling, 2026-10-01, #162): creature-kill XP is a closed product.** XP gained on a creature kill is the base creature XP multiplied by the product of a closed list of multipliers, each owned by its own decision:
+**Amendment (architect ruling, 2026-10-01, #162): creature-kill XP has a closed set of modifiers.** XP gained on a creature kill is changed only by this closed set of modifiers, each owned by its own decision and applied in the order and with the rounding that decision already fixes:
 
-- stamina (D118, this section);
-- the Prey XP bonus (PREY-0, `OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md`);
-- party shared experience (PARTY-PVP-0, `OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md`).
+1. party shared experience (PARTY-PVP-0 §5.1, `OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md`): the party bonus and the equal split, a summon's share first, rounded as §5.1 states; without sharing, XP goes by damage share;
+2. the Prey XP bonus (PREY-0 §7, `OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md`), applied to each character's own share;
+3. stamina (D118, this section), applied last to each character's own result.
 
-Only a later decision extends the list. Store XP boosts and double-XP events are not in base; they come later with the Store and event decisions. No boost source exists now.
+Each character's Prey and stamina state is its own, so members of one party can receive different awards. This amendment sets no new formula and changes no existing order or rounding; it only closes the list. Only a later decision adds a modifier. Store XP boosts and double-XP events are not in base; they come later with the Store and event decisions. No boost source exists now.
 
 ### 2.5 Mounts (D125)
 
