@@ -179,16 +179,18 @@ disagree, §13 R6).
 - A creature is **idle** when it perceives no player and no player summon, has no active
   condition, and is at its spawn cell, has no spawn point, or failed its walk back (§5.5). An idle
   creature has no pending think and costs nothing.
-- **Wake.** When a committed move or admission puts a player within a creature's perception
-  (§4.2), the owner schedules that creature's think, due at once (at most one pending, `RL-11`).
-  The wake set is the creatures among the candidates the VIS-1 interest query examines for that
-  player (at most `MOVE-RL-09`, 1,024).
+- **Wake.** When a committed move or admission puts a player or a player summon within a
+  creature's perception (§4.2), the owner schedules that creature's think, due at once (at most
+  one pending, `RL-11`). The wake set is the creatures among the candidates the VIS-1 interest
+  query examines for the moved player or player summon, from its own position (at most
+  `MOVE-RL-09`, 1,024 each), so a summon away from its owner still wakes the creatures it
+  reaches.
 - A summon is never idle while its owner is on the channel.
 
 ### 4.2 Perception
 
-- A creature **perceives** a player or player summon when the creature lies inside that player's
-  MOVE-RL-11 interest area (§4.1 there, the Channel's size and the floor rule). So a creature
+- A creature **perceives** a player or player summon when the creature lies inside the MOVE-RL-11
+  interest area centred on that player or summon (§4.1 there, the Channel's size and the floor rule). So a creature
   notices exactly the players who can see it (architect ruling R1).
 - Candidates are taken from the interest index in the MOVE-RL-11 canonical order measured from the
   creature, at most `AI01-PERCEPTION-CANDIDATES` (64), nearest first beyond it.
@@ -277,8 +279,13 @@ Every draw uses a SIM purpose seeded by (creature `ExactActorRef`, think sequenc
   distance for a walk back.
 - **When.** At most one request per think (`RL-10`): when the creature has no adopted path, its
   goal moved, or its last step was refused.
-- **Staleness.** A path binds (creature `ExactActorRef`, think sequence, goal, bundle revision). It
-  is dropped when any of them changes, when the target changes, or when a step is refused.
+- **Staleness.** A pending request binds (creature `ExactActorRef`, bundle revision), not the
+  think sequence: a later think that still needs a path updates the goal of the pending request in
+  place and keeps its queue position (one pending request per creature), and the search uses the
+  goal current when it runs. A request is dropped only when the creature's actor generation or the
+  bundle revision changes, or a think no longer needs a path. An adopted path binds (creature
+  `ExactActorRef`, goal, bundle revision); it is dropped when any of them changes, when the target
+  changes, or when a step is refused.
 - **Budget on the writer.** Searches run inside the channel owner's deterministic window budget
   (§7). A request over the budget waits for the next window in canonical order; meanwhile the
   creature follows its previous path if still valid, else holds position. Never a failure, never a
@@ -322,10 +329,14 @@ Every draw uses a SIM purpose seeded by (creature `ExactActorRef`, think sequenc
 
 ### 6.2 Realization
 
-- At channel activation the owner realizes every point of the active bundle in canonical order
+- At channel activation the owner realizes every active point of the active bundle in canonical order
   (source key, point ordinal), at most `RL-14` per window, each as a fresh actor-local generation
   with its speed drawn (`MONSTER_SPEED_DRAW`), before the channel admits players (`RL-15`).
 - One live or pending creature per point, ever.
+- A point is **active** when its period is `All`. A point with another period is compiled and
+  listed in the parity report but is outside the activation set and `RL-15`, and is never
+  realized or respawned until a spawn-period decision binds it to the World clock (owner 7a,
+  WORLD-INTERACTION-0; one creature today).
 
 ### 6.3 Respawn
 
@@ -341,7 +352,7 @@ delay later. When it is due:
 - **Occupied:** the accepted chain, 3 retries every 5,000 ms (D115) unless the source states
   another interval, then `SKIPPED` and a successor a full delay later. It never displaces or
   stacks (Canary forces placement; the accepted §4.3 rule stays).
-- **Period** other than `All`: not realized until a world clock decision (one creature today).
+- **Period** other than `All`: the point is inactive (§6.2) and never respawns.
 - At most one pending occurrence per point (`RL-12`).
 
 ### 6.4 Rate hooks
@@ -390,15 +401,22 @@ decisions; until then the factor is 1.
 
 ### 8.2 Player summons
 
-- **Creation** is the spell lane's (`acquire_summon`, S27): level, mana from `summoning.mana_cost`,
-  `summonable` or `convinceable`, a masterless convince target. This runtime commits the mana and
-  the summon in one owner mutation, checking the cap of 2 summons per character (`RL-19`) in it.
+- **Creation** is the spell lane's (`acquire_summon`, S27), with that contract's checks per source:
+  Summon Creature takes mana from `summoning.mana_cost` and requires `summonable`; Convince takes
+  mana from `summoning.mana_cost`, requires `convinceable` and a masterless target; Animate Dead
+  has `mana_source = none` and `require_flag = none`, and consumes the corpse and one rune charge.
+  This runtime commits every effect of one acquisition (mana, corpse removal, rune charge, summon
+  admission) as one all-or-nothing operation, checking the cap of 2 summons per character
+  (`RL-19`) and the placement in it: if admission fails, nothing is consumed.
   Summon Creature and Animate Dead admit a new creature (placed as §8.1; on the corpse tile). Convince changes the owner of the existing creature, keeping its
   actor and health.
 - A convinced spawned creature keeps its point: the point respawns only after it is gone (Canary;
   ruling R7).
 - A creature that has ever been a summon never yields a corpse, loot, experience, Bestiary, Prey,
-  task or Bosstiary credit when it dies; its death creates no death key.
+  task or Bosstiary credit when it dies. A lethal combat outcome still creates or recognizes its
+  one replay-stable death key and death occurrence (VSL-COMBAT-01 §§7–8, DUR-03 A4), so lethal
+  replay and actor-generation fencing stay exactly-once; that occurrence simply starts no
+  descendant workflow. Only a removal (§8.4) creates no death key.
 
 ### 8.3 Behaviour
 
@@ -416,8 +434,8 @@ decisions; until then the factor is 1.
 A summon is removed, with no death, when its owner logs out, dies, transfers channel or leaves the
 channel at the end of its in-fight deadline; when the owner is more than 30 tiles in x or y or 2
 floors away (checked on every committed move of either); when its owner link is stale (owner
-generation changed); and at `WorldReset`. A monster's summons die with their master (no death key,
-nothing dropped). A reconnect to the same GameSession keeps them. Summons are never saved and do
+generation changed); and at `WorldReset`. A monster's summons are removed with their master (a
+removal, not a death: no death key, nothing dropped). A reconnect to the same GameSession keeps them. Summons are never saved and do
 not return at login. Familiars are the spell lane's (C.1, its Q3).
 
 ### 8.5 Attribution
@@ -467,7 +485,7 @@ allocation.
 | `CREATUREAI0-RL-12` pending respawn occurrences per channel | 131,072 (one per point) | |
 | `CREATUREAI0-RL-13` respawn delay | 1,000 ms to 86,400,000 ms | content validation; map 5 s to 54,784 s |
 | `CREATUREAI0-RL-14` realizations per 50 ms window at activation | 4,096 | |
-| `CREATUREAI0-RL-15` activation with every point realized | at most 30,000 ms at 131,072 points, measured by SPAWN-1 | above it, a new decision |
+| `CREATUREAI0-RL-15` activation with every active point (§6.2) realized | at most 30,000 ms at 131,072 points, measured by SPAWN-1 | above it, a new decision |
 | `CREATUREAI0-RL-16` creature runtime memory per channel | at most 128 MiB at 131,072 idle creatures, measured by SPAWN-1 | above it, a new decision |
 | `CREATUREAI0-RL-17` AI work (thinks and paths) per 50 ms window | p99 at most 15 ms on the reference host, measured by CREATURE-MOVE-1 | above it `RL-05` and `RL-09` fall |
 | `CREATUREAI0-RL-18` AI overrides per creature | 2 (one forced target, one forced distance) | the newer replaces |
@@ -520,20 +538,23 @@ loot; summon damage counting for its owner; spawns per channel, reset at the ser
 
 **R1. Perception.** a) The MOVE-RL-11 relation: a creature perceives the players that see it
 (recommended: one index, fair, the area D84 chose for vision); b) Canary's 11-tile
-box. **Ruled a).** It supersedes the first slice's 7-tile content value (D115).
+box. **Ruled a)**, and confirmed by the owner (answer 4a, 2026-10-01, #162). It supersedes the
+first slice's 7-tile content value (D115).
 
 **R2. Floors.** Owner 4a lists "chasing players across floors". Global monsters do not use stairs,
 ladders or holes; Canary forbids floor-change tiles to monsters, and the Tibia escape by changing
 floor depends on it. a) Tibia: no floor change by walking; the target on another floor is lost
 (recommended: owner rule 5905825574, Tibia-faithful); b) cross-floor chase as a declared
-difference. **Ruled a)**, reported to the control plane because the owner's wording differs.
+difference. **Ruled a)**, and confirmed by the owner (answer 2a, 2026-10-01, #162).
 
 **R3. Where paths run.** a) On the writer inside a window budget, deterministic deferral
 (recommended); b) worker threads with asynchronous adoption, nondeterministic. **Ruled a).**
 
 **R4. Population rows.** D57 asks a new owner decision for larger values. Owner 4a (full behaviour
 from data) with D188 (the full base map) and 6a (spawns per channel) is that decision for the
-reference map; the numbers are bounds with headroom over the map (`RL-01` to `RL-04`). **Ruled.**
+reference map; the numbers are bounds with headroom over the map (`RL-01` to `RL-04`). **Ruled**,
+and the owner confirmed that 4a covers these bounds without a separate approval (answer 3a,
+2026-10-01, #162).
 
 **R5. Failed walk back.** a) Idle in place until the next wake (recommended: bounded); b) Canary's
 retry every think forever. **Ruled a).**
