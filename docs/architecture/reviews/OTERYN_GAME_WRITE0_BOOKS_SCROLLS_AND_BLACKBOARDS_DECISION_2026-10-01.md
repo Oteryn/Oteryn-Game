@@ -175,8 +175,9 @@ DUR-03 §39.3.
   (at `WRITE0-RL-03`); every transition is a conditional update from `OPEN` and acts only if it
   changed a row.
 - **Report bounds** (fixed here; results returned by the GM tools command, each storing nothing):
-  - deduplication by (reporter CharacterId, target key, revision): a repeat returns the first
-    result;
+  - deduplication by (reporter CharacterId, target key, revision) among `OPEN` reports only (a
+    partial unique index `WHERE state = OPEN`): a repeat while the first is open returns its
+    result; after it is `CLOSED` or `EXPIRED` the reporter may report the same text again;
   - at most `WRITE0-RL-04` reports per reporting character per hour (`REPORT_RATE_LIMITED`) and
     `WRITE0-RL-05` open reports per reporting account (`REPORT_QUOTA`);
   - at most `WRITE0-RL-06` open snapshots in the World; a report beyond it is refused
@@ -188,7 +189,7 @@ DUR-03 §39.3.
        (CharacterId, hour), the reporting account's open-report row (AccountId), the World's
        open-snapshot row. Each is first created by `INSERT … ON CONFLICT DO NOTHING` at zero, then
        read `FOR UPDATE`, so a missing row can never be raced past.
-    3. **Dedup:** an existing snapshot with the unique key (reporter, target key, revision) returns that
+    3. **Dedup:** an existing `OPEN` report with the key (reporter, target key, revision) returns that
        report's first result; the unique index backs it, and a uniqueness conflict on insert maps to
        the same result, never to a raw error.
     4. **Limits:** `WRITE0-RL-04`, `-RL-05`, `-RL-06` against the locked counters.
