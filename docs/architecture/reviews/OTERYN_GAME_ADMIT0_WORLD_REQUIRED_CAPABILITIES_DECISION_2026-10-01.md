@@ -100,7 +100,11 @@ hurt or block its character, without making those capabilities core protocol for
   migration, any later transfer contract) must, before its commit: check the destination scope's
   effective set against the session's declared support (refusing with `RECONNECT_CAPABILITY_REQUIRED`
   semantics, current authority preserved), select every capability of the set, and reconcile by a
-  replacement snapshot (§4). Until the contract of such a transfer adds this check, that transfer
+  replacement snapshot (§4). **Rebind rule:** a transfer, even one that keeps the same transport,
+  rebinds the session with `ServerResumeAccepted` (FND-02 §11) carrying the destination's selected
+  capabilities and context, sent before the replacement snapshot and before any message of a
+  capability-gated domain; the client interprets no gated domain of the destination until it has
+  it. No new message is needed: the transfer contract reuses the existing one. Until the contract of such a transfer adds this check, that transfer
   into a channel with a non-empty set is refused (fail closed). This holds whatever the source
   scope's set was, so a session recovered in a scope with an empty set cannot enter a public channel
   unchecked (WORLD-INTERACTION-0 §9.2).
