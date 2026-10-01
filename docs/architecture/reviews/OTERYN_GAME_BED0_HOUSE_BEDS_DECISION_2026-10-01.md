@@ -71,10 +71,15 @@ training?
 
 ## 3. Bed content (BED-CONTENT-1)
 
-An Item definition that is a bed part carries `bed {partner_direction, free_type,
-occupied_type_male, occupied_type_female}`. A validator checks that both parts of every placed bed
-in the active bundle name each other. A bed is identified by its **head part's tile** in the house
-(`BedKey = (HouseId, x, y, z)`). Bed parts stay map items: never pickupable, never moved
+An Item definition that is a bed part carries `bed {part: head | foot, partner_direction,
+free_type, occupied_type_male, occupied_type_female}`. A validator checks, for every placed bed in
+the active bundle, that there is exactly one `head` part and one `foot` part, that each names the
+other through its `partner_direction`, and that both lie on tiles of the same house. A bed is
+identified by its **head part's tile** in the house (`BedKey = (HouseId, x, y, z)`). Every path that
+derives a `BedKey` (USE, `BED_SLEEP_INTENT`, the reservation, the sleeper insert, the view and the
+bed-removed check) first normalises the target to the head: a `foot` target resolves through its
+`partner_direction` to the head, and a target that does not resolve to a valid head is refused
+`NOT_POSSIBLE`. A USE on one half and a `BED_SLEEP_INTENT` on the other therefore name the same bed. Bed parts stay map items: never pickupable, never moved
 (HOUSE-RUNTIME-0 §6.2).
 
 ## 4. Going to sleep (BED-1)
@@ -207,7 +212,9 @@ coefficients are `PARITY_PENDING`; the manual confirms the soul rate.
 | `BED0-RL-02` `BED_SLEEP_INTENT` size | 24 bytes |
 | `BED0-RL-03` sleep time counted | 21 days (OFFLINE-0's offline cap) |
 
-Each with max and max+1 tests.
+Each with max and max+1 tests. Also tested: a USE on the foot and a `BED_SLEEP_INTENT` on the head
+(and the reverse) derive the same `BedKey`, so a second sleeper on the other half is refused
+`BED_OCCUPIED`; a bed whose parts do not name each other fails content validation.
 
 ## 11. Rejected options
 
