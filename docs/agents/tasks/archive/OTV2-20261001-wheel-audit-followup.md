@@ -1,0 +1,83 @@
+# OTV2-20261001-wheel-audit-followup
+
+```yaml
+task_id: OTV2-20261001-wheel-audit-followup
+title: "Wheel/Gem audit follow-up: numeric safety and source/item delivery evidence"
+mode: REPAIR
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: codex/wheel-audit-followup-20261001
+pr: 1474
+base_sha: aad17f99d86abea01bd50b9d559e69eaa5549d88
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: codex-wheel-audit-followup
+created_at: 2026-10-01
+updated_at: 2026-10-01
+execution_policy: continuous_progress
+owned_paths:
+  - tools/content-schema/wheel-authoring/
+  - docs/agents/tasks/archive/OTV2-20261001-wheel-audit-followup.md
+public_contracts: []
+depends_on: []
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Authority and outcome
+
+The owner requested finishing this worker's authoring/research scope and publishing
+architect/coordinator responsibilities to #162. Allocation and backlog are in
+comment5936424268. One root writer uses a new branch; previous frozen branches
+remain untouched. Three existing subagents proposed patches/research outside the
+repository. All project changes, tests and Git publication ran in the cloud.
+Remote Desktop only controlled/read a research browser, then closed it.
+
+This batch rejects zero Combat Mastery divisors, repairs stale vendor evidence,
+records positional/upstream conflicts and supplies reproducible Item/Trade/icon
+metadata. Native Wheel/Gem remains unimplemented at audited main. No runtime,
+architecture values, item materialization, protocol or proprietary assets changed.
+
+## Findings and dispositions
+
+- PROVEN HARDENING: missing_health_step now strictly positive; zero/negative
+  rejected at three stages, positive fractional values and zero bonuses retained.
+- CONFLICT EVIDENCE_GAP: slot2 ID2/ID30 disagreement recorded across four exact
+  upstream revisions. English Basic_Mod Chrome/CDP prose corroborates the selected
+  planner position, but exact-ID/target-date/current-Global admission remains pending.
+- PROVEN EVIDENCE_GAP: vendor evidence referenced removed trade-00000-00321.json;
+  it now cites index-driven Item/Trade evidence (311 offers across18 keys).
+- PROVEN DELIVERY_GAP: all18 native items remain materializable:false. Metadata
+  records known weights/charges, unknown fields, client flags and five upstream
+  XML weight disagreements; accepted native values are preserved.
+- OUT_OF_SCOPE runtime delivery: loader/state/effects/Atelier/economy/Item/wire/client
+  and durable E2E work routed to coordinator/workers. Cap225/12.5M amendment,
+  exact-position qualification and Guiding arithmetic routed to architect.
+
+## Qualification
+
+Preparation:117 authoring tests PASS; deterministic schema/candidate/evidence/report,
+manifest,18 appearances and new delivery sample PASS; pinned planner replay PASS.
+New tests exercise the complete validator plus missing Item identity and drifting
+icon coverage rejection. Source proof verifies42 exact anchors in142 audited blobs.
+Icon metadata covers205 crops/520 bindings,189 safe fallbacks and16 blocked.
+Final frozen-head tests, six browser modes, governance and hosted checks are
+recorded externally in the PR/#162 packet, avoiding a self-referential commit.
+
+High-risk authority/recovery qualification: NOT_APPLICABLE; this is reference-only
+validation/metadata and creates no gameplay writer, controller or durable authority.
+Native E2E: NOT_APPLICABLE to this authoring repair; absent modules remain a delivery
+gap, not waived acceptance. Upstream was inspected statically without builds or
+external-client E2E. Wiki revision not obtained; no new Global parity certificate.
+
+Self-review: root inspected the complete bounded delta, schema generation, sibling
+numeric bounds, canonical source hashes and preservation of native values/admission.
+Paid review/queue/merge remain with control plane session_013KJX6mv8LQveCKKXYgAX94.
+The bound risk policy does not require deep review for low-risk authoring metadata;
+any programme review dispatch is coordinator-owned. Completed means this worker's
+reviewable deliverable, not protected integration or gameplay completeness.
+Merge commit/result: squash merge of #1474, if admitted through protected lifecycle.
+Exact FREEZE_SHA, validation, recovery and CI readback are external lifecycle evidence.

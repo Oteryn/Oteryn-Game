@@ -3,7 +3,7 @@
   "runtime_admitted": false,
   "redistribution_authorized": false,
   "mapping_basis": "CURRENT_PINNED_PLANNER_SOURCE_IDS; NOT_OLDER_CLIENT_SLOT_LAYOUT",
-  "candidate_sha256": "51da970d2fd39c2094287114b593a491d76f0668a8262d6076047778a8ba3649",
+  "candidate_sha256": "6871587163ec70b3186ad1581e91961843d448e3f389755311027e6252ac2df7",
   "source_sha256": "f49f4c0cea261e2a43db0164bd5bbadd07bce61bc542c6d50a4e9b86029c63de",
   "sheets": {
     "dedication": {

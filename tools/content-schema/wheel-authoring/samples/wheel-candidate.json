@@ -26,7 +26,7 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "6e91cc5c627bfd4c47cc321cfc9b3ccfebd7b6e466e867aa6aab35b2f54f90d7"
+    "source-parameters.json": "713d9495d939ab9d98849e21817c5e5db7032704479fa0621df80e30df0310f9"
   },
   "progression": {
     "minimum_level": 51,
@@ -22952,7 +22952,7 @@
           "greater_fragment": 2250000,
           "crusher": 500
         },
-        "vendor_price_evidence": "existing content/services/trade/trade-00000-00321.json; candidate reference, no trade mutation",
+        "vendor_price_evidence": "samples/item-delivery-reference.json; verified content/services/trade/index.json shard inputs; declarations only, no trade mutation",
         "state_operation_evidence": "WHEEL-GEM-0 sections 3, 5-9; official manual capture notes. in-vessel switch refusal is architect ruling R2.",
         "vendor_buy_unrevealed_gem_prices": {
           "lesser": 2500,

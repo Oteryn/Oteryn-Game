@@ -1,0 +1,2947 @@
+{
+  "schema": "OTERYN_WHEEL_ITEM_DELIVERY_REFERENCE/v1",
+  "runtime_admitted": false,
+  "redistribution_authorized": false,
+  "scope": "METADATA_REFERENCE_AND_OBSERVED_NATIVE_BOUNDARY",
+  "input_digests": {
+    "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "content/assets/files/catalog-content.json": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+    "content/assets/files/sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma": "d37730c58970657b2466ad3aa0bad351115ae3744b00e820924cf2f498ed80a8",
+    "content/assets/files/sprites-b9a7e3637bd3b1836c986413689ab360445f19ac20c7346f3d3527bcc322c3ea.bmp.lzma": "9c3e7fa2fc4bf3731fd186596376da88fce6130cf7b75a12e29fe20c11176138",
+    "content/assets/files/sprites-d2f65cdfb60118cb8b213dc50a2469e345c0f4eb5a48b967b9ea58a0e464d7be.bmp.lzma": "44e151d109908e3d0f43ea7950086e46ac7bb6eefea1c07c38712ce2e892237e",
+    "imports/official/client-assets/15.30/manifest.json": "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4",
+    "content/items/index.json": "8a4916cdb5a8efa301660f1b5e86285bd9ea4139dbaceb83e6dbe0938d2f871e",
+    "content/items/definitions/items-25500-25999.json": "0afdcd00b38b4b8318e519c889f5b8d0e0afcb4af35d5ca7654595e243d10dc9",
+    "content/items/definitions/items-26000-26499.json": "31e92db31d637766d7cfeb5b98190c44bbd44d076d14f226decb028974d50f27",
+    "content/items/definitions/items-27000-27499.json": "c228ab50e901953eebe86d6ef38d4a6fef7690ddbafcfbd1a60af7550cc01023",
+    "content/services/trade/index.json": "90193ebfcba69632e5457cf8a44b9cb00b323eb016b5bceca5e7ca84ec8e14b4",
+    "content/services/trade/trade-00000-00323.json": "7eb3c24beb4f6c48038de7ddd86636b6c03267b00c8a44df3535846f7f81c87f"
+  },
+  "items": {
+    "oteryn:item.tibia.i44602": {
+      "appearance_object_id": 44602,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "913e5c0c4d465aa3cde5d309fbe9ea144d8486e3a4252e73dff119d8c13e3ee9",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser guardian gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 0,
+        "skillwheel_gem.vocation_id": 0,
+        "market.category": 15,
+        "market.trade_as_object_id": 44602,
+        "market.show_as_object_id": 44602
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          2500
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44603": {
+      "appearance_object_id": 44603,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "24ad870145e72e9e772a99f465ddcb1cc1bf085edb7ea687f411dae39d23048a",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 50
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "guardian gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 1,
+        "skillwheel_gem.vocation_id": 0,
+        "market.category": 15,
+        "market.trade_as_object_id": 44603,
+        "market.show_as_object_id": 44603
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          5000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44604": {
+      "appearance_object_id": 44604,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "6e3819d4755a57c21415f1f72bd51294cf653932526a2917ac67669f3b04a046",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "greater guardian gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 2,
+        "skillwheel_gem.vocation_id": 0,
+        "market.category": 15,
+        "market.trade_as_object_id": 44604,
+        "market.show_as_object_id": 44604
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          10000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44605": {
+      "appearance_object_id": 44605,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "4dd23387669632982bad06bd415636b0f8c153c20c8555453bc0df4928217b6d",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser marksman gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 0,
+        "skillwheel_gem.vocation_id": 1,
+        "market.category": 15,
+        "market.trade_as_object_id": 44605,
+        "market.show_as_object_id": 44605
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          2500
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44606": {
+      "appearance_object_id": 44606,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "27bc37a8d633be26bd2cfff21ded4d42006cb51d5ec043f8000dd88e2c0b1101",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 50
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "marksman gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 1,
+        "skillwheel_gem.vocation_id": 1,
+        "market.category": 15,
+        "market.trade_as_object_id": 44606,
+        "market.show_as_object_id": 44606
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          5000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44607": {
+      "appearance_object_id": 44607,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "d2745a1a76f7db6c41caf5df169eaf8c83a54ea5c39e874454b55fb77d6975d8",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "greater marksman gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 2,
+        "skillwheel_gem.vocation_id": 1,
+        "market.category": 15,
+        "market.trade_as_object_id": 44607,
+        "market.show_as_object_id": 44607
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          10000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44608": {
+      "appearance_object_id": 44608,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "50c6ae4a78a15260814f6a4fc881156a7d472d5acafb97baf0ba96a464c937a7",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser sage gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 0,
+        "skillwheel_gem.vocation_id": 2,
+        "market.category": 15,
+        "market.trade_as_object_id": 44608,
+        "market.show_as_object_id": 44608
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          2500
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44609": {
+      "appearance_object_id": 44609,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "2db0bf260073b0ca403c95bbde558d05d2021f9fe1a7e187d76d451858f4a95a",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 50
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sage gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 1,
+        "skillwheel_gem.vocation_id": 2,
+        "market.category": 15,
+        "market.trade_as_object_id": 44609,
+        "market.show_as_object_id": 44609
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          5000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44610": {
+      "appearance_object_id": 44610,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "1744563b5839a389c7c70ac8158af4fabc738efb97f3b15bd1dbf00367548839",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "greater sage gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 2,
+        "skillwheel_gem.vocation_id": 2,
+        "market.category": 15,
+        "market.trade_as_object_id": 44610,
+        "market.show_as_object_id": 44610
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          10000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44611": {
+      "appearance_object_id": 44611,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "98b4e3ecdc46ff5d0a7feb9540248c1e542170c6f55e2446144460b77c4166b9",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser mystic gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 0,
+        "skillwheel_gem.vocation_id": 3,
+        "market.category": 15,
+        "market.trade_as_object_id": 44611,
+        "market.show_as_object_id": 44611
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          2500
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44612": {
+      "appearance_object_id": 44612,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "f5264cbca0d07bc2b39259e04841b199bd6e8db510594617d413cf0f0823b565",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 50
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "mystic gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 1,
+        "skillwheel_gem.vocation_id": 3,
+        "market.category": 15,
+        "market.trade_as_object_id": 44612,
+        "market.show_as_object_id": 44612
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          5000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i44613": {
+      "appearance_object_id": 44613,
+      "native_definition_path": "content/items/definitions/items-25500-25999.json",
+      "native_definition_sha256": "8616f2a1ac49e1f8b89972b66e711f8bbf71d9848998a988c174507e007f4b2c",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "greater mystic gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 2,
+        "skillwheel_gem.vocation_id": 3,
+        "market.category": 15,
+        "market.trade_as_object_id": 44613,
+        "market.show_as_object_id": 44613
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          10000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i46625": {
+      "appearance_object_id": 46625,
+      "native_definition_path": "content/items/definitions/items-26000-26499.json",
+      "native_definition_sha256": "80398a92a44e9a07808957e4bd75a0db4b30cfaf434c14da374c11ad0ce01bf7",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 5
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser fragment"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "SellToPlayer",
+          "unit_price": 750000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "market.category": 9,
+        "market.trade_as_object_id": 46625,
+        "market.show_as_object_id": 46625
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          500
+        ],
+        "sale_price": [
+          750000
+        ]
+      }
+    },
+    "oteryn:item.tibia.i46626": {
+      "appearance_object_id": 46626,
+      "native_definition_path": "content/items/definitions/items-26000-26499.json",
+      "native_definition_sha256": "263e4274f47f394058ba3bdbfc3b9756522e397422ac8790dd29722a36f2a443",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 10
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "greater fragment"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "SellToPlayer",
+          "unit_price": 2250000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "market.category": 9,
+        "market.trade_as_object_id": 46626,
+        "market.show_as_object_id": 46626
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          2500
+        ],
+        "sale_price": [
+          2250000
+        ]
+      }
+    },
+    "oteryn:item.tibia.i46627": {
+      "appearance_object_id": 46627,
+      "native_definition_path": "content/items/definitions/items-26000-26499.json",
+      "native_definition_sha256": "efd320b6fcb512d9bcb3793e963ee960f19dbdda1e8b78c676661e1f116b794f",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "charges": {
+          "state": "KNOWN",
+          "value": {
+            "count": {
+              "state": "KNOWN",
+              "value": 10
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 300
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "crusher"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.ahmet",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.asphota",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.bashira",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.beatrice",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.bertha",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.bezil",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.gladys",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.gorn",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.gree_dee",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.halif",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.lubo",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.maro",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.maun",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.nezil",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.perod",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.red_lilly",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.rock_in_a_hard_place",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.sarina",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.shiantis",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.tefrit",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.timur",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        },
+        {
+          "service": "oteryn:service.trade.zora",
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.market": true,
+        "flags.usable": true,
+        "flags.multiuse": true,
+        "flags.wearout": true,
+        "market.category": 14,
+        "market.trade_as_object_id": 46627,
+        "market.show_as_object_id": 46627
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          0
+        ],
+        "sale_price": [
+          500
+        ]
+      }
+    },
+    "oteryn:item.tibia.i49371": {
+      "appearance_object_id": 49371,
+      "native_definition_path": "content/items/definitions/items-27000-27499.json",
+      "native_definition_sha256": "7c8c427c6e4bdc5cb2a35f817f0cfc3a1f764dc7736f36e44b61ed3a04e70fb1",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser spiritualist gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 0,
+        "skillwheel_gem.vocation_id": 4,
+        "market.category": 15,
+        "market.trade_as_object_id": 49371,
+        "market.show_as_object_id": 49371
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          2500
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i49372": {
+      "appearance_object_id": 49372,
+      "native_definition_path": "content/items/definitions/items-27000-27499.json",
+      "native_definition_sha256": "fc6150714e8d966c30bd9f24f38b354c3af459892e28021cf85c3268e63dd9ee",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 50
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "spiritualist gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 1,
+        "skillwheel_gem.vocation_id": 4,
+        "market.category": 15,
+        "market.trade_as_object_id": 49372,
+        "market.show_as_object_id": 49372
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          5000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    },
+    "oteryn:item.tibia.i49373": {
+      "appearance_object_id": 49373,
+      "native_definition_path": "content/items/definitions/items-27000-27499.json",
+      "native_definition_sha256": "4209ebff44b5b41cf4d849dc022e0989c80b1880ea50950cecf45b32f9a65d58",
+      "native_materializable_observed": false,
+      "native_stack_class_observed": "Unknown",
+      "native_known_semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "greater spiritualist gem"
+            }
+          }
+        }
+      },
+      "native_unknown_fields": [
+        "charges",
+        "classification",
+        "container",
+        "equipment",
+        "fluid",
+        "imbuement",
+        "physical.movable",
+        "physical.pickupable",
+        "protection",
+        "readable_writeable",
+        "skill_modifiers",
+        "stack",
+        "temporal",
+        "trade_restrictions",
+        "use_transform",
+        "weapon"
+      ],
+      "native_trade_declarations_observed": [
+        {
+          "service": "oteryn:service.trade.augustin",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.briasol",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.chantalle",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.edmund",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.gail",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.giri",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.hanna",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.ishina",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.iwan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.jessica",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.odemara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.oiriz",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.talila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tesha",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.tezila",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.valindara",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        },
+        {
+          "service": "oteryn:service.trade.yonan",
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000
+        }
+      ],
+      "client_flags_observed": {
+        "flags.take": true,
+        "flags.cumulative": true,
+        "flags.market": true,
+        "flags.skillwheel_gem": true,
+        "skillwheel_gem.gem_quality_id": 2,
+        "skillwheel_gem.vocation_id": 4,
+        "market.category": 15,
+        "market.trade_as_object_id": 49373,
+        "market.show_as_object_id": 49373
+      },
+      "client_npc_price_sets_observed": {
+        "buy_price": [
+          10000
+        ],
+        "sale_price": [
+          0
+        ]
+      }
+    }
+  },
+  "client_icon_coverage": {
+    "manifest_sha256": "77e98ad275fd66a802ce87990663883252223db18d3c4dab318bab8758658c19",
+    "reference_crops": 205,
+    "bindings": 520,
+    "pixel_equal_fallback_crops": 189,
+    "blocked_different_fallback_crops": 16,
+    "item_appearance_catalogue_provides_perk_ui_crosswalk": false
+  },
+  "native_trade_coverage": {
+    "item_keys_with_declarations": 18,
+    "declared_offer_count": 311,
+    "interpretation": "AUTHORING_DECLARATIONS; NOT_NATIVE_TRADE_ADMISSION"
+  },
+  "native_delivery_requires": [
+    "Accepted item family and physical/stack/charge/use/trade semantics",
+    "Atomic item consumption, fragment placement, charge decrement and capacity rules",
+    "Native inventory/trade/loot integration under current catalogue revision",
+    "Admitted client projections and asset packaging/redistribution authority"
+  ]
+}

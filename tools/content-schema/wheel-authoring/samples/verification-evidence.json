@@ -110,7 +110,8 @@
     "special_spell_secondary_cooldown": "OTS_HYPOTHESIS_ONLY_NOT_SELECTED",
     "flurry_cast_range": "CONFLICT_NOT_SELECTED; AFFECTED_AREA_REFERENCE_SELECTED",
     "guiding_presence_arithmetic": "PARITY_PENDING: WIKI_LITERAL_ONLY; PINNED_CANARY_INSPECTED_PATHS_LACK_NEW_PLUS33; NO_OWNER_GATE",
-    "mystic_repulse_selection": "ENGLISH_WIKI_1206174_EXPLICIT40_CONFIRMS_FORMULA_SELECTION; RUNTIME_UNADMITTED"
+    "mystic_repulse_selection": "ENGLISH_WIKI_1206174_EXPLICIT40_CONFIRMS_FORMULA_SELECTION; RUNTIME_UNADMITTED",
+    "basic_mod_position_2": "UPSTREAM_SOURCE_CONFLICT_RECORDED; ENGLISH_WIKI_PROSE_CORROBORATES_TIBIAPAL; EXACT_LIST_PENDING_NATIVE_ADMISSION"
   },
   "live_verification": {
     "tibiapal": true,
@@ -136,7 +137,7 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "51da970d2fd39c2094287114b593a491d76f0668a8262d6076047778a8ba3649",
+  "candidate_sha256": "6871587163ec70b3186ad1581e91961843d448e3f389755311027e6252ac2df7",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
     "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
@@ -147,14 +148,14 @@
   },
   "client_icon_manifest": {
     "file": "samples/client-icon-manifest.json",
-    "sha256": "cad3cf9282789a29d4da8598ea4936f24b447801a5e1e46074c7e947f2549b6e"
+    "sha256": "77e98ad275fd66a802ce87990663883252223db18d3c4dab318bab8758658c19"
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "2937f6ae21ac9fe883501de30e6b3aa0728845e1bf1389840e5804ba59c50c30"
+    "sha256": "a5874a77e70d4450878831eabdd9adb6bc3ef49cebcd838a020aa50732e4246f"
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",
-    "sha256": "60c8a899ca2bd4bb4e33df2884d61f7b8b665175d5b480d6f908bc3268094e97"
+    "sha256": "3f7ee588767a5b6c09ee4094018497a9201096b5c403c82ef91825964ca14ad4"
   }
 }

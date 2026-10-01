@@ -5,6 +5,13 @@ W-R and GEM-R. It covers all five vocations, 180 slots, the 20 vocation/domain
 Revelation assignments, 46 populated basic mods and 94 supreme mods. The candidate
 is deliberately separate from runtime admission (`runtime_admitted: false`).
 
+The [native delivery audit](runtime-delivery-audit.md) distinguishes reference
+coverage from the unfinished game module. It records the Combat Mastery validator
+repair, positional Basic-mod source conflict, item semantics and runtime owners.
+`samples/item-delivery-reference.json` reproduces item/trade/icon coverage without
+granting materialization. `samples/item-source-semantics-observations.json` records
+upstream XML disagreements; it does not replace accepted native item values.
+
 ## Build and verify
 
 With Python 3 and `requirements.txt` installed, run from this directory:
@@ -16,6 +23,7 @@ python wheel_authoring.py validate
 python -m unittest discover -s . -q
 python build_report.py --check
 python verify_item_assets.py --check
+python verify_item_delivery_reference.py --check
 python client_icons.py --check
 node verify_planner.cjs /path/to/pinned/TibiaPal
 ```
