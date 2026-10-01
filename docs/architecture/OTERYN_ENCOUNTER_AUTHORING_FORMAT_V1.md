@@ -239,6 +239,11 @@ rules.
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
 
+**Amendment (pending on acceptance of BOSS-RAID-0; `reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §6, §8, §9).** The D27 reward
+domain is decided: boss cooldowns, lever admission into an instance per group, the reward chest
+and anti-hopping eligibility. Raids are encounters with `channel_shared` scope plus a schedule,
+announcements and waves (§4.1 there).
+
 ## 11. First transcription
 
 `samples/soul_war_taint_zones/` transcribes `FourthTaintBossesPrepareDeath`: 15 participants read
