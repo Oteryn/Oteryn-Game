@@ -75,6 +75,10 @@ assert "NPC" not in project["next_population_families"] and "Dialogue" not in pr
 # Keep the standalone Quest preservation guards on the migration workflow's test path.
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_registration_preservation.py")], check=True)
 
+# Core Item admission is a separate accepted data overlay, retained by every regeneration.
+subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_reward_item_semantics.py")], check=True)
+subprocess.run([sys.executable, str(ROOT / "tools/content-migration/quest_reward_item_semantics.py"), "--check"], check=True)
+
 # The RewardClaim family has no legacy source: its own authoring tool must reproduce it exactly.
 reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
 for script in ("test_reward_claim_authoring.py",):

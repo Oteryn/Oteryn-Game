@@ -148,6 +148,9 @@ def main() -> int:
         rows.sort(key=canonical_bytes)
 
     item_records = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
+    # Accepted reward Item facts are tree-first; retain them across legacy regeneration.
+    from quest_reward_item_semantics import apply_admissions
+    apply_admissions(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

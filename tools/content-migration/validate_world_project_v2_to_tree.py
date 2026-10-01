@@ -96,6 +96,8 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
 def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, batches: list[Any],
                              migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
+    from quest_reward_item_semantics import load_admissions
+    reward_admissions = load_admissions(ROOT)
     staged = load(ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")
     stats = load(ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json")
     content_path = {"weapon.range_cells": "weapon.range"}
@@ -157,11 +159,13 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         for entry in record["authoring_facts"]:
             authoring_value(legacy_authoring[key], entry["field_path"])
             fact_count += 1
-        # Blocked contracts stay UNKNOWN even when the source carried a value. Weight is no
-        # longer blocked: the owner fixed its unit (hundredths of an ounce, 2026-09-30) and
-        # ITEM-SEM-2b promotes it from TibiaWiki.
+        # B3 §4.3 supersedes the old maximum hold only for this digest-verified
+        # reward admission's proven stackable items. Other blocked facts stay unknown.
         for blocked in ("stack.stack_max",):
-            require(blocked not in known, f"BLOCKED_FIELD_PROMOTED:{blocked}")
+            if blocked in known:
+                admitted = reward_admissions.get(key[1])
+                require(admitted is not None and admitted[0]["stackable"] and known[blocked] == 100,
+                        f"BLOCKED_FIELD_PROMOTED:{blocked}")
         require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
     require(fact_count == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"], "PROVENANCE_FACT_COUNT")
     return len(legacy_authoring), len(taxonomy["records"]), relation_count, fact_count
@@ -337,6 +341,9 @@ def validate_dialogue(declarations: Any) -> int:
 
 def main() -> int:
     reference = load(LEGACY / "definitions" / "reference.json")
+    # Equivalence is protected legacy plus the accepted tree-first reward Item packet.
+    from quest_reward_item_semantics import apply_admissions
+    apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
     legacy_mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
     require(len(legacy_mount_declarations) == 252, "LEGACY_MOUNT_COUNT")
