@@ -85,7 +85,8 @@ explicit, with no automatic promotion. A `conflict` row can also lack an authore
 candidate: inspect `authored_candidates` and `family_representation` separately.
 Reward/requirement entity lists are partial source facts, not full prerequisite
 expressions or admitted canonical Item references. Tibiopedia was unavailable
-(browser redirected to an empty setup page); three requested spoilers did not exist.
+(browser redirected to an empty setup page); three requested spoiler URLs were unavailable, with layouts resolved from
+the base pages or aggregate listing. The original unavailable-page audit remains.
 
 Source interaction conversion also resolves branch-local immutable constants,
 bounded exact arithmetic and static membership lists. Engine value-copy calls
@@ -99,3 +100,9 @@ Only 40 executable curations and nine partial mission-family links are newly
 authored; declaration/reference-only evidence is not promoted to a quest.
 Progress preserves each source occurrence, its blob/line digest and full write
 requester context, even when multiple writes share the same effect.
+
+Wiki enrichment preserves 1026 exact source revisions and their distinct cuts.
+Multiline rewards, quantities, aliases and scoped requirements are parsed without
+media/fragment links. Source-only specs retain unknown IDs and prerequisites;
+scoped level facts never become a guessed global minimum. Illuminator title
+overlap remains an explicit identity conflict.

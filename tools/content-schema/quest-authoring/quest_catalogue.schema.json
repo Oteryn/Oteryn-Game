@@ -170,6 +170,10 @@
             }
           },
           "additionalProperties": false
+        },
+        "semantic_pages": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
@@ -351,7 +355,8 @@
                 "enum": [
                   "duplicate_title",
                   "quest_log_conflict",
-                  "structured_source_difference"
+                  "structured_source_difference",
+                  "source_identity_overlap"
                 ]
               },
               "keys": {
@@ -394,6 +399,30 @@
               },
               "resolution": {
                 "type": "string"
+              },
+              "titles": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "basis": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "provider",
+                    "pageid",
+                    "revid",
+                    "content_sha256",
+                    "url"
+                  ]
+                }
               }
             },
             "additionalProperties": false,
@@ -443,6 +472,24 @@
                     "br_value",
                     "fandom_target_cut",
                     "br_target_cut",
+                    "classification",
+                    "resolution"
+                  ]
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "source_identity_overlap"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "titles",
+                    "basis",
+                    "evidence",
                     "classification",
                     "resolution"
                   ]
@@ -644,6 +691,9 @@
         },
         "listing_complete": {
           "const": false
+        },
+        "semantic_enrichment": {
+          "$ref": "#/$defs/semanticEnrichment"
         }
       },
       "additionalProperties": false
@@ -763,6 +813,404 @@
         }
       },
       "additionalProperties": false
+    },
+    "semanticEnrichment": {
+      "type": "object",
+      "required": [
+        "level",
+        "reward_entity_references",
+        "reward_groups",
+        "prerequisite_expressions",
+        "source_revision_sha256",
+        "semantic_sha256",
+        "source_field_listing_complete",
+        "runtime_promotion"
+      ],
+      "properties": {
+        "source_revision_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "semantic_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "extractor": {
+          "const": "structured-wiki-enrichment/v2"
+        },
+        "runtime_promotion": {
+          "const": false
+        },
+        "source_field_listing_complete": {
+          "const": false
+        },
+        "level": {
+          "type": "object",
+          "required": [
+            "source_value",
+            "kind",
+            "plain_integer",
+            "mentioned_numbers"
+          ],
+          "properties": {
+            "source_value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "kind": {
+              "enum": [
+                "plain_integer",
+                "explicit_none",
+                "varies",
+                "not_stated",
+                "uncertain",
+                "scoped_or_range"
+              ]
+            },
+            "plain_integer": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "mentioned_numbers": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "reward_entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scopedEntity"
+          }
+        },
+        "reward_groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "scope_anchor",
+              "entities"
+            ],
+            "properties": {
+              "scope_anchor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope_kind": {
+                "enum": [
+                  "vocation"
+                ]
+              },
+              "entities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/scopedEntity"
+                }
+              },
+              "evidence": {
+                "$ref": "#/$defs/lineEvidence"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "prerequisite_expressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceExpression"
+          }
+        },
+        "unparsed_requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "line",
+              "line_sha256",
+              "reason"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "line_sha256": {
+                "$ref": "#/$defs/hash"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "reward_quantitative_facts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "amount",
+              "scope",
+              "evidence"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "experience",
+                  "experience_rate_bonus_percent"
+                ]
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "scope": {
+                "enum": [
+                  "each_mission",
+                  "highest_rank",
+                  "npc_talks",
+                  "event"
+                ]
+              },
+              "evidence": {
+                "$ref": "#/$defs/lineEvidence"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "reward_declared_none": {
+          "type": "boolean"
+        },
+        "reward_selection": {
+          "enum": [
+            "choice_documented",
+            "UNKNOWN"
+          ]
+        },
+        "reward_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "removed_media_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unresolved_templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "lineEvidence": {
+      "type": "object",
+      "required": [
+        "line",
+        "line_sha256"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      },
+      "additionalProperties": false
+    },
+    "scopedEntity": {
+      "type": "object",
+      "required": [
+        "entity",
+        "quantity",
+        "binding_status"
+      ],
+      "properties": {
+        "entity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "not": {
+            "pattern": "^(?:[Ii]mage|[Ff]ile|[Aa]rquivo|[Ff]icheiro):"
+          }
+        },
+        "quantity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "binding_status": {
+          "const": "UNKNOWN"
+        },
+        "source_namespace": {
+          "const": "mediawiki/page_title"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sourceExpression": {
+      "type": "object",
+      "required": [
+        "line",
+        "line_sha256",
+        "section",
+        "scope",
+        "scope_anchor",
+        "operator",
+        "execution_semantics",
+        "declaration_strength",
+        "nodes"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "section": {
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "mission_only",
+            "daily_task",
+            "recommendation",
+            "source_requirement_list",
+            "optional",
+            "entity_only",
+            "completion_only"
+          ]
+        },
+        "scope_anchor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "references",
+            "any_of_references"
+          ]
+        },
+        "execution_semantics": {
+          "const": "UNKNOWN"
+        },
+        "declaration_strength": {
+          "enum": [
+            "reference_only",
+            "explicit",
+            "uncertain"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sourceNode"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sourceNode": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "value",
+            "binding_status",
+            "applies_to"
+          ],
+          "properties": {
+            "kind": {
+              "const": "level_at_least"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "binding_status": {
+              "const": "SOURCE_DECLARED"
+            },
+            "applies_to": {
+              "enum": [
+                "alternative_entity",
+                "mission_or_addon",
+                "full_completion",
+                "world",
+                "source_requirement_list"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "entity",
+            "quantity",
+            "binding_status",
+            "source_namespace"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "entity_reference",
+                "entity_use_reference",
+                "quest_completion_reference",
+                "quest_stage_reference"
+              ]
+            },
+            "entity": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300,
+              "not": {
+                "pattern": "^(?:[Ii]mage|[Ff]ile|[Aa]rquivo|[Ff]icheiro):"
+              }
+            },
+            "quantity": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "binding_status": {
+              "const": "UNKNOWN"
+            },
+            "source_namespace": {
+              "const": "mediawiki/page_title"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }

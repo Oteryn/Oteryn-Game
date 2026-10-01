@@ -23,6 +23,30 @@ def require(condition, message):
         raise ValueError(message)
 
 
+def validate_semantic(row):
+    semantic = row['source_fields'].get('semantic_enrichment')
+    if semantic is None:
+        return
+    require(semantic['source_revision_sha256'] == row['content_sha256'], 'stale semantic source hash')
+    payload = {k: v for k, v in semantic.items() if k != 'semantic_sha256'}
+    fingerprint = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False,
+                                           separators=(',', ':')).encode()).hexdigest()
+    require(fingerprint == semantic['semantic_sha256'], 'stale semantic payload hash')
+    require(semantic['runtime_promotion'] is False and semantic['source_field_listing_complete'] is False,
+            'false complete semantic listing or runtime promotion')
+    for ref in row['source_fields']['reward_entity_references']:
+        require(not ref['entity'].split(':', 1)[0].lower() in ('image', 'file', 'arquivo', 'ficheiro'),
+                'media reference is not a reward')
+    for expression in semantic['prerequisite_expressions']:
+        require(expression['execution_semantics'] == 'UNKNOWN', 'unbound source prerequisite execution')
+        for node in expression['nodes']:
+            if node['kind'] == 'level_at_least':
+                require(node['applies_to'] in ('alternative_entity', 'mission_or_addon', 'full_completion',
+                                               'world', 'source_requirement_list'), 'missing level scope')
+                require(expression['scope'] != 'entity_only' or node['applies_to'] == 'alternative_entity',
+                        'entity threshold promoted to quest requirement')
+
+
 def fresh_sources(facts, wiki):
     fresh = facts.get('fresh_wiki')
     if fresh is None:
@@ -42,6 +66,7 @@ def fresh_sources(facts, wiki):
         require(row.get('revision_timestamp') and row.get('url') and row.get('target_cut')
                 and row.get('access_method') in ('remote_desktop_browser', 'normal_web'), 'missing fresh provenance')
         require(row['source_fields'].get('listing_complete') is False, 'false complete source listing')
+        validate_semantic(row)
         fingerprints.append(':'.join(map(str, identity)) + ':' + row['content_sha256'])
     actual_digest = hashlib.sha256(('\n'.join(sorted(fingerprints)) + '\n').encode()).hexdigest()
     require(actual_digest == fresh['snapshot_pages_digest'], 'stale source snapshot digest')
@@ -61,6 +86,7 @@ def fresh_sources(facts, wiki):
     summary = {'pages': len(pages), 'pages_by_provider': dict(sorted(counts.items())),
                'title_links_by_role': dict(sorted(Counter(x['role'] for x in fresh['title_links']).items())),
                'source_target_cuts': fresh['source_target_cuts'], 'snapshot_pages_digest': actual_digest,
+               'semantic_pages': sum('semantic_enrichment' in p['source_fields'] for p in pages.values()),
                'missing_pages': len(fresh['unavailable_pages']), 'runtime_promotion': False}
     return linked, summary
 
@@ -110,6 +136,18 @@ def build(coverage, quests, readiness, links, facts, provenance):
                 and s.get('path') and s.get('blob_sha256') for s in fact['sources']),
                 'missing source-backed provenance')
         additions[title] = fact
+    fresh_pages = facts.get('fresh_wiki', {}).get('pages', [])
+    source_keys = {(r['provider'], r['pageid'], r['revid'], r['content_sha256']) for r in fresh_pages}
+    for overlap in facts.get('source_identity_overlaps', []):
+        involved = overlap['titles']
+        require(len(involved) >= 2 and len(involved) == len(set(involved))
+                and set(involved) <= wiki.keys(), 'stale or duplicate identity overlap')
+        markers = {(e['provider'], e['pageid'], e['revid'], e['content_sha256']) for e in overlap['evidence']}
+        require(markers <= source_keys and len(markers) >= 2, 'stale identity overlap provenance')
+        for title in involved:
+            require(any(e['provider'] == 'tibia_fandom' and (e['pageid'], e['revid'])
+                        == (wiki[title]['pageid'], wiki[title]['revid']) for e in overlap['evidence']),
+                    'missing pinned overlap title provenance')
     output = []
     for row in sorted(rows, key=lambda r: r['title']):
         title = row['title']
@@ -137,6 +175,10 @@ def build(coverage, quests, readiness, links, facts, provenance):
                                    'fandom_value': cached, 'br_value': other,
                                    'fandom_target_cut': '2026-09-27', 'br_target_cut': reference['target_cut'],
                                    'classification': 'CONFLICT', 'resolution': 'Preserve scoped fields; align dates and meanings before promotion'})
+        for overlap in facts.get('source_identity_overlaps', []):
+            if title in overlap['titles']:
+                require(overlap.get('evidence') and all(e.get('revid') and e.get('content_sha256') for e in overlap['evidence']), 'missing identity overlap provenance')
+                checks.append({'kind': 'source_identity_overlap', **overlap})
         state = ('conflict' if checks else 'directly_authored' if matches
                  else 'represented_by_family' if title in family else 'unrepresented')
         projection = []

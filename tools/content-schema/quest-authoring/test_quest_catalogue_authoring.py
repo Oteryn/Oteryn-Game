@@ -119,5 +119,91 @@ class CatalogueChecks(unittest.TestCase):
             self.run_build(facts=facts)
 
 
+
+
+class SemanticSourceChecks(unittest.TestCase):
+    def row(self):
+        from quest_catalogue_authoring import validate_semantic
+        self.validate = validate_semantic
+        semantic = {'source_revision_sha256': 'a' * 64, 'source_field_listing_complete': False,
+                    'runtime_promotion': False, 'prerequisite_expressions': [
+                        {'scope': 'entity_only', 'execution_semantics': 'UNKNOWN',
+                         'nodes': [{'kind': 'level_at_least', 'value': 9,
+                                    'applies_to': 'alternative_entity'}]}]}
+        row = {'content_sha256': 'a' * 64, 'source_fields': {
+            'reward_entity_references': [{'entity': 'Legion Helmet', 'quantity': None}],
+            'semantic_enrichment': semantic}}
+        self.rehash(row)
+        return row
+
+    def rehash(self, row):
+        import json
+        semantic = row['source_fields']['semantic_enrichment']
+        payload = {k: v for k, v in semantic.items() if k != 'semantic_sha256'}
+        semantic['semantic_sha256'] = hashlib.sha256(json.dumps(
+            payload, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
+
+    def test_reward_media_rejected(self):
+        row = self.row()
+        row['source_fields']['reward_entity_references'][0]['entity'] = 'Image:Outfit.gif'
+        with self.assertRaisesRegex(ValueError, 'media reference'):
+            self.validate(row)
+
+    def test_alternative_spell_level_cannot_be_quest_requirement(self):
+        row = self.row()
+        node = row['source_fields']['semantic_enrichment']['prerequisite_expressions'][0]['nodes'][0]
+        node['applies_to'] = 'source_requirement_list'
+        self.rehash(row)
+        with self.assertRaisesRegex(ValueError, 'entity threshold'):
+            self.validate(row)
+
+    def test_semantic_stale_revision_and_payload_rejected(self):
+        for source in [True, False]:
+            row = self.row()
+            if source:
+                row['source_fields']['semantic_enrichment']['source_revision_sha256'] = 'b' * 64
+            else:
+                row['source_fields']['semantic_enrichment']['prerequisite_expressions'][0]['nodes'][0]['value'] = 10
+            with self.assertRaisesRegex(ValueError, 'stale semantic'):
+                self.validate(row)
+
+    def test_source_refs_cannot_be_executable_or_complete(self):
+        for field, value in [('runtime_promotion', True), ('source_field_listing_complete', True)]:
+            row = self.row()
+            row['source_fields']['semantic_enrichment'][field] = value
+            self.rehash(row)
+            with self.assertRaises(ValueError):
+                self.validate(row)
+        row = self.row()
+        row['source_fields']['semantic_enrichment']['prerequisite_expressions'][0]['execution_semantics'] = 'all_of'
+        self.rehash(row)
+        with self.assertRaisesRegex(ValueError, 'execution'):
+            self.validate(row)
+
+    def test_unknown_quantity_stays_unknown(self):
+        row = self.row()
+        self.validate(row)
+        self.assertIsNone(row['source_fields']['reward_entity_references'][0]['quantity'])
+
+
+class IdentityOverlapChecks(unittest.TestCase):
+    setUp = CatalogueChecks.setUp
+    run_build = CatalogueChecks.run_build
+    fresh_fixture = CatalogueChecks.fresh_fixture
+
+    def test_stale_identity_overlap_rejected(self):
+        facts = self.fresh_fixture()
+        facts['source_identity_overlaps'] = [{'titles':['Small Quest','Unknown Quest'],
+            'classification':'CONFLICT','basis':'Same outfit stages','evidence':[]}]
+        with self.assertRaisesRegex(ValueError, 'identity overlap'):
+            self.run_build(facts=facts)
+
+    def test_duplicate_identity_overlap_rejected(self):
+        facts = self.fresh_fixture()
+        facts['source_identity_overlaps'] = [{'titles':['Small Quest','Small Quest'],
+            'classification':'CONFLICT','basis':'Repeated title','evidence':[]}]
+        with self.assertRaisesRegex(ValueError, 'identity overlap'):
+            self.run_build(facts=facts)
+
 if __name__ == '__main__':
     unittest.main()
