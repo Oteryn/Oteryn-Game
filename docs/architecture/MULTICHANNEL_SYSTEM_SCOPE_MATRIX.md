@@ -113,6 +113,13 @@ never shortens them; the PvP damage ledger's contributors are written ahead the 
 tables. The World PvP type is a
 ruleset field.
 
+**Amendment (pending on acceptance of VIP-0;
+`reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md` §4 and §8).** The VIP list is a Game
+table per Account + World, the same on every channel of the World. Its Presence use shows only
+online or offline on this World, from session rows and hints on the CHAT-0 World relay, and only
+after the watched character accepts the VIP invitation and while it does not hide its status; it
+never shows a channel.
+
 ## Required identity envelope
 
 Every runtime command, event and timer that can mutate or address gameplay state must carry enough identity to resolve its owner without process-global lookup.

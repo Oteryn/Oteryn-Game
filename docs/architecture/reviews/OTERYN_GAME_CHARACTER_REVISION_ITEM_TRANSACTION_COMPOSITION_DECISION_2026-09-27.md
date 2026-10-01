@@ -258,6 +258,13 @@ obligation row, and a dialogue reward claim, with a quest obligation row only wh
 names a transition; a claim-only node writes no obligation row. Neither advances
 `CharacterRevision`.
 
+**Amendment (pending on acceptance of VIP-0;
+`reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md` §4).** Rule 1 also covers the VIP list,
+entry, group, group-member and command-receipt rows of the acting session's (Account, World), a
+watched character's consent change to an entry naming it, and the `vip_status` setting: social
+rows, not Character state. A VIP write advances no `CharacterRevision`, touches no item and
+takes rule 2's fence of the acting session.
+
 ## 6. Handback
 
 ```yaml
