@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/charm-complete-preparation-20261001
-pr: null
+pr: 1434
 base_sha: edad9408b6996297d9768fe299a6c351e08dc393
 head_sha: null
 final_head_sha: null
@@ -29,6 +29,7 @@ owned_paths:
   - tools/content-schema/charm-authoring/samples/tibiapal-planner-execution-2026-10-01.json
   - tools/content-schema/charm-authoring/samples/tibiapal-browser-verification-2026-10-01.json
   - tools/content-schema/charm-authoring/samples/charm-mechanics-sources-2026-10-01.json
+  - tools/content-schema/charm-authoring/samples/charm-source-resolution-2026-10-01.json
   - tools/content-schema/charm-authoring/README.md
   - tools/content-schema/charm-authoring/INTEGRATION.md
   - rulesets/progression/charms/index.json
@@ -130,3 +131,32 @@ main only with that PR. The PR URL and exact frozen SHA are recorded by GitHub a
 owner-facing report after publication; a commit cannot contain its own hash. Archive placement
 does not assert integration. The coordinator retains review-trigger and protected-integration
 ownership; gameplay connection and source-conflict adjudication remain named follow-ups.
+
+## Owner-requested source continuation, 2026-10-01
+
+The owner resumed this exact preparation task and asked for subagents using Canary and Crystal.
+Root remains the one publisher of `codex/charm-complete-preparation-20261001`; all five source
+workers owned only separate local evidence outputs. The preparation returned to AUTHORING
+from predecessor `ca991aa1fb12fb656ea3d39f5736d9745769027e` for this bounded evidence repair.
+Gameplay connection, protected integration and provider review triggers remain coordinator work.
+
+The new qualified source packet covers every one of the original 32 question entries and
+retains concrete consumer recommendations, exact source quotations and 45 pinned file hashes.
+Two claims that Crystal omits Adrenaline/Numb on mana drain were disproved and removed.
+The captured facts, closed schema cardinalities and generated mechanics were updated together.
+Fatal Hold's Crystal area filter and generated-damage callback, Carnage summon provenance,
+and the physical-damage owner locator are corrected/clarified. No source defect is promoted
+to an accepted runtime rule, and official parity remains distinct from source behavior.
+
+Five lanes passed 227 source/formula/reference-model checks. Independent source review checked
+all 32 entries, 190 citation hashes/ranges and 127 excerpts; its Fatal callback finding was
+repaired and the critical threshold operator made explicit. Offline checks reject missing or
+duplicate coverage, pin/inventory drift, OTS promotion and accidental runtime activation.
+These checks are preparation evidence; no fork server or connected Oteryn gameplay was executed.
+
+Publication is one new API-native candidate with this complete bounded delta and the exact
+predecessor as its sole parent, on this exclusively allocated preparation branch. The native
+atomic expected-head operation is unavailable; the bound META connector-compatible route
+uses a fresh predecessor read, one non-force ref update and immediate exact-head readback.
+Local edits select no material Git commit for publication. Candidate freeze and exact-head
+qualification follow the remote readback; a changed head requires reconciliation.

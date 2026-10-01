@@ -43,6 +43,51 @@ class CharmMechanicsTests(unittest.TestCase):
         self.mechanics["charms"].pop()
         self.assertTrue(self.check())
 
+    def test_resolution_complete_and_stale_mana_claims_removed(self):
+        self.assertEqual(
+            cm.validate_resolution(cm.load(cm.RESOLUTION), self.sample), []
+        )
+        for name in ["adrenaline_burst", "numb"]:
+            self.assertFalse(
+                any(
+                    "does not process minor" in text
+                    for text in self.charm(name)["unknowns"]
+                )
+            )
+
+    def test_resolution_missing_and_duplicate_original_entries_rejected(self):
+        for duplicate in [False, True]:
+            packet = cm.load(cm.RESOLUTION)
+            packet["coverage"].pop()
+            if duplicate:
+                packet["coverage"].append(copy.deepcopy(packet["coverage"][0]))
+            self.assertIn(
+                "resolution coverage must include each original entry once",
+                cm.validate_resolution(packet, self.sample),
+            )
+
+    def test_resolution_cannot_activate_or_promote_ots(self):
+        packet = cm.load(cm.RESOLUTION)
+        packet["runtime_connected"] = True
+        packet["coverage"][0]["official_parity_proven"] = True
+        sid = next(
+            k for k, v in packet["sources"].items() if v["repository"] in cm.OTS_REPOS
+        )
+        packet["sources"][sid]["evidence_class"] = "PROJECT_ACCEPTED_RECORD"
+        errors = cm.validate_resolution(packet, self.sample)
+        self.assertIn("resolution runtime_connected must remain false", errors)
+        self.assertIn("resolution row cannot claim official parity", errors)
+        self.assertIn("resolution OTS source promotion", errors)
+
+    def test_resolution_pin_and_inventory_drift_rejected(self):
+        packet = cm.load(cm.RESOLUTION)
+        packet["original_unknowns"][0]["text"] = "silently rewritten"
+        sid = next(iter(self.sample["sources"]))
+        packet["sources"][sid]["sha256"] = "0" * 64
+        errors = cm.validate_resolution(packet, self.sample)
+        self.assertIn("resolution original unknown inventory drift", errors)
+        self.assertIn("resolution captured source binding drift", errors)
+
     def test_type_and_hook_drift_rejected(self):
         for field, value in [
             ("effect_type", "critical_hit_chance"),

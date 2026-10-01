@@ -870,7 +870,7 @@
         },
         "trigger": {
           "activation": false,
-          "notes": "Related OTS implementations; official parity UNKNOWN.",
+          "notes": "Both pinned forks process this minor on matching monster health and mana drain. Crystal game.cpp8811-8825 corrects the former absent-mana-path claim; source RNG and official parity remain separately qualified. See samples/charm-source-resolution-2026-10-01.json.",
           "references": [
             {
               "lines": [
@@ -941,7 +941,6 @@
         }
       },
       "unknowns": [
-        "Crystal mana-drain path does not process minor Adrenaline/Numb; source trigger conflict",
         "Base speed below 40 is outside usual actor-domain expectation; no separate haste floor encoded."
       ]
     },
@@ -1103,8 +1102,8 @@
             },
             {
               "lines": [
-                172,
-                172
+                176,
+                176
               ],
               "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
             }
@@ -1125,7 +1124,7 @@
         },
         "ots_area_geometry_candidate": {
           "activation": false,
-          "notes": "Cardinal cross / radius 1 from shared OTS; wiki cached phrases say all monsters, but full geometry not captured. Diagonals, obstacles, same-tile entities, summons, and stacked targets need evidence; not safe to call exact official geometry.",
+          "notes": "Cardinal cross / radius 1 from shared OTS; wiki cached phrases say all monsters, but full geometry not captured. Diagonals, obstacles, same-tile entities, summons, and stacked targets need evidence; not safe to call exact official geometry. Exact source trace is now documented in samples/charm-source-resolution-2026-10-01.json: four cardinal tiles, first creature in each tile vector, ceil before cap, shared mutable cap defect, and no local summon exclusion. UNKNOWN here concerns official parity; preserve existing Oteryn floor/local caps and summon exclusion.",
           "references": [
             {
               "lines": [
@@ -1169,7 +1168,7 @@
         },
         "ots_rounding_candidate": {
           "activation": false,
-          "notes": "Cap applied before recipient resistance/armor in OTS; Global rounding and mitigation order UNKNOWN. static maxLevelsLimit=6 mutates future ordinary procs cap in both OTS implementations; do not copy shared bug.",
+          "notes": "Cap applied before recipient resistance/armor in OTS; Global rounding and mitigation order UNKNOWN. static maxLevelsLimit=6 mutates future ordinary procs cap in both OTS implementations; do not copy shared bug. Exact source trace is now documented in samples/charm-source-resolution-2026-10-01.json: four cardinal tiles, first creature in each tile vector, ceil before cap, shared mutable cap defect, and no local summon exclusion. UNKNOWN here concerns official parity; preserve existing Oteryn floor/local caps and summon exclusion.",
           "references": [
             {
               "lines": [
@@ -3879,7 +3878,7 @@
         },
         "trigger": {
           "activation": false,
-          "notes": "Related OTS implementations; official parity UNKNOWN.",
+          "notes": "Canary health callback has no positive-loss, living-target or extension guard. Crystal combat.cpp940-972 additionally filters multi-target attacks (including spells) to a locked target. These are source behaviors, not accepted Oteryn targeting rules; use the qualified resolution packet.",
           "references": [
             {
               "lines": [
@@ -4856,7 +4855,7 @@
         },
         "trigger": {
           "activation": false,
-          "notes": "Related OTS implementations; official parity UNKNOWN.",
+          "notes": "Both pinned forks process this minor on matching monster health and mana drain. Crystal game.cpp8811-8825 corrects the former absent-mana-path claim; source RNG and official parity remain separately qualified. See samples/charm-source-resolution-2026-10-01.json.",
           "references": [
             {
               "lines": [
@@ -4906,7 +4905,6 @@
         }
       },
       "unknowns": [
-        "Crystal mana-drain path does not process minor Numb; source trigger conflict",
         "Direct addCondition bypasses normal condition immunity guard; official immunity behavior UNKNOWN"
       ]
     },

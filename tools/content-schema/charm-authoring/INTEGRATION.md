@@ -148,3 +148,35 @@ auto target versus spell/rune area target, lethal/no-living target, zero damage,
 proc-no-chain/no-leech and reconnect/restart where state changes. Resolve source conflicts
 before activating the affected behavior; missing reference knowledge must not become a silent
 default. Preserve protocol generation equality and the existing authority/fee contract tests.
+
+## Canary/Crystal source-resolution supplement
+
+`samples/charm-source-resolution-2026-10-01.json` traces all 32 original question entries
+through five reviewed source lanes. It binds 45 source files at full revisions and hashes,
+retains exact quotations, and separates actual fork behavior, accepted project rules and
+concrete proposed consumer choices. The 227 source/formula/model checks are reference proof;
+they do not execute a connected Oteryn or official Tibia server. An independent review checked
+190 citation hashes/ranges and 127 quotations, with the Fatal Hold routing correction applied.
+
+Two original questions were erroneous: Crystal `game.cpp:8811–8825` processes both Adrenaline
+Burst and Numb on mana drain. Those claims are removed from the captured facts, their digest
+is repinned, and the schema cardinalities/generated mechanics are updated together.
+
+Use these concrete outcomes during integration:
+
+| Family | Source trace and project recommendation |
+|---|---|
+| Damage | Forks use `ceil`; preserve existing Oteryn `floor`, local 2×/6× level and 8% caps before mitigation. Crystal's strict percentage comparison loses one outcome and its spell-target filter conflicts with accepted area rules. |
+| Carnage | Source offsets are four cardinal tiles, selecting the first creature per tile, and the local type check includes summons. Preserve Oteryn's each-eligible-monster contract, summon exclusion, and accepted physical damage with armor/resistances. Reject the shared mutable cap. |
+| Conditions | The full speed formula, input offset, truncation and reapplication paths are documented. The paralysis floor is a delta against base speed, not an absolute final speed. Direct charm application bypasses ordinary monster paralysis immunity. Proposed consumer profiles include calibrated chance rolls and reliable effect removal. |
+| Cleanse | Both forks select status instances and grant 11000 ms immunity; selecting a type removes its active instances. Agony eligibility differs. The packet proposes an explicit conservative eligibility profile; it does not silently accept a new immunity policy. |
+| Critical/leech | Reject Canary's second full critical roll and Crystal's fractional/relative leech units. Proposed arithmetic uses additive fixed-point bonuses, explicit equipment provenance, a shared uniform critical roll (`U <= threshold`, `U` in 1..10000), and actual HP-loss leech inputs. D186 governs all four families' secondary auto targets. |
+| Defensive | Parry block and health paths are sequential; the wrong signed input can heal the attacker. Use one nonnegative reflection opportunity and the already accepted armor behavior. Dodge status/DoT handling, minor ordering and mixed-resource inversion are explicit proposed consumer policies, not inferred official rules. |
+| Passives | Gut changes product probability, not stack count; its logging is defective. Reject Scavenge's inverted division and preserve positive, capped relative scaling. Bless must use the existing death-loss units; Crystal's configured-loss path mixes fraction and percent. |
+| Fatal Hold | Crystal filters even spells to the locked main target; use accepted per-target spell/rune coverage. Generated charm damage reaches `CombatHealthFunc` in both forks, whose Fatal callback lacks an extension guard. The consumer must enforce the owner-wide no-charm-chain rule. |
+
+The remaining original caveats describe official parity or consumer choices; they are not
+missing source investigations. Recommendations do not activate runtime or amend contracts.
+The coordinator reviews proposed policies while allocating the corresponding consumer work.
+`charm_mechanics.py check` also verifies complete original-entry coverage, exact source bindings,
+the inactive boundary and rejection of OTS evidence promotion for this supplement.

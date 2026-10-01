@@ -20,7 +20,12 @@ MECHANICS = REPO / "rulesets/progression/charms/mechanics.json"
 PROGRESSION = REPO / "rulesets/progression/charms/progression.json"
 CATALOGUE = REPO / "content/charms/charms-00000-00024.json"
 INDEX = REPO / "rulesets/progression/charms/index.json"
-SOURCE_SHA256 = "309a9d943ff0fcda11a9e66e046af4e266facc4318d94f2d07d567cc2edd42ad"
+SOURCE_SHA256 = "4d92d03878554a57aea04d5af3c1a93cc47cfffcba72e9bede4c5eacec7b7421"
+RESOLUTION = ROOT / "samples/charm-source-resolution-2026-10-01.json"
+RESOLUTION_SHA256 = "dd4e4d3689b42d6395ca7e017ac772e28c2c4179b9ed6069d59d3e6485cf9955"
+ORIGINAL_UNKNOWN_SHA256 = (
+    "d1fc314b809eae4678b6fedcd0161985932e4fc75649d032dfe9adf83c21b994"
+)
 OTS_REPOS = {"opentibiabr/canary", "zimbadev/crystalserver"}
 HOOKS = {
     "attack_proc_damage": "after_player_health_reduction",
@@ -91,6 +96,72 @@ def evidence_values(value: object):
     elif isinstance(value, list):
         for child in value:
             yield from evidence_values(child)
+
+
+def validate_resolution(package: dict, sample: dict) -> list[str]:
+    """Keep source tracing and proposed consumer choices separate from activation."""
+    errors = []
+    if (
+        package.get("schema") != "OTERYN_CHARM_SOURCE_RESOLUTION/v1"
+        or package.get("repository") != "Oteryn/Oteryn-Game"
+        or package.get("pr_number") != 1434
+        or package.get("predecessor_sha") != "ca991aa1fb12fb656ea3d39f5736d9745769027e"
+    ):
+        errors.append("resolution target drift")
+    for field in ["runtime_connected", "official_parity_proven", "activation"]:
+        if package.get(field) is not False:
+            errors.append(f"resolution {field} must remain false")
+    origin = package.get("original_unknowns", [])
+    pin = digest(json.dumps(origin, sort_keys=True, separators=(",", ":")).encode())
+    if len(origin) != 32 or pin != ORIGINAL_UNKNOWN_SHA256:
+        errors.append("resolution original unknown inventory drift")
+    expected = {(row["key"], row["text"]) for row in origin}
+    coverage = package.get("coverage", [])
+    observed = [(row.get("key"), row.get("original_unknown")) for row in coverage]
+    if len(observed) != 32 or len(set(observed)) != 32 or set(observed) != expected:
+        errors.append("resolution coverage must include each original entry once")
+    lanes = package.get("lanes", {})
+    if set(lanes) != {
+        "conditions",
+        "damage",
+        "defensive",
+        "critical-leech",
+        "passives",
+    }:
+        errors.append("resolution lane coverage drift")
+    for row in coverage:
+        if row.get("lane") not in lanes:
+            errors.append("resolution unknown lane")
+        if row.get("official_parity_proven") is not False:
+            errors.append("resolution row cannot claim official parity")
+        if row.get("runtime_activation") is not False:
+            errors.append("resolution row cannot activate runtime")
+        if row.get("result") not in {
+            "STALE_HANDOFF_CORRECTED",
+            "SOURCE_TRACE_AND_CONCRETE_RECOMMENDATION",
+        }:
+            errors.append("resolution outcome drift")
+    sources = package.get("sources", {})
+    for sid, source in sources.items():
+        if sid != source.get("repository", "") + ":" + source.get("path", ""):
+            errors.append("resolution source identity drift")
+        if not re.fullmatch(r"[a-f0-9]{40}", source.get("revision", "")):
+            errors.append("resolution source revision must be pinned")
+        if not re.fullmatch(r"[a-f0-9]{64}", source.get("sha256", "")):
+            errors.append("resolution source hash must be pinned")
+        if (
+            source.get("repository") in OTS_REPOS
+            and source.get("evidence_class") != "OTS_HYPOTHESIS_ONLY"
+        ):
+            errors.append("resolution OTS source promotion")
+    for sid, source in sample["sources"].items():
+        if sources.get(sid) != source:
+            errors.append("resolution captured source binding drift")
+    if not package.get("adoption_boundary"):
+        errors.append("resolution must state consumer adoption boundary")
+    if digest(dumps(package).encode()) != RESOLUTION_SHA256:
+        errors.append("resolution captured packet drift; review before repinning")
+    return errors
 
 
 def validate(
@@ -212,6 +283,7 @@ def validate(
         errors.append(
             "captured facts SHA256 drift; review evidence refresh before repinning"
         )
+    errors += validate_resolution(load(RESOLUTION), sample)
     return errors
 
 
