@@ -48,7 +48,7 @@ Tests, each matching its normative section:
   Before a case profile exists, no identity resolution happens for review. The only resolution is
   the system-run `PRIVACY_DSR` resolution, and it returns no mapping to any reviewer or detector.
 - **Corpus (§4.1):** a build leaving the admitted set keeps its corpus until its last session and
-  challenge end. A session whose corpus is absent is not challenged; this produces an `OPS-1`
+  challenge end, unless it is evicted as the oldest beyond `SECCLIENT01-RL-22`. A session whose corpus is absent is not challenged; this produces an `OPS-1`
   event and no observation about the session.
 - **Trust store (§3):** a trust record at or below the floor, or signed by a release key, is
   rejected and produces an `OPS-1` event. A revoked key's manifests stop being accepted. A stale,
@@ -68,6 +68,8 @@ Tests, each matching its normative section:
 
 Later, each with its own decision: client attestation (the reserved slot, §7), a third-party
 anti-cheat or kernel component (rejected for now, §9), sanctions and ban waves (OPS-GM-01).
+Implementation follow-up SEC-TRUST-1 (§3): freshness state that is not restored with the database,
+and an embedded trust snapshot at the floor.
 
 ## 1. Question
 
@@ -144,7 +146,9 @@ automatically?
     be trusted again for at most 24 hours. The harm is limited to challenge evidence, which proves
     only release possession and is never sanction evidence (§4.0, §6). The emergency path is a
     Game node release that raises the embedded floor above the revocation. No extra witness
-    infrastructure is built for this.
+    infrastructure is built for this. Repeated restore and restart cycles can extend the window
+    until SEC-TRUST-1. A store below the floor stays `UNVERIFIED` (fail closed, no challenges),
+    which only removes possession-only signals and never affects admission.
   - *Fail closed:* at start and every `SECCLIENT01-RL-14` (1 hour), a node fetches the latest
     checkpoint and applies the log's records in order up to its revision. The trust store is
     `VERIFIED` only while its revision equals that of a checkpoint that is accepted and still within
@@ -211,10 +215,12 @@ ban is always server-side.
 - **Retiring builds.** When a build leaves the admitted set, no new session can declare it, but its
   corpus is kept until the last session that declared it has ended and that session's last
   challenge has reached its terminal outcome. Retiring corpora do not count against
-  `SECCLIENT01-RL-07`; their number is bounded by the sessions still open, and they are deleted at
-  the latest when the node restarts.
+  `SECCLIENT01-RL-07`, but a node keeps at most `SECCLIENT01-RL-22` (8) of them, each within
+  `SECCLIENT01-RL-08`. When a ninth would be kept, the oldest is evicted. All are deleted at the
+  latest when the node restarts. Sessions of an evicted build are no longer challenged and yield no
+  observation about the session (see the next point).
 - **No corpus, no challenge.** A session whose declared build has no corpus on its node (an accepted
-  manifest is missing or its key was revoked, or the node restarted after the build retired) is not
+  manifest is missing or its key was revoked, its retiring corpus was evicted, or the node restarted after the build retired) is not
   challenged, and no observation is recorded for it. The node records one `OPS-1` event about the
   release pipeline instead, never a security observation about the session.
 
@@ -309,7 +315,7 @@ supports, so no case is opened before then (§6).
 | `SECCLIENT01-IDRES-1` Identity-resolution logs: each mapping of an AnalyticsActorId to an account or character, with who or what resolved it, the purpose, and the case or request | Two purposes only. `CASE`: automation detection, for an authorised case. `PRIVACY_DSR`: carrying out the subject's own deletion or export request (the ANL-03 §14 and `DATA-PRIVACY-01` data subject duty) | `SECURITY_SENSITIVE`, player-linked | `SECCLIENT01-RL-16` (2 years) from the resolution | Written by the resolution service. `CASE` resolution only for an authorised case (ANL-03 §14.4); cases are prohibited until the case evidence profile exists, so before then no `CASE` resolution happens. `PRIVACY_DSR` resolution is system-run and audited, only for a verified request of the subject themself, and returns the mapping only to the DSR reader and the purge job, never to any person, reviewer, analyst or detector. The security audit role reads. The DSR reader reads the subject's rows only. The purge job deletes per the next column. | None | Daily purge past retention; on account deletion the account and character references are replaced by a deletion marker within `SECCLIENT01-RL-18` (30 days) | Only the fact and time of each resolution, inside an `EXPORT-1` response, with the resolver redacted | Only by the privacy officer under the legal hold rule below; a hold suspends purge and account deletion for its scope until it expires or is released | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
 | `SECCLIENT01-ACCESS-1` Access and retention audit: every read of `RAW-1`, `FEAT-1`, `SIG-1`, `LIFE-1`, `IDRES-1`, `EXPORT-1` and `ACCESS-1` itself, every DSR reader run, legal hold records, and purge runs | Accountability for access to the artifacts above | `SECURITY_SENSITIVE`, pseudonymous; reader identity is staff data | `SECCLIENT01-RL-16` (2 years) from the entry | Append-only, written by the store. Read only by the security audit role and the privacy officer. The purge job deletes per the next column. | None | Daily purge past retention; on account deletion the AnalyticsActorId is removed within `SECCLIENT01-RL-18` (30 days) and the entry stays until its retention | None | Only by the privacy officer under the legal hold rule below; a hold suspends purge and account deletion for its scope until it expires or is released | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
 | `SECCLIENT01-AGG-1` Calibration aggregates: bucket counts over at least `SECCLIENT01-RL-11` (50) distinct actors | Automation detection and detector calibration only; never balance, product or marketing analytics or any other model | Non-personal: no AnalyticsActorId, and no bucket below the actor minimum | `SECCLIENT01-RL-12` (2 years) from computation | Written by the detector service. The detector service and the security analyst role read. The purge job deletes per the next column. | Terminal form; nothing further | Daily purge past retention; account deletion needs no action, because nothing links to an actor | None | Only by the privacy officer under the legal hold rule below; a hold suspends purge and account deletion for its scope until it expires or is released | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
-| `SECCLIENT01-EXPORT-1` Data subject responses, the only export | Answering a player's data subject request | `SECURITY_SENSITIVE`, player-linked | `SECCLIENT01-RL-17` (30 days) after delivery | Assembled by the DSR reader from the subject's rows in `RAW-1`, `FEAT-1`, `SIG-1`, `LIFE-1` and `IDRES-1`. Released by the privacy officer, who sees the response but never the actor-to-account mapping, and delivered only to the requesting player. The purge job deletes per the next column. | None | Daily purge past retention; on account deletion deleted within `SECCLIENT01-RL-18` (30 days) | Is the export; reviewer, resolver and other players' data is redacted | Only by the privacy officer under the legal hold rule below; a hold suspends purge and account deletion for its scope until it expires or is released | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-EXPORT-1` Data subject responses, the only export | Answering a player's data subject request | `SECURITY_SENSITIVE`, player-linked | `SECCLIENT01-RL-17` (30 days) after delivery, and never more than `SECCLIENT01-RL-23` (60 days) after assembly, whether delivered or not | Assembled by the DSR reader from the subject's rows in `RAW-1`, `FEAT-1`, `SIG-1`, `LIFE-1` and `IDRES-1`. Released by the privacy officer, who sees the response but never the actor-to-account mapping, and delivered only to the requesting player. The purge job deletes per the next column. | None | Daily purge past retention; on account deletion deleted within `SECCLIENT01-RL-18` (30 days) | Is the export; reviewer, resolver and other players' data is redacted | Only by the privacy officer under the legal hold rule below; a hold suspends purge and account deletion for its scope until it expires or is released | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
 | `SECCLIENT01-OPS-1` Operational events: trust record rejected, checkpoint not accepted, trust store `UNVERIFIED`, missing corpus | Running the release trust pipeline | Non-personal: node, build and revision only, no actor | `SECCLIENT01-RL-15` (1 year) from the event | Written by the Game node. Operators and the security audit role read. The purge job deletes per the next column. | None | Daily purge past retention; account deletion needs no action | None | Only by the privacy officer under the legal hold rule below; a hold suspends purge and account deletion for its scope until it expires or is released | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
 
 **Legal hold rule (all nine profiles).** Only the privacy officer role that `DATA-PRIVACY-01` names
@@ -390,6 +396,8 @@ offer `CLIENT_INTEGRITY_V1` and sends no challenge.
 | `SECCLIENT01-RL-19` trust checkpoint issuance interval | 6 hours |
 | `SECCLIENT01-RL-20` trust checkpoint maximum age | 24 hours |
 | `SECCLIENT01-RL-21` trust checkpoint future skew, and backward clock step | 5 minutes |
+| `SECCLIENT01-RL-22` retiring corpora kept per node | 8; the oldest is evicted |
+| `SECCLIENT01-RL-23` data subject response copy ceiling from assembly | 60 days |
 
 Each with max and max+1 tests.
 

@@ -41,7 +41,8 @@ layered version (#162 5929226991).
   with a nonce-salted code-region challenge at login (alpha) and in game (before open beta). A
   correct answer proves only access to official release bytes, never integrity; outcomes are never
   sanction evidence on their own; one terminal outcome per challenge, unsolicited replies
-  coalesced; retiring builds keep their corpus until their sessions end.
+  coalesced; retiring builds keep their corpus until their sessions end (at most 8 per node, oldest
+  evicted). Follow-up SEC-TRUST-1: non-restored freshness state and an embedded trust snapshot.
 - **Layer 2:** `INPUT_TELEMETRY_V1` with a closed, statistical summary; server-side timing weighs
   more; no opt-out, disclosed in the privacy policy; summaries accepted by server-owned windows,
   silence recorded once per silent period; a closed list of nine artifact kinds, each with every
