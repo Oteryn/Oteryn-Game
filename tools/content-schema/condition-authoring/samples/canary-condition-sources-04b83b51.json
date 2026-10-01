@@ -1,0 +1,557 @@
+{
+  "canary": {
+    "repository": "https://github.com/opentibiabr/canary",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+  },
+  "fields": [
+    {
+      "attributes": [
+        [
+          "ticks",
+          5000
+        ],
+        [
+          "start",
+          5
+        ],
+        [
+          "damage",
+          100
+        ]
+      ],
+      "element": "poison",
+      "item_ids": [
+        105
+      ],
+      "name": "poison field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          4000
+        ],
+        [
+          "count",
+          2
+        ],
+        [
+          "damage",
+          20
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        1998,
+        1999,
+        2000
+      ],
+      "name": "campfire"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          20
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2118
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          10
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2119
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [],
+      "element": "fire",
+      "item_ids": [
+        2120
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          5000
+        ],
+        [
+          "start",
+          5
+        ],
+        [
+          "damage",
+          100
+        ]
+      ],
+      "element": "poison",
+      "item_ids": [
+        2121
+      ],
+      "name": "poison field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "damage",
+          25
+        ]
+      ],
+      "element": "energy",
+      "item_ids": [
+        2122
+      ],
+      "name": "energy field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          10
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2123
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          10
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2124
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [],
+      "element": "fire",
+      "item_ids": [
+        2125
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          5000
+        ],
+        [
+          "damage",
+          100
+        ],
+        [
+          "start",
+          5
+        ]
+      ],
+      "element": "energy",
+      "item_ids": [
+        2126
+      ],
+      "name": "energy field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          20
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2131
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          10
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2132
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [],
+      "element": "fire",
+      "item_ids": [
+        2133
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          5000
+        ],
+        [
+          "damage",
+          100
+        ],
+        [
+          "start",
+          5
+        ]
+      ],
+      "element": "poison",
+      "item_ids": [
+        2134
+      ],
+      "name": "poison gas"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "damage",
+          25
+        ]
+      ],
+      "element": "energy",
+      "item_ids": [
+        2135
+      ],
+      "name": "energy field"
+    },
+    {
+      "attributes": [
+        [
+          "damage",
+          300
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2137
+      ],
+      "name": "searing fire"
+    },
+    {
+      "attributes": [
+        [
+          "damage",
+          300
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2138
+      ],
+      "name": "searing fire"
+    },
+    {
+      "attributes": [
+        [
+          "damage",
+          0
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        2140
+      ],
+      "name": "ashes"
+    },
+    {
+      "attributes": [
+        [
+          "damage",
+          300
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        7465,
+        7466,
+        7467,
+        7468,
+        7469,
+        7470,
+        7471,
+        7472,
+        7473
+      ],
+      "name": "searing fire"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          10
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        10069
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          10
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        10070
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          10
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        10071
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "count",
+          7
+        ],
+        [
+          "damage",
+          10
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        21465
+      ],
+      "name": "fire field"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "damage",
+          25
+        ]
+      ],
+      "element": "fire",
+      "item_ids": [
+        23365
+      ],
+      "name": "fire trap"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "damage",
+          25
+        ]
+      ],
+      "element": "energy",
+      "item_ids": [
+        23366
+      ],
+      "name": "energy trap"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "damage",
+          25
+        ]
+      ],
+      "element": "poison",
+      "item_ids": [
+        23367
+      ],
+      "name": "toxic trap"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          5000
+        ],
+        [
+          "damage",
+          100
+        ],
+        [
+          "start",
+          5
+        ]
+      ],
+      "element": "poison",
+      "item_ids": [
+        23368
+      ],
+      "name": "poison trap"
+    },
+    {
+      "attributes": [
+        [
+          "ticks",
+          10000
+        ],
+        [
+          "damage",
+          25
+        ]
+      ],
+      "element": "energy",
+      "item_ids": [
+        31380
+      ],
+      "name": "energy field"
+    }
+  ],
+  "git_blobs": {
+    "data/items/items.xml": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+    "data/scripts/actions/items/demonic_candy_ball.lua": "df7d4b8a328e396fa0a118f8af339298f44ef1f8",
+    "data/scripts/actions/items/filled_jalapeno_peppers.lua": "cefe09724c0875c21dc7c6881215e9a01cf990aa",
+    "data/scripts/actions/items/foods.lua": "648abd7463043a51a05b50574cc93524b2335dfe",
+    "data/scripts/actions/items/potions.lua": "0d9576f22e562c660d20b616c1084275ed4d9699",
+    "data/scripts/runes/paralyze_rune.lua": "b0c602a159b091d8557a4f2905155d9cb52e38b8",
+    "data/scripts/runes/soul_fire.lua": "09e4e9f5ef0e46550e68ef9889ccf7a9350319f1",
+    "data/scripts/spells/attack/curse.lua": "047a0d95177d6cbbcdea907d838ceccc01b83501",
+    "data/scripts/spells/attack/electrify.lua": "08e8d28ccd0d9fe24d12ca3ac868fef2d82e78df",
+    "data/scripts/spells/attack/envenom.lua": "57db5753a7633aeec3b76a5d8c864a9708a854d2",
+    "data/scripts/spells/attack/holy_flash.lua": "5eccb5062524eaf63fd47c13ec9514d968c965a9",
+    "data/scripts/spells/attack/ignite.lua": "70108f2ca9d73644f20080eb502af240e132417e",
+    "data/scripts/spells/attack/inflict_wound.lua": "117f2ebbd850622d1492775648d6fd907e63956a",
+    "data/scripts/spells/healing/intense_recovery.lua": "6b94326772cdcd56acc206bd074c1d65ff95b586",
+    "data/scripts/spells/healing/recovery.lua": "bba8ba44bc047464b348e2dd7bbe070a6a1296b3",
+    "data/scripts/spells/support/great_light.lua": "39529ccb8d9f552174cbb50a6de131cf28c2a9a2",
+    "data/scripts/spells/support/haste.lua": "7c899e8c784036213e63b6216cb23efb3f4ee2e5",
+    "data/scripts/spells/support/light.lua": "73dd7a804116c2305e3b4eaf6d645c33f436b951",
+    "data/scripts/spells/support/magic_shield.lua": "ff55e21eafc8973c6a475962213d2832ec1bb1b0",
+    "data/scripts/spells/support/strong_haste.lua": "e20b7a891cca707846e41d2eafe182dd0b898b52",
+    "data/scripts/spells/support/ultimate_light.lua": "514f8839226bc8d5d04183390c3604c645193dde",
+    "src/io/iobestiary.cpp": "c0497c4d1814e7950ad8fc27b9a4ec1f86d4a5cd"
+  },
+  "schema": "OTERYN_CONDITION_SOURCES/v1"
+}

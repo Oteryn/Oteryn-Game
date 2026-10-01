@@ -119,6 +119,9 @@ shapes are new?
   offers stay. The rule holds nothing today.
 - A travel route loads when it has no gate or only a level and Premium gate. Quest-gated routes
   are held. A route price of 0 is free.
+  **Amendment (pending on acceptance of QUEST-GATE-0; `OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §3.4).** A
+  quest-gated route loads; the talk runtime checks its gate before the confirmation, and the travel
+  transaction re-reads the gate's tracks under the `character_root` lock.
 
 ## 4. Wire (NPC-WIRE-1)
 
@@ -264,6 +267,13 @@ shapes are new?
   (the DEATH-0 respawn rule). NPC-TRAVEL-1 builds this rule; DEATH-1 uses the same rule for an
   occupied respawn tile.
 
+**Amendment (pending on acceptance of TRAVEL-0; `reviews/OTERYN_GAME_TRAVEL0_NPC_TRAVEL_DECISION_2026-09-30.md` §5-§8).**
+The fare subtracts route discounts whose quest gate passes (floored at 0). A PZ block or kill block
+refuses travel; the logout block alone no longer does. A travel hold stops walking until the
+outcome; the move follows the known commit, fenced on the scope ownership generation, and a
+fenced follow-up transaction keyed by the occurrence consumes the pending arrival. A death cancels
+the pending travel invocation, so a late commit never moves a dead actor. Travel never changes channel. The §6.1 fallback stays (no stacking); summons are removed.
+
 ## 7. Price evidence (boundary §15 and §19)
 
 The boundary requires exact target evidence for prices before `NPC_SINGLE_TRADE_COMMIT_V1`.
@@ -320,6 +330,9 @@ satisfied).
   localization.
   *Amendment (BANK-FEE-0, pending on acceptance):* bank payment of BUY and travel fees is now decided
   (`OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`); banker services are BANK-0.
+  **Amendment (pending on acceptance of QUEST-GATE-0; `OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5).**
+  Quest-conditioned dialogue is now decided: typed quest conditions and outcomes on Dialogue nodes,
+  built by NPC-QUEST-1; dialogue still commits no value.
 
 ## 12. Before-freeze checklist
 

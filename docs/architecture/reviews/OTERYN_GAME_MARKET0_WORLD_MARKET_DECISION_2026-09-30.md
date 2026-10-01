@@ -99,6 +99,13 @@ How do players of one World buy and sell items through the Market, safely across
   no changed charges, duration, text or contents.
 - `trade_as` merging is deferred; each definition key is its own ware.
 
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3-§4).** A second ware kind is added: the virtual Tibia Coin ware
+`oteryn:market.tibia_coin`, one book per World, never an Item or ItemInstance and never in the
+depot, escrow or Inbox. Its coins stay on Platform: a coin sell offer claims a Platform hold, and
+fills move held coins by SETTLE instructions. The Market fee applies unchanged; the Premium gate
+of §4 does not apply to coin offers (Global).
+
 **Amendment (pending on acceptance of IMBUE-FORGE-0;
 `reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md` §13).**
 The default state also means item tier 0 and no imbuement. An imbued instance is never a ware. A
@@ -145,6 +152,12 @@ tiered instance is refused until MARKET-TIER-1 keys a ware by (definition, tier)
 - **Anonymous.** Other players see no name; the offer still stores its Account and character.
 - **Retention.** The expiry job deletes ended offers beyond each character's 600 newest
   (`MARKET0-RL-07`); the market event keeps the audit record under MARKET-RET-0's profile.
+
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3 `MKTCOIN0-WARE-KEY`).** An offer's ware is a discriminated key: `ware_kind` `ITEM` with
+definition key and definition revision (as above), or `COIN` with `coin_kind` (closed list:
+`TIBIA_COIN`) and no definition key or revision; a database check refuses any other combination,
+and an unknown kind fails closed. Existing rows are `ITEM`.
 
 ## 5. Inbox (INBOX-1)
 
@@ -245,6 +258,11 @@ tiered instance is refused until MARKET-TIER-1 keys a ware by (definition, tier)
 - **Expiry.** Offers past `expires_at`, oldest first, one per step, returning escrow as a cancel.
 - **Revision.** No `CharacterRevision` advance (composition rule 1 as amended).
 
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3 `MKTCOIN0-WARE-KEY`).** `game_market_books` keys by (World, `ware_kind`, definition key or
+`coin_kind`). A `COIN` book has no revision; its fills need equal `coin_kind` only, not DUR-03
+§46 compatibility.
+
 ## 8. Persistence deltas (MARKET-1 and INBOX-1)
 
 Each keeps the previous function body and adds one clause, as DEPOT-0 §6 does:
@@ -319,6 +337,11 @@ is measured by MARKET-1 against the audit envelope before implementation.
   one page (32 entries) in domain 11, and command 9 takes an Inbox entry handle as source, with the
   main backpack or `DEPOT {box}` as destination.
 - The Market view closes with the depot view.
+
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§8).** Capability `MARKET_COINS_V1`, requiring `MARKET_V1`, lists the coin ware, adds the
+Account's coin balance to `MARKET_QUERY` (display only) and the results `NOT_ENOUGH_COINS` and
+`COINS_UNAVAILABLE`; its number is reserved on #162 at allocation.
 
 ## 11. Declared Reference differences
 

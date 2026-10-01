@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/world/areas/hunting-places/",
-  "kind": "static_content",
-  "owner": "Area",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Hunting-place taxonomy/Area definitions."
-}
+{"coordinate_frame":"global-target-2026-09-27","family":"Area.HuntingPlace","generator":"tools/content-schema/world-authoring/convert_hunting_places.py","population_state":"POPULATED","record_count":445,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/world/areas/hunting-places/hunting-places-00000-00444.json"],"source":{"category":"Category:Hunting Places","evidence":"Derived","fetched_at":"2026-09-29","license":"TibiaWiki (Fandom), CC BY-SA; only raw values of a few factual infobox fields (city, recommended levels, map coordinates, creature names) are recorded, never article prose.","site":"https://tibia.fandom.com","snapshot":{"path":"imports/tibiawiki/hunting-places/fandom-snapshot-v1.json","sha256":"1a1a920a2a3be952b87e62c87bc7406146e25f35826885b33ec853feb3e96fb7"},"source_key":"oteryn:source.tibiawiki"}}

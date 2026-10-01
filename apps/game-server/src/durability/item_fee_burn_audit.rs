@@ -5,9 +5,9 @@
 //!
 //! One event per fee transaction: every BURN line (quantity before and after; a whole burn ends
 //! `RETIRED` with no location), the closed cause, the fee, the conservation summary, the
-//! Character and its committed revision, and the runtime scope. GOLD-FEE-1a burns gold coins
-//! only, so the change is always 0 and no change MINT field exists yet (GOLD-FEE-1b adds it).
-//! The shape has its own `DUR03-RL-*-FEE-BURN` rows; every bound is checked before encode
+//! Character and its committed revision, and the runtime scope. GOLD-FEE-1b adds platinum and
+//! crystal inputs and the change: its worth and at most two change MINT lines (a fresh platinum
+//! stack, then a fresh gold stack, each in a new backpack entry). The shape has its own `DUR03-RL-*-FEE-BURN` rows; every bound is checked before encode
 //! allocation and oversize input is rejected, never truncated.
 
 use super::item_mint_audit::{
@@ -17,7 +17,9 @@ use super::item_mint_audit::{
 };
 use super::item_transfer_audit::ITEM_LIFECYCLE_RETIRED;
 use crate::domain::charm::CharmKey;
-use crate::domain::currency::{COIN_DEFINITION_FAMILY, COIN_STACK_MAXIMUM, Coin, FEE_INPUTS_MAX};
+use crate::domain::currency::{
+    COIN_DEFINITION_FAMILY, COIN_STACK_MAXIMUM, Coin, FEE_CHANGE_OUTPUTS_MAX, FEE_INPUTS_MAX,
+};
 use prost::Message;
 use sha2::{Digest, Sha256};
 
@@ -28,8 +30,8 @@ pub const FEE_RL06_PARTICIPANTS_MAX: u64 = 22;
 pub const FEE_RL06_EFFECT_WORK_UNITS_MAX: u64 = 64;
 pub const FEE_RL07_EVENTS_MAX: u64 = 1;
 /// Measured worst case of this schema (the `worst_case_*` test), D50 method.
-pub const FEE_RL07_PAYLOAD_BYTES_MAX: usize = 24_181;
-pub const FEE_RL07_ENVELOPE_BYTES_MAX: usize = 24_495;
+pub const FEE_RL07_PAYLOAD_BYTES_MAX: usize = 25_398;
+pub const FEE_RL07_ENVELOPE_BYTES_MAX: usize = 25_712;
 /// The largest reachable fee: 20 stacks of 100 crystal coins.
 pub const FEE_GOLD_UNITS_MAX: u64 = 20_000_000;
 
@@ -68,13 +70,23 @@ pub struct OneItemFeeBurnLineV1 {
     pub placement_ordinal: u64,
 }
 
+/// One change MINT (decision §4.2 step 4): a fresh live coin stack that did not exist before,
+/// in a new direct backpack entry.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemFeeChangeMintV1 {
+    #[prost(message, optional, tag = "1")]
+    pub after: Option<OneItemStateV1>,
+    #[prost(uint64, tag = "2")]
+    pub placement_ordinal: u64,
+}
+
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemFeeBurnV1 {
     #[prost(message, optional, tag = "1")]
     pub cause: Option<OneItemFeeBurnCauseV1>,
     #[prost(uint64, tag = "2")]
     pub fee_gold_units: u64,
-    /// Conservation summary: burned worth; equals the fee while the change is 0.
+    /// Conservation summary: burned worth, equal to the fee plus the change.
     #[prost(uint64, tag = "3")]
     pub burned_gold_units: u64,
     #[prost(bytes = "vec", tag = "4")]
@@ -94,24 +106,34 @@ pub struct OneItemFeeBurnV1 {
     /// 1..=20 lines in burn order.
     #[prost(message, repeated, tag = "10")]
     pub lines: Vec<OneItemFeeBurnLineV1>,
+    /// Burned worth minus the fee, below the worth of the last line's coin.
+    #[prost(uint64, tag = "11")]
+    pub change_gold_units: u64,
+    /// 0..=2 change MINT lines: `change / 100` platinum, then `change % 100` gold, each only when
+    /// positive.
+    #[prost(message, repeated, tag = "12")]
+    pub change: Vec<OneItemFeeChangeMintV1>,
 }
 
-/// Resource usage of one fee transaction: each line is a participant; a whole burn adds its
-/// location removal and its retirement, a partial burn its quantity change.
-pub fn fee_burn_usage(lines: &[OneItemFeeBurnLineV1]) -> TransactionResourceUsage {
-    let whole = lines
+/// Resource usage of one fee transaction: each line and each change MINT is a participant; a
+/// whole burn adds its location removal and its retirement, a partial burn its quantity change,
+/// a change MINT its new entry.
+pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
+    let whole = value
+        .lines
         .iter()
         .filter(|line| line.after.as_ref().is_some_and(|after| after.quantity == 0))
         .count() as u64;
-    let count = lines.len() as u64;
+    let count = value.lines.len() as u64;
+    let minted = value.change.len() as u64;
     TransactionResourceUsage {
-        touched_item_instances: count,
-        location_custody_lines: whole,
+        touched_item_instances: count + minted,
+        location_custody_lines: whole + minted,
         value_lines: 0,
         transform_lines: 0,
         container_expansion: 0,
-        participants: count,
-        effect_work_units: 3 * whole + 2 * (count - whole),
+        participants: count + minted,
+        effect_work_units: 3 * whole + 2 * (count - whole) + 2 * minted,
         events: 1,
     }
 }
@@ -131,12 +153,11 @@ fn check_fee_usage(usage: &TransactionResourceUsage) -> Result<(), AuditError> {
     Ok(())
 }
 
-/// The admitted coins of GOLD-FEE-1a: gold only (GOLD-FEE-1b admits platinum and crystal with
-/// their change MINT).
+/// The coin of a line or change state: one of the closed worth table's definitions.
 fn line_coin(state: &OneItemStateV1) -> Result<Coin, AuditError> {
     let definition = state.definition.as_ref().ok_or(AuditError::InvalidInput)?;
     match Coin::from_production_key(&definition.production_key) {
-        Some(Coin::Gold) if definition.family == COIN_DEFINITION_FAMILY => Ok(Coin::Gold),
+        Some(coin) if definition.family == COIN_DEFINITION_FAMILY => Ok(coin),
         _ => Err(AuditError::InvalidInput),
     }
 }
@@ -165,7 +186,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         return Err(AuditError::InvalidInput);
     }
     let mut burned: u64 = 0;
-    let mut previous_ordinal = u64::MAX;
+    let mut previous: Option<(u64, u64)> = None;
     for (index, line) in value.lines.iter().enumerate() {
         let before = line.before.as_ref().ok_or(AuditError::InvalidInput)?;
         let after = line.after.as_ref().ok_or(AuditError::InvalidInput)?;
@@ -177,7 +198,11 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         let partial = after.lifecycle == ITEM_LIFECYCLE_LIVE && after.quantity > 0;
         // One coin, worth ascending, then display order (highest ordinal first); only the last
         // line may keep units.
-        if before.item_instance_id != after.item_instance_id
+        let ordered = previous.is_none_or(|(worth, ordinal)| {
+            coin.worth() > worth || (coin.worth() == worth && line.placement_ordinal < ordinal)
+        });
+        if !ordered
+            || before.item_instance_id != after.item_instance_id
             || before.world_id != value.world_id
             || after.world_id != value.world_id
             || before.definition != after.definition
@@ -186,21 +211,76 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
             || after.quantity >= before.quantity
             || !(retired || (partial && last))
             || line.placement_ordinal == 0
-            || line.placement_ordinal >= previous_ordinal
             || value.lines[..index].iter().any(|other| {
                 other.before.as_ref().map(|b| &b.item_instance_id) == Some(&before.item_instance_id)
             })
         {
             return Err(AuditError::InvalidInput);
         }
-        previous_ordinal = line.placement_ordinal;
+        previous = Some((coin.worth(), line.placement_ordinal));
         burned += u64::from(before.quantity - after.quantity) * coin.worth();
     }
-    // Gold only: no change, so the burned worth is exactly the fee and the last line is needed.
-    if burned != value.fee_gold_units || value.burned_gold_units != burned {
+    // Conservation: burned - change = fee; change below the last coin's worth, so every line
+    // is needed and the last burns no unit more than the plan.
+    let last_worth = previous.map_or(0, |(worth, _)| worth);
+    if value.burned_gold_units != burned
+        || burned.checked_sub(value.change_gold_units) != Some(value.fee_gold_units)
+        || value.change_gold_units >= last_worth
+    {
         return Err(AuditError::InvalidInput);
     }
-    check_fee_usage(&fee_burn_usage(&value.lines))
+    check_change(value)?;
+    check_fee_usage(&fee_burn_usage(value))
+}
+
+/// Change MINT lines: `change / 100` platinum then `change % 100` gold, each only when
+/// positive, fresh live items of this World in consecutive new entries after the burn lines.
+fn check_change(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
+    let expected: Vec<(Coin, u64)> = [
+        (Coin::Platinum, value.change_gold_units / 100),
+        (Coin::Gold, value.change_gold_units % 100),
+    ]
+    .into_iter()
+    .filter(|(_, quantity)| *quantity > 0)
+    .collect();
+    if value.change.len() > FEE_CHANGE_OUTPUTS_MAX || value.change.len() != expected.len() {
+        return Err(AuditError::InvalidInput);
+    }
+    // The first output takes an ordinal after every burn line's entry, the next one after it.
+    let last_line_ordinal = value.lines.iter().map(|line| line.placement_ordinal).max();
+    let mut previous_ordinal: Option<u64> = None;
+    for (output, (coin, quantity)) in value.change.iter().zip(expected) {
+        let after = output.after.as_ref().ok_or(AuditError::InvalidInput)?;
+        check_uuid_v7(&after.item_instance_id)?;
+        check_definition(after.definition.as_ref())?;
+        let consecutive = match previous_ordinal {
+            Some(ordinal) => ordinal.checked_add(1) == Some(output.placement_ordinal),
+            None => last_line_ordinal.is_none_or(|ordinal| output.placement_ordinal > ordinal),
+        };
+        if line_coin(after)? != coin
+            || u64::from(after.quantity) != quantity
+            || after.lifecycle != ITEM_LIFECYCLE_LIVE
+            || after.world_id != value.world_id
+            || output.placement_ordinal == 0
+            || !consecutive
+            || value.lines.iter().any(|line| {
+                line.before.as_ref().map(|b| &b.item_instance_id) == Some(&after.item_instance_id)
+            })
+            || value
+                .change
+                .iter()
+                .filter(|other| {
+                    other.after.as_ref().map(|a| &a.item_instance_id)
+                        == Some(&after.item_instance_id)
+                })
+                .count()
+                != 1
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        previous_ordinal = Some(output.placement_ordinal);
+    }
+    Ok(())
 }
 
 /// RL-07 payload gate for the fee shape: size before decode, canonical round trip, closed
@@ -325,12 +405,16 @@ mod tests {
     }
 
     fn state(item: u8, revision: &str, quantity: u32) -> OneItemStateV1 {
+        coin_state(Coin::Gold, item, revision, quantity)
+    }
+
+    fn coin_state(coin: Coin, item: u8, revision: &str, quantity: u32) -> OneItemStateV1 {
         OneItemStateV1 {
             item_instance_id: uuid(item),
             world_id: uuid(1),
             definition: Some(OneItemTypedDefinitionRevisionV1 {
                 family: COIN_DEFINITION_FAMILY.into(),
-                production_key: Coin::Gold.production_key().into(),
+                production_key: coin.production_key().into(),
                 revision_ref: revision.into(),
             }),
             quantity,
@@ -373,7 +457,49 @@ mod tests {
             runtime_scope_ownership_generation: 1,
             backpack_item_instance_id: uuid(50),
             lines,
+            change_gold_units: 0,
+            change: Vec::new(),
         }
+    }
+
+    fn coin_line(
+        coin: Coin,
+        item: u8,
+        ordinal: u64,
+        before: u32,
+        after: u32,
+    ) -> OneItemFeeBurnLineV1 {
+        OneItemFeeBurnLineV1 {
+            before: Some(coin_state(coin, item, "r", before)),
+            after: Some(coin_state(coin, item, "r", after)),
+            placement_ordinal: ordinal,
+        }
+    }
+
+    fn minted(coin: Coin, item: u8, quantity: u32, ordinal: u64) -> OneItemFeeChangeMintV1 {
+        OneItemFeeChangeMintV1 {
+            after: Some(coin_state(coin, item, "r", quantity)),
+            placement_ordinal: ordinal,
+        }
+    }
+
+    /// The decision §8 example: 2,350 from 10 gold and one crystal mints 76 platinum and 60
+    /// gold into two new entries.
+    fn with_change() -> OneItemFeeBurnV1 {
+        let mut value = burn(
+            vec![
+                coin_line(Coin::Gold, 10, 1, 10, 0),
+                coin_line(Coin::Crystal, 11, 2, 1, 0),
+            ],
+            2_350,
+        );
+        value.burned_gold_units = 10_010;
+        value.change_gold_units = 7_660;
+        value.change = vec![
+            minted(Coin::Platinum, 20, 76, 3),
+            minted(Coin::Gold, 21, 60, 4),
+        ];
+        value
     }
 
     fn identity() -> FeeBurnEventIdentity<'static> {
@@ -459,7 +585,7 @@ mod tests {
             Err(AuditError::InvalidInput)
         );
         assert_eq!(
-            fee_burn_usage(&value.lines),
+            fee_burn_usage(&value),
             TransactionResourceUsage {
                 touched_item_instances: 2,
                 location_custody_lines: 1,
@@ -496,15 +622,14 @@ mod tests {
         value.lines[1].after = Some(state(11, "r", 50));
         cases.push(("a line that burns nothing", value));
         let mut value = good();
-        value.lines[1]
-            .before
-            .as_mut()
-            .unwrap()
-            .definition
-            .as_mut()
-            .unwrap()
-            .production_key = Coin::Platinum.production_key().into();
-        cases.push(("platinum before GOLD-FEE-1b", value));
+        value.lines[0] = coin_line(Coin::Platinum, 10, 7, 1, 0);
+        value.burned_gold_units = 105;
+        value.fee_gold_units = 105;
+        cases.push(("platinum burned before gold", value));
+        let mut value = good();
+        value.change_gold_units = 1;
+        value.burned_gold_units = 36;
+        cases.push(("change without its MINT", value));
         let mut value = good();
         value.lines[1]
             .before
@@ -566,18 +691,110 @@ mod tests {
         }
     }
 
+    #[test]
+    fn a_change_mint_round_trips_and_every_broken_change_is_rejected() {
+        let value = with_change();
+        let wire = encode_fee_burn_event(identity(), value.clone()).unwrap();
+        assert_eq!(decode_fee_burn_envelope(&wire).unwrap().1, value);
+        // An untouched entry may hold a higher ordinal than every burn line.
+        let mut later = with_change();
+        later.change[0].placement_ordinal = 7;
+        later.change[1].placement_ordinal = 8;
+        assert!(encode_fee_burn_event(identity(), later).is_ok());
+        let usage = fee_burn_usage(&value);
+        assert_eq!(
+            (usage.touched_item_instances, usage.location_custody_lines),
+            (4, 4)
+        );
+        assert_eq!(usage.effect_work_units, 10);
+
+        let mut cases: Vec<(&str, OneItemFeeBurnV1)> = Vec::new();
+        let mut broken = with_change();
+        broken.change.swap(0, 1);
+        cases.push(("gold before platinum", broken));
+        let mut broken = with_change();
+        broken.change[1] = minted(Coin::Gold, 21, 59, 4);
+        cases.push(("change quantity other than change mod 100", broken));
+        let mut broken = with_change();
+        broken.change.pop();
+        cases.push(("a change output missing", broken));
+        let mut broken = with_change();
+        broken.change[1].placement_ordinal = 5;
+        cases.push(("change entries not consecutive", broken));
+        let mut broken = with_change();
+        broken.change[0].placement_ordinal = 2;
+        broken.change[1].placement_ordinal = 3;
+        cases.push(("change entry at a burn line's ordinal", broken));
+        let mut broken = with_change();
+        broken.change[0].placement_ordinal = 1;
+        broken.change[1].placement_ordinal = 2;
+        cases.push(("change entries before the burn lines", broken));
+        let mut broken = with_change();
+        broken.change[1] = minted(Coin::Gold, 11, 60, 4);
+        cases.push(("change reuses a burned item", broken));
+        let mut broken = with_change();
+        broken.change[1] = minted(Coin::Gold, 20, 60, 4);
+        cases.push(("one item minted twice", broken));
+        let mut broken = with_change();
+        broken.change[0] = minted(Coin::Crystal, 20, 76, 3);
+        cases.push(("crystal change", broken));
+        let mut broken = with_change();
+        broken.change[0].after.as_mut().unwrap().world_id = uuid(3);
+        cases.push(("change in another World", broken));
+        // Burning a second crystal would overpay: change of 10,000 or more is never planned.
+        let mut broken = with_change();
+        broken.lines[1] = coin_line(Coin::Crystal, 11, 2, 2, 0);
+        broken.burned_gold_units = 20_010;
+        broken.change_gold_units = 17_660;
+        cases.push(("change at or above the last coin's worth", broken));
+        for (case, value) in cases {
+            assert_eq!(
+                check_fee_burn(&value),
+                Err(AuditError::InvalidInput),
+                "{case}"
+            );
+        }
+    }
+
     fn worst_case(lines: usize) -> OneItemFeeBurnV1 {
         let revision = "r".repeat(mint::RL07_CONTENT_KEY_BYTES_MAX);
         let lines = (0..lines)
             .map(|n| {
                 let tag = u8::try_from(n).unwrap() + 100;
-                line(tag, u64::MAX - u64::from(tag), 100, 0, &revision)
+                line(tag, u64::MAX - 2 - u64::from(tag), 100, 0, &revision)
             })
             .collect::<Vec<_>>();
         let mut value = burn(lines, 0);
-        let fee = 100 * value.lines.len() as u64;
-        value.fee_gold_units = fee;
-        value.burned_gold_units = fee;
+        // Every line whole and the last one a crystal stack paying 9,999 more than the fee: the
+        // largest change (99 platinum, 99 gold) in two maximal outputs.
+        let last = value.lines.len() - 1;
+        let last_line = &mut value.lines[last];
+        for state in [&mut last_line.before, &mut last_line.after] {
+            state
+                .as_mut()
+                .unwrap()
+                .definition
+                .as_mut()
+                .unwrap()
+                .production_key = Coin::Crystal.production_key().into();
+        }
+        let burned = 100 * last as u64 + 100 * Coin::Crystal.worth();
+        value.burned_gold_units = burned;
+        value.change_gold_units = 9_999;
+        value.fee_gold_units = burned - 9_999;
+        value.change = [(Coin::Platinum, 99), (Coin::Gold, 99)]
+            .into_iter()
+            .enumerate()
+            .map(|(n, (coin, quantity))| OneItemFeeChangeMintV1 {
+                after: Some(coin_state(
+                    coin,
+                    200 + u8::try_from(n).unwrap(),
+                    &revision,
+                    quantity,
+                )),
+                placement_ordinal: u64::MAX - 1 + n as u64,
+            })
+            .collect();
         value.committed_character_revision = u64::MAX;
         value.runtime_scope_ownership_generation = u64::MAX;
         value.cause = Some(OneItemFeeBurnCauseV1 {
@@ -595,8 +812,8 @@ mod tests {
 
     #[test]
     fn worst_case_payload_and_envelope_are_the_registered_rows() {
-        // 20 whole burns of 100 units, 512-byte revisions, the longest charm key, maximal
-        // integers: the exact encoded worst case of this schema.
+        // 20 whole burns of 100 units, two change MINTs of 99, 512-byte revisions, the longest
+        // charm key, maximal integers: the exact encoded worst case of this schema.
         let value = worst_case(FEE_INPUTS_MAX);
         let payload = OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
@@ -658,8 +875,12 @@ mod tests {
         usage.value_lines = 1;
         assert_eq!(check_fee_usage(&usage), Err(AuditError::InvalidInput));
         // The one-item rows still refuse a fee-sized transaction.
-        let fee = fee_burn_usage(&worst_case(FEE_INPUTS_MAX).lines);
-        assert_eq!(fee.effect_work_units, 60);
+        let fee = fee_burn_usage(&worst_case(FEE_INPUTS_MAX));
+        assert_eq!(fee.effect_work_units, FEE_RL06_EFFECT_WORK_UNITS_MAX);
+        assert_eq!(
+            fee.touched_item_instances,
+            FEE_RL01_TOUCHED_ITEM_INSTANCES_MAX
+        );
         assert_eq!(fee.check(), Err(AuditError::CapacityExceeded));
     }
 }

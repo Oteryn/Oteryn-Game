@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:condition-authoring:candidate:1",
+  "title": "Condition authoring schema candidate v1 - structural validation",
+  "description": "CANDIDATE static ConditionDefinition catalogue (CONDITIONS-0 §3, COND-CONTENT-1). Content owns the values; the families, conflict policies, ticks, dispel and lifecycle belong to the COND-1 runtime. Semantic rules live in condition_authoring.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "decision", "source", "conditions"],
+  "properties": {
+    "schema": {"const": "OTERYN_CONDITION_AUTHORING_CATALOGUE/v1"},
+    "decision": {"const": "docs/architecture/reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canary", "canary_facts", "canary_facts_sha256", "monster_effects"],
+      "properties": {
+        "canary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "revision"],
+          "properties": {
+            "repository": {"const": "https://github.com/opentibiabr/canary"},
+            "revision": {"$ref": "#/$defs/gitSha"}
+          }
+        },
+        "canary_facts": {"type": "string", "minLength": 1},
+        "canary_facts_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "monster_effects": {"type": "string", "minLength": 1}
+      }
+    },
+    "conditions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/condition"}}
+  },
+  "$defs": {
+    "gitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "ms": {"type": "integer", "minimum": 1},
+    "positive": {"type": "integer", "minimum": 1},
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "name", "family", "conflict_key", "negative", "used_by", "evidence", "status"],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["family", "key", "revision"],
+          "properties": {
+            "family": {"const": "Condition"},
+            "key": {"type": "string", "pattern": "^oteryn:condition\\.[a-z0-9_]+(\\.[a-z0-9_-]+)+$"},
+            "revision": {"const": "definition-r1"}
+          }
+        },
+        "name": {"type": "string", "minLength": 1},
+        "family": {"enum": ["SPEED", "DAMAGE_OVER_TIME", "FOOD_REGENERATION", "RECOVERY", "MANA_SHIELD", "LIGHT"]},
+        "conflict_key": {
+          "enum": ["speed", "poison", "fire", "energy", "bleeding", "drown", "freezing", "dazzled", "cursed",
+                   "food_regeneration", "recovery", "mana_shield", "light"]
+        },
+        "negative": {"type": "boolean", "description": "The dispel tag `negative` (CONDITIONS-0 §5): damage over time and paralysis."},
+        "used_by": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "ref"],
+          "properties": {
+            "kind": {"enum": ["spell", "rune", "potion", "food", "field", "monster_attack", "charm"]},
+            "ref": {"type": "string", "minLength": 1, "description": "Spell words, rune name, item ids, charm key or monster Effect key. Provenance, not a typed reference."}
+          }
+        },
+        "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+        "status": {"enum": ["admitted", "blocked"]},
+        "blocked_reason": {"type": "string", "minLength": 1},
+        "speed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "duration_ms", "a_min", "b_min", "a_max", "b_max"],
+          "description": "Target speed drawn in [a_min x (base - 40) + b_min, a_max x (base - 40) + b_max]; a in thousandths.",
+          "properties": {
+            "kind": {"enum": ["haste", "paralysis"]},
+            "duration_ms": {"$ref": "#/$defs/ms"},
+            "a_min": {"type": "integer"},
+            "b_min": {"type": "integer"},
+            "a_max": {"type": "integer"},
+            "b_max": {"type": "integer"}
+          }
+        },
+        "damage_over_time": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["field", "schedule"],
+          "properties": {
+            "field": {"type": "boolean", "description": "A field's application always replaces (CONDITIONS-0 §3.1)."},
+            "schedule": {"$ref": "#/$defs/schedule"}
+          }
+        },
+        "food_regeneration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_duration_ms"],
+          "description": "Rates come from the vocation data (SPELL-D5), the time per food from the Item.",
+          "properties": {"max_duration_ms": {"$ref": "#/$defs/ms"}}
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["duration_ms"],
+          "minProperties": 3,
+          "dependentRequired": {
+            "health_gain": ["health_interval_ms"], "health_interval_ms": ["health_gain"],
+            "mana_gain": ["mana_interval_ms"], "mana_interval_ms": ["mana_gain"]
+          },
+          "properties": {
+            "duration_ms": {"$ref": "#/$defs/ms"},
+            "health_gain": {"$ref": "#/$defs/positive"},
+            "health_interval_ms": {"$ref": "#/$defs/ms"},
+            "mana_gain": {"$ref": "#/$defs/positive"},
+            "mana_interval_ms": {"$ref": "#/$defs/ms"}
+          }
+        },
+        "mana_shield": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["duration_ms", "capacity_milli"],
+          "description": "capacity = min(max mana, trunc((constant + per_level x level + per_magic_level x magic level) / 1000)).",
+          "properties": {
+            "duration_ms": {"$ref": "#/$defs/ms"},
+            "capacity_milli": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["constant", "per_level", "per_magic_level"],
+              "properties": {
+                "constant": {"type": "integer", "minimum": 0},
+                "per_level": {"type": "integer", "minimum": 0},
+                "per_magic_level": {"type": "integer", "minimum": 0}
+              }
+            }
+          }
+        },
+        "light": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["duration_ms", "level", "color"],
+          "properties": {
+            "duration_ms": {"$ref": "#/$defs/ms"},
+            "level": {"type": "integer", "minimum": 1, "maximum": 255},
+            "color": {"type": "integer", "minimum": 0, "maximum": 255}
+          }
+        }
+      },
+      "if": {"properties": {"status": {"const": "blocked"}}},
+      "then": {"required": ["blocked_reason"]},
+      "else": {"not": {"required": ["blocked_reason"]}}
+    },
+    "evidence": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reference", "revision", "path", "git_blob"],
+          "properties": {
+            "reference": {"const": "canary"},
+            "revision": {"$ref": "#/$defs/gitSha"},
+            "path": {"type": "string", "minLength": 1},
+            "lines": {"type": "string", "pattern": "^[0-9]+-[0-9]+$"},
+            "item_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/positive"}},
+            "git_blob": {"$ref": "#/$defs/gitSha"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reference", "path"],
+          "properties": {
+            "reference": {"const": "content"},
+            "path": {"type": "string", "pattern": "^content/abilities/"},
+            "effect_key": {"type": "string", "pattern": "^oteryn:effect\\."},
+            "formula_key": {"type": "string", "pattern": "^oteryn:formula\\."}
+          },
+          "minProperties": 3
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reference", "path"],
+          "properties": {
+            "reference": {"const": "decision"},
+            "path": {"type": "string", "pattern": "^docs/architecture/"}
+          }
+        }
+      ]
+    },
+    "schedule": {
+      "description": "The WorldProject/v2 damage-over-time shape (ProjectV2DamageOverTime) as converted from Canary.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tick_profile", "first_tick", "ticks"],
+          "properties": {
+            "tick_profile": {"const": "Fixed"},
+            "first_tick": {"$ref": "#/$defs/firstTick"},
+            "ticks": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["count", "interval_ms", "amount"],
+                "properties": {
+                  "count": {"$ref": "#/$defs/positive"},
+                  "interval_ms": {"type": "integer", "minimum": 0},
+                  "amount": {"$ref": "#/$defs/positive"}
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tick_profile", "first_tick", "total_minimum", "total_maximum", "tick_interval_ms"],
+          "properties": {
+            "tick_profile": {"const": "Decreasing"},
+            "first_tick": {"$ref": "#/$defs/firstTick"},
+            "total_minimum": {"type": "integer", "minimum": 0},
+            "total_maximum": {"$ref": "#/$defs/positive"},
+            "tick_interval_ms": {"type": "integer", "minimum": 0},
+            "initial_tick_amount": {"$ref": "#/$defs/positive"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tick_profile", "first_tick", "base_minimum", "base_maximum", "factor", "tick_counts", "tick_interval_ms"],
+          "properties": {
+            "tick_profile": {"const": "Geometric"},
+            "first_tick": {"$ref": "#/$defs/firstTick"},
+            "base_minimum": {"$ref": "#/$defs/positive"},
+            "base_maximum": {"$ref": "#/$defs/positive"},
+            "factor": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["numerator", "denominator"],
+              "properties": {"numerator": {"$ref": "#/$defs/positive"}, "denominator": {"$ref": "#/$defs/positive"}}
+            },
+            "tick_counts": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/positive"}},
+            "tick_interval_ms": {"type": "integer", "minimum": 0}
+          }
+        }
+      ]
+    },
+    "firstTick": {"enum": ["AfterInterval", "Immediate"]}
+  }
+}

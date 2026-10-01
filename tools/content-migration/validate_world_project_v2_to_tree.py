@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,7 @@ DIALOGUE_COUNT = 715
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
 PROFICIENCY_COUNT = 443
+PROFICIENCY_BINDING_COUNT = 664  # 642 + 22 bound by the ITEM-ADD-1 donor epoch-2 Items
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
 REWARD_CLAIM_COUNT = 231
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
@@ -350,13 +352,13 @@ def main() -> int:
         "legacy_mutated": False,
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
-    require(lock["family_counts"] == {"Item": 33567, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
+    require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
-    require(item_index["record_count"] == 33567 and len(item_index["shards"]) == 68, "ITEM_INDEX")
+    require(item_index["record_count"] == 34031 and len(item_index["shards"]) == 69, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 
     migrated_items: list[Any] = []
@@ -384,7 +386,7 @@ def main() -> int:
         expected_start = payload["shard"]["end"] + 1
 
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
-    require(migrated_items == legacy_items and expected_start == 33567, "ITEM_DEFINITION_ROUNDTRIP")
+    require(migrated_items == legacy_items and expected_start == 34031, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -416,7 +418,7 @@ def main() -> int:
     require(canonical_sorted(item_bindings) == canonical_sorted(legacy_item_bindings), "ITEM_BINDING_ROUNDTRIP")
     require(canonical_sorted(mount_bindings) == canonical_sorted(legacy_mount_bindings), "MOUNT_BINDING_ROUNDTRIP")
 
-    require(len({target_id(row["identity"]) for row in migrated_items}) == 33567, "ITEM_IDENTITY_UNIQUENESS")
+    require(len({target_id(row["identity"]) for row in migrated_items}) == 34031, "ITEM_IDENTITY_UNIQUENESS")
     require(len({
         ("Mount", row["identity"]["key"], row["identity"]["revision"])
         for row in migrated_mounts
@@ -442,11 +444,47 @@ def main() -> int:
             "PROFICIENCY_INDEX")
     require(proficiency_index["record_count"] == PROFICIENCY_COUNT, "PROFICIENCY_INDEX_COUNT")
     proficiency_keys = set()
+    proficiency_refs = set()
     for shard_path in proficiency_index["shards"]:
         shard = load(ROOT / shard_path)
         require(shard["family"] == "Proficiency" and shard["shard"]["count"] == len(shard["records"]), "PROFICIENCY_SHARD")
         proficiency_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
+        proficiency_refs |= {("Proficiency", row["definition"]["identity"]["key"],
+                              row["definition"]["identity"]["revision"]) for row in shard["records"]}
     require(len(proficiency_keys) == PROFICIENCY_COUNT, "PROFICIENCY_IDENTITY_UNIQUENESS")
+    proficiency_bindings = load(ROOT / "content" / "proficiencies" / "bindings.json")
+    binding_rows = proficiency_bindings["records"]
+    require(proficiency_bindings["record_count"] == len(binding_rows) == PROFICIENCY_BINDING_COUNT,
+            "PROFICIENCY_BINDING_COUNT")
+    item_refs = {("Item", definition["identity"]["key"], definition["identity"]["revision"])
+                 for definition in migrated_items}
+
+    def ref(value):
+        return (value["family"], value["key"], value["revision"])
+
+    require(len({row["item"]["key"] for row in binding_rows}) == len(binding_rows), "PROFICIENCY_BINDING_UNIQUENESS")
+    require(all(ref(row["item"]) in item_refs and ref(row["profile_binding"]) in proficiency_refs
+                and row["threshold_class"] in {"standard", "knight", "crossbow"} for row in binding_rows),
+            "PROFICIENCY_BINDING_REFERENCES")
+    # Completeness against the pinned ITEM-PROF-1 source: every source weapon whose Item is
+    # defined and whose class is known is bound, so a newly defined Item cannot stay unbound.
+    binding_source_path = ROOT / proficiency_bindings["source"]["path"]
+    require(hashlib.sha256(binding_source_path.read_bytes()).hexdigest() == proficiency_bindings["source"]["sha256"],
+            "PROFICIENCY_BINDING_SOURCE_DIGEST")
+    defined_item_keys = {key for _, key, _ in item_refs}
+    expected_bindings = {}
+    expected_excluded = {"item_not_defined": 0, "unknown_threshold_class": 0}
+    for row in load(binding_source_path)["bindings"]:
+        if row["item_key"] not in defined_item_keys:
+            expected_excluded["item_not_defined"] += 1
+        elif row["threshold_class"] not in {"standard", "knight", "crossbow"}:
+            expected_excluded["unknown_threshold_class"] += 1
+        else:
+            expected_bindings[row["item_key"]] = (
+                f"oteryn:proficiency.tibia.p{row['proficiency_id']}", row["threshold_class"])
+    require({row["item"]["key"]: (row["profile_binding"]["key"], row["threshold_class"]) for row in binding_rows}
+            == expected_bindings and proficiency_bindings["excluded"] == expected_excluded,
+            "PROFICIENCY_BINDING_COMPLETENESS")
     reward_claim_index = load(ROOT / "content" / "interactions" / "reward_claims" / "index.json")
     require(reward_claim_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and reward_claim_index["family"] == "RewardClaim",
             "REWARD_CLAIM_INDEX")
@@ -458,12 +496,13 @@ def main() -> int:
         reward_claim_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
     require(len(reward_claim_keys) == REWARD_CLAIM_COUNT, "REWARD_CLAIM_IDENTITY_UNIQUENESS")
     print(
-        "PASS items=33567 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
+        "PASS items=34031 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "
         f"encounter_records={encounter_records} charm_records={CHARM_COUNT} "
-        f"proficiency_records={PROFICIENCY_COUNT} reward_claim_records={REWARD_CLAIM_COUNT}"
+        f"proficiency_records={PROFICIENCY_COUNT} proficiency_bindings={PROFICIENCY_BINDING_COUNT} "
+        f"reward_claim_records={REWARD_CLAIM_COUNT}"
     )
     return 0
 

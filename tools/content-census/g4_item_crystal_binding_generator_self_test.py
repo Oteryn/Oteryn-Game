@@ -547,6 +547,19 @@ def main() -> None:
         {"oteryn:item.tibia.i3288": {"5810"}},
     )
 
+    # rule_only_definition_keys: only a current CipSoft id that no Crystal row names is exempt.
+    assert MODULE.rule_only_definition_keys(
+        {
+            "oteryn:item.tibia.i21887",  # current, no Crystal row: rule-only
+            "oteryn:item.tibia.i3031",  # a Crystal row names it
+            "oteryn:item.tibia.i48296",  # not a current CipSoft id
+            "oteryn:item.tibia.i021887",  # not canonical
+            "oteryn:item.oteryn.event_token",
+        },
+        {"3031"},
+        {21887, 3031},
+    ) == {"oteryn:item.tibia.i21887"}
+
     # Identity promotions: parsed from `<PREFIX>_{SOURCE_ITEM_ID,OLD_KEY,KEY}` constants.
     rust = (
         "pub const R7_P04_GOLD_COIN_SOURCE_ITEM_ID: u64 = 3_031;\n"
