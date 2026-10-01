@@ -71,7 +71,7 @@ class StackFalseQualification(unittest.TestCase):
 
     def test_packet_reproduces(self):
         packet = lower.build()
-        self.assertEqual(packet["counts"], {"promotions": 2380, "holds": 13})
+        self.assertEqual(packet["counts"], {"promotions": 2381, "holds": 13})
         self.assertEqual(
             (
                 json.dumps(

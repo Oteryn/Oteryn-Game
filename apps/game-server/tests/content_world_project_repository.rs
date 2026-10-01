@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "7a66b5581a96fc6b9f55abb951196ccc8abeeea97c672e90667efef88841bcaf",
+        "66fffef7be413a91bd32ddc3c1d55eded82066bdd68433d15252d35e8d337585",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        23_416_751,
-        "0c4560789dda6c1c03511e0273df80191aa2e07f579103126c6f6e9bcf71d873",
+        23_523_800,
+        "3e361d45efecd4c6d23d562f473a7b70daa75e2f10e8da9eacbcf642e5ea2dc4",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "2cd0fedf2127e0c7471fd316972a7e80e259542339cb3bbd8d9bfd55dc257da1",
+        "3d670eed97c97ab4b3949b3b8a84177b46fdc72b825f3f06d707d16cda1b1ab8",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "562f23eff08fff9a6df36e6ff462a1e4c3f395474bed08568623e48f273e7387",
+        "64b5e2efe08bca94d3424704d4ff11c492c2acd30938de327d9e88e9e65ad3fd",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "8d5c10351be6eb1f75478258ae8ad162443d97eac2990544d7c028208f0cb688";
+const TREE_SHA256: &str = "eb53cac7e311c45f5d89a9d8d4c102058747a9ee971fceaeb53a8a33e0b00ee6";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -250,7 +250,11 @@ fn wave1_atom_count(semantics: &ReferenceItemSemantics) -> usize {
     }
     if let Known(value) = &semantics.stack {
         count += usize::from(matches!(&value.stackable, Known(false)));
-        assert!(matches!(&value.stack_max, ReferenceItemField::Unknown));
+        if matches!(value.stackable, Known(true)) {
+            assert_eq!(value.stack_max, Known(100));
+        } else {
+            assert!(matches!(&value.stack_max, ReferenceItemField::Unknown));
+        }
     }
     if let Known(value) = &semantics.trade_restrictions {
         count += usize::from(matches!(&value.marketable, Known(_)));
@@ -990,8 +994,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // on the backpack, which already has a slot count.
     // Explicit wiki non-stackability adds 2,345 atoms; 557 Items already had an atom
     // on these paths, so only 1,788 additional Items enter this atom census.
-    assert_eq!(wave1_items, 164 + 995 + 27 + 1_788);
-    assert_eq!(wave1_fields, 290 + 1_269 + 49 + 1 + 2_345);
+    // Physical fact initialization exposes one additional explicit wiki negative (i20129).
+    assert_eq!(wave1_items, 164 + 995 + 27 + 1_788 + 1);
+    assert_eq!(wave1_fields, 290 + 1_269 + 49 + 1 + 2_345 + 1);
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
         .definitions
@@ -1027,10 +1032,40 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);
+    let (mut pickup_fields, mut positive_stacks, mut weight_fields) = (0, 0, 0);
     for definition in &linked.definitions {
         let ReferenceDefinitionKind::Item(item) = &definition.kind else {
             continue;
         };
+        if let ReferenceItemField::Known(physical) = &item.semantics.physical {
+            pickup_fields += usize::from(matches!(
+                physical.pickupable,
+                ReferenceItemField::Known(true)
+            ));
+            weight_fields += usize::from(matches!(physical.weight, ReferenceItemField::Known(_)));
+        }
+        if let ReferenceItemField::Known(stack) = &item.semantics.stack
+            && matches!(stack.stackable, ReferenceItemField::Known(true))
+        {
+            positive_stacks += 1;
+            assert_eq!(stack.stack_max, ReferenceItemField::Known(100));
+            let admitted = definition.definition.key().as_str() == "oteryn:item.tibia.i3155";
+            assert_eq!(item.materializable, admitted);
+            assert_eq!(
+                (item.physical_class, item.stack_class),
+                if admitted {
+                    (
+                        ReferenceItemPhysicalClass::Physical,
+                        ReferenceItemStackClass::StackCapable,
+                    )
+                } else {
+                    (
+                        ReferenceItemPhysicalClass::Unknown,
+                        ReferenceItemStackClass::Unknown,
+                    )
+                }
+            );
+        }
         if definition.definition.key().as_str() == "oteryn:item.tibia.i50275" {
             assert!(matches!(
                 &item.semantics.protection,
@@ -1057,6 +1092,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             equipment_patterns += patterns.len();
         }
     }
+    assert_eq!(
+        (pickup_fields, positive_stacks, weight_fields),
+        (6756, 39, 6513 + 3)
+    );
     assert_eq!(resistance_vectors, 391);
     assert_eq!(resistance_atoms, 625);
     // The independent predecessor census includes the separately admitted starter pattern.

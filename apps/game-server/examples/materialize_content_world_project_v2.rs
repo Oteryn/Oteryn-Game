@@ -21,6 +21,7 @@ use oteryn_game_server::content::{
     item_admission::apply_item_admission_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
+    item_physical_promotion::apply_item_physical_promotion_v1,
     item_stack_false_promotion::apply_item_stack_false_promotion_v1,
     item_stats_promotion::apply_item_stats_promotion_v2,
     protected_cw2_b1_donor_identity_epoch_2_import, protected_r7_p04_gold_coin_item_family_import,
@@ -1950,6 +1951,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // STARTER-CONTENT-1: the main backpack becomes materializable and container-slot equippable.
     let admitted = apply_item_admission_v1(&mut draft)?;
     let _stack_false = apply_item_stack_false_promotion_v1(&mut draft)?;
+    apply_item_physical_promotion_v1(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());

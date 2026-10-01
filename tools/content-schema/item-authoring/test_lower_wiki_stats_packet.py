@@ -78,7 +78,7 @@ def test_disagreement_malformed_and_non_items():
         snapshot(
             {
                 1: [(1, {"weight": "1.00"}), (2, {"weight": "2.00"})],
-                2: [(3, {"weight": "0.5"}), (4, {"range": "?"})],
+                2: [(3, {"weight": "0.501"}), (4, {"range": "?"})],
                 3: [(5, {"weight": "1.00"}), (6, {"weight": "1.00"})],
                 4: [(7, {"attack": "9"})],
             }
@@ -276,6 +276,10 @@ def test_charges_and_duration_qualification():
 
 
 def main():
+    for raw, expected in (("22", 2200), ("0.5", 50), ("1.3", 130), ("41.00", 4100)):
+        assert lower.weight(raw) == expected
+    for raw in ("0.501", "1.", "1e2", "-1", "unknown", "1,30"):
+        assert lower.weight(raw) is None
     test_lowering_types_values()
     test_disagreement_malformed_and_non_items()
     test_equipment_requirements_and_holds()

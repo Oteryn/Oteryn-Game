@@ -10,7 +10,7 @@ pub const ITEM_STACK_FALSE_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json"
 );
 pub const ITEM_STACK_FALSE_PACKET_SHA256: &str =
-    "47a5e0626d1fc14948a68c1f85c3908eac9c148c157816ca13da4ea285af5659";
+    "bf7c2177f37dc0c40b60a37655707fa85f6ee2ed6abeda5fc4c84bb542f856d5";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,
@@ -48,7 +48,7 @@ pub fn apply_item_stack_false_promotion_v1(
         } => Some((identity.key.as_str(), *stack_class, semantics)),
         _ => None,
     });
-    apply_rows(items, ITEM_STACK_FALSE_PACKET, 2380)
+    apply_rows(items, ITEM_STACK_FALSE_PACKET, 2381)
 }
 
 fn current(semantics: &ReferenceItemSemantics) -> Result<Option<bool>, String> {

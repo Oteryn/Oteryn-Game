@@ -50,7 +50,7 @@ ITEM_KEY = "oteryn:item.tibia.i{}"
 
 INTEGER = re.compile(r"^[+-]?[0-9]+$")
 UNSIGNED = re.compile(r"^[0-9]+$")
-WEIGHT = re.compile(r"^([0-9]+)\.([0-9]{2})$")
+WEIGHT = re.compile(r"^([0-9]+)(?:\.([0-9]{1,2}))?$")
 # Wiki `weapontype` -> `ReferenceWeaponType`. Wands, rods, fist weapons and ammunition (and
 # a few pages that omit it) have no weapontype and are typed from `primarytype`; exercise
 # and training weapons stay untyped.
@@ -182,7 +182,11 @@ def unsigned(raw, maximum):
 
 def weight(raw):
     match = WEIGHT.match(raw)
-    return int(match.group(1)) * 100 + int(match.group(2)) if match else None
+    if not match:
+        return None
+    # The source is ounces; omitted decimal digits are exact trailing zeroes.
+    # Reject finer precision rather than rounding a source observation.
+    return int(match.group(1)) * 100 + int((match.group(2) or "").ljust(2, "0"))
 
 
 def duration(raw):

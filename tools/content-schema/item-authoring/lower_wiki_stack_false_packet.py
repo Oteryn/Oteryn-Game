@@ -105,7 +105,7 @@ def build(root=ROOT):
     rows, holds = qualify(
         snapshot, definitions, bound, routed, load_appearance_objects(data)
     )
-    if len(rows) != 2380:
+    if len(rows) != 2381:
         raise ValueError("bounded stack-false scope drift")
     return {
         "schema": "OTERYN_ITEM_STACK_FALSE_PROMOTION/v1",
@@ -132,6 +132,10 @@ def build(root=ROOT):
             "head": "340a6be43b1beead30c145a4223a146a1024cca9",
             "unknown_to_known_false": 2345,
             "already_known_false": 35,
+        },
+        "physical_followup": {
+            "parent": "5cb90c84013faa4c07fc35e3f660e67db6d691d2",
+            "new_explicit_false_ids": [20129],
         },
         "counts": {"promotions": len(rows), "holds": len(holds)},
         "promotions": rows,
