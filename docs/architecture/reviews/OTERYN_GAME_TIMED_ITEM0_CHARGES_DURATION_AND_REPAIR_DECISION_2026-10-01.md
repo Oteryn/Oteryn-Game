@@ -68,7 +68,9 @@ happens when they run out, and how a worn pair of soft boots is repaired?
 
 ## 3. State (TIMED-1)
 
-Table `game_item_timed_states`, one row per ItemInstance whose current definition is `timed`:
+Table `game_item_timed_states`, one row per ItemInstance whose current definition is `timed`, or is
+the **inactive form** of a timed pair (a definition with a `transform {trigger: equip}` into a
+timed definition, such as an unworn ring or unworn soft boots):
 
 | Column | Meaning |
 |---|---|
@@ -82,16 +84,21 @@ Table `game_item_timed_states`, one row per ItemInstance whose current definitio
   BUY, conjure, any later source), with charges and duration from the definition, or the NPC offer's
   `count` for charges (NPC-0 §5; content validation refuses an offer whose `count` exceeds the
   definition's charges), and by a transform into a timed definition. A transform out of a timed
-  definition, and every retirement of the item (`DECAY_RETIRE`, a burn, `Expire`), deletes it in the
-  same transaction. Items minted before TIMED-1 lands get their row from a TIMED-1 backfill with the
+  definition other than its own inactive form, and every retirement of the item (`DECAY_RETIRE`, a
+  burn, `Expire`), deletes it in the same transaction.
+- **Paired forms keep the row.** The row belongs to the item, not to the form. An unequip transform
+  into the inactive form keeps the row frozen with its `remaining_ms`; the next equip transform
+  restarts the clock from that value. An inactive form minted new has no row, which means the full
+  duration of its active form; the first equip creates the row. Items minted before TIMED-1 lands get their row from a TIMED-1 backfill with the
   definition's values. Amended: DUR-03 §39.3.
 - Every write is a DUR-03 `STATE_MUTATION` (§11.1) or part of a `TRANSFORM`, in a one-item
   transaction under the item writer's fence and the holder's `character_root` lock when a character
   holds the item, under a closed `TimedItemCause` (§10). The row moves with the item, because it is
   keyed by ItemInstanceId; no move writes it except where §4 starts or stops a clock.
-- A deferred database guard checks, at commit, that a live timed item has exactly one row, that
-  `charges` and `remaining_ms` are non-NULL exactly when the current definition has `charges` and
-  `temporal`, and that they never exceed the definition's values.
+- A deferred database guard checks, at commit, that a live timed item has exactly one row and an
+  inactive form at most one, that `charges` and `remaining_ms` are non-NULL exactly when the timed
+  definition (the current one, or for an inactive form its active form) has `charges` and
+  `temporal`, and that they never exceed that definition's values.
 
 ## 4. Clocks (TIMED-1)
 
@@ -120,13 +127,23 @@ An item's time runs only while it is **live**, as in Canary:
   corpse decay pattern; a scope that loads late, or a house that activates, expires overdue items at
   once. Scope downtime counts against the item (R3).
 - **Frozen:** a move into a frozen location stops the clock in the move transaction (the runtime's
-  live value is written); a move out starts it. DUR-03 §39.3 transfers that cross between live and
+  live value is written); a move out starts it.
+- **Container trees (BAGS-0).** A tree move, a death drop and a pickup change the clock class of
+  every `continuous` timed item in the tree, not only of the root. The move transaction locks those
+  descendants' timed rows `FOR UPDATE` in ItemInstanceId order, after the BAGS-0 tree locks, and
+  writes each one (deadline set or cleared, clock stopped or started) in the same commit. A tree
+  holds at most `TIMEDITEM0-RL-05` (32) `continuous` timed items; a placement that would exceed it
+  is refused `NO_ROOM` and writes nothing, so the work of any tree move stays bounded. DUR-03 §39.3 transfers that cross between live and
   frozen classes carry that one-row write. Amended: DUR-03 §39.3.
-- **Expiry** at `remaining_ms = 0` (or the deadline): one transaction under
+- **Decay target.** An item's decay target is its definition's `transform {trigger: decay}` if
+  present, else `temporal.decay_target`; content validation rejects a definition with both set to
+  different targets. The same target applies whether the item runs out of time or of charges.
+- **Expiry** at `remaining_ms = 0`, at the deadline, or at 0 charges: one transaction under
   `TimedItemCause::Expire {item, deadline or exhaustion revision}`, keyed by the item and its
-  `state_revision`, so a replay finds the row already changed and writes nothing: a `TRANSFORM` (`PRESERVE_INSTANCE`) to the definition's `decay_target`,
-  whose timed row is created fresh from its own definition or deleted; or, without a
-  `decay_target`, a BURN that retires the item. The item stops being active (§8) at the moment the
+  `state_revision`, so a replay finds the row already changed and writes nothing: a `TRANSFORM`
+  (`PRESERVE_INSTANCE`) to the decay target, whose timed row is created fresh from its own
+  definition or deleted; or, only when the definition has no decay target, a BURN that retires
+  the item. The item stops being active (§8) at the moment the
   runtime reaches 0, before the commit.
 
 ## 5. Charges (TIMED-1)
@@ -144,7 +161,7 @@ An item's time runs only while it is **live**, as in Canary:
 - **Equip and unequip transforms.** When ITEM-MOVE-WIRE-1 §4 equips an item whose definition has a
   `transform {trigger: equip}`, the same move transaction transforms it (`PRESERVE_INSTANCE`) into
   the target and starts its clock; an unequip with `trigger: unequip` transforms it back and stops
-  the clock. `remaining_ms` carries across both forms, so the inactive form keeps the time left
+  the clock. `remaining_ms` carries across both forms in the same row (§3), so the inactive form keeps the time left
   (Canary). An unequip of an active form without an unequip transform keeps the active form, frozen
   if it is `on_equip`. Amended: DUR-03 §33, ITEM-MOVE-WIRE-1 §6.
 - **Toggles.** A `transform {trigger: use}` between a lit and an unlit form (torch, lamp) is an
@@ -212,8 +229,12 @@ by the runtime. `Expire` without a `decay_target` is a BURN sink. The repair bur
 | `TIMEDITEM0-RL-02` active-time budget per item | 7 days (604,800,000 ms) |
 | `TIMEDITEM0-RL-03` remaining-time updates to the client per item | 1 per 60 s |
 | `TIMEDITEM0-RL-04` ground expiry steps per scope per simulation tick | 64; the rest wait for the next tick |
+| `TIMEDITEM0-RL-05` `continuous` timed items per container tree | 32 |
 
-Each with max and max+1 tests. Content validation refuses a definition above RL-01 or RL-02.
+Each with max and max+1 tests. Also tested: unequip then re-equip keeps the remaining time (the
+timer does not reset); a lit torch inside a dropped bag gets its Ground deadline in the drop
+commit; a charge-only item at 0 charges with a `transform {trigger: decay}` transforms, and is
+burned only without any decay target. Content validation refuses a definition above RL-01 or RL-02.
 
 ## 12. Rejected options
 

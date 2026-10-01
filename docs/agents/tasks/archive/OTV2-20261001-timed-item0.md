@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-timed-item-0
-pr: "assigned at PR creation; recorded in the #162 FREEZE_SHA entry"
+pr: 1471
 base_sha: aad17f99
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -83,7 +83,7 @@ No code, migration or content change is made.
 
 ## Closeout
 
-- PR: recorded in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1471. Review: Codex round 1 (5382769280) on `e8212a64` answered in the next head; the exact frozen heads are in the #162 FREEZE_SHA entries. Merge commit/result: its squash merge.
 - Amendments, each pending on acceptance of TIMED-ITEM-0: EQUIP-0 §3.2; DUR-03 §15, §33, §39.3;
   ITEM-MOVE-WIRE-1 §6; ITEM-USE-0 §6; NPC-0 §6.2; CONDITIONS-0 §3; OFFLINE-0 scope.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
