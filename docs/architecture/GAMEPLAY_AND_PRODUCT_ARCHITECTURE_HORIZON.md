@@ -395,6 +395,13 @@ Must decide:
 - dynamic populations/ecology only through explicit bounded policies;
 - overload degradation that cannot block the authoritative channel loop.
 
+Amendment (pending on acceptance of CREATURE-AI-0; `reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md`).
+Under owner decisions 4a, 5a and 6a (2026-10-01, #162) CREATURE-AI-0 decides creature runtime
+ownership per channel, perception, targeting and target change, flee, chase and pathfinding
+budgets, leash and walk back, floors, spawns and respawn per channel, monster and player summons
+with their attribution and removal, durability and overload. Boss phases, encounters and raids stay
+with BOSS-RAID-0 and the encounter runtime; NPC behaviour and dynamic populations stay open.
+
 Must preserve:
 
 - channel-local simulation unless a named world/instance owner exists;

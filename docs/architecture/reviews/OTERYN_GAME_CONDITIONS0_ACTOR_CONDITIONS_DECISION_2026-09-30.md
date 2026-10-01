@@ -192,6 +192,10 @@ exists per conflict key.
   cadence changed so that a creature takes each step of its chosen path at its step duration
   between thinks (Canary's walk events). This is requested as a GAME-AI-01 amendment, carried by
   SPEED-1's allocation; until it is accepted, creature speed has no effect.
+  **Amendment (pending on acceptance of CREATURE-AI-0; `reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md`
+  §5.1).** CREATURE-AI-0 is that amendment: a creature step timer (`DEADLINE_STATE`, one pending)
+  runs each step of the adopted path at the step duration of §4.2, built by CREATURE-MOVE-1 after
+  SPEED-1. SPEED-1 no longer carries it.
 - SPEED-1 re-measures the existing movement tests against pacing.
 
 ## 5. Dispel (COND-1)
