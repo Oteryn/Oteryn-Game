@@ -132,9 +132,11 @@ session (FND-02 §9). The server never offers a degraded session in its place.
 The check is one predicate: the client's supported list contains the target scope's effective set.
 It runs after authentication and only against the current scope generation's set:
 
-- **Fresh admission** (FND-04A §7 step 11 and §7.1): after the signature (step 6) and after the
-  `world_policy_revision` equality of step 11 succeeds, before GrantNonce eligibility (step 12); a
-  refusal consumes no nonce and mutates nothing.
+- **Fresh admission** (FND-04A §7 step 14 and §7.1): after the signature (step 6), the
+  `world_policy_revision` equality of step 11, and current ownership, lifecycle and world
+  eligibility (steps 13 and 14), so a stale grant for a character the account no longer owns never
+  sees the channel's capability ids; the final atomic revalidation (step 17, §7.1) checks it again.
+  A refusal consumes no nonce and mutates nothing.
 - **Same-session reconnect** (FND-04B §12 and §13 item 10): after the reconnect proof is
   authenticated (§9) and the session resolved, against the current scope generation's set.
 - **Recovery, same-session or post-grace** (FND-04B §18-§21): after the recovery credential is
@@ -213,7 +215,7 @@ None. Owner answer 4a gave consent; every other choice applies FND-02 and FND-04
 
 ## 11. Before-freeze checklist
 
-1. **Contract amendments**, all applied in this PR: FND-02 §9; FND-04A §6, §7 (step 11), §7.1, §11,
+1. **Contract amendments**, all applied in this PR: FND-02 §9; FND-04A §6, §7 (step 14), §7.1, §11,
    §12; FND-04B §13, §18, §25, §26; FND-04C §2.1, §4.1-§4.3, §7, §9; node-boot D1 and D5;
    RUNE-USE-0 §11; WORLD-INTERACTION-0 §8.6; HOUSE-RUNTIME-0 §4 (the exit transfer). The registry `requires` field and the D1 configuration key are built by
    ADMIT-CAP-1.
