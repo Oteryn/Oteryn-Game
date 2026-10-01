@@ -131,6 +131,10 @@ The owner confirmed these directly in this session on 2026-09-29.
     `mana_spent_before = 0`.
 - **Admission.** Admission loads the row, or the absent-row values, into the live Character, and
   `CasterState` reads from it. It writes nothing.
+- **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §3).** The row gains `stamina_minutes` (0..2,520, absent
+  2,520), `offline_pool_s` (0..43,200, absent 43,200), `offline_skill` (`none` or a trainable family,
+  absent `none`), `last_logout_at` and `last_seen_at` (database timestamps, absent NULL). The
+  admission settlement of OFFLINE-0 §5 is a build receipt committed after admission, not part of it.
 
 ### 4.2 Receipt chain
 
@@ -151,6 +155,10 @@ The owner confirmed these directly in this session on 2026-09-29.
       that order (an advance resets `mana_spent`);
     - `vocation_choice`: `none` to a vocation key; `magic_level` and `mana_spent` equal;
     - `promotion`: a vocation key to another key; `magic_level` and `mana_spent` equal;
+    - **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §3).** `training` also admits stamina equal or lower and
+      the offline pool equal or higher; new causes `logout` (one per terminal release) and
+      `offline_settlement` (one per lease, keyed by CharacterId and lease generation), with the
+      directions OFFLINE-0 §3 states; receipts carry the before and after stamina and pool;
   - There is no death cause: the loss is carried by the death receipt itself (§4.6);
   - `command_binding` (1..1,024 B), `policy_digest` (32 B), the revision fields of an XP receipt and
     `committed_at`.
