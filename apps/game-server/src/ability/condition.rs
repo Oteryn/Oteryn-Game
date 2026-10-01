@@ -646,7 +646,8 @@ impl<S: Clone> ConditionStore<S> {
     /// due, in order, for the next simulation tick (`RUN_EACH_BOUNDED`), and none is dropped.
     /// Instances whose time is over and whose ticks are all dealt end here.
     pub(crate) fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
-        self.cleanse_immunities.retain(|immunity| immunity.until > now);
+        self.cleanse_immunities
+            .retain(|immunity| immunity.until > now);
         if self.pass_at != now {
             self.pass_at = now;
             self.pass_ticks = 0;
