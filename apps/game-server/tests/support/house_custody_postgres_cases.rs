@@ -565,6 +565,24 @@ fn house_location_and_provenance_are_one_to_one() -> TestResult {
         insert_provenance(&mut tx, &world, &items[2], OTHER_HOUSE, &character).await?;
         tx.commit().await?;
 
+        // The reclaim subject is a Character of the item's own World.
+        let foreign = {
+            let mut tx = connection.begin().await?;
+            tx.execute("SET LOCAL session_replication_role = replica")
+                .await?;
+            let other_world: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
+                .fetch_one(&mut *tx)
+                .await?;
+            let foreign = seed_character(&mut tx, &other_world).await?;
+            tx.commit().await?;
+            foreign
+        };
+        let mut tx = connection.begin().await?;
+        insert_location(&mut tx, &world, &items[3], HOUSE, 4).await?;
+        let cross = insert_provenance(&mut tx, &world, &items[3], HOUSE, &foreign).await;
+        assert!(message(cross)?.contains("same World"));
+        tx.rollback().await?;
+
         // The HouseId is the revision-free House content key.
         let unkeyed = place_with_key(connection, &world, &items[3], &character, "house-7").await;
         assert_eq!(sqlstate(unkeyed)?, "23514");

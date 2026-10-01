@@ -95,6 +95,10 @@ set, so `0025` needs no renumber.
   `game_item_house_placement_transactions` ledger, written only by a SECURITY DEFINER insert
   trigger, makes a placement transaction usable by at most one HouseInterior row ever. Cases for
   the untouched and the cycled provenance; one mutation.
+- Codex P2 4150638685 on `68ca69b9` (the reclaim subject may be a Character of another World):
+  accepted and repaired in the next candidate. A BEFORE INSERT OR UPDATE guard requires the
+  subject's root `world_id` to equal the provenance `world_id` (roots never change World). One
+  case and one mutation.
 
 ## Closeout
 

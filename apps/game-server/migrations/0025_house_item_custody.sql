@@ -255,6 +255,25 @@ CREATE TRIGGER game_item_house_reclaim_provenance_stamp_xact BEFORE INSERT OR UP
     ON game_item_house_reclaim_provenance FOR EACH ROW
     EXECUTE FUNCTION game_item_house_reclaim_provenance_stamp_xact();
 
+-- The reclaim subject is a Character of the item's own World (§3.2: the
+-- placer's own custody). A root's world_id never changes (0009 guard), so
+-- checking at write time keeps the binding.
+CREATE FUNCTION game_item_house_reclaim_subject_in_world() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM game_character_roots c
+                    WHERE c.character_id = NEW.reclaim_subject_character_id
+                      AND c.world_id = NEW.world_id) THEN
+        RAISE EXCEPTION 'HousingReclaimProvenance subject must be a Character of the same World'
+            USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER game_item_house_reclaim_subject_in_world BEFORE INSERT OR UPDATE
+    ON game_item_house_reclaim_provenance FOR EACH ROW
+    EXECUTE FUNCTION game_item_house_reclaim_subject_in_world();
+
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_item_house_interior_provenance_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_house_reclaim_provenance_guard() SET search_path = %I, pg_temp', current_schema());
@@ -262,6 +281,7 @@ DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_item_location_exclusivity_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_house_reclaim_provenance_stamp_xact() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_house_placement_record() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_item_house_reclaim_subject_in_world() SET search_path = %I, pg_temp', current_schema());
 END $$;
 
 -- The guard does not re-check rows that already exist, so the migration
@@ -285,6 +305,7 @@ REVOKE ALL ON FUNCTION
     game_item_house_reclaim_provenance_guard(),
     game_item_house_reclaim_provenance_stamp_xact(),
     game_item_house_placement_record(),
+    game_item_house_reclaim_subject_in_world(),
     game_item_location_exclusive(UUID),
     game_item_location_exclusivity_guard()
 FROM PUBLIC;
