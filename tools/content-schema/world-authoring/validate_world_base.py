@@ -974,6 +974,10 @@ def main() -> int:
         )
     except ValidationError as error:
         errors = [str(error)]
+    if not errors and not unpopulated(args.root.resolve()):
+        import convert_appearance_only_ids as appearance_only
+
+        errors = appearance_only.verify(args.root.resolve(), args.workers)
     for error in errors[:50]:
         print(f"FAIL {error}", file=sys.stderr)
     if errors:

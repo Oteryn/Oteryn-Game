@@ -136,6 +136,19 @@ def palette_ids(root: Path) -> set[int]:
     return {row["source_item_id"] for row in index["palette"]}
 
 
+def ground_source() -> dict:
+    """The pinned `items.xml` the ground classes must be derived from."""
+    row = next(
+        r for r in world_base.SOURCE["files"] if r["path"] == world_base.ITEMS_XML
+    )
+    return {
+        "path": world_base.ITEMS_XML,
+        "repository": base.SOURCE["repository"],
+        "revision": base.SOURCE["revision"],
+        "sha256": row["sha256"],
+    }
+
+
 def derive_ground_classes(xml: bytes, palette: set[int]) -> dict:
     """The ground class file: base map palette ids whose `items.xml` name is water or lava."""
     names = items_xml_names(xml)
@@ -163,14 +176,25 @@ def derive_ground_classes(xml: bytes, palette: set[int]) -> dict:
     return document
 
 
-def load_ground_classes(data: bytes) -> tuple[set[int], set[int]]:
+def load_ground_classes(
+    data: bytes, palette: set[int] | None = None
+) -> tuple[set[int], set[int]]:
+    """Water and lava ids of the ground class file. It must name the pinned `items.xml` as
+    its source and, when `palette` is given, list only base map palette ids."""
     document = json.loads(data)
     if document.get("schema") != GROUND_SCHEMA:
         raise ConvertError("ground class file schema differs")
+    if document.get("source") != ground_source():
+        raise ConvertError("ground class file source differs from the pinned items.xml")
     water = set().union(*(parse_ids(v) for v in document["water"].values()))
     lava = set().union(*(parse_ids(v) for v in document["lava"].values()))
     if water & lava or not water or not lava:
         raise ConvertError("ground classes must be non-empty and disjoint")
+    if palette is not None and (water | lava) - palette:
+        raise ConvertError(
+            "ground classes list ids the base map palette lacks: "
+            f"{sorted((water | lava) - palette)[:10]}"
+        )
     return water, lava
 
 
@@ -822,7 +846,7 @@ def build(
     evidence = (root / EVIDENCE).read_bytes()
     anchors = load_evidence(evidence, snapshot, root)
     if cls is None:
-        water, lava = load_ground_classes(ground)
+        water, lava = load_ground_classes(ground, palette_ids(root))
         cls = GroundMap(root, water, lava).cls
     cities = city_index(root)
     cap = CAP if cap is None else cap

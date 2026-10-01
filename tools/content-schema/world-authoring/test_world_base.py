@@ -1087,6 +1087,35 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.assertEqual(rule(frozenset({"unmove"})), "decoration")
         self.assertEqual(rule(frozenset()), "decoration")
 
+    def test_appearance_only_sample_is_checked_without_the_source_checkout(self):
+        import client_appearance_reader as client
+        import convert_appearance_only_ids as appearance_only
+
+        appearance = client.Appearance(1949, "gate", frozenset({"unpass"}), None, None)
+        source = {"files": [{"path": "client.dat", "sha256": "0" * 64}]}
+        with mock.patch.object(
+            appearance_only, "load_client", return_value=({1949: appearance}, source)
+        ):
+            out = appearance_only.build(set(), self.root)
+            where = str(appearance_only.SAMPLE.relative_to(appearance_only.ROOT))
+            path = self.root / where
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(out[where])
+            self.assertEqual(appearance_only.verify(self.root), [])
+            sample = json.loads(out[where])
+            sample["rows"][0]["occurrences_on_base_map"] += 1
+            path.write_bytes(validate.canonical(sample))
+            self.assertIn("differs from", " ".join(appearance_only.verify(self.root)))
+            # a provisional client id may be left out only as one items.xml declares
+            sample["rows"] = []
+            path.write_bytes(validate.canonical(sample))
+            self.assertIn("left out", " ".join(appearance_only.verify(self.root)))
+            sample["rows"] = [{**json.loads(out[where])["rows"][0], "id": 100}]
+            path.write_bytes(validate.canonical(sample))
+            self.assertIn(
+                "no provisional client id", " ".join(appearance_only.verify(self.root))
+            )
+
     def test_floor_change_summary_counts_kinds_present_on_the_map(self):
         kinds = {100: "down", 101: "down", 102: "up_north", 103: "rope"}
         counts = convert.Counter({100: 3, 102: 2, 999: 5})

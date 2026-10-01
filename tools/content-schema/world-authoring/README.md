@@ -90,7 +90,9 @@ map or the wiki changes.
 - `island-ground-classes.json` lists the water and lava ground item ids (base map palette ids
   whose pinned `items.xml` name is one of 12 water or 4 lava names, for example `shallow
   water` 629-634,880-891,...). `convert_islands.py --crystal-root PATH` re-derives it from the
-  pinned `items.xml` and fails (or rewrites) on a difference.
+  pinned `items.xml` and fails (or rewrites) on a difference. Without the checkout, every
+  run still requires its `source` to be that pinned `items.xml` and its ids to be base map
+  palette ids.
 - `convert_islands.py [--check]` reads the snapshot, the region files, the ground classes and
   the AREAS-1 city records offline (about 20 s). A tile is land unless its first (ground) item is water
   or lava; an absent tile is void. The component of a coordinate is a 4-neighbour breadth-first
@@ -573,7 +575,9 @@ each row with the id, `class`, occurrences, `speed` (bank waypoints, ground only
   unsupported wire types). It reads the id, name and the flags `bank` (with waypoints), `clip`,
   `unpass`, `unmove` and `automap` (colour). `edron_rework.py` also uses it for walkability.
 - `convert_appearance_only_ids.py --crystal-root PATH [--check]` writes the list from the committed
-  palette, the region files and the appearances file.
+  palette, the region files and the appearances file. `validate_world_base.py` rebuilds it without
+  the checkout: every listed id must be a provisional client id, at most the capture's
+  `in_items_xml` entries may be left out, and the rest must match byte for byte.
 
 ```bash
 python convert_appearance_only_ids.py --crystal-root /path/to/crystalserver [--check]

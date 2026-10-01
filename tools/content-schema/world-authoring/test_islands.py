@@ -256,6 +256,7 @@ def make_root(
         {
             "lava": {"lava": str(LAVA_ID)},
             "schema": convert.GROUND_SCHEMA,
+            "source": convert.ground_source(),
             "water": {"water": str(WATER_ID)},
         },
     )
@@ -720,6 +721,22 @@ class GroundClassTest(unittest.TestCase):
         )
         with self.assertRaises(ConvertError):
             convert.load_ground_classes(data)
+
+    def test_source_must_be_the_pinned_items_xml_and_ids_on_the_palette(self) -> None:
+        document = {
+            "lava": {"lava": "5"},
+            "schema": convert.GROUND_SCHEMA,
+            "source": convert.ground_source(),
+            "water": {"water": "6"},
+        }
+        self.assertEqual(
+            convert.load_ground_classes(canonical(document), {5, 6}), ({6}, {5})
+        )
+        with self.assertRaisesRegex(ConvertError, "palette lacks"):
+            convert.load_ground_classes(canonical(document), {5})
+        stale = {**document["source"], "sha256": "0" * 64}
+        with self.assertRaisesRegex(ConvertError, "pinned items.xml"):
+            convert.load_ground_classes(canonical({**document, "source": stale}))
 
 
 class SnapshotReaderTest(unittest.TestCase):
