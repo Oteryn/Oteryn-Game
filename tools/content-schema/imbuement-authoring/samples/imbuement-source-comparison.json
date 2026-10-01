@@ -8,219 +8,111 @@
   "differences": [
     {
       "name": "Bash",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51724
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Bash",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51444
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53751
+      ]
     },
     {
       "name": "Blockade",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51725
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Blockade",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51445
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53752
+      ]
     },
     {
       "name": "Chop",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51726
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Chop",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51446
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53753
+      ]
     },
     {
       "name": "Cloud Fabric",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51727
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Cloud Fabric",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51447
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53754
+      ]
     },
     {
       "name": "Demon Presence",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51728
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Demon Presence",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51448
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53755
+      ]
     },
     {
       "name": "Dragon Hide",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51729
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Dragon Hide",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51449
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53756
+      ]
     },
     {
       "name": "Electrify",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51730
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Electrify",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51450
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53757
+      ]
     },
     {
       "name": "Epiphany",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51731
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Epiphany",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51451
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53758
+      ]
     },
     {
       "name": "Featherweight",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51732
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Featherweight",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51452
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53759
+      ]
     },
     {
       "name": "Frost",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51733
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Frost",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51453
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53760
+      ]
     },
     {
       "name": "Lich Shroud",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51734
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Lich Shroud",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51454
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53761
+      ]
     },
     {
       "name": "Precision",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51735
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Precision",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51455
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53762
+      ]
     },
     {
       "name": "Punch",
@@ -241,12 +133,12 @@
     },
     {
       "name": "Punch",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51736
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53763
+      ]
     },
     {
       "name": "Punch",
@@ -256,103 +148,49 @@
       "crystal": "50490"
     },
     {
-      "name": "Punch",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51456
-      ],
-      "crystal": []
-    },
-    {
       "name": "Quara Scale",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51737
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Quara Scale",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51457
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53764
+      ]
     },
     {
       "name": "Reap",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51738
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Reap",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51458
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53765
+      ]
     },
     {
       "name": "Scorch",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51739
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Scorch",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51459
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53766
+      ]
     },
     {
       "name": "Slash",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51740
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Slash",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51460
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53767
+      ]
     },
     {
       "name": "Snake Skin",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51741
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Snake Skin",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51461
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53768
+      ]
     },
     {
       "name": "Strike",
@@ -375,6 +213,15 @@
     },
     {
       "name": "Strike",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53769
+      ]
+    },
+    {
+      "name": "Strike",
       "tier": 2,
       "field": "effect",
       "canary": {
@@ -391,15 +238,6 @@
         "bonus": "1500",
         "chance": "500"
       }
-    },
-    {
-      "name": "Strike",
-      "tier": 2,
-      "field": "scroll_item_ids",
-      "canary": [
-        51742
-      ],
-      "crystal": []
     },
     {
       "name": "Strike",
@@ -421,67 +259,31 @@
       }
     },
     {
-      "name": "Strike",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51462
-      ],
-      "crystal": []
-    },
-    {
       "name": "Swiftness",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51743
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Swiftness",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51463
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53770
+      ]
     },
     {
       "name": "Vampirism",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51744
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Vampirism",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51464
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53771
+      ]
     },
     {
       "name": "Venom",
-      "tier": 2,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51745
-      ],
-      "crystal": []
-    },
-    {
-      "name": "Venom",
-      "tier": 3,
-      "field": "scroll_item_ids",
-      "canary": [
-        51465
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53772
+      ]
     },
     {
       "name": "Vibrancy",
@@ -501,6 +303,15 @@
     },
     {
       "name": "Vibrancy",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53773
+      ]
+    },
+    {
+      "name": "Vibrancy",
       "tier": 2,
       "field": "effect",
       "canary": {
@@ -514,6 +325,15 @@
         "type": "vibrancy",
         "chance": "25"
       }
+    },
+    {
+      "name": "Vibrancy",
+      "tier": 2,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        51746
+      ]
     },
     {
       "name": "Vibrancy",
@@ -539,25 +359,25 @@
       "crystal": "46317"
     },
     {
-      "name": "Void",
-      "tier": 2,
+      "name": "Vibrancy",
+      "tier": 3,
       "field": "scroll_item_ids",
-      "canary": [
-        51747
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        51466
+      ]
     },
     {
       "name": "Void",
-      "tier": 3,
+      "tier": 1,
       "field": "scroll_item_ids",
-      "canary": [
-        51467
-      ],
-      "crystal": []
+      "canary": [],
+      "crystal": [
+        53774
+      ]
     }
   ],
-  "comparison_scope": "Raw XML facts, not final engine outcomes. Strike candidate values are additive modifiers; intrinsic character critical baseline is a separate Global rule. Crystal comparisons distinguish modifiers from effective totals.",
+  "comparison_scope": "Raw XML facts with independently pinned corrected scroll bindings, not final engine outcomes. Original immutable captures incorrectly read scrollid only from children and remain preserved as capture history. Strike candidate values are additive modifiers; intrinsic character critical baseline is a separate Global rule.",
   "selection": "Source-qualified post-2025 Strike additive modifiers; Wiki BR other effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
   "global_fee_conflict": {
     "candidate_architecture": [
@@ -572,9 +392,9 @@
     ]
   },
   "supporting_catalogues": {
-    "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
+    "crystal-imbuements-evidence.json": "b7f6d5ac40111c103c82a9fc02bc4188be733171a01a1665e588fff41bc8e68c",
     "global-observation-plan.json": "7b9060e1b401ff36dd29f0ef7002551be58fe74644d33f109edccd66122965b4",
-    "global-rules-evidence.json": "2986858f47c814dc72f6437391d2197bfd12ddf5ecaa4b2073168ba08ddb0cbb",
+    "global-rules-evidence.json": "b538d52001b26524ba037d9d23fed1944a69d23939edc6b12b04830440c71807",
     "imbuement-access.json": "f56f29d4be08c9047eb999a59bf3f7852bf40be4b0d712d774c7b21291883741",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-combat.json": "13fc33f7e10ab6b7a6a72a46e6738ab03e8d3e9a3611d54cc1709dedf00d2fdf",
@@ -590,6 +410,7 @@
     "current_equipment_typed": 629,
     "target_equipment_typed": 628,
     "target_existing_item_refs": 627,
+    "basic_only_eligibility_profiles": 12,
     "validated_missing_item_proposals": 2,
     "source_defined_shrine_routes": 72,
     "completed_scroll_loot_records": 48,
@@ -787,6 +608,8 @@
   "blocked": [
     "Candidate architecture reconciliation (fees, Basic inscription, Stash, Vibrancy)",
     "Canonical Quest runtime state",
+    "Canonical Imbuement ruleset remains READY_UNPOPULATED; the authoring schema is not installed in runtime",
+    "Canonical Item type/tier profiles remain UNKNOWN; ReferenceImbuementTier lacks tier1 lowering",
     "Per-field evidence gaps listed in eligibility and Global rules packets",
     "Runtime, persistence and wire implementation"
   ]

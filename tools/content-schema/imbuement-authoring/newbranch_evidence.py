@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Verify normalized evidence from Crystal's pinned imbuements branch, offline."""
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -18,6 +19,8 @@ CAPTURE_PINS = {
     "engine_facts": "111b65be2f04c3dcfffa80e9c0a25e77fad0cfc9255dc25d66ecc4b39a949f6a",
     "custom_assistant_packages": "75f3b64e5fd444f5e8eb1e8039e277a8d1b1605ef38e20e1baf8dccbd1a28d16",
     "critical_modifier_public_evidence": "9729138159844ba79bed21a94b1b912243e1ea3fe4c01a3bc6b623e3ff19dee8",
+    "corrected_previous_scroll_bindings": "e958925aac492b5a91997600aaf25f16efaebcb40f80bf358a844585fe2113cf",
+    "original_capture_defects": "5bf19c7ca965caeb1a550d638bf63aa0078edf888bf3842349c54fa29773d429",
 }
 
 
@@ -152,6 +155,91 @@ def parse_xml(raw):
     }
 
 
+def parse_previous_scroll_bindings(raw):
+    """Capture both XML encodings; missing scroll IDs remain explicit zero."""
+    text = raw.decode("utf-8")
+    root = ET.fromstring(text)
+    starts = [i for i, line in enumerate(text.splitlines(), 1)
+              if re.search(r"<imbuement\s", line)]
+    rows = []
+    for node, line in zip(root.findall("imbuement"), starts, strict=True):
+        root_id = node.get("scrollid")
+        child_ids = [n.get("value") for n in node if n.get("key") == "scroll"]
+        if len(child_ids) > 1 or (root_id is not None and child_ids):
+            raise ValueError("ambiguous source scroll encoding")
+        value = root_id if root_id is not None else child_ids[0] if child_ids else "0"
+        rows.append({"name": node.get("name"), "tier": int(node.get("base")),
+                     "scroll_item_id": int(value), "source_line": line,
+                     "representation": "ROOT_SCROLLID" if root_id is not None
+                         else "CHILD_SCROLL_ATTRIBUTE" if child_ids else "ABSENT"})
+    return sorted(rows, key=lambda row: (row["name"], row["tier"]))
+
+
+def corrected_previous_references(packet):
+    """Copy immutable old facts and repair only their normalized scroll lists."""
+    import imbuement_authoring as authoring
+    captures = packet["corrected_previous_scroll_bindings"]
+    if digest(captures) != CAPTURE_PINS["corrected_previous_scroll_bindings"]:
+        raise ValueError("corrected scroll capture differs from reviewed XML evidence")
+    originals = authoring.source_facts()
+    expected_keys = {(name, tier) for name in authoring.LAYOUT for tier in (1, 2, 3)}
+    if set(captures) != {"canary", "crystal"}:
+        raise ValueError("both pinned previous references are required")
+    result = {}
+    for name, capture in captures.items():
+        source = originals[name]
+        if any(capture[field] != source[field] for field in ("revision", "path", "sha256", "url")):
+            raise ValueError("corrected scroll evidence must retain original raw source identity")
+        rows = keyed(capture["records"], expected_keys, lambda row: (row["name"], row["tier"]))
+        corrected = copy.deepcopy(source)
+        for record in corrected["records"]:
+            scroll_id = rows[record["name"], record["tier"]]["scroll_item_id"]
+            record["scroll_item_ids"] = [scroll_id] if scroll_id else []
+        result[name] = corrected["records"]
+    return result
+
+
+def verify_previous_xml(packet, source_name, raw):
+    if source_name not in ("canary", "crystal"):
+        raise ValueError("unknown previous XML reference")
+    capture = packet["corrected_previous_scroll_bindings"][source_name]
+    if hashlib.sha256(raw).hexdigest() != capture["sha256"]:
+        raise ValueError("previous XML differs from its immutable captured source")
+    if parse_previous_scroll_bindings(raw) != capture["records"]:
+        raise ValueError("corrected scroll bindings differ from reparsed pinned XML")
+
+
+def expected_previous_comparison(packet):
+    """Recompute previous XML differences, including corrected scroll IDs."""
+    import imbuement_authoring as authoring
+    originals = authoring.source_facts()
+    result = {}
+    for name, records in corrected_previous_references(packet).items():
+        source = originals[name]
+        lookup = {(row["name"], row["tier"]): row for row in records}
+        differences = []
+        for row in packet["xml"]["records"]:
+            old = lookup[row["name"], row["tier"]]
+            for field in ("effect", "materials", "storage", "premium", "scroll_item_id"):
+                previous = (old["scroll_item_ids"][0] if old["scroll_item_ids"] else 0) \
+                    if field == "scroll_item_id" else old[field]
+                if field == "storage":
+                    previous = int(previous)
+                if field == "premium":
+                    previous = previous == "1"
+                if row[field] != previous:
+                    differences.append({"name": row["name"], "tier": row["tier"], "field": field,
+                                        "new_branch": row[field], "previous_reference": previous})
+        result[name] = {
+            "revision": source["revision"],
+            "new_base_prices": [int(base["price"]) for base in packet["xml"]["bases"]],
+            "previous_base_prices": [int(base["price"]) for base in source["bases"]],
+            "corrected_scroll_reference": f"corrected_previous_scroll_bindings.{name}",
+            "record_differences": differences,
+        }
+    return result
+
+
 def validate(packet):
     from imbuement_authoring import LAYOUT
     if packet["revision"] != REVISION or packet["role"] != "OTS_HYPOTHESIS_ONLY":
@@ -162,6 +250,8 @@ def validate(packet):
     for field, pin in CAPTURE_PINS.items():
         if digest(packet[field]) != pin:
             raise ValueError(f"pinned source capture changed: {field}")
+    if packet["previous_reference_comparison"] != expected_previous_comparison(packet):
+        raise ValueError("previous-reference comparison omits or invents source differences")
     for record in records:
         if not record["materials"] or any(m["count"] < 1 for m in record["materials"]):
             raise ValueError("invalid recipe")
@@ -197,6 +287,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--xml", type=Path, help="Optionally reparse a downloaded pinned XML")
+    parser.add_argument("--previous-xml", action="append", default=[], metavar="SOURCE=PATH",
+                        help="Reparse corrected canary/crystal scroll captures from pinned raw XML")
     args = parser.parse_args()
     packet = json.loads(PACKET.read_text())
     validate(packet)
@@ -207,6 +299,11 @@ def main():
             raise ValueError("XML differs from the captured pinned source")
         if parse_xml(raw) != packet["xml"]:
             raise ValueError("normalized XML differs from the pinned source")
+    for reference in args.previous_xml:
+        name, separator, path = reference.partition("=")
+        if not separator or not path:
+            raise ValueError("previous XML argument must be SOURCE=PATH")
+        verify_previous_xml(packet, name, Path(path).read_bytes())
     print("Crystal imbuements: 72 records, 9 token bundles, pinned OTS evidence verified")
 
 

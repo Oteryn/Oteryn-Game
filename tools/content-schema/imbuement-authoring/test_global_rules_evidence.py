@@ -64,6 +64,20 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertIn("wiki_br_etcher_archived_2026_01_30",
                       self.rules["etcher_npc_purchase_worthy_predicate"]["evidence"])
 
+    def test_canary_timer_excerpt_is_distinct_from_complete_source_identity(self):
+        timer = self.sources["canary_timer_impl"]
+        self.assertEqual(timer["sha256"],
+                         "d5cc1fe6e7bf784d48c1d679cf810402c6bd6befbb48823a1f5b01acb51e5638")
+        self.assertEqual(timer["previous_capture"]["sha256"],
+                         "c7401a27cd92734a0ec6451b6732cdc9ab504a669d918d9c10ab86f24af4c647")
+        self.assertIn("excerpt", timer["previous_capture"]["digest_scope"])
+        for key in ("canary_timer_impl", "canary_player_impl", "canary_scroll_action"):
+            source = self.sources[key]
+            self.assertEqual(source["access_status"], "FULL_PUBLIC_SOURCE_FILE_READ")
+            self.assertIn("complete", source["digest_scope"])
+            self.assertNotIn("lines465-505", source["digest_scope"])
+            self.assertEqual(source["role"], "OTS_HYPOTHESIS_ONLY")
+
     def test_source_references_are_unique_and_complete(self):
         self.assertEqual(len(self.rules), len(self.packet["rules"]))
         for rule in self.rules.values():

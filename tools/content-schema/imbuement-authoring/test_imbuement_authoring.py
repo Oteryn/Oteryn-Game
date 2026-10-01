@@ -146,6 +146,25 @@ class ImbuementAuthoringTests(unittest.TestCase):
                 self.assertTrue(all(r["family"] == "Item" and r["key"].startswith("oteryn:item.tibia.i") for r in refs))
         self.assertEqual(len({t["scroll_item"]["key"] for d in self.candidate["definitions"] for t in d["tiers"]}), 72)
 
+    def test_engine_scroll_comparison_uses_actual_root_bindings(self):
+        report = authoring.comparison()
+        rows = [r for r in report["differences"] if r["field"] == "scroll_item_ids"]
+        expected = {(d["name"], 1) for d in self.candidate["definitions"]}
+        expected |= {("Vibrancy", 2), ("Vibrancy", 3)}
+        self.assertEqual({(r["name"], r["tier"]) for r in rows}, expected)
+        canonical = {(d["name"], t["tier"]): int(t["scroll_item"]["key"].split(".i")[-1])
+                     for d in self.candidate["definitions"] for t in d["tiers"]}
+        for row in rows:
+            self.assertEqual(row["canary"], [])
+            self.assertEqual(row["crystal"], [canonical[row["name"], row["tier"]]])
+
+    def test_authoring_coverage_does_not_hide_canonical_tier_one_integration_gap(self):
+        report = authoring.comparison()
+        self.assertEqual(report["completion"]["basic_only_eligibility_profiles"], 12)
+        self.assertTrue(any("tier1 lowering" in gap for gap in report["blocked"]))
+        self.assertTrue(any("READY_UNPOPULATED" in gap for gap in report["blocked"]))
+        self.assertEqual(self.candidate["activation"], "DRAFT_NOT_RUNTIME_READY")
+
     def test_exact_access_and_eligibility_references(self):
         for definition in self.candidate["definitions"]:
             self.assertEqual(definition["item_eligibility_binding"]["candidate_key"], definition["candidate_key"])

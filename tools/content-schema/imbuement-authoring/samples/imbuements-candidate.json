@@ -4,9 +4,9 @@
   "target": "global-tibia-observable-2026-07-28-post-server-save",
   "source_facts_sha256": "7ee2221886abdc80d27ce5cd13e58bdecab8b3c5210a7e0e7a36efc52771070e",
   "supporting_catalogues": {
-    "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
+    "crystal-imbuements-evidence.json": "b7f6d5ac40111c103c82a9fc02bc4188be733171a01a1665e588fff41bc8e68c",
     "global-observation-plan.json": "7b9060e1b401ff36dd29f0ef7002551be58fe74644d33f109edccd66122965b4",
-    "global-rules-evidence.json": "2986858f47c814dc72f6437391d2197bfd12ddf5ecaa4b2073168ba08ddb0cbb",
+    "global-rules-evidence.json": "b538d52001b26524ba037d9d23fed1944a69d23939edc6b12b04830440c71807",
     "imbuement-access.json": "f56f29d4be08c9047eb999a59bf3f7852bf40be4b0d712d774c7b21291883741",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-combat.json": "13fc33f7e10ab6b7a6a72a46e6738ab03e8d3e9a3611d54cc1709dedf00d2fdf",

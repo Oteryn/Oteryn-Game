@@ -141,6 +141,65 @@ class CrystalBranchEvidenceTests(unittest.TestCase):
         self.assertEqual(facts["scroll_target_equipped_allowed"]["anchors"][-1]["line"], 2854)
         self.assertTrue(all(r["confidence"] == "OTS_SOURCE_CODE_ONLY" for r in facts.values()))
 
+    def test_previous_scroll_parser_supports_root_child_and_explicit_absence(self):
+        root = b'<imbuements>\n<imbuement name="Strike" base="1" scrollid="53769"/>\n</imbuements>'
+        child = b'<imbuements>\n<imbuement name="Strike" base="2"><attribute key="scroll" value="51742"/></imbuement>\n</imbuements>'
+        absent = b'<imbuements>\n<imbuement name="Vibrancy" base="2"/>\n</imbuements>'
+        self.assertEqual(branch.parse_previous_scroll_bindings(root)[0], {
+            "name": "Strike", "tier": 1, "scroll_item_id": 53769,
+            "source_line": 2, "representation": "ROOT_SCROLLID"})
+        self.assertEqual(branch.parse_previous_scroll_bindings(child)[0]["scroll_item_id"], 51742)
+        self.assertEqual(branch.parse_previous_scroll_bindings(child)[0]["representation"], "CHILD_SCROLL_ATTRIBUTE")
+        self.assertEqual(branch.parse_previous_scroll_bindings(absent)[0]["scroll_item_id"], 0)
+        self.assertEqual(branch.parse_previous_scroll_bindings(absent)[0]["representation"], "ABSENT")
+        with self.assertRaises(ValueError):
+            branch.parse_previous_scroll_bindings(child.replace(b'base="2"', b'base="2" scrollid="51742"'))
+        with self.assertRaises(ValueError):
+            branch.parse_previous_scroll_bindings(child.replace(b'</imbuement>',
+                b'<attribute key="scroll" value="51742"/></imbuement>'))
+
+    def test_corrected_references_preserve_original_capture_and_restore_actual_summer_ids(self):
+        import imbuement_authoring as authoring
+        original = authoring.source_facts()
+        self.assertTrue(all(not r["scroll_item_ids"] for r in original["crystal"]["records"]))
+        corrected = branch.corrected_previous_references(self.packet)
+        self.assertEqual(sum(bool(r["scroll_item_ids"]) for r in corrected["crystal"]), 72)
+        self.assertEqual(sum(bool(r["scroll_item_ids"]) for r in corrected["canary"]), 46)
+        self.assertEqual(next(r for r in corrected["crystal"]
+            if r["name"] == "Strike" and r["tier"] == 1)["scroll_item_ids"], [53769])
+        self.assertEqual(next(r for r in corrected["canary"]
+            if r["name"] == "Vibrancy" and r["tier"] == 2)["scroll_item_ids"], [])
+        self.assertEqual(original, authoring.source_facts())
+        defects = self.packet["original_capture_defects"]
+        self.assertEqual(defects[0]["affected_record_count"], 72)
+
+    def test_previous_comparison_exposes_all_basic_scroll_differences(self):
+        comparison = self.packet["previous_reference_comparison"]
+        summer = comparison["crystal"]["record_differences"]
+        self.assertEqual(len(summer), 24)
+        self.assertEqual({r["field"] for r in summer}, {"scroll_item_id"})
+        self.assertEqual({r["tier"] for r in summer}, {1})
+        self.assertTrue(all(r["new_branch"] == 0 and 53751 <= r["previous_reference"] <= 53774
+                            for r in summer))
+        canary = comparison["canary"]["record_differences"]
+        missing = [r for r in canary if r["field"] == "scroll_item_id"]
+        self.assertEqual({(r["name"], r["tier"]) for r in missing}, {("Vibrancy", 2), ("Vibrancy", 3)})
+        self.mutation_rejected(lambda p: p["previous_reference_comparison"]["crystal"].update(record_differences=[]))
+        self.mutation_rejected(lambda p: p["previous_reference_comparison"]["canary"]["record_differences"].pop())
+
+    def test_corrected_scroll_capture_cannot_be_forged_or_disconnected_from_raw_sources(self):
+        def capture(packet):
+            return packet["corrected_previous_scroll_bindings"]["crystal"]
+        self.mutation_rejected(lambda p: capture(p)["records"][0].update(scroll_item_id=0))
+        self.mutation_rejected(lambda p: capture(p)["records"][0].update(source_line=999999))
+        self.mutation_rejected(lambda p: capture(p).update(sha256="0" * 64))
+        self.mutation_rejected(lambda p: capture(p).update(revision=branch.REVISION))
+        self.mutation_rejected(lambda p: capture(p).update(records=[capture(p)["records"][0]] * 72))
+        self.mutation_rejected(lambda p: p.update(original_capture_defects=[]))
+        for name in ("canary", "crystal", "invented"):
+            with self.subTest(reference=name), self.assertRaises(ValueError):
+                branch.verify_previous_xml(self.packet, name, b"<imbuements/>")
+
 
 if __name__ == "__main__":
     unittest.main()

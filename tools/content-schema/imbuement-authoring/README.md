@@ -248,6 +248,15 @@ those operations, never generalized to player ownership transfer or scroll trade
 The historical Basic Frost/elemental-arrow experiment remains bounded and its
 Shiver case explicitly conflicts with the current wiki's blanket ammunition claim.
 
+The engine-completeness audit separates authoring from canonical/runtime readiness.
+Oteryn's24/72 draft is populated; the canonical Imbuement and Quest indices are
+still READY_UNPOPULATED. Existing Item slot capabilities have UNKNOWN per-family
+limits, and their static tier codec rejects Basic-only max1 used by12 profiles.
+The original XML capture's root-scroll-ID omission is repaired by a separately
+pinned correction, with original facts retained. Crystal summer has72 mappings,
+Crystal imbuements48 and Canary46. See audit-report.md for versioned comparisons,
+actual execution differences and source-name/ID-space qualifications.
+
 ## Offline validation
 
 ```sh

@@ -172,10 +172,83 @@ The public current Fandom page was browser-read with the same reviewed hash;
 the explicit historical-oldid route required login and was not accessed.
 All twelve broad unresolved scopes remain pending.
 
+## Oteryn versus Crystal and Canary completeness audit
+
+This audit compares the draft against Crystal `imbuements` at
+`15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1`, Crystal `summer-update` at
+`00ce02a57ca5a12e48f32a3476e37471167e4c3f`, and Canary `main` at
+`04b83b512114bfd888000d6e1433ed8ecaec7c5b`. Fresh public branch reads still
+matched those pins. Canonical Oteryn source was separately checked at `main`
+`d3cfb2468510255d2495514ec975c23c1d76f32a`; its two-commit difference from the
+checkout changes Premium wiring and a Bestiary test, not imbuement-core files.
+These comparisons used ordinary public GitHub HTTP/API, not Remote Desktop.
+
+| Area | Oteryn | Crystal | Canary |
+| --- | --- | --- | --- |
+| Definition/recipe catalogue | 24 types /72 tiers, authoring draft | 24/72 in both branches | 24/72 |
+| Scroll XML/Item mappings | 72 canonical bindings | summer72; imbuements48 | 46;24Basic and2Vibrancy missing |
+| Recipe materials | All72 source-qualified names/bindings | 72 numeric recipes match | 71 match; Basic Punch differs |
+| Apply fees by tier | 7500/60000/250000, Global sources | same selected flat fees | older XML5000/30000/200000 |
+| Canonical loaded rules | `READY_UNPOPULATED` | XML load path exists | XML load path exists |
+| Apply/clear, ticking, active state, effects, protocol | no imbuement implementation found | executable paths, with source-qualified OTS differences | executable paths, with source-qualified OTS differences |
+| Global certainty | 12 explicit broad evidence gaps | code is an OTS hypothesis | code is an OTS hypothesis |
+
+The source audit found and repaired a real comparison defect: the original capture
+searched child attributes for scroll IDs and missed root-level `scrollid` values.
+The immutable original capture is retained; separately pinned correction rows now
+recompute comparisons. Summer Crystal has all24 Basic mappings, unlike the48
+mappings in Crystal `imbuements`; Canary has46 mapped IDs. All populated IDs match
+the candidate. Tests require these omissions to remain visible.
+
+At the pinned Oteryn main, `rulesets/items/imbuements/index.json:7` and
+`content/quests/definitions/index.json:7` are `READY_UNPOPULATED`. Of34031 canonical
+Items,661 carry known imbuement slot groups, but every canonical
+`allowed_family_tiers` and `excluded_families` remains UNKNOWN. Within the663-item
+source census,656 have matching known canonical slots, five have unknown slot
+values and two are absent. Static Item capabilities do not constitute active
+imbuement state or effect execution.
+
+A concrete integration blocker exists in
+`apps/game-server/src/content/reference_playable.rs:621`: the static
+`ReferenceImbuementTier` supports Two/Three/Ten; its binary decoder at
+`reference_artifact.rs:2408` accepts2/3/10 and rejects1. Twelve current authoring
+profiles contain Basic-only maximum1. The draft preserves their evidence rather
+than widening them to2 or inventing a runtime adapter. The20 generic Item family
+categories intentionally group the five elemental types; they are not four
+missing imbuement definitions. Canonical population, lowering and runtime work
+remain outside this authoring repair.
+
+Concrete OTS differences matter before reuse. Canary Basic Punch uses20 Ghostly
+Tissue9690; selected Oteryn and Crystal use25 Tarantula Egg10281. Exact pinned
+`items.xml` reads establish these names; labels from unrelated legacy ID spaces
+were rejected. Crystal `imbuements` lacks an explicit40529 Gold-Brocaded Cloth
+entry in its pinned `items.xml`, although the recipe references it. This is a
+named-XML coverage gap, not proof the item cannot load from client appearances.
+Canary critical execution adds the configured5%/10% character baseline to its
+XML10% chance and15/25/50% modifiers, producing15% and25/35/60% without other
+bonuses; Oteryn deliberately stores+5%/+5,15,40% modifiers separately. Canary
+also has an active PvP paralysis-reflection branch, which is not selected as
+current Global behavior. Crystal's inspected `getImbuements` uses a boolean as
+the storage-key argument and reuses that filter for completed scrolls; its
+inscription listing does not enforce the same character gates. Both Yana scripts
+leave the worth-unlock response TODO. These are concrete source-path differences,
+not evidence to weaken the Global access predicates.
+
+The audit also corrected three Canary source digest descriptions. The old timer
+SHA covered lines465–505 without their trailing newline; the current record now
+hashes the complete pinned file and retains the excerpt as previous-capture
+provenance. Player and scroll-script digest scopes no longer copy that timer range.
+
+**Conclusion:** the 24/72 source authoring catalogue and dedicated schema are
+populated and validated. Oteryn does not yet have a complete playable imbuement
+system, and generic Item schemas are not a replacement for the dedicated rules,
+active item state, timers, combat effects or protocol/UI. Green authoring checks
+and generic repository CI do not establish gameplay parity.
+
 ## Validation
 
-All 159 offline tests pass. The seven replay/schema commands in README pass,
+All 166 offline tests pass. The seven replay/schema commands in README pass,
 including both missing Items through the owning Item validator with zero errors
-and warnings, and an additional reparse of the pinned Crystal XML. All 69 rule
+and warnings, and an additional reparse of all three pinned engine XMLs. All 69 rule
 records retain qualified source references. The catalogue preserves 12 named
 Global observation requirements rather than declaring complete server parity.

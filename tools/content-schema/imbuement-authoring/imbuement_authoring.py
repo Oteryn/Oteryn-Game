@@ -19,9 +19,9 @@ EVIDENCE_PINS = {
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-access.json": "f56f29d4be08c9047eb999a59bf3f7852bf40be4b0d712d774c7b21291883741",
     "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
-    "global-rules-evidence.json": "2986858f47c814dc72f6437391d2197bfd12ddf5ecaa4b2073168ba08ddb0cbb",
+    "global-rules-evidence.json": "b538d52001b26524ba037d9d23fed1944a69d23939edc6b12b04830440c71807",
     "imbuement-combat.json": "13fc33f7e10ab6b7a6a72a46e6738ab03e8d3e9a3611d54cc1709dedf00d2fdf",
-    "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
+    "crystal-imbuements-evidence.json": "b7f6d5ac40111c103c82a9fc02bc4188be733171a01a1665e588fff41bc8e68c",
     "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
     "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d",
     "global-observation-plan.json": "7b9060e1b401ff36dd29f0ef7002551be58fe74644d33f109edccd66122965b4",
@@ -333,7 +333,9 @@ def build():
 def comparison():
     sources = source_facts()
     packets = supporting()
-    engines = {e: {(r["name"], r["tier"]): r for r in sources[e]["records"]} for e in ("canary", "crystal")}
+    import newbranch_evidence
+    corrected = newbranch_evidence.corrected_previous_references(packets["crystal-imbuements-evidence.json"])
+    engines = {e: {(r["name"], r["tier"]): r for r in corrected[e]} for e in ("canary", "crystal")}
     differences = []
     for name, tier in sorted(engines["canary"]):
         a, b = engines["canary"][(name, tier)], engines["crystal"][(name, tier)]
@@ -342,7 +344,7 @@ def comparison():
                 differences.append({"name": name, "tier": tier, "field": field, "canary": a[field], "crystal": b[field]})
     return {"schema": "OTERYN_IMBUEMENT_SOURCE_COMPARISON/v1", "source_facts_sha256": FACTS_SHA256,
             "engine_comparison_key": ["name", "tier"], "differences": differences,
-            "comparison_scope": "Raw XML facts, not final engine outcomes. Strike candidate values are additive modifiers; intrinsic character critical baseline is a separate Global rule. Crystal comparisons distinguish modifiers from effective totals.",
+            "comparison_scope": "Raw XML facts with independently pinned corrected scroll bindings, not final engine outcomes. Original immutable captures incorrectly read scrollid only from children and remain preserved as capture history. Strike candidate values are additive modifiers; intrinsic character critical baseline is a separate Global rule.",
             "selection": "Source-qualified post-2025 Strike additive modifiers; Wiki BR other effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
             "global_fee_conflict": {"candidate_architecture": [5000, 30000, 200000],
                                     "global_since_2025": [7500, 60000, 250000]},
@@ -354,6 +356,8 @@ def comparison():
                 "current_equipment_typed": packets["imbuement-eligibility.json"]["summary"]["typed_items"],
                 "target_equipment_typed": packets["imbuement-eligibility.json"]["summary"]["target_candidate_typed_items"],
                 "target_existing_item_refs": packets["imbuement-eligibility.json"]["summary"]["target_candidate_bound_items"],
+                "basic_only_eligibility_profiles": sum(any(cap == 1 for cap in row["allowed_types"].values())
+                                                      for row in packets["imbuement-eligibility.json"]["items"]),
                 "validated_missing_item_proposals": len(packets["missing-item-definitions.json"]["proposals"]),
                 "source_defined_shrine_routes": 72,
                 "completed_scroll_loot_records": 48,
@@ -365,6 +369,8 @@ def comparison():
             },
             "remaining_global_observation_requirements": packets["global-rules-evidence.json"]["unresolved"],
             "blocked": ["Candidate architecture reconciliation (fees, Basic inscription, Stash, Vibrancy)", "Canonical Quest runtime state",
+                        "Canonical Imbuement ruleset remains READY_UNPOPULATED; the authoring schema is not installed in runtime",
+                        "Canonical Item type/tier profiles remain UNKNOWN; ReferenceImbuementTier lacks tier1 lowering",
                         "Per-field evidence gaps listed in eligibility and Global rules packets",
                         "Runtime, persistence and wire implementation"]}
 

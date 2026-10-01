@@ -239,33 +239,41 @@
       "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/imbuement_scrolls.lua",
       "accessed_date": "2026-10-01",
       "sha256": "5a9b3007a55c4cac9fd99b72083881f2a08df1c68ca7dd31b97bea8819b10cc5",
-      "digest_scope": "Exact UTF-8 file content returned by GitHub at pinned commit; timer capture is lines465-505 only; implementation facts do not certify Global",
+      "digest_scope": "Exact complete public GitHub source file bytes at the pinned commit; independently matches github_blob_sha; source code is OTS hypothesis only",
       "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "published_date": null,
-      "access_status": "EXTRACTED",
-      "github_blob_sha": "d73559479494ab33079dd473cfeddddb1c4b989c"
+      "access_status": "FULL_PUBLIC_SOURCE_FILE_READ",
+      "github_blob_sha": "d73559479494ab33079dd473cfeddddb1c4b989c",
+      "method": "Ordinary public HTTP GET"
     },
     "canary_timer_impl": {
       "role": "OTS_HYPOTHESIS_ONLY",
       "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/imbuements/imbuements.cpp",
       "accessed_date": "2026-10-01",
-      "sha256": "c7401a27cd92734a0ec6451b6732cdc9ab504a669d918d9c10ab86f24af4c647",
-      "digest_scope": "Exact UTF-8 file content returned by GitHub at pinned commit; timer capture is lines465-505 only; implementation facts do not certify Global",
+      "sha256": "d5cc1fe6e7bf784d48c1d679cf810402c6bd6befbb48823a1f5b01acb51e5638",
+      "digest_scope": "Exact complete public GitHub source file bytes at the pinned commit; independently matches github_blob_sha; source code is OTS hypothesis only",
       "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "published_date": null,
-      "access_status": "EXTRACTED",
-      "github_blob_sha": "48fa8de2a764261c6e1dfdc6b77c7d4c6ac88b7f"
+      "access_status": "FULL_PUBLIC_SOURCE_FILE_READ",
+      "github_blob_sha": "48fa8de2a764261c6e1dfdc6b77c7d4c6ac88b7f",
+      "previous_capture": {
+        "sha256": "c7401a27cd92734a0ec6451b6732cdc9ab504a669d918d9c10ab86f24af4c647",
+        "digest_scope": "Exact UTF-8 pinned source lines465-505 joined with LF and without a trailing newline; independently reproduced excerpt hash, not the complete source file",
+        "access_status": "EXTRACTED"
+      },
+      "method": "Ordinary public HTTP GET"
     },
     "canary_player_impl": {
       "role": "OTS_HYPOTHESIS_ONLY",
       "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp",
       "accessed_date": "2026-10-01",
       "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
-      "digest_scope": "Exact UTF-8 file content returned by GitHub at pinned commit; timer capture is lines465-505 only; implementation facts do not certify Global",
+      "digest_scope": "Exact complete public GitHub source file bytes at the pinned commit; independently matches github_blob_sha; source code is OTS hypothesis only",
       "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "published_date": null,
-      "access_status": "EXTRACTED",
-      "github_blob_sha": "d1b12e93fdf34598af61c7f69adceac9d977e819"
+      "access_status": "FULL_PUBLIC_SOURCE_FILE_READ",
+      "github_blob_sha": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+      "method": "Ordinary public HTTP GET"
     },
     "crystal_imbuements_player_impl": {
       "role": "OTS_HYPOTHESIS_ONLY",
