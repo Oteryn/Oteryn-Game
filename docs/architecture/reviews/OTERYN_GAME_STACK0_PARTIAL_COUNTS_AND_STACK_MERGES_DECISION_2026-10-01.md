@@ -132,9 +132,12 @@ Source stack S (quantity q), asked amount `c` (q when absent), destination D.
 - `m < q`: S keeps its identity and location with `q − m`; the moved units go by §13 into the
   receiver and/or by a §12 split into a planned identity N for the new item.
 - **S and its own location.** S is never its own receiver. Inside S's own container, `c < q` splits
-  into a new entry of that container, and `c = q` is a reorder (deferred, `NOT_SUPPORTED`). Onto
-  S's own tile, or S's own slot, nothing happens (Canary ignores `item == toItem`): no transaction,
-  result `MOVED`.
+  into a new entry of that container, and `c = q` is a reorder (deferred, `NOT_SUPPORTED`). The
+  move is a no-op only when destination resolution returns S itself (S is the tile's top Ground
+  item, or the item in the target slot): nothing happens (Canary ignores `item == toItem`), no
+  transaction, result `MOVED`. A lower Ground item moved onto its own tile whose top is a different
+  compatible stack B merges into B by §4.2; onto a top that is not a receiver, it becomes the new
+  top as a Ground-to-Ground move on one tile.
 
 ### 4.4 Equipment slots (as Canary `Player::queryMaxCount`)
 
@@ -195,8 +198,9 @@ ITEM-MOVE-WIRE-1 §3, §4 and §5, BAGS-0 §5 and §6, WORLD-INTERACTION-0 §7.2
 Rule 4 as extended (ITEM-MOVE-WIRE-1 §7.2, BAGS-0 §4.2): `character_root`; item rows in
 one ascending ItemInstanceId order `FOR UPDATE` over S, B, T **and every container whose entries
 change** (the destination parent, S's container when it receives T or a split entry), because a
-container is an item and BAGS-0 §4.2 locks it in that same global order; then Ground tile rows in
-tile key order,
+container is an item and BAGS-0 §4.2 locks it in that same global order; then the container-slot
+row (the main backpack `0011` placement check, ITEM-MOVE-WIRE-1 §7.2, BAGS-0 §4.2); then Ground tile
+rows in tile key order,
 then the counters. **Each tile row's lock mode is fixed by the frozen plan and never upgraded:** a
 real lock when the plan inserts on the tile or removes or retires a Ground root from it (the source
 tile when S leaves or retires), `FOR SHARE` only when the tile is touched solely by a merge into
