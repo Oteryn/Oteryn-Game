@@ -39,6 +39,7 @@ mod fixture;
 pub mod item_admission;
 pub mod item_capacity_promotion;
 pub mod item_identity;
+pub mod item_market_true_promotion;
 pub mod item_physical_promotion;
 pub mod item_stack_default_promotion;
 pub mod item_stack_false_promotion;
