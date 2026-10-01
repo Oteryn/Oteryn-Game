@@ -117,6 +117,17 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   equipping never advances `CharacterRevision`. Stats from equipment are derived at runtime;
   ATTACK-0 reads the equipped weapon and shield.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §6, §9).**
+A container with contents may enter the empty container slot and may leave it as a tree to a
+destination whose BAGS-0 child admits it (Ground, a depot box). Unequip may target a nested
+container. The nine other slots still refuse containers. Dropping and picking up a tree is built by
+BAGS-GROUND-1. The §5 Ground counter (`ITEMMOVE1-RL-02`) then counts every item reachable from a
+Ground root, adjusted atomically by the tree's item count on drop and pickup, by the extracted
+subtree's item count when an entry is moved out of a Ground tree into the character's own trees,
+and by one per item retirement; every commit that changes that number adjusts the counter by
+exactly the change, under the tile and counter row lock.
+
 ## 5. Drop and pick up (ITEM-MOVE-2b)
 
 - **Drop.** A whole main backpack entry or a slot's item to `GROUND {position}`: within 15 tiles

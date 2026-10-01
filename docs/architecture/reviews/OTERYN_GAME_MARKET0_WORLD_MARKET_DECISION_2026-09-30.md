@@ -99,6 +99,13 @@ How do players of one World buy and sell items through the Market, safely across
   no changed charges, duration, text or contents.
 - `trade_as` merging is deferred; each definition key is its own ware.
 
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3-§4).** A second ware kind is added: the virtual Tibia Coin ware
+`oteryn:market.tibia_coin`, one book per World, never an Item or ItemInstance and never in the
+depot, escrow or Inbox. Its coins stay on Platform: a coin sell offer claims a Platform hold, and
+fills move held coins by SETTLE instructions. The Market fee applies unchanged; the Premium gate
+of §4 does not apply to coin offers (Global).
+
 ### 3.2 Numbers
 
 - `amount` 1 to 64,000 (`MARKET0-RL-02`); `piece_price` 1 to 999,999,999,999; `total =
@@ -141,6 +148,12 @@ How do players of one World buy and sell items through the Market, safely across
 - **Retention.** The expiry job deletes ended offers beyond each character's 600 newest
   (`MARKET0-RL-07`); the market event keeps the audit record under MARKET-RET-0's profile.
 
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3 `MKTCOIN0-WARE-KEY`).** An offer's ware is a discriminated key: `ware_kind` `ITEM` with
+definition key and definition revision (as above), or `COIN` with `coin_kind` (closed list:
+`TIBIA_COIN`) and no definition key or revision; a database check refuses any other combination,
+and an unknown kind fails closed. Existing rows are `ITEM`.
+
 ## 5. Inbox (INBOX-1)
 
 - **Family.** A new DUR-03 custody family, the third after `HouseInterior` and `CharacterDepot`:
@@ -168,6 +181,13 @@ How do players of one World buy and sell items through the Market, safely across
   own bound (`HOUSEOWN0-RL-14`, 2,000 items per house interior, HOUSE-OWN-0 §7), and while the
   counter is above the ceiling the character's new offers and accepts are refused. This bounds a character's open buy offers to 100,000 units in all (a declared
   Reference difference, `PARITY_PENDING`).
+
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §7, §8).** Mail
+is a further delivery into the Inbox, but a refusable one: a posting that would raise the
+recipient's counter above `MAIL0-RL-05` (50,000) is refused, so mail cannot lock a Market. After
+BAGS-0, an Inbox entry may be a stamped parcel with at most 10 children without contents; the
+counter counts every item of the tree, and a third out-shape moves one child to a new main
+backpack entry. A parcel with contents never enters a depot box in this slice.
 
 ## 6. Escrow and fills (MARKET-1)
 
@@ -239,6 +259,11 @@ How do players of one World buy and sell items through the Market, safely across
   declared difference (`PARITY_PENDING`).
 - **Expiry.** Offers past `expires_at`, oldest first, one per step, returning escrow as a cancel.
 - **Revision.** No `CharacterRevision` advance (composition rule 1 as amended).
+
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§3 `MKTCOIN0-WARE-KEY`).** `game_market_books` keys by (World, `ware_kind`, definition key or
+`coin_kind`). A `COIN` book has no revision; its fills need equal `coin_kind` only, not DUR-03
+§46 compatibility.
 
 ## 8. Persistence deltas (MARKET-1 and INBOX-1)
 
@@ -314,6 +339,11 @@ is measured by MARKET-1 against the audit envelope before implementation.
   one page (32 entries) in domain 11, and command 9 takes an Inbox entry handle as source, with the
   main backpack or `DEPOT {box}` as destination.
 - The Market view closes with the depot view.
+
+**Amendment (pending on acceptance of MARKET-COINS-0; `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md`
+§8).** Capability `MARKET_COINS_V1`, requiring `MARKET_V1`, lists the coin ware, adds the
+Account's coin balance to `MARKET_QUERY` (display only) and the results `NOT_ENOUGH_COINS` and
+`COINS_UNAVAILABLE`; its number is reserved on #162 at allocation.
 
 ## 11. Declared Reference differences
 

@@ -235,6 +235,8 @@ The accepted Reference eight-skill catalogue does **not** imply either a fixed e
 
 Weapon Proficiency, charms, Hunting Tasks, permanent Prey/Hunting slots, Wheel/Promotion Points, Animus and future profile-specific Character facts use dedicated typed relation families/child aggregates after their physical contract is accepted.
 
+**Amendment (D251, 2026-10-01).** Permanent Prey slots, Prey Wildcards and the Weekly Task Expansion move out of this Character-owned extension into an Account-scoped balance owned by PREY-0/PREY-1 (owner decision D251: https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5925300264; PREY-0 (PR #1413; `docs/architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md`, lands with #1413, which must merge first)). Hunting Task Points and the permanent Hunting Task slots stay Character-owned.
+
 Every extension declares:
 
 - semantic owner;

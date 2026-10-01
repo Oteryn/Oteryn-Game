@@ -1,0 +1,58 @@
+{
+  "admissions": [
+    {
+      "equipment_primary_slot": "CONTAINER",
+      "evidence": {
+        "canary": {
+          "attributes": {
+            "containersize": "20",
+            "moveevent.slot": "backpack",
+            "primarytype": "containers"
+          },
+          "lines": "5937-5947",
+          "path": "data/items/items.xml",
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+        },
+        "crystalserver": {
+          "attributes": {
+            "containersize": "20",
+            "moveevent.slot": "backpack",
+            "primarytype": "containers"
+          },
+          "lines": "5959-5969",
+          "path": "data/items/items.xml",
+          "repository": "zimbadev/crystalserver",
+          "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+        },
+        "tibiawiki": {
+          "content_sha256": "1c564f86bf3ddfc848499bd2bab637de01708594180a3c8403911755b8c567f0",
+          "fields": {
+            "slot": "Container",
+            "stackable": "no",
+            "volume": "20"
+          },
+          "page_id": 1591,
+          "path": "imports/tibiawiki/facts/items-stats.json",
+          "revision_id": 1147105,
+          "snapshot_sha256": "33a1bf7fc076ede18982a2ffbb392d6d98d1a72ae1795e7d33235757d33e0c6d",
+          "url": "https://tibia.fandom.com/wiki/Backpack"
+        }
+      },
+      "expected_container_capacity": 20,
+      "item_key": "oteryn:item.tibia.i2854",
+      "materializable": true,
+      "stack_class": "NON_STACKABLE"
+    }
+  ],
+  "decision": "docs/architecture/reviews/OTERYN_GAME_STARTER_BACKPACK0_STARTER_GRANT_DECISION_2026-09-30.md#4",
+  "policy": {
+    "agreement": "ALL_SOURCES_AGREE_ELSE_NO_ADMISSION",
+    "precedence": "TIBIAWIKI_THEN_OTS_HYPOTHESIS",
+    "scope": "MATERIALIZABLE_STACK_CLASS_CONTAINER_SLOT_ONLY"
+  },
+  "schema": "OTERYN_ITEM_ADMISSION/v1",
+  "task": "OTV2-20261001-starter-content-1"
+}

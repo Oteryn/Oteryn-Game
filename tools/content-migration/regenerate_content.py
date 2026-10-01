@@ -13,7 +13,7 @@ would drop the other side's rows.
 
 Steps: the legacy WorldProject package (content/world, from the materializer), the Rust
 inventory pins in content_world_project_repository.rs, the content tree (world_project_v2_to_tree),
-the Charm, Proficiency and RewardClaim registrations, then the validators. The script never
+the Charm, Proficiency, RewardClaim and StarterKit registrations, then the validators. The script never
 commits; review `git status` and commit the merge yourself.
 
 Scope: the command regenerates only the content tree, `content/world` and the Rust package pins.
@@ -58,6 +58,7 @@ AUTHORING_TOOLS = (
     "tools/content-schema/charm-authoring/charm_authoring.py",
     "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
     "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+    "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
 )
 
 CHECKS = (
