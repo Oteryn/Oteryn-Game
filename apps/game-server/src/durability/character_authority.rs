@@ -926,6 +926,46 @@ async fn verify_character_integrity(
     }
 }
 
+/// Preparatory PROF-1 verifier, deliberately outside global admission until 0032's full gate.
+/// Checks retained storage/history only. Neither canonical content nor current authority is
+/// inferred from receipts. Missing retained migration mappings fail Unavailable in the codec.
+pub(super) async fn verify_character_proficiency_history(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> std::result::Result<Vec<super::character_proficiency::StoredProficiencyTrack>, DurabilityError>
+{
+    let invalid = sqlx::query(
+        "SELECT 1 FROM game_character_proficiency_receipts h \
+         LEFT JOIN game_character_roots r USING (character_id) \
+         WHERE h.character_id=encode($1,'hex')::uuid AND (r.character_id IS NULL \
+          OR h.original_character_revision<1 OR h.committed_character_revision<>h.original_character_revision+1 \
+          OR h.committed_character_revision>r.character_revision \
+          OR (get_byte(uuid_send(h.proficiency_occurrence_id),6)>>4)<>7 \
+          OR (get_byte(uuid_send(h.proficiency_occurrence_id),8)&192)<>128 \
+          OR h.cause NOT IN ('training','perk_selection','migration') \
+          OR octet_length(h.command_binding) NOT BETWEEN 1 AND 1024 OR octet_length(h.policy_digest)<>32 \
+          OR h.level_before NOT BETWEEN 1 AND 4294967295 OR h.level_after<>h.level_before \
+          OR h.experience_before<0 OR h.experience_after<>h.experience_before OR h.committed_at<0 \
+          OR EXISTS (SELECT 1 FROM unnest(ARRAY[h.profile_revision,h.ruleset_revision,h.content_revision, \
+              h.simulation_revision,h.evidence_revision,h.declaration_revision,h.policy_revision,h.reward_revision]) v \
+              WHERE v IS NULL OR v !~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$') \
+          OR (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
+              WHERE l.proficiency_occurrence_id=h.proficiency_occurrence_id)=0 \
+          OR (h.cause='perk_selection' AND (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
+              WHERE l.proficiency_occurrence_id=h.proficiency_occurrence_id)<>1)) \
+         UNION ALL SELECT 1 FROM game_character_proficiency_receipt_lines l \
+          LEFT JOIN game_character_proficiency_receipts h USING (proficiency_occurrence_id) \
+          WHERE (l.character_id=encode($1,'hex')::uuid OR h.character_id=encode($1,'hex')::uuid) \
+           AND (h.proficiency_occurrence_id IS NULL OR l.character_id IS DISTINCT FROM h.character_id \
+             OR l.committed_character_revision IS DISTINCT FROM h.committed_character_revision \
+             OR l.cause IS DISTINCT FROM h.cause) LIMIT 1"
+    ).bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    if invalid.is_some() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    super::character_proficiency::read::verify_track_history(tx, character).await
+}
+
 /// CHAR-BUILD-1 (A13 §4.2, #1271 F4) build state, checked by name at admission:
 /// build-chain continuity (each build receipt, and each death receipt with build
 /// fields, starts from its predecessor's `after`, or from the seed `none`, magic

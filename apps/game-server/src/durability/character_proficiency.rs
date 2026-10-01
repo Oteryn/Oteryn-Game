@@ -10,6 +10,10 @@
 //! declared selection mapping from both retained definition revisions. Compatible revision
 //! refresh is unresolved in the contract; training/selection never relax "definition unchanged".
 
+#[path = "character_proficiency_codec.rs"]
+pub(in crate::durability) mod read;
+pub use read::{CommittedProficiencyChange, StoredProficiencyTrack};
+
 use super::character_progression::{CharacterProgressionError, valid_revision};
 use crate::domain::weapon_proficiency::{
     PROFICIENCY_PERK_LEVELS_MAX, PROFICIENCY_PERKS_PER_LEVEL_MAX, ProficiencySelectionShape,
