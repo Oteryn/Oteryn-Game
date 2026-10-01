@@ -133,6 +133,8 @@ const NPC_R5_NATIVE_REPAIRS: &[u8] = include_bytes!(
 const NPC_R5_NATIVE_REPAIRS_SHA256: &str =
     "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb";
 const NPC_R5_PROJECT_REVISION: &str = "g4-npc-source-repairs-r10";
+#[path = "npc_materializer/qualified_repairs.rs"]
+mod npc_qualified_repairs;
 const NPC_STAGE_TOOL_SHA256: &str =
     "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff";
 const NPC_CANDIDATES_SHA256: &str =
@@ -2184,6 +2186,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parse(limits())?;
     let mut draft = original.migrate_to_v2();
     let npc_r5_repairs = apply_npc_r5_native_repairs(&mut draft)?;
+    // R7 before fences bind the canonical R10 package, preserving immutable R5 evidence.
+    let repaired = CanonicalProjectDocuments::from_v2_draft(draft, limits())?
+        .into_snapshot(limits())?
+        .parse(limits())?;
+    let mut draft = repaired.migrate_to_v2();
+    let npc_r7_repairs = npc_qualified_repairs::apply(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
@@ -2199,6 +2207,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats.replaced,
         admitted
     );
+    println!("npc_r7_repairs={npc_r7_repairs}");
     Ok(())
 }
 

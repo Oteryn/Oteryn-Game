@@ -1,0 +1,29 @@
+{
+  "schema": "NPC_R7_OFFICIAL_PRICE_INDEPENDENT_REVIEW/v1",
+  "packet_sha256": "572d8adad3e81ddd770c4e2ee32c20de8212c3b9dda63642de83665f8e3f5fda",
+  "official_evidence_sha256": "380b74673d380c22b10a792edad9af43415d89b2be68319c7e3a68186b67d433",
+  "summary": {
+    "OFFICIAL_BASE_PRICE_RETAINED_QUALIFIED_CONDITIONAL_VARIANT_HELD": 34,
+    "OFFICIAL_PRICE_CORRECTED": 25,
+    "OFFICIAL_PRICE_RETAINED_QUALIFIED": 14,
+    "OFFICIAL_TRADED_ITEM_CORRECTED": 3,
+    "REMOVED_HISTORICAL_OFFER_CURRENT_GLOBAL_UNPROVEN": 1,
+    "REMOVED_NONPLAIN_DIALOGUE_QUANTITY_OFFER": 1
+  },
+  "verified_dat_witnesses": 807,
+  "verified_raw_context_witnesses": 71,
+  "records": 78,
+  "service_repairs": 41,
+  "additional_giri_offers": 1,
+  "errors": [],
+  "findings": [
+    {
+      "severity": "P2",
+      "status": "RESOLVED_FINAL_PACKET_B54CC354",
+      "description": "Raw wiki notes/prose embedded in source receipts; D3 says never wiki prose. Strip raw prose while retaining capture digest, URL, byte interval and parsed condition facts."
+    }
+  ],
+  "tests": "12 PASS",
+  "native_scope_review": "Exact before tuples and immutable direction/currency/count/subtype verified. Rust apply preflights all43 declaration+2profile changes before mutation; digest, revision, ordering, identity and controlled item replacements checked. Pending flags cleared only for76qualified retained rows; Elgar/Lily removed and typed conditional variants remain held.",
+  "superseded_by": "final-semantic-review.json"
+}
