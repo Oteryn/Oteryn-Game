@@ -4159,25 +4159,6 @@
         }
       ]
     },
-    "40522": {
-      "item_id": 40522,
-      "observations": [
-        {
-          "content_sha256": "aa785c77c0951dd33c7652db4b2aef6f09dd0d3d18cdca87cc6562e2862e2032",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "1.00"
-          },
-          "page_id": 101156,
-          "revision_id": 1194166,
-          "revision_sha1": "d60e56615a85e4fcf7214b5f3e52b558e38a0edd",
-          "revision_timestamp": "2026-07-04T18:24:27Z",
-          "url": "https://tibia.fandom.com/wiki/Daedal_Chisel",
-          "wiki_title": "Daedal Chisel"
-        }
-      ]
-    },
     "40523": {
       "item_id": 40523,
       "observations": [
@@ -9648,91 +9629,6 @@
         }
       ]
     },
-    "43778": {
-      "item_id": 43778,
-      "observations": [
-        {
-          "content_sha256": "6a7a7e0738c9454924c3e00482a5d894351f0ca5d76930ddd74df628ef9a607e",
-          "fields": {
-            "weight": "1.00"
-          },
-          "page_id": 102997,
-          "revision_id": 1194752,
-          "revision_sha1": "92463c5cb9db83ab2ab16218c79a56372fd174f5",
-          "revision_timestamp": "2026-07-07T01:54:02Z",
-          "url": "https://tibia.fandom.com/wiki/Organic_Acid",
-          "wiki_title": "Organic Acid"
-        }
-      ]
-    },
-    "43779": {
-      "item_id": 43779,
-      "observations": [
-        {
-          "content_sha256": "20ef5a0a497c63a5c7572ef5ce255c7f5bc9151a693fc892b3da87969237013a",
-          "fields": {
-            "weight": "1.00"
-          },
-          "page_id": 102998,
-          "revision_id": 1106043,
-          "revision_sha1": "8b5b320a6f2a59156386b2a782c51ed4929b77b6",
-          "revision_timestamp": "2025-06-19T07:22:40Z",
-          "url": "https://tibia.fandom.com/wiki/Unstable_Darklight_Matter",
-          "wiki_title": "Unstable Darklight Matter"
-        }
-      ]
-    },
-    "43780": {
-      "item_id": 43780,
-      "observations": [
-        {
-          "content_sha256": "76e684c9864d71100244cc3157bdd90066c306901b796fea6b12053c0a07984b",
-          "fields": {
-            "weight": "1.00"
-          },
-          "page_id": 102999,
-          "revision_id": 1106044,
-          "revision_sha1": "58f14d69abf91a78e93b8d40f3d55517185b1867",
-          "revision_timestamp": "2025-06-19T07:22:55Z",
-          "url": "https://tibia.fandom.com/wiki/Yellow_Darklight_Matter",
-          "wiki_title": "Yellow Darklight Matter"
-        }
-      ]
-    },
-    "43781": {
-      "item_id": 43781,
-      "observations": [
-        {
-          "content_sha256": "0d392558486b70f25b7e98c40b548c548ebe8b63788e3a0b95a8549ee7d3c249",
-          "fields": {
-            "weight": "1.00"
-          },
-          "page_id": 103000,
-          "revision_id": 1106041,
-          "revision_sha1": "a238bc3df694dc5e6c0f2b25d1a392b8c9687f86",
-          "revision_timestamp": "2025-06-19T07:05:33Z",
-          "url": "https://tibia.fandom.com/wiki/Darklight_Obsidian_Axe",
-          "wiki_title": "Darklight Obsidian Axe"
-        }
-      ]
-    },
-    "43782": {
-      "item_id": 43782,
-      "observations": [
-        {
-          "content_sha256": "b61cb4ffd016cc9ac7da3a393386a53af16909b95f621c051dbb1e7fe59f61e9",
-          "fields": {
-            "weight": "1.00"
-          },
-          "page_id": 103001,
-          "revision_id": 1106039,
-          "revision_sha1": "5f6f59e340509cead038847b4edd704200a29fd4",
-          "revision_timestamp": "2025-06-19T06:48:42Z",
-          "url": "https://tibia.fandom.com/wiki/Lichen_Gobbler",
-          "wiki_title": "Lichen Gobbler"
-        }
-      ]
-    },
     "43785": {
       "item_id": 43785,
       "observations": [
@@ -10025,44 +9921,6 @@
           "revision_timestamp": "2023-07-25T20:00:49Z",
           "url": "https://tibia.fandom.com/wiki/Bluish_Dewberry_Palm",
           "wiki_title": "Bluish Dewberry Palm"
-        }
-      ]
-    },
-    "43946": {
-      "item_id": 43946,
-      "observations": [
-        {
-          "content_sha256": "591e2a2ba3308ef24d1e051cd490dda930b5e2696c103b4d350072fdde213c6c",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Valuables",
-            "weight": "1.20"
-          },
-          "page_id": 103028,
-          "revision_id": 1076151,
-          "revision_sha1": "386f32f284cf220ba131fd095ecdfb42ff9aa71f",
-          "revision_timestamp": "2024-08-22T13:05:26Z",
-          "url": "https://tibia.fandom.com/wiki/Abridged_Promotion_Scroll",
-          "wiki_title": "Abridged Promotion Scroll"
-        }
-      ]
-    },
-    "43947": {
-      "item_id": 43947,
-      "observations": [
-        {
-          "content_sha256": "8a317f38f4b0fb63e5b8bb58aea51bdc8af265e74e42aa6781b21c6f5d740708",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Valuables",
-            "weight": "1.20"
-          },
-          "page_id": 103029,
-          "revision_id": 1057246,
-          "revision_sha1": "7d8272ad1a39086e50d0845ad3cb6d704c228cd6",
-          "revision_timestamp": "2024-04-06T10:23:10Z",
-          "url": "https://tibia.fandom.com/wiki/Basic_Promotion_Scroll",
-          "wiki_title": "Basic Promotion Scroll"
         }
       ]
     },
@@ -10384,27 +10242,6 @@
           "revision_timestamp": "2023-07-11T21:01:35Z",
           "url": "https://tibia.fandom.com/wiki/Empty_Essence_Flask_(Dark)",
           "wiki_title": "Empty Essence Flask (Dark)"
-        }
-      ]
-    },
-    "44048": {
-      "item_id": 44048,
-      "observations": [
-        {
-          "content_sha256": "ea3e1f7f1bc55bf905bc92b0543a5fc516490208497e6c1f47a3133c69841445",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Taming Items",
-            "secondarytype": "Valuables",
-            "stackable": "yes",
-            "weight": "1.20"
-          },
-          "page_id": 103157,
-          "revision_id": 1201512,
-          "revision_sha1": "222d21ef787cfc63730d0db79b4850539fa4620c",
-          "revision_timestamp": "2026-08-17T08:53:57Z",
-          "url": "https://tibia.fandom.com/wiki/Spiritual_Horseshoe",
-          "wiki_title": "Spiritual Horseshoe"
         }
       ]
     },
@@ -11588,44 +11425,6 @@
           "revision_timestamp": "2023-12-10T06:16:37Z",
           "url": "https://tibia.fandom.com/wiki/Enchanted_Balista_Bolt",
           "wiki_title": "Enchanted Balista Bolt"
-        }
-      ]
-    },
-    "44432": {
-      "item_id": 44432,
-      "observations": [
-        {
-          "content_sha256": "f1826e4cf0c46fd889505db58e7cdf4f56839c4fee5ee54e10fbee77a99b6487",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "1.50"
-          },
-          "page_id": 104235,
-          "revision_id": 1047535,
-          "revision_sha1": "c7ee7b523d4e5bd5874ef7047453ff73385fa6b4",
-          "revision_timestamp": "2023-12-09T19:03:16Z",
-          "url": "https://tibia.fandom.com/wiki/Ancient_Iks_Ritual_Chalice",
-          "wiki_title": "Ancient Iks Ritual Chalice"
-        }
-      ]
-    },
-    "44433": {
-      "item_id": 44433,
-      "observations": [
-        {
-          "content_sha256": "97601f0acd44d6a84809355a2c8ddde671dd6d1ccb938b9aad8f394cd34308ba",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "1.00"
-          },
-          "page_id": 104236,
-          "revision_id": 1047606,
-          "revision_sha1": "c61948b74fad51418c05df9a791ae623560e8cb5",
-          "revision_timestamp": "2023-12-10T20:29:39Z",
-          "url": "https://tibia.fandom.com/wiki/Ceremonial_Brush",
-          "wiki_title": "Ceremonial Brush"
         }
       ]
     },
@@ -18017,27 +17816,6 @@
         }
       ]
     },
-    "51276": {
-      "item_id": 51276,
-      "observations": [
-        {
-          "content_sha256": "6a294a0ce2c279fbb64317b8ecd0e19a31958bd3107cc7234134afdf5a5923a4",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Creature Products",
-            "secondarytype": "Quest Items",
-            "stackable": "yes",
-            "weight": "2.50"
-          },
-          "page_id": 110343,
-          "revision_id": 1181885,
-          "revision_sha1": "f6ee3c33610ec298c2320a0b32cf4de2c6355243",
-          "revision_timestamp": "2026-05-03T23:40:19Z",
-          "url": "https://tibia.fandom.com/wiki/Spirited_Soil",
-          "wiki_title": "Spirited Soil"
-        }
-      ]
-    },
     "51314": {
       "item_id": 51314,
       "observations": [
@@ -19123,136 +18901,6 @@
           "revision_timestamp": "2026-08-05T21:03:04Z",
           "url": "https://tibia.fandom.com/wiki/Sailor's_Backpack",
           "wiki_title": "Sailor's Backpack"
-        }
-      ]
-    },
-    "53197": {
-      "item_id": 53197,
-      "observations": [
-        {
-          "content_sha256": "64808544e2a05ffc271666c571ba75ae34129471e3661faf125e0a9ff3930451",
-          "fields": {
-            "armor": "4",
-            "attrib": "sword fighting +4, axe fighting +4, club fighting +4, shielding +1",
-            "duration": "180 minutes",
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "resist": "physical +7%, fire +12%",
-            "slot": "Neck",
-            "vocrequired": "knights",
-            "weight": "5.10"
-          },
-          "page_id": 110756,
-          "revision_id": 1195622,
-          "revision_sha1": "de5c5f3b3be40ea71a410326daed54e50daa52f5",
-          "revision_timestamp": "2026-07-13T14:39:38Z",
-          "url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Valor",
-          "wiki_title": "Enchanted Flamingo Amulet of Valor"
-        }
-      ]
-    },
-    "53199": {
-      "item_id": 53199,
-      "observations": [
-        {
-          "content_sha256": "25ba584f25fe21777ed31322e5e524d816ebf5d8e518d798602a152d5ba1333a",
-          "fields": {
-            "armor": "4",
-            "attrib": "distance fighting +4, holy magic level +1",
-            "duration": "180 minutes",
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "resist": "physical +5%, fire +14%",
-            "slot": "Neck",
-            "vocrequired": "paladins",
-            "weight": "4.60"
-          },
-          "page_id": 110758,
-          "revision_id": 1197152,
-          "revision_sha1": "a7580fe110ea33cf324aed102aaabbdcf0c19e17",
-          "revision_timestamp": "2026-07-20T18:05:38Z",
-          "url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Precision",
-          "wiki_title": "Enchanted Flamingo Amulet of Precision"
-        }
-      ]
-    },
-    "53201": {
-      "item_id": 53201,
-      "observations": [
-        {
-          "content_sha256": "b0973519bb4d7ddae5483804970052a3c4eb8656c0de29f91bb51f448ae30209",
-          "fields": {
-            "armor": "3",
-            "attrib": "magic level +3, energy magic level +1",
-            "duration": "180 minutes",
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "resist": "physical +3%, fire +11%",
-            "slot": "Neck",
-            "vocrequired": "sorcerers",
-            "weight": "4.70"
-          },
-          "page_id": 110760,
-          "revision_id": 1195619,
-          "revision_sha1": "dc7380cf4ba1d149a0d5028d5a3a6fedb788c3da",
-          "revision_timestamp": "2026-07-13T14:39:34Z",
-          "url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Destruction",
-          "wiki_title": "Enchanted Flamingo Amulet of Destruction"
-        }
-      ]
-    },
-    "53203": {
-      "item_id": 53203,
-      "observations": [
-        {
-          "content_sha256": "344fb94f4359e5077d07a7a40cd5e25aad40b2409b4f163a464c49555832aa61",
-          "fields": {
-            "armor": "3",
-            "attrib": "magic level +3, ice magic level +1",
-            "duration": "180 minutes",
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "resist": "physical +3%, fire +11%",
-            "slot": "Neck",
-            "vocrequired": "druids",
-            "weight": "4.30"
-          },
-          "page_id": 110762,
-          "revision_id": 1195620,
-          "revision_sha1": "2f2d94768c4fd13f646f56758f147ea8fc2450e4",
-          "revision_timestamp": "2026-07-13T14:39:36Z",
-          "url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Nature",
-          "wiki_title": "Enchanted Flamingo Amulet of Nature"
-        }
-      ]
-    },
-    "53205": {
-      "item_id": 53205,
-      "observations": [
-        {
-          "content_sha256": "1cba7eaf0ec2059a7330c3457fcf8cd68f2756488c3199ed1bc0aaa2ce672bd5",
-          "fields": {
-            "attrib": "fist fighting +4, magic level +2",
-            "duration": "180 minutes",
-            "levelrequired": "270",
-            "mantra": "4",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "resist": "physical +4%, ice +12%",
-            "slot": "Neck",
-            "vocrequired": "monks",
-            "weight": "5.30"
-          },
-          "page_id": 110764,
-          "revision_id": 1195623,
-          "revision_sha1": "4f88bf7098548f102045bb8d53fb783219c94d86",
-          "revision_timestamp": "2026-07-13T14:39:40Z",
-          "url": "https://tibia.fandom.com/wiki/Enchanted_Swan_Amulet_of_Balance",
-          "wiki_title": "Enchanted Swan Amulet of Balance"
         }
       ]
     },
@@ -195027,6 +194675,25 @@
         }
       ]
     },
+    "oteryn:item.tibia.i40522": {
+      "item_id": 40522,
+      "observations": [
+        {
+          "content_sha256": "aa785c77c0951dd33c7652db4b2aef6f09dd0d3d18cdca87cc6562e2862e2032",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "1.00"
+          },
+          "page_id": 101156,
+          "revision_id": 1194166,
+          "revision_sha1": "d60e56615a85e4fcf7214b5f3e52b558e38a0edd",
+          "revision_timestamp": "2026-07-04T18:24:27Z",
+          "url": "https://tibia.fandom.com/wiki/Daedal_Chisel",
+          "wiki_title": "Daedal Chisel"
+        }
+      ]
+    },
     "oteryn:item.tibia.i40527": {
       "item_id": 40527,
       "observations": [
@@ -198429,6 +198096,91 @@
         }
       ]
     },
+    "oteryn:item.tibia.i43778": {
+      "item_id": 43778,
+      "observations": [
+        {
+          "content_sha256": "6a7a7e0738c9454924c3e00482a5d894351f0ca5d76930ddd74df628ef9a607e",
+          "fields": {
+            "weight": "1.00"
+          },
+          "page_id": 102997,
+          "revision_id": 1194752,
+          "revision_sha1": "92463c5cb9db83ab2ab16218c79a56372fd174f5",
+          "revision_timestamp": "2026-07-07T01:54:02Z",
+          "url": "https://tibia.fandom.com/wiki/Organic_Acid",
+          "wiki_title": "Organic Acid"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43779": {
+      "item_id": 43779,
+      "observations": [
+        {
+          "content_sha256": "20ef5a0a497c63a5c7572ef5ce255c7f5bc9151a693fc892b3da87969237013a",
+          "fields": {
+            "weight": "1.00"
+          },
+          "page_id": 102998,
+          "revision_id": 1106043,
+          "revision_sha1": "8b5b320a6f2a59156386b2a782c51ed4929b77b6",
+          "revision_timestamp": "2025-06-19T07:22:40Z",
+          "url": "https://tibia.fandom.com/wiki/Unstable_Darklight_Matter",
+          "wiki_title": "Unstable Darklight Matter"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43780": {
+      "item_id": 43780,
+      "observations": [
+        {
+          "content_sha256": "76e684c9864d71100244cc3157bdd90066c306901b796fea6b12053c0a07984b",
+          "fields": {
+            "weight": "1.00"
+          },
+          "page_id": 102999,
+          "revision_id": 1106044,
+          "revision_sha1": "58f14d69abf91a78e93b8d40f3d55517185b1867",
+          "revision_timestamp": "2025-06-19T07:22:55Z",
+          "url": "https://tibia.fandom.com/wiki/Yellow_Darklight_Matter",
+          "wiki_title": "Yellow Darklight Matter"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43781": {
+      "item_id": 43781,
+      "observations": [
+        {
+          "content_sha256": "0d392558486b70f25b7e98c40b548c548ebe8b63788e3a0b95a8549ee7d3c249",
+          "fields": {
+            "weight": "1.00"
+          },
+          "page_id": 103000,
+          "revision_id": 1106041,
+          "revision_sha1": "a238bc3df694dc5e6c0f2b25d1a392b8c9687f86",
+          "revision_timestamp": "2025-06-19T07:05:33Z",
+          "url": "https://tibia.fandom.com/wiki/Darklight_Obsidian_Axe",
+          "wiki_title": "Darklight Obsidian Axe"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43782": {
+      "item_id": 43782,
+      "observations": [
+        {
+          "content_sha256": "b61cb4ffd016cc9ac7da3a393386a53af16909b95f621c051dbb1e7fe59f61e9",
+          "fields": {
+            "weight": "1.00"
+          },
+          "page_id": 103001,
+          "revision_id": 1106039,
+          "revision_sha1": "5f6f59e340509cead038847b4edd704200a29fd4",
+          "revision_timestamp": "2025-06-19T06:48:42Z",
+          "url": "https://tibia.fandom.com/wiki/Lichen_Gobbler",
+          "wiki_title": "Lichen Gobbler"
+        }
+      ]
+    },
     "oteryn:item.tibia.i43792": {
       "item_id": 43792,
       "observations": [
@@ -199681,6 +199433,44 @@
         }
       ]
     },
+    "oteryn:item.tibia.i43946": {
+      "item_id": 43946,
+      "observations": [
+        {
+          "content_sha256": "591e2a2ba3308ef24d1e051cd490dda930b5e2696c103b4d350072fdde213c6c",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Valuables",
+            "weight": "1.20"
+          },
+          "page_id": 103028,
+          "revision_id": 1076151,
+          "revision_sha1": "386f32f284cf220ba131fd095ecdfb42ff9aa71f",
+          "revision_timestamp": "2024-08-22T13:05:26Z",
+          "url": "https://tibia.fandom.com/wiki/Abridged_Promotion_Scroll",
+          "wiki_title": "Abridged Promotion Scroll"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43947": {
+      "item_id": 43947,
+      "observations": [
+        {
+          "content_sha256": "8a317f38f4b0fb63e5b8bb58aea51bdc8af265e74e42aa6781b21c6f5d740708",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Valuables",
+            "weight": "1.20"
+          },
+          "page_id": 103029,
+          "revision_id": 1057246,
+          "revision_sha1": "7d8272ad1a39086e50d0845ad3cb6d704c228cd6",
+          "revision_timestamp": "2024-04-06T10:23:10Z",
+          "url": "https://tibia.fandom.com/wiki/Basic_Promotion_Scroll",
+          "wiki_title": "Basic Promotion Scroll"
+        }
+      ]
+    },
     "oteryn:item.tibia.i43961": {
       "item_id": 43961,
       "observations": [
@@ -199838,6 +199628,27 @@
           "revision_timestamp": "2025-10-19T20:24:00Z",
           "url": "https://tibia.fandom.com/wiki/Bakragore's_Amalgamation",
           "wiki_title": "Bakragore's Amalgamation"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44048": {
+      "item_id": 44048,
+      "observations": [
+        {
+          "content_sha256": "ea3e1f7f1bc55bf905bc92b0543a5fc516490208497e6c1f47a3133c69841445",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Taming Items",
+            "secondarytype": "Valuables",
+            "stackable": "yes",
+            "weight": "1.20"
+          },
+          "page_id": 103157,
+          "revision_id": 1201512,
+          "revision_sha1": "222d21ef787cfc63730d0db79b4850539fa4620c",
+          "revision_timestamp": "2026-08-17T08:53:57Z",
+          "url": "https://tibia.fandom.com/wiki/Spiritual_Horseshoe",
+          "wiki_title": "Spiritual Horseshoe"
         }
       ]
     },
@@ -200665,6 +200476,44 @@
           "revision_timestamp": "2025-09-02T18:57:05Z",
           "url": "https://tibia.fandom.com/wiki/Grass_(Tile)",
           "wiki_title": "Grass (Tile)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44432": {
+      "item_id": 44432,
+      "observations": [
+        {
+          "content_sha256": "f1826e4cf0c46fd889505db58e7cdf4f56839c4fee5ee54e10fbee77a99b6487",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "1.50"
+          },
+          "page_id": 104235,
+          "revision_id": 1047535,
+          "revision_sha1": "c7ee7b523d4e5bd5874ef7047453ff73385fa6b4",
+          "revision_timestamp": "2023-12-09T19:03:16Z",
+          "url": "https://tibia.fandom.com/wiki/Ancient_Iks_Ritual_Chalice",
+          "wiki_title": "Ancient Iks Ritual Chalice"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44433": {
+      "item_id": 44433,
+      "observations": [
+        {
+          "content_sha256": "97601f0acd44d6a84809355a2c8ddde671dd6d1ccb938b9aad8f394cd34308ba",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "1.00"
+          },
+          "page_id": 104236,
+          "revision_id": 1047606,
+          "revision_sha1": "c61948b74fad51418c05df9a791ae623560e8cb5",
+          "revision_timestamp": "2023-12-10T20:29:39Z",
+          "url": "https://tibia.fandom.com/wiki/Ceremonial_Brush",
+          "wiki_title": "Ceremonial Brush"
         }
       ]
     },
@@ -228550,6 +228399,27 @@
         }
       ]
     },
+    "oteryn:item.tibia.i51276": {
+      "item_id": 51276,
+      "observations": [
+        {
+          "content_sha256": "6a294a0ce2c279fbb64317b8ecd0e19a31958bd3107cc7234134afdf5a5923a4",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Creature Products",
+            "secondarytype": "Quest Items",
+            "stackable": "yes",
+            "weight": "2.50"
+          },
+          "page_id": 110343,
+          "revision_id": 1181885,
+          "revision_sha1": "f6ee3c33610ec298c2320a0b32cf4de2c6355243",
+          "revision_timestamp": "2026-05-03T23:40:19Z",
+          "url": "https://tibia.fandom.com/wiki/Spirited_Soil",
+          "wiki_title": "Spirited Soil"
+        }
+      ]
+    },
     "oteryn:item.tibia.i5129": {
       "item_id": 5129,
       "observations": [
@@ -234125,6 +233995,136 @@
           "revision_timestamp": "2023-10-22T12:31:51Z",
           "url": "https://tibia.fandom.com/wiki/Wooden_Railing_(Docks)",
           "wiki_title": "Wooden Railing (Docks)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53197": {
+      "item_id": 53197,
+      "observations": [
+        {
+          "content_sha256": "64808544e2a05ffc271666c571ba75ae34129471e3661faf125e0a9ff3930451",
+          "fields": {
+            "armor": "4",
+            "attrib": "sword fighting +4, axe fighting +4, club fighting +4, shielding +1",
+            "duration": "180 minutes",
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "resist": "physical +7%, fire +12%",
+            "slot": "Neck",
+            "vocrequired": "knights",
+            "weight": "5.10"
+          },
+          "page_id": 110756,
+          "revision_id": 1195622,
+          "revision_sha1": "de5c5f3b3be40ea71a410326daed54e50daa52f5",
+          "revision_timestamp": "2026-07-13T14:39:38Z",
+          "url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Valor",
+          "wiki_title": "Enchanted Flamingo Amulet of Valor"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53199": {
+      "item_id": 53199,
+      "observations": [
+        {
+          "content_sha256": "25ba584f25fe21777ed31322e5e524d816ebf5d8e518d798602a152d5ba1333a",
+          "fields": {
+            "armor": "4",
+            "attrib": "distance fighting +4, holy magic level +1",
+            "duration": "180 minutes",
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "resist": "physical +5%, fire +14%",
+            "slot": "Neck",
+            "vocrequired": "paladins",
+            "weight": "4.60"
+          },
+          "page_id": 110758,
+          "revision_id": 1197152,
+          "revision_sha1": "a7580fe110ea33cf324aed102aaabbdcf0c19e17",
+          "revision_timestamp": "2026-07-20T18:05:38Z",
+          "url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Precision",
+          "wiki_title": "Enchanted Flamingo Amulet of Precision"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53201": {
+      "item_id": 53201,
+      "observations": [
+        {
+          "content_sha256": "b0973519bb4d7ddae5483804970052a3c4eb8656c0de29f91bb51f448ae30209",
+          "fields": {
+            "armor": "3",
+            "attrib": "magic level +3, energy magic level +1",
+            "duration": "180 minutes",
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "resist": "physical +3%, fire +11%",
+            "slot": "Neck",
+            "vocrequired": "sorcerers",
+            "weight": "4.70"
+          },
+          "page_id": 110760,
+          "revision_id": 1195619,
+          "revision_sha1": "dc7380cf4ba1d149a0d5028d5a3a6fedb788c3da",
+          "revision_timestamp": "2026-07-13T14:39:34Z",
+          "url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Destruction",
+          "wiki_title": "Enchanted Flamingo Amulet of Destruction"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53203": {
+      "item_id": 53203,
+      "observations": [
+        {
+          "content_sha256": "344fb94f4359e5077d07a7a40cd5e25aad40b2409b4f163a464c49555832aa61",
+          "fields": {
+            "armor": "3",
+            "attrib": "magic level +3, ice magic level +1",
+            "duration": "180 minutes",
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "resist": "physical +3%, fire +11%",
+            "slot": "Neck",
+            "vocrequired": "druids",
+            "weight": "4.30"
+          },
+          "page_id": 110762,
+          "revision_id": 1195620,
+          "revision_sha1": "2f2d94768c4fd13f646f56758f147ea8fc2450e4",
+          "revision_timestamp": "2026-07-13T14:39:36Z",
+          "url": "https://tibia.fandom.com/wiki/Enchanted_Flamingo_Amulet_of_Nature",
+          "wiki_title": "Enchanted Flamingo Amulet of Nature"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53205": {
+      "item_id": 53205,
+      "observations": [
+        {
+          "content_sha256": "1cba7eaf0ec2059a7330c3457fcf8cd68f2756488c3199ed1bc0aaa2ce672bd5",
+          "fields": {
+            "attrib": "fist fighting +4, magic level +2",
+            "duration": "180 minutes",
+            "levelrequired": "270",
+            "mantra": "4",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "resist": "physical +4%, ice +12%",
+            "slot": "Neck",
+            "vocrequired": "monks",
+            "weight": "5.30"
+          },
+          "page_id": 110764,
+          "revision_id": 1195623,
+          "revision_sha1": "4f88bf7098548f102045bb8d53fb783219c94d86",
+          "revision_timestamp": "2026-07-13T14:39:40Z",
+          "url": "https://tibia.fandom.com/wiki/Enchanted_Swan_Amulet_of_Balance",
+          "wiki_title": "Enchanted Swan Amulet of Balance"
         }
       ]
     },
@@ -278547,7 +278547,7 @@
     }
   },
   "schema": "OTERYN_ITEM_WIKI_STATS_SNAPSHOT/v1",
-  "snapshot_sha256": "33a1bf7fc076ede18982a2ffbb392d6d98d1a72ae1795e7d33235757d33e0c6d",
+  "snapshot_sha256": "5fc20ff76f65ab8e0a6bb8f52bc366a0bc0b0b617aaaf3bc8b1c987604a2a2d6",
   "source": {
     "api": "https://tibia.fandom.com/api.php",
     "attribution": {
