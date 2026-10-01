@@ -166,3 +166,19 @@ announcements and explicit Agony-condition documentation. It closes the unnecess
 for hidden RNG identity when candidate outcomes are observably equivalent. The integration
 packet records reproducible commands, resolved reference facts and the precise observations
 still required for connected/current-server qualification.
+
+## Deployed calculator continuation
+
+The packet now contains 146 source records and 172 qualified claims. Its
+`calculator_completion` section retains 19 actual public-page fixtures: 12 ExevoPan
+input/output cases, six TibiaMaps level boundaries and one deployed preselection counterexample.
+Ordinary page HTTPS returned HTML; module HTTPS403 required the existing Chrome/CDP fallback.
+Only successful trusted-input runs are retained as behavior evidence. Unsuccessful synthetic
+events and unchanged slider attempts are excluded explicitly.
+
+The captured TibiaMaps worker floors the 5% HP term, applies the local 2×level cap, and includes
+mitigation in displayed proc damage. Its ranking omits mitigation and preselects races before
+resistance: Enflame-only, level100, one Demon plus one Hydra chooses the immune Demon.
+The current ExevoPan scalar formulas and 12 observed outputs agree with its historical model,
+including the absent level cap. Neither observed page exposes charm-stage controls.
+These are measured community-tool limitations, not new accepted combat rules or Global tests.

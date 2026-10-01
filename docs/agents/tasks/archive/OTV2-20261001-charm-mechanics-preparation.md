@@ -238,3 +238,24 @@ proof remain precise per-question observations, not fabricated outcomes or runti
 Root selects one new API-native sole-parent successor after a fresh predecessor read,
 preserves executable modes, performs one non-force branch update and verifies exact head.
 Fresh validation/review then qualifies the final inactive preparation candidate.
+
+## Owner-requested deployed calculator continuation
+
+The owner resumed Charm completion. The predecessor9a94780a completed its hosted
+Charm, Linux, Windows, governance and aggregate game-gate checks successfully.
+Root returned this exclusively allocated branch to AUTHORING for five existing preparation
+paths; no runtime code, catalogue arithmetic or accepted CHARM-0/D186 contracts change.
+
+Nineteen public deployed UI fixtures now qualify the supplied TibiaMaps and ExevoPan links.
+The packet adds five source records and four scoped claims (146sources/172claims total).
+Captured public modules close the earlier unavailable-deployed-source gap. TibiaMaps flooring,
+cap transitions, display mitigation and its observed immune-Demon preselection defect remain
+community-tool facts. ExevoPan's current fixed scalar formulas and12 observed cases agree with
+the historical model, including its missing level cap. Neither captured page exposes stages.
+Failed synthetic-input and slider attempts are discarded explicitly, not counted as behavior.
+
+Ordinary page HTTPS was attempted first; module HTTPS403 used only the existing Chrome/CDP
+public research fallback. All edits, comparisons and publication use the ordinary workspace
+and GitHub API. Root remains sole publisher. The same bounded one-successor/non-force route
+creates a new candidate from9a94780a, then freezes and freshly validates/reviews its exact SHA.
+No current Global game/account action, connected runtime, merge or paid review trigger is added.

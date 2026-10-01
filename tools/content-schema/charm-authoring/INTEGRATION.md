@@ -285,3 +285,24 @@ is executed by this preparation.
 Every identified reference/preparation case is handled. The remaining current-game cases
 have measurable inputs and competing outputs; no unresolved value becomes an implicit
 runtime default. Connecting the accepted implementation remains the allocated consumer task.
+
+## Deployed calculator findings
+
+The `calculator_completion` section supersedes earlier statements that the supplied
+TibiaMaps/Exevo calculators were not executed. Existing Chrome/CDP exercised 19 public UI
+fixtures and read the deployed public modules after ordinary module HTTPS returned403.
+The earlier mathematical comparisons remain historical evidence; exhaustive deployed equivalence
+and original-source-repository identity are not established.
+
+| Tool | Observed result | Consumer consequence |
+|---|---|---|
+| TibiaMaps | Six level boundaries confirm `min(floor(0.05×HP),2×level)` in its deployed worker. At HP30150, levels753/754 produce base1506/1507. Displayed proc damage applies resistance and mitigation, then separate integer formatting. | This measures calculator arithmetic only; preserve accepted Oteryn arithmetic and do not infer Global hit rounding from display formatting. |
+| TibiaMaps selection | Level100, one Demon and one Hydra, only Enflame: the tool selects the fire-immune Demon and reports0. Its captured Hydra data instead yields117×0.9813=114.8121. Race preselection ignores resistance; the ranking objective also omits mitigation. | The “optimal” result is not a safe oracle. Use the recorded counterexample when comparing any consumer optimizer. |
+| ExevoPan | Twelve trusted-input cases match the deployed legacy scalar expressions. Average500/HP40000 gives elemental700 with no level control; a separate neutral level100 stage2 capped model gives520. HP100 versus99.9 at average0 distinguishes its displayed nearest rounding. | Its fixed model cannot validate current caps or per-hit rounding. Exact scalar matches do not prove whole historical build identity. |
+| Both | The captured controls expose no stage selector; Exevo uses fixed10% elemental chance and Low Blow multiplier1.09. | Current unequal stages remain outside these observed models. Never substitute their constants for the 25-profile catalogue. |
+
+Successful captures retain accepted input values, rendered outputs, source/text/excerpt hashes
+and exact literal ranges. Synthetic React-setter results were stale and discarded; the owned
+public page was reloaded before trusted-input fixtures. Slider coordinate attempts did not
+change the slider and are excluded. Every retained Exevo fixture uses observed bonus0.
+No game account, Global combat, connected Oteryn consumer or whole fork server was executed.

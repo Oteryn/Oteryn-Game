@@ -932,6 +932,1749 @@
       }
     ]
   },
+  "calculator_completion": {
+    "access": "Ordinary public page HTTPS200 first, module HTTPS403 then existing Chrome/CDP. Remote Desktop only public browsing and minimal browser-control commands. All repository edits/source comparisons run in ordinary workspace.",
+    "activation": false,
+    "boundary": "Deployed calculator behavior is community reference only. Display rounding, normalized efficiency and preselection bugs do not adjudicate current Global combat. No runtime loader or accepted contract changes.",
+    "counts": {
+      "deployed_ui_fixtures": 19,
+      "exevo_fixtures": 12,
+      "new_claims": 4,
+      "new_sources": 5,
+      "tibiamaps_level_fixtures": 6,
+      "tibiamaps_prefilter_fixtures": 1
+    },
+    "excluded_harness_attempts": "Synthetic React setters produced stale outputs and page timers timed out in a background tab; those runs were discarded, the owned public page reloaded, and successful fixtures use trusted CDP Input.insertText. Slider coordinate attempts did not change its value and are excluded from the19fixtures; all retained fixtures have observed bonus0.",
+    "executed_artifacts": {
+      "exevo-ui-execution.json": {
+        "content": {
+          "access_method": "REMOTE_DESKTOP_EXISTING_CHROME_CDP",
+          "input_method": "CDP trusted Input.insertText after focus/select; checkbox DOM click",
+          "observed_date": "2026-10-01",
+          "results": [
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 500,
+                "hp": 2000
+              },
+              "outputs": {
+                "elemental": "510",
+                "low_blow": "545"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 500,
+                "hp": 40000
+              },
+              "outputs": {
+                "elemental": "700",
+                "low_blow": "545"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 0,
+                "hp": 0
+              },
+              "outputs": {
+                "elemental": "0",
+                "low_blow": "0"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 0,
+                "hp": 100
+              },
+              "outputs": {
+                "elemental": "1",
+                "low_blow": "0"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 0,
+                "hp": 99.9
+              },
+              "outputs": {
+                "elemental": "0",
+                "low_blow": "0"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 150.145,
+                "hp": 2600
+              },
+              "outputs": {
+                "elemental": "163",
+                "low_blow": "164"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 600,
+                "hp": 2600
+              },
+              "outputs": {
+                "elemental": "613",
+                "low_blow": "654"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 3650,
+                "hp": 12340.9
+              },
+              "outputs": {
+                "elemental": "3712",
+                "low_blow": "3979"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": true,
+                "damage": 500,
+                "hp": 0
+              },
+              "outputs": {
+                "elemental": "525",
+                "low_blow": "545"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": true,
+                "damage": 500,
+                "hp": 2600
+              },
+              "outputs": {
+                "elemental": "538",
+                "low_blow": "545"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": true,
+                "damage": 0,
+                "hp": 40000
+              },
+              "outputs": {
+                "elemental": "200",
+                "low_blow": "0"
+              }
+            },
+            {
+              "inputs": {
+                "bonus": 0,
+                "critical": false,
+                "damage": 1.5,
+                "hp": 6813
+              },
+              "outputs": {
+                "elemental": "36",
+                "low_blow": "2"
+              }
+            }
+          ],
+          "scope": "DEPLOYED_PUBLIC_CALCULATOR_UI_INTERACTION_NOT_SERVER_GAMEPLAY",
+          "url": "https://www.exevopan.com/calculators/charm-damage"
+        },
+        "sha256": "d2a2672b2cca8bc9b56c2967eca0a242b3cf0be0ae2ebe936e6cd36f9f7b9810"
+      },
+      "tibiamaps-prefilter-execution.json": {
+        "content": {
+          "analyzer": "Session: 01:00h\nKilled Monsters:\n  1x demon\n  1x hydra",
+          "available": [
+            "enflame"
+          ],
+          "level": 100,
+          "output": "1 possible charm configurations analyzed in 7 ms\nOptimal damage type to use overall: holy (efficiency: 102.64%)\n[#1] Optimal charm configuration: 0.00% total charm efficiency\nEnflame on demon (impact: 0.00%)\n8,200 hitpoints × 5% base charm damage = 410 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 0% fire damage multiplier × 97.24% mitigation multiplier = 0 damage per proc",
+          "url": "https://tibiamaps.io/tools/charms"
+        },
+        "sha256": "783634c483f319d3a1ae7a905d7b4bebd2a3d1bc50daeb05fe23591b4f85d221"
+      },
+      "tibiamaps-ui-execution.json": {
+        "content": {
+          "access_method": "REMOTE_DESKTOP_EXISTING_CHROME_CDP",
+          "input_method": "CDP trusted Input.insertText after focus/select",
+          "observed_date": "2026-10-01",
+          "results": [
+            {
+              "analyzer": "Session data: From 2023-09-13, 19:18:54 to 2023-09-13, 20:18:54\nSession: 01:00h\nKilled Monsters:\n  251x darklight striker\n  251x darklight matter\n  160x walking pillar\n  156x darklight source",
+              "assignments": [
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 2 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 36.35%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 2 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 2 damage per proc",
+                  "text": "Poison on darklight striker (impact: 32.94%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 2 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 2 damage per proc",
+                  "text": "Wound on walking pillar (impact: 25.70%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 2 damage per proc"
+                },
+                {
+                  "charm": "Curse",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 2 damage per proc",
+                  "text": "Curse on darklight source (impact: 18.91%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 2 damage per proc"
+                },
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 2 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 36.35%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 2 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 2 damage per proc",
+                  "text": "Poison on darklight striker (impact: 32.94%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 2 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 2 damage per proc",
+                  "text": "Wound on walking pillar (impact: 25.70%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 2 damage per proc"
+                },
+                {
+                  "charm": "Divine Wrath",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 2 damage per proc",
+                  "text": "Divine Wrath on darklight source (impact: 18.91%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 2 damage per proc"
+                }
+              ],
+              "available": [
+                "curse",
+                "divine-wrath",
+                "enflame",
+                "freeze",
+                "poison",
+                "wound",
+                "zap"
+              ],
+              "best": "[#1] Optimal charm configuration: 113.90% total charm efficiency\nEnflame on darklight matter (impact: 36.35%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 2 damage per proc\nPoison on darklight striker (impact: 32.94%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 2 damage per proc\nWound on walking pillar (impact: 25.70%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 2 damage per proc\nCurse on darklight source (impact: 18.91%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 1 × 2 = 2 damage is the damage cap at level 1 ✅\nOverall, this gives 2 base charm damage at level 1\n2 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 2 damage per proc",
+              "level": 1,
+              "summary": "840 possible charm configurations analyzed in 12 ms",
+              "version": "2026-08-09"
+            },
+            {
+              "analyzer": "Session data: From 2023-09-13, 19:18:54 to 2023-09-13, 20:18:54\nSession: 01:00h\nKilled Monsters:\n  251x darklight striker\n  251x darklight matter\n  160x walking pillar\n  156x darklight source",
+              "assignments": [
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 237 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 36.35%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 237 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 219 damage per proc",
+                  "text": "Poison on darklight striker (impact: 32.94%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 219 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 210 damage per proc",
+                  "text": "Wound on walking pillar (impact: 25.70%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 210 damage per proc"
+                },
+                {
+                  "charm": "Curse",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 190 damage per proc",
+                  "text": "Curse on darklight source (impact: 18.91%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 190 damage per proc"
+                },
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 237 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 36.35%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 237 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 219 damage per proc",
+                  "text": "Poison on darklight striker (impact: 32.94%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 219 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 210 damage per proc",
+                  "text": "Wound on walking pillar (impact: 25.70%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 210 damage per proc"
+                },
+                {
+                  "charm": "Divine Wrath",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 190 damage per proc",
+                  "text": "Divine Wrath on darklight source (impact: 18.91%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 190 damage per proc"
+                }
+              ],
+              "available": [
+                "curse",
+                "divine-wrath",
+                "enflame",
+                "freeze",
+                "poison",
+                "wound",
+                "zap"
+              ],
+              "best": "[#1] Optimal charm configuration: 113.90% total charm efficiency\nEnflame on darklight matter (impact: 36.35%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 237 damage per proc\nPoison on darklight striker (impact: 32.94%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 219 damage per proc\nWound on walking pillar (impact: 25.70%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 210 damage per proc\nCurse on darklight source (impact: 18.91%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 100 × 2 = 200 damage is the damage cap at level 100 ✅\nOverall, this gives 200 base charm damage at level 100\n200 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 190 damage per proc",
+              "level": 100,
+              "summary": "840 possible charm configurations analyzed in 11 ms",
+              "version": "2026-08-09"
+            },
+            {
+              "analyzer": "Session data: From 2023-09-13, 19:18:54 to 2023-09-13, 20:18:54\nSession: 01:00h\nKilled Monsters:\n  251x darklight striker\n  251x darklight matter\n  160x walking pillar\n  156x darklight source",
+              "assignments": [
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,783 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 36.49%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,783 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ❌\nOverall, this gives 1,485 base charm damage at level 753\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc",
+                  "text": "Poison on darklight striker (impact: 32.61%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ❌\nOverall, this gives 1,485 base charm damage at level 753\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,584 damage per proc",
+                  "text": "Wound on walking pillar (impact: 25.80%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,584 damage per proc"
+                },
+                {
+                  "charm": "Curse",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,429 damage per proc",
+                  "text": "Curse on darklight source (impact: 18.99%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,429 damage per proc"
+                },
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,783 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 36.49%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,783 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ❌\nOverall, this gives 1,485 base charm damage at level 753\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc",
+                  "text": "Poison on darklight striker (impact: 32.61%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ❌\nOverall, this gives 1,485 base charm damage at level 753\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,584 damage per proc",
+                  "text": "Wound on walking pillar (impact: 25.80%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,584 damage per proc"
+                },
+                {
+                  "charm": "Divine Wrath",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 1,429 damage per proc",
+                  "text": "Divine Wrath on darklight source (impact: 18.99%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 1,429 damage per proc"
+                }
+              ],
+              "available": [
+                "curse",
+                "divine-wrath",
+                "enflame",
+                "freeze",
+                "poison",
+                "wound",
+                "zap"
+              ],
+              "best": "[#1] Optimal charm configuration: 113.90% total charm efficiency\nEnflame on darklight matter (impact: 36.49%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,783 damage per proc\nPoison on darklight striker (impact: 32.61%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ❌\nOverall, this gives 1,485 base charm damage at level 753\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc\nWound on walking pillar (impact: 25.80%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,584 damage per proc\nCurse on darklight source (impact: 18.99%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 753 × 2 = 1,506 damage is the damage cap at level 753 ✅\nOverall, this gives 1,506 base charm damage at level 753\n1,506 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,429 damage per proc",
+              "level": 753,
+              "summary": "840 possible charm configurations analyzed in 12 ms",
+              "version": "2026-08-09"
+            },
+            {
+              "analyzer": "Session data: From 2023-09-13, 19:18:54 to 2023-09-13, 20:18:54\nSession: 01:00h\nKilled Monsters:\n  251x darklight striker\n  251x darklight matter\n  160x walking pillar\n  156x darklight source",
+              "assignments": [
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,507 base charm damage at level 754\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 36.49%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,507 base charm damage at level 754\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,485 base charm damage at level 754\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc",
+                  "text": "Poison on darklight striker (impact: 32.59%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,485 base charm damage at level 754\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,586 damage per proc",
+                  "text": "Wound on walking pillar (impact: 25.82%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,586 damage per proc"
+                },
+                {
+                  "charm": "Curse",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,431 damage per proc",
+                  "text": "Curse on darklight source (impact: 19.00%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,431 damage per proc"
+                },
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,507 base charm damage at level 754\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 36.49%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,507 base charm damage at level 754\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,485 base charm damage at level 754\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc",
+                  "text": "Poison on darklight striker (impact: 32.59%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,485 base charm damage at level 754\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,586 damage per proc",
+                  "text": "Wound on walking pillar (impact: 25.82%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,586 damage per proc"
+                },
+                {
+                  "charm": "Divine Wrath",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 1,431 damage per proc",
+                  "text": "Divine Wrath on darklight source (impact: 19.00%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 1,431 damage per proc"
+                }
+              ],
+              "available": [
+                "curse",
+                "divine-wrath",
+                "enflame",
+                "freeze",
+                "poison",
+                "wound",
+                "zap"
+              ],
+              "best": "[#1] Optimal charm configuration: 113.90% total charm efficiency\nEnflame on darklight matter (impact: 36.49%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,507 base charm damage at level 754\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc\nPoison on darklight striker (impact: 32.59%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ❌\nOverall, this gives 1,485 base charm damage at level 754\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc\nWound on walking pillar (impact: 25.82%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,586 damage per proc\nCurse on darklight source (impact: 19.00%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ❌\nLevel 754 × 2 = 1,508 damage is the damage cap at level 754 ✅\nOverall, this gives 1,508 base charm damage at level 754\n1,508 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,431 damage per proc",
+              "level": 754,
+              "summary": "840 possible charm configurations analyzed in 10 ms",
+              "version": "2026-08-09"
+            },
+            {
+              "analyzer": "Session data: From 2023-09-13, 19:18:54 to 2023-09-13, 20:18:54\nSession: 01:00h\nKilled Monsters:\n  251x darklight striker\n  251x darklight matter\n  160x walking pillar\n  156x darklight source",
+              "assignments": [
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,507 base charm damage at level 1,150\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 34.11%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,507 base charm damage at level 1,150\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,485 base charm damage at level 1,150\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc",
+                  "text": "Poison on darklight striker (impact: 30.46%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,485 base charm damage at level 1,150\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,900 base charm damage at level 1,150\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc",
+                  "text": "Wound on walking pillar (impact: 30.41%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,900 base charm damage at level 1,150\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc"
+                },
+                {
+                  "charm": "Curse",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,577 base charm damage at level 1,150\n1,577 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc",
+                  "text": "Curse on darklight source (impact: 18.57%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,577 base charm damage at level 1,150\n1,577 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc"
+                },
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,507 base charm damage at level 1,150\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 34.11%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,507 base charm damage at level 1,150\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,485 base charm damage at level 1,150\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc",
+                  "text": "Poison on darklight striker (impact: 30.46%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,485 base charm damage at level 1,150\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,900 base charm damage at level 1,150\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc",
+                  "text": "Wound on walking pillar (impact: 30.41%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,900 base charm damage at level 1,150\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc"
+                },
+                {
+                  "charm": "Divine Wrath",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,577 base charm damage at level 1,150\n1,577 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc",
+                  "text": "Divine Wrath on darklight source (impact: 18.57%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,577 base charm damage at level 1,150\n1,577 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc"
+                }
+              ],
+              "available": [
+                "curse",
+                "divine-wrath",
+                "enflame",
+                "freeze",
+                "poison",
+                "wound",
+                "zap"
+              ],
+              "best": "[#1] Optimal charm configuration: 113.56% total charm efficiency\nEnflame on darklight matter (impact: 34.11%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,507 base charm damage at level 1,150\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc\nPoison on darklight striker (impact: 30.46%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,485 base charm damage at level 1,150\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc\nWound on walking pillar (impact: 30.41%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,900 base charm damage at level 1,150\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc\nCurse on darklight source (impact: 18.57%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 1,150 × 2 = 2,300 damage is the damage cap at level 1,150 ❌\nOverall, this gives 1,577 base charm damage at level 1,150\n1,577 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc",
+              "level": 1150,
+              "summary": "840 possible charm configurations analyzed in 11 ms",
+              "version": "2026-08-09"
+            },
+            {
+              "analyzer": "Session data: From 2023-09-13, 19:18:54 to 2023-09-13, 20:18:54\nSession: 01:00h\nKilled Monsters:\n  251x darklight striker\n  251x darklight matter\n  160x walking pillar\n  156x darklight source",
+              "assignments": [
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,507 base charm damage at level 5,000\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 34.11%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,507 base charm damage at level 5,000\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,485 base charm damage at level 5,000\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc",
+                  "text": "Poison on darklight striker (impact: 30.46%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,485 base charm damage at level 5,000\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,900 base charm damage at level 5,000\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc",
+                  "text": "Wound on walking pillar (impact: 30.41%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,900 base charm damage at level 5,000\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc"
+                },
+                {
+                  "charm": "Curse",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,577 base charm damage at level 5,000\n1,577 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc",
+                  "text": "Curse on darklight source (impact: 18.57%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,577 base charm damage at level 5,000\n1,577 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc"
+                },
+                {
+                  "charm": "Enflame",
+                  "details": "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,507 base charm damage at level 5,000\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc",
+                  "text": "Enflame on darklight matter (impact: 34.11%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,507 base charm damage at level 5,000\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc"
+                },
+                {
+                  "charm": "Poison",
+                  "details": "29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,485 base charm damage at level 5,000\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc",
+                  "text": "Poison on darklight striker (impact: 30.46%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,485 base charm damage at level 5,000\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc"
+                },
+                {
+                  "charm": "Wound",
+                  "details": "38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,900 base charm damage at level 5,000\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc",
+                  "text": "Wound on walking pillar (impact: 30.41%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,900 base charm damage at level 5,000\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc"
+                },
+                {
+                  "charm": "Divine Wrath",
+                  "details": "31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,577 base charm damage at level 5,000\n1,577 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc",
+                  "text": "Divine Wrath on darklight source (impact: 18.57%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,577 base charm damage at level 5,000\n1,577 base charm damage × 100% holy damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc"
+                }
+              ],
+              "available": [
+                "curse",
+                "divine-wrath",
+                "enflame",
+                "freeze",
+                "poison",
+                "wound",
+                "zap"
+              ],
+              "best": "[#1] Optimal charm configuration: 113.56% total charm efficiency\nEnflame on darklight matter (impact: 34.11%)\n30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,507 base charm damage at level 5,000\n1,507 base charm damage × 125% fire damage multiplier × 94.74% mitigation multiplier = 1,785 damage per proc\nPoison on darklight striker (impact: 30.46%)\n29,700 hitpoints × 5% base charm damage = 1,485 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,485 base charm damage at level 5,000\n1,485 base charm damage × 115% earth damage multiplier × 95.03% mitigation multiplier = 1,623 damage per proc\nWound on walking pillar (impact: 30.41%)\n38,000 hitpoints × 5% base charm damage = 1,900 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,900 base charm damage at level 5,000\n1,900 base charm damage × 110% physical damage multiplier × 95.61% mitigation multiplier = 1,998 damage per proc\nCurse on darklight source (impact: 18.57%)\n31,550 hitpoints × 5% base charm damage = 1,577 maximum base charm damage ✅\nLevel 5,000 × 2 = 10,000 damage is the damage cap at level 5,000 ❌\nOverall, this gives 1,577 base charm damage at level 5,000\n1,577 base charm damage × 100% death damage multiplier × 94.88% mitigation multiplier = 1,496 damage per proc",
+              "level": 5000,
+              "summary": "840 possible charm configurations analyzed in 12 ms",
+              "version": "2026-08-09"
+            }
+          ],
+          "scope": "DEPLOYED_PUBLIC_CALCULATOR_UI_INTERACTION_NOT_SERVER_GAMEPLAY",
+          "url": "https://tibiamaps.io/tools/charms"
+        },
+        "sha256": "944aae4c69d8200411a3de1127e90ddbc4ba4425054e10ef9a5b18f93378a156"
+      }
+    },
+    "exevo_scalar_comparisons": [
+      {
+        "historical_scalar_expected": {
+          "elemental": 510,
+          "low_blow": 545
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 500,
+          "hp": 2000
+        },
+        "observed": {
+          "elemental": 510,
+          "low_blow": 545
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 700,
+          "low_blow": 545
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 500,
+          "hp": 40000
+        },
+        "observed": {
+          "elemental": 700,
+          "low_blow": 545
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 0,
+          "low_blow": 0
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 0,
+          "hp": 0
+        },
+        "observed": {
+          "elemental": 0,
+          "low_blow": 0
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 1,
+          "low_blow": 0
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 0,
+          "hp": 100
+        },
+        "observed": {
+          "elemental": 1,
+          "low_blow": 0
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 0,
+          "low_blow": 0
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 0,
+          "hp": 99.9
+        },
+        "observed": {
+          "elemental": 0,
+          "low_blow": 0
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 163,
+          "low_blow": 164
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 150.145,
+          "hp": 2600
+        },
+        "observed": {
+          "elemental": 163,
+          "low_blow": 164
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 613,
+          "low_blow": 654
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 600,
+          "hp": 2600
+        },
+        "observed": {
+          "elemental": 613,
+          "low_blow": 654
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 3712,
+          "low_blow": 3979
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 3650,
+          "hp": 12340.9
+        },
+        "observed": {
+          "elemental": 3712,
+          "low_blow": 3979
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 525,
+          "low_blow": 545
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": true,
+          "damage": 500,
+          "hp": 0
+        },
+        "observed": {
+          "elemental": 525,
+          "low_blow": 545
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 538,
+          "low_blow": 545
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": true,
+          "damage": 500,
+          "hp": 2600
+        },
+        "observed": {
+          "elemental": 538,
+          "low_blow": 545
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 200,
+          "low_blow": 0
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": true,
+          "damage": 0,
+          "hp": 40000
+        },
+        "observed": {
+          "elemental": 200,
+          "low_blow": 0
+        },
+        "pass": true
+      },
+      {
+        "historical_scalar_expected": {
+          "elemental": 36,
+          "low_blow": 2
+        },
+        "inputs": {
+          "bonus": 0,
+          "critical": false,
+          "damage": 1.5,
+          "hp": 6813
+        },
+        "observed": {
+          "elemental": 36,
+          "low_blow": 2
+        },
+        "pass": true
+      }
+    ],
+    "independent_fixture_assessment": {
+      "content": {
+        "counts": {
+          "browser_fixtures_checked": 19,
+          "exevo": 12,
+          "tibiamaps_displayed_assignment_records": 48,
+          "tibiamaps_normal": 6,
+          "tibiamaps_prefilter": 1
+        },
+        "evidence": [
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-worker-bundle.json",
+            "artifact_sha256": "704b87f32d4bc4e161ece784b1b0dcfeeed6ee2ed84bbba3fc8f4f3ac76a6b64",
+            "content_sha256_utf8": "d3fb629dec3609135f7e7c99f576e4d1d45612a45bce74dc2d38c59db712ba85",
+            "end_character_exclusive": 221411,
+            "quote": "y=(e,i)=>{const t=2*i,p=Math.floor(.05*e);return{baseCharmDamage:Math.min(p,t),isCapped:p>t}}",
+            "quote_sha256_utf8": "92f3f07405fbf7feb9cd191e15942bd9f5d21f12459af6f84ca0483bc2fbfc7d",
+            "start_character_0_based": 221318,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-worker-bundle.json",
+            "artifact_sha256": "704b87f32d4bc4e161ece784b1b0dcfeeed6ee2ed84bbba3fc8f4f3ac76a6b64",
+            "content_sha256_utf8": "d3fb629dec3609135f7e7c99f576e4d1d45612a45bce74dc2d38c59db712ba85",
+            "end_character_exclusive": 221277,
+            "quote": "n=1-t/100;return{creature:e,hitpoints:i,damageType:l,charm:p,characterLevel:a,baseCharmDamage:h,isCapped:o,damageTypeMultiplier:r,mitigationMultiplier:n,damagePerProc:h*r*n",
+            "quote_sha256_utf8": "8574fac30fd4fd484105be177c7f4439d2561c1fbe1ccb0d77eed7ed7bc51434",
+            "start_character_0_based": 221105,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-worker-bundle.json",
+            "artifact_sha256": "704b87f32d4bc4e161ece784b1b0dcfeeed6ee2ed84bbba3fc8f4f3ac76a6b64",
+            "content_sha256_utf8": "d3fb629dec3609135f7e7c99f576e4d1d45612a45bce74dc2d38c59db712ba85",
+            "end_character_exclusive": 222568,
+            "quote": "a=m*l*p;h.push({creature:t,hitpoints:l,mitigation:r,killsPerSession:p,charmDamageFactor:a})}h.sort(((e,i)=>i.charmDamageFactor-e.charmDamageFactor));const o=new Set;for(const e of h)if(o.add(e),o.size===a)break",
+            "quote_sha256_utf8": "6488dc9f68ac04ac0b6febbef3d39a907fe07a35307c7265f58ccfc52069133b",
+            "start_character_0_based": 222358,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-worker-bundle.json",
+            "artifact_sha256": "704b87f32d4bc4e161ece784b1b0dcfeeed6ee2ed84bbba3fc8f4f3ac76a6b64",
+            "content_sha256_utf8": "d3fb629dec3609135f7e7c99f576e4d1d45612a45bce74dc2d38c59db712ba85",
+            "end_character_exclusive": 223554,
+            "quote": "e.sumOfCharmDamageFactors=0;for(const[i,t]of e.charmsPerCreature)e.sumOfCharmDamageFactors+=t.charmDamageFactor",
+            "quote_sha256_utf8": "0f5fc8ab22063c5a3af19c0f0df55363ae1a0dc96e2110184df64d21adff978a",
+            "start_character_0_based": 223443,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-worker-bundle.json",
+            "artifact_sha256": "704b87f32d4bc4e161ece784b1b0dcfeeed6ee2ed84bbba3fc8f4f3ac76a6b64",
+            "content_sha256_utf8": "d3fb629dec3609135f7e7c99f576e4d1d45612a45bce74dc2d38c59db712ba85",
+            "end_character_exclusive": 223720,
+            "quote": "const t=p.charmDamageFactor*p.damageTypeMultiplier/e.sumOfCharmDamageFactors;p.charmEfficiency=t,i+=t",
+            "quote_sha256_utf8": "8b1b620fddbd4d7af415be5bb8f487b98901abf5e266a5a595c9804fa95f5fb4",
+            "start_character_0_based": 223619,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-worker-bundle.json",
+            "artifact_sha256": "704b87f32d4bc4e161ece784b1b0dcfeeed6ee2ed84bbba3fc8f4f3ac76a6b64",
+            "content_sha256_utf8": "d3fb629dec3609135f7e7c99f576e4d1d45612a45bce74dc2d38c59db712ba85",
+            "end_character_exclusive": 224759,
+            "quote": "version:\"2026-08-09\"",
+            "quote_sha256_utf8": "eb81bf94257ecf5e9a7204f995a76c4171a8e4dce41296e0c509d441ed2f59a8",
+            "start_character_0_based": 224739,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-ui-bundle.json",
+            "artifact_sha256": "31c36771e0ad2cf245509d416d80529bea3cf4209c4987c9e7fddebeec4eb792",
+            "content_sha256_utf8": "99031c27292e7886304d10916b968a647c63de372a36623873aee610f282123a",
+            "end_character_exclusive": 61,
+            "quote": "const e=new Intl.NumberFormat(\"en\",{maximumFractionDigits:0})",
+            "quote_sha256_utf8": "6d1f4dde4fe4d54534f6d03ece73750d5d7a0c273dcec43dc3ab299265a56f68",
+            "start_character_0_based": 0,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-ui-bundle.json",
+            "artifact_sha256": "31c36771e0ad2cf245509d416d80529bea3cf4209c4987c9e7fddebeec4eb792",
+            "content_sha256_utf8": "99031c27292e7886304d10916b968a647c63de372a36623873aee610f282123a",
+            "end_character_exclusive": 5434,
+            "quote": "f.postMessage({huntAnalyzerText:e,charmsToConsider:a,characterLevel:t})",
+            "quote_sha256_utf8": "62a7b9fd80ad5d180ebe2925d5e24a4864c0f32f3633008249336e0b32aa17df",
+            "start_character_0_based": 5363,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/exevo-public-shared-bundle-2.json",
+            "artifact_sha256": "2ba7accecba96e1d25b7a8e5b191953444432bd93d8b7904d00c7b276fcbff09",
+            "content_sha256_utf8": "2870c66ababaf57510e706bea6a720d1c87d433a09d2181916dd97c5b7149c94",
+            "end_character_exclusive": 44901,
+            "quote": "Math.round(1.09*e)",
+            "quote_sha256_utf8": "bdbe975463324bf300cb85d1f37605342691277541e9294414014596f2b98d4f",
+            "start_character_0_based": 44883,
+            "start_line_1_based": 1
+          },
+          {
+            "artifact": "retained-local-artifacts/calculator-continuation-1434/exevo-public-shared-bundle-2.json",
+            "artifact_sha256": "2ba7accecba96e1d25b7a8e5b191953444432bd93d8b7904d00c7b276fcbff09",
+            "content_sha256_utf8": "2870c66ababaf57510e706bea6a720d1c87d433a09d2181916dd97c5b7149c94",
+            "end_character_exclusive": 45049,
+            "quote": "Math.round(h*(.1*(.05*(1+g/100)))+e*(v?1.05:1))",
+            "quote_sha256_utf8": "d9f310f3a823e592714e7baa6764e5c3628d74f4dff88509a95b54712895576c",
+            "start_character_0_based": 45002,
+            "start_line_1_based": 1
+          }
+        ],
+        "excluded_harness_attempts": [
+          "exevo-slider-execution.json",
+          "earlier synthetic setter outputs"
+        ],
+        "exevo_fixture_checks": [
+          {
+            "expected": {
+              "elemental": "510",
+              "low_blow": "545"
+            },
+            "historical_expected": {
+              "elemental": "510",
+              "low_blow": "545"
+            },
+            "index": 1,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 500,
+              "hp": 2000
+            },
+            "observed": {
+              "elemental": "510",
+              "low_blow": "545"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "700",
+              "low_blow": "545"
+            },
+            "historical_expected": {
+              "elemental": "700",
+              "low_blow": "545"
+            },
+            "index": 2,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 500,
+              "hp": 40000
+            },
+            "observed": {
+              "elemental": "700",
+              "low_blow": "545"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "0",
+              "low_blow": "0"
+            },
+            "historical_expected": {
+              "elemental": "0",
+              "low_blow": "0"
+            },
+            "index": 3,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 0,
+              "hp": 0
+            },
+            "observed": {
+              "elemental": "0",
+              "low_blow": "0"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "1",
+              "low_blow": "0"
+            },
+            "historical_expected": {
+              "elemental": "1",
+              "low_blow": "0"
+            },
+            "index": 4,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 0,
+              "hp": 100
+            },
+            "observed": {
+              "elemental": "1",
+              "low_blow": "0"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "0",
+              "low_blow": "0"
+            },
+            "historical_expected": {
+              "elemental": "0",
+              "low_blow": "0"
+            },
+            "index": 5,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 0,
+              "hp": 99.9
+            },
+            "observed": {
+              "elemental": "0",
+              "low_blow": "0"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "163",
+              "low_blow": "164"
+            },
+            "historical_expected": {
+              "elemental": "163",
+              "low_blow": "164"
+            },
+            "index": 6,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 150.145,
+              "hp": 2600
+            },
+            "observed": {
+              "elemental": "163",
+              "low_blow": "164"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "613",
+              "low_blow": "654"
+            },
+            "historical_expected": {
+              "elemental": "613",
+              "low_blow": "654"
+            },
+            "index": 7,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 600,
+              "hp": 2600
+            },
+            "observed": {
+              "elemental": "613",
+              "low_blow": "654"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "3712",
+              "low_blow": "3979"
+            },
+            "historical_expected": {
+              "elemental": "3712",
+              "low_blow": "3979"
+            },
+            "index": 8,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 3650,
+              "hp": 12340.9
+            },
+            "observed": {
+              "elemental": "3712",
+              "low_blow": "3979"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "525",
+              "low_blow": "545"
+            },
+            "historical_expected": {
+              "elemental": "525",
+              "low_blow": "545"
+            },
+            "index": 9,
+            "inputs": {
+              "bonus": 0,
+              "critical": true,
+              "damage": 500,
+              "hp": 0
+            },
+            "observed": {
+              "elemental": "525",
+              "low_blow": "545"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "538",
+              "low_blow": "545"
+            },
+            "historical_expected": {
+              "elemental": "538",
+              "low_blow": "545"
+            },
+            "index": 10,
+            "inputs": {
+              "bonus": 0,
+              "critical": true,
+              "damage": 500,
+              "hp": 2600
+            },
+            "observed": {
+              "elemental": "538",
+              "low_blow": "545"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "200",
+              "low_blow": "0"
+            },
+            "historical_expected": {
+              "elemental": "200",
+              "low_blow": "0"
+            },
+            "index": 11,
+            "inputs": {
+              "bonus": 0,
+              "critical": true,
+              "damage": 0,
+              "hp": 40000
+            },
+            "observed": {
+              "elemental": "200",
+              "low_blow": "0"
+            },
+            "pass": true
+          },
+          {
+            "expected": {
+              "elemental": "36",
+              "low_blow": "2"
+            },
+            "historical_expected": {
+              "elemental": "36",
+              "low_blow": "2"
+            },
+            "index": 12,
+            "inputs": {
+              "bonus": 0,
+              "critical": false,
+              "damage": 1.5,
+              "hp": 6813
+            },
+            "observed": {
+              "elemental": "36",
+              "low_blow": "2"
+            },
+            "pass": true
+          }
+        ],
+        "historical_comparison": {
+          "all_12_displayed_fixture_outputs_agree": true,
+          "component_original_source_lines": "28-47",
+          "constants": {
+            "ELEMENTAL_DAMAGE": 0.05,
+            "ELEMENTAL_PROC_CHANCE": 0.1,
+            "LOW_BLOW_MULTIPLIER": 1.09,
+            "POWERFUL_MULTIPLIER": 1.05
+          },
+          "constants_original_source_lines": "1-5",
+          "full_deployed_build_or_input_domain_equivalence_proven": false,
+          "revision": "d897a9ccaf22c561fe9779e3d3e58820146c1a2c",
+          "revision_date": "2022-12-15",
+          "source_artifacts": [
+            {
+              "artifact": "retained-local-artifacts/global-followup-1434/exevo-file-1.json",
+              "artifact_sha256": "c7be63085e2da4af4348e9c761f81bd23857adad3d5501a69574841c2735d37f",
+              "decoder": "content contains literal backslash-n line separators in captured GitHub response; replace literal backslash-n with LF only for original-source line coordinates",
+              "git_blob_sha": "901773f1074048f8e7b81d6556d8ad106a36f1fc",
+              "raw_content_sha256_utf8": "25c89b3791c380664d19640d6e61fc222876246f96af87c781d47de04967678f",
+              "source_url": "https://github.com/tibialabs/exevo-pan/blob/d897a9ccaf22c561fe9779e3d3e58820146c1a2c/apps/exevo-pan/src/modules/Calculators/modules/CharmDamage/index.tsx"
+            },
+            {
+              "artifact": "retained-local-artifacts/global-followup-1434/exevo-file-2.json",
+              "artifact_sha256": "15ea9ca898d659b01994f6b697c1f3b8b5f86182d6107bc3da478ffdf3a61a99",
+              "decoder": "content contains literal backslash-n line separators in captured GitHub response; replace literal backslash-n with LF only for original-source line coordinates",
+              "git_blob_sha": "53e29d3725007a39d8933a42b01d1533b35fd195",
+              "raw_content_sha256_utf8": "06c9f985fc2e269ccc7ad439683e6faf0ad7255e3ef44efb4e2677266ad82244",
+              "source_url": "https://github.com/tibialabs/exevo-pan/blob/d897a9ccaf22c561fe9779e3d3e58820146c1a2c/apps/exevo-pan/src/modules/Calculators/modules/CharmDamage/constants.ts"
+            }
+          ]
+        },
+        "limitations": [
+          "Browser fixtures sampled 2026-10-01; equivalence over other inputs or the whole historical build is unproven.",
+          "No bonus-slider interaction is qualified; all 12 Exevo observations have bonus=0.",
+          "TibiaMaps stage2-like scalar base and seven elementals do not support varying charm tiers; score omits mitigation while per-proc details include it.",
+          "Worker normalizes assigned preselected races only; neither score nor display is measured Global proc probability/DPS.",
+          "TibiaMaps embedded version is a self-reported label, not independently authenticated repository revision or all-dataset freshness."
+        ],
+        "observed_date": "2026-10-01",
+        "prefilter_fixture_check": {
+          "alternative": {
+            "base": 117,
+            "creature": "hydra",
+            "dataset": {
+              "damageTypes": [
+                {
+                  "multiplier": 1.1,
+                  "type": "energy"
+                },
+                {
+                  "multiplier": 1.05,
+                  "type": "physical"
+                },
+                {
+                  "multiplier": 1,
+                  "type": "death"
+                },
+                {
+                  "multiplier": 1,
+                  "type": "fire"
+                },
+                {
+                  "multiplier": 0.7,
+                  "type": "holy"
+                },
+                {
+                  "multiplier": 0.5,
+                  "type": "ice"
+                },
+                {
+                  "multiplier": 0,
+                  "type": "earth"
+                }
+              ],
+              "hitpoints": 2350,
+              "mitigation": 1.87
+            },
+            "normalised_one_assigned_creature_efficiency": 1,
+            "raw_per_proc": 114.8121
+          },
+          "demon_dataset": {
+            "damageTypes": [
+              {
+                "multiplier": 1.12,
+                "type": "holy"
+              },
+              {
+                "multiplier": 1.12,
+                "type": "ice"
+              },
+              {
+                "multiplier": 0.8,
+                "type": "death"
+              },
+              {
+                "multiplier": 0.75,
+                "type": "physical"
+              },
+              {
+                "multiplier": 0.6,
+                "type": "earth"
+              },
+              {
+                "multiplier": 0.5,
+                "type": "energy"
+              },
+              {
+                "multiplier": 0,
+                "type": "fire"
+              }
+            ],
+            "hitpoints": 8200,
+            "mitigation": 2.76
+          },
+          "input": "Session: 01:00h\nKilled Monsters:\n  1x demon\n  1x hydra",
+          "level": 100,
+          "pass": true,
+          "selected": [
+            {
+              "base": 200,
+              "charm": "Enflame",
+              "creature": "demon",
+              "damagePerProc": 0,
+              "efficiency": 0
+            }
+          ]
+        },
+        "scope": "INDEPENDENT_OFFLINE_CHECK_OF_CAPTURED_DEPLOYED_COMMUNITY_CALCULATOR_CODE_AND_19_RECORDED_BROWSER_FIXTURES; NO_GAMEPLAY_OR_CONNECTED_CONSUMER_PROOF",
+        "source_artifacts": [
+          {
+            "path": "retained-local-artifacts/calculator-continuation-1434/exevo-ui-execution.json",
+            "sha256": "d2a2672b2cca8bc9b56c2967eca0a242b3cf0be0ae2ebe936e6cd36f9f7b9810"
+          },
+          {
+            "path": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-ui-execution.json",
+            "sha256": "944aae4c69d8200411a3de1127e90ddbc4ba4425054e10ef9a5b18f93378a156"
+          },
+          {
+            "path": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-prefilter-execution.json",
+            "sha256": "783634c483f319d3a1ae7a905d7b4bebd2a3d1bc50daeb05fe23591b4f85d221"
+          },
+          {
+            "path": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-worker-bundle.json",
+            "sha256": "704b87f32d4bc4e161ece784b1b0dcfeeed6ee2ed84bbba3fc8f4f3ac76a6b64"
+          },
+          {
+            "path": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-ui-bundle.json",
+            "sha256": "31c36771e0ad2cf245509d416d80529bea3cf4209c4987c9e7fddebeec4eb792"
+          },
+          {
+            "path": "retained-local-artifacts/calculator-continuation-1434/exevo-public-shared-bundle-2.json",
+            "sha256": "2ba7accecba96e1d25b7a8e5b191953444432bd93d8b7904d00c7b276fcbff09"
+          }
+        ],
+        "tibiamaps_fixture_checks": [
+          {
+            "assignments": [
+              {
+                "base": 2,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "2",
+                "impact": "36.35%",
+                "raw_per_proc": 2.3685
+              },
+              {
+                "base": 2,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "2",
+                "impact": "32.94%",
+                "raw_per_proc": 2.1856899999999997
+              },
+              {
+                "base": 2,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "2",
+                "impact": "25.70%",
+                "raw_per_proc": 2.10342
+              },
+              {
+                "base": 2,
+                "charm": "Curse",
+                "creature": "darklight source",
+                "display_per_proc": "2",
+                "impact": "18.91%",
+                "raw_per_proc": 1.8976
+              },
+              {
+                "base": 2,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "2",
+                "impact": "36.35%",
+                "raw_per_proc": 2.3685
+              },
+              {
+                "base": 2,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "2",
+                "impact": "32.94%",
+                "raw_per_proc": 2.1856899999999997
+              },
+              {
+                "base": 2,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "2",
+                "impact": "25.70%",
+                "raw_per_proc": 2.10342
+              },
+              {
+                "base": 2,
+                "charm": "Divine Wrath",
+                "creature": "darklight source",
+                "display_per_proc": "2",
+                "impact": "18.91%",
+                "raw_per_proc": 1.8976
+              }
+            ],
+            "displayed_assignments_checked": 8,
+            "level": 1,
+            "maximum_display": "113.90%",
+            "maximum_raw": 1.1390292286203392,
+            "pass": true,
+            "permutations": 840
+          },
+          {
+            "assignments": [
+              {
+                "base": 200,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "237",
+                "impact": "36.35%",
+                "raw_per_proc": 236.85
+              },
+              {
+                "base": 200,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "219",
+                "impact": "32.94%",
+                "raw_per_proc": 218.569
+              },
+              {
+                "base": 200,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "210",
+                "impact": "25.70%",
+                "raw_per_proc": 210.342
+              },
+              {
+                "base": 200,
+                "charm": "Curse",
+                "creature": "darklight source",
+                "display_per_proc": "190",
+                "impact": "18.91%",
+                "raw_per_proc": 189.76
+              },
+              {
+                "base": 200,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "237",
+                "impact": "36.35%",
+                "raw_per_proc": 236.85
+              },
+              {
+                "base": 200,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "219",
+                "impact": "32.94%",
+                "raw_per_proc": 218.569
+              },
+              {
+                "base": 200,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "210",
+                "impact": "25.70%",
+                "raw_per_proc": 210.342
+              },
+              {
+                "base": 200,
+                "charm": "Divine Wrath",
+                "creature": "darklight source",
+                "display_per_proc": "190",
+                "impact": "18.91%",
+                "raw_per_proc": 189.76
+              }
+            ],
+            "displayed_assignments_checked": 8,
+            "level": 100,
+            "maximum_display": "113.90%",
+            "maximum_raw": 1.1390292286203392,
+            "pass": true,
+            "permutations": 840
+          },
+          {
+            "assignments": [
+              {
+                "base": 1506,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "1,783",
+                "impact": "36.49%",
+                "raw_per_proc": 1783.4805000000001
+              },
+              {
+                "base": 1485,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "1,623",
+                "impact": "32.61%",
+                "raw_per_proc": 1622.8748249999999
+              },
+              {
+                "base": 1506,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "1,584",
+                "impact": "25.80%",
+                "raw_per_proc": 1583.87526
+              },
+              {
+                "base": 1506,
+                "charm": "Curse",
+                "creature": "darklight source",
+                "display_per_proc": "1,429",
+                "impact": "18.99%",
+                "raw_per_proc": 1428.8927999999999
+              },
+              {
+                "base": 1506,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "1,783",
+                "impact": "36.49%",
+                "raw_per_proc": 1783.4805000000001
+              },
+              {
+                "base": 1485,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "1,623",
+                "impact": "32.61%",
+                "raw_per_proc": 1622.8748249999999
+              },
+              {
+                "base": 1506,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "1,584",
+                "impact": "25.80%",
+                "raw_per_proc": 1583.87526
+              },
+              {
+                "base": 1506,
+                "charm": "Divine Wrath",
+                "creature": "darklight source",
+                "display_per_proc": "1,429",
+                "impact": "18.99%",
+                "raw_per_proc": 1428.8927999999999
+              }
+            ],
+            "displayed_assignments_checked": 8,
+            "level": 753,
+            "maximum_display": "113.90%",
+            "maximum_raw": 1.1389852315954352,
+            "pass": true,
+            "permutations": 840
+          },
+          {
+            "assignments": [
+              {
+                "base": 1507,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "1,785",
+                "impact": "36.49%",
+                "raw_per_proc": 1784.6647500000001
+              },
+              {
+                "base": 1485,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "1,623",
+                "impact": "32.59%",
+                "raw_per_proc": 1622.8748249999999
+              },
+              {
+                "base": 1508,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "1,586",
+                "impact": "25.82%",
+                "raw_per_proc": 1585.9786800000002
+              },
+              {
+                "base": 1508,
+                "charm": "Curse",
+                "creature": "darklight source",
+                "display_per_proc": "1,431",
+                "impact": "19.00%",
+                "raw_per_proc": 1430.7903999999999
+              },
+              {
+                "base": 1507,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "1,785",
+                "impact": "36.49%",
+                "raw_per_proc": 1784.6647500000001
+              },
+              {
+                "base": 1485,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "1,623",
+                "impact": "32.59%",
+                "raw_per_proc": 1622.8748249999999
+              },
+              {
+                "base": 1508,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "1,586",
+                "impact": "25.82%",
+                "raw_per_proc": 1585.9786800000002
+              },
+              {
+                "base": 1508,
+                "charm": "Divine Wrath",
+                "creature": "darklight source",
+                "display_per_proc": "1,431",
+                "impact": "19.00%",
+                "raw_per_proc": 1430.7903999999999
+              }
+            ],
+            "displayed_assignments_checked": 8,
+            "level": 754,
+            "maximum_display": "113.90%",
+            "maximum_raw": 1.138959580898822,
+            "pass": true,
+            "permutations": 840
+          },
+          {
+            "assignments": [
+              {
+                "base": 1507,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "1,785",
+                "impact": "34.11%",
+                "raw_per_proc": 1784.6647500000001
+              },
+              {
+                "base": 1485,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "1,623",
+                "impact": "30.46%",
+                "raw_per_proc": 1622.8748249999999
+              },
+              {
+                "base": 1900,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "1,998",
+                "impact": "30.41%",
+                "raw_per_proc": 1998.2489999999998
+              },
+              {
+                "base": 1577,
+                "charm": "Curse",
+                "creature": "darklight source",
+                "display_per_proc": "1,496",
+                "impact": "18.57%",
+                "raw_per_proc": 1496.2576
+              },
+              {
+                "base": 1507,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "1,785",
+                "impact": "34.11%",
+                "raw_per_proc": 1784.6647500000001
+              },
+              {
+                "base": 1485,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "1,623",
+                "impact": "30.46%",
+                "raw_per_proc": 1622.8748249999999
+              },
+              {
+                "base": 1900,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "1,998",
+                "impact": "30.41%",
+                "raw_per_proc": 1998.2489999999998
+              },
+              {
+                "base": 1577,
+                "charm": "Divine Wrath",
+                "creature": "darklight source",
+                "display_per_proc": "1,496",
+                "impact": "18.57%",
+                "raw_per_proc": 1496.2576
+              }
+            ],
+            "displayed_assignments_checked": 8,
+            "level": 1150,
+            "maximum_display": "113.56%",
+            "maximum_raw": 1.1356082654784176,
+            "pass": true,
+            "permutations": 840
+          },
+          {
+            "assignments": [
+              {
+                "base": 1507,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "1,785",
+                "impact": "34.11%",
+                "raw_per_proc": 1784.6647500000001
+              },
+              {
+                "base": 1485,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "1,623",
+                "impact": "30.46%",
+                "raw_per_proc": 1622.8748249999999
+              },
+              {
+                "base": 1900,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "1,998",
+                "impact": "30.41%",
+                "raw_per_proc": 1998.2489999999998
+              },
+              {
+                "base": 1577,
+                "charm": "Curse",
+                "creature": "darklight source",
+                "display_per_proc": "1,496",
+                "impact": "18.57%",
+                "raw_per_proc": 1496.2576
+              },
+              {
+                "base": 1507,
+                "charm": "Enflame",
+                "creature": "darklight matter",
+                "display_per_proc": "1,785",
+                "impact": "34.11%",
+                "raw_per_proc": 1784.6647500000001
+              },
+              {
+                "base": 1485,
+                "charm": "Poison",
+                "creature": "darklight striker",
+                "display_per_proc": "1,623",
+                "impact": "30.46%",
+                "raw_per_proc": 1622.8748249999999
+              },
+              {
+                "base": 1900,
+                "charm": "Wound",
+                "creature": "walking pillar",
+                "display_per_proc": "1,998",
+                "impact": "30.41%",
+                "raw_per_proc": 1998.2489999999998
+              },
+              {
+                "base": 1577,
+                "charm": "Divine Wrath",
+                "creature": "darklight source",
+                "display_per_proc": "1,496",
+                "impact": "18.57%",
+                "raw_per_proc": 1496.2576
+              }
+            ],
+            "displayed_assignments_checked": 8,
+            "level": 5000,
+            "maximum_display": "113.56%",
+            "maximum_raw": 1.1356082654784176,
+            "pass": true,
+            "permutations": 840
+          }
+        ]
+      },
+      "raw_artifact": "retained-local-artifacts/calculator-continuation-1434/independent-fixture-checks.json",
+      "scope": "Independent offline checking of captured public tool results before publication; final candidate review is separate and SHA-specific.",
+      "sha256": "643e4b01ebbf6e5cab6c9e12f0ef68db151c547d1e807437ef2318d02bc2a722"
+    },
+    "observed_date": "2026-10-01",
+    "official_runtime_parity_proven": false,
+    "predecessor_sha": "9a94780a2adb242788a0c1216516d2c022fe6672",
+    "runtime_connected": false,
+    "schema": "OTERYN_DEPLOYED_PUBLIC_CHARM_CALCULATOR_OBSERVATIONS/v1",
+    "supersedes": "Earlier reports saying deployed calculators were not exercised/public worker unavailable are historical. Nineteen current public UI fixtures and source excerpts are now retained; exhaustive equivalence and original-source-repository identity remain unproven."
+  },
   "catalogue_sha256": "65b0f3cc0fdf0954040120656eeae08e509c6ff8545ce3f2e89b47af559433b1",
   "claims": [
     {
@@ -6995,6 +8738,112 @@
           }
         ]
       }
+    },
+    {
+      "activation": false,
+      "applies_to": [
+        "oteryn:charm.curse",
+        "oteryn:charm.divine_wrath",
+        "oteryn:charm.enflame",
+        "oteryn:charm.freeze",
+        "oteryn:charm.poison",
+        "oteryn:charm.wound",
+        "oteryn:charm.zap"
+      ],
+      "confidence": "OBSERVED_COMMUNITY_TOOL_WITH_EXACT_PUBLIC_SOURCE_EXCERPTS",
+      "evidence_ids": [
+        "calculator-deployed:tibiamaps-worker",
+        "calculator-deployed:tibiamaps-ui",
+        "calculator-deployed:tibiamaps-page"
+      ],
+      "field": "tibiamaps_arithmetic",
+      "id": "calculator-deployed:tibiamaps_arithmetic",
+      "key": "global:combat",
+      "lane": "calculator-reference",
+      "limitations": "Finite public calculator UI/source observations only; no whole-build identity, exhaustive tool equivalence, current Global per-hit rounding/RNG/leech, or connected Oteryn execution. Accepted CHARM-0/D186 contracts and inactive preparation remain unchanged.",
+      "live_server_tested": false,
+      "official_runtime_parity_proven": false,
+      "value": "Observed deployed worker uses min(floor(0.05×HP),2×level), then resistance and mitigation multipliers; rendered damage rounds separately. Ranking uses base×HP×kills and resistance, omitting mitigation from its efficiency objective."
+    },
+    {
+      "activation": false,
+      "applies_to": [
+        "oteryn:charm.curse",
+        "oteryn:charm.divine_wrath",
+        "oteryn:charm.enflame",
+        "oteryn:charm.freeze",
+        "oteryn:charm.poison",
+        "oteryn:charm.wound",
+        "oteryn:charm.zap"
+      ],
+      "confidence": "OBSERVED_COMMUNITY_TOOL_WITH_EXACT_PUBLIC_SOURCE_EXCERPTS",
+      "evidence_ids": [
+        "calculator-deployed:tibiamaps-worker",
+        "calculator-deployed:tibiamaps-page"
+      ],
+      "field": "tibiamaps_prefilter",
+      "id": "calculator-deployed:tibiamaps_prefilter",
+      "key": "global:combat",
+      "lane": "calculator-reference",
+      "limitations": "Finite public calculator UI/source observations only; no whole-build identity, exhaustive tool equivalence, current Global per-hit rounding/RNG/leech, or connected Oteryn execution. Accepted CHARM-0/D186 contracts and inactive preparation remain unchanged.",
+      "live_server_tested": false,
+      "official_runtime_parity_proven": false,
+      "value": "Executed level100 hunt1Demon+1Hydra with only Enflame selects fire-immune Demon and yields0. Hydra instead gives117×1×0.9813=114.8121 under the same captured data; this is a concrete deployed preselection defect."
+    },
+    {
+      "activation": false,
+      "applies_to": [
+        "oteryn:charm.curse",
+        "oteryn:charm.divine_wrath",
+        "oteryn:charm.enflame",
+        "oteryn:charm.freeze",
+        "oteryn:charm.poison",
+        "oteryn:charm.wound",
+        "oteryn:charm.zap",
+        "oteryn:charm.low_blow"
+      ],
+      "confidence": "OBSERVED_COMMUNITY_TOOL_WITH_EXACT_PUBLIC_SOURCE_EXCERPTS",
+      "evidence_ids": [
+        "calculator-deployed:exevo-formulas",
+        "calculator-deployed:exevo-page"
+      ],
+      "field": "exevo_scalar_and_cap",
+      "id": "calculator-deployed:exevo_scalar_and_cap",
+      "key": "global:combat",
+      "lane": "calculator-reference",
+      "limitations": "Finite public calculator UI/source observations only; no whole-build identity, exhaustive tool equivalence, current Global per-hit rounding/RNG/leech, or connected Oteryn execution. Accepted CHARM-0/D186 contracts and inactive preparation remain unchanged.",
+      "live_server_tested": false,
+      "official_runtime_parity_proven": false,
+      "value": "Twelve deployed native-input fixtures match the captured legacy scalar formulas. A500/HP40000 yields545/700 without a level input; a separate neutral level100 stage2 capped model yields520 elemental. Fractional expected-average outputs use Math.round; this is not per-hit rounding."
+    },
+    {
+      "activation": false,
+      "applies_to": [
+        "oteryn:charm.curse",
+        "oteryn:charm.divine_wrath",
+        "oteryn:charm.enflame",
+        "oteryn:charm.freeze",
+        "oteryn:charm.poison",
+        "oteryn:charm.wound",
+        "oteryn:charm.zap",
+        "oteryn:charm.low_blow"
+      ],
+      "confidence": "OBSERVED_COMMUNITY_TOOL_WITH_EXACT_PUBLIC_SOURCE_EXCERPTS",
+      "evidence_ids": [
+        "calculator-deployed:tibiamaps-worker",
+        "calculator-deployed:tibiamaps-ui",
+        "calculator-deployed:tibiamaps-page",
+        "calculator-deployed:exevo-formulas",
+        "calculator-deployed:exevo-page"
+      ],
+      "field": "fixed_stage_controls",
+      "id": "calculator-deployed:fixed_stage_controls",
+      "key": "global:combat",
+      "lane": "calculator-reference",
+      "limitations": "Finite public calculator UI/source observations only; no whole-build identity, exhaustive tool equivalence, current Global per-hit rounding/RNG/leech, or connected Oteryn execution. Accepted CHARM-0/D186 contracts and inactive preparation remain unchanged.",
+      "live_server_tested": false,
+      "official_runtime_parity_proven": false,
+      "value": "Captured current public controls expose no charm-stage selectors. TibiaMaps uses fixed5% damage with equal unparameterized proc chance in ranking; Exevo uses fixed10% elemental chance and1.09LowBlow multiplier. Unequal current5/10/11% elemental stages and4/8/9pointLowBlow bonuses cannot be modeled through these observed controls."
     }
   ],
   "client_assets": {
@@ -29034,7 +30883,11 @@
         "browser-completion:passives-assessment:2",
         "gap-closure:D1",
         "gap-closure:D3",
-        "gap-closure:D4"
+        "gap-closure:D4",
+        "calculator-deployed:tibiamaps_arithmetic",
+        "calculator-deployed:tibiamaps_prefilter",
+        "calculator-deployed:exevo_scalar_and_cap",
+        "calculator-deployed:fixed_stage_controls"
       ],
       "classification": "PARTIAL_DOCUMENTED_REFERENCE",
       "community_costs": [
@@ -29085,7 +30938,11 @@
         "browser-completion:passives-assessment:2",
         "gap-closure:D1",
         "gap-closure:D3",
-        "gap-closure:D4"
+        "gap-closure:D4",
+        "calculator-deployed:tibiamaps_arithmetic",
+        "calculator-deployed:tibiamaps_prefilter",
+        "calculator-deployed:exevo_scalar_and_cap",
+        "calculator-deployed:fixed_stage_controls"
       ],
       "classification": "PARTIAL_DOCUMENTED_REFERENCE",
       "community_costs": [
@@ -29185,7 +31042,11 @@
         "browser-completion:passives-assessment:2",
         "gap-closure:D1",
         "gap-closure:D3",
-        "gap-closure:D4"
+        "gap-closure:D4",
+        "calculator-deployed:tibiamaps_arithmetic",
+        "calculator-deployed:tibiamaps_prefilter",
+        "calculator-deployed:exevo_scalar_and_cap",
+        "calculator-deployed:fixed_stage_controls"
       ],
       "classification": "PARTIAL_DOCUMENTED_REFERENCE",
       "community_costs": [
@@ -29286,7 +31147,11 @@
         "browser-completion:passives-assessment:2",
         "gap-closure:D1",
         "gap-closure:D3",
-        "gap-closure:D4"
+        "gap-closure:D4",
+        "calculator-deployed:tibiamaps_arithmetic",
+        "calculator-deployed:tibiamaps_prefilter",
+        "calculator-deployed:exevo_scalar_and_cap",
+        "calculator-deployed:fixed_stage_controls"
       ],
       "classification": "PARTIAL_DOCUMENTED_REFERENCE",
       "community_costs": [
@@ -29387,7 +31252,9 @@
         "browser-completion:passives-assessment:2",
         "gap-closure:L2",
         "gap-closure:L3",
-        "gap-closure:L4"
+        "gap-closure:L4",
+        "calculator-deployed:exevo_scalar_and_cap",
+        "calculator-deployed:fixed_stage_controls"
       ],
       "classification": "PARTIAL_DOCUMENTED_REFERENCE",
       "community_costs": [
@@ -29645,7 +31512,11 @@
         "browser-completion:passives-assessment:2",
         "gap-closure:D1",
         "gap-closure:D3",
-        "gap-closure:D4"
+        "gap-closure:D4",
+        "calculator-deployed:tibiamaps_arithmetic",
+        "calculator-deployed:tibiamaps_prefilter",
+        "calculator-deployed:exevo_scalar_and_cap",
+        "calculator-deployed:fixed_stage_controls"
       ],
       "classification": "PARTIAL_DOCUMENTED_REFERENCE",
       "community_costs": [
@@ -29951,7 +31822,11 @@
         "browser-completion:passives-assessment:2",
         "gap-closure:D1",
         "gap-closure:D3",
-        "gap-closure:D4"
+        "gap-closure:D4",
+        "calculator-deployed:tibiamaps_arithmetic",
+        "calculator-deployed:tibiamaps_prefilter",
+        "calculator-deployed:exevo_scalar_and_cap",
+        "calculator-deployed:fixed_stage_controls"
       ],
       "classification": "PARTIAL_DOCUMENTED_REFERENCE",
       "community_costs": [
@@ -30002,7 +31877,11 @@
         "browser-completion:passives-assessment:2",
         "gap-closure:D1",
         "gap-closure:D3",
-        "gap-closure:D4"
+        "gap-closure:D4",
+        "calculator-deployed:tibiamaps_arithmetic",
+        "calculator-deployed:tibiamaps_prefilter",
+        "calculator-deployed:exevo_scalar_and_cap",
+        "calculator-deployed:fixed_stage_controls"
       ],
       "classification": "PARTIAL_DOCUMENTED_REFERENCE",
       "community_costs": [
@@ -31118,6 +32997,258 @@
       "title": "Vampiric Embrace | TibiaWiki | Fandom",
       "url": "https://tibia.fandom.com/wiki/Vampiric_Embrace",
       "version_scope": "Captured public revision 1089899; observed 2026-10-01. Documentation, not a live-server measurement."
+    },
+    "calculator-deployed:exevo-formulas": {
+      "access_kind": "CAPTURED_CONTENT",
+      "access_method": "REMOTE_DESKTOP_EXISTING_CHROME_CDP",
+      "access_note": "Public deployed tool source/page, not a CipSoft server observation. Initial page HTTP200 returned HTML; module HTTP403 required existing Chrome fallback. Browser-only research; no remote project files or system changes.",
+      "authority": "COMMUNITY",
+      "evidence_class": "DEPLOYED_PUBLIC_CALCULATOR_REFERENCE",
+      "excerpt_ranges": [
+        {
+          "length": 18,
+          "start_character": 44883
+        },
+        {
+          "length": 47,
+          "start_character": 45002
+        },
+        {
+          "length": 25,
+          "start_character": 44837
+        },
+        {
+          "length": 25,
+          "start_character": 44907
+        }
+      ],
+      "excerpt_sha256": [
+        "bdbe975463324bf300cb85d1f37605342691277541e9294414014596f2b98d4f",
+        "d9f310f3a823e592714e7baa6764e5c3628d74f4dff88509a95b54712895576c",
+        "c1c3332308bb7b6e02489f2da38fe4216fba8508dc27816f8d9fcce4761664fb",
+        "cdfd7351f257892c316d50ddbcd00acc374c98f947d01f0ee7af51111be8b314"
+      ],
+      "excerpts": [
+        "Math.round(1.09*e)",
+        "Math.round(h*(.1*(.05*(1+g/100)))+e*(v?1.05:1))",
+        "[e,t]=(0,n.useState)(500)",
+        "[h,p]=(0,n.useState)(2e3)"
+      ],
+      "id": "calculator-deployed:exevo-formulas",
+      "independent_live_test": false,
+      "observed_date": "2026-10-01",
+      "raw_artifact": "retained-local-artifacts/calculator-continuation-1434/exevo-public-shared-bundle-2.json",
+      "raw_artifact_sha256": "2ba7accecba96e1d25b7a8e5b191953444432bd93d8b7904d00c7b276fcbff09",
+      "raw_text_sha256_utf8": "2870c66ababaf57510e706bea6a720d1c87d433a09d2181916dd97c5b7149c94",
+      "repository": null,
+      "revision": null,
+      "source_path": null,
+      "url": "https://www.exevopan.com/_next/static/chunks/7532-75ff52dfcf51c5a5.js",
+      "version_scope": "Loaded public shared bundle7532-75ff52dfcf51c5a5.js captured2026-10-01; exact deployed scalar formulas match the earlier historical expressions. This does not establish identity of the whole historical build or exhaustive behavior equivalence."
+    },
+    "calculator-deployed:exevo-page": {
+      "access_kind": "CAPTURED_CONTENT",
+      "access_method": "REMOTE_DESKTOP_EXISTING_CHROME_CDP",
+      "access_note": "Public deployed tool source/page, not a CipSoft server observation. Initial page HTTP200 returned HTML; module HTTP403 required existing Chrome fallback. Browser-only research; no remote project files or system changes.",
+      "authority": "COMMUNITY",
+      "evidence_class": "DEPLOYED_PUBLIC_CALCULATOR_REFERENCE",
+      "excerpt_ranges": [
+        {
+          "length": 30,
+          "start_character": 334
+        },
+        {
+          "length": 15,
+          "start_character": 391
+        },
+        {
+          "length": 25,
+          "start_character": 365
+        },
+        {
+          "length": 25,
+          "start_character": 466
+        }
+      ],
+      "excerpt_sha256": [
+        "eaa598bd1bf56611c64ecf6c2216cdcfb2020c90715346be14e0d9f16c1caf15",
+        "50fb42df489a920e16809a116cb128b628745a3969a128fd5c60d1e07379c72b",
+        "4560e078c62f93898be4c015cf1e55733894e87b9c8d487a8f1ee2bd43b405fd",
+        "8e28b66e2677361a811f9c8483d7856160e59ccf7b10e86d4800264846a98b66"
+      ],
+      "excerpts": [
+        "LOW BLOW + 10% CRITICAL CHANCE",
+        "ELEMENTAL CHARM",
+        "Final average damage:\n545",
+        "Final average damage:\n510"
+      ],
+      "id": "calculator-deployed:exevo-page",
+      "independent_live_test": false,
+      "observed_date": "2026-10-01",
+      "raw_artifact": "retained-local-artifacts/gap-closure-1434/browser/continuation-exevo-slider-controls.json",
+      "raw_artifact_sha256": "712fb9fc77b0019fbc076c2fcbb684e0d8f58a0db2ae3c2b3f63eaa5e74d9094",
+      "raw_text_sha256_utf8": "1beab6f5e8af69c487d47d4979449948bec1ac1aac7ec8c1eda02bb1131f4e08",
+      "repository": null,
+      "revision": null,
+      "source_path": null,
+      "url": "https://www.exevopan.com/calculators/charm-damage",
+      "version_scope": "Full rendered deployed public calculator captured2026-10-01; average damage, creature HP, critical checkbox and sensitivity slider exposed; no level/stage control exposed."
+    },
+    "calculator-deployed:tibiamaps-page": {
+      "access_kind": "CAPTURED_CONTENT",
+      "access_method": "REMOTE_DESKTOP_EXISTING_CHROME_CDP",
+      "access_note": "Public deployed tool source/page, not a CipSoft server observation. Initial page HTTP200 returned HTML; module HTTP403 required existing Chrome fallback. Browser-only research; no remote project files or system changes.",
+      "authority": "COMMUNITY",
+      "evidence_class": "DEPLOYED_PUBLIC_CALCULATOR_REFERENCE",
+      "excerpt_ranges": [
+        {
+          "length": 39,
+          "start_character": 85
+        },
+        {
+          "length": 50,
+          "start_character": 657
+        },
+        {
+          "length": 73,
+          "start_character": 933
+        }
+      ],
+      "excerpt_sha256": [
+        "f0e8454ee12bfaa1ad907b93af72f1b9c8224fcb091a981f4ade2cee6e812c39",
+        "d0bf18a3b387eb55dc7d2c4367ad4abe8cd0b40e5140db2f61b3781b41dff212",
+        "7197eb0ebcb2e4c9a17be48267d265934d55e27b66e03b7a53188822f17dd3ce"
+      ],
+      "excerpts": [
+        "Latest Bestiary data update: 2026-08-09",
+        "Curse Divine Wrath Enflame Freeze Poison Wound Zap",
+        "30,150 hitpoints × 5% base charm damage = 1,507 maximum base charm damage"
+      ],
+      "id": "calculator-deployed:tibiamaps-page",
+      "independent_live_test": false,
+      "observed_date": "2026-10-01",
+      "raw_artifact": "retained-local-artifacts/gap-closure-1434/browser/continuation-tibiamaps-controls.json",
+      "raw_artifact_sha256": "40146dc0d8dd6fa880768642071188ef3f249ff31df9741e6885402130480522",
+      "raw_text_sha256_utf8": "7ad9e105f3df80f7abe7fd5beb92daa8aacd31a48356b81ad18ae5e35ee00d6f",
+      "repository": null,
+      "revision": null,
+      "source_path": null,
+      "url": "https://tibiamaps.io/tools/charms",
+      "version_scope": "Full rendered deployed public page captured2026-10-01; seven elemental charm controls, level and detailed output observed. No stage selection was exposed in this page/control capture."
+    },
+    "calculator-deployed:tibiamaps-ui": {
+      "access_kind": "CAPTURED_CONTENT",
+      "access_method": "REMOTE_DESKTOP_EXISTING_CHROME_CDP",
+      "access_note": "Public deployed tool source/page, not a CipSoft server observation. Initial page HTTP200 returned HTML; module HTTP403 required existing Chrome fallback. Browser-only research; no remote project files or system changes.",
+      "authority": "COMMUNITY",
+      "evidence_class": "DEPLOYED_PUBLIC_CALCULATOR_REFERENCE",
+      "excerpt_ranges": [
+        {
+          "length": 53,
+          "start_character": 8
+        },
+        {
+          "length": 27,
+          "start_character": 725
+        },
+        {
+          "length": 18,
+          "start_character": 1285
+        }
+      ],
+      "excerpt_sha256": [
+        "6d9112f359feb0c2dd76f1836a9ed717b3daf998dd97630012dc90255def3d1a",
+        "43fbd2edab5e3341a46317a3ae26c371924ace460fe2ea5eff16e421999a9eb7",
+        "93b7ff119d22889b8d1cad1d4460cbb6b0c1e7d09ca9e5d5f4ed2798a07f1549"
+      ],
+      "excerpts": [
+        "new Intl.NumberFormat(\"en\",{maximumFractionDigits:0})",
+        "Math.floor(.05*n.hitpoints)",
+        "t(n.damagePerProc)"
+      ],
+      "id": "calculator-deployed:tibiamaps-ui",
+      "independent_live_test": false,
+      "observed_date": "2026-10-01",
+      "raw_artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-ui-bundle.json",
+      "raw_artifact_sha256": "31c36771e0ad2cf245509d416d80529bea3cf4209c4987c9e7fddebeec4eb792",
+      "raw_text_sha256_utf8": "99031c27292e7886304d10916b968a647c63de372a36623873aee610f282123a",
+      "repository": null,
+      "revision": null,
+      "source_path": null,
+      "url": "https://tibiamaps.io/_js/charms/charms-ui.min.mjs?v=2026-08-09",
+      "version_scope": "Public deployed UI module version query2026-08-09, captured2026-10-01; output formatting is separate from internal damage arithmetic."
+    },
+    "calculator-deployed:tibiamaps-worker": {
+      "access_kind": "CAPTURED_CONTENT",
+      "access_method": "REMOTE_DESKTOP_EXISTING_CHROME_CDP",
+      "access_note": "Public deployed tool source/page, not a CipSoft server observation. Initial page HTTP200 returned HTML; module HTTP403 required existing Chrome fallback. Browser-only research; no remote project files or system changes.",
+      "authority": "COMMUNITY",
+      "evidence_class": "DEPLOYED_PUBLIC_CALCULATOR_REFERENCE",
+      "excerpt_ranges": [
+        {
+          "length": 93,
+          "start_character": 221318
+        },
+        {
+          "length": 9,
+          "start_character": 221105
+        },
+        {
+          "length": 19,
+          "start_character": 221258
+        },
+        {
+          "length": 7,
+          "start_character": 222358
+        },
+        {
+          "length": 56,
+          "start_character": 222450
+        },
+        {
+          "length": 45,
+          "start_character": 222523
+        },
+        {
+          "length": 76,
+          "start_character": 223619
+        },
+        {
+          "length": 20,
+          "start_character": 224739
+        }
+      ],
+      "excerpt_sha256": [
+        "92f3f07405fbf7feb9cd191e15942bd9f5d21f12459af6f84ca0483bc2fbfc7d",
+        "3435446e971684b175d8fadfc63105e52c5e65289d5afe27921329560f41e38e",
+        "18b6d11c4e6e3456a4831f1edd492aef678c08c61926b12cbcc941a1bbdd52ad",
+        "eba8ce03f696570aab8e4514c99eed0c15b2549b6ae645f7cfdd614243745d26",
+        "b8ce27a01963be4d5571b04304567e2ac4d34abb649ab8bda88d92099f173608",
+        "34f915194ba439a34549cf708b5392372894debe1d1b2a0b81868f7d5f289061",
+        "e1fef33d6655f5fc74240dca5b1bde369d50ec3bf1fbb267745729e6357dfb63",
+        "eb81bf94257ecf5e9a7204f995a76c4171a8e4dce41296e0c509d441ed2f59a8"
+      ],
+      "excerpts": [
+        "y=(e,i)=>{const t=2*i,p=Math.floor(.05*e);return{baseCharmDamage:Math.min(p,t),isCapped:p>t}}",
+        "n=1-t/100",
+        "damagePerProc:h*r*n",
+        "a=m*l*p",
+        "h.sort(((e,i)=>i.charmDamageFactor-e.charmDamageFactor))",
+        "for(const e of h)if(o.add(e),o.size===a)break",
+        "const t=p.charmDamageFactor*p.damageTypeMultiplier/e.sumOfCharmDamageFactors",
+        "version:\"2026-08-09\""
+      ],
+      "id": "calculator-deployed:tibiamaps-worker",
+      "independent_live_test": false,
+      "observed_date": "2026-10-01",
+      "raw_artifact": "retained-local-artifacts/calculator-continuation-1434/tibiamaps-public-worker-bundle.json",
+      "raw_artifact_sha256": "704b87f32d4bc4e161ece784b1b0dcfeeed6ee2ed84bbba3fc8f4f3ac76a6b64",
+      "raw_text_sha256_utf8": "d3fb629dec3609135f7e7c99f576e4d1d45612a45bce74dc2d38c59db712ba85",
+      "repository": null,
+      "revision": null,
+      "source_path": null,
+      "url": "https://tibiamaps.io/_js/charms/charms-worker.min.mjs?v=2026-08-09",
+      "version_scope": "Public deployed worker captured2026-10-01; embedded Bestiary version2026-08-09. Original source repository identity and immutable deployment history are not established."
     },
     "catalogue:br_charms": {
       "access_kind": "CAPTURED_CONTENT",
@@ -35299,11 +37430,12 @@
     "catalogue_keys": 25,
     "community_bonus_comparisons": 75,
     "community_cost_comparisons": 75,
+    "deployed_calculator_ui_fixtures": 19,
     "external_fork_servers_executed": 0,
     "full_official_server_tests": 0,
     "gap_closure_literal_source_checks": 248,
     "remaining_question_groups_executed": 19,
-    "research_claims": 168,
-    "source_records": 141
+    "research_claims": 172,
+    "source_records": 146
   }
 }
