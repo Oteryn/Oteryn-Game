@@ -822,3 +822,291 @@ fn a_capped_actor_does_not_hold_back_the_channel_and_its_carried_tick_leads_the_
     ]);
     assert_eq!(keys(next), [(0, 1, 4), (50 * MS, 2, 1)]);
 }
+
+#[test]
+fn cleanse_excludes_drowning_positive_and_expired_speed_conditions() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    assert_eq!(store.prepare_cleanse(&facts(u64::MAX, &root)), Ok(None));
+    apply(
+        &mut store,
+        &dot(DotElement::Drown, 30, 30, true),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    apply(
+        &mut store,
+        &speed(false, 1_300, 40),
+        ConditionSourceKind::SelfUse,
+        &facts(0, &root),
+    )
+    .unwrap();
+    assert_eq!(store.prepare_cleanse(&facts(0, &root)), Ok(None));
+    apply(
+        &mut store,
+        &speed(true, 0, 0),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    assert_eq!(store.prepare_cleanse(&facts(6_000 * MS, &root)), Ok(None));
+    let plan = store
+        .prepare_cleanse(&facts(5_999 * MS, &root))
+        .unwrap()
+        .unwrap();
+    assert_eq!(plan.conflict_key(), ConflictKey::Speed);
+    assert!(store.commit_cleanse(plan));
+    assert_eq!(store.instances().len(), 1);
+    assert_eq!(
+        store.instances()[0].definition().condition_type(),
+        ConditionType::DamageOverTime(DotElement::Drown),
+    );
+}
+
+#[test]
+fn cleanse_selection_matches_the_named_draw_and_replays_without_another_removal() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    for element in [
+        DotElement::Fire,
+        DotElement::Poison,
+        DotElement::Drown,
+        DotElement::Energy,
+    ] {
+        apply(
+            &mut store,
+            &dot(element, 30, 30, true),
+            ConditionSourceKind::Creature,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    let facts = facts(100 * MS, &root);
+    let before = store.clone();
+    let plan = store.prepare_cleanse(&facts).unwrap().unwrap();
+    assert_eq!(store, before, "prepare must not mutate");
+    assert_eq!(Some(plan), store.prepare_cleanse(&facts).unwrap());
+    let draw = deterministic_decision_u64(&root, facts.occurrence, COND_CLEANSE_PICK, 0).unwrap();
+    let candidates = [DotElement::Fire, DotElement::Poison, DotElement::Energy];
+    assert_eq!(
+        plan.conflict_key(),
+        ConflictKey::Element(candidates[(draw % 3) as usize]),
+    );
+    assert!(store.commit_cleanse(plan));
+    let committed = store.clone();
+    assert!(!store.commit_cleanse(plan));
+    assert_eq!(store, committed);
+    assert_eq!(store.instances().len(), 3);
+    assert_eq!(
+        store.cleanse_immunity_remaining(plan.conflict_key(), facts.now),
+        11_000 * MS,
+    );
+}
+
+#[test]
+fn cleanse_immunity_refuses_its_key_until_the_exact_deadline() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let poison = dot(DotElement::Poison, 30, 30, true);
+    apply(
+        &mut store,
+        &poison,
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let plan = store
+        .prepare_cleanse(&facts(100 * MS, &root))
+        .unwrap()
+        .unwrap();
+    assert!(store.commit_cleanse(plan));
+    let committed = store.clone();
+    for kind in [
+        ConditionSourceKind::Creature,
+        ConditionSourceKind::Player,
+        ConditionSourceKind::Field,
+        ConditionSourceKind::SelfUse,
+    ] {
+        assert_eq!(
+            apply(
+                &mut store,
+                &poison,
+                kind,
+                &facts(11_100 * MS - 1, &root),
+            ),
+            Err(ConditionRefusal::Immune),
+        );
+        assert_eq!(store, committed);
+    }
+    apply(
+        &mut store,
+        &dot(DotElement::Fire, 30, 30, true),
+        ConditionSourceKind::Creature,
+        &facts(200 * MS, &root),
+    )
+    .unwrap();
+    apply(
+        &mut store,
+        &poison,
+        ConditionSourceKind::Creature,
+        &facts(11_100 * MS, &root),
+    )
+    .unwrap();
+    assert_eq!(
+        store.cleanse_immunity_remaining(plan.conflict_key(), 11_100 * MS),
+        0,
+    );
+}
+
+#[test]
+fn cleanse_plan_cannot_remove_a_replacement_or_grant_immunity() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &speed(true, 0, 0),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let plan = store.prepare_cleanse(&facts(0, &root)).unwrap().unwrap();
+    apply(
+        &mut store,
+        &speed(false, 1_300, 40),
+        ConditionSourceKind::SelfUse,
+        &facts(MS, &root),
+    )
+    .unwrap();
+    let replacement = store.clone();
+    assert!(!store.commit_cleanse(plan));
+    assert_eq!(store, replacement);
+    assert_eq!(store.cleanse_immunity_remaining(ConflictKey::Speed, MS), 0);
+}
+
+#[test]
+fn cleanse_preserves_committed_ticks_and_moved_store_immunity_until_death() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &dot(DotElement::Fire, 30, 30, false),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let committed_ticks = store.take_due(0, TickFacts::default());
+    assert_eq!(damage_amount(&committed_ticks[0]), (10, false));
+    let plan = store
+        .prepare_cleanse(&facts(1_000 * MS, &root))
+        .unwrap()
+        .unwrap();
+    assert!(store.commit_cleanse(plan));
+    let mut transferred = store;
+    assert_eq!(
+        transferred.cleanse_immunity_remaining(plan.conflict_key(), 2_000 * MS),
+        10_000 * MS,
+    );
+    assert!(
+        transferred
+            .take_due(4_000 * MS, TickFacts::default())
+            .is_empty()
+    );
+    assert_eq!(damage_amount(&committed_ticks[0]), (10, false));
+    transferred.clear_on_death();
+    assert_eq!(
+        transferred.cleanse_immunity_remaining(plan.conflict_key(), 4_000 * MS),
+        0,
+    );
+    assert_eq!(
+        ConditionStore::<u32>::new().cleanse_immunity_remaining(plan.conflict_key(), 0),
+        0,
+    );
+}
+
+#[test]
+fn cleanse_overflow_refuses_before_removing_an_instance() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &dot(DotElement::Fire, 30, 30, true),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let before = store.clone();
+    assert_eq!(
+        store.prepare_cleanse(&facts(u64::MAX, &root)),
+        Err(ConditionRefusal::TimeOverflow),
+    );
+    assert_eq!(store, before);
+}
+
+#[test]
+fn exhausted_sequence_cannot_reuse_a_cleanse_plan_identity() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &speed(true, 0, 0),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let plan = store.prepare_cleanse(&facts(0, &root)).unwrap().unwrap();
+    assert!(store.commit_cleanse(plan));
+    store.next_sequence = u32::MAX;
+    let before = store.clone();
+    assert_eq!(
+        apply(
+            &mut store,
+            &speed(false, 1_300, 40),
+            ConditionSourceKind::SelfUse,
+            &facts(12_000 * MS, &root),
+        ),
+        Err(ConditionRefusal::SequenceExhausted),
+    );
+    assert_eq!(store, before);
+    assert!(!store.commit_cleanse(plan));
+}
+
+#[test]
+fn cleanse_paralysis_immunity_refuses_the_shared_speed_key_including_haste() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &speed(true, 0, 0),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let plan = store.prepare_cleanse(&facts(0, &root)).unwrap().unwrap();
+    assert_eq!(plan.conflict_key(), ConflictKey::Speed);
+    assert!(store.commit_cleanse(plan));
+    let before = store.clone();
+    for paralysis in [false, true] {
+        assert_eq!(
+            apply(
+                &mut store,
+                &speed(paralysis, 1_300, 40),
+                ConditionSourceKind::SelfUse,
+                &facts(11_000 * MS - 1, &root),
+            ),
+            Err(ConditionRefusal::Immune),
+        );
+        assert_eq!(store, before);
+    }
+    apply(
+        &mut store,
+        &speed(false, 1_300, 40),
+        ConditionSourceKind::SelfUse,
+        &facts(11_000 * MS, &root),
+    )
+    .unwrap();
+    assert_eq!(
+        store.instances()[0].definition().condition_type(),
+        ConditionType::Haste,
+    );
+}
