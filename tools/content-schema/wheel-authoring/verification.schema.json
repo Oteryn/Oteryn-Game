@@ -366,6 +366,16 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 20000
+        },
+        "guiding_presence_arithmetic": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "mystic_repulse_selection": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
         }
       },
       "required": [
@@ -380,7 +390,9 @@
         "official_cooldown_corrections",
         "great_fire_wave_and_mystic_repulse_damage",
         "special_spell_secondary_cooldown",
-        "flurry_cast_range"
+        "flurry_cast_range",
+        "guiding_presence_arithmetic",
+        "mystic_repulse_selection"
       ]
     },
     "live_verification": {

@@ -26,7 +26,7 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "e84bef69c54ed1b39c1b893aa0d4855cf49ac87147953d638b2fb24762d1cbc5"
+    "source-parameters.json": "6e91cc5c627bfd4c47cc321cfc9b3ccfebd7b6e466e867aa6aab35b2f54f90d7"
   },
   "progression": {
     "minimum_level": 51,
@@ -23068,7 +23068,7 @@
         "stage": 2,
         "planner_value": 60,
         "selected_value": 40,
-        "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, Fandom 1206174 now read via Chrome/CDP; Global target-version conflict remains Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
+        "evidence": "FORMULA_SELECTION_CONFIRMED: English TibiaWiki Conviction r1206174 explicitly gives +40% base damage; official > English wiki > Canary per architect ruling #162/5933264015. BR r443774 +15% and planner +60% are retained conflicting corroboration, not selected authority. Runtime and current Global parity remain unadmitted."
       }
     ],
     "initial_gems": {

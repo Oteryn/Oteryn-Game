@@ -51,10 +51,16 @@ def validate_gem_revision(candidate, previous):
         # Fees/yields can differ while both revisions decode stored gem/grade rows identically.
         def row_contract(contract):
             gems = contract['gems']
-            return {'vocations': contract['vocations'], 'mods': [gems['basic_mods'], gems['supreme_mods']],
-                    'qualities': gems['qualities'], 'grade_chain': {
-                        k: gems['atelier'][k] for k in ('basic_pair_compatibility',
-                            'effective_grade_order', 'effective_grade_rule', 'grade_scope')}}
+            # Only known economic fields may vary; new interpretation fields fail closed.
+            atelier = {k: v for k, v in gems['atelier'].items() if k not in
+                       ('fees', 'fragment_items', 'fragment_yields', 'yield_evidence', 'fee_evidence')}
+            atelier['operation_policy'] = {k: v for k, v in atelier['operation_policy'].items()
+                if k not in ('vendor_reference_prices', 'vendor_buy_unrevealed_gem_prices',
+                             'vendor_price_evidence', 'state_operation_evidence',
+                             'revealed_gem_limit_evidence', 'reveal_input_scope_evidence')}
+            return {'vocations': contract['vocations'],
+                    'gems': {k: v for k, v in gems.items() if k not in ('grade_costs', 'atelier')},
+                    'atelier': atelier}
         require(row_contract(source) == row_contract(destination), 'GEM_COMPATIBLE_ROW_CHANGED')
     else:
         require(declaration['kind'] == 'staged_migration', 'GEM_REVISION_KIND')

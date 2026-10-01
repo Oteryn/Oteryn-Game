@@ -43,6 +43,10 @@
               "minLength": 1,
               "maxLength": 20000
             },
+            "predecessor_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
             "gem_revision": {
               "type": "object",
               "additionalProperties": false,
@@ -71,7 +75,8 @@
           },
           "required": [
             "kind",
-            "predecessor"
+            "predecessor",
+            "predecessor_sha256"
           ]
         }
       ]

@@ -162,21 +162,21 @@
       "fandom_1206174_percent": 40,
       "br_443774_percent": 15,
       "planner_percent": 60,
-      "state": "PRIMARY_SNAPSHOT_40_SELECTED; CURRENT_GLOBAL_NOT_ESTABLISHED"
+      "state": "ENGLISH_WIKI_40_SELECTED_BY_FORMULA; BR_AND_PLANNER_CONFLICTS_RETAINED; NO_GLOBAL_RUNTIME_ADMISSION"
     },
     "battle_instinct": "Fandom r1206174 section repeats Battle Healing prose; do not overwrite Battle Instinct from that anomalous paragraph. Preserve source identities and flag for native content review.",
     "healing_link": "Fandom r1206174 still says 10%; original released official 8833 explicitly supersedes it with 25%, which candidate already selects.",
     "atelier_gem_cap": {
       "selected_project": 250,
       "fandom_1151969": 225,
-      "state": "KEEP_ACCEPTED_PARITY_PENDING_PROJECT_DECISION"
+      "state": "FORMULA_REFERENCE_SELECTION_CONFIRMED; CANDIDATE_CHANGE_DEFERRED_PENDING_WHEEL_GEM0_AMENDMENT"
     },
     "supreme_grade_iii_gold": {
       "selected_project": 12000000,
       "fandom_1151969": 12500000,
-      "state": "KEEP_ACCEPTED_PROJECT_GRADE_TABLE; GLOBAL_PRICE_UNCONFIRMED"
+      "state": "FORMULA_REFERENCE_SELECTION_CONFIRMED; CANDIDATE_CHANGE_DEFERRED_PENDING_WHEEL_GEM0_AMENDMENT"
     },
-    "guiding_presence_interpretation": "Literal +33% captured; relative versus points, rounding and own-Serene application remain native owner Q5. No invented resolved semantics.",
+    "guiding_presence_interpretation": "Official8833 full mantra share100%; official8944/EnglishWiki1206174 literal party+33%. EnglishWiki gives no arithmetic; pinnedCanary99902524 party.cpp308-321 implements mantra sharing but combat.cpp824-835/game.cpp210-223 has no Guiding+33 bonus. Arithmetic/rounding/self-copy PARITY_PENDING; runtime unadmitted; no owner gate.",
     "hunting_task_shop_points": "Fandom overview states up to 50 points: recorded as an unadmitted reference; no new Task Shop dependency or runtime point grant is allocated."
   },
   "manual_scope": "Fresh official manual corroborates operation/fragment/effective-grade facts; it does not state the numeric gem cap or grade prices in the read text.",
@@ -478,7 +478,9 @@
       "druid": 69,
       "monk": 69
     },
-    "evidence": "FANDOM_1151969 states up to 69; candidate vocation catalogue unions independently derive 46 + 23 = 69. No catalogue-policy conflict exists; runtime point grants remain unadmitted."
+    "evidence": "FANDOM_1151969 states up to 69; candidate vocation catalogue unions independently derive 46 + 23 = 69. No catalogue-policy conflict exists; runtime point grants remain unadmitted.",
+    "state": "OUT_OF_SCOPE_REFERENCE_ONLY",
+    "accepted_runtime_value": false
   },
   "manual_notes_correction": {
     "reference": "docs/reference/tibia-manual/characters.md:105",
@@ -487,5 +489,52 @@
     "interpretation": "Grade enhancements add Momentum instead of increasing the fixed Grade-I cooldown reduction. The candidate already implements that distinction.",
     "evidence": "official characters manual read through REMOTE_DESKTOP_CHROME_CDP on 2026-10-01; body sha256 bea47bda1adf1042f1248a0ef7f0c7c909b96e4a413ea2f19eaafd9e5d1b471f",
     "manual_file_changed": true
+  },
+  "architect_ruling": {
+    "reference": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015",
+    "formula_precedence": "official > English TibiaWiki > pinned Canary; BR/planner corroboration only",
+    "gem_price_cap_application": "DEFERRED_BY_COORDINATOR_STATE_5897165704_PENDING_ARCHITECT_WHEEL_GEM0_AMENDMENT; 225/12.5M are architect reference selections, candidate250/12M unchanged",
+    "task_shop_and_grade_iv_maximum": "OUT_OF_SCOPE_REFERENCE_ONLY; no accepted runtime value",
+    "deferred_reference_values": {
+      "revealed_gem_limit": 225,
+      "supreme_grade_iii_gold": 12500000
+    },
+    "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704"
+  },
+  "canary_guiding_reference": {
+    "pinned_canary_commit": "99902524e052f37574194466c2949c576e4ab269",
+    "access_method": "NORMAL_HTTPS_RAW_GITHUB",
+    "files": {
+      "player.cpp": "be92f3b797a5692843b1cce09250287ce52f91afbcfd5edaf9c6fddccfbb9232",
+      "party.cpp": "3207b9c63ac4025b57b2dd2a72cab9cf7be4ca3dbed3bdbc4607922b8d50197e",
+      "combat.cpp": "3dc306b44b9ea0c04a48cb6dcdca63b3982a4ee74484cb6a9da40265ecc7fc49",
+      "game.cpp": "b337fb7d7ce61d9ccde4f315cb696df0add9a0bf933c9b5c634b9ed79d7f01dd",
+      "player_wheel.cpp": "e1eef362cce79252cae9f9d469b57ccb5a1b1658e848ed8c8d1881f5c8650717"
+    },
+    "findings": {
+      "mystic_repulse_ii": {
+        "selected_value": 40,
+        "source": "English TibiaWiki Conviction r1206174",
+        "browser_body_sha256": "92616710a5cfa6e9ea43cef56ee7b2721e8d512b462423895e7b114ab0ad1de4",
+        "observation": "Mystic Repulse\tCooldown reduced by 6 seconds\t+40% Base damage",
+        "state": "ENGLISH_WIKI_SELECTION_CONFIRMED; BR15_AND_PLANNER60_CORROBORATION_ONLY"
+      },
+      "guiding_presence": {
+        "wiki_literal_percent": 33,
+        "wiki_arithmetic": "NOT_SPECIFIED",
+        "canary_full_mantra_share": "party.cpp:308-321 uses full getMantra(), skips holder, adds 100 baseline",
+        "canary_party_bonus": "combat.cpp:824-835 adds6/6/12 and game.cpp:210-223 applies97/100; no GUIDING_PRESENCE conditional at these party-bonus paths",
+        "state": "PARITY_PENDING: PINNED_CANARY_DOES_NOT_IMPLEMENT_OFFICIAL8944_PLUS33_PARTY_BONUS_ARITHMETIC",
+        "runtime_admitted": false
+      }
+    },
+    "scope": "Exact pinned reference files and inspected party-bonus paths; no proof of current Global or native implementation.",
+    "file_urls": {
+      "player.cpp": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/src/creatures/players/player.cpp",
+      "party.cpp": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/src/creatures/players/grouping/party.cpp",
+      "combat.cpp": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/src/creatures/combat/combat.cpp",
+      "game.cpp": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/src/game/game.cpp",
+      "player_wheel.cpp": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/src/creatures/players/components/wheel/player_wheel.cpp"
+    }
   }
 }

@@ -9,7 +9,9 @@ from jsonschema.exceptions import ValidationError
 from wheel_authoring import ROOT, VOCATIONS, build, read, validate, validate_evidence, validate_allocation, validate_gem, effective_gem_grades
 class WheelAuthoringTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls): cls.candidate=read(ROOT/'samples/wheel-candidate.json')
+    def setUpClass(cls):
+        cls.previous_bytes=(ROOT/'samples/wheel-candidate.json').read_bytes()
+        cls.candidate=read(ROOT/'samples/wheel-candidate.json')
     def reject(self, mutate, code=None):
         c=copy.deepcopy(self.candidate);mutate(c)
         if code:
@@ -63,18 +65,18 @@ class WheelAuthoringTests(unittest.TestCase):
         p=[0]*36;p[14]=True
         with self.assertRaisesRegex(ValueError,'INVALID_POINT_VECTOR'):validate_allocation(self.candidate,'knight',p,100)
     def test_value_only_numeric_successor(self):
-        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'value_only','predecessor':self.candidate['revision']});c['vocations']['knight']['slots'][0]['dedication'][0]['value_per_point']=4;validate(c,self.candidate)
+        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'value_only','predecessor':self.candidate['revision'],'predecessor_sha256':hashlib.sha256(self.previous_bytes).hexdigest()});c['vocations']['knight']['slots'][0]['dedication'][0]['value_per_point']=4;validate(c,self.candidate,self.previous_bytes)
     def test_value_only_rejects_structure_change(self):
-        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'value_only','predecessor':self.candidate['revision']});c['vocations']['knight']['slots'][0]['conviction']['key']='other_perk'
-        with self.assertRaisesRegex(ValueError,'VALUE_ONLY_STRUCTURE_CHANGED'):validate(c,self.candidate)
+        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'value_only','predecessor':self.candidate['revision'],'predecessor_sha256':hashlib.sha256(self.previous_bytes).hexdigest()});c['vocations']['knight']['slots'][0]['conviction']['key']='other_perk'
+        with self.assertRaisesRegex(ValueError,'VALUE_ONLY_STRUCTURE_CHANGED'):validate(c,self.candidate,self.previous_bytes)
     def test_value_only_rejects_augment_kind_change(self):
-        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'value_only','predecessor':self.candidate['revision']});c['vocations']['knight']['slots'][5]['conviction']['augment_stages'][0]['numeric_effects'][0]['kind']='critical_extra_damage'
-        with self.assertRaisesRegex(ValueError,'VALUE_ONLY_STRUCTURE_CHANGED'):validate(c,self.candidate)
+        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'value_only','predecessor':self.candidate['revision'],'predecessor_sha256':hashlib.sha256(self.previous_bytes).hexdigest()});c['vocations']['knight']['slots'][5]['conviction']['augment_stages'][0]['numeric_effects'][0]['kind']='critical_extra_damage'
+        with self.assertRaisesRegex(ValueError,'VALUE_ONLY_STRUCTURE_CHANGED'):validate(c,self.candidate,self.previous_bytes)
     def test_successor_requires_matching_previous(self):
-        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'wheel_reset','predecessor':'wrong'})
-        with self.assertRaisesRegex(ValueError,'REVISION_CHAIN'):validate(c,self.candidate)
+        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'wheel_reset','predecessor':'wrong','predecessor_sha256':hashlib.sha256(self.previous_bytes).hexdigest()})
+        with self.assertRaisesRegex(ValueError,'REVISION_CHAIN'):validate(c,self.candidate,self.previous_bytes)
     def test_successor_requires_previous(self):
-        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'value_only','predecessor':self.candidate['revision']})
+        c=copy.deepcopy(self.candidate);c.update(revision='r2',release={'kind':'value_only','predecessor':self.candidate['revision'],'predecessor_sha256':hashlib.sha256(self.previous_bytes).hexdigest()})
         with self.assertRaisesRegex(ValueError,'PREDECESSOR_REQUIRED'):validate(c)
     def test_augment_unit_mismatch_rejected(self):self.reject(lambda c:c['vocations']['knight']['slots'][5]['conviction']['augment_stages'][0]['numeric_effects'][0].update(unit='mana'),'AUGMENT_EFFECT_UNIT')
     def test_dedication_wrong_sprite_rejected(self):self.reject(lambda c:c['vocations']['knight']['slots'][0]['dedication_icon'].update(sprite='basic_mod'),'DEDICATION_ICON_SPRITE')
@@ -203,7 +205,7 @@ class WheelAuthoringTests(unittest.TestCase):
             with self.subTest(threshold=threshold,cap=cap):self.reject(mutate)
     def test_initial_cannot_restart_revision_chain(self):
         c=copy.deepcopy(self.candidate);c['revision']='r2'
-        with self.assertRaisesRegex(ValueError,'INITIAL_WITH_PREDECESSOR'):validate(c,self.candidate)
+        with self.assertRaisesRegex(ValueError,'INITIAL_WITH_PREDECESSOR'):validate(c,self.candidate,self.previous_bytes)
     def test_atelier_contract_invariants(self):
         for field,value in [('revealed_tradeable',True),('reveal_requires_matching_vocation',False),('grade_max',99),('grade_decrease_allowed',True),('vessel_requires_matching_domain',False)]:
             with self.subTest(field=field):self.reject(lambda c:c['gems']['atelier']['operation_policy'].update({field:value}))

@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import tempfile
 import unittest
@@ -10,7 +11,8 @@ import client_icons
 
 class EvidenceCompletionTests(unittest.TestCase):
     def setUp(self):
-        self.candidate = wheel.read(wheel.ROOT / 'samples/wheel-candidate.json')
+        self.previous_bytes = (wheel.ROOT / 'samples/wheel-candidate.json').read_bytes()
+        self.candidate = wheel.decode_json(self.previous_bytes)
 
     def test_failed_replay_and_conflicting_live_claims_are_not_qualified(self):
         evidence = wheel.read(wheel.ROOT / 'samples/verification-evidence.json')
@@ -32,7 +34,8 @@ class EvidenceCompletionTests(unittest.TestCase):
     def test_successor_refuses_invalid_historical_envelopes(self):
         successor = copy.deepcopy(self.candidate)
         successor.update(revision='r2', release={'kind': 'wheel_reset',
-                                               'predecessor': self.candidate['revision']})
+                                               'predecessor': self.candidate['revision'],
+            'predecessor_sha256': hashlib.sha256(self.previous_bytes).hexdigest()})
         for field, value, code in [('schema', 'UNRECOGNIZED', 'PREDECESSOR_ENVELOPE'),
                 ('runtime_admitted', True, 'PREDECESSOR_ENVELOPE'),
                 ('revision', 'r' * 129, 'PREDECESSOR_ENVELOPE'),
@@ -41,7 +44,7 @@ class EvidenceCompletionTests(unittest.TestCase):
             previous = copy.deepcopy(self.candidate)
             previous[field] = value
             with self.subTest(field=field), self.assertRaisesRegex(ValueError, code):
-                wheel.validate(successor, previous)
+                wheel.validate(successor, previous, self.previous_bytes)
 
     def test_historical_perk_enums_are_not_revalidated_against_current_capture(self):
         previous = copy.deepcopy(self.candidate)
@@ -50,10 +53,12 @@ class EvidenceCompletionTests(unittest.TestCase):
             if slot['conviction']['unique_parameters'] and
                 slot['conviction']['unique_parameters']['numeric_effects'])
         effect['kind'] = 'historical_perk_kind'
+        previous_bytes=json.dumps(previous,allow_nan=False).encode()
         successor = copy.deepcopy(self.candidate)
         successor.update(revision='r2', release={'kind': 'wheel_reset',
-                                               'predecessor': previous['revision']})
-        wheel.validate(successor, previous)
+            'predecessor': previous['revision'],
+            'predecessor_sha256': hashlib.sha256(previous_bytes).hexdigest()})
+        wheel.validate(successor, previous, previous_bytes)
 
     def test_manifest_byte_entry_point_refuses_duplicate_fields(self):
         payload=json.dumps(self.candidate).replace('"runtime_admitted": false',

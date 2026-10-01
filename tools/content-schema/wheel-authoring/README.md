@@ -112,7 +112,9 @@ single rune effect, as explicitly stated by Fandom r1206174. Official 8833 binds
 multiplier to 3, Focus Mastery to a 2-second focus-spell group reduction, and
 Guiding Presence to 100% shared mantra. Official 8944 adds the raw 33% party-bonus
 increase. That raw percent has unit `source_percent`: its native arithmetic,
-rounding and self-copy semantics remain the owning Spell Q5 decision. Area references and Divine Dazzle's +4-second duration use the
+rounding and self-copy semantics remain PARITY_PENDING: the wiki gives no arithmetic
+and inspected pinned Canary party-bonus paths do not implement the new +33%.
+This needs no owner value decision; native admission remains separate. Area references and Divine Dazzle's +4-second duration use the
 existing spell evidence. These names are reference bindings, not newly admitted
 Spell or WorldQuery identities. Crystal's declared Shield Slam damage-reduction
 field has an upstream TODO; a declared number does not establish working combat.
@@ -201,7 +203,14 @@ the authoring selection; current live Global parity remains an external claim.
 
 ## Revisions and admission
 
-An initial revision accepts no previous candidate. Successors require the previous candidate;
+An initial revision accepts no previous candidate or bytes. Successors require
+`release.predecessor_sha256` and the exact immutable previous artifact bytes.
+The CLI reads `--previous` once; its decoded content, revision and byte SHA-256
+must match before Wheel/Gem comparison. The Python API takes `previous_bytes`
+as its third argument. Reconstructed, reformatted or modified same-ID artifacts
+are refused. The selected predecessor digest must come from the canonical
+released artifact; a caller-selected digest is not runtime release authority.
+Successors require the previous candidate;
 `value_only` rejects changes to topology, perk identities, effect kinds/units and
 other nonnumeric structure. `wheel_reset` describes the Wheel's revision policy,
 not permission to erase paid gems: any Gem contract change additionally requires `release.gem_revision`, with kind
@@ -210,7 +219,11 @@ not permission to erase paid gems: any Gem contract change additionally requires
 `OTERYN_WHEEL_GEM_REVISION_REFERENCE/v1` record binds both revision IDs and Gem
 contract hashes, the same kind, `runtime_admitted: false`, and
 `runtime_validation: PENDING_GEM_R_ADMISSION`. A compatible declaration must leave
-stored mod/quality/grade interpretation equal. A staged declaration requires a
+stored mod/quality/grade interpretation equal, including resonance activation,
+Grade-IV derived effects and non-current-row policy. All non-economic Gem/Atelier
+fields are compared by default, so a new interpretation field fails closed.
+Only known grade/reveal fees, fragment yields/items, vendor prices and their
+evidence labels are excluded from the compatible row comparison. A staged declaration requires a
 nonempty `native_migration_reference`; this checks authoring provenance only.
 GEM-R must still qualify the actual WHEEL-GEM-0 §5.3 mapping/migration and DUR-02
 execution before admission. A Wheel reset never waives this requirement.
@@ -260,7 +273,12 @@ cooldown selections in original official 8944. It confirms Fandom Conviction
 1206174 selects Mystic Repulse II +40%, while BR 443774 says +15% and the planner
 +60%. Fandom overview 1151969 lists 225 revealed gems and Supreme Grade III
 12,500,000 gold; accepted project values remain 250 and 12,000,000. These conflicts
-are explicit evidence for owners, not silent revisions of accepted decisions.
+remain explicit evidence. Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)
+selects wiki values 225/12,500,000 under FORMULA, while current coordinator
+STATE defers changing this candidate until the WHEEL-GEM-0 amendment.
+The selected +40% Mystic row satisfies that hierarchy. Task Shop +50 and the
+catalogue-derived 69 Grade-IV maximum remain OUT_OF_SCOPE references only;
+neither is a new accepted runtime grant.
 The Fandom Battle Instinct paragraph incorrectly repeats Battle Healing prose;
 it is recorded as a source anomaly rather than selected over native conditions.
 The manual's fixed repository path, actual file digest and reviewed-result status,

@@ -93,14 +93,14 @@
       "stage": 2,
       "planner_value": 60,
       "selected_value": 40,
-      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, Fandom 1206174 now read via Chrome/CDP; Global target-version conflict remains Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
+      "evidence": "FORMULA_SELECTION_CONFIRMED: English TibiaWiki Conviction r1206174 explicitly gives +40% base damage; official > English wiki > Canary per architect ruling #162/5933264015. BR r443774 +15% and planner +60% are retained conflicting corroboration, not selected authority. Runtime and current Global parity remain unadmitted."
     }
   ],
   "classification": {
     "numerical_planner_reference": "CONFIRMED_PINNED_SOURCE",
     "unique_conviction_reference": "OFFICIAL_8833_8944_AND_FANDOM_1206174_RULES_BOUND_TO_BROWSER_AUDIT",
     "official_atelier_behavior": "LIVE_OFFICIAL_MANUAL_CONFIRMED_WITHIN_AUDIT_FACTS",
-    "fees_and_extra_points": "PROJECT_DECISIONS_RETAINED; WIKI_CORROBORATION_AND_CAP_GRADE_PRICE_CONFLICTS_IN_BROWSER_AUDIT",
+    "fees_and_extra_points": "CANDIDATE250_12M_RETAINED_PENDING_WHEEL_GEM0_AMENDMENT; ARCHITECT225_12_5M_REFERENCE_ONLY; TASKSHOP_GRADEIV_MAX_OUT_OF_SCOPE",
     "loot_probabilities": "OTS_HYPOTHESIS_ONLY",
     "revealed_gem_limit": "PARITY_PENDING",
     "live_website_and_wiki": "LIVE_TIBIAPAL_INPUTS_AND_SEVEN_REQUESTED_FANDOM_PAGES_READ",
@@ -108,7 +108,9 @@
     "official_cooldown_corrections": "OFFICIAL_8944_READ_VIA_CHROME_CDP",
     "great_fire_wave_and_mystic_repulse_damage": "PROJECT_SNAPSHOT_2026_09_27_SELECTED; CURRENT_GLOBAL_DAMAGE_PARITY_UNCONFIRMED",
     "special_spell_secondary_cooldown": "OTS_HYPOTHESIS_ONLY_NOT_SELECTED",
-    "flurry_cast_range": "CONFLICT_NOT_SELECTED; AFFECTED_AREA_REFERENCE_SELECTED"
+    "flurry_cast_range": "CONFLICT_NOT_SELECTED; AFFECTED_AREA_REFERENCE_SELECTED",
+    "guiding_presence_arithmetic": "PARITY_PENDING: WIKI_LITERAL_ONLY; PINNED_CANARY_INSPECTED_PATHS_LACK_NEW_PLUS33; NO_OWNER_GATE",
+    "mystic_repulse_selection": "ENGLISH_WIKI_1206174_EXPLICIT40_CONFIRMS_FORMULA_SELECTION; RUNTIME_UNADMITTED"
   },
   "live_verification": {
     "tibiapal": true,
@@ -134,7 +136,7 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "e0ab2dc206021b56e7e0388194113d53b7e4a4da23a7c13c7625666c246cab83",
+  "candidate_sha256": "51da970d2fd39c2094287114b593a491d76f0668a8262d6076047778a8ba3649",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
     "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
@@ -145,14 +147,14 @@
   },
   "client_icon_manifest": {
     "file": "samples/client-icon-manifest.json",
-    "sha256": "c8b411e49b928125dfe4a00fc1feb8d2ad25104637041318fc75f6a4a04e6362"
+    "sha256": "cad3cf9282789a29d4da8598ea4936f24b447801a5e1e46074c7e947f2549b6e"
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "1cfbef85e327f7a99dc2aa0b58e2010011bda2bd5a9119e05c567465b8f67af5"
+    "sha256": "2937f6ae21ac9fe883501de30e6b3aa0728845e1bf1389840e5804ba59c50c30"
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",
-    "sha256": "c2a35edf1ed89c9aac9028acf936ef6ed17ac73f29d8af366e1b355e4e1ad456"
+    "sha256": "60c8a899ca2bd4bb4e33df2884d61f7b8b665175d5b480d6f908bc3268094e97"
   }
 }
