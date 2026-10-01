@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/wheel-successor-proof-20261001
-pr: null
+pr: 1462
 base_sha: 7dd7a00b37313241c50b7aa76c3e0a1c71718bf4
 head_sha: null
 final_head_sha: null
