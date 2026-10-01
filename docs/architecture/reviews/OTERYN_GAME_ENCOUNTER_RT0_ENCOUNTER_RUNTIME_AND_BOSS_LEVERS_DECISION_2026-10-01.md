@@ -30,8 +30,11 @@
 | ENC-PARITY-1 | impl | fixtures against Canary and TibiaWiki: a transform boss (Urmahlullu), a prevent-death boss, a timer boss (King Zelos), a lever room for 5, the Soul War zone rule | every child above |
 
 Tests: one fight replayed from its seed gives the same rule order, draws and outcomes; a trigger
-loop over `ENCRT0-RL-01` faults the instance without an outcome; a crash loses the fight and
-refunds nothing; an encounter-bound creature never exists without its live encounter instance.
+loop over `ENCRT0-RL-01`, or an inline re-entry over `ENCRT0-RL-08`/`-RL-09`, faults the instance
+without an outcome; a stalled host fires every due timer, in order; a crash loses the fight and
+refunds nothing, but a reward-boss death committed before it keeps its rewards; an encounter-bound
+creature never exists without its live encounter instance; retirement after a crash fences the
+departed runtime first.
 
 Later, each with its own decision: scripted movement (D29), state shared by all parties beyond the
 quest domain's `world_state` (D29), the Tibiadrome and World Changes (BOSS-RAID-0), Hazard.
@@ -159,6 +162,16 @@ Two triggers run inline, inside the damage applier, before it continues:
   `damage_modifier` with `this_hit`, `reflect_damage` and `convert_damage_to_heal` act on this hit.
 
 Their other actions run inline too, in order; any occurrence they raise goes to the queue (§4.1).
+
+**Inline re-entry bound.** An inline action that changes health (`heal`, `damage`, `cast`,
+`reflect_damage`, `convert_damage_to_heal`, `shared_life` propagation) enters the damage applier
+again and may fire inline hooks again, as Canary's recursion does. Each **root hit** (the health
+change that entered the first inline hook) carries a depth counter and a work counter: at most
+`ENCRT0-RL-08` nested inline levels and `ENCRT0-RL-09` inline rule steps per root hit. Reaching
+either bound is a content loop with a fixed outcome: the hook that would exceed it does not run,
+the health changes already applied stay, the root hit completes without further encounter effects,
+and the instance faults (§3.3) at the end of that hit. The bound and the outcome are the same on
+every replay.
 Encounter modifiers that last (a `damage_modifier` with a duration, `shared_life`) are held by the
 instance and applied at the same encounter stage.
 
@@ -169,7 +182,12 @@ instance and applied at the same encounter stage.
   dispatcher has the same granularity in practice). Due entries run in due time, then scheduling
   sequence. Values captured at the trigger (`death_position`, `role_position`, the triggering
   actor, the picked player) are stored in the entry.
-- A repeating timer that is late fires once (`SKIP_TO_LATEST`), never a burst.
+- **No firing is ever dropped.** Due times are in owner semantic time, which advances window by
+  window; a host stall delays when windows run, not which entries are due in them. A repeating
+  timer therefore fires once per period, each firing with its own occurrence, in due order. If more
+  than `ENCRT0-RL-10` timer firings of one instance are due in one window, the rest carry forward
+  to the next windows in due order (bounded carry-forward), never coalesced. CREATURE-AI-0's
+  `SKIP_TO_LATEST` stays for creature thinks only.
 - At most `ENCRT0-RL-02` pending entries per instance; an action that would exceed it faults the
   instance.
 
@@ -245,8 +263,13 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
 - Consumers that write character data take that character's own fence by their contract; a
   credited character who is offline or elsewhere is handled by the consumer (BOSS-REWARD-1's
   per-character MINT, the quest domain's own rule), never by the encounter.
-- An outcome that has not committed in its consumer when the owner crashes is lost, as the fight is
-  (BOSS-RAID-0 ruling R3); it is never replayed from memory into a second write.
+- **A reward-boss death** (BOSS-RAID-0 §8.1, ruling R3(b)): its death record, with the credited
+  set, commits **with the death** in the death composition, not after it; its draws, MINTs,
+  Bosstiary kills and the outcome's other bound consumers resume after a restart from that record,
+  idempotent by the death key. A player who spent a cooldown is never left without the reward.
+- **Every other outcome** (quest steps, stage outcomes, deaths of non-reward creatures) is delivered
+  at most once: if its consumer has not committed when the owner crashes, it is lost with the
+  fight, and it is never replayed from memory into a second write.
 
 ### 6.5 `drop_item` (ENC-OUTCOME-1; DUR-03 amendment)
 
@@ -271,9 +294,10 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
   2. The participants are the players standing on the entry positions, one per position (Canary's
      bottom creature; a non-player there is ignored), at most `max_participants`
      (`BOSSRAID0-RL-07`), within the party size limits of the encounter's `entry` (format §3).
-  3. A `channel_shared` boss encounter refuses while its arena anchor holds a player (`BUSY`,
-     Canary's occupied zone). An `instance_per_party` encounter never does: each group gets its own
-     room (D26).
+  3. `BOSS_ENTRY` is admitted only for an `instance_per_party` encounter; content validation
+     rejects it on a `channel_shared` one (a same-channel arena admission would be a later
+     decision). Each group gets its own room (D26), so Canary's occupied-zone refusal never
+     applies.
   4. BOSS-RAID-0 §6.2 admission (one transaction: cooldowns, level, quest predicates, gates; the
      group refused as a whole with its typed reason, Canary's messages as text).
   5. On success the BOSS-ROOM-1 instance is created with its encounter instance (§3.1), the
@@ -296,7 +320,12 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
   (from `ACTIVE`; `RETIRED` only when no live Ground item of the instance remains), and each item's
   step in the shared retirement tables. BOSS-ROOM-1's recovery (at boot and as a periodic World job
   of the HOUSE-OWN-0 §9 kind) finds allocation rows `ACTIVE` whose InstanceRuntime is gone or
-  `RETIRING`, and finishes them. An item already reserved by `CorpseDecay` finishes by that cause;
+  `RETIRING`, and finishes them.
+- **Fence first.** The transition `ACTIVE` to `RETIRING` (by the live runtime at the end, or by
+  recovery after a crash) takes a fresh ownership generation for the instance scope in the same
+  transaction, which invalidates every earlier generation's §32 fence. From then on no Ground write
+  of the departed or ending runtime can commit; only `InstanceRetire` steps under the new
+  generation run, and the scan for live Ground items happens after the fence. An item already reserved by `CorpseDecay` finishes by that cause;
   the shared per-item uniqueness keeps one retirement per item. An instance retires only after its
   last character has left it (BOSS-RAID-0 §6.4). An InstanceId is never reused.
 - This is the instance form of Tibia's rule that what is left on a boss-room floor is gone when the
@@ -310,7 +339,8 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
   only those of their owners: creature deaths (DUR-03 A4), outcomes in their consumers, drops,
   cooldowns (BOSS-RAID-0), and Ground custody (§8).
 - **Channel restart:** each `channel_shared` encounter starts a fresh instance; nothing resumes.
-- **Instance crash:** the instance and its fight are lost; participants go to the exit anchor;
+- **Instance crash:** the instance and its fight are lost (a reward-boss death already committed
+  keeps its rewards, §6.4); participants go to the exit anchor;
   cooldowns stay spent; Ground items retire (§8).
 
 ## 10. Rows (values fixed here, registered by each child)
@@ -324,6 +354,9 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
 | `ENCRT0-RL-05` `drop_item` MINTs per instance per 60 s | 60 | above it, skipped and counted |
 | `ENCRT0-RL-06` live Ground roots per InstanceRuntime | 2,000 | a drop or MINT beyond it is `BLOCKED` |
 | `ENCRT0-RL-07` live encounter instances per channel | 4,096 | content and admission bound |
+| `ENCRT0-RL-08` nested inline levels per root hit | 4 | above it, the fixed outcome of §4.2 |
+| `ENCRT0-RL-09` inline rule steps per root hit | 128 | above it, the fixed outcome of §4.2 |
+| `ENCRT0-RL-10` timer firings per instance per window | 64 | the rest carry forward (§4.3) |
 
 Each with max and max+1 tests. `ENC-PARITY-1` measures a 15-player Ferumbras-sized fight against
 `RL-03`; a measured p99 above it needs a new decision, never a silent raise.
@@ -339,7 +372,8 @@ existing views (VIS-2, CHAT_V1, `WORLD_INTERACTION_V1`, `MAP_STATE_V1`).
 - **Encounter scripts.** Format §2.2: data only.
 - **Running every trigger inline.** Recursion would make order depend on call depth; the FIFO
   keeps Canary's order for one occurrence and bounds loops.
-- **Durable encounter state.** Format §2.4; a crash loses the fight, as in Tibia.
+- **Durable encounter state.** Format §2.4; a crash loses the fight, as in Tibia (a committed
+  reward-boss death keeps its rewards, §6.4).
 - **Keeping instance Ground items after the instance ends.** Nothing could reach them; they would
   be value without an owner.
 
@@ -350,8 +384,11 @@ existing views (VIS-2, CHAT_V1, `WORLD_INTERACTION_V1`, `MAP_STATE_V1`).
   **Ruled a).**
 - **R2. Instance floor.** a) Retire at instance end (recommended); b) move to the exit tile; c) mail
   to the owner. **Ruled a).** b) and c) have no Tibia basis.
-- **R3. Lost outcomes on a crash.** a) Lost (recommended: BOSS-RAID-0 R3, no duplication); b)
-  replayed. **Ruled a).**
+- **R3. Outcomes on a crash.** a) A reward-boss death's outcome is durable with the death and
+  resumes (BOSS-RAID-0 R3(b)); every other outcome is at most once (recommended); b) every outcome
+  durable before the next owner turn. **Ruled a).**
+- **R4. Late timers.** a) Every firing runs, bounded carry-forward (recommended: replay-exact);
+  b) coalesce to one. **Ruled a).**
 
 ## 14. Owner questions
 

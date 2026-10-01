@@ -42,13 +42,14 @@ close-out plan; BOSS-RAID-0 §6.5).
 - **Owner:** one encounter instance per scope owner (one per boss room; one per channel for
   `channel_shared`), runtime-only, activated only with every anchor bound (E3, E4).
 - **Execution:** a FIFO trigger queue drained in the owner turn; `lethal_damage` and the
-  health-change triggers inline in the damage applier (Canary's synchronous points); delayed rules
-  and timers on 50 ms windows; the `ENCOUNTER_DRAW` purpose; loops fault the instance.
+  health-change triggers inline in the damage applier (Canary's synchronous points) with a per-hit
+  re-entry bound; delayed rules and timers on 50 ms windows, no firing dropped; the `ENCOUNTER_DRAW` purpose; loops fault the instance.
 - **Actions:** each through its owner (creatures, GAME-ABILITY-01, overlays, Movement, CHAT-0);
-  outcomes to bound consumers, idempotent by key; `drop_item` as an `EncounterDropCause` MINT.
-- **Boss lever:** the `BOSS_ENTRY` lever child feeding BOSS-RAID-0 §6.2.
-- **Instance floor:** Ground custody in an InstanceRuntime scope, retired by `InstanceRetire`.
-- **Owner questions:** none; R1-R3 are architect rulings.
+  outcomes to bound consumers, idempotent by key (a reward-boss death durable with the death); `drop_item` as an `EncounterDropCause` MINT.
+- **Boss lever:** the `BOSS_ENTRY` lever child feeding BOSS-RAID-0 §6.2, for `instance_per_party` only.
+- **Instance floor:** Ground custody in an InstanceRuntime scope, retired by `InstanceRetire` after a
+  fresh ownership generation fences the departed runtime.
+- **Owner questions:** none; R1-R4 are architect rulings.
 
 No code, migration or content change is made.
 
