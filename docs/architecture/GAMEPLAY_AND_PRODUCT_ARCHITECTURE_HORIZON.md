@@ -158,7 +158,7 @@ Accepted Stage B Reference-sensitive semantic closure adds:
 - Character-owned promotion achievement/build state while current benefit activation may consume Platform-owned entitlement input; unresolved fee/lapse behavior remains parity-gated;
 - profile-scoped death/protection semantics; item/corpse/value conservation remains combat + GAME-ITEM/DUR-03 authority and PvP-specific persistent state remains gated by the owning profile/world policy;
 - Character-owned offline-training activation/counter/pool semantics for the first Reference target: >=10 minutes offline before gain, maximum 12 hours effective continuous training, 1:1 pool drain while training, 1:1 refill online or offline without training, and reactivation after depletion/refill; exact effectiveness remains ruleset/SIM-gated;
-- target-required character-specific progression scope including Weapon Proficiency Progress, charms/charm points/charm expansion, Hunting Task Points, permanent Hunting Task slots, permanent Prey slots, Wheel/Promotion Point state and Animus Mastery within the accepted evidence boundary; character-specific does not mean one giant aggregate/table;
+- target-required character-specific progression scope including Weapon Proficiency Progress, charms/charm points/charm expansion, Hunting Task Points, permanent Hunting Task slots, permanent Prey slots (Account-wide per D251, see the GAME-CHAR-01 Stage B owner baseline amendment), Wheel/Promotion Point state and Animus Mastery within the accepted evidence boundary; character-specific does not mean one giant aggregate/table;
 - stable versioned definition identities and explicit migration for incompatible progression definitions;
 - a binding fail-closed rule for every unresolved target mechanic.
 

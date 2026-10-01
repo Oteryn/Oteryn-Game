@@ -258,7 +258,7 @@ The Character **domain ownership scope** includes target-required character-spec
 - charms, charm points and charm expansion state;
 - Hunting Task Points;
 - permanent Hunting Task slots;
-- permanent Prey slots;
+- permanent Prey slots (Account-wide per the D251 amendment below);
 - Wheel/Promotion Point character-build state;
 - Animus Mastery as character-specific progression within the accepted evidence boundary.
 
@@ -271,6 +271,8 @@ The owner accepts these architecture rules:
 5. Platform owns commercial entitlement source.
 6. Character-specific progress references stable versioned definition identities and requires explicit migration when definitions become incompatible.
 7. A resource being character-bound does not automatically transfer its economy/conservation authority into the core Character aggregate.
+
+**Amendment (D251, 2026-10-01).** Prey Wildcards, the permanent Prey slot and the Weekly Task Expansion are an **Account-wide** balance shared by all the account's characters, not character-specific state. This is a declared difference from Tibia, where they are per-character (owner decision D251, #162, answering Q14 / PREY-0 §15 Y2; `docs/architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md`, PR #1413). Until a Store delivery contract exists they have no production source. Hunting Task Points and permanent Hunting Task slots in the list above remain character-specific. Where this section or the list above reads "permanent Prey slots" as character-specific, this amendment governs.
 
 Physical child-aggregate/table decomposition remains `DUR-02` work.
 
