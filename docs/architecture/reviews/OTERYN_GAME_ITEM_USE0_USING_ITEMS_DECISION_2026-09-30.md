@@ -189,9 +189,9 @@ admitted shapes and by a paragraph at the end of §39.3. Every other §39 obliga
 
 ## 6. Uses
 
-**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §6).** A use of a held item whose definition has a `transform {trigger:
-use}` between a lit and an unlit form (torch, lamp) is one `TRANSFORM` (`PRESERVE_INSTANCE`) under
-`TimedItemCause::Toggle`, carrying its remaining time.
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §3).** A use whose `transform {trigger: use}` would turn an
+item into a `continuous` timed form (lighting a torch or a lamp) is refused `NOT_ADMITTED`, writing
+nothing, until TIMED-ITEM-0B decides continuous duration.
 
 ### 6.1 Food (FOOD-REGEN-1)
 

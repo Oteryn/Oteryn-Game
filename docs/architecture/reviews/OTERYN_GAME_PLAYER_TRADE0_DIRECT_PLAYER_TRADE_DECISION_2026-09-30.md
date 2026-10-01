@@ -108,9 +108,9 @@ How do two players exchange items safely?
   Tibia items are (Canary default); `marketable` is not read as a trade flag. Store-bound items do not
   exist yet; their decision adds the refusal. An offer is a reference, not a move.
   **Amendment (pending on acceptance of TIMED-ITEM-0,
-  `OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §4).** Also refused
-  as `NOT_TRADEABLE`: an item whose timed clock is running (a lit `continuous` item, an equipped
-  active `on_equip` item), and a tree that contains one.
+  `OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §5).** Also refused
+  as `NOT_TRADEABLE`: an equipped item whose timed clock is running, once equipped items can be
+  offered.
 - **Accept.** Allowed only in `READY` (both offers exist). Range and sight line are checked again
   at each accept.
 - **Changes cancel** before `TRANSFERRING`: any committed or issued change to either offered item

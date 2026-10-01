@@ -672,7 +672,9 @@ main backpack, under §32. No new burn sink: dropped items are retired by `World
 
 **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §6).** An equip or unequip of an item whose definition has a
 `transform {trigger: equip | unequip}` transforms it (`PRESERVE_INSTANCE`) in the same move
-transaction and writes its timed row (clock start or stop) there.
+transaction, creating its timed row on a first equip; a live item's value is checkpointed before
+it leaves its slot, so the move writes no timed value. A swap in which both items need such a
+transform is refused `SWAP_TIMED_BOTH`.
 
 ## 34. Multi-transaction typed custody
 
@@ -1396,18 +1398,16 @@ authority, conservation) is unchanged.
   occurrence }`. **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7).** Plus `NpcRepair { npc, offer, occurrence }`
   (owner answer 1a), whose transaction also transforms one item (`PRESERVE_INSTANCE`) and resets
   its timed row; its plan admits at most 19 coin inputs, so inputs, change and the repaired item
-  stay within the fee-shape rows below (22 touched items, 64 work units); transfers that cross between live, deadline and frozen locations write the item's
-  timed row in the same transaction (TIMED-ITEM-0 §4). For a container tree it admits the bounded
-  multi-item shape `TimedTreeMove`: the root's TRANSFER plus at most 32 `STATE_MUTATION` lines of
-  the tree's `continuous` timed descendants under `TimedItemCause::TreeClock`, no other lines, at
-  most 33 touched items and one audit event, superseding the §39.1 one-item limit for this shape
-  only. Its §28 ceilings: 33 touched items, 1 location line, 0 value lines, 0 transform I/O,
-  expansion 8 (`DUR03-RL-05-TREE`), 33 participants / 99 work units, 1 event, `DUR03-RL-08` 3, and
-  descendant lines of at most 64 bytes each (2,048 bytes for 32) within `DUR03-RL-07-PAYLOAD-BYTES`
-  and `DUR03-RL-07-ENVELOPE-BYTES`, registered and measured by TIMED-1. The TIMED-1 backfill uses
-  only one-item transactions (TIMED-ITEM-0 §3); every new timed row starts in its location's clock
-  class in its creating transaction; every MINT of a timed definition creates the
-  row and every retirement deletes it, in the same transaction (TIMED-ITEM-0 §3).
+  stay within the fee-shape rows below (22 touched items, 64 work units). TIMED-ITEM-0 (§10) also
+  admits these one-item shapes under the closed `TimedItemCause`, with the default one-item rows:
+  a row `STATE_MUTATION` (`Checkpoint`, `ChargeSpent`, `BackfillRow`); an expiry `TRANSFORM`
+  (`PRESERVE_INSTANCE`) to the decay target; an expiry **BURN** to `RETIRED` (one location line, the
+  row deleted, one audit event with the before and after values) when there is no decay target;
+  and, inside an equip move or swap, one `EquipForm` transform and row line on an already-touched
+  item (a swap needing two is refused). For these shapes only they supersede the §39.1 exclusions of
+  burn and transform. No timed value is written by a move: the runtime checkpoints a live item before
+  it leaves its slot. Every MINT of an admitted timed definition creates the row and every
+  retirement deletes it, in the same transaction (TIMED-ITEM-0 §4).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
 - **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends

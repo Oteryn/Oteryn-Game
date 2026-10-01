@@ -41,17 +41,23 @@ external_repositories: []
 TIMED-ITEM-0 decides items that run on charges or time, and the soft boots repair (owner answer 1a,
 #162 5932648083).
 
-- **State:** `game_item_timed_states` (charges, active-time budget, ground deadline), keyed by
-  ItemInstanceId, written only by one-item DUR-03 transactions under the closed `TimedItemCause`.
-- **Clocks:** time runs only in the game world (held by an in-world character, or on Ground); held
-  items commit at A13 checkpoints; ground items expire at a durable deadline (D3 pattern).
-- **Charges:** one per hit an active item's protection reduces; at 0 the item expires.
-- **Forms:** equip/unequip and use toggles transform with `PRESERVE_INSTANCE`, keeping the time.
+- **Scope (narrowed at round 7):** charges, `on_equip` duration, equip forms, expiry and the repair;
+  `continuous` duration (lit torches, Ground and house deadlines, tree clocks) is `NOT_ADMITTED`
+  until TIMED-ITEM-0B.
+- **State:** `game_item_timed_states` (charges, active-time budget), keyed by ItemInstanceId,
+  written only by one-item DUR-03 shapes under the closed `TimedItemCause`; backfill by one-item
+  rows before the guard is enabled.
+- **Clocks:** time runs only while equipped in the game world; the runtime commits at A13
+  checkpoints and checkpoints a live item before it leaves its slot, so moves carry no timed value.
+- **Charges:** one per hit an active item's protection reduces; at 0 the item expires (transform, or
+  a one-item BURN aggregate when there is no decay target).
+- **Forms:** equip/unequip transform with `PRESERVE_INSTANCE`, keeping the time; a ring-for-ring
+  swap is refused `SWAP_TIMED_BOTH`.
 - **Repair:** `FeeBurnCause::NpcRepair`; worn soft boots to soft boots for 10,000 gold.
 - **Active rule:** EQUIP-0 grants a timed item's abilities while it has charges and time;
   `REGENERATION` and `MANA_SHIELD` added.
 - **Wire:** `TIMED_ITEMS_V1` adds charges and remaining time to item presentations and Look.
-- **Rulings:** R1-R4 (exercise weapons move to EXERCISE-0); no open owner question.
+- **Rulings:** R1-R5 (exercise weapons to EXERCISE-0; continuous duration to TIMED-ITEM-0B); no open owner question.
 
 No code, migration or content change is made.
 

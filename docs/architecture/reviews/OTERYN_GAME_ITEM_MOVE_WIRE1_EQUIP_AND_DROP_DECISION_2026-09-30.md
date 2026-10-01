@@ -179,8 +179,11 @@ exactly the change, under the tile and counter row lock.
 ## 6. Persistence and DUR-03
 
 **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §6).** An equip or unequip of an item with an equip or unequip
-transform performs the `PRESERVE_INSTANCE` transform and the clock start or stop in the same move
-transaction (DUR-03 §33 as amended).
+transform performs the `PRESERVE_INSTANCE` transform in the same move transaction (DUR-03 §33 as
+amended), on the item the move already touches; the runtime checkpoints a live item's value before
+it leaves its slot. A swap in which both items need such a transform (a ring for a ring) is refused
+`SWAP_TIMED_BOTH`, writing nothing; the client unequips first. A swap needing one keeps the swap's 2
+touched items and adds that transform and row line.
 
 ### 6.1 Supersessions (as B3 §4.6)
 
