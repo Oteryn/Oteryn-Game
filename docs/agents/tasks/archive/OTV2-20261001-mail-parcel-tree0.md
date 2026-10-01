@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-mail-parcel-tree-0
-pr: "named in the #162 FREEZE_SHA entry"
+pr: "1427"
 base_sha: "origin/main at branch creation (after #1404)"
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -41,6 +41,8 @@ MAIL-0 (PR #1404) and BAGS-0 have both merged.
 - Posting is BAGS-0 §4.3's tree move plus the stamp transform. Taking a child out is the one-item
   TRANSFER, or the tree move for a child with contents. A parcel goes into a depot box only under
   BAGS-DEPOT-1.
+- MAIL-PARCEL-1 depends on BAGS-1 and BAGS-DEPOT-1 (Inbox trees). The MAIL-0 implementation-brief
+  paragraph on BAGS-0 now gives its current state (candidate merged in #1416, awaiting acceptance).
 - MAIL-0 §11 rows: `MAIL0-RL-03`, parcel posting (at most 499 items and 502 work units, under
   `DUR03-RL-05-TREE` and `BAGS0-RL-06`), parcel child out.
 - MAIL-0 §13 and §15: nested bags moved from declared differences to parity kept.
@@ -75,7 +77,7 @@ review on the frozen head.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1427. Merge commit/result: its squash merge.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

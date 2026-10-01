@@ -24,9 +24,10 @@
   CHAT-0 §5 (the mail notice); the composition decision (before its §7).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
-- Amendment (2026-10-01, after BAGS-0 PR #1416 merged): `MAIL0-RL-03` is raised from 10 children
-  without contents to a parcel tree within BAGS-0 §3 (§7, §11, §13), as BAGS-0 §9 names. Pending on
-  acceptance of BAGS-0, like MAIL-PARCEL-1's other BAGS-0 dependencies.
+- Amendment (2026-10-01, after the BAGS-0 candidate decision merged in PR #1416): `MAIL0-RL-03` is
+  raised from 10 children without contents to a parcel tree within BAGS-0 §3 (§7, §11, §13), as
+  BAGS-0 §9 names. Pending on acceptance of BAGS-0; MAIL-PARCEL-1 builds on its BAGS-1 and
+  BAGS-DEPOT-1 children.
 
 ## Implementation brief
 
@@ -36,14 +37,15 @@
 | MAIL-TEXT-1 | hard, security and privacy review | the item text store and the text write transaction (§4) | ITEM-MOVE-1; MAIL-CONTENT-1 |
 | MAIL-1 | hard, persistence review | mail operations, letter posting, the stamp transform, the mail event, the Inbox mail ceiling and the posting rate (§5, §6, §8) | INBOX-1; ITEM-MOVE-2a; MAIL-TEXT-1; MAIL-CONTENT-1 |
 | MAIL-WIRE-1 | impl, protocol review | capability `MAIL_V1`, the `MAILBOX` destination, the text view and write command, the mail notice (§9) | ITEM-VIEW-1; MAP-WIRE-2; MAIL-1 |
-| MAIL-PARCEL-1 | hard, persistence review | parcel posting as a container tree, parcel trees in the Inbox, the parcel-child out-shape, the junior parcel refusal (§7) | MAIL-1; the bags child of BAGS-0 |
+| MAIL-PARCEL-1 | hard, persistence review | parcel posting as a container tree, parcel trees in the Inbox, the parcel-child out-shape, the junior parcel refusal (§7) | MAIL-1; BAGS-1; BAGS-DEPOT-1 (Inbox trees) |
 | MAIL-SYSTEM-1 | hard, persistence review | system letters minted into the Inbox, first the rent warning (§10) | MAIL-1; HOUSE-1 |
 
-BAGS-0 (containers with contents in the main backpack, B3 RL-05 above 0) is not written yet. A
-parcel cannot be filled without it, so it is the next decision parcels need. Later, each with its
-own decision: house mailboxes (Store upgrades, with the house interior runtime), posting from the
-ground, Store-bound items. Nested bags inside parcels are admitted by the `MAIL0-RL-03` amendment
-(§7) once BAGS-0 is accepted.
+BAGS-0 (containers with contents, B3 RL-05 above 0) is written: its candidate decision merged in
+PR #1416 and awaits acceptance. A parcel cannot be filled without it, so MAIL-PARCEL-1 waits for
+that acceptance and for its BAGS-1 (trees and the tree move) and BAGS-DEPOT-1 (trees in the Inbox)
+children. Nested bags inside parcels are admitted by the `MAIL0-RL-03` amendment (§7). Later, each
+with its own decision: house mailboxes (Store upgrades, with the house interior runtime), posting
+from the ground, Store-bound items.
 
 ## 1. Question
 
@@ -250,7 +252,9 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   `Container {parent}` location (DUR-03 §10); they are locked and checked but not moved. The operation records the tree: its item count and a
   SHA-256 over the sorted ItemInstanceIds (the HOUSE-OWN-0 §7 idiom), and the commit checks both.
 - **Inbox tree** (MARKET-0 §5 amendment). An Inbox entry may be a stamped parcel with its tree.
-  The counter counts every item of the tree, as the depot counts contents (BAGS-0 §9).
+  The counter counts every item of the tree, as the depot counts contents (BAGS-0 §9). Trees in
+  the Inbox, their per-item count, their view and their whole-tree removal belong to BAGS-DEPOT-1
+  (BAGS-0 §9); MAIL-PARCEL-1 posts, shows and takes out parcel trees only on top of it.
 - **Out.** A direct child of an Inbox parcel moves to a new main backpack entry with the depot view
   open: a child without contents by the one-item TRANSFER, a child with contents by BAGS-0 §4.3's
   tree move, with its depth and size checks against the backpack tree. An empty stamped parcel
