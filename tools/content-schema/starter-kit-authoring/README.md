@@ -33,14 +33,15 @@ closed on an unknown label.
 - **Append-only across revisions.** Within one head, editing a record together with its seal
   passes. `content --check --seal-base <rev>` therefore also compares the ledger with the ledger
   at a base revision (default: the merge base with `origin/main`): a seal there must be kept
-  unchanged. An explicit base that does not resolve fails; with no base and no `origin/main`
-  (a shallow CI checkout) the history check is reported as skipped.
+  unchanged. When no base resolves (an explicit one, or `origin/main` in a shallow checkout) the
+  check fails. The Content Tree Migration workflow checks out full history and passes the PR's
+  base SHA (D250).
 
 ```sh
 cd tools/content-schema/starter-kit-authoring
 python starter_kit_authoring.py content          # rebuild after templates.json or content/items changes
-python starter_kit_authoring.py content --check  # CI
-python starter_kit_authoring.py content --check --seal-base origin/main  # with history
+python starter_kit_authoring.py content --check  # base: merge base with origin/main
+python starter_kit_authoring.py content --check --seal-base "$BASE_SHA"  # CI
 python starter_kit_authoring.py seal --label oteryn:starter-template.<name>
 python test_starter_kit_authoring.py
 ```

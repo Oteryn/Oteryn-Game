@@ -173,12 +173,22 @@ def test_labels_are_immutable() -> None:
 
 def test_committed_family() -> None:
     assert ska.committed_errors() == [], ska.committed_errors()
-    assert ska.content_command(check=True) == 0
+    # Smoke check of the committed content; the history check itself is covered above and
+    # runs in CI with --seal-base (D250).
+    assert ska.content_command(check=True, require_history=False) == 0
     # The committed ledger keeps every seal of the base revision when history is available.
     base = ska.resolve_base(None)
     if base is not None:
         assert ska.base_seal_errors(ska.load_seals(), ska.load_base_seals(base)) == []
     assert ska.history_errors("no-such-revision") is not None
+    # Without a resolvable base (a shallow checkout) the default fails closed (D250).
+    resolve = ska.resolve_base
+    ska.resolve_base = lambda base: None
+    try:
+        assert ska.content_command(check=True) == 1
+        assert ska.content_command(check=True, require_history=False) == 0
+    finally:
+        ska.resolve_base = resolve
     print("ok test_committed_family")
 
 

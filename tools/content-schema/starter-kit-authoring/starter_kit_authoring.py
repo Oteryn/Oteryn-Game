@@ -382,7 +382,11 @@ def history_errors(seal_base: str | None) -> list[str] | None:
     return base_seal_errors(load_seals(), load_base_seals(revision))
 
 
-def content_command(check: bool, seal_base: str | None = None) -> int:
+def content_command(
+    check: bool, seal_base: str | None = None, require_history: bool = True
+) -> int:
+    """Write or check the family. Without a resolvable seal base this fails (§4.2, D250);
+    `require_history=False` is only for the unit test's committed-content smoke check."""
     try:
         outputs = generate()
         errors = history_errors(seal_base)
@@ -390,7 +394,13 @@ def content_command(check: bool, seal_base: str | None = None) -> int:
         print(error, file=sys.stderr)
         return 1
     if errors is None:
-        print("starter kit seal history: no base revision (pass --seal-base), skipped")
+        if require_history:
+            print(
+                "starter kit seal history: no base revision resolves; pass --seal-base",
+                file=sys.stderr,
+            )
+            return 1
+        print("starter kit seal history: no base revision, skipped (smoke check)")
     elif errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
