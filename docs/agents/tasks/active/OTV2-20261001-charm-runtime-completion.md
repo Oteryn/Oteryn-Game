@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/charm-cleanse-owner-store-20261001
-pr: null
+pr: 1479
 issue: 162
 base_sha: 326742be1566e596dfd3cca9d8caf631f1aff4a0
 head_sha: null
@@ -93,7 +93,7 @@ preventing a stale retained plan from aliasing a later instance after sequence w
 last_progress: authored retained Cleanse state transitions and eight boundary tests
 status: implementing
 branch: codex/charm-cleanse-owner-store-20261001
-pr: null
+pr: 1479
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
