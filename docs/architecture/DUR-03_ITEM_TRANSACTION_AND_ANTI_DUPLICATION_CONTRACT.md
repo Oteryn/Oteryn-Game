@@ -309,6 +309,17 @@ GAME-ITEM-01 owns containment legality. DUR-03 requires:
 - destroy/replace of a container with live descendants is invalid unless the same bounded transaction explicitly gives every affected descendant a legal disposition;
 - no committed orphan/cycle.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §3, §4).**
+Containers with contents are admitted. Every entry is `Container {parent ItemInstanceId, ordinal}`
+and stores no owner; the owner is the root's location. A tree has depth at most 8 and at most 500
+items. Moving a container is one TRANSFER of the root; the descendants are locked `FOR SHARE` and
+checked, never moved, and the receipt binds their count and a hash. For these shapes only, it
+supersedes the §39.1 exclusion of nested containers and sets container expansion to 8 levels
+(`DUR03-RL-05-TREE`). §39.3 step 3 keeps its one-item `DECAY_RETIRE` shape for a Ground tree:
+one transaction per item, in post-order (every descendant before its parent, the root last), which
+extends the D3 order to depth 8. Every other obligation is unchanged.
+
 ## 11. Item lifecycle and identity transitions
 
 ### 11.1 Same concrete lifecycle preserves identity
