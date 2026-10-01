@@ -78,7 +78,7 @@ class Qualification(unittest.TestCase):
             + "\n"
         ).encode()
         self.assertEqual(data, lower.OUTPUT.read_bytes())
-        self.assertEqual(packet["counts"], {"promotions": 18, "holds": 34})
+        self.assertEqual(packet["counts"], {"promotions": 18, "holds": 33})
 
 
 if __name__ == "__main__":

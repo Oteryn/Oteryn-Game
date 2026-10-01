@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "bf2741ae1cf2a543ae7a4dd6b57d8cb016e7da5a28e320ce704bfe90d079d7d6",
+        "37514e501678535b65c58dec3d1784caf965062cb606eb49c08c391d03994c67",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        23_809_808,
-        "008e5b6c3f8e180af43ef381a0f5ba40c47c4b1591dbd023b106af72ab06c605",
+        23_810_407,
+        "5eddd6d6aae79d8122ca6fee2f4119bca396a20d29d2ad6b2a2f7733a412d476",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "3d2821c63645e5fb968e443c6180d2dd5c1e7dc966a59b9c84d6f0d0008f4f14",
+        "c3b99ac957c07a7a3b4b69d6dd7e61ae8545f56ecc3045593c6c8675afddf9cd",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "d4490e18f59865bfa3a62a0030137b4a9f76cee6be6f1257a8caf0cedcdf6699",
+        "999c3469337c1a4be47d7a9b501c4df336590c91cd5def79257d6f146c6f4b4c",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "70cc381e08c71f081237ae1c1fa62006cd4dc8e807e78b2d4ee72f73be4b6a12";
+const TREE_SHA256: &str = "daf78688ec7f4995a347c066d395f85658da20785869f6f7416f873658820a17";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -996,8 +996,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // on these paths, so only 1,788 additional Items enter this atom census.
     // Physical fact initialization exposes one additional explicit wiki negative (i20129).
     // Documented-default No adds 1,487 leaves; 500 overlap this older atom census.
-    assert_eq!(wave1_items, 164 + 995 + 27 + 1_788 + 1 + 11 + 987);
-    assert_eq!(wave1_fields, 290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487);
+    // Seven genuine historical defaults add seven leaves; three overlap this census.
+    assert_eq!(wave1_items, 164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4);
+    assert_eq!(
+        wave1_fields,
+        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7
+    );
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
         .definitions
@@ -1068,6 +1072,18 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 }
             );
         }
+        if definition.definition.key().as_str() == "oteryn:item.tibia.i5801" {
+            let ReferenceItemField::Known(physical) = &item.semantics.physical else {
+                panic!("5801 physical facts must be known");
+            };
+            let ReferenceItemField::Known(container) = &item.semantics.container else {
+                panic!("5801 container facts must remain known");
+            };
+            assert_eq!(physical.weight, ReferenceItemField::Known(1700));
+            assert_eq!(container.capacity, ReferenceItemField::Known(22));
+            assert!(!item.materializable);
+            assert!(item.legal_destinations.is_empty());
+        }
         if definition.definition.key().as_str() == "oteryn:item.tibia.i50275" {
             assert!(matches!(
                 &item.semantics.protection,
@@ -1111,7 +1127,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     }
     assert_eq!(
         (pickup_fields, positive_stacks, weight_fields),
-        (6756, 39, 6513 + 3)
+        (6756, 39, 6513 + 4)
     );
     assert_eq!((modifier_vectors, modifier_atoms), (419, 619));
     assert_eq!(resistance_vectors, 391);

@@ -20,10 +20,13 @@ on:
       - tools/content-census/item_wiki_family_capture.py
       - tools/content-census/item_wiki_stats_capture.py
       - tools/content-census/item_wiki_stats_capture_self_test.py
+      - docs/agents/evidence/OTV2-20261001-item5801-temporal-source-qualification-v1.json
       - docs/agents/evidence/OTV2-20261001-item-modifier-source-hold-v1.json
       - docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-stack-default-source-qualification-v1.json
       - docs/agents/evidence/OTV2-20261001-item-stack-default-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-stack-historical-source-frame-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-source-qualification-v1.json
@@ -96,6 +99,7 @@ jobs:
         run: |
           python test_lower_wiki_stats_packet.py
           python -m unittest test_wiki_modifiers_packet.py
+          python -m unittest test_key_ring5801_source_selection.py
 
       - name: Bounded physical source facts and magic rune limit
         run: |
@@ -113,6 +117,12 @@ jobs:
           set -euo pipefail
           python test_lower_wiki_stack_default_packet.py
           python lower_wiki_stack_default_packet.py --check
+
+      - name: Closed historical source frames for seven stack defaults
+        working-directory: tools/content-schema/item-authoring
+        run: |
+          python test_lower_wiki_stack_historical_packet.py
+          python lower_wiki_stack_historical_packet.py --check
 
       - name: Weapon proficiency tests and artifact drift
         run: |

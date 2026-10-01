@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 from engine_items import load_appearance_objects
+from key_ring5801_source_selection import load_context, select
 
 ROOT = Path(__file__).resolve().parents[3]
 COMPILER = "tools/content-schema/item-authoring/lower_wiki_capacity_packet.py"
@@ -40,14 +41,18 @@ def known_capacity(definition):
     )
 
 
-def qualify(snapshot, definitions, bound, routed, appearances):
+def qualify(snapshot, definitions, bound, routed, appearances, temporal_context=None):
     promotions, holds = [], []
     for record in sorted(snapshot["records"].values(), key=lambda r: r["item_id"]):
         iid = record["item_id"]
         key = f"oteryn:item.tibia.i{iid}"
         if key not in definitions or "semantics" not in definitions[key]:
             continue
-        observations = [o for o in record["observations"] if "volume" in o["fields"]]
+        observations = [
+            o
+            for o in select(record, "container.capacity", temporal_context)
+            if "volume" in o["fields"]
+        ]
         if not observations:
             continue
         raw = [o["fields"]["volume"] for o in observations]
@@ -150,8 +155,10 @@ def build(root=ROOT):
         for row in json.loads((root / shard).read_text())["records"]:
             definition = row["definition"]
             definitions[definition["identity"]["key"]] = definition
+    appearances = load_appearance_objects(data)
+    temporal_context = load_context(root, snapshot, definitions, routed, appearances)
     promotions, holds = qualify(
-        snapshot, definitions, bound, routed, load_appearance_objects(data)
+        snapshot, definitions, bound, routed, appearances, temporal_context
     )
     return {
         "schema": "OTERYN_ITEM_CAPACITY_PROMOTION/v1",
@@ -165,6 +172,7 @@ def build(root=ROOT):
             ).hexdigest(),
         },
         "source": {
+            "temporal_qualification": temporal_context["qualification"],
             "path": SNAPSHOT,
             "snapshot_sha256": digest,
             "client_path": CLIENT,
@@ -175,7 +183,7 @@ def build(root=ROOT):
                 (root / bindings).read_bytes()
             ).hexdigest(),
         },
-        "policy": "BOUNDED_UNKNOWN_REPAIR_ALL_PRESENT_WIKI_PAGES_AGREE_CLIENT_CORROBORATED_NO_MAP_OWNER",
+        "policy": "BOUNDED_UNKNOWN_REPAIR_ALL_PRESENT_WIKI_PAGES_AGREE_CLIENT_CORROBORATED_NO_MAP_OWNER_EXCEPT_EXACT_ITEM5801_CURRENT_SOURCE",
         "correction_evidence": {
             "oteryn:item.tibia.i53074": {
                 "url": "https://www.tibiawiki.com.br/wiki/Adventurer_Backpack",

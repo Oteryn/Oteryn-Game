@@ -33,6 +33,8 @@ from collections import Counter, defaultdict
 from fractions import Fraction
 from pathlib import Path
 
+from key_ring5801_source_selection import load_context, select
+
 ROOT = Path(__file__).resolve().parents[3]
 SNAPSHOT = ROOT / "imports" / "tibiawiki" / "facts" / "items-stats.json"
 ITEM_INDEX = ROOT / "content" / "items" / "index.json"
@@ -507,7 +509,7 @@ def source_hold(path=None, digest=None):
     return json.loads(data)
 
 
-def build(snapshot, item_ids, definitions=None, routed_keys=()):
+def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context=None):
     source_holds = (
         source_hold(),
         source_hold(MODIFIER_SOURCE_HOLD, MODIFIER_SOURCE_HOLD_SHA256),
@@ -556,10 +558,11 @@ def build(snapshot, item_ids, definitions=None, routed_keys=()):
             # STARTER-BACKPACK-0 supplies a separately qualified complete pattern.
             if field_path == "equipment.patterns" and record["item_id"] == 2854:
                 continue
-            results = [lower(row["fields"]) for row in observations]
+            field_observations = select(record, field_path, temporal_context)
+            results = [lower(row["fields"]) for row in field_observations]
             present = [
                 (obs, res)
-                for obs, res in zip(observations, results)
+                for obs, res in zip(field_observations, results)
                 if res[0] is not None
             ]
             if not present:
@@ -708,6 +711,11 @@ def build(snapshot, item_ids, definitions=None, routed_keys=()):
                                 if name in obs
                             }
                             if field_path in QUALIFIED_PHYSICAL_FIELDS
+                            or (
+                                record["item_id"] == 5801
+                                and field_path == "physical.weight"
+                                and temporal_context
+                            )
                             else {}
                         )
                         for obs, res in present
@@ -733,7 +741,11 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
     ).hexdigest()
     if records_digest != snapshot["snapshot_sha256"]:
         raise ValueError("wiki snapshot digest mismatch")
-    rows, report, counts = build(snapshot, item_ids, *physical_field_inputs())
+    definitions, routed_keys = physical_field_inputs()
+    temporal_context = load_context(ROOT, snapshot, definitions, routed_keys)
+    rows, report, counts = build(
+        snapshot, item_ids, definitions, routed_keys, temporal_context
+    )
     packet = {
         "compiler": {"path": COMPILER_PATH, "sha256": compiler_sha256},
         "counts": {
@@ -743,7 +755,7 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
         },
         "policy": {
             "precedence": "TIBIAWIKI_REPLACES_EARLIER_PROMOTION",
-            "agreement": "ALL_PAGES_AGREE_ELSE_REPORT",
+            "agreement": "ALL_PAGES_AGREE_ELSE_REPORT_EXCEPT_EXACT_ITEM5801_WEIGHT_CAPACITY_QUALIFIER",
             "weight_unit": "HUNDREDTHS_OF_OUNCE",
         },
         "promotions": rows,
@@ -764,6 +776,7 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
                 "path": str(MODIFIER_SOURCE_HOLD.relative_to(ROOT)),
                 "sha256": MODIFIER_SOURCE_HOLD_SHA256,
             },
+            "temporal_qualification": temporal_context["qualification"],
             "external_qualification": {
                 "path": str(SOURCE_HOLD.relative_to(ROOT)),
                 "sha256": SOURCE_HOLD_SHA256,
