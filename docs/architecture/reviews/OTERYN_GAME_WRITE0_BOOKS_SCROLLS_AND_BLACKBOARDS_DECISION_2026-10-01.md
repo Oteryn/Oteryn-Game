@@ -167,8 +167,16 @@ DUR-03 §39.3.
   item or map object, revision, text, writer CharacterId and time) lives in a restricted moderation
   store, readable only by the moderation role, kept for `WRITE0-RL-03`, never logged, and later
   rewrites do not change it.
+- **Target key.** An item's target is its ItemInstanceId. A map object's target is
+  (WorldId, ChannelId, scope ownership generation, map object key), where the map object key is its
+  stable LocalObject identity from the map bundle; its volatile revision restarts with each
+  generation, so the generation is part of the key and of the snapshot.
+- **Report states.** A report is `OPEN`, then exactly once `CLOSED` (by a moderator) or `EXPIRED`
+  (at `WRITE0-RL-03`); every transition is a conditional update from `OPEN` and acts only if it
+  changed a row.
 - **Report bounds** (fixed here; results returned by the GM tools command, each storing nothing):
-  - deduplication by (reporter CharacterId, target, revision): a repeat returns the first result;
+  - deduplication by (reporter CharacterId, target key, revision): a repeat returns the first
+    result;
   - at most `WRITE0-RL-04` reports per reporting character per hour (`REPORT_RATE_LIMITED`) and
     `WRITE0-RL-05` open reports per reporting account (`REPORT_QUOTA`);
   - at most `WRITE0-RL-06` open snapshots in the World; a report beyond it is refused
@@ -180,7 +188,7 @@ DUR-03 §39.3.
        (CharacterId, hour), the reporting account's open-report row (AccountId), the World's
        open-snapshot row. Each is first created by `INSERT … ON CONFLICT DO NOTHING` at zero, then
        read `FOR UPDATE`, so a missing row can never be raced past.
-    3. **Dedup:** an existing snapshot with the unique key (reporter, target, revision) returns that
+    3. **Dedup:** an existing snapshot with the unique key (reporter, target key, revision) returns that
        report's first result; the unique index backs it, and a uniqueness conflict on insert maps to
        the same result, never to a raw error.
     4. **Limits:** `WRITE0-RL-04`, `-RL-05`, `-RL-06` against the locked counters.
@@ -189,13 +197,18 @@ DUR-03 §39.3.
     7. **Increment** the three counters.
     8. **Commit**; any failure in 1-7 rolls everything back and returns its result, storing nothing.
   - **Close or expiry** of a report is one transaction with the same order: the moderation actor's
-    authority (GM tools decision) in place of step 1, then the account and World counter rows
-    upserted and locked as in step 2, the snapshot deleted or marked closed, the two counters
-    decremented, commit. Hourly rows are never decremented and are deleted after their hour.
+    authority (GM tools decision) or the expiry job in place of step 1; the account and World
+    counter rows upserted and locked as in step 2; then the report row locked and
+    `UPDATE … SET state = CLOSED|EXPIRED WHERE state = OPEN`; the two counters are decremented
+    **only if that update changed a row**; commit. A retried close, or a close racing the expiry,
+    therefore decrements once; the loser returns the report's current state. The snapshot text is
+    deleted when the report leaves `OPEN` past its retention (the expiry), never by a close alone.
+    Hourly rows are never decremented and are deleted after their hour.
     Reports from many channels therefore never overshoot a limit.
-- **Removal.** A moderation **clear** deletes the text row if its `text_revision` still equals the
-  reported one, under the item row lock of §5.2, else refuses with `STALE` (the moderator sees the
-  newer text through a new report). For a map object the snapshot also records the channel scope
+- **Removal.** A moderation **clear** is keyed by its moderation action id: a retry returns the
+  first result. It deletes the text row if its `text_revision` still equals the reported one,
+  under the item row lock of §5.2, and advances the revision (§5.2), so it acts at most once;
+  otherwise it refuses with `STALE` (the moderator sees the newer text through a new report). For a map object the snapshot also records the channel scope
   ownership generation; the clear applies only while that generation and the volatile
   `text_revision` both still match, else `STALE` (after a restart the text is already gone). The
   result set beyond `OK` and `STALE` belongs to the GM tools decision. It is an audited
