@@ -550,7 +550,7 @@ quest doors, quest format §3.1) stays sealed.
   the existing `EXHAUSTED`, `STALE`, `BLOCKED` and `NOTHING_TO_USE` are reused.
   **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §6).** Plus `OFFLINE_TRAINING`: a training statue accepted the
   activation and a graceful logout follows; a non-Premium user gets `SEALED` with the Premium
-  message id.
+  message id; a logout-blocked or PZ-locked user gets `PZ_BLOCKED`.
 - **Without the capability** a USE on a map item keeps its MAP-WIRE-2 meaning with new outcomes
   reported as `REJECTED`; the field 4 map arm, the new command 9 sources and `PUSH_INTENT` are
   refused.

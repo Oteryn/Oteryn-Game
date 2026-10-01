@@ -135,7 +135,8 @@ The owner confirmed these directly in this session on 2026-09-29.
   2,520), `offline_pool_s` (0..43,200, absent 43,200) and `offline_skill` (`none` or a trainable
   family, absent `none`). No timestamp columns: offline time is read from marker receipts'
   `committed_at`. The admission settlement is a build receipt committed after admission, not part
-  of it.
+  of it; it is the one admitted revision-advancing write per login (against "Why not an initializer
+  receipt" above), and every chain writer of the lease takes its fence from its committed revision.
 
 ### 4.2 Receipt chain
 
@@ -262,6 +263,8 @@ The owner confirmed these directly in this session on 2026-09-29.
 ### 4.5 Magic-level training (D151)
 
 - **Accumulation.** `mana_spent` accumulates in the live session with each cast's mana cost.
+- **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §3).** Each session adds two marker receipts (settlement and
+  logout) to the build chain's growth.
 - **Commits.** It is committed as a build receipt:
   - on every magic-level advance, which is always durable. The live magic level changes only after
     that receipt commits;

@@ -56,8 +56,8 @@ statue?
   offline, 1 minute per 3 offline up to 39 hours, 1 per 6 from 39 to 42.
 - A13 §4.1-§4.2 and SKILLS-0 §3: build state is one row per Character in
   `game_character_build_state`; every change is one CharacterRevision with one build receipt whose
-  cause has a CHECK on its direction; commits happen at every advance, before a death, at logout and
-  at a checkpoint of at most 60 s; a crash loses at most one checkpoint, never a level.
+  cause has a CHECK on its direction. A13 §4.5: commits happen at every advance, before a death, at
+  logout and at a checkpoint of at most 60 s; a crash loses at most one checkpoint, never a level.
 - PREY-0 §6.3: the hunting clock ticks once per 60 s of the session in which the character dealt
   damage to, or took damage from, a creature (not a player); "it is the stamina signal of the XP lane
   (D118)".
@@ -93,13 +93,15 @@ statue?
 | `offline_pool_s` | 0..43,200 | 43,200 |
 | `offline_skill` | `none` or one of fist, club, sword, axe, distance, magic level | `none` |
 
-- **No timestamp columns.** Every time this decision needs is a build receipt's `committed_at`
-  (the database clock, D3), which the `0009` guard already binds: the latest `logout` receipt gives
-  the logout time, the latest `offline_settlement` receipt the session start. Nothing a row-only
-  write could fake.
+- **No timestamp columns.** The times this decision needs are the marker receipts' `committed_at`
+  and the lease's acquisition time. OFFLINE-1 stamps a marker's `committed_at` from
+  `clock_timestamp()` in a database trigger (D3's deferred-trigger pattern), stores the marker's
+  `as_of`, and the guard checks `as_of = committed_at`; a runtime-supplied value is overwritten, so
+  neither a row-only write nor a forged receipt can fake offline time.
 - **Receipts** carry the before and after values of the three columns. A13's row guard and chain
   rule (before equals the previous after) cover them; death receipts carry them equal before and
-  after (A13 §4.6, DEATH-0 §3.1), and the death flush commits pending stamina with pending tries.
+  after and join A13's all-NULL-or-all-non-NULL build-field group (A13 §4.6, DEATH-0 §3.1); the death
+  flush commits pending stamina with pending tries.
 - **Causes** (A13 §4.2's CHECK, extended; vocation equal in all three):
   - `training` (existing): skills and magic level equal or higher, stamina equal or lower, pool and
     `offline_skill` equal; at least one of the eight families or stamina changes (the strict-OR and
@@ -110,11 +112,16 @@ statue?
   - `offline_settlement`: a **marker**, committed once per lease at admission even when nothing else
     changes: stamina equal or higher; pool any value in range; `offline_skill` to `none`; every skill
     family equal except the trained family and shielding, which may rise.
-- **Keys.** Both markers carry the lease generation; `UNIQUE (character_id, lease_generation)` per
-  marker cause. A same-key retry returns the first receipt.
-- **Time binding.** A marker reads the database time once under the `character_root` lock, binds it
-  as an `as_of` input of the binding, and its after values are a pure function of `as_of` and the
-  stored row; the receipt's `committed_at` is that same transaction's time.
+- **Keys and replay.** Both markers carry the lease generation; `UNIQUE (character_id,
+  lease_generation)` per marker cause. A marker replays by (character, lease generation, cause)
+  before the binding check; a same-key retry returns the first receipt, never a conflict.
+- **Time binding.** A marker reads the database time once under the `character_root` lock as
+  `as_of`; its after values are a pure function of `as_of` and the stored row. `as_of` is not part of
+  the binding computed before the transaction; the receipt stores it.
+- **Fence order.** The settlement is the revision-advancing write at admission that A13 §4.1's
+  "Why not an initializer receipt" rejected for every login; it is admitted here because offline time
+  needs it, and every chain writer of the lease (XP, build, stance, death) takes its fence from the
+  revision the settlement committed. Amended: A13 §4.1.
 - Amended: A13 §4.1, §4.2 and §4.6; SKILLS-0 §3.2 (this PR). OFFLINE-1 extends
   `verify_character_integrity` and bumps the build binding version, in the shared guard-rewrite order.
 
@@ -122,13 +129,15 @@ statue?
 
 ### 4.1 Logout
 
-- The `logout` marker is the last queued build commit of the session, committed in its own
-  transaction before the terminal release (the H-1 actor-end pattern), not inside it. Amended:
-  CHAR-POSITION-0 §3.2 (this PR).
+- The `logout` marker commits after the actor has left the world (no checkpoint can follow it), in
+  its own transaction before the terminal release (the H-1 actor-end pattern), not inside it.
+  Amended: CHAR-POSITION-0 §3.2 (this PR).
 - It carries the final tries and stamina flush, the statue activation if one is pending (§6), and
-  the online pool restore: `pool + (as_of − session start)` seconds, capped at 43,200, where the
-  session start is this lease's `offline_settlement` `committed_at`. Checkpoints never restore the
-  pool.
+  the online pool restore: `pool + floor((as_of − lease acquisition time) / 1 s)`, capped at
+  43,200, only when this lease committed its settlement. Checkpoints never restore the pool. Online
+  time of a lease that ends without a logout marker (a crash, a recovery into a new GameSession under
+  FND-04B §21, a later channel transfer that changes the lease) restores nothing (`PARITY_PENDING`,
+  in the player's disfavour, bounded by one session).
 - It is skipped (no marker, no activation) when a respawn is pending, when the character has no
   progression row yet, or outside a Channel scope (the build writer serves Channel scopes only); the
   next admission then settles as after a crash (§5).
@@ -151,22 +160,26 @@ statue?
 
 - After admission commits and before the actor becomes playable, the build writer commits the
   `offline_settlement` marker for the new lease, on a Channel scope (on another scope it waits until
-  the character is on one). A same-GameSession reconnect keeps its lease and settles nothing.
-- **Offline time.** If the latest `logout` marker is newer than the latest `offline_settlement`,
-  `d = max(0, as_of − logout committed_at)`, capped at 21 days. Otherwise the last session ended
-  without a logout marker (a crash, or a skipped marker): `d = 0`, so nothing regenerates and no
-  training happens (R2). With no earlier marker at all (a first login), `d = 0`.
-- **Stamina:** with `o = d − 600 s`, nothing below 180 s; else `floor(o / 180)` minutes up to 2,340,
-  then `floor(rest / 360)` up to 2,520 (D118, Canary).
+  the character is on one), after any pending respawn resolves. When the character has no progression
+  row yet (D88 creates it at the first XP award), the settlement first runs D88's initializer in the
+  same transaction. A same-GameSession reconnect keeps its lease and settles nothing.
+- **Offline time.** `d > 0` only when the latest build-carrying receipt is a `logout` marker of the
+  lease immediately before this one; then `d = max(0, lease acquisition time − logout committed_at)`,
+  capped at 21 days. Otherwise (a crash, a skipped or older marker, a first login) `d = 0`: nothing
+  regenerates and no training happens (R2), and a still-set `offline_skill` is cleared.
+- **Stamina** (Canary): with `o = d − 600 s`, nothing below 180 s; else with stamina `s` and
+  `n = 2,340 − min(2,340, s)`: if `floor(o / 180) ≤ n`, `s + floor(o / 180)`; else
+  `min(2,520, max(2,340, s) + floor((o − 180 n) / 360))` (D118).
 - **Offline training**, when `offline_skill` is set (it was set by a logout marker):
   - `d < 600 s`: nothing trains and the pool is unchanged (Canary); the skill is cleared.
   - else `t = min(d, offline_pool_s, 43,200)`; the pool becomes `offline_pool_s − t + (d − t)`, capped
     at 43,200; if `t < 60` no tries are granted (Canary); else, in integers:
-    - melee and fist: `floor(t × 1,000 / (base attack speed ms × 2))` tries; distance `× 4` in the
-      divisor;
-    - magic level: `floor(t × mana gain amount × 1,000 / max(gain ticks ms, 1,000))` as mana spent,
-      with the current vocation's gain amount and the top vocation's ticks (Canary);
-    - shielding `floor(t / 4)` tries, only if the trained family's (level, tries) rose;
+    - melee and fist: `floor(t × 1,000 / (top vocation's base attack speed ms × 2))` tries; distance
+      `× 4` in the divisor;
+    - magic level: `floor(t × mana gain amount × 1,000 / ticks ms)` as mana spent, with the current
+      vocation's gain amount and the top vocation's gain ticks, 1,000 ms when they are 0 (Canary);
+    - shielding `floor(t / 4)` tries, only if the trained skill's level or percent changed (Canary);
+    - Canary's `RATE_OFFLINE_TRAINING_SPEED` is 1 (no rate in the Reference ruleset);
     - applied through SKILLS-0 §3's arithmetic, advances included.
   - The skill is cleared.
 - Without a skill: the pool becomes `offline_pool_s + d`, capped at 43,200.
@@ -179,7 +192,7 @@ statue?
   evidence, fail closed; refused until PREM-3 delivers Premium) that is neither logout-blocked nor
   PZ-locked marks the pending activation and starts a graceful logout; the client gets the
   disposition `OFFLINE_TRAINING` under `WORLD_INTERACTION_V1`. A blocked character gets
-  `PZ_BLOCKED`; a non-Premium one `SEALED` with the Premium message id. Amended: WORLD-INTERACTION-0
+  `PZ_BLOCKED` (reused for a logout block); a non-Premium one `SEALED` with the Premium message id. Amended: WORLD-INTERACTION-0
   §10.1 (this PR).
 - The activation commits only with the `logout` marker; a session that ends without one trains
   nothing.
@@ -225,14 +238,15 @@ None. Owner answer 2a and decision 8 fix the scope and the model; D118 fixes the
 
 ## 11. Before-freeze checklist
 
-1. **Contract amendments:** A13 §4.1, §4.2, §4.6 (columns, causes, death); SKILLS-0 §3.2 (no-op and
+1. **Contract amendments:** A13 §4.1, §4.2, §4.5, §4.6 (columns, fence order, causes, growth,
+   death); SKILLS-0 §3.2 (no-op and
    strict-OR rules); CHAR-POSITION-0 §3.2 (the logout marker before the release); PREY-0 §6.3 (clock
    ownership); WORLD-INTERACTION-0 §10.1 (disposition). Applied in this PR.
 2. **Serialization:** every write is a build receipt on A13's ordered build writer with its expected
    revision and the `character_root` lock; markers are keyed per lease with a UNIQUE constraint and
    replay.
-3. **Restart:** all state is durable; a crash loses at most one checkpoint of stamina and tries, and
-   the next login regenerates nothing and trains nothing (R2).
+3. **Restart:** all state is durable; a crash returns at most one checkpoint of stamina and loses at
+   most one of tries, and the next login regenerates nothing and trains nothing (R2).
 4. **Typed references:** marker keys are (CharacterId, lease generation); times are receipt
    `committed_at` values from the database clock.
 5. **Wire:** one new disposition under `WORLD_INTERACTION_V1`; no new command.
