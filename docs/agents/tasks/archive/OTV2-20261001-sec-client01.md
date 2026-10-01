@@ -24,8 +24,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md
 public_contracts:
   - docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md
-depends_on:
-  - "PR #1440 ADMIT-0 (the mandatory capability floor; accept ADMIT-0 first)"
+depends_on: []
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -42,7 +41,8 @@ layered version (#162 5929226991).
   more; no opt-out, disclosed in the privacy policy.
 - **Layer 3:** outcomes and telemetry are ANL-01 security events; ANL-03 hypothesis signals; GM
   review and ban waves through OPS-GM-01 before open beta; nothing automatic.
-- **Admission:** native transport profile 1 requires both capabilities through ADMIT-0's floor.
+- **Admission:** native transport profile 1 requires both capabilities through a transport profile
+  set added to ADMIT-0's predicate.
 - **Attestation:** `ClientBootstrap` field 8 set aside.
 - **Owner questions:** none; R1-R2 are architect rulings.
 

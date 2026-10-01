@@ -81,6 +81,11 @@ hurt or block its character, without making those capabilities core protocol for
   empty or incomplete set. A build that offers none of the three has an empty floor and behaves as
   today; a development scope that must run without them uses a build with their offer gates
   closed.
+  **Amendment (pending on acceptance of SEC-CLIENT-01; `reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md` §4.1).** The
+  set the predicate checks for a session is the channel's effective set **plus a transport profile
+  set**: for profile 1 (native) `CLIENT_INTEGRITY_V1` and `INPUT_TELEMETRY_V1`, each once the build
+  offers it; for a future browser profile `INPUT_TELEMETRY_V1`. The same points, order and codes
+  apply; the profile set is not part of the channel's boot validation.
 
 ### 3.2 Closure and boot validation
 

@@ -12,8 +12,8 @@
   only; telemetry carries statistical summaries, never typed text or anything outside the game
   window; the protocol reserves a place for client attestation now.
 - Builds on: FND-02 §9, §11, §20 (capabilities, `ClientBootstrap`, privacy); FND-04 and FND-04A-C
-  ("no kernel driver, invasive anti-cheat or mandatory device fingerprint"); ADMIT-0 (PR #1440, the
-  mandatory capability floor and `ADMISSION_CAPABILITY_REQUIRED`); ANL-01 and ANL-03 (read-only
+  ("no kernel driver, invasive anti-cheat or mandatory device fingerprint"); ADMIT-0 (the capability
+  predicate and `ADMISSION_CAPABILITY_REQUIRED`); ANL-01 and ANL-03 (read-only
   detectors, hypothesis signals, human review, privacy classes, optional diagnostics are
   non-adverse); `CLIENT_CRASH_DIAGNOSTICS_PRIVACY_OWNER_BASELINE.md`; ADR-0006; ADR-0018 (browser,
   proposed); MOVE-RL-11 (server-side visibility); the horizon gates `PROD-COMPAT-01`,
@@ -90,11 +90,12 @@ automatically?
 - Capability **`CLIENT_INTEGRITY_V1`** (number reserved on #162 at allocation): one server message
   `IntegrityChallenge {challenge_id, nonce, region_selector}` and one client message
   `IntegrityResponse {challenge_id, digest}`, where `digest = SHA-256(nonce || region bytes)`.
-- **Mandatory per transport profile.** For transport profile 1 (native), `CLIENT_INTEGRITY_V1` and
-  `INPUT_TELEMETRY_V1` join ADMIT-0's mandatory floor: a native bootstrap that does not declare
-  them is refused `ADMISSION_CAPABILITY_REQUIRED` (a protocol requirement, the same refusal an
-  outdated client gets, not a sanction). A future browser profile (ADR-0018) requires
-  `INPUT_TELEMETRY_V1` only. The check is ADMIT-0's predicate at its points, unchanged: fresh
+- **Mandatory per transport profile.** ADMIT-0's predicate checks, for each session, the channel's
+  effective set plus a transport profile set: for transport profile 1 (native)
+  `CLIENT_INTEGRITY_V1` and `INPUT_TELEMETRY_V1`, each once the build offers it. A native bootstrap
+  that does not declare them is refused `ADMISSION_CAPABILITY_REQUIRED` (a protocol requirement,
+  the same refusal an outdated client gets, not a sanction). A future browser profile (ADR-0018)
+  requires `INPUT_TELEMETRY_V1` only. The check is ADMIT-0's predicate at its points, unchanged: fresh
   admission after authentication, ownership and world eligibility (FND-04A step 14, and the final
   revalidation), same-session reconnect and recovery, with ADMIT-0's three codes
   (`ADMISSION_`, `RECONNECT_`, `RECOVERY_CAPABILITY_REQUIRED`). No new FND-04 step or code is
@@ -224,9 +225,8 @@ None. Owner answer 5b set the layers, the timing and the privacy limits.
 
 ## 13. Before-freeze checklist
 
-1. **Contract amendments:** FND-02 §11 (field 8 set aside); ADMIT-0 §3.1 (floor per transport
-   profile), applied once #1440 is on main (this branch merges main before its freeze). Registry,
-   proto and event registrations are the children's (§4.1).
+1. **Contract amendments:** FND-02 §11 (field 8 set aside); ADMIT-0 §3.1 (a transport profile
+   set). Applied in this PR. Registry, proto and event registrations are the children's (§4.1).
 2. **Serialization:** challenges and summaries are session messages; outcomes are events, never
    state changes.
 3. **Restart:** nothing durable but ANL events; a challenge in flight at a restart is `MISSING`
