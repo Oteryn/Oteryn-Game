@@ -64,7 +64,7 @@ fn current(semantics: &ReferenceItemSemantics) -> Result<Option<bool>, String> {
     }
 }
 
-fn apply_rows<'a>(
+pub(super) fn apply_rows<'a>(
     items: impl Iterator<Item = (&'a str, ItemStackDocument, &'a mut ReferenceItemSemantics)>,
     bytes: &[u8],
     expected: usize,

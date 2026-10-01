@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "ad4ee7cdd798d0af7314bc03cf0af7d517fe63ce6def2a0bcea435124313c42f",
+        "bf2741ae1cf2a543ae7a4dd6b57d8cb016e7da5a28e320ce704bfe90d079d7d6",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        23_684_900,
-        "79cb032492dcc54df99f4a8ddfa2df5f9a165c5e878c0c425449909af7041150",
+        23_809_808,
+        "008e5b6c3f8e180af43ef381a0f5ba40c47c4b1591dbd023b106af72ab06c605",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "b6a5d6c9e07b45df1fa20e7f4a184b0aaa8db766991d36a1d71da21800efe416",
+        "3d2821c63645e5fb968e443c6180d2dd5c1e7dc966a59b9c84d6f0d0008f4f14",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "b0f28915624304243319e5656b8437607558a41cc11a39d124d9cbef450dd9a2",
+        "d4490e18f59865bfa3a62a0030137b4a9f76cee6be6f1257a8caf0cedcdf6699",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a689b933735677d3f2746eda8f64281f75c2def8f9f0b9f7d66c53e9e4ed1285";
+const TREE_SHA256: &str = "70cc381e08c71f081237ae1c1fa62006cd4dc8e807e78b2d4ee72f73be4b6a12";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -995,8 +995,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // Explicit wiki non-stackability adds 2,345 atoms; 557 Items already had an atom
     // on these paths, so only 1,788 additional Items enter this atom census.
     // Physical fact initialization exposes one additional explicit wiki negative (i20129).
-    assert_eq!(wave1_items, 164 + 995 + 27 + 1_788 + 1 + 11);
-    assert_eq!(wave1_fields, 290 + 1_269 + 49 + 1 + 2_345 + 1 + 11);
+    // Documented-default No adds 1,487 leaves; 500 overlap this older atom census.
+    assert_eq!(wave1_items, 164 + 995 + 27 + 1_788 + 1 + 11 + 987);
+    assert_eq!(wave1_fields, 290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487);
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
         .definitions
