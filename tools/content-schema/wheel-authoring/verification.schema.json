@@ -537,6 +537,26 @@
         "file",
         "sha256"
       ]
+    },
+    "browser_source_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "file",
+        "sha256"
+      ]
     }
   },
   "required": [
@@ -554,7 +574,8 @@
     "live_source_audit",
     "item_asset_reference",
     "client_icon_manifest",
-    "reference_selection"
+    "reference_selection",
+    "browser_source_audit"
   ],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Wheel reference verification evidence"

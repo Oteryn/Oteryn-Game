@@ -42,6 +42,31 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 20000
+            },
+            "gem_revision": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "declared_compatible",
+                    "staged_migration"
+                  ]
+                },
+                "reference": {
+                  "type": "string",
+                  "pattern": "^samples/gem-revisions/[a-z0-9][a-z0-9_-]*\\.json$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "reference",
+                "sha256"
+              ]
             }
           },
           "required": [
@@ -238,7 +263,7 @@
           "const": true
         },
         "wiki_verified": {
-          "const": false
+          "const": true
         },
         "blockers": {
           "type": "array",
@@ -1166,7 +1191,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -1187,7 +1213,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -1208,7 +1235,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -1333,7 +1361,7 @@
               "const": "additional_targets"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1376,7 +1404,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -1396,7 +1425,7 @@
               "const": "reference_spell_mana_cost"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1438,7 +1467,7 @@
               "const": "reference_cast_range"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1459,7 +1488,7 @@
               "const": "reference_chain_jump_range"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1481,7 +1510,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -1502,7 +1532,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -1607,7 +1638,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -1628,7 +1660,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -1711,7 +1744,7 @@
               "const": "reference_explosion_radius"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1753,7 +1786,7 @@
               "const": "field_side_length"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1816,7 +1849,7 @@
               "const": "central_target_cap"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1879,7 +1912,7 @@
               "const": "active_energy_beam_length"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1900,7 +1933,7 @@
               "const": "active_great_energy_beam_length"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -1943,7 +1976,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -2006,7 +2040,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -2090,7 +2125,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -2199,7 +2235,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -2388,7 +2425,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -2414,7 +2452,7 @@
               "const": "revelation_mastery_points"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -2828,7 +2866,7 @@
               "const": "adjacent_creature_threshold"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -2849,7 +2887,7 @@
               "const": "adjacent_creature_cap"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -2954,7 +2992,7 @@
               "const": "monster_proximity_radius"
             },
             "value": {
-              "type": "number",
+              "type": "integer",
               "minimum": 0
             },
             "unit": {
@@ -3060,7 +3098,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -3081,7 +3120,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -3102,7 +3142,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 100
             },
             "unit": {
               "const": "percent_points"
@@ -3203,7 +3244,7 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
-              "const": "next_damage_spell_primary_cooldown_reduction"
+              "const": "focus_spell_group_cooldown_reduction"
             },
             "value": {
               "type": "number",
@@ -3232,6 +3273,49 @@
             },
             "unit": {
               "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "shared_mantra_percent"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "party_bonus_increase_source_percent"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "source_percent"
             }
           },
           "required": [
@@ -3327,10 +3411,13 @@
               "count_threshold_creature_then_each_additional_up_to_cap",
               "crossbow_bonus_applies_to_attacks",
               "heal_self_when_healing_someone_else",
+              "magic_level_bonus_uses_base_magic_level",
               "no_nearby_monster_grants_distance_otherwise_holy_and_healing_magic",
+              "party_bonus_increase_interpretation_requires_runtime_owner",
+              "reduce_focus_spell_group_cooldown",
               "rune_bonus_uses_vocation_can_create_rule",
               "share_mantra_with_group_members",
-              "shield_doubles_bonus"
+              "shield_triples_bonus"
             ]
           },
           "minItems": 1,
@@ -3460,6 +3547,40 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 20000
+        },
+        "additional_unadmitted_reference_sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "maximum_points": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "runtime_admitted": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "key",
+              "maximum_points",
+              "source",
+              "runtime_admitted"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1
         }
       },
       "required": [
@@ -3478,7 +3599,8 @@
         "extra_point_sources",
         "extra_points_evidence",
         "game_premium_activation",
-        "game_extra_points_activation"
+        "game_extra_points_activation",
+        "additional_unadmitted_reference_sources"
       ]
     },
     "operation_policy": {
@@ -3519,7 +3641,8 @@
             "locked",
             "in_vessel",
             "last_gem_of_domain",
-            "non_current_ruleset"
+            "non_current_ruleset",
+            "no_room"
           ]
         },
         "switch_domain_refusals": {
@@ -3621,6 +3744,81 @@
             "regular",
             "greater"
           ]
+        },
+        "atelier_actions_require_wheel_eligibility": {
+          "const": true
+        },
+        "atelier_commands_require_initial_gem_grant": {
+          "const": true
+        },
+        "rejected_operations_write_nothing": {
+          "const": true
+        },
+        "replay_policy": {
+          "const": "receipt_first_match_request_binding_no_new_ruleset_validation_or_random_draw"
+        },
+        "reveal_refusals": {
+          "const": [
+            "not_eligible",
+            "no_gem",
+            "atelier_full",
+            "not_enough_gold",
+            "stale_revision"
+          ]
+        },
+        "grade_up_refusals": {
+          "const": [
+            "max_grade",
+            "stale_grade",
+            "not_enough_fragments",
+            "not_enough_gold",
+            "non_current_ruleset"
+          ]
+        },
+        "vessel_requires_character_owned_gem": {
+          "const": true
+        },
+        "non_current_gem_and_grade_effects_zero": {
+          "const": true
+        },
+        "non_current_grade_rows_effective_grade": {
+          "const": 0
+        },
+        "non_current_vessel_gems_remain_placed": {
+          "const": true
+        },
+        "crush_gem_units_per_use": {
+          "const": 1
+        },
+        "crush_charges_per_use": {
+          "const": 1
+        },
+        "crush_transaction_scope": {
+          "const": "item_only_no_character_revision"
+        },
+        "vessel_changes_require_temple": {
+          "const": false
+        },
+        "vessel_requires_current_gem_ruleset": {
+          "const": true
+        },
+        "grade_up_catalogue_scope": {
+          "const": "vocation_mod_catalogue"
+        },
+        "initial_gem_grant_trigger": {
+          "const": "first_eligible_admission_or_before_first_atelier_use"
+        },
+        "initial_gem_domains_are_fixed": {
+          "const": true
+        },
+        "reveal_input_scope": {
+          "const": "main_backpack_direct_entries_in_b3_order"
+        },
+        "reveal_input_scope_evidence": {
+          "const": "PARITY_PENDING: WHEEL-GEM-0 section 6; Global inventory search scope not established"
+        },
+        "replay_requires_matching_request_binding": {
+          "const": true
         }
       },
       "required": [
@@ -3650,7 +3848,28 @@
         "vendor_reference_prices",
         "vendor_price_evidence",
         "state_operation_evidence",
-        "vendor_buy_unrevealed_gem_prices"
+        "vendor_buy_unrevealed_gem_prices",
+        "atelier_actions_require_wheel_eligibility",
+        "atelier_commands_require_initial_gem_grant",
+        "rejected_operations_write_nothing",
+        "replay_policy",
+        "reveal_refusals",
+        "grade_up_refusals",
+        "vessel_requires_character_owned_gem",
+        "non_current_gem_and_grade_effects_zero",
+        "non_current_grade_rows_effective_grade",
+        "non_current_vessel_gems_remain_placed",
+        "crush_gem_units_per_use",
+        "crush_charges_per_use",
+        "crush_transaction_scope",
+        "vessel_changes_require_temple",
+        "vessel_requires_current_gem_ruleset",
+        "grade_up_catalogue_scope",
+        "initial_gem_grant_trigger",
+        "initial_gem_domains_are_fixed",
+        "reveal_input_scope",
+        "reveal_input_scope_evidence",
+        "replay_requires_matching_request_binding"
       ]
     },
     "icon_evidence": {
@@ -3903,6 +4122,65 @@
         "kind",
         "value",
         "unit"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "unit": {
+                "enum": [
+                  "targets",
+                  "tiles",
+                  "creatures",
+                  "points",
+                  "mana"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "critical_hit_chance",
+                  "momentum_chance",
+                  "rune_trigger_chance",
+                  "next_attack_damage_reduction",
+                  "damage_reduction",
+                  "bow_physical_pierce",
+                  "bow_holy_pierce",
+                  "restored_max_health",
+                  "restored_max_mana",
+                  "exclusive_overkill_limit",
+                  "exclusive_low_target_health_limit",
+                  "exclusive_minimum_target_health",
+                  "mastery_thunder_critical_chance",
+                  "shared_mantra_percent",
+                  "dodge",
+                  "exclusive_target_health_limit",
+                  "missing_health_step",
+                  "damage_reduction_per_step"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "maximum": 100
+              }
+            }
+          }
+        }
       ]
     },
     "augment_stage": {

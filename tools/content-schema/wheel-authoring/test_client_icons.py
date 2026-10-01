@@ -1,4 +1,6 @@
 import copy
+import hashlib
+import json
 import unittest
 from unittest.mock import patch
 import client_icons
@@ -67,3 +69,35 @@ class ClientIconTests(unittest.TestCase):
         self.candidate['icon_evidence']['reference_sheet_sha256'] = '0' * 64
         with self.assertRaisesRegex(ValueError, 'ICON_SOURCE_DIGEST'):
             client_icons.build_manifest(self.candidate)
+
+    def test_only_equal_original_cells_allow_reference_fallback(self):
+        blocked = {key for key, entry in self.manifest['icons'].items()
+                   if not entry['reference_fallback_verified']}
+        self.assertEqual(blocked, {f'conviction:{i}' for i in (14,19,22,26,29,33,36,44,45)} |
+                         {'revelation:8'} | {f'supreme_mod:{i}' for i in (36,37,77,88,89,90)})
+
+    def test_custom_candidate_and_serialized_bytes_are_bound(self):
+        self.candidate['revision'] = 'another-candidate'
+        serialized = json.dumps(self.candidate).encode()
+        manifest = client_icons.build_manifest(self.candidate, serialized)
+        self.assertEqual(manifest['candidate_sha256'], hashlib.sha256(serialized).hexdigest())
+        with self.assertRaisesRegex(ValueError, 'ICON_MANIFEST_DRIFT'):
+            client_icons.validate_manifest(self.manifest, self.candidate, serialized)
+        with self.assertRaisesRegex(ValueError, 'ICON_CANDIDATE_CONTENT'):
+            client_icons.build_manifest(self.candidate, b'{}')
+
+    def test_original_sheet_bounds_and_complete_comparison_required(self):
+        original_read = client_icons.read
+        for mutation, code in [('width', 'ICON_ORIGINAL_CROP'), ('coverage', 'ICON_COMPARISON_COVERAGE')]:
+            def broken(path):
+                source = original_read(path)
+                if path.name == 'source-icon-reference.json':
+                    original = source['sheets'][0]['original_cdn']
+                    if mutation == 'width':
+                        original.update(width=16, equal_reference_cells=[0])
+                    else:
+                        original['equal_reference_cells'].pop()
+                return source
+            with self.subTest(mutation=mutation), patch.object(client_icons, 'read', side_effect=broken):
+                with self.assertRaisesRegex(ValueError, code):
+                    client_icons.build_manifest(self.candidate)

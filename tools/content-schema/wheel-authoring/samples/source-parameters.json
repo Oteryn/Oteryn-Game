@@ -1121,7 +1121,7 @@
       "stage": 1,
       "planner_value": 6,
       "selected_value": 4,
-      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 fetch still failed."
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 now read via Chrome/CDP."
     },
     {
       "key": "augmented_thousand_fist_blows",
@@ -1130,7 +1130,7 @@
       "stage": 2,
       "planner_value": 6,
       "selected_value": 4,
-      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 fetch still failed."
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 now read via Chrome/CDP."
     },
     {
       "key": "augmented_mystic_repulse",
@@ -1139,7 +1139,7 @@
       "stage": 2,
       "planner_value": 60,
       "selected_value": 40,
-      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
+      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, Fandom 1206174 now read via Chrome/CDP; Global target-version conflict remains Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
     }
   ],
   "augment_parameters": {
@@ -1275,7 +1275,8 @@
         "locked",
         "in_vessel",
         "last_gem_of_domain",
-        "non_current_ruleset"
+        "non_current_ruleset",
+        "no_room"
       ],
       "switch_domain_refusals": [
         "locked",
@@ -1308,7 +1309,40 @@
         "lesser": 2500,
         "regular": 5000,
         "greater": 10000
-      }
+      },
+      "atelier_actions_require_wheel_eligibility": true,
+      "atelier_commands_require_initial_gem_grant": true,
+      "rejected_operations_write_nothing": true,
+      "replay_policy": "receipt_first_match_request_binding_no_new_ruleset_validation_or_random_draw",
+      "reveal_refusals": [
+        "not_eligible",
+        "no_gem",
+        "atelier_full",
+        "not_enough_gold",
+        "stale_revision"
+      ],
+      "grade_up_refusals": [
+        "max_grade",
+        "stale_grade",
+        "not_enough_fragments",
+        "not_enough_gold",
+        "non_current_ruleset"
+      ],
+      "vessel_requires_character_owned_gem": true,
+      "non_current_gem_and_grade_effects_zero": true,
+      "non_current_grade_rows_effective_grade": 0,
+      "non_current_vessel_gems_remain_placed": true,
+      "crush_gem_units_per_use": 1,
+      "crush_charges_per_use": 1,
+      "crush_transaction_scope": "item_only_no_character_revision",
+      "vessel_changes_require_temple": false,
+      "vessel_requires_current_gem_ruleset": true,
+      "grade_up_catalogue_scope": "vocation_mod_catalogue",
+      "initial_gem_grant_trigger": "first_eligible_admission_or_before_first_atelier_use",
+      "initial_gem_domains_are_fixed": true,
+      "reveal_input_scope": "main_backpack_direct_entries_in_b3_order",
+      "reveal_input_scope_evidence": "PARITY_PENDING: WHEEL-GEM-0 section 6; Global inventory search scope not established",
+      "replay_requires_matching_request_binding": true
     },
     "loot_reference": {
       "evidence": "OTS_HYPOTHESIS_ONLY: Crystal summer-update data/libs/functions/gematelier.lua; fiendish integration is outside admitted GEM-R",
@@ -1435,12 +1469,12 @@
         },
         {
           "kind": "shield_healing_multiplier",
-          "value": 2,
+          "value": 3,
           "unit": "multiplier"
         }
       ],
       "behaviors": [
-        "shield_doubles_bonus"
+        "shield_triples_bonus"
       ],
       "targets": [
         "healing_spells"
@@ -1517,7 +1551,8 @@
         }
       ],
       "behaviors": [
-        "rune_bonus_uses_vocation_can_create_rule"
+        "rune_bonus_uses_vocation_can_create_rule",
+        "magic_level_bonus_uses_base_magic_level"
       ],
       "targets": []
     },
@@ -1534,19 +1569,18 @@
           "unit": "seconds"
         },
         {
-          "kind": "next_damage_spell_primary_cooldown_reduction",
+          "kind": "focus_spell_group_cooldown_reduction",
           "value": 2,
           "unit": "seconds"
         }
       ],
       "behaviors": [
-        "consume_bonus_on_next_damage_spell_after_focus"
+        "consume_bonus_on_next_damage_spell_after_focus",
+        "reduce_focus_spell_group_cooldown"
       ],
       "targets": [
-        "Eternal Winter",
         "Hell's Core",
-        "Rage of the Skies",
-        "Wrath of Nature"
+        "Rage of the Skies"
       ]
     },
     "healing_link": {
@@ -1566,11 +1600,26 @@
       ]
     },
     "guiding_presence": {
-      "numeric_effects": [],
-      "behaviors": [
-        "share_mantra_with_group_members"
+      "numeric_effects": [
+        {
+          "kind": "shared_mantra_percent",
+          "value": 100,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "party_bonus_increase_source_percent",
+          "value": 33,
+          "unit": "source_percent"
+        }
       ],
-      "targets": []
+      "behaviors": [
+        "share_mantra_with_group_members",
+        "party_bonus_increase_interpretation_requires_runtime_owner"
+      ],
+      "targets": [
+        "group_members",
+        "passive_party_bonuses"
+      ]
     },
     "sanctuary": {
       "numeric_effects": [
@@ -1643,7 +1692,15 @@
     },
     "extra_points_evidence": "OTS_HYPOTHESIS_ONLY: Canary player_wheel.cpp:357-363 and config.lua.dist:260; Grade IV from official manual notes",
     "game_premium_activation": "WHEEL-0 owner W1a: apply only after PREM-1 activation",
-    "game_extra_points_activation": "WHEEL-0 section 6.3: zero until each owning feature exists"
+    "game_extra_points_activation": "WHEEL-0 section 6.3: zero until each owning feature exists",
+    "additional_unadmitted_reference_sources": [
+      {
+        "key": "hunting_task_shop",
+        "maximum_points": 50,
+        "source": "FANDOM_1151969",
+        "runtime_admitted": false
+      }
+    ]
   },
   "icon_evidence": {
     "renderer_repository": "https://github.com/PawelKusnierek/TibiaPal",
@@ -1668,10 +1725,10 @@
     },
     "unavailable_sprite_categories": [],
     "client_asset_crosswalk": "REFERENCE_MANIFEST_COMPLETE; RUNTIME_ASSET_ADMISSION_PENDING",
-    "live_asset_fetch": "HTTP_403_ON_ORIGINAL_CDN_2026_10_01",
+    "live_asset_fetch": "ORIGINAL_CDN_200_VIA_REMOTE_CHROME_CDP_2026_10_01; CLOUD_HTTP_403",
     "reference_sheet_observations": "samples/source-icon-reference.json",
-    "reference_sheet_sha256": "4a49c4b3e2ab60531e4e5677c0b81600ac21014a9a77e02d27b6af451d1f1a4e",
-    "appearance_scope": "ALL_FIVE_REFERENCE_STRIPS_VISUALLY_INSPECTED; CURRENT_GLOBAL_APPEARANCE_NOT_CONFIRMED"
+    "reference_sheet_sha256": "f49f4c0cea261e2a43db0164bd5bbadd07bce61bc542c6d50a4e9b86029c63de",
+    "appearance_scope": "ALL_FIVE_ORIGINAL_SHEETS_VISUALLY_INSPECTED; ALTERNATIVE_FALLBACK_ONLY_FOR_IDENTICAL_CELLS"
   },
   "revelation_behaviors": {
     "gift_of_life": [
@@ -1805,6 +1862,16 @@
   },
   "live_source_verification": {
     "tibiapal_content_verified": true,
-    "requested_fandom_verified": false
-  }
+    "requested_fandom_verified": true
+  },
+  "unique_source_selections": {
+    "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
+    "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
+    "guiding_presence": "official:8833 selects sharing 100% of mantra; official:8944 and Fandom:1206174 add party bonuses +33%. source_percent preserves wording; relative/points, rounding and own-Serene-copy semantics remain Q5 with the runtime owner.",
+    "runic_mastery": {
+      "evidence": "FANDOM_1206174",
+      "rule": "Percentage applies to the character base magic level for that rune effect only; no effective-skill or equipment bonus is invented."
+    }
+  },
+  "browser_source_audit": "samples/browser-source-audit.json"
 }

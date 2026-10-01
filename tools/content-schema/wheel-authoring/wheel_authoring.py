@@ -7,23 +7,42 @@ import json
 import math
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 from jsonschema import Draft202012Validator
 ROOT = Path(__file__).resolve().parent
 VOCATIONS = ('knight', 'paladin', 'sorcerer', 'druid', 'monk')
 DOMAINS = {'TL':'green','TR':'red','BL':'blue','BR':'purple'}
 CATEGORY = {'Unique':'unique','SkillBonus':'skill_bonus','Leech':'leech','Augmentation':'augmentation','VesselResonance':'vessel_resonance','Other':'other'}
 STATS = {'Hit Points':'max_health','Mana':'max_mana','Capacity':'capacity','Mitigation Multiplier':'mitigation_multiplier'}
+COUNT_UNITS = ('targets', 'tiles', 'creatures', 'points', 'mana')
+BOUNDED_PERCENT_KINDS = ('critical_hit_chance', 'momentum_chance', 'rune_trigger_chance',
+    'next_attack_damage_reduction', 'damage_reduction', 'bow_physical_pierce', 'bow_holy_pierce',
+    'restored_max_health', 'restored_max_mana', 'exclusive_overkill_limit',
+    'exclusive_low_target_health_limit', 'exclusive_minimum_target_health',
+    'mastery_thunder_critical_chance', 'shared_mantra_percent', 'dodge',
+    'exclusive_target_health_limit', 'missing_health_step', 'damage_reduction_per_step')
+def parameter_value_schema(kind, unit):
+    result={'type':'integer' if unit in COUNT_UNITS else 'number','minimum':0}
+    if kind in BOUNDED_PERCENT_KINDS:result['maximum']=100
+    return result
 def finite_json(value):
     if isinstance(value,float) and not math.isfinite(value):raise ValueError('NON_FINITE_NUMBER')
     if isinstance(value,dict):
         for child in value.values():finite_json(child)
     elif isinstance(value,list):
         for child in value:finite_json(child)
-def read(path):
+def decode_json(serialized):
     def reject_constant(value):raise ValueError('NON_FINITE_NUMBER: '+value)
-    value=json.loads(Path(path).read_text(),parse_constant=reject_constant)
+    def unique_object(pairs):
+        result={}
+        for key,value in pairs:
+            if key in result:raise ValueError('DUPLICATE_JSON_KEY: '+key)
+            result[key]=value
+        return result
+    value=json.loads(serialized,parse_constant=reject_constant,object_pairs_hook=unique_object)
     finite_json(value)
     return value
+def read(path):return decode_json(Path(path).read_text())
 def clean(text): return html.unescape(re.sub(r'<[^>]*>', ' ', text)).strip()
 def name(text): return clean(text).split('|')[0]
 def slug(text): return re.sub(r'[^a-z0-9]+','_', name(text).lower()).strip('_')
@@ -132,7 +151,7 @@ def build():
     for identifier, info in lib['supreme_mods'].items():
         if not identifier.isdigit():continue
         supreme.append({'source_id':int(identifier),'name':name(info['Name']) or name(info['NameSummary']),'summary_name':name(info['NameSummary']),'format':info['FormatType'],'grades':[{'grade':g,'reference_text':clean(info['EffectInfo'][str(g)]),'numeric_effects':supreme_effects(clean(info['EffectInfo'][str(g)]),info['NameSummary'])} for g in range(4)],'reference_summary':clean(info['EffectInfoSummary']),'icon':icon('supreme_mod',int(identifier))})
-    return {'schema':'OTERYN_WHEEL_AUTHORING_CANDIDATE/v1','revision':'wheel-authoring-candidate-r1','release':{'kind':'initial','predecessor':None},'runtime_admitted':False,'sources':[{'id':'tibiapal','repository':'https://github.com/PawelKusnierek/TibiaPal','commit':raw['source']['commit']},{'id':'canary','repository':'https://github.com/opentibiabr/canary','commit':graph['source_commit']},{'id':'crystal_summer_update','repository':'https://github.com/zimbadev/crystalserver','commit':'00ce02a57ca5a12e48f32a3476e37471167e4c3f'}],'input_digests':{f:hashlib.sha256((ROOT/'samples'/f).read_bytes()).hexdigest() for f in ['source-wheel-reference.json','source-graph.json','source-parameters.json']},'progression':parameters['progression'],'icon_evidence':parameters['icon_evidence'],'topology':topology,'vocations':vocations,'gems':{'excluded_empty_basic_mod_ids':[int(k) for k,v in lib['basic_mod_config'].items() if not v],'qualities':[{'quality':q,'basic_mod_count':b,'supreme_mod_count':s,'matching_vessel_stage':v,'matching_damage_healing_bonus':bonus} for q,b,s,v,bonus in [('lesser',1,0,1,1),('regular',2,0,2,1),('greater',2,1,3,2)]],'basic_mods':basic,'supreme_mods':supreme,'grade_costs':[{'target_grade':g,'basic':{'gold':bg,'fragments':f},'supreme':{'gold':sg,'fragments':f}} for g,bg,sg,f in [(1,2000000,5000000,5),(2,5000000,12000000,15),(3,30000000,75000000,30)]],'atelier':{k:v for k,v in parameters['gems'].items() if k!='loot_reference'},'loot_reference':parameters['gems']['loot_reference'],'reference_corrections':parameters['corrections'],'initial_gems':{'count':8,'composition':'one_lesser_and_one_regular_per_domain'},'parameter_state':'REFERENCE_CATALOGUE_NOT_RUNTIME_ADMITTED'},'verification':{'planner_unlock_states_checked':1080,'planner_unlock_mismatches':0,'legal_allocation_snapshots':180,'live_website_verified':parameters['live_source_verification']['tibiapal_content_verified'],'wiki_verified':parameters['live_source_verification']['requested_fandom_verified'],'blockers':['Formal admission requires the content owner review; this candidate changes no runtime ruleset.','Resolve dedication mitigation versus resistance wording in the owning decision.','Bind reference parameters and area names to admitted runtime effect and Spell owners.','Reference icon crosswalk is complete; runtime asset admission remains with the client owner.','Reference selection follows the Sept 27 project snapshot; current Global parity and failed requested Fandom fetches remain unconfirmed.']}}
+    return {'schema':'OTERYN_WHEEL_AUTHORING_CANDIDATE/v1','revision':'wheel-authoring-candidate-r1','release':{'kind':'initial','predecessor':None},'runtime_admitted':False,'sources':[{'id':'tibiapal','repository':'https://github.com/PawelKusnierek/TibiaPal','commit':raw['source']['commit']},{'id':'canary','repository':'https://github.com/opentibiabr/canary','commit':graph['source_commit']},{'id':'crystal_summer_update','repository':'https://github.com/zimbadev/crystalserver','commit':'00ce02a57ca5a12e48f32a3476e37471167e4c3f'}],'input_digests':{f:hashlib.sha256((ROOT/'samples'/f).read_bytes()).hexdigest() for f in ['source-wheel-reference.json','source-graph.json','source-parameters.json']},'progression':parameters['progression'],'icon_evidence':parameters['icon_evidence'],'topology':topology,'vocations':vocations,'gems':{'excluded_empty_basic_mod_ids':[int(k) for k,v in lib['basic_mod_config'].items() if not v],'qualities':[{'quality':q,'basic_mod_count':b,'supreme_mod_count':s,'matching_vessel_stage':v,'matching_damage_healing_bonus':bonus} for q,b,s,v,bonus in [('lesser',1,0,1,1),('regular',2,0,2,1),('greater',2,1,3,2)]],'basic_mods':basic,'supreme_mods':supreme,'grade_costs':[{'target_grade':g,'basic':{'gold':bg,'fragments':f},'supreme':{'gold':sg,'fragments':f}} for g,bg,sg,f in [(1,2000000,5000000,5),(2,5000000,12000000,15),(3,30000000,75000000,30)]],'atelier':{k:v for k,v in parameters['gems'].items() if k!='loot_reference'},'loot_reference':parameters['gems']['loot_reference'],'reference_corrections':parameters['corrections'],'initial_gems':{'count':8,'composition':'one_lesser_and_one_regular_per_domain'},'parameter_state':'REFERENCE_CATALOGUE_NOT_RUNTIME_ADMITTED'},'verification':{'planner_unlock_states_checked':1080,'planner_unlock_mismatches':0,'legal_allocation_snapshots':180,'live_website_verified':parameters['live_source_verification']['tibiapal_content_verified'],'wiki_verified':parameters['live_source_verification']['requested_fandom_verified'],'blockers':['Formal admission requires the content owner review; this candidate changes no runtime ruleset.','Resolve dedication mitigation versus resistance wording in the owning decision.','Bind reference parameters and area names to admitted runtime effect and Spell owners.','Reference icon crosswalk is complete; runtime asset admission remains with the client owner.','Reference selection follows the Sept 27 project snapshot; requested Fandom pages and original sprites were read via Chrome/CDP; Global conflicts are preserved in browser-source-audit.json.']}}
 def validate_gem(candidate, vocation, quality, basic_1, basic_2=None, supreme=None):
     if vocation not in VOCATIONS:raise ValueError('UNKNOWN_VOCATION')
     if quality not in ('lesser','regular','greater'):raise ValueError('UNKNOWN_GEM_QUALITY')
@@ -189,8 +208,15 @@ def validate(candidate, previous=None):
     release=candidate['release']
     if release['kind']=='initial':require(previous is None,'INITIAL_WITH_PREDECESSOR')
     else:
-        require(previous is not None,'PREDECESSOR_REQUIRED');require(release['predecessor']==previous['revision'] and candidate['revision']!=previous['revision'],'REVISION_CHAIN')
+        require(previous is not None,'PREDECESSOR_REQUIRED')
+        finite_json(previous)
+        require(isinstance(previous,dict) and previous.get('schema')=='OTERYN_WHEEL_AUTHORING_CANDIDATE/v1' and
+            previous.get('runtime_admitted') is False and isinstance(previous.get('revision'),str) and
+            1<=len(previous['revision'])<=128,'PREDECESSOR_ENVELOPE')
+        require(release['predecessor']==previous['revision'] and candidate['revision']!=previous['revision'],'REVISION_CHAIN')
         if release['kind']=='value_only':require(structure(candidate)==structure(previous),'VALUE_ONLY_STRUCTURE_CHANGED')
+        from gem_revisions import validate_gem_revision
+        validate_gem_revision(candidate,previous)
     for filename,digest in candidate['input_digests'].items():
         require(hashlib.sha256((ROOT/'samples'/filename).read_bytes()).hexdigest()==digest,'INPUT_DIGEST_MISMATCH')
     topology=candidate['topology'];require([s['state_slot'] for s in topology]==list(range(1,37)),'SLOT_IDENTITIES')
@@ -293,10 +319,14 @@ def validate_evidence(candidate, candidate_bytes, evidence_path=None):
     def require(condition, code):
         if not condition:raise ValueError(code)
     require(evidence['candidate_sha256']==hashlib.sha256(candidate_bytes).hexdigest(),'EVIDENCE_CANDIDATE_DIGEST')
-    require(candidate==json.loads(candidate_bytes),'EVIDENCE_CANDIDATE_CONTENT')
+    require(candidate==decode_json(candidate_bytes),'EVIDENCE_CANDIDATE_CONTENT')
     require(evidence['source_conflicts']==candidate['gems']['reference_corrections'],'EVIDENCE_CORRECTIONS')
     require(evidence['icon_evidence']==candidate['icon_evidence'],'EVIDENCE_ICONS')
     require(evidence['planner_replay']['source_commit']==candidate['sources'][0]['commit'],'EVIDENCE_SOURCE_REVISION')
+    require(evidence['planner_replay']['result']=='PASS','EVIDENCE_REPLAY_RESULT')
+    live=evidence['live_verification']
+    require(live['tibiapal']==candidate['verification']['live_website_verified'] and
+        live['fandom']==candidate['verification']['wiki_verified'],'EVIDENCE_LIVE_FLAGS')
     counts=evidence['counts']
     actual={'vocations':len(candidate['vocations']),
         'slots':sum(len(v['slots']) for v in candidate['vocations'].values()),
@@ -308,6 +338,48 @@ def validate_evidence(candidate, candidate_bytes, evidence_path=None):
     binding=evidence['live_source_audit'];require(binding['file']=='samples/live-source-audit.json','EVIDENCE_AUDIT_PATH')
     require(binding['sha256']==hashlib.sha256((ROOT/binding['file']).read_bytes()).hexdigest(),'EVIDENCE_AUDIT_DIGEST')
     audit=read(ROOT/binding['file'])
+    manual=evidence['official_manual_notes']
+    require(manual['reference']=='docs/reference/tibia-manual/characters.md#517-wheel-of-destiny','EVIDENCE_MANUAL_PATH')
+    manual_path=ROOT.parents[2]/'docs/reference/tibia-manual/characters.md'
+    require(manual['notes_sha256']==hashlib.sha256(manual_path.read_bytes()).hexdigest(),'EVIDENCE_MANUAL_DIGEST')
+    require(manual['result'] in ('REVIEWED_OWNER_CAPTURE_AND_LIVE_TAVILY_EXTRACT_FOR_LISTED_FACTS',
+        'REVIEWED_OWNER_CAPTURE_AND_REMOTE_CHROME_FOR_LISTED_FACTS'),'EVIDENCE_MANUAL_RESULT')
+    browser_binding=evidence['browser_source_audit']
+    require(browser_binding['file']=='samples/browser-source-audit.json','EVIDENCE_BROWSER_PATH')
+    require(browser_binding['sha256']==hashlib.sha256((ROOT/browser_binding['file']).read_bytes()).hexdigest(),'EVIDENCE_BROWSER_DIGEST')
+    browser=read(ROOT/browser_binding['file'])
+    require(browser['schema']=='OTERYN_WHEEL_BROWSER_SOURCE_AUDIT/v1','EVIDENCE_BROWSER_SCHEMA')
+    require(browser['runtime_admitted'] is False and browser['live_global_parity_confirmed'] is False,'EVIDENCE_BROWSER_ADMISSION')
+    originals=[sheet['original_cdn'] for sheet in read(ROOT/'samples/source-icon-reference.json')['sheets']]
+    require(browser['original_sheets']==originals,'EVIDENCE_ORIGINAL_SHEET_OBSERVATIONS')
+    unread=[category for category in ('dedication','conviction','revelation','basic_mod','supreme_mod')
+        if not any(sheet['url']==icon(category,0)['asset_url'] and
+            sheet['method']=='REMOTE_DESKTOP_CHROME_CDP' and sheet['visual_inspection'] is True
+            for sheet in browser['original_sheets'])]
+    require(live['static_sprite_sheets']==(not unread) and
+        set(live['remaining_sprite_categories'])==set(unread),'EVIDENCE_SPRITE_COVERAGE')
+    if candidate['verification']['wiki_verified']:
+        required={'Wheel_of_Destiny','Wheel_of_Destiny/Conviction_Perks','Wheel_of_Destiny/Dedication_Perks',
+            'Wheel_of_Destiny/Revelation_Perks','Lesser_Gem','Regular_Gem','Greater_Gem'}
+        require(required<=set(browser['requested_fandom_coverage']),'EVIDENCE_BROWSER_WIKI_COVERAGE')
+        def fandom_page(url):
+            parsed=urlsplit(url)
+            if parsed.scheme=='https' and parsed.netloc=='tibia.fandom.com' and not parsed.query and parsed.path.startswith('/wiki/'):
+                page=parsed.path.removeprefix('/wiki/')
+                # The recorded public Gem Atelier redirect leads to Wheel#Gem_Atelier.
+                return 'Wheel_of_Destiny' if page=='Gem_Atelier' else page
+            return None
+        observed=set()
+        for observation in browser['observations']:
+            page=fandom_page(observation['url'])
+            if page in required:
+                require(fandom_page(observation['requested_url'])==page,'EVIDENCE_BROWSER_WIKI_REQUEST')
+                require(observation['status']=='READ' and observation['method']=='REMOTE_DESKTOP_CHROME_CDP','EVIDENCE_BROWSER_WIKI_READ')
+                require(type(observation['characters']) is int and observation['characters']>0 and
+                    re.fullmatch(r'[a-f0-9]{64}',observation['sha256']) and
+                    re.fullmatch(r'[1-9][0-9]*',observation['revision']),'EVIDENCE_BROWSER_WIKI_CAPTURE')
+                observed.add(page)
+        require(required<=observed,'EVIDENCE_BROWSER_WIKI_OBSERVATIONS')
     item_binding=evidence['item_asset_reference']
     require(item_binding['file']=='samples/item-asset-reference.json','EVIDENCE_ITEM_ASSET_PATH')
     require(item_binding['sha256']==hashlib.sha256((ROOT/item_binding['file']).read_bytes()).hexdigest(),'EVIDENCE_ITEM_ASSET_DIGEST')
@@ -318,7 +390,7 @@ def validate_evidence(candidate, candidate_bytes, evidence_path=None):
         reference_binding=evidence[key]
         require(reference_binding['file']=='samples/'+filename,'EVIDENCE_REFERENCE_PATH')
         require(reference_binding['sha256']==hashlib.sha256((ROOT/reference_binding['file']).read_bytes()).hexdigest(),'EVIDENCE_REFERENCE_DIGEST')
-    validate_manifest(read(ROOT/'samples/client-icon-manifest.json'),candidate)
+    validate_manifest(read(ROOT/'samples/client-icon-manifest.json'),candidate,candidate_bytes)
     validate_selection(candidate)
     require(not audit['runtime_admitted'] and not audit['live_global_parity_confirmed'] and not evidence['live_verification']['live_global_parity_confirmed'],'EVIDENCE_ADMISSION')
     if candidate['verification']['live_website_verified']:

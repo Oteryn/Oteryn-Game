@@ -21,8 +21,8 @@ node verify_planner.cjs /path/to/pinned/TibiaPal
 ```
 
 Open `wheel-comparison.html` for a standalone offline comparison by vocation and
-search. It displays the candidate's structured data offline. Optional icon previews load revision-pinned reference sheets using the complete
-client crop manifest; blocked or missing images show their IDs.
+search. It displays the candidate's structured data offline. Optional icon previews prefer original CDN sheets. Only pixel-equal cells may
+fall back to pinned reference sheets; other blocked images show their IDs.
 The viewer includes perk and gem icons without redistributing source image bytes.
 `build` without `--check` writes `samples/wheel-candidate.json`. Validation never
 writes files. Rebuilding needs only the committed source captures, without the
@@ -30,7 +30,9 @@ original JavaScript/WASM module or network access.
 The default `validate` and `build --check` qualify the candidate's exact file hash,
 coverage, corrections and evidence digests. Custom `--file` authoring validates
 semantics only; supply `--evidence` to qualify that exact file. The CLI labels the
-difference. Non-finite numbers are rejected when reading and validating JSON.
+difference. Non-finite numbers are rejected when reading and validating JSON. The reader
+rejects duplicate object keys, including nested and Unicode-equivalent keys,
+rather than choosing one conflicting value.
 
 ## Data and evidence
 
@@ -75,10 +77,14 @@ manual. The live-served planner module, string catalogue and renderer are
 byte-identical to the pinned TibiaPal inputs, whose complete replay passes. This
 qualifies `live_website_verified` for planner content only; it does not establish
 interactive browser behavior or current Global parity. The supplied planner code
-renders an invalid-code message. Seven requested Fandom pages failed extraction;
-`wiki_verified` remains false. BR wiki pages are separately revision-pinned
-secondary observations. The original official 8944 article failed extraction and
-returned HTTP 403; its existing project capture remains the primary evidence.
+renders an invalid-code message. Seven requested Fandom pages, official news 8833/8944, the official character
+manual and the five original CDN sheets were subsequently read with real Chrome
+through Remote Desktop/CDP after normal HTTP/extraction failed. The browser was
+used only for public internet research, then closed. The audit preserves source
+revisions, content hashes, access methods and unresolved disagreements in
+`samples/browser-source-audit.json`; `wiki_verified` now describes that bounded
+seven-page coverage. It does not mean all values match current Global.
+
 
 ## Wheel semantics
 
@@ -101,7 +107,12 @@ Conviction includes source identities, categories, full-slice values, typed
 augment stages and all nine unique perk definitions. Unique conditions, affected
 skills/spells and numbers are encoded separately, including Battle Instinct,
 Positional Tactics, Runic/Focus/Ballistic Mastery, Healing Link, Battle Healing,
-Guiding Presence and Sanctuary. Area references and Divine Dazzle's +4-second duration use the
+Guiding Presence and Sanctuary. Runic Mastery uses base magic level for the
+single rune effect, as explicitly stated by Fandom r1206174. Official 8833 binds Battle Healing's shield
+multiplier to 3, Focus Mastery to a 2-second focus-spell group reduction, and
+Guiding Presence to 100% shared mantra. Official 8944 adds the raw 33% party-bonus
+increase. That raw percent has unit `source_percent`: its native arithmetic,
+rounding and self-copy semantics remain the owning Spell Q5 decision. Area references and Divine Dazzle's +4-second duration use the
 existing spell evidence. These names are reference bindings, not newly admitted
 Spell or WorldQuery identities. Crystal's declared Shield Slam damage-reduction
 field has an upstream TODO; a declared number does not establish working combat.
@@ -134,16 +145,25 @@ Effective grades follow the preceding mods in the same gem: take the minimum of
 self and preceding present mod grades. Grades belong to a character's mod type;
 a type at Grade IV adds one promotion point. Cooldown supreme mods retain their
 base cooldown reduction across grades and add Momentum chance at higher grades.
+The fresh official manual says grading does not reduce cooldowns *further*;
+repository manual notes were corrected to preserve that distinction. The browser
+audit records the old wording and correction; the candidate's fixed reduction is correct.
 
 Progression includes Global eligibility, the level-minus-50 point formula,
 temple removal, five promotion scrolls, the Monk quest bonus and Grade IV points.
+The current Fandom reference additionally lists up to 50 Hunting Task Shop points;
+that unadmitted reference is recorded without introducing a runtime point grant.
+The 69-point Grade IV maximum is corroborated by all five candidate vocation
+catalogues: 46 eligible basic types plus 23 supreme types, each worth one point.
 The reference values do not activate those features in Game: WHEEL-0's Premium
 activation and extra-point dependencies remain explicit.
 
 Atelier data includes clockwise domains (green/red/purple/blue), reveal/switch
 fees, fragments, grade costs, initial eight gems and revealed/unrevealed yields.
 Official manual yields override the conflicting OTS yields. Fees remain labelled
-`OTS_HYPOTHESIS_ONLY` candidate values, as in WHEEL-GEM-0. Operation policy records reveal eligibility, tradeability, locking, last-domain
+`OTS_HYPOTHESIS_ONLY` candidate values, as in WHEEL-GEM-0. Operation policy records all-action Wheel eligibility, reveal inventory scope,
+first eligible initial-gem grant, current-revision vessel placement anywhere,
+vocation-catalogue grading, tradeability, locking, last-domain
 and in-vessel refusals, initial-gem lifetime, placement constraints, grade limits,
 crusher charges and existing vendor prices. The 250 revealed-gem limit remains
 `PARITY_PENDING` under the owning decision. Crystal loot probabilities are retained
@@ -155,17 +175,22 @@ economy transactions, revelation RNG, grade writes, vessel writes or loot change
 Icons bind the current planner's category/index to an explicit crop manifest:
 205 distinct crops and 520 candidate JSON-pointer bindings, across five sheets.
 Each sheet records its immutable reference URL, dimensions, byte count and SHA-256.
-All five reference strips were visually inspected; Revelation's RGBA pixels equal
-the pinned TibiaPal sheet. The older reference client's slot layout differs in
-13 Conviction assignments and is not used for current bindings. The other four
-strips have no successful original-CDN comparison, so current Global appearance
-parity remains unconfirmed. Original CDN requests still return HTTP 403.
-The manifest and snapshot-selection files are digest-bound by default validation.
-No PNG or proprietary client implementation is included, and public availability
-does not grant runtime redistribution rights. To qualify locally supplied source
-bytes, use `python client_icons.py --check --assets-dir /path/to/reference-sheets`
-with files named `dedication.png`, `conviction.png`, `revelation.png`,
-`basic_mod.png` and `supreme_mod.png`.
+All five original and reference strips were visually inspected and hashed. A
+comparison through the same Chrome Canvas RGBA pipeline confirms 189 of the 205
+used cells equal; nine Conviction, one Revelation and six Supreme cells differ.
+The manifest marks those 16 cells as ineligible for fallback, avoiding a wrong
+icon when the original CDN is blocked. Original cells and fallback cells have
+independently checked bounds. The older client's slot layout differs in 13
+Conviction assignments and is not used for current bindings. Browser tests cover
+original, fallback, offline and wrong-dimension responses across all five vocations.
+The manifest and snapshot-selection files are digest-bound by exact-file validation,
+including a custom candidate's supplied serialized bytes. No PNG or proprietary
+client implementation is included, and public availability does not grant runtime
+redistribution rights. Qualify locally supplied source bytes with
+`python client_icons.py --check --assets-dir /path/to/reference-sheets` and/or
+`--originals-dir /path/to/original-sheets`; each directory uses `dedication.png`,
+`conviction.png`, `revelation.png`, `basic_mod.png` and `supreme_mod.png`.
+
 
 `samples/reference-selection.json` fixes the spell/augment authoring snapshot at
 2026-09-27 and binds the existing project spell input by SHA-256. Released official
@@ -179,11 +204,21 @@ the authoring selection; current live Global parity remains an external claim.
 An initial revision accepts no previous candidate. Successors require the previous candidate;
 `value_only` rejects changes to topology, perk identities, effect kinds/units and
 other nonnumeric structure. `wheel_reset` describes the Wheel's revision policy,
-not permission to erase paid gems: GEM-R admission separately requires the
-WHEEL-GEM-0 §5.3 compatible mapping or staged migration.
+not permission to erase paid gems: any Gem contract change additionally requires `release.gem_revision`, with kind
+`declared_compatible` or `staged_migration`, an owned JSON reference under
+`samples/gem-revisions/` and its SHA-256. The referenced
+`OTERYN_WHEEL_GEM_REVISION_REFERENCE/v1` record binds both revision IDs and Gem
+contract hashes, the same kind, `runtime_admitted: false`, and
+`runtime_validation: PENDING_GEM_R_ADMISSION`. A compatible declaration must leave
+stored mod/quality/grade interpretation equal. A staged declaration requires a
+nonempty `native_migration_reference`; this checks authoring provenance only.
+GEM-R must still qualify the actual WHEEL-GEM-0 §5.3 mapping/migration and DUR-02
+execution before admission. A Wheel reset never waives this requirement.
 Source identities, complete effect shapes, areas, targets, placement and icon
 indices must agree with the committed input captures. Structural source updates
-must update those captures; numeric effect tuning remains possible. Operation
+must update those captures; numeric effect tuning remains possible. Count units require integers; probabilities, thresholds and reductions are
+bounded at 100, while fractional seconds, larger damage bonuses and signed basic
+penalties remain valid. Operation
 invariants follow WHEEL-GEM-0, Battle Instinct thresholds/caps must be feasible,
 and loot probabilities require a positive denominator and bounded chances.
 
@@ -201,7 +236,7 @@ ruleset revision/migration behaviour before admitting it to a world.
 
 The official manual freshly confirms the listed eligibility, operation/refusal,
 fragment-yield and grade-chain facts in `samples/live-source-audit.json`. It does
-not newly establish exact fees, the 250-gem cap, the 0.075 mitigation increment,
+not newly establish exact fees, the 250-gem cap,
 initial gem count, grade costs or quest/scroll point counts. Existing
 OTS/PARITY_PENDING classifications for those values remain.
 
@@ -219,3 +254,21 @@ secondary page nor successful access selects a new Global target version.
 The corrected candidate retains `live_global_parity_confirmed: false` and
 `runtime_admitted: false`. Independent content review and
 protected integration still belong to the active programme control plane.
+
+The browser continuation corroborates mitigation 0.075% in official 8833 and both
+cooldown selections in original official 8944. It confirms Fandom Conviction
+1206174 selects Mystic Repulse II +40%, while BR 443774 says +15% and the planner
++60%. Fandom overview 1151969 lists 225 revealed gems and Supreme Grade III
+12,500,000 gold; accepted project values remain 250 and 12,000,000. These conflicts
+are explicit evidence for owners, not silent revisions of accepted decisions.
+The Fandom Battle Instinct paragraph incorrectly repeats Battle Healing prose;
+it is recorded as a source anomaly rather than selected over native conditions.
+The manual's fixed repository path, actual file digest and reviewed-result status,
+plus the browser audit digest and complete seven-page observations, are now
+validated; changing the manual also triggers authoring CI.
+
+Wiki coverage qualifies only canonical HTTPS URLs on the exact Fandom authority,
+with the recorded Gem Atelier redirect explicitly allowed. Each requested page
+needs a matching observed page, successful Chrome/CDP read, positive content
+length, Fandom revision and SHA-256; foreign-host lookalikes and empty captures
+are refused. Browser audit schema and false admission/parity flags are enforced.
