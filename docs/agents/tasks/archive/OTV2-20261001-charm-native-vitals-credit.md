@@ -63,8 +63,12 @@ Seven new source tests cover pure successor limits and actual native owner mutat
 Self-review verified real fixture maxima185HP/90mana and exura cost20, exact replacement identity,
 and unchanged unrelated vitals/cooldowns. Source preparation is bounded263 added Rust lines.
 
-Local RED/GREEN, build, rustfmt and Clippy: UNAVAILABLE_EXECUTOR (managed environment failed).
-Fresh exact-head CI and independent review are pending; source byte readback and the complete
-owned delta are verified in the external FREEZE_SHA packet. No inherited PR1476/1479 evidence,
-PostgreSQL/client/E2E or full Charm completion is claimed. The archive reaches main only if PR1482
-merges; protected integration remains control-plane owned. A commit cannot store its own SHA.
+Initial source publication happened during UNAVAILABLE_EXECUTOR. The managed executor is now
+restored. Focused native credit tests: 9 PASS, including all 7 new tests. Local rustfmt and
+git diff --check PASS; governance validator and its 36 tests PASS. The initial exact head
+3eb39376371ef0befe63dcaffee5cba2463e5729 also passed Rust Linux workspace CI and independent
+APPROVED_NATIVE_VITALS_SOURCE review; its formatting failure is repaired in this final batch.
+Local strict all-target Clippy PASS. Fresh final-head CI/re-review are recorded in the external
+freeze packet after completion. No inherited PR1476/1479 evidence, Charm caller replay, client/gameplay
+E2E or full Charm completion is claimed. The archive reaches main only if PR1482 merges; protected
+integration remains control-plane owned. A commit cannot store its own SHA.

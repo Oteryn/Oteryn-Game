@@ -487,7 +487,10 @@ pub(crate) mod tests {
             states.apply_health_gain(&runtime, actor, session, u64::MAX),
             Some((78, 3))
         );
-        let before = states.get(&runtime, actor, session).expect("present").clone();
+        let before = states
+            .get(&runtime, actor, session)
+            .expect("present")
+            .clone();
         assert_eq!(
             states.apply_health_gain(&runtime, actor, session, 1),
             Some((0, 3))
@@ -524,7 +527,10 @@ pub(crate) mod tests {
             states.apply_mana_gain(&runtime, actor, session, u64::MAX),
             Some((13, 4))
         );
-        let before = states.get(&runtime, actor, session).expect("present").clone();
+        let before = states
+            .get(&runtime, actor, session)
+            .expect("present")
+            .clone();
         assert_eq!(
             states.apply_mana_gain(&runtime, actor, session, 1),
             Some((0, 4))
@@ -537,8 +543,16 @@ pub(crate) mod tests {
         let (mut runtime, actor, session) = runtime_with_player(0x75);
         let other = GameSessionId::decode(&uuid_v7(0x76)).expect("other session");
         let mut states = ChannelSpellStates::default();
-        assert!(states.apply_health_gain(&runtime, actor, session, 7).is_none());
-        assert!(states.apply_mana_gain(&runtime, actor, session, 7).is_none());
+        assert!(
+            states
+                .apply_health_gain(&runtime, actor, session, 7)
+                .is_none()
+        );
+        assert!(
+            states
+                .apply_mana_gain(&runtime, actor, session, 7)
+                .is_none()
+        );
         states
             .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
             .expect("initialized");
@@ -548,25 +562,47 @@ pub(crate) mod tests {
         );
         wound(&mut states, actor, session, 100);
         let before = states.actors.clone();
-        assert!(states.apply_health_gain(&runtime, actor, other, 7).is_none());
+        assert!(
+            states
+                .apply_health_gain(&runtime, actor, other, 7)
+                .is_none()
+        );
         assert!(states.apply_mana_gain(&runtime, actor, other, 7).is_none());
         assert_eq!(states.actors, before);
 
         runtime
             .remove_terminal_session(session, actor)
             .expect("ended");
-        assert!(states.apply_health_gain(&runtime, actor, session, 7).is_none());
-        assert!(states.apply_mana_gain(&runtime, actor, session, 7).is_none());
+        assert!(
+            states
+                .apply_health_gain(&runtime, actor, session, 7)
+                .is_none()
+        );
+        assert!(
+            states
+                .apply_mana_gain(&runtime, actor, session, 7)
+                .is_none()
+        );
         assert_eq!(states.actors, before);
 
         let reservation = runtime.reserve_fresh_session(other).expect("reserve");
-        let successor = runtime.commit_fresh_session(reservation).expect("successor");
+        let successor = runtime
+            .commit_fresh_session(reservation)
+            .expect("successor");
         assert_ne!(actor, successor);
         states
             .initialize(&runtime, successor, other, FACTS, (0, 0), now(0))
             .expect("fresh state");
-        assert!(states.apply_health_gain(&runtime, actor, session, 7).is_none());
-        assert!(states.apply_mana_gain(&runtime, actor, session, 7).is_none());
+        assert!(
+            states
+                .apply_health_gain(&runtime, actor, session, 7)
+                .is_none()
+        );
+        assert!(
+            states
+                .apply_mana_gain(&runtime, actor, session, 7)
+                .is_none()
+        );
         assert_eq!(
             states.apply_health_gain(&runtime, successor, other, 7),
             Some((0, 1))
