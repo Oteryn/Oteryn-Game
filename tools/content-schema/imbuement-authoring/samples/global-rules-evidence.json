@@ -158,6 +158,136 @@
       "sha256": "a484c5820d7c2b7607ee6cd3e9a6c52492c82dfa90473dd92c6315b4a8b16294",
       "digest_scope": "Exact UTF-8 indexed search snippet; no full page or revision available",
       "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+    },
+    "news_8834_mirror": {
+      "role": "DERIVED_OFFICIAL_NEWS_MIRROR",
+      "url": "https://tibiaroute.com/news/Echo-Raids-and-Discovery-System-8834-aS71",
+      "accessed_date": "2026-10-01",
+      "sha256": "aafbf01fcd1905e72a987d011efd9a7e39707c34a508eaa92078e5cb32ade1f9",
+      "digest_scope": "Tavily extracted full markdown of a third-party CipSoft news mirror; date and Basic scroll statement inspected",
+      "revision": "newsarchive:8834 mirrored",
+      "published_date": "2026-06-11",
+      "access_status": "EXTRACTED"
+    },
+    "tibiopedia_release_15_30": {
+      "role": "DERIVED_COMMUNITY_DATED_RELEASE",
+      "url": "https://tibiopedia.pl/news/archives/2452",
+      "accessed_date": "2026-10-01",
+      "sha256": "7c771eb8983e43f6d829d682c47c399e31e630e7a4e8b09a9bfaacab1000b282",
+      "digest_scope": "Exact public HTML bytes after ordinary language/layout setup; dated release article identifies client15.30 and Echo Raids",
+      "revision": null,
+      "published_date": "2026-07-13",
+      "access_status": "EXTRACTED",
+      "verified_page_date": "13.07.2026",
+      "verified_client_version": "15.30"
+    },
+    "tibiopedia_echo_raids": {
+      "role": "DERIVED_COMMUNITY",
+      "url": "https://tibiopedia.pl/articles/32,Echo-Raids",
+      "accessed_date": "2026-10-01",
+      "sha256": "df9c294f8caf7d3ce41bf20a62aeb47b2233098777c083961d6f335c64c3318b",
+      "digest_scope": "Exact public HTML bytes after ordinary language/layout setup; confirms introduced15.30 and Basic scroll rewards; current guide is not an archived release-date snapshot",
+      "revision": null,
+      "published_date": null,
+      "access_status": "EXTRACTED"
+    },
+    "canary_etcher_action": {
+      "role": "OTS_HYPOTHESIS_ONLY",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/etcher.lua",
+      "accessed_date": "2026-10-01",
+      "sha256": "e96712965238f9f8a47a0d6fe8fa00abe199f114de41e3046fec07d5894de10f",
+      "digest_scope": "Exact UTF-8 file content returned by GitHub at pinned commit; timer capture is lines465-505 only; implementation facts do not certify Global",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "published_date": null,
+      "access_status": "EXTRACTED",
+      "github_blob_sha": "8570ea905e5faec9a15695713d00706f5f7961a5"
+    },
+    "canary_scroll_action": {
+      "role": "OTS_HYPOTHESIS_ONLY",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/imbuement_scrolls.lua",
+      "accessed_date": "2026-10-01",
+      "sha256": "5a9b3007a55c4cac9fd99b72083881f2a08df1c68ca7dd31b97bea8819b10cc5",
+      "digest_scope": "Exact UTF-8 file content returned by GitHub at pinned commit; timer capture is lines465-505 only; implementation facts do not certify Global",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "published_date": null,
+      "access_status": "EXTRACTED",
+      "github_blob_sha": "d73559479494ab33079dd473cfeddddb1c4b989c"
+    },
+    "canary_timer_impl": {
+      "role": "OTS_HYPOTHESIS_ONLY",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/imbuements/imbuements.cpp",
+      "accessed_date": "2026-10-01",
+      "sha256": "c7401a27cd92734a0ec6451b6732cdc9ab504a669d918d9c10ab86f24af4c647",
+      "digest_scope": "Exact UTF-8 file content returned by GitHub at pinned commit; timer capture is lines465-505 only; implementation facts do not certify Global",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "published_date": null,
+      "access_status": "EXTRACTED",
+      "github_blob_sha": "48fa8de2a764261c6e1dfdc6b77c7d4c6ac88b7f"
+    },
+    "canary_player_impl": {
+      "role": "OTS_HYPOTHESIS_ONLY",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp",
+      "accessed_date": "2026-10-01",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "digest_scope": "Exact UTF-8 file content returned by GitHub at pinned commit; timer capture is lines465-505 only; implementation facts do not certify Global",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "published_date": null,
+      "access_status": "EXTRACTED",
+      "github_blob_sha": "d1b12e93fdf34598af61c7f69adceac9d977e819"
+    },
+    "crystal_imbuements_player_impl": {
+      "role": "OTS_HYPOTHESIS_ONLY",
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp",
+      "revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
+      "branch": "imbuements",
+      "github_blob_sha": "06f6859722057f3be165d1f8c3e8507983248b26",
+      "accessed_date": "2026-10-01",
+      "published_date": null,
+      "sha256": "96a49407670a756b0178324784d181fb4aa5754bf82eb155c1f4eea2ef6399fd",
+      "digest_scope": "Exact file bytes captured via GitHub at user-requested imbuements branch commit; distinct from earlier summer-update branch; implementation corroboration is not independent Global server evidence.",
+      "access_status": "EXTRACTED"
+    },
+    "crystal_imbuements_etcher_action": {
+      "role": "OTS_HYPOTHESIS_ONLY",
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/scripts/actions/items/etcher.lua",
+      "revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
+      "branch": "imbuements",
+      "github_blob_sha": "27006647c0c91d30f3a5d4812ea2b8afd054fc5b",
+      "accessed_date": "2026-10-01",
+      "published_date": null,
+      "sha256": "94a775552f5b43b6d28340df87858215ef8ac409dfc8eef083cf7287198aa31d",
+      "digest_scope": "Exact file bytes captured via GitHub at user-requested imbuements branch commit; distinct from earlier summer-update branch; implementation corroboration is not independent Global server evidence.",
+      "access_status": "EXTRACTED"
+    },
+    "fandom_vibrancy_gate": {
+      "role": "DERIVED",
+      "url": "https://tibia.fandom.com/wiki/Vibrancy",
+      "revision": null,
+      "published_date": null,
+      "accessed_date": "2026-10-01",
+      "sha256": "b4b73a455a5958df33b342d23a87dee62932fdaa9da815f356d4d2ae9ac40360",
+      "digest_scope": "Exact UTF-8 indexed search snippet in combat_vibrancy_final.json results content; no full page or revision available",
+      "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+    },
+    "fandom_basic_vibrancy_gate": {
+      "role": "DERIVED",
+      "url": "https://tibia.fandom.com/wiki/Basic_Vibrancy",
+      "revision": null,
+      "published_date": null,
+      "accessed_date": "2026-10-01",
+      "sha256": "73dd22aeddafe692911ccdff952e8fff5c4e7201afc039a3b348cc3b5cc6d3a8",
+      "digest_scope": "Exact UTF-8 indexed search snippet in combat_vibrancy_final.json results content; no full page or revision available",
+      "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+    },
+    "fandom_powerful_vibrancy_gate": {
+      "role": "DERIVED",
+      "url": "https://tibia.fandom.com/wiki/Powerful_Vibrancy",
+      "revision": null,
+      "published_date": null,
+      "accessed_date": "2026-10-01",
+      "sha256": "2d0c69af997dabb6d8a570b546cbc6704d98837a69c8a87e7ef5440b62a563d0",
+      "digest_scope": "Exact UTF-8 indexed search snippet in combat_vibrancy_final.json results content; no full page or revision available",
+      "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
     }
   },
   "rules": [
@@ -394,11 +524,14 @@
       "id": "basic_scrolls_exist",
       "value": true,
       "evidence": [
-        "official_news_8834_basic_scrolls"
+        "official_news_8834_basic_scrolls",
+        "news_8834_mirror",
+        "tibiopedia_release_15_30",
+        "tibiopedia_echo_raids"
       ],
       "parity_status": "OFFICIAL_PUBLIC_SEARCH_SNIPPET",
-      "target_time_status": "BASIC_ASSET_PRESENCE_IN_ACCEPTED_SNAPSHOT_NEWS_DATE_NOT_RETRIEVED",
-      "notes": "Echo Wardens drop Basic scrolls. Accepted15.30 primary asset definitions separately contain all24 Basic scrolls; see canonical item bindings."
+      "target_time_status": "DATED_PRE_TARGET_TEASER_AND_15_30_RELEASE_CORROBORATED",
+      "notes": "Official indexed news8834 confirms Echo Wardens drop Basic scrolls. Full news mirror dated11June2026 plus independently dated13July2026 client15.30 release and accepted15.30 assets place their introduction before28July2026. Exact official article full extraction remains unavailable."
     },
     {
       "id": "etcher_npc_price_gold",
@@ -454,7 +587,29 @@
       ],
       "parity_status": "PARITY_PENDING",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION",
-      "notes": "BR and independently fetched Tibiopedia Etcher page do not state consumed units or charges. Stackable/destructible does not prove single-use consumption. Verify exact final client/server transaction or direct Global observation; do not invent charge count."
+      "notes": "BR and independently fetched Tibiopedia Etcher page do not state consumed units or charges. Stackable/destructible does not prove single-use consumption. Verify exact final client/server transaction or direct Global observation; do not invent charge count.",
+      "hypotheses": [
+        {
+          "value": 1,
+          "evidence": [
+            "canary_etcher_action",
+            "canary_player_impl"
+          ],
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "conditions": "Only after clearAllImbuements returns success; player.cpp2676 checks nonempty active imbuements."
+        },
+        {
+          "value": 1,
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "evidence": [
+            "crystal_imbuements_player_impl",
+            "crystal_imbuements_etcher_action"
+          ],
+          "conditions": "Etcher action dispatches to onClearAllImbuementsOnEtcher; scans active slots then removes1 before clearing all slots. Requires owned etcher; no claim of durable/atomic transaction behavior."
+        }
+      ]
     },
     {
       "id": "timer_equipped_hunting_general",
@@ -645,7 +800,141 @@
       ],
       "parity_status": "DERIVED_CORROBORATED",
       "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
-      "notes": "BR notes successive paralysis can remove the previous paralysis. A probability alone does not prove admission-only rejection semantics."
+      "notes": "Legacy numeric rule id retained for reference compatibility. These15/25/50 percent values must not be interpreted as a blanket chance to reject every paralysis admission: primary news4779 describes protection against subsequent paralysis and a probability to remove initial paralysis. Exact sequence and PvP semantics are sourced in imbuement-combat.json.",
+      "runtime_semantics_profile": "imbuement-combat.json"
+    },
+    {
+      "id": "basic_scroll_introduction",
+      "value": {
+        "teaser_date": "2026-06-11",
+        "release_date": "2026-07-13",
+        "client_version": "15.30"
+      },
+      "evidence": [
+        "news_8834_mirror",
+        "tibiopedia_release_15_30",
+        "tibiopedia_echo_raids"
+      ],
+      "parity_status": "DERIVED_DATED_RELEASE_CORROBORATED",
+      "target_time_status": "RELEASE_PRECEDES_FROZEN_TARGET",
+      "notes": "Dates are independently retrieved mirror/community archive facts; do not relabel them as a retrieved full official article."
+    },
+    {
+      "id": "etcher_invalid_target_consumed_units",
+      "value": null,
+      "evidence": [
+        "canary_etcher_action",
+        "canary_player_impl"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_GLOBAL_OBSERVATION_RETRIEVED",
+      "hypotheses": [
+        {
+          "value": 0,
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "evidence": [
+            "canary_etcher_action",
+            "canary_player_impl"
+          ],
+          "conditions": "Missing/non-item target, zero slots or no active imbuement; clear failure occurs before remove1."
+        },
+        {
+          "value": 0,
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "evidence": [
+            "crystal_imbuements_player_impl",
+            "crystal_imbuements_etcher_action"
+          ],
+          "conditions": "Lua rejects non-item target; C++ skips removal when no active imbuement is found."
+        }
+      ]
+    },
+    {
+      "id": "scroll_application_accepts_equipped_target",
+      "value": null,
+      "evidence": [
+        "official_manual",
+        "canary_scroll_action",
+        "canary_player_impl"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_EXPLICIT_GLOBAL_EQUIPPED_TARGET_PROOF",
+      "hypotheses": [
+        {
+          "value": true,
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "evidence": [
+            "canary_player_impl"
+          ],
+          "conditions": "applyScrollImbuement at player.cpp2564 explicitly adds active stats when item parent is Player, after compatibility checks."
+        },
+        {
+          "value": true,
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "evidence": [
+            "crystal_imbuements_player_impl"
+          ],
+          "conditions": "applyImbuementScrollToItem requires owned target but explicitly adds equipped stats when parent==Player; other validation/storage/Premium behavior is assessed separately in Crystal branch packet."
+        }
+      ],
+      "notes": "General inventory use and at-any-time community wording do not independently prove equipped-target acceptance."
+    },
+    {
+      "id": "fine_grained_timer_hypothesis",
+      "value": null,
+      "evidence": [
+        "official_manual",
+        "wiki_br_imbuements",
+        "fandom_swiftness",
+        "canary_timer_impl"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_COMPLETE_GLOBAL_TIMING_OBSERVATION",
+      "hypotheses": [
+        {
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "evidence": [
+            "canary_timer_impl"
+          ],
+          "value": {
+            "aggressive": "Requires holding player, outsidePZ, in fight and outside a container",
+            "non_aggressive": "Requires direct Player parent; ticks regardlessPZ/combat when nonAggressiveFightOnlyfalse",
+            "configuration_override": "TOGGLE_IMBUEMENT_NON_AGGRESSIVE_FIGHT_ONLY can restrict every category to aggressive timing"
+          }
+        },
+        {
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "evidence": [
+            "crystal_imbuements_player_impl"
+          ],
+          "value": {
+            "aggressive": "Equipped inventory scan skips PZ/nonfight/container",
+            "non_aggressive": "Equipped directPlayer parent continuesPZ/nonfight ifTOGGLE_IMBUEMENT_NON_AGGRESSIVE_FIGHT_ONLYfalse",
+            "configuration_override": "Same config can restrict every category to fightoutsidePZ",
+            "tick_precision": "Duration decremented by EVENT_IMBUEMENT_AND_SERENE_STATUS_INTERVAL/1000 integer seconds; not exact elapsed-time accounting"
+          }
+        }
+      ],
+      "notes": "Official manual gives equipped+hunting only. BR generic PZ exception mentions backpack only; Fandom Swiftness explicitly continues out of combat. Their overlap cannot certify every utility timer or exact PZ/combat/tick deadline."
+    },
+    {
+      "id": "vibrancy_pvp_gate",
+      "value": null,
+      "evidence": [
+        "fandom_vibrancy_gate",
+        "fandom_basic_vibrancy_gate",
+        "fandom_powerful_vibrancy_gate"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "CURRENT_INDEXED_SOURCE_CONFLICT_NO_EXACT_TARGET_PROOF",
+      "runtime_semantics_profile": "imbuement-combat.json",
+      "notes": "The indexed Vibrancy family page explicitly qualifies additional PvP paralysis deflection with if initially successful. Shorter Basic/Powerful snippets describe always deflecting on additional attacks without that qualification. Whether deflection requires a previous successful recovery and its state lifetime are unqualified; do not select unconditional deflection from truncated item snippets. Repeated-attack recovery remains independently corroborated."
     }
   ],
   "conflicts": [
@@ -696,6 +985,25 @@
       "accepted_decision_value": "aggressive in fight outsidePZ; nonaggressive while equipped",
       "global_value": "coarse manual equipped+hunting; capacity and swiftness exceptions derived",
       "resolution": "Preserve pending status for exact fine-grained Global timer behavior rather than treating Canary implementation as official evidence."
+    },
+    {
+      "id": "vibrancy_admission_only_probability",
+      "field": "Vibrancy effect semantics",
+      "accepted_decision_value": "Chance at CONDITIONS-0 admission to deflect paralyze",
+      "global_value": "Repeated-paralysis sequence, including chance to remove initial effect; see imbuement-combat.json",
+      "resolution": "Owning condition/effect architecture needs explicit reconciliation; probabilities alone cannot implement the sourced sequence."
+    },
+    {
+      "id": "vibrancy_pvp_success_state_gate",
+      "field": "additional PvP paralysis deflection conditionality",
+      "family_page_qualification": "if initially successful",
+      "shorter_tier_snippets": "always deflects PvP paralysis upon additional paralyse attacks",
+      "evidence": [
+        "fandom_vibrancy_gate",
+        "fandom_basic_vibrancy_gate",
+        "fandom_powerful_vibrancy_gate"
+      ],
+      "resolution": "Preserve unresolved qualification; shorter indexed item snippets cannot establish absence of a success-state gate."
     }
   ],
   "unresolved": [
@@ -705,27 +1013,29 @@
     },
     {
       "id": "etcher_consumption",
-      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification."
+      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification. Exact pinnedCanary public implementation now supplies one unit on success andzero on invalid target as explicit OTS hypotheses; no Global single-use statement retrieved."
     },
     {
       "id": "scroll_application_equipped_target",
-      "reason": "Official unequipped restriction is explicit for shrine; inventory-scroll use does not explicitly specify equipped target acceptance."
+      "reason": "Official unequipped restriction is explicit for shrine; inventory-scroll use does not explicitly specify equipped target acceptance. Exact pinnedCanary player.cpp has an equipped-stat-update branch as explicit OTS hypothesis; general inventory-use wording does not certify equippedGlobal acceptance."
     },
     {
       "id": "fine_grained_timers",
       "reason": "Combat deadline, PZ entry timing, offline restoration, Swiftness/Vibrancy PZ behavior and tick rounding require observable Global qualification. Independently fetched Tibiopedia guide supplies only general equipped-combat wording; no explicit exception/PvP qualification."
     },
     {
-      "id": "vibrancy_pvp",
-      "reason": "BR and Tibiopedia describe paralysis deflection rates without an explicit player-vs-player exception. Do not infer monster-only or player coverage from absence of a qualifier."
-    },
-    {
       "id": "combat_pipeline",
       "reason": "AoE leech, overkill rounding, critical-per-cast RNG, spell exclusions, conversion order, resistance multiplication and paralysis replacement cannot be certified from recipe/effect tables."
     },
     {
-      "id": "basic_scroll_origin_date",
-      "reason": "Official news8834 indexed basic-scroll statement retrieved; exact article date unavailable. Primary accepted client15.30 independently establishes Basic item existence."
+      "id": "vibrancy_pvp_gate",
+      "reason": "Current Fandom family page states if initially successful; shorter Basic/Powerful indexed snippets omit the gate. Exact successful-recovery state, lifetime and target-time PvP conditionality remain unqualified.",
+      "evidence": [
+        "fandom_vibrancy_gate",
+        "fandom_basic_vibrancy_gate",
+        "fandom_powerful_vibrancy_gate"
+      ],
+      "evidence_catalogue": "imbuement-combat.json"
     }
   ],
   "rejected_sources": [
@@ -755,6 +1065,152 @@
       "query_scope": "Etcher|Imbuements public revision content",
       "result": "HTTP_403",
       "used_for_values": false
+    }
+  ],
+  "closed_gaps": [
+    {
+      "id": "basic_scroll_origin_date",
+      "evidence": [
+        "news_8834_mirror",
+        "tibiopedia_release_15_30",
+        "tibiopedia_echo_raids"
+      ],
+      "resolution": "11June2026 teaser and13July2026 client15.30 release precede frozen target; dated mirror/community confidence retained."
+    }
+  ],
+  "research_attempts": [
+    {
+      "id": "etcher_consumption",
+      "method": "TAVILY_SEARCH",
+      "query": "Tibia etcher consumed disappears use no imbuement item",
+      "result_urls": [
+        "https://www.reddit.com/r/TibiaMMO/comments/1mi5hyw/imbuements_im_lost",
+        "https://www.reddit.com/r/TibiaMMO/comments/1p7bxav/imbuements",
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7",
+        "https://tibia.fandom.com/wiki/Etcher"
+      ],
+      "outcome": "Retrieved Etcher/Imbuing and official news results explain clear-all, not consumed units or invalid-target effects."
+    },
+    {
+      "id": "scroll_application_equipped_target",
+      "method": "TAVILY_SEARCH",
+      "query": "Tibia imbuement scroll equipped item use equipped inventory",
+      "result_urls": [
+        "https://www.tibiamonk.com/en/info/imbuiments",
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "https://www.reddit.com/r/TibiaMMO/comments/1uxdtfm/basic_imbuement_scrolls",
+        "https://www.tibia.com/news?subtopic=newsarchive&id=8396",
+        "https://www.youtube.com/watch?v=AhqMbf5x0ss"
+      ],
+      "outcome": "Retrieved general inventory multiuse/application descriptions; no explicit equipped-target statement."
+    },
+    {
+      "id": "fine_grained_timers",
+      "method": "TAVILY_SEARCH",
+      "query": "Tibia imbuement timer Swiftness Vibrancy protection zone ticks",
+      "result_urls": [
+        "https://www.reddit.com/r/TibiaMMO/comments/17419h9/imbuing_timers",
+        "https://tibiavault.com/imbuing-guide",
+        "https://tibiatrends.com/imbuements",
+        "https://tibia.fandom.com/wiki/Swiftness",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7"
+      ],
+      "outcome": "Retrieved Swiftness out-of-combat exception and anecdotal Reddit one-minute PZ claim; exactGlobal deadline unqualified; rejected guide strengths remain rejected."
+    },
+    {
+      "id": "basic_scroll_origin_date",
+      "method": "TAVILY_SEARCH",
+      "query": "Tibia Echo Raids Discovery System 8834 June July 2026 basic scroll",
+      "result_urls": [
+        "https://tibiaroute.com/news/Echo-Raids-and-Discovery-System-8834-aS71",
+        "https://www.youtube.com/watch?v=wrDjqvrSSok",
+        "https://tibia.fandom.com/wiki/Basic_Scrolls",
+        "https://tibia.fandom.com/wiki/Echo_Raid",
+        "https://www.youtube.com/watch?v=wi6NnQoFId0"
+      ],
+      "outcome": "Closed introduction timeline with full dated mirror and independent native13July2026 release archive."
+    },
+    {
+      "id": "follow_up_queries",
+      "method": "TAVILY_SEARCH",
+      "queries": [
+        "site:tibiaqa.com etcher consumed use",
+        "Tibia etcher jednorazowy zużywa użyciu",
+        "Tibia etcher consumido desaparece usar",
+        "site:tibia.fandom.com/wiki/Swiftness \"protection zone\"",
+        "site:tibia.fandom.com/wiki/Vibrancy timer protection zone player"
+      ],
+      "outcome": "Each returnedHTTP429 excessive requests; no value selected and further connector retries stopped."
+    },
+    {
+      "id": "primary_dated_news",
+      "method": "NATIVE_PUBLIC_HTTP",
+      "urls": [
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8834",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8396",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8436"
+      ],
+      "outcome": "Each returnedHTTP403 for ordinary/default and ordinary browserUserAgent requests; existing indexedprimary/fullmirror classification retained."
+    },
+    {
+      "id": "historical_and_detailed_public_pages",
+      "method": "NATIVE_PUBLIC_HTTP",
+      "urls": [
+        "https://www.tibiawiki.com.br/index.php?title=Imbuements&action=history",
+        "https://www.tibiawiki.com.br/index.php?title=Etcher&action=history",
+        "https://www.tibiaqa.com/search?q=etcher",
+        "https://tibia.fandom.com/wiki/Swiftness?so=search"
+      ],
+      "outcome": "BR histories andTibiaQA403; Fandom402. No archivedtarget snapshot or detailedtimer page obtained."
+    },
+    {
+      "id": "native_etcher_and_guide",
+      "method": "NATIVE_PUBLIC_HTTP",
+      "urls": [
+        "https://tibiopedia.pl/items/Etcher",
+        "https://tibiopedia.pl/articles/3,Imbuing-nasycenia"
+      ],
+      "outcome": "BothHTTP200 after ordinary locale/layout choice. Etcher confirms clear-all/price/Freeuse but no consumedunits; guide no timerexception/PvP/consumption detail."
+    },
+    {
+      "id": "concrete_implementation_hypotheses",
+      "method": "GITHUB_PINNED_FILE_READ",
+      "urls": [
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/etcher.lua",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/imbuement_scrolls.lua",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/imbuements/imbuements.cpp"
+      ],
+      "outcome": "Exact files/line slices supply successful and invalid-use consumption, equippedscroll handling and timer branches; retained asOTS_HYPOTHESIS_ONLY withoutGlobalpromotion."
+    },
+    {
+      "id": "user_requested_crystal_imbuements_branch",
+      "method": "GITHUB_PINNED_FILE_READ",
+      "urls": [
+        "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp",
+        "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/scripts/actions/items/etcher.lua"
+      ],
+      "outcome": "User-requested imbuements branch confirms concrete etcher/equippedscroll/timer implementation hypotheses. Separate commit and source confidence preserved; no Global observation invented."
+    },
+    {
+      "id": "vibrancy_pvp_gate",
+      "method": "TAVILY_SEARCH_ALREADY_CAPTURED",
+      "query": "Tibia Vibrancy initial paralysis additional attacks probability removal PvP 4779",
+      "result_urls": [
+        "https://tibia.fandom.com/wiki/Vibrancy",
+        "https://tibia.fandom.com/wiki/Basic_Vibrancy",
+        "https://tibia.fandom.com/wiki/Powerful_Vibrancy"
+      ],
+      "outcome": "Retrieved family snippet explicitly contains if initially successful; Basic/Powerful snippets omit conditionality. Exact indexed content digests retained; no full-page or revision proof."
+    }
+  ],
+  "delegated_profiles": [
+    {
+      "id": "vibrancy_sequence",
+      "evidence_catalogue": "imbuement-combat.json",
+      "status": "PARTIALLY_CORROBORATED_NOT_CLOSED",
+      "resolution": "Repeated-paralysis recovery is corroborated; exact PvP success-state gate and present reflection remain unqualified. Delegation does not close those observation requirements."
     }
   ]
 }

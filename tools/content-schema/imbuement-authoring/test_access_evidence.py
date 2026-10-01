@@ -86,6 +86,16 @@ class AccessEvidenceTest(unittest.TestCase):
         for event in events:
             self.assertFalse(self.granted(self.definitions["shrine_access"], events - {event}))
 
+    def test_blank_npc_purchase_requires_world_character_and_premium_gates(self):
+        purchase = self.packet["scroll_acquisition"]["blank_npc_purchase"]
+        events = self.leaves(purchase)
+        self.assertEqual(len(events), 3)
+        self.assertTrue(self.granted(purchase, events))
+        for event in events:
+            self.assertFalse(self.granted(purchase, events - {event}))
+        self.assertEqual(purchase["npc_source_name"], "Albinius")
+        self.assertEqual(purchase["gold"], 25000)
+
     def test_premium_does_not_replace_powerful_unlock(self):
         events = self.leaves(self.definitions["shrine_access"]) | self.leaves(self.definitions["compatible_item"]) | self.leaves(self.definitions["premium"])
         for name, family in self.families.items():
@@ -140,22 +150,55 @@ class AccessEvidenceTest(unittest.TestCase):
                     self.assertFalse(self.granted(expr, events - premium))
                 self.assertFalse(family["scroll_inscription"]["basic"]["allowed"])
 
-    def test_blank_and_basic_loot_do_not_prove_completed_higher_tier_loot(self):
+    def test_completed_scroll_loot_has_individual_evidence_for_every_item(self):
         loot = self.packet["scroll_acquisition"]["loot"]
         self.assertTrue(loot["blank_scroll"])
         self.assertTrue(loot["basic_scroll"])
         for item in ("intricate_scroll", "powerful_scroll"):
-            self.assertIsNone(loot[item], "A completed-scroll drop requires its own named evidence")
-            self.assertEqual(loot["evidence_status_by_item"][item], "UNKNOWN")
+            self.assertIs(loot[item], False)
+            self.assertEqual(loot["evidence_status_by_item"][item], "COMMUNITY_EXPLICIT_ALL_24_ITEM_PAGES")
         self.assertNotIn("official_manual", loot["source_refs"])
-        gap = loot["source_gaps"][0]
-        self.assertEqual(gap["kind"], "COMPLETED_SCROLL_LOOT_UNCONFIRMED")
-        self.assertEqual(set(gap["tiers"]), {"intricate", "powerful"})
-        # Unknown loot must not disable the independently documented crafting path.
+        self.assertEqual(loot["scope"], "MONSTER_DROPS_IN_EXPLICIT_COMMUNITY_ITEM_RECORDS")
+        rows = loot["completed_scroll_item_observations"]
+        self.assertEqual(len(rows), 48)
+        self.assertEqual({(r["family_name"], r["tier"]) for r in rows},
+                         {(name, tier) for name in self.families for tier in ("intricate", "powerful")})
+        for row in rows:
+            self.assertEqual(row["named_monster_drop_sources"], [])
+            self.assertEqual(row["evidence_status"], "COMMUNITY_EXPLICIT_ITEM_PAGE")
+            self.assertEqual(row["item_source_name"], f'{row["tier"].title()} {row["family_name"]} Scroll')
+            self.assertEqual(row["source_url"], "https://tibiopedia.pl/items/" + row["item_source_name"].replace(" ", "_"))
+            self.assertTrue(row["free_account_application_explicit"])
+            self.assertRegex(row["source_sha256"], r"^[a-f0-9]{64}$")
+        # Empty monster-drop lists must not disable the independently documented crafting path.
         for family in self.families.values():
             for tier in ("intricate", "powerful"):
                 expr = family["scroll_inscription"][tier]
                 self.assertTrue(self.granted(expr, self.leaves(expr)))
+
+    def test_yana_nine_material_bundles_are_cumulative_and_do_not_imbue_items(self):
+        exchange = self.packet["material_acquisition"]["yana_gold_token_exchange"]
+        rows = exchange["recipes"]
+        self.assertEqual(len(rows), 9)
+        self.assertEqual({(r["family_name"], r["tier"]) for r in rows},
+                         {(name, tier) for name in ("Strike", "Vampirism", "Void")
+                          for tier in ("basic", "intricate", "powerful")})
+        self.assertFalse(exchange["exchange_imbues_item"])
+        self.assertFalse(exchange["exchange_pays_shrine_fee"])
+        indexed = {(r["family_name"], r["tier"]): r for r in rows}
+        for name in ("Strike", "Vampirism", "Void"):
+            previous = []
+            for index, tier in enumerate(("basic", "intricate", "powerful"), 1):
+                row = indexed[name, tier]
+                self.assertEqual(row["inputs"], [{"source_name": "Gold Token", "count": index * 2,
+                                                 "item_ref": {"family": "Item", "key": "oteryn:item.tibia.i22721",
+                                                              "revision": "definition-r1"}}])
+                self.assertEqual(len(row["outputs"]), index)
+                self.assertEqual(row["outputs"][:index - 1], previous)
+                self.assertTrue(all(r["count"] > 0 and r["item_ref"]["family"] == "Item"
+                                    for r in row["outputs"]))
+                self.assertEqual(row["dialogue_keywords"], ["hi", "trade", name.lower(), tier, "yes"])
+                previous = row["outputs"]
 
 
 if __name__ == "__main__":

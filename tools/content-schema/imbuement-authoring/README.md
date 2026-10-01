@@ -23,7 +23,10 @@ The ruleset destination from the full-game tree remains
 | `samples/imbuement-bindings.json` | All 72 ingredient names and 72 scrolls, blank scroll, etcher, tome, Gold Token and usable shrine variants with canonical Item identities. |
 | `samples/imbuement-access.json` | All 72 direct shrine routes, scroll routes and exact Powerful unlock alternatives, including claim actions after bosses. |
 | `samples/imbuement-eligibility.json` | Exhaustive 663-item client census with primary slots, per-source type/tier claims, discrepancies and explicit missing evidence. |
-| `samples/global-rules-evidence.json` | 43 rules, 14 sources, architecture conflicts and unresolved behavioral questions, each with evidence strength. |
+| `samples/global-rules-evidence.json` | 48 rules, 26 sources, concrete transaction/timer hypotheses, architecture conflicts and observation requirements. |
+| `samples/imbuement-combat.json` | Sourced Vibrancy sequence, bounded AoE leech formula, engine hypotheses and rejected test-server generalizations. |
+| `samples/crystal-imbuements-evidence.json` | Additional owner-supplied `imbuements` branch: 72 XML records, 13 pinned source files, 28 execution facts and nine token exchanges. |
+| `samples/missing-item-definitions.json`, `samples/missing-item-source-facts.json` | Two concrete Item authoring proposals with primary flags, capacity, weight, slots, acquisition, source revisions and target dates; owning Item validation passes. |
 | `samples/imbuement-source-comparison.json` | Reproducible engine differences plus the Global fee correction. |
 | `binding_evidence.py`, `eligibility_evidence.py` | Rebuild/check identity and eligibility evidence from pinned repository inputs; never manufacture an identity from a number alone. |
 | `test_*.py` | Offline semantic, source-selection and adversarial validation tests. |
@@ -54,12 +57,15 @@ The ruleset destination from the full-game tree remains
    Recipe/effect corroboration remains community-derived.
 4. **Engine hypotheses.**
    [Canary 04b83b512114bfd888000d6e1433ed8ecaec7c5b](https://github.com/opentibiabr/canary/tree/04b83b512114bfd888000d6e1433ed8ecaec7c5b)
-   and [Crystal summer-update 00ce02a57ca5a12e48f32a3476e37471167e4c3f](https://github.com/zimbadev/crystalserver/tree/00ce02a57ca5a12e48f32a3476e37471167e4c3f).
+   [Crystal summer-update 00ce02a57ca5a12e48f32a3476e37471167e4c3f](https://github.com/zimbadev/crystalserver/tree/00ce02a57ca5a12e48f32a3476e37471167e4c3f),
+   and the additional owner-supplied [Crystal imbuements 15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1](https://github.com/zimbadev/crystalserver/tree/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1).
    Imbuement and Item XML facts are compared by qualified identity, not document
    position. They remain `OTS_HYPOTHESIS_ONLY` and cannot close a Global evidence gap.
 
-Research used the Tavily search/extract connector, with four independent agent
-lanes for rules, identities, per-item eligibility and quest predicates.
+Research used the Tavily search/extract connector, with five independent agent
+lanes for rules, identities, per-item eligibility, quest predicates and the
+additional Crystal branch. After Tavily returned its plan usage limit, native
+public HTTP and existing captures were used; no further metered calls were made.
 No third-party engine code, wiki prose, sprites or asset bytes are copied into
 the new evidence files.
 
@@ -70,7 +76,8 @@ the new evidence files.
 | Apply fees | **7,500 / 60,000 / 250,000 gold** | Old XML and accepted Oteryn decision give 5,000 / 30,000 / 200,000. |
 | Success / protection | **100%**, no protection add-on | Historical XML fields remain present but do not establish current Global behavior. |
 | Basic Punch | **25 Tarantula Eggs** | Canary Basic recipe uses 20 of item 9690; higher tiers use the wiki ingredients. |
-| Strike | **10% chance**, +15 / 25 / 50% damage | Crystal's raw chance and bonus values differ from Wiki/Canary. |
+| Strike | **10% chance**, +15 / 25 / 50% damage | Crystal's raw XML values are deltas: its player baseline yields these final values. Comparing XML alone gives a false disagreement. |
+| Vibrancy | Recovery from existing paralysis on another paralysis attack; separate qualified PvP claims | Initial-condition admission probability alone does not describe the sourced sequence. The family page's PvP success qualifier is unresolved; Crystal's XML type is unrecognized by its loader. |
 | Scroll inventory | **All 72 scrolls** are bound, including Basic | Basic scrolls were missing from the first candidate. |
 | Scroll inscription | Official sources describe **Intricate and Powerful** | Basic loot-scroll presence does not prove Basic shrine crafting. |
 | Powerful unlock | Boss completion **plus the applicable reward claim** | Generic boss-only prerequisites omit required steps. |
@@ -115,7 +122,10 @@ that exact timestamp. The ledger preserves temporal qualification for each claim
 The eligibility census records all 663 client slot items. Types and maximum tiers
 are filled for 629 current items: 607 direct Tibiopedia tables and 22 explicit
 Wiki BR fallbacks. Of these, 627 bind to canonical Item definitions; Bursa Obscura
-(49160) and Sailor's Backpack (53192) have no canonical definition. Thirty legacy
+(49160) and Sailor's Backpack (53192) have no canonical definition. Both now have
+concrete, source-filled proposals that pass the owning Item schema and validator
+with zero errors and warnings. They remain explicitly proposed references.
+Thirty legacy
 Mayhem/Remedy/Carving items are explicitly documented as withdrawn in version
 11.50; four TEST objects lack eligibility evidence and remain excluded.
 
@@ -123,14 +133,43 @@ The selected draft values prefer the direct item table when its slots match the
 client. All 607 native slot counts match; the older BR helper has 21 slot errors
 and omits Monk-era Punch entries. The 101 disagreements in types or maximum tiers
 retain both source claims and use `DERIVED_SELECTED_OVER_STALE_HELPER`; the 22
-fallback rows remain `COMMUNITY_SINGLE_SOURCE`. This source-selection policy
+fallback profiles remain single-source; one has a separately corroborated field.
+This source-selection policy
 fills the candidate without calling community data verified server behavior.
 The packet records zero officially verified per-item allow lists. Exact counts,
 affected names and per-source claims live in its `summary` and `items` records.
 
-Fine-grained timers, Vibrancy PvP behavior, leech/critical composition, etcher
-consumption, loot of completed Intricate/Powerful scrolls and target-time
-continuity have their own remaining evidence limits.
+Current item existence and the frozen target are checked separately. Sailor's
+Backpack was introduced on **2026-08-04**, after the **2026-07-28** target; it is
+excluded from that target while its current facts and proposal are preserved.
+The target therefore has **628 typed candidates**, **627 existing canonical
+references**, and one source-filled proposal for Bursa Obscura. The 30 legacy
+items were withdrawn on 2017-12-05. Client presence alone proves neither live
+release nor availability. A dated 2024-01-23 patch also corrects Stoic Iks Casque's
+Epiphany maximum from tier 1 to **tier 2**, preserving the old helper value.
+
+All 48 Intricate/Powerful scroll item pages explicitly list no monster drop;
+these are individual community records, not a universal primary-server proof.
+Basic scroll chronology now includes the dated 2026-06-11 teaser and 2026-07-13
+15.30 release, before the target. Nine Gold Token material exchanges are recorded
+for Strike, Vampirism and Void. Yana's native page independently states **2/4/6
+Gold Tokens** and the exact dialogs. These buy cumulative ingredients; they do
+not apply an imbuement or pay its gold fee.
+
+The additional Crystal branch has 72 matching numerical strengths and 69
+matching effect configurations. Its three Vibrancy configurations disagree with
+the selected recovery sequence and are not loaded. Basic scrolls are absent from
+its action, quest storage is passed as a boolean, and custom assistant packages
+are not Global NPC evidence. Etcher consumption, equipped-scroll targets, timer
+configuration, leech rounding and protection composition have concrete code
+anchors; those anchors remain engine hypotheses.
+
+Fine-grained timers, leech/critical composition, etcher consumption, equipped
+scroll target acceptance, the exact Vibrancy PvP success gate and target-time
+continuity retain explicit
+observation requirements. Every remaining
+Global gap has actual attempted sources. Public recipe tables cannot prove
+server transactions.
 They are not filled with arbitrary values to make the catalogue appear complete.
 
 `candidate_key` identifies a local authoring definition. Percentages use integer
@@ -150,6 +189,9 @@ A passing source audit is not a playable Global parity test.
 python -m pip install -r tools/content-schema/imbuement-authoring/requirements.txt
 python tools/content-schema/imbuement-authoring/binding_evidence.py --check
 python tools/content-schema/imbuement-authoring/eligibility_evidence.py --check
+python tools/content-schema/imbuement-authoring/missing_item_proposals.py --check
+python tools/content-schema/imbuement-authoring/combat_evidence.py --check
+python tools/content-schema/imbuement-authoring/newbranch_evidence.py --check
 python tools/content-schema/imbuement-authoring/imbuement_authoring.py build --check
 python tools/content-schema/imbuement-authoring/imbuement_authoring.py validate
 python -m unittest discover -s tools/content-schema/imbuement-authoring -p 'test_*.py'

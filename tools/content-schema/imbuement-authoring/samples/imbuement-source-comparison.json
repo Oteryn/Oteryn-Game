@@ -557,6 +557,7 @@
       "crystal": []
     }
   ],
+  "comparison_scope": "Raw XML facts, not final engine outcomes. Crystal imbuements branch includes player baselines; use the qualified effective-strength comparison in its separate packet.",
   "selection": "Wiki BR effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
   "global_fee_conflict": {
     "accepted_decision": [
@@ -571,13 +572,65 @@
     ]
   },
   "supporting_catalogues": {
-    "global-rules-evidence.json": "051d86fbbe7f3fd48cc4361bc1dcea41f9d8912fe6c3db75af29da72308e40ea",
-    "imbuement-access.json": "7b18978f9c2b31d98bc42dba5a9a799d8845f974beb51299efd92bac7fc00334",
+    "crystal-imbuements-evidence.json": "765715f0f7a0b7e8a2b10bbecc065be2bad6695295224dd1e598b95f2accf424",
+    "global-rules-evidence.json": "3e2675715427827d23822fb5d2151be0175d275a7008b50e446d0d40f722f652",
+    "imbuement-access.json": "8b1162f4732bbe1e9cc7fc1ddec5e9165588b8302e7410629b325abeadbcbd1d",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-eligibility.json": "f39b7a1c1593907e424f70ed2db6d27ba9b8c4835346d30cb3a35e4112f0e677"
+    "imbuement-combat.json": "fd2b96e18ab2852c996483a5fd1e3240ac0652c4b0c077dfafd01ef9af93bd70",
+    "imbuement-eligibility.json": "9798fec253f95f14171dd3f3021345c076d193b80e0ae1a3b55bada469e8e26a",
+    "missing-item-definitions.json": "14c3a5316cf53f89c4d35b5b1e2afb0d6bd09bfadecf2862bf397e4fd967dc02",
+    "missing-item-source-facts.json": "3b85d6dc6a033919f1cda01eff7bbf222e740286fc7ff1d911d5ebf235d0dab4"
   },
+  "completion": {
+    "definitions": 24,
+    "tier_recipes": 72,
+    "material_bindings": 72,
+    "scroll_bindings": 72,
+    "current_equipment_typed": 629,
+    "target_equipment_typed": 628,
+    "target_existing_item_refs": 627,
+    "validated_missing_item_proposals": 2,
+    "source_defined_shrine_routes": 72,
+    "completed_scroll_loot_records": 48,
+    "global_rules": 48,
+    "combat_rule_profiles": 9,
+    "crystal_imbuements_revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
+    "gold_token_exchange_bundles": 9
+  },
+  "remaining_global_observation_requirements": [
+    {
+      "id": "exact_target_snapshot",
+      "reason": "Current manual and current wiki are dated retrievals; change continuity is evidence, not an archived full Global configuration for28July2026."
+    },
+    {
+      "id": "etcher_consumption",
+      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification. Exact pinnedCanary public implementation now supplies one unit on success andzero on invalid target as explicit OTS hypotheses; no Global single-use statement retrieved."
+    },
+    {
+      "id": "scroll_application_equipped_target",
+      "reason": "Official unequipped restriction is explicit for shrine; inventory-scroll use does not explicitly specify equipped target acceptance. Exact pinnedCanary player.cpp has an equipped-stat-update branch as explicit OTS hypothesis; general inventory-use wording does not certify equippedGlobal acceptance."
+    },
+    {
+      "id": "fine_grained_timers",
+      "reason": "Combat deadline, PZ entry timing, offline restoration, Swiftness/Vibrancy PZ behavior and tick rounding require observable Global qualification. Independently fetched Tibiopedia guide supplies only general equipped-combat wording; no explicit exception/PvP qualification."
+    },
+    {
+      "id": "combat_pipeline",
+      "reason": "AoE leech, overkill rounding, critical-per-cast RNG, spell exclusions, conversion order, resistance multiplication and paralysis replacement cannot be certified from recipe/effect tables."
+    },
+    {
+      "id": "vibrancy_pvp_gate",
+      "reason": "Current Fandom family page states if initially successful; shorter Basic/Powerful indexed snippets omit the gate. Exact successful-recovery state, lifetime and target-time PvP conditionality remain unqualified.",
+      "evidence": [
+        "fandom_vibrancy_gate",
+        "fandom_basic_vibrancy_gate",
+        "fandom_powerful_vibrancy_gate"
+      ],
+      "evidence_catalogue": "imbuement-combat.json"
+    }
+  ],
   "blocked": [
-    "Accepted architecture fee correction",
+    "Accepted architecture reconciliation (fees, Basic inscription, Stash, Vibrancy)",
     "Canonical Quest runtime state",
     "Per-field evidence gaps listed in eligibility and Global rules packets",
     "Runtime, persistence and wire implementation"

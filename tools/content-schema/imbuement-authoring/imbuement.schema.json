@@ -19,6 +19,10 @@
     "supporting_catalogues": {
       "type": "object",
       "properties": {
+        "crystal-imbuements-evidence.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
         "global-rules-evidence.json": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
@@ -31,21 +35,46 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
+        "imbuement-combat.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
         "imbuement-eligibility.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "missing-item-definitions.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "missing-item-source-facts.json": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         }
       },
       "required": [
+        "crystal-imbuements-evidence.json",
         "global-rules-evidence.json",
         "imbuement-access.json",
         "imbuement-bindings.json",
-        "imbuement-eligibility.json"
+        "imbuement-combat.json",
+        "imbuement-eligibility.json",
+        "missing-item-definitions.json",
+        "missing-item-source-facts.json"
       ],
       "additionalProperties": false
     },
     "global_rules_profile": {
       "const": "global-rules-evidence.json"
+    },
+    "combat_profile": {
+      "const": "imbuement-combat.json"
+    },
+    "missing_item_proposals": {
+      "const": "missing-item-definitions.json"
+    },
+    "engine_reference_profile": {
+      "const": "crystal-imbuements-evidence.json"
     },
     "architecture_reconciliation": {
       "const": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE"
@@ -382,17 +411,25 @@
                       "type": "object",
                       "properties": {
                         "kind": {
-                          "const": "paralysis_deflection"
+                          "const": "paralysis_recovery"
                         },
-                        "chance_bps": {
+                        "remove_chance_bps": {
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 10000
+                        },
+                        "trigger": {
+                          "const": "additional_paralysis_attack_while_paralysed"
+                        },
+                        "sequence_profile": {
+                          "const": "imbuement-combat.json#vibrancy_sequence"
                         }
                       },
                       "required": [
                         "kind",
-                        "chance_bps"
+                        "remove_chance_bps",
+                        "trigger",
+                        "sequence_profile"
                       ],
                       "additionalProperties": false
                     }
@@ -597,6 +634,9 @@
     "source_facts_sha256",
     "supporting_catalogues",
     "global_rules_profile",
+    "combat_profile",
+    "missing_item_proposals",
+    "engine_reference_profile",
     "architecture_reconciliation",
     "definitions"
   ],

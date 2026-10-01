@@ -1,0 +1,551 @@
+{
+  "activation": "REVIEWABLE_PROPOSALS_NOT_RUNTIME_DEFINITIONS",
+  "inputs": {
+    "owning_item_schema_sha256": "b58bba554efd346b9f33103a889acfb571b97861ee06be460a474f0c115b3c1c",
+    "primary_appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "source_facts_sha256": "3b85d6dc6a033919f1cda01eff7bbf222e740286fc7ff1d911d5ebf235d0dab4",
+    "test_wiki_facts_sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+  },
+  "proposals": [
+    {
+      "admission_requirements": [
+        "Owning Item population must admit the proposed exact identity before any ItemRef is activated.",
+        "Owning Presentation population must admit the primary-client appearance and sprite dependencies.",
+        "delivery_task_eligible=false is a conservative draft authoring default, not an observed global rule."
+      ],
+      "authoring_definition": {
+        "container": {
+          "capacity": 1,
+          "content_kind": "items"
+        },
+        "delivery_task_eligible": false,
+        "display_name": "Bursa Obscura",
+        "equipment": {
+          "hands": 0,
+          "slot": "back"
+        },
+        "family_profile": "container_equipment",
+        "identity": {
+          "key": "oteryn:item.tibia.i49160",
+          "revision": "definition-r1"
+        },
+        "imbuement": {
+          "allowed_family_tiers": [
+            {
+              "family": "featherweight",
+              "tier": 1
+            },
+            {
+              "family": "featherweight",
+              "tier": 2
+            },
+            {
+              "family": "featherweight",
+              "tier": 3
+            }
+          ],
+          "slot_count": 1
+        },
+        "physical": {
+          "pickupable": true,
+          "weight": {
+            "unit": "oz",
+            "value": "1.50"
+          }
+        },
+        "presentation": {
+          "inspection_description": "A mysterious pouch from an extra-dimensional realm."
+        },
+        "stack": {
+          "max_count": 1,
+          "stackable": false
+        },
+        "taxonomy": {
+          "item_class": "container",
+          "primary": "backpack"
+        },
+        "trade": {
+          "marketable": true,
+          "tradeable": true
+        }
+      },
+      "dependencies": {
+        "assets": [],
+        "definitions": [],
+        "presentations": [],
+        "proficiency_crosswalks": []
+      },
+      "identity_state": "PROPOSED_NOT_REGISTERED",
+      "primary_client": {
+        "flags": {
+          "clothes.slot": 3,
+          "cyclopediaitem.cyclopedia_type": 49160,
+          "flags.clothes": true,
+          "flags.container": true,
+          "flags.cyclopediaitem": true,
+          "flags.market": true,
+          "flags.take": true,
+          "flags.usable": true,
+          "market.category": 15,
+          "market.show_as_object_id": 49160,
+          "market.trade_as_object_id": 49160
+        },
+        "frame_groups": [
+          {
+            "fixed_frame_group": 2,
+            "geometry": {
+              "is_opaque": false,
+              "layers": 1,
+              "pattern_depth": 1,
+              "pattern_height": 1,
+              "pattern_width": 1,
+              "phase_count": 20
+            },
+            "sprite_ids": [
+              238274,
+              238275,
+              238276,
+              238277,
+              238278,
+              238274,
+              238275,
+              238276,
+              238277,
+              238278,
+              238279,
+              238280,
+              238276,
+              238277,
+              238278,
+              238274,
+              238275,
+              238276,
+              238277,
+              238278
+            ]
+          }
+        ],
+        "id": 49160,
+        "imbuement_slots": 1,
+        "name": "bursa obscura",
+        "record_sha256": "49fa9dfeeeaf496a2566b1b00fc2080abceb85d890b59db6359395f49f114eec"
+      },
+      "proposed_item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i49160",
+        "revision": "definition-r1"
+      },
+      "source_client_id": 49160,
+      "source_facts": {
+        "acquisition_facts": {
+          "count": 55,
+          "exchange_source_name": "Tentacle Piece",
+          "notes": "Dread Guardian exchange is during Devovorga Essence mini world change.",
+          "npc_names": [
+            "Malunga",
+            "Dread Guardian"
+          ]
+        },
+        "client_id": 49160,
+        "facts": {
+          "allowed_imbuement_max_tiers": {
+            "featherweight": 3
+          },
+          "container_capacity": 1,
+          "description": "A mysterious pouch from an extra-dimensional realm.",
+          "imbuement_slots": 1,
+          "introduced_on": null,
+          "introduced_version": "13.40.e15431",
+          "marketable": true,
+          "stackable": false,
+          "tradeable": true,
+          "weight_oz": "1.50"
+        },
+        "source_name": "Bursa Obscura",
+        "sources": {
+          "tibiopedia": {
+            "digest_scope": "native captured HTML",
+            "observed_fields": [
+              "allowed_imbuement_max_tiers",
+              "stackable",
+              "weight_oz",
+              "imbuement_slots",
+              "introduced_version"
+            ],
+            "sha256": "c7968262aa0ddb166b6504af6d09b511e0f4e79998e51d05ae52ba565a8afd57",
+            "url": "https://tibiopedia.pl/items/Bursa_Obscura"
+          },
+          "wiki_br": {
+            "digest_scope": "Tavily search include_raw_content extracted markdown",
+            "observed_fields": [
+              "container_capacity",
+              "weight_oz",
+              "imbuement_slots",
+              "marketable",
+              "tradeable",
+              "introduced_version",
+              "introduced_on",
+              "description"
+            ],
+            "published_approval_date": "2025-07-06",
+            "revision_id": 427070,
+            "revision_url": "https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=427070](https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=427070",
+            "sha256": "ef6fde7a5e8ed49da081da588797e2adb9a16a05e1ae9710d67655f7f4847109",
+            "url": "https://www.tibiawiki.com.br/wiki/Bursa_Obscura"
+          }
+        }
+      },
+      "source_facts_sha256": "bdfd149440ef685b6afd9b03a6d0514b98c9e352ce53545dc0f2638c8c3bf2b7",
+      "target_time_status": "PREEXISTING_TARGET_SOURCE_VERSION",
+      "validation": {
+        "contract": "tools/content-schema/item-authoring/item.schema.json",
+        "errors": [],
+        "validator": "tools/content-schema/item-authoring/validate_item.py",
+        "warnings": []
+      }
+    },
+    {
+      "admission_requirements": [
+        "Owning Item population must admit the proposed exact identity before any ItemRef is activated.",
+        "Owning Presentation population must admit the primary-client appearance and sprite dependencies.",
+        "delivery_task_eligible=false is a conservative draft authoring default, not an observed global rule."
+      ],
+      "authoring_definition": {
+        "container": {
+          "capacity": 24,
+          "content_kind": "items"
+        },
+        "delivery_task_eligible": false,
+        "display_name": "Sailor's Backpack",
+        "equipment": {
+          "hands": 0,
+          "slot": "back"
+        },
+        "family_profile": "container_equipment",
+        "identity": {
+          "key": "oteryn:item.tibia.i53192",
+          "revision": "definition-r1"
+        },
+        "imbuement": {
+          "allowed_family_tiers": [
+            {
+              "family": "featherweight",
+              "tier": 1
+            },
+            {
+              "family": "featherweight",
+              "tier": 2
+            },
+            {
+              "family": "featherweight",
+              "tier": 3
+            }
+          ],
+          "slot_count": 1
+        },
+        "physical": {
+          "pickupable": true,
+          "weight": {
+            "unit": "oz",
+            "value": "15.00"
+          }
+        },
+        "stack": {
+          "max_count": 1,
+          "stackable": false
+        },
+        "taxonomy": {
+          "item_class": "container",
+          "primary": "backpack"
+        },
+        "trade": {
+          "marketable": true,
+          "tradeable": true
+        }
+      },
+      "dependencies": {
+        "assets": [],
+        "definitions": [],
+        "presentations": [],
+        "proficiency_crosswalks": []
+      },
+      "identity_state": "PROPOSED_NOT_REGISTERED",
+      "primary_client": {
+        "flags": {
+          "clothes.slot": 3,
+          "cyclopediaitem.cyclopedia_type": 53192,
+          "flags.clothes": true,
+          "flags.container": true,
+          "flags.cyclopediaitem": true,
+          "flags.market": true,
+          "flags.take": true,
+          "flags.usable": true,
+          "market.category": 4,
+          "market.show_as_object_id": 53192,
+          "market.trade_as_object_id": 53192,
+          "npcsaledata.buy_price": [
+            0
+          ],
+          "npcsaledata.currency_quest_flag_display_name": [
+            "Event Points"
+          ],
+          "npcsaledata.location": [
+            "Great Expedition Wharf"
+          ],
+          "npcsaledata.name": [
+            "Proprietor Piers"
+          ],
+          "npcsaledata.sale_price": [
+            90
+          ]
+        },
+        "frame_groups": [
+          {
+            "fixed_frame_group": 2,
+            "geometry": {
+              "is_opaque": false,
+              "layers": 1,
+              "pattern_depth": 1,
+              "pattern_height": 1,
+              "pattern_width": 1,
+              "phase_count": 1
+            },
+            "sprite_ids": [
+              240580
+            ]
+          }
+        ],
+        "id": 53192,
+        "imbuement_slots": 1,
+        "name": "sailor's backpack",
+        "record_sha256": "54c6dc8d70146fe9e0d3910cd56199d2fb2c3aa5a3a61dc63b89cc2d270ba314"
+      },
+      "proposed_item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53192",
+        "revision": "definition-r1"
+      },
+      "source_client_id": 53192,
+      "source_facts": {
+        "acquisition_facts": {
+          "count": 90,
+          "event_name": "The Great Expedition",
+          "exchange_source_name": "Event Points",
+          "npc_names": [
+            "Proprietor Piers"
+          ]
+        },
+        "client_id": 53192,
+        "facts": {
+          "allowed_imbuement_max_tiers": {
+            "featherweight": 3
+          },
+          "container_capacity": 24,
+          "description": null,
+          "imbuement_slots": 1,
+          "introduced_on": "2026-08-04",
+          "introduced_version": "15.32.fc9100",
+          "marketable": true,
+          "stackable": false,
+          "tradeable": true,
+          "weight_oz": "15.00"
+        },
+        "source_name": "Sailor's Backpack",
+        "sources": {
+          "tibiopedia": {
+            "digest_scope": "native captured HTML",
+            "observed_fields": [
+              "allowed_imbuement_max_tiers",
+              "stackable",
+              "weight_oz",
+              "imbuement_slots",
+              "introduced_version"
+            ],
+            "sha256": "2965b8ca85fbb46eb057a3888f98218bfcef36e494cca06648972aaf376e1ff7",
+            "url": "https://tibiopedia.pl/items/Sailor%27s_Backpack"
+          },
+          "wiki_br": {
+            "digest_scope": "Tavily search include_raw_content extracted markdown",
+            "observed_fields": [
+              "container_capacity",
+              "weight_oz",
+              "imbuement_slots",
+              "marketable",
+              "tradeable",
+              "introduced_version",
+              "introduced_on",
+              "description"
+            ],
+            "published_approval_date": "2026-08-04",
+            "revision_id": 442016,
+            "revision_url": "https://www.tibiawiki.com.br/index.php?title=Sailor%27s_Backpack&oldid=442016](https://www.tibiawiki.com.br/index.php?title=Sailor%27s_Backpack&oldid=442016",
+            "sha256": "d791167b0a6e7567c1631d02ec666985f33158347c4622d935b6032a4bf085de",
+            "url": "https://www.tibiawiki.com.br/wiki/Sailor%27s_Backpack"
+          }
+        }
+      },
+      "source_facts_sha256": "96c732bb9c86222d213288be701c69fbf7b3318494d50e3983a5b1d664ad9e07",
+      "target_time_status": "INTRODUCED_AFTER_TARGET",
+      "validation": {
+        "contract": "tools/content-schema/item-authoring/item.schema.json",
+        "errors": [],
+        "validator": "tools/content-schema/item-authoring/validate_item.py",
+        "warnings": []
+      }
+    }
+  ],
+  "schema": "OTERYN_MISSING_IMBUEMENT_ITEM_DEFINITION_PROPOSALS/v1",
+  "target_date": "2026-07-28",
+  "test_item_evidence": [
+    {
+      "action": "Do not mint live global definitions or assign real-item eligibility from naming/classes.",
+      "classification": "CLIENT_AND_PUBLIC_WIKI_TEST_LABEL; AVAILABILITY_UNPROVEN",
+      "flags_limit": "Pickupable/equipment flags and slot observations prove client records, not live release or obtainability.",
+      "primary_client": {
+        "flags": {
+          "clothes.slot": 6,
+          "flags.clothes": true,
+          "flags.multiuse": true,
+          "flags.take": true,
+          "flags.usable": true
+        },
+        "id": 28464,
+        "imbuement_slots": 1,
+        "name": "test weapon for knights ",
+        "record_sha256": "f060fb218536e421e426eda26c925559c897f71abd9a4f54502d0d1e5156e595"
+      },
+      "public_status": "Imported revisioned pages identify these as Test items but contain no availability status.",
+      "source_client_id": 28464,
+      "wiki_observations": [
+        {
+          "content_sha256": "00d858cb2a0dc10e3830bf63b5ca7f9a68dee63221eebb8c107ed60b27c99b91",
+          "fields": {
+            "hands": "One",
+            "objectclass": "Weapons",
+            "primarytype": "Sword Weapons",
+            "slot": "Weapon Hand",
+            "stackable": "no",
+            "weapontype": "Sword"
+          },
+          "page_id": 85915,
+          "revision_id": 1194786,
+          "revision_sha1": "d84558ad405dbe14658df96356ad91b649172e55",
+          "revision_timestamp": "2026-07-07T03:49:31Z",
+          "url": "https://tibia.fandom.com/wiki/Test_Weapon_for_Knights",
+          "wiki_title": "Test Weapon for Knights"
+        }
+      ]
+    },
+    {
+      "action": "Do not mint live global definitions or assign real-item eligibility from naming/classes.",
+      "classification": "CLIENT_AND_PUBLIC_WIKI_TEST_LABEL; AVAILABILITY_UNPROVEN",
+      "flags_limit": "Pickupable/equipment flags and slot observations prove client records, not live release or obtainability.",
+      "primary_client": {
+        "flags": {
+          "clothes.slot": 0,
+          "flags.clothes": true,
+          "flags.take": true
+        },
+        "id": 28465,
+        "imbuement_slots": 3,
+        "name": "bow of destruction TEST",
+        "record_sha256": "f4a00cde7851fc689e09b6b964cdc1fc0228f472689560a1b8b5c0b4696d0fa0"
+      },
+      "public_status": "Imported revisioned pages identify these as Test items but contain no availability status.",
+      "source_client_id": 28465,
+      "wiki_observations": [
+        {
+          "content_sha256": "7f95d2f9a1053d17e45700fa50399feb17ae8e2d7c9135f8999644353e096262",
+          "fields": {
+            "hands": "Two",
+            "objectclass": "Weapons",
+            "primarytype": "Distance Weapons",
+            "secondarytype": "Bows",
+            "slot": "Both Hands",
+            "weapontype": "Distance"
+          },
+          "page_id": 85916,
+          "revision_id": 1194789,
+          "revision_sha1": "427b7d5fdd6d9a90c1e5feafa2da9d0ec7195b40",
+          "revision_timestamp": "2026-07-07T03:50:02Z",
+          "url": "https://tibia.fandom.com/wiki/Bow_of_Destruction_Test",
+          "wiki_title": "Bow of Destruction Test"
+        }
+      ]
+    },
+    {
+      "action": "Do not mint live global definitions or assign real-item eligibility from naming/classes.",
+      "classification": "CLIENT_AND_PUBLIC_WIKI_TEST_LABEL; AVAILABILITY_UNPROVEN",
+      "flags_limit": "Pickupable/equipment flags and slot observations prove client records, not live release or obtainability.",
+      "primary_client": {
+        "flags": {
+          "clothes.slot": 0,
+          "flags.clothes": true,
+          "flags.take": true
+        },
+        "id": 28478,
+        "imbuement_slots": 2,
+        "name": "umbral master bow TEST",
+        "record_sha256": "37591abc1e9de44ae8a99b524d4ea4c90f837acc9788327738ae8d63c94db4cb"
+      },
+      "public_status": "Imported revisioned pages identify these as Test items but contain no availability status.",
+      "source_client_id": 28478,
+      "wiki_observations": [
+        {
+          "content_sha256": "eaa4db9d4a9173aa9ae0c75934991cb64caf3313871b9911dec047cc9b2930a9",
+          "fields": {
+            "hands": "Two",
+            "objectclass": "Weapons",
+            "primarytype": "Distance Weapons",
+            "secondarytype": "Bows",
+            "slot": "Both Hands",
+            "weapontype": "Distance"
+          },
+          "page_id": 85919,
+          "revision_id": 1194785,
+          "revision_sha1": "35cbfa2bb6da80ac32126d668105a909634843b6",
+          "revision_timestamp": "2026-07-07T03:49:16Z",
+          "url": "https://tibia.fandom.com/wiki/Umbral_Master_Bow_Test",
+          "wiki_title": "Umbral Master Bow Test"
+        }
+      ]
+    },
+    {
+      "action": "Do not mint live global definitions or assign real-item eligibility from naming/classes.",
+      "classification": "CLIENT_AND_PUBLIC_WIKI_TEST_LABEL; AVAILABILITY_UNPROVEN",
+      "flags_limit": "Pickupable/equipment flags and slot observations prove client records, not live release or obtainability.",
+      "primary_client": {
+        "flags": {
+          "clothes.slot": 6,
+          "flags.clothes": true,
+          "flags.light": true,
+          "flags.take": true,
+          "light.brightness": 3,
+          "light.color": 204
+        },
+        "id": 28479,
+        "imbuement_slots": 2,
+        "name": "wand of destruction TEST",
+        "record_sha256": "138222e832f6e82dc7b8cff1e7ab85288a4d6bd5f47bc963f546b8194037dd88"
+      },
+      "public_status": "Imported revisioned pages identify these as Test items but contain no availability status.",
+      "source_client_id": 28479,
+      "wiki_observations": [
+        {
+          "content_sha256": "94228b30881ec54a7d7bebf87e79f16eb8faab9b47ea45a16776ebdcf9f76df7",
+          "fields": {
+            "objectclass": "Weapons",
+            "primarytype": "Wands",
+            "slot": "Weapon Hand"
+          },
+          "page_id": 85920,
+          "revision_id": 1194784,
+          "revision_sha1": "d904903bced3e02f70db62224cc87cfc7d8625e2",
+          "revision_timestamp": "2026-07-07T03:49:03Z",
+          "url": "https://tibia.fandom.com/wiki/Wand_of_Destruction_Test",
+          "wiki_title": "Wand of Destruction Test"
+        }
+      ]
+    }
+  ]
+}

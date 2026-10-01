@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from datetime import date
 import importlib.util
 import json
 from pathlib import Path
@@ -18,6 +19,7 @@ import binding_evidence as binding
 HERE = Path(__file__).resolve().parent
 OUTPUT = HERE / "samples/imbuement-eligibility.json"
 TARGET = "global-tibia-observable-2026-07-28-post-server-save"
+TARGET_DATE = date(2026, 7, 28)
 WIKI_ALIASES = {"souleater (axe)": "souleater"}
 CANONICAL_ALIASES = {6527: ("avenger", "the avenger"), 8024: ("devileye", "the devileye"),
                      8025: ("ironworker", "the ironworker"), 8101: ("stomper", "the stomper"),
@@ -100,6 +102,20 @@ def build(packet: dict) -> dict:
         raise ValueError("stored primary facts differ from pinned client asset")
     canonical = binding.canonical_items()
     identity_facts = json.loads(binding.ITEM_FACTS.read_bytes())["records"]
+    release_dates = sources.get("release_dates", {})
+    for release in release_dates.values():
+        date.fromisoformat(release["date"])
+        if release["source_id"] not in packet["source_registry"]:
+            raise ValueError("release date lacks its pinned source")
+        if release["date"] != packet["source_registry"][release["source_id"]]["release_date"]:
+            raise ValueError("release date differs from pinned source metadata")
+    amendments = {}
+    for amendment in sources.get("type_amendments", []):
+        if amendment["candidate_key"] not in TYPES or type(amendment["max_tier"]) is not int or amendment["max_tier"] not in (1, 2, 3):
+            raise ValueError("invalid sourced type amendment")
+        if any(s not in packet["source_registry"] for s in amendment["source_ids"]):
+            raise ValueError("type amendment lacks source evidence")
+        amendments.setdefault(amendment["client_id"], []).append(amendment)
     wiki_by_name = {}
     for source_id, table in sources["wiki_tables"].items():
         for row in table:
@@ -171,6 +187,18 @@ def build(packet: dict) -> dict:
                     discrepancies.append({"kind": "PRIMARY_WIKI_SLOT_DISPUTE", "source": source_id,
                                           "primary_slots": client["slots"], "source_slots": row["slots"]})
         comparisons = {}
+        selected_amendments = []
+        for amendment in amendments.get(item_id, []):
+            if normalize(amendment["item_name"]) != normalize(name):
+                raise ValueError("type amendment has conflicting named identity")
+            prior = allowed.get(amendment["candidate_key"])
+            if prior is None:
+                raise ValueError("partial type amendment cannot invent an unobserved item profile")
+            allowed[amendment["candidate_key"]] = amendment["max_tier"]
+            selected_amendments.append(amendment)
+            discrepancies.append({"kind": "DATED_ITEM_TYPE_TIER_AMENDMENT", "candidate_key": amendment["candidate_key"],
+                                  "helper_max_tier": prior, "selected_max_tier": amendment["max_tier"],
+                                  "sources": amendment["source_ids"]})
         for source_id, rows in engines.items():
             row = rows.get(item_id)
             if row is None:
@@ -208,17 +236,50 @@ def build(packet: dict) -> dict:
         elif allowed and not selected_source.startswith("tibiopedia_i"):
             status = "COMMUNITY_SINGLE_SOURCE"
         native_meta = packet["source_registry"].get(f"tibiopedia_i{item_id}", {})
+        target_time_evidence = {}
+        introduced = release_dates.get(native_meta.get("introduced_version"))
+        withdrawn = release_dates.get(native_meta.get("withdrawn_version"))
+        if withdrawn and date.fromisoformat(withdrawn["date"]) <= TARGET_DATE:
+            target_time_status = "WITHDRAWN_BEFORE_TARGET_EXCLUDED"
+            target_time_evidence = {"version": native_meta["withdrawn_version"], **withdrawn}
+        elif introduced and date.fromisoformat(introduced["date"]) > TARGET_DATE:
+            target_time_status = "POST_TARGET_RELEASE_EXCLUDED"
+            target_time_evidence = {"version": native_meta["introduced_version"], **introduced}
+        elif introduced:
+            target_time_status = "PRE_TARGET_RELEASE_CONTINUITY_UNVERIFIED"
+            target_time_evidence = {"version": native_meta["introduced_version"], **introduced}
+        else:
+            prior_observations = [o for o in identity_evidence.get("wiki_observations", [])
+                                  if date.fromisoformat(o["revision_timestamp"][:10]) <= TARGET_DATE]
+            if prior_observations:
+                target_time_status = "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED"
+                target_time_evidence = {"observations": prior_observations}
+            else:
+                target_time_status = "TARGET_RELEASE_DATE_UNPROVEN"
+                historical_helpers = [(source_id, packet["source_registry"][source_id]) for source_id, _ in wiki_rows
+                                      if packet["source_registry"][source_id].get("revision_date") and
+                                      date.fromisoformat(packet["source_registry"][source_id]["revision_date"]) <= TARGET_DATE]
+                if historical_helpers:
+                    target_time_status = "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED"
+                    target_time_evidence = {"sources": [{"source_id": source_id, "revision": meta["revision"],
+                                                       "date": meta["revision_date"]} for source_id, meta in historical_helpers]}
         if native_meta.get("withdrawn_version"):
             status = "RETIRED_SOURCE_ITEM_EXCLUDED"
+        if selected_amendments and status == "COMMUNITY_SINGLE_SOURCE":
+            status = "COMMUNITY_SINGLE_SOURCE_WITH_CORROBORATED_FIELD"
         evidence_status = status
         if item_ref is None:
             if status != "RETIRED_SOURCE_ITEM_EXCLUDED":
                 status = binding_status
+        if target_time_status == "POST_TARGET_RELEASE_EXCLUDED":
+            status = "POST_TARGET_RELEASE_EXCLUDED"
         items.append({"client_id": item_id, "item_ref": item_ref, "name": name, "slots": client["slots"],
                       "slot_source": "primary_client", "binding_status": binding_status,
                       "identity_evidence": identity_evidence,
                       "allowed_types": allowed, "eligibility_sources": evidence, "status": status,
                       "evidence_status": evidence_status, "selected_eligibility_source": selected_source,
+                      "selected_type_amendments": selected_amendments,
+                      "target_time_status": target_time_status, "target_time_evidence": target_time_evidence,
                       "community_comparison": community_comparison,
                       "engine_comparison": comparisons, "discrepancies": discrepancies})
     primary_names = {normalize(r["name"]) for r in primary}
@@ -230,10 +291,18 @@ def build(packet: dict) -> dict:
                "status_counts": dict(sorted(Counter(r["status"] for r in items).items())),
                "evidence_status_counts": dict(sorted(Counter(r["evidence_status"] for r in items).items())),
                "typed_items": sum(bool(r["allowed_types"]) for r in items),
+               "target_time_status_counts": dict(sorted(Counter(r["target_time_status"] for r in items).items())),
+               "target_candidate_typed_items": sum(bool(r["allowed_types"]) and r["target_time_status"] not in (
+                    "POST_TARGET_RELEASE_EXCLUDED", "WITHDRAWN_BEFORE_TARGET_EXCLUDED") for r in items),
+               "target_candidate_bound_items": sum(bool(r["allowed_types"]) and r["item_ref"] is not None and
+                    r["target_time_status"] not in ("POST_TARGET_RELEASE_EXCLUDED", "WITHDRAWN_BEFORE_TARGET_EXCLUDED")
+                    for r in items),
                "discrepancy_counts": dict(sorted(Counter(d["kind"] for r in items for d in r["discrepancies"]).items())),
                "qualified_items_per_type": {k: sum(r["item_ref"] is not None and r["evidence_status"] in (
                                                   "COMMUNITY_CORROBORATED", "DERIVED_SELECTED_OVER_STALE_HELPER",
-                                                  "COMMUNITY_SINGLE_SOURCE") and k in r["allowed_types"]
+                                                  "COMMUNITY_SINGLE_SOURCE", "COMMUNITY_SINGLE_SOURCE_WITH_CORROBORATED_FIELD")
+                                                  and r["target_time_status"] not in ("POST_TARGET_RELEASE_EXCLUDED",
+                                                  "WITHDRAWN_BEFORE_TARGET_EXCLUDED") and k in r["allowed_types"]
                                                   for r in items) for k in TYPES},
                "global_verified_items": 0}
     return {"schema": "OTERYN_IMBUEMENT_ELIGIBILITY_EVIDENCE/v1", "activation": "DRAFT_NOT_RUNTIME_READY",
@@ -245,7 +314,11 @@ def build(packet: dict) -> dict:
                 "DERIVED_SELECTED_OVER_STALE_HELPER is a source candidate choice, never verified Global parity or runtime "
                 "admission. BR-only fallback is COMMUNITY_SINGLE_SOURCE. ItemRefs independently require named identity "
                 "and canonical existence. Global server eligibility and target-date continuity remain unverified; "
-                "OTS-only hypotheses fail closed; empty allowed_types means unknown, never forbidden.",
+                "OTS-only hypotheses fail closed; empty allowed_types means unknown, never forbidden. "
+                "Dated named-item amendments correct only their documented fields, without promoting the remaining "
+                "profile. Post-target launches and pre-target withdrawals are excluded from target summaries while "
+                "current client facts remain retained; a dated named observation establishes chronology, not server "
+                "rule continuity at the target server save.",
             "items": items, "summary": summary,
             "rejected_sources": packet["rejected_sources"],
             "unmatched_wiki_items": sorted(name for name in wiki_by_name if name not in primary_names)}

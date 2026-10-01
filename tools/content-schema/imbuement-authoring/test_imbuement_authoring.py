@@ -40,10 +40,27 @@ class ImbuementAuthoringTests(unittest.TestCase):
         for name in ("Scorch", "Venom", "Frost", "Electrify", "Reap"):
             self.assertEqual(self.definition(name)["category"], "elemental_damage")
 
-    def test_strike_uses_wiki_values_over_crystal(self):
+    def test_strike_uses_final_strengths_instead_of_raw_xml_deltas(self):
         tiers = self.definition("Strike")["tiers"]
         self.assertEqual([t["effect"]["chance_bps"] for t in tiers], [1000] * 3)
         self.assertEqual([t["effect"]["extra_damage_bps"] for t in tiers], [1500, 2500, 5000])
+
+    def test_vibrancy_is_recovery_on_an_additional_attack(self):
+        tiers = self.definition("Vibrancy")["tiers"]
+        self.assertEqual([t["effect"]["remove_chance_bps"] for t in tiers], [1500, 2500, 5000])
+        for tier in tiers:
+            self.assertEqual(tier["effect"]["kind"], "paralysis_recovery")
+            self.assertEqual(tier["effect"]["trigger"], "additional_paralysis_attack_while_paralysed")
+        self.rejects(lambda c: self.definition("Vibrancy", c)["tiers"][0].update(
+            effect={"kind": "paralysis_deflection", "chance_bps": 1500}))
+
+    def test_completion_does_not_admit_post_target_item_or_proposed_refs(self):
+        report = authoring.comparison()["completion"]
+        self.assertEqual(report["current_equipment_typed"], 629)
+        self.assertEqual(report["target_equipment_typed"], 628)
+        self.assertEqual(report["target_existing_item_refs"], 627)
+        self.assertEqual(report["validated_missing_item_proposals"], 2)
+        self.assertEqual(report["gold_token_exchange_bundles"], 9)
 
     def test_basic_punch_uses_wiki_recipe_over_canary(self):
         material = self.definition("Punch")["tiers"][0]["materials"][0]

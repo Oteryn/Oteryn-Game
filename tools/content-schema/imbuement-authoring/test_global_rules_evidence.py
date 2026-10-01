@@ -97,9 +97,67 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         for key in ("swiftness_bonus_points_by_tier", "strike_chance_percent",
                     "strike_extra_damage_percent_by_tier"):
             self.assertNotIn("tibiopedia_imbuing_guide", self.rules[key]["evidence"])
-        self.assertIn("vibrancy_pvp", {r["id"] for r in self.packet["unresolved"]})
         self.assertTrue(all(not attempt["used_for_values"]
                             for attempt in self.packet["additional_public_access_attempts"]))
+
+    def test_basic_scroll_timeline_precedes_frozen_target_without_primary_date_overclaim(self):
+        introduction = self.rules["basic_scroll_introduction"]
+        self.assertEqual(introduction["value"]["client_version"], "15.30")
+        self.assertLessEqual(introduction["value"]["release_date"], "2026-07-28")
+        self.assertEqual(introduction["value"]["teaser_date"], "2026-06-11")
+        self.assertTrue(introduction["parity_status"].startswith("DERIVED"))
+        self.assertNotIn("basic_scroll_origin_date", {r["id"] for r in self.packet["unresolved"]})
+
+    def test_concrete_engine_hypotheses_do_not_silently_fill_global_unknowns(self):
+        for key in ("etcher_consumed_units", "etcher_invalid_target_consumed_units",
+                    "scroll_application_accepts_equipped_target", "fine_grained_timer_hypothesis"):
+            rule = self.rules[key]
+            self.assertIsNone(rule["value"])
+            self.assertEqual(rule["parity_status"], "PARITY_PENDING")
+            self.assertTrue(rule["hypotheses"])
+            for hypothesis in rule["hypotheses"]:
+                self.assertEqual(hypothesis["status"], "OTS_HYPOTHESIS_ONLY")
+                self.assertFalse(hypothesis["selected_as_global"])
+                self.assertTrue(all(self.sources[s]["role"] == "OTS_HYPOTHESIS_ONLY"
+                                    for s in hypothesis["evidence"]))
+
+    def test_pvp_snippet_qualification_keeps_success_state_gate_unresolved(self):
+        rule = self.rules["vibrancy_pvp_gate"]
+        self.assertIsNone(rule["value"])
+        self.assertEqual(rule["parity_status"], "PARITY_PENDING")
+        self.assertIn("vibrancy_pvp_gate", {r["id"] for r in self.packet["unresolved"]})
+        self.assertNotIn("vibrancy_pvp", {r["id"] for r in self.packet["closed_gaps"]})
+        conflict = next(r for r in self.packet["conflicts"]
+                        if r["id"] == "vibrancy_pvp_success_state_gate")
+        self.assertEqual(conflict["family_page_qualification"], "if initially successful")
+        self.assertEqual(set(conflict["evidence"]), set(rule["evidence"]))
+        for key in rule["evidence"]:
+            self.assertEqual(self.sources[key]["access_status"], "INDEXED_SEARCH_SNIPPET_ONLY")
+            self.assertEqual(self.sources[key]["role"], "DERIVED")
+        profile = next(r for r in self.packet["delegated_profiles"]
+                       if r["id"] == "vibrancy_sequence")
+        self.assertEqual(profile["status"], "PARTIALLY_CORROBORATED_NOT_CLOSED")
+
+    def test_probability_does_not_encode_vibrancy_as_initial_admission_chance(self):
+        self.assertEqual(self.rules["vibrancy_deflection_chance_percent_by_tier"]
+                         ["runtime_semantics_profile"], "imbuement-combat.json")
+        self.assertIn("vibrancy_admission_only_probability",
+                      {conflict["id"] for conflict in self.packet["conflicts"]})
+
+    def test_unresolved_research_preserves_actual_failed_and_successful_attempts(self):
+        attempts = {row["id"]: row for row in self.packet["research_attempts"]}
+        self.assertIn("HTTP429", attempts["follow_up_queries"]["outcome"])
+        self.assertIn("HTTP403", attempts["primary_dated_news"]["outcome"])
+        self.assertIn("BothHTTP200", attempts["native_etcher_and_guide"]["outcome"])
+        self.assertTrue(attempts["concrete_implementation_hypotheses"]["urls"])
+
+    def test_user_requested_crystal_branch_is_distinct_and_keeps_ots_confidence(self):
+        source = self.sources["crystal_imbuements_player_impl"]
+        self.assertEqual(source["branch"], "imbuements")
+        self.assertEqual(source["revision"], "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1")
+        self.assertEqual(source["role"], "OTS_HYPOTHESIS_ONLY")
+        self.assertTrue(any("crystal_imbuements_player_impl" in hypothesis["evidence"]
+                            for hypothesis in self.rules["etcher_consumed_units"]["hypotheses"]))
 
 
 if __name__ == "__main__":

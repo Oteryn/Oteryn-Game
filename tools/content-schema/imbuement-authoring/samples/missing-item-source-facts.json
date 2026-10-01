@@ -1,0 +1,124 @@
+{
+  "schema": "OTERYN_MISSING_IMBUEMENT_ITEM_SOURCE_FACTS/v1",
+  "captured_on": "2026-10-01",
+  "target_date": "2026-07-28",
+  "records": [
+    {
+      "client_id": 49160,
+      "source_name": "Bursa Obscura",
+      "facts": {
+        "container_capacity": 1,
+        "weight_oz": "1.50",
+        "imbuement_slots": 1,
+        "allowed_imbuement_max_tiers": {
+          "featherweight": 3
+        },
+        "stackable": false,
+        "marketable": true,
+        "tradeable": true,
+        "introduced_version": "13.40.e15431",
+        "introduced_on": null,
+        "description": "A mysterious pouch from an extra-dimensional realm."
+      },
+      "sources": {
+        "wiki_br": {
+          "url": "https://www.tibiawiki.com.br/wiki/Bursa_Obscura",
+          "revision_id": 427070,
+          "revision_url": "https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=427070](https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=427070",
+          "sha256": "ef6fde7a5e8ed49da081da588797e2adb9a16a05e1ae9710d67655f7f4847109",
+          "digest_scope": "Tavily search include_raw_content extracted markdown",
+          "observed_fields": [
+            "container_capacity",
+            "weight_oz",
+            "imbuement_slots",
+            "marketable",
+            "tradeable",
+            "introduced_version",
+            "introduced_on",
+            "description"
+          ],
+          "published_approval_date": "2025-07-06"
+        },
+        "tibiopedia": {
+          "url": "https://tibiopedia.pl/items/Bursa_Obscura",
+          "sha256": "c7968262aa0ddb166b6504af6d09b511e0f4e79998e51d05ae52ba565a8afd57",
+          "digest_scope": "native captured HTML",
+          "observed_fields": [
+            "allowed_imbuement_max_tiers",
+            "stackable",
+            "weight_oz",
+            "imbuement_slots",
+            "introduced_version"
+          ]
+        }
+      },
+      "acquisition_facts": {
+        "npc_names": [
+          "Malunga",
+          "Dread Guardian"
+        ],
+        "exchange_source_name": "Tentacle Piece",
+        "count": 55,
+        "notes": "Dread Guardian exchange is during Devovorga Essence mini world change."
+      }
+    },
+    {
+      "client_id": 53192,
+      "source_name": "Sailor's Backpack",
+      "facts": {
+        "container_capacity": 24,
+        "weight_oz": "15.00",
+        "imbuement_slots": 1,
+        "allowed_imbuement_max_tiers": {
+          "featherweight": 3
+        },
+        "stackable": false,
+        "marketable": true,
+        "tradeable": true,
+        "introduced_version": "15.32.fc9100",
+        "introduced_on": "2026-08-04",
+        "description": null
+      },
+      "sources": {
+        "wiki_br": {
+          "url": "https://www.tibiawiki.com.br/wiki/Sailor%27s_Backpack",
+          "revision_id": 442016,
+          "revision_url": "https://www.tibiawiki.com.br/index.php?title=Sailor%27s_Backpack&oldid=442016](https://www.tibiawiki.com.br/index.php?title=Sailor%27s_Backpack&oldid=442016",
+          "sha256": "d791167b0a6e7567c1631d02ec666985f33158347c4622d935b6032a4bf085de",
+          "digest_scope": "Tavily search include_raw_content extracted markdown",
+          "observed_fields": [
+            "container_capacity",
+            "weight_oz",
+            "imbuement_slots",
+            "marketable",
+            "tradeable",
+            "introduced_version",
+            "introduced_on",
+            "description"
+          ],
+          "published_approval_date": "2026-08-04"
+        },
+        "tibiopedia": {
+          "url": "https://tibiopedia.pl/items/Sailor%27s_Backpack",
+          "sha256": "2965b8ca85fbb46eb057a3888f98218bfcef36e494cca06648972aaf376e1ff7",
+          "digest_scope": "native captured HTML",
+          "observed_fields": [
+            "allowed_imbuement_max_tiers",
+            "stackable",
+            "weight_oz",
+            "imbuement_slots",
+            "introduced_version"
+          ]
+        }
+      },
+      "acquisition_facts": {
+        "npc_names": [
+          "Proprietor Piers"
+        ],
+        "exchange_source_name": "Event Points",
+        "count": 90,
+        "event_name": "The Great Expedition"
+      }
+    }
+  ]
+}

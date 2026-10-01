@@ -1,0 +1,5598 @@
+{
+  "schema": "OTERYN_CRYSTAL_IMBUEMENTS_BRANCH_EVIDENCE/v1",
+  "repository": "zimbadev/crystalserver",
+  "branch": "imbuements",
+  "revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
+  "captured_on": "2026-10-01",
+  "role": "OTS_HYPOTHESIS_ONLY",
+  "scope": "Normalized independent OTS source facts; neither official Global authority nor runtime-ready implementation. No third-party source bodies redistributed.",
+  "sources": {
+    "data/XML/imbuements.xml": {
+      "blob_sha": "dc712cbd666a41614dbb1d9fbb355138e59fc5a3",
+      "sha256": "7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
+      "line_count": 458,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/XML/imbuements.xml"
+    },
+    "data/scripts/actions/items/imbuement_scrolls.lua": {
+      "blob_sha": "597b4218acaaea2bf5fa2f843f27654d49968244",
+      "sha256": "e5fe4eb9ddcd88806865d8041c0f398b8b444477cb0f82420243d90f09d41554",
+      "line_count": 13,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/scripts/actions/items/imbuement_scrolls.lua"
+    },
+    "data/scripts/actions/items/etcher.lua": {
+      "blob_sha": "27006647c0c91d30f3a5d4812ea2b8afd054fc5b",
+      "sha256": "94a775552f5b43b6d28340df87858215ef8ac409dfc8eef083cf7287198aa31d",
+      "line_count": 13,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/scripts/actions/items/etcher.lua"
+    },
+    "data/scripts/actions/objects/imbuement_shrine.lua": {
+      "blob_sha": "fe6754a2f43cc227a5d2ab1408c982ab1ebbee5d",
+      "sha256": "0a8e76aa16c4d96644d465f2a1d6d10be937c014dcbccf3686f08cb756bcb906",
+      "line_count": 13,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/scripts/actions/objects/imbuement_shrine.lua"
+    },
+    "data-global/npc/imbuement_assistant.lua": {
+      "blob_sha": "96a26d77bf2667e67b98f48c2f7297132157cd91",
+      "sha256": "3f815ac19db3834929d1e96d779fbc06a875d0d1868c15a6242ff8c18eb8e396",
+      "line_count": 464,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data-global/npc/imbuement_assistant.lua"
+    },
+    "data-crystal/npc/imbuement_assistant.lua": {
+      "blob_sha": "aebe613af2c16a552d9ded33902e735c251c4bf9",
+      "sha256": "1f26b1afa597e202f0214088d76e896d29b1ecbbc271d004ae6bb04743918981",
+      "line_count": 452,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data-crystal/npc/imbuement_assistant.lua"
+    },
+    "data-global/npc/yana.lua": {
+      "blob_sha": "767904448d1923e28733ffba83d90b44da3dafa7",
+      "sha256": "3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324",
+      "line_count": 252,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data-global/npc/yana.lua"
+    },
+    "src/creatures/players/imbuements/imbuements.cpp": {
+      "blob_sha": "0cdc2db68a667ffa06eac98868cf4d153da63f7a",
+      "sha256": "b1a39c0567b8db265bf9dea64a9c6abe358e79f52088f9380789d219e80cf27a",
+      "line_count": 472,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp"
+    },
+    "src/creatures/players/player.cpp": {
+      "blob_sha": "06f6859722057f3be165d1f8c3e8507983248b26",
+      "sha256": "96a49407670a756b0178324784d181fb4aa5754bf82eb155c1f4eea2ef6399fd",
+      "line_count": 13295,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp"
+    },
+    "src/creatures/combat/combat.cpp": {
+      "blob_sha": "499a6aec29f7fd85da4953aea599ab1cba181fe3",
+      "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+      "line_count": 2999,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp"
+    },
+    "src/creatures/combat/condition.cpp": {
+      "blob_sha": "ad062c3bf48c6f02c09af514f1611a3cfc3c150f",
+      "sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+      "line_count": 2826,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/condition.cpp"
+    },
+    "src/game/game.cpp": {
+      "blob_sha": "0d92f0ad2c25ddde690488729e33ec036254f6b8",
+      "sha256": "4b26d0c5168e0907ae9044b2587a37ba647f6b6651a94e02f1c12a2e3af58d45",
+      "line_count": 13109,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp"
+    },
+    "config.lua.dist": {
+      "blob_sha": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "line_count": 764,
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/config.lua.dist"
+    }
+  },
+  "xml": {
+    "bases": [
+      {
+        "id": "1",
+        "name": "Basic",
+        "price": "7500",
+        "removecost": "15000",
+        "duration": "72000"
+      },
+      {
+        "id": "2",
+        "name": "Intricate",
+        "price": "60000",
+        "removecost": "15000",
+        "duration": "72000"
+      },
+      {
+        "id": "3",
+        "name": "Powerful",
+        "price": "250000",
+        "removecost": "15000",
+        "duration": "72000"
+      }
+    ],
+    "categories": [
+      {
+        "id": "0",
+        "name": "Elemental Damage",
+        "agressive": "1"
+      },
+      {
+        "id": "1",
+        "name": "Life Leech",
+        "agressive": "1"
+      },
+      {
+        "id": "2",
+        "name": "Mana Leech",
+        "agressive": "1"
+      },
+      {
+        "id": "3",
+        "name": "Critical Hit",
+        "agressive": "1"
+      },
+      {
+        "id": "4",
+        "name": "Elemental Protection (Death)",
+        "agressive": "1"
+      },
+      {
+        "id": "5",
+        "name": "Elemental Protection (Earth)",
+        "agressive": "1"
+      },
+      {
+        "id": "6",
+        "name": "Elemental Protection (Fire)",
+        "agressive": "1"
+      },
+      {
+        "id": "7",
+        "name": "Elemental Protection (Ice)",
+        "agressive": "1"
+      },
+      {
+        "id": "8",
+        "name": "Elemental Protection (Energy)",
+        "agressive": "1"
+      },
+      {
+        "id": "9",
+        "name": "Elemental Protection (Holy)",
+        "agressive": "1"
+      },
+      {
+        "id": "10",
+        "name": "Increase Speed",
+        "agressive": "0"
+      },
+      {
+        "id": "11",
+        "name": "Skillboost (Axe Fighting)",
+        "agressive": "1"
+      },
+      {
+        "id": "12",
+        "name": "Skillboost (Sword Fighting)",
+        "agressive": "1"
+      },
+      {
+        "id": "13",
+        "name": "Skillboost (Club Fighting)",
+        "agressive": "1"
+      },
+      {
+        "id": "14",
+        "name": "Skillboost (Shielding)",
+        "agressive": "1"
+      },
+      {
+        "id": "15",
+        "name": "Skillboost (Distance Fighting)",
+        "agressive": "1"
+      },
+      {
+        "id": "16",
+        "name": "Skillboost (Magic Level)",
+        "agressive": "1"
+      },
+      {
+        "id": "17",
+        "name": "Increase Capacity",
+        "agressive": "0"
+      },
+      {
+        "id": "18",
+        "name": "Skillboost (Fist Fighting)",
+        "agressive": "1"
+      },
+      {
+        "id": "19",
+        "name": "Paralysis Removal",
+        "agressive": "0"
+      }
+    ],
+    "records": [
+      {
+        "name": "Bash",
+        "tier": 1,
+        "category_id": 13,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "club",
+          "bonus": "1"
+        },
+        "materials": [
+          {
+            "source_item_id": 9657,
+            "count": 20
+          }
+        ],
+        "source_line": 296
+      },
+      {
+        "name": "Bash",
+        "tier": 2,
+        "category_id": 13,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51724,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "club",
+          "bonus": "2"
+        },
+        "materials": [
+          {
+            "source_item_id": 9657,
+            "count": 20
+          },
+          {
+            "source_item_id": 22189,
+            "count": 15
+          }
+        ],
+        "source_line": 301
+      },
+      {
+        "name": "Bash",
+        "tier": 3,
+        "category_id": 13,
+        "premium": true,
+        "storage": 50492,
+        "scroll_item_id": 51444,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "club",
+          "bonus": "4"
+        },
+        "materials": [
+          {
+            "source_item_id": 9657,
+            "count": 20
+          },
+          {
+            "source_item_id": 22189,
+            "count": 15
+          },
+          {
+            "source_item_id": 10405,
+            "count": 10
+          }
+        ],
+        "source_line": 307
+      },
+      {
+        "name": "Blockade",
+        "tier": 1,
+        "category_id": 14,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "shield",
+          "bonus": "1"
+        },
+        "materials": [
+          {
+            "source_item_id": 9641,
+            "count": 20
+          }
+        ],
+        "source_line": 368
+      },
+      {
+        "name": "Blockade",
+        "tier": 2,
+        "category_id": 14,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51725,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "shield",
+          "bonus": "2"
+        },
+        "materials": [
+          {
+            "source_item_id": 9641,
+            "count": 20
+          },
+          {
+            "source_item_id": 11703,
+            "count": 25
+          }
+        ],
+        "source_line": 373
+      },
+      {
+        "name": "Blockade",
+        "tier": 3,
+        "category_id": 14,
+        "premium": true,
+        "storage": 50496,
+        "scroll_item_id": 51445,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "shield",
+          "bonus": "4"
+        },
+        "materials": [
+          {
+            "source_item_id": 9641,
+            "count": 20
+          },
+          {
+            "source_item_id": 11703,
+            "count": 25
+          },
+          {
+            "source_item_id": 20199,
+            "count": 25
+          }
+        ],
+        "source_line": 379
+      },
+      {
+        "name": "Chop",
+        "tier": 1,
+        "category_id": 11,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "axe",
+          "bonus": "1"
+        },
+        "materials": [
+          {
+            "source_item_id": 10196,
+            "count": 20
+          }
+        ],
+        "source_line": 278
+      },
+      {
+        "name": "Chop",
+        "tier": 2,
+        "category_id": 11,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51726,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "axe",
+          "bonus": "2"
+        },
+        "materials": [
+          {
+            "source_item_id": 10196,
+            "count": 20
+          },
+          {
+            "source_item_id": 11447,
+            "count": 25
+          }
+        ],
+        "source_line": 283
+      },
+      {
+        "name": "Chop",
+        "tier": 3,
+        "category_id": 11,
+        "premium": true,
+        "storage": 50492,
+        "scroll_item_id": 51446,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "axe",
+          "bonus": "4"
+        },
+        "materials": [
+          {
+            "source_item_id": 10196,
+            "count": 20
+          },
+          {
+            "source_item_id": 11447,
+            "count": 25
+          },
+          {
+            "source_item_id": 21200,
+            "count": 20
+          }
+        ],
+        "source_line": 289
+      },
+      {
+        "name": "Cloud Fabric",
+        "tier": 1,
+        "category_id": 8,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "energy",
+          "value": "3"
+        },
+        "materials": [
+          {
+            "source_item_id": 9644,
+            "count": 20
+          }
+        ],
+        "source_line": 170
+      },
+      {
+        "name": "Cloud Fabric",
+        "tier": 2,
+        "category_id": 8,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51727,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "energy",
+          "value": "8"
+        },
+        "materials": [
+          {
+            "source_item_id": 9644,
+            "count": 20
+          },
+          {
+            "source_item_id": 14079,
+            "count": 15
+          }
+        ],
+        "source_line": 175
+      },
+      {
+        "name": "Cloud Fabric",
+        "tier": 3,
+        "category_id": 8,
+        "premium": true,
+        "storage": 50490,
+        "scroll_item_id": 51447,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "energy",
+          "value": "15"
+        },
+        "materials": [
+          {
+            "source_item_id": 9644,
+            "count": 20
+          },
+          {
+            "source_item_id": 14079,
+            "count": 15
+          },
+          {
+            "source_item_id": 9665,
+            "count": 10
+          }
+        ],
+        "source_line": 181
+      },
+      {
+        "name": "Demon Presence",
+        "tier": 1,
+        "category_id": 9,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "holy",
+          "value": "3"
+        },
+        "materials": [
+          {
+            "source_item_id": 9639,
+            "count": 25
+          }
+        ],
+        "source_line": 206
+      },
+      {
+        "name": "Demon Presence",
+        "tier": 2,
+        "category_id": 9,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51728,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "holy",
+          "value": "8"
+        },
+        "materials": [
+          {
+            "source_item_id": 9639,
+            "count": 25
+          },
+          {
+            "source_item_id": 9638,
+            "count": 25
+          }
+        ],
+        "source_line": 211
+      },
+      {
+        "name": "Demon Presence",
+        "tier": 3,
+        "category_id": 9,
+        "premium": true,
+        "storage": 50498,
+        "scroll_item_id": 51448,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "holy",
+          "value": "15"
+        },
+        "materials": [
+          {
+            "source_item_id": 9639,
+            "count": 25
+          },
+          {
+            "source_item_id": 9638,
+            "count": 25
+          },
+          {
+            "source_item_id": 10304,
+            "count": 20
+          }
+        ],
+        "source_line": 217
+      },
+      {
+        "name": "Dragon Hide",
+        "tier": 1,
+        "category_id": 6,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "fire",
+          "value": "3"
+        },
+        "materials": [
+          {
+            "source_item_id": 5877,
+            "count": 20
+          }
+        ],
+        "source_line": 188
+      },
+      {
+        "name": "Dragon Hide",
+        "tier": 2,
+        "category_id": 6,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51729,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "fire",
+          "value": "8"
+        },
+        "materials": [
+          {
+            "source_item_id": 5877,
+            "count": 20
+          },
+          {
+            "source_item_id": 16131,
+            "count": 10
+          }
+        ],
+        "source_line": 193
+      },
+      {
+        "name": "Dragon Hide",
+        "tier": 3,
+        "category_id": 6,
+        "premium": true,
+        "storage": 50494,
+        "scroll_item_id": 51449,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "fire",
+          "value": "15"
+        },
+        "materials": [
+          {
+            "source_item_id": 5877,
+            "count": 20
+          },
+          {
+            "source_item_id": 16131,
+            "count": 10
+          },
+          {
+            "source_item_id": 11658,
+            "count": 5
+          }
+        ],
+        "source_line": 199
+      },
+      {
+        "name": "Electrify",
+        "tier": 1,
+        "category_id": 0,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "energy",
+          "value": "10"
+        },
+        "materials": [
+          {
+            "source_item_id": 18993,
+            "count": 25
+          }
+        ],
+        "source_line": 80
+      },
+      {
+        "name": "Electrify",
+        "tier": 2,
+        "category_id": 0,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51730,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "energy",
+          "value": "25"
+        },
+        "materials": [
+          {
+            "source_item_id": 18993,
+            "count": 25
+          },
+          {
+            "source_item_id": 21975,
+            "count": 5
+          }
+        ],
+        "source_line": 85
+      },
+      {
+        "name": "Electrify",
+        "tier": 3,
+        "category_id": 0,
+        "premium": true,
+        "storage": 50490,
+        "scroll_item_id": 51450,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "energy",
+          "value": "50"
+        },
+        "materials": [
+          {
+            "source_item_id": 18993,
+            "count": 25
+          },
+          {
+            "source_item_id": 21975,
+            "count": 5
+          },
+          {
+            "source_item_id": 23508,
+            "count": 1
+          }
+        ],
+        "source_line": 91
+      },
+      {
+        "name": "Epiphany",
+        "tier": 1,
+        "category_id": 16,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "magicpoints",
+          "bonus": "1"
+        },
+        "materials": [
+          {
+            "source_item_id": 9635,
+            "count": 25
+          }
+        ],
+        "source_line": 350
+      },
+      {
+        "name": "Epiphany",
+        "tier": 2,
+        "category_id": 16,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51731,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "magicpoints",
+          "bonus": "2"
+        },
+        "materials": [
+          {
+            "source_item_id": 9635,
+            "count": 25
+          },
+          {
+            "source_item_id": 11452,
+            "count": 15
+          }
+        ],
+        "source_line": 355
+      },
+      {
+        "name": "Epiphany",
+        "tier": 3,
+        "category_id": 16,
+        "premium": true,
+        "storage": 50501,
+        "scroll_item_id": 51451,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "magicpoints",
+          "bonus": "4"
+        },
+        "materials": [
+          {
+            "source_item_id": 9635,
+            "count": 25
+          },
+          {
+            "source_item_id": 11452,
+            "count": 15
+          },
+          {
+            "source_item_id": 10309,
+            "count": 15
+          }
+        ],
+        "source_line": 361
+      },
+      {
+        "name": "Featherweight",
+        "tier": 1,
+        "category_id": 17,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "capacity",
+          "value": "3"
+        },
+        "materials": [
+          {
+            "source_item_id": 25694,
+            "count": 20
+          }
+        ],
+        "source_line": 422
+      },
+      {
+        "name": "Featherweight",
+        "tier": 2,
+        "category_id": 17,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51732,
+        "effect": {
+          "key": "effect",
+          "type": "capacity",
+          "value": "8"
+        },
+        "materials": [
+          {
+            "source_item_id": 25694,
+            "count": 20
+          },
+          {
+            "source_item_id": 25702,
+            "count": 10
+          }
+        ],
+        "source_line": 427
+      },
+      {
+        "name": "Featherweight",
+        "tier": 3,
+        "category_id": 17,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51452,
+        "effect": {
+          "key": "effect",
+          "type": "capacity",
+          "value": "15"
+        },
+        "materials": [
+          {
+            "source_item_id": 25694,
+            "count": 20
+          },
+          {
+            "source_item_id": 25702,
+            "count": 10
+          },
+          {
+            "source_item_id": 20205,
+            "count": 5
+          }
+        ],
+        "source_line": 433
+      },
+      {
+        "name": "Frost",
+        "tier": 1,
+        "category_id": 0,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "ice",
+          "value": "10"
+        },
+        "materials": [
+          {
+            "source_item_id": 9661,
+            "count": 25
+          }
+        ],
+        "source_line": 116
+      },
+      {
+        "name": "Frost",
+        "tier": 2,
+        "category_id": 0,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51733,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "ice",
+          "value": "25"
+        },
+        "materials": [
+          {
+            "source_item_id": 9661,
+            "count": 25
+          },
+          {
+            "source_item_id": 21801,
+            "count": 10
+          }
+        ],
+        "source_line": 121
+      },
+      {
+        "name": "Frost",
+        "tier": 3,
+        "category_id": 0,
+        "premium": true,
+        "storage": 50496,
+        "scroll_item_id": 51453,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "ice",
+          "value": "50"
+        },
+        "materials": [
+          {
+            "source_item_id": 9661,
+            "count": 25
+          },
+          {
+            "source_item_id": 21801,
+            "count": 10
+          },
+          {
+            "source_item_id": 9650,
+            "count": 5
+          }
+        ],
+        "source_line": 127
+      },
+      {
+        "name": "Lich Shroud",
+        "tier": 1,
+        "category_id": 4,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "death",
+          "value": "2"
+        },
+        "materials": [
+          {
+            "source_item_id": 11466,
+            "count": 25
+          }
+        ],
+        "source_line": 134
+      },
+      {
+        "name": "Lich Shroud",
+        "tier": 2,
+        "category_id": 4,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51734,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "death",
+          "value": "5"
+        },
+        "materials": [
+          {
+            "source_item_id": 11466,
+            "count": 25
+          },
+          {
+            "source_item_id": 22007,
+            "count": 20
+          }
+        ],
+        "source_line": 139
+      },
+      {
+        "name": "Lich Shroud",
+        "tier": 3,
+        "category_id": 4,
+        "premium": true,
+        "storage": 50488,
+        "scroll_item_id": 51454,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "death",
+          "value": "10"
+        },
+        "materials": [
+          {
+            "source_item_id": 11466,
+            "count": 25
+          },
+          {
+            "source_item_id": 22007,
+            "count": 20
+          },
+          {
+            "source_item_id": 9660,
+            "count": 5
+          }
+        ],
+        "source_line": 145
+      },
+      {
+        "name": "Precision",
+        "tier": 1,
+        "category_id": 15,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "distance",
+          "bonus": "1"
+        },
+        "materials": [
+          {
+            "source_item_id": 11464,
+            "count": 25
+          }
+        ],
+        "source_line": 314
+      },
+      {
+        "name": "Precision",
+        "tier": 2,
+        "category_id": 15,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51735,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "distance",
+          "bonus": "2"
+        },
+        "materials": [
+          {
+            "source_item_id": 11464,
+            "count": 25
+          },
+          {
+            "source_item_id": 18994,
+            "count": 20
+          }
+        ],
+        "source_line": 319
+      },
+      {
+        "name": "Precision",
+        "tier": 3,
+        "category_id": 15,
+        "premium": true,
+        "storage": 50498,
+        "scroll_item_id": 51455,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "distance",
+          "bonus": "4"
+        },
+        "materials": [
+          {
+            "source_item_id": 11464,
+            "count": 25
+          },
+          {
+            "source_item_id": 18994,
+            "count": 20
+          },
+          {
+            "source_item_id": 10298,
+            "count": 10
+          }
+        ],
+        "source_line": 325
+      },
+      {
+        "name": "Punch",
+        "tier": 1,
+        "category_id": 18,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "fist",
+          "bonus": "1"
+        },
+        "materials": [
+          {
+            "source_item_id": 10281,
+            "count": 25
+          }
+        ],
+        "source_line": 332
+      },
+      {
+        "name": "Punch",
+        "tier": 2,
+        "category_id": 18,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51736,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "fist",
+          "bonus": "2"
+        },
+        "materials": [
+          {
+            "source_item_id": 10281,
+            "count": 25
+          },
+          {
+            "source_item_id": 11489,
+            "count": 20
+          }
+        ],
+        "source_line": 337
+      },
+      {
+        "name": "Punch",
+        "tier": 3,
+        "category_id": 18,
+        "premium": true,
+        "storage": 50490,
+        "scroll_item_id": 51456,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "fist",
+          "bonus": "4"
+        },
+        "materials": [
+          {
+            "source_item_id": 10281,
+            "count": 25
+          },
+          {
+            "source_item_id": 11489,
+            "count": 20
+          },
+          {
+            "source_item_id": 40529,
+            "count": 15
+          }
+        ],
+        "source_line": 343
+      },
+      {
+        "name": "Quara Scale",
+        "tier": 1,
+        "category_id": 7,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "ice",
+          "value": "3"
+        },
+        "materials": [
+          {
+            "source_item_id": 10295,
+            "count": 25
+          }
+        ],
+        "source_line": 224
+      },
+      {
+        "name": "Quara Scale",
+        "tier": 2,
+        "category_id": 7,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51737,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "ice",
+          "value": "8"
+        },
+        "materials": [
+          {
+            "source_item_id": 10295,
+            "count": 25
+          },
+          {
+            "source_item_id": 10307,
+            "count": 15
+          }
+        ],
+        "source_line": 229
+      },
+      {
+        "name": "Quara Scale",
+        "tier": 3,
+        "category_id": 7,
+        "premium": true,
+        "storage": 50496,
+        "scroll_item_id": 51457,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "ice",
+          "value": "15"
+        },
+        "materials": [
+          {
+            "source_item_id": 10295,
+            "count": 25
+          },
+          {
+            "source_item_id": 10307,
+            "count": 15
+          },
+          {
+            "source_item_id": 14012,
+            "count": 10
+          }
+        ],
+        "source_line": 235
+      },
+      {
+        "name": "Reap",
+        "tier": 1,
+        "category_id": 0,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "death",
+          "value": "10"
+        },
+        "materials": [
+          {
+            "source_item_id": 11484,
+            "count": 25
+          }
+        ],
+        "source_line": 44
+      },
+      {
+        "name": "Reap",
+        "tier": 2,
+        "category_id": 0,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51738,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "death",
+          "value": "25"
+        },
+        "materials": [
+          {
+            "source_item_id": 11484,
+            "count": 25
+          },
+          {
+            "source_item_id": 9647,
+            "count": 20
+          }
+        ],
+        "source_line": 49
+      },
+      {
+        "name": "Reap",
+        "tier": 3,
+        "category_id": 0,
+        "premium": true,
+        "storage": 50488,
+        "scroll_item_id": 51458,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "death",
+          "value": "50"
+        },
+        "materials": [
+          {
+            "source_item_id": 11484,
+            "count": 25
+          },
+          {
+            "source_item_id": 9647,
+            "count": 20
+          },
+          {
+            "source_item_id": 10420,
+            "count": 5
+          }
+        ],
+        "source_line": 55
+      },
+      {
+        "name": "Scorch",
+        "tier": 1,
+        "category_id": 0,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "fire",
+          "value": "10"
+        },
+        "materials": [
+          {
+            "source_item_id": 9636,
+            "count": 25
+          }
+        ],
+        "source_line": 98
+      },
+      {
+        "name": "Scorch",
+        "tier": 2,
+        "category_id": 0,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51739,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "fire",
+          "value": "25"
+        },
+        "materials": [
+          {
+            "source_item_id": 9636,
+            "count": 25
+          },
+          {
+            "source_item_id": 5920,
+            "count": 5
+          }
+        ],
+        "source_line": 103
+      },
+      {
+        "name": "Scorch",
+        "tier": 3,
+        "category_id": 0,
+        "premium": true,
+        "storage": 50494,
+        "scroll_item_id": 51459,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "fire",
+          "value": "50"
+        },
+        "materials": [
+          {
+            "source_item_id": 9636,
+            "count": 25
+          },
+          {
+            "source_item_id": 5920,
+            "count": 5
+          },
+          {
+            "source_item_id": 5954,
+            "count": 5
+          }
+        ],
+        "source_line": 109
+      },
+      {
+        "name": "Slash",
+        "tier": 1,
+        "category_id": 12,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "sword",
+          "bonus": "1"
+        },
+        "materials": [
+          {
+            "source_item_id": 9691,
+            "count": 25
+          }
+        ],
+        "source_line": 386
+      },
+      {
+        "name": "Slash",
+        "tier": 2,
+        "category_id": 12,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51740,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "sword",
+          "bonus": "2"
+        },
+        "materials": [
+          {
+            "source_item_id": 9691,
+            "count": 25
+          },
+          {
+            "source_item_id": 21202,
+            "count": 25
+          }
+        ],
+        "source_line": 391
+      },
+      {
+        "name": "Slash",
+        "tier": 3,
+        "category_id": 12,
+        "premium": true,
+        "storage": 50492,
+        "scroll_item_id": 51460,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "sword",
+          "bonus": "4"
+        },
+        "materials": [
+          {
+            "source_item_id": 9691,
+            "count": 25
+          },
+          {
+            "source_item_id": 21202,
+            "count": 25
+          },
+          {
+            "source_item_id": 9654,
+            "count": 5
+          }
+        ],
+        "source_line": 397
+      },
+      {
+        "name": "Snake Skin",
+        "tier": 1,
+        "category_id": 5,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "earth",
+          "value": "3"
+        },
+        "materials": [
+          {
+            "source_item_id": 17823,
+            "count": 25
+          }
+        ],
+        "source_line": 152
+      },
+      {
+        "name": "Snake Skin",
+        "tier": 2,
+        "category_id": 5,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51741,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "earth",
+          "value": "8"
+        },
+        "materials": [
+          {
+            "source_item_id": 17823,
+            "count": 25
+          },
+          {
+            "source_item_id": 9694,
+            "count": 20
+          }
+        ],
+        "source_line": 157
+      },
+      {
+        "name": "Snake Skin",
+        "tier": 3,
+        "category_id": 5,
+        "premium": true,
+        "storage": 50492,
+        "scroll_item_id": 51461,
+        "effect": {
+          "key": "effect",
+          "type": "reduction",
+          "combat": "earth",
+          "value": "15"
+        },
+        "materials": [
+          {
+            "source_item_id": 17823,
+            "count": 25
+          },
+          {
+            "source_item_id": 9694,
+            "count": 20
+          },
+          {
+            "source_item_id": 11702,
+            "count": 10
+          }
+        ],
+        "source_line": 163
+      },
+      {
+        "name": "Strike",
+        "tier": 1,
+        "category_id": 3,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "critical",
+          "bonus": "500",
+          "chance": "500"
+        },
+        "materials": [
+          {
+            "source_item_id": 11444,
+            "count": 20
+          }
+        ],
+        "source_line": 26
+      },
+      {
+        "name": "Strike",
+        "tier": 2,
+        "category_id": 3,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51742,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "critical",
+          "bonus": "1500",
+          "chance": "500"
+        },
+        "materials": [
+          {
+            "source_item_id": 11444,
+            "count": 20
+          },
+          {
+            "source_item_id": 10311,
+            "count": 25
+          }
+        ],
+        "source_line": 31
+      },
+      {
+        "name": "Strike",
+        "tier": 3,
+        "category_id": 3,
+        "premium": true,
+        "storage": 50501,
+        "scroll_item_id": 51462,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "critical",
+          "bonus": "4000",
+          "chance": "500"
+        },
+        "materials": [
+          {
+            "source_item_id": 11444,
+            "count": 20
+          },
+          {
+            "source_item_id": 10311,
+            "count": 25
+          },
+          {
+            "source_item_id": 22728,
+            "count": 5
+          }
+        ],
+        "source_line": 37
+      },
+      {
+        "name": "Swiftness",
+        "tier": 1,
+        "category_id": 10,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "speed",
+          "value": "10"
+        },
+        "materials": [
+          {
+            "source_item_id": 17458,
+            "count": 15
+          }
+        ],
+        "source_line": 404
+      },
+      {
+        "name": "Swiftness",
+        "tier": 2,
+        "category_id": 10,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51743,
+        "effect": {
+          "key": "effect",
+          "type": "speed",
+          "value": "15"
+        },
+        "materials": [
+          {
+            "source_item_id": 17458,
+            "count": 15
+          },
+          {
+            "source_item_id": 10302,
+            "count": 25
+          }
+        ],
+        "source_line": 409
+      },
+      {
+        "name": "Swiftness",
+        "tier": 3,
+        "category_id": 10,
+        "premium": true,
+        "storage": 50490,
+        "scroll_item_id": 51463,
+        "effect": {
+          "key": "effect",
+          "type": "speed",
+          "value": "30"
+        },
+        "materials": [
+          {
+            "source_item_id": 17458,
+            "count": 15
+          },
+          {
+            "source_item_id": 10302,
+            "count": 25
+          },
+          {
+            "source_item_id": 14081,
+            "count": 20
+          }
+        ],
+        "source_line": 415
+      },
+      {
+        "name": "Vampirism",
+        "tier": 1,
+        "category_id": 1,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "lifeleech",
+          "bonus": "500",
+          "chance": "100"
+        },
+        "materials": [
+          {
+            "source_item_id": 9685,
+            "count": 25
+          }
+        ],
+        "source_line": 242
+      },
+      {
+        "name": "Vampirism",
+        "tier": 2,
+        "category_id": 1,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51744,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "lifeleech",
+          "bonus": "1000",
+          "chance": "100"
+        },
+        "materials": [
+          {
+            "source_item_id": 9685,
+            "count": 25
+          },
+          {
+            "source_item_id": 9633,
+            "count": 15
+          }
+        ],
+        "source_line": 247
+      },
+      {
+        "name": "Vampirism",
+        "tier": 3,
+        "category_id": 1,
+        "premium": true,
+        "storage": 50488,
+        "scroll_item_id": 51464,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "lifeleech",
+          "bonus": "2500",
+          "chance": "100"
+        },
+        "materials": [
+          {
+            "source_item_id": 9685,
+            "count": 25
+          },
+          {
+            "source_item_id": 9633,
+            "count": 15
+          },
+          {
+            "source_item_id": 9663,
+            "count": 5
+          }
+        ],
+        "source_line": 253
+      },
+      {
+        "name": "Venom",
+        "tier": 1,
+        "category_id": 0,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "earth",
+          "value": "10"
+        },
+        "materials": [
+          {
+            "source_item_id": 9686,
+            "count": 25
+          }
+        ],
+        "source_line": 62
+      },
+      {
+        "name": "Venom",
+        "tier": 2,
+        "category_id": 0,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51745,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "earth",
+          "value": "25"
+        },
+        "materials": [
+          {
+            "source_item_id": 9686,
+            "count": 25
+          },
+          {
+            "source_item_id": 9640,
+            "count": 20
+          }
+        ],
+        "source_line": 67
+      },
+      {
+        "name": "Venom",
+        "tier": 3,
+        "category_id": 0,
+        "premium": true,
+        "storage": 50492,
+        "scroll_item_id": 51465,
+        "effect": {
+          "key": "effect",
+          "type": "damage",
+          "combat": "earth",
+          "value": "50"
+        },
+        "materials": [
+          {
+            "source_item_id": 9686,
+            "count": 25
+          },
+          {
+            "source_item_id": 9640,
+            "count": 20
+          },
+          {
+            "source_item_id": 21194,
+            "count": 2
+          }
+        ],
+        "source_line": 73
+      },
+      {
+        "name": "Vibrancy",
+        "tier": 1,
+        "category_id": 19,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "vibrancy",
+          "chance": "15"
+        },
+        "materials": [
+          {
+            "source_item_id": 22053,
+            "count": 20
+          }
+        ],
+        "source_line": 440
+      },
+      {
+        "name": "Vibrancy",
+        "tier": 2,
+        "category_id": 19,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51746,
+        "effect": {
+          "key": "effect",
+          "type": "vibrancy",
+          "chance": "25"
+        },
+        "materials": [
+          {
+            "source_item_id": 22053,
+            "count": 20
+          },
+          {
+            "source_item_id": 23507,
+            "count": 15
+          }
+        ],
+        "source_line": 445
+      },
+      {
+        "name": "Vibrancy",
+        "tier": 3,
+        "category_id": 19,
+        "premium": true,
+        "storage": 46317,
+        "scroll_item_id": 51466,
+        "effect": {
+          "key": "effect",
+          "type": "vibrancy",
+          "chance": "50"
+        },
+        "materials": [
+          {
+            "source_item_id": 22053,
+            "count": 20
+          },
+          {
+            "source_item_id": 23507,
+            "count": 15
+          },
+          {
+            "source_item_id": 28567,
+            "count": 5
+          }
+        ],
+        "source_line": 451
+      },
+      {
+        "name": "Void",
+        "tier": 1,
+        "category_id": 2,
+        "premium": false,
+        "storage": 0,
+        "scroll_item_id": 0,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "manaleech",
+          "bonus": "300",
+          "chance": "100"
+        },
+        "materials": [
+          {
+            "source_item_id": 11492,
+            "count": 25
+          }
+        ],
+        "source_line": 260
+      },
+      {
+        "name": "Void",
+        "tier": 2,
+        "category_id": 2,
+        "premium": true,
+        "storage": 0,
+        "scroll_item_id": 51747,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "manaleech",
+          "bonus": "500",
+          "chance": "100"
+        },
+        "materials": [
+          {
+            "source_item_id": 11492,
+            "count": 25
+          },
+          {
+            "source_item_id": 20200,
+            "count": 25
+          }
+        ],
+        "source_line": 265
+      },
+      {
+        "name": "Void",
+        "tier": 3,
+        "category_id": 2,
+        "premium": true,
+        "storage": 50494,
+        "scroll_item_id": 51467,
+        "effect": {
+          "key": "effect",
+          "type": "skill",
+          "value": "manaleech",
+          "bonus": "800",
+          "chance": "100"
+        },
+        "materials": [
+          {
+            "source_item_id": 11492,
+            "count": 25
+          },
+          {
+            "source_item_id": 20200,
+            "count": 25
+          },
+          {
+            "source_item_id": 22730,
+            "count": 5
+          }
+        ],
+        "source_line": 271
+      }
+    ]
+  },
+  "engine_facts": [
+    {
+      "id": "apply_fees_gold",
+      "value": {
+        "basic": 7500,
+        "intricate": 60000,
+        "powerful": 250000
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Matches selected official-news fees; replaces stale summer-update and Canary XML base fees.",
+      "anchors": [
+        {
+          "path": "data/XML/imbuements.xml",
+          "line": 2,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/XML/imbuements.xml#L2"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2575,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2575"
+        }
+      ]
+    },
+    {
+      "id": "success_always",
+      "value": true,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Source removes fees/materials then sets state; no protection/percent branch in this method. This is code evidence, not an observation of Global.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2512,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2512"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2618,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2618"
+        }
+      ]
+    },
+    {
+      "id": "clear_fee_gold",
+      "value": 15000,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Same fixed tier-independent clearing fee as selected Global source.",
+      "anchors": [
+        {
+          "path": "data/XML/imbuements.xml",
+          "line": 2,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/XML/imbuements.xml#L2"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2654,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2654"
+        }
+      ]
+    },
+    {
+      "id": "duration_seconds",
+      "value": 72000,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Twenty hours as configured in all three bases.",
+      "anchors": [
+        {
+          "path": "data/XML/imbuements.xml",
+          "line": 2,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/XML/imbuements.xml#L2"
+        }
+      ]
+    },
+    {
+      "id": "basic_scroll_application_registered",
+      "value": false,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "All 24 Basic XML scrollid values are 0; action registers only 48 Intricate/Powerful IDs. Existing client has 24 Basic scroll definitions; branch cannot implement their use.",
+      "anchors": [
+        {
+          "path": "data/XML/imbuements.xml",
+          "line": 26,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/XML/imbuements.xml#L26"
+        },
+        {
+          "path": "data/scripts/actions/items/imbuement_scrolls.lua",
+          "line": 12,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/scripts/actions/items/imbuement_scrolls.lua#L12"
+        }
+      ]
+    },
+    {
+      "id": "scroll_inscription_tiers",
+      "value": [
+        2,
+        3
+      ],
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Explicit selection routine skips Basic. Conflicts with accepted decision saying any tier; matches selected primary creation text.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 411,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L411"
+        },
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 420,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L420"
+        }
+      ]
+    },
+    {
+      "id": "scroll_target_equipped_allowed",
+      "value": true,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Guard checks top owner and positive slots, not unequipped status. Direct-equipped state updates stats.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2771,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2771"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2666,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2666"
+        }
+      ]
+    },
+    {
+      "id": "scroll_application_consumed_units",
+      "value": 1,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Removes one matching scroll before applying configured duration to first free slot.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2851,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2851"
+        }
+      ]
+    },
+    {
+      "id": "scroll_application_fee_gold",
+      "value": 0,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "The entire scroll application method has no money debit; this is an OTS hypothesis independent of manual inference.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2771,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2771"
+        }
+      ]
+    },
+    {
+      "id": "scroll_quest_exemption_implemented",
+      "value": false,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Calls getImbuements which retains the configurable storage filter; cannot assume advertised scroll quest exemption. Storage lookup itself is malformed.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2805,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2805"
+        },
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 389,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L389"
+        }
+      ]
+    },
+    {
+      "id": "premium_field_enforcement_in_selection",
+      "value": false,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "XML premium is loaded but neither getImbuements nor getAllImbuementsIntricateAndPowerful checks isPremium. Caller protocol behavior needs separate audit; do not claim complete bypass proof.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 122,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L122"
+        },
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 377,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L377"
+        }
+      ]
+    },
+    {
+      "id": "quest_storage_argument_bug",
+      "value": true,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "getStorageValue receives result of (storage == -1), a boolean, rather than storage ID; rejection depends on unrelated storage 0 for ordinary positive IDs.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 389,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L389"
+        }
+      ]
+    },
+    {
+      "id": "etcher_success_consumed_units",
+      "value": 1,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "C++ debits one Etcher only after detecting at least one existing imbuement; Lua dispatches and does not itself remove anything.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2723,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2723"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2745,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2745"
+        },
+        {
+          "path": "data/scripts/actions/items/etcher.lua",
+          "line": 8,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/scripts/actions/items/etcher.lua#L8"
+        }
+      ]
+    },
+    {
+      "id": "etcher_empty_target_consumed_units",
+      "value": 0,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "No existing imbuement leaves removedImbuement false and skips removal. Guard does not explicitly assert target ownership; keep transaction validation as OTS risk.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2733,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2733"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2744,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2744"
+        }
+      ]
+    },
+    {
+      "id": "etcher_clears_all_slots",
+      "value": true,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Iterates all slots after debit and clears each found state, updating equipped stats; no clear fee in this method.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2723,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2723"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2766,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2766"
+        }
+      ]
+    },
+    {
+      "id": "non_aggressive_timer_configuration",
+      "value": {
+        "default_fight_only": false,
+        "categories": [
+          "Swiftness",
+          "Featherweight",
+          "Vibrancy"
+        ],
+        "false": "direct-equipped timers tick in PZ and out of combat",
+        "true": "all categories require combat outside PZ"
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Actual code gives all three utilities same branch; not a Global proof of fine-grained timer behavior.",
+      "anchors": [
+        {
+          "path": "config.lua.dist",
+          "line": 399,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/config.lua.dist#L399"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 985,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L985"
+        }
+      ]
+    },
+    {
+      "id": "aggressive_timer",
+      "value": {
+        "requires_equipped": true,
+        "requires_in_fight": true,
+        "paused_in_protection_zone": true
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Per-tick inventory scan excludes nested container objects and combat timers in PZ/noncombat.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 952,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L952"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 985,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L985"
+        }
+      ]
+    },
+    {
+      "id": "vibrancy_effect_loader_bug",
+      "value": {
+        "xml_type": "vibrancy",
+        "recognized_loader_type": "deflect",
+        "loaded_effect": "NONE"
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Three XML entries use unhandled effect type vibrancy. No fallback branch translates it; configured chance is ignored by parser. Description alone is not functionality.",
+      "anchors": [
+        {
+          "path": "data/XML/imbuements.xml",
+          "line": 442,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/XML/imbuements.xml#L442"
+        },
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 321,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L321"
+        }
+      ]
+    },
+    {
+      "id": "condition_deflection_mechanism",
+      "value": {
+        "stacking": "maximum_chance",
+        "checks": "condition start/update",
+        "pvp_only_guard": false
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Dormant for XML Vibrancy due to loader mismatch. Deflection checks have no attacker context; not proof of actual monster/PvP behavior on Global.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 12297,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L12297"
+        },
+        {
+          "path": "src/creatures/combat/condition.cpp",
+          "line": 425,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/condition.cpp#L425"
+        }
+      ]
+    },
+    {
+      "id": "strike_xml_delta_and_player_baseline",
+      "value": {
+        "xml_extra_damage_bps": [
+          500,
+          1500,
+          4000
+        ],
+        "xml_chance_bps": [
+          500,
+          500,
+          500
+        ],
+        "player_baseline_extra_damage_bps": 1000,
+        "player_baseline_chance_bps": 500,
+        "combined_extra_damage_bps": [
+          1500,
+          2500,
+          5000
+        ],
+        "combined_chance_bps": [
+          1000,
+          1000,
+          1000
+        ]
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Combined isolated Strike values match selected Global. Importing XML alone gives wrong values. Baseline is added even without Strike; total gameplay includes other perks.",
+      "anchors": [
+        {
+          "path": "data/XML/imbuements.xml",
+          "line": 28,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data/XML/imbuements.xml#L28"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 7438,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L7438"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 7445,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L7445"
+        }
+      ]
+    },
+    {
+      "id": "recipe_material_sources",
+      "value": [
+        "inventory",
+        "stash"
+      ],
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Checks and consumes inventory first, then stash; conflicts with accepted first-slice backpack-only decision.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2559,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2559"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2612,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2612"
+        }
+      ]
+    },
+    {
+      "id": "scroll_inscription_transaction_risk",
+      "value": true,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Money/materials are debited before onApplyImbuementOnScroll removes blank and inserts output. Insertion failure has no compensation here; no rollback proof.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2585,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2585"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2702,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2702"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 2714,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2714"
+        }
+      ]
+    },
+    {
+      "id": "custom_assistant_is_global_npc",
+      "value": false,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Both datapacks add Imbuement Assistant selling complete recipe bundles for custom gold prices; normalized separately from Yana exchange and never admitted as Global wares.",
+      "anchors": [
+        {
+          "path": "data-global/npc/imbuement_assistant.lua",
+          "line": 103,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data-global/npc/imbuement_assistant.lua#L103"
+        },
+        {
+          "path": "data-crystal/npc/imbuement_assistant.lua",
+          "line": 103,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/data-crystal/npc/imbuement_assistant.lua#L103"
+        }
+      ]
+    },
+    {
+      "id": "leech_aoe_and_rounding",
+      "value": {
+        "formula": "clamp(lround(realDamage * share_bps / 10000 * (0.1*N + 0.9) / N), 0, realDamage)",
+        "per_target": true,
+        "rounding": "nearest integer, C++ lround"
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Actual per-target source formula; order multiplies proportion before rounding and clamps result to actual health removed. N must be positive by caller invariant.",
+      "anchors": [
+        {
+          "path": "src/game/game.cpp",
+          "line": 8671,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8671"
+        },
+        {
+          "path": "src/game/game.cpp",
+          "line": 8672,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8672"
+        }
+      ]
+    },
+    {
+      "id": "leech_overkill_basis",
+      "value": "actual health removed",
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "realDamage is min(targetHealth, primary+secondary), possibly adjusted further by prepare-death or target rules, then passed to both leech routines.",
+      "anchors": [
+        {
+          "path": "src/game/game.cpp",
+          "line": 8284,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8284"
+        },
+        {
+          "path": "src/game/game.cpp",
+          "line": 8339,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8339"
+        }
+      ]
+    },
+    {
+      "id": "critical_roll_scope",
+      "value": "one Combat::applyExtensions call before target iteration",
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "uniform_random(1,100)*100 is compared to total critical chance in basis points. This is engine structure rather than verified Global RNG granularity.",
+      "anchors": [
+        {
+          "path": "src/creatures/combat/combat.cpp",
+          "line": 2687,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L2687"
+        },
+        {
+          "path": "src/creatures/combat/combat.cpp",
+          "line": 2700,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L2700"
+        }
+      ]
+    },
+    {
+      "id": "protection_composition",
+      "value": "per-slot sequential damage -= ceil(current_damage * percentage / 100)",
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Loop uses current residual damage and rounds each step; aggregate equivalent is not generally interchangeable once integer rounding applies. Other innate/reduction paths also exist.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 3907,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3907"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 3910,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3910"
+        }
+      ]
+    },
+    {
+      "id": "elemental_conversion_rounding",
+      "value": "independent integer assignment of physical residual and elemental share",
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "First applicable conversion is applied only when primary type is physical; writes each floating product into integer combat fields, truncating toward zero.",
+      "anchors": [
+        {
+          "path": "src/creatures/combat/combat.cpp",
+          "line": 1004,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L1004"
+        },
+        {
+          "path": "src/creatures/combat/combat.cpp",
+          "line": 1005,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L1005"
+        }
+      ]
+    }
+  ],
+  "gold_token_bundles": [
+    {
+      "name": "Strike",
+      "tier": "basic",
+      "materials": [
+        {
+          "source_item_id": 11444,
+          "count": 20
+        }
+      ],
+      "source_line": 59,
+      "gold_tokens": 2,
+      "token_item_id": 22721
+    },
+    {
+      "name": "Strike",
+      "tier": "intricate",
+      "materials": [
+        {
+          "source_item_id": 11444,
+          "count": 20
+        },
+        {
+          "source_item_id": 10311,
+          "count": 25
+        }
+      ],
+      "source_line": 66,
+      "gold_tokens": 4,
+      "token_item_id": 22721
+    },
+    {
+      "name": "Strike",
+      "tier": "powerful",
+      "materials": [
+        {
+          "source_item_id": 11444,
+          "count": 20
+        },
+        {
+          "source_item_id": 10311,
+          "count": 25
+        },
+        {
+          "source_item_id": 22728,
+          "count": 5
+        }
+      ],
+      "source_line": 74,
+      "gold_tokens": 6,
+      "token_item_id": 22721
+    },
+    {
+      "name": "Vampirism",
+      "tier": "basic",
+      "materials": [
+        {
+          "source_item_id": 9685,
+          "count": 25
+        }
+      ],
+      "source_line": 85,
+      "gold_tokens": 2,
+      "token_item_id": 22721
+    },
+    {
+      "name": "Vampirism",
+      "tier": "intricate",
+      "materials": [
+        {
+          "source_item_id": 9685,
+          "count": 25
+        },
+        {
+          "source_item_id": 9633,
+          "count": 15
+        }
+      ],
+      "source_line": 92,
+      "gold_tokens": 4,
+      "token_item_id": 22721
+    },
+    {
+      "name": "Vampirism",
+      "tier": "powerful",
+      "materials": [
+        {
+          "source_item_id": 9685,
+          "count": 25
+        },
+        {
+          "source_item_id": 9633,
+          "count": 15
+        },
+        {
+          "source_item_id": 9663,
+          "count": 5
+        }
+      ],
+      "source_line": 100,
+      "gold_tokens": 6,
+      "token_item_id": 22721
+    },
+    {
+      "name": "Void",
+      "tier": "basic",
+      "materials": [
+        {
+          "source_item_id": 11492,
+          "count": 25
+        }
+      ],
+      "source_line": 111,
+      "gold_tokens": 2,
+      "token_item_id": 22721
+    },
+    {
+      "name": "Void",
+      "tier": "intricate",
+      "materials": [
+        {
+          "source_item_id": 11492,
+          "count": 25
+        },
+        {
+          "source_item_id": 20200,
+          "count": 25
+        }
+      ],
+      "source_line": 118,
+      "gold_tokens": 4,
+      "token_item_id": 22721
+    },
+    {
+      "name": "Void",
+      "tier": "powerful",
+      "materials": [
+        {
+          "source_item_id": 11492,
+          "count": 25
+        },
+        {
+          "source_item_id": 20200,
+          "count": 25
+        },
+        {
+          "source_item_id": 22730,
+          "count": 5
+        }
+      ],
+      "source_line": 126,
+      "gold_tokens": 6,
+      "token_item_id": 22721
+    }
+  ],
+  "custom_assistant_packages": [
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "bash",
+      "fee_gold": 6250,
+      "materials": [
+        {
+          "source_item_id": 9657,
+          "count": 20
+        },
+        {
+          "source_item_id": 22189,
+          "count": 15
+        },
+        {
+          "source_item_id": 10405,
+          "count": 10
+        }
+      ],
+      "source_line": 105,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "blockade",
+      "fee_gold": 16150,
+      "materials": [
+        {
+          "source_item_id": 9641,
+          "count": 20
+        },
+        {
+          "source_item_id": 11703,
+          "count": 25
+        },
+        {
+          "source_item_id": 20199,
+          "count": 25
+        }
+      ],
+      "source_line": 114,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "chop",
+      "fee_gold": 13050,
+      "materials": [
+        {
+          "source_item_id": 10196,
+          "count": 20
+        },
+        {
+          "source_item_id": 11447,
+          "count": 25
+        },
+        {
+          "source_item_id": 21200,
+          "count": 20
+        }
+      ],
+      "source_line": 123,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "epiphany",
+      "fee_gold": 10650,
+      "materials": [
+        {
+          "source_item_id": 9635,
+          "count": 25
+        },
+        {
+          "source_item_id": 11452,
+          "count": 15
+        },
+        {
+          "source_item_id": 10309,
+          "count": 15
+        }
+      ],
+      "source_line": 132,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "precision",
+      "fee_gold": 6750,
+      "materials": [
+        {
+          "source_item_id": 11464,
+          "count": 25
+        },
+        {
+          "source_item_id": 18994,
+          "count": 20
+        },
+        {
+          "source_item_id": 10298,
+          "count": 10
+        }
+      ],
+      "source_line": 141,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "slash",
+      "fee_gold": 6550,
+      "materials": [
+        {
+          "source_item_id": 9691,
+          "count": 25
+        },
+        {
+          "source_item_id": 21202,
+          "count": 25
+        },
+        {
+          "source_item_id": 9654,
+          "count": 5
+        }
+      ],
+      "source_line": 150,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "punch",
+      "fee_gold": 16700,
+      "materials": [
+        {
+          "source_item_id": 11489,
+          "count": 20
+        },
+        {
+          "source_item_id": 10281,
+          "count": 25
+        },
+        {
+          "source_item_id": 40529,
+          "count": 15
+        }
+      ],
+      "source_line": 160,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "featherweight",
+      "fee_gold": 12250,
+      "materials": [
+        {
+          "source_item_id": 25694,
+          "count": 20
+        },
+        {
+          "source_item_id": 25702,
+          "count": 10
+        },
+        {
+          "source_item_id": 20205,
+          "count": 5
+        }
+      ],
+      "source_line": 169,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "strike",
+      "fee_gold": 16700,
+      "materials": [
+        {
+          "source_item_id": 11444,
+          "count": 20
+        },
+        {
+          "source_item_id": 10311,
+          "count": 25
+        },
+        {
+          "source_item_id": 22728,
+          "count": 5
+        }
+      ],
+      "source_line": 178,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "swiftness",
+      "fee_gold": 5225,
+      "materials": [
+        {
+          "source_item_id": 17458,
+          "count": 15
+        },
+        {
+          "source_item_id": 10302,
+          "count": 25
+        },
+        {
+          "source_item_id": 14081,
+          "count": 20
+        }
+      ],
+      "source_line": 187,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "vampirism",
+      "fee_gold": 10475,
+      "materials": [
+        {
+          "source_item_id": 9685,
+          "count": 25
+        },
+        {
+          "source_item_id": 9633,
+          "count": 15
+        },
+        {
+          "source_item_id": 9663,
+          "count": 5
+        }
+      ],
+      "source_line": 196,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "vibrancy",
+      "fee_gold": 15000,
+      "materials": [
+        {
+          "source_item_id": 22053,
+          "count": 20
+        },
+        {
+          "source_item_id": 23507,
+          "count": 15
+        },
+        {
+          "source_item_id": 28567,
+          "count": 5
+        }
+      ],
+      "source_line": 205,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "void",
+      "fee_gold": 17400,
+      "materials": [
+        {
+          "source_item_id": 11492,
+          "count": 25
+        },
+        {
+          "source_item_id": 20200,
+          "count": 25
+        },
+        {
+          "source_item_id": 22730,
+          "count": 5
+        }
+      ],
+      "source_line": 214,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "electrify",
+      "fee_gold": 3770,
+      "materials": [
+        {
+          "source_item_id": 18993,
+          "count": 25
+        },
+        {
+          "source_item_id": 21975,
+          "count": 5
+        },
+        {
+          "source_item_id": 23508,
+          "count": 1
+        }
+      ],
+      "source_line": 224,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "frost",
+      "fee_gold": 9750,
+      "materials": [
+        {
+          "source_item_id": 9661,
+          "count": 25
+        },
+        {
+          "source_item_id": 21801,
+          "count": 10
+        },
+        {
+          "source_item_id": 9650,
+          "count": 5
+        }
+      ],
+      "source_line": 233,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "reap",
+      "fee_gold": 3475,
+      "materials": [
+        {
+          "source_item_id": 11484,
+          "count": 25
+        },
+        {
+          "source_item_id": 9647,
+          "count": 20
+        },
+        {
+          "source_item_id": 10420,
+          "count": 5
+        }
+      ],
+      "source_line": 242,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "scorch",
+      "fee_gold": 15875,
+      "materials": [
+        {
+          "source_item_id": 9636,
+          "count": 25
+        },
+        {
+          "source_item_id": 5920,
+          "count": 5
+        },
+        {
+          "source_item_id": 5954,
+          "count": 5
+        }
+      ],
+      "source_line": 251,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "venom",
+      "fee_gold": 1820,
+      "materials": [
+        {
+          "source_item_id": 9686,
+          "count": 25
+        },
+        {
+          "source_item_id": 9640,
+          "count": 20
+        },
+        {
+          "source_item_id": 21194,
+          "count": 2
+        }
+      ],
+      "source_line": 260,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "cloud fabric",
+      "fee_gold": 13775,
+      "materials": [
+        {
+          "source_item_id": 9644,
+          "count": 20
+        },
+        {
+          "source_item_id": 14079,
+          "count": 15
+        },
+        {
+          "source_item_id": 9665,
+          "count": 10
+        }
+      ],
+      "source_line": 270,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "demon presence",
+      "fee_gold": 20250,
+      "materials": [
+        {
+          "source_item_id": 9639,
+          "count": 25
+        },
+        {
+          "source_item_id": 9638,
+          "count": 25
+        },
+        {
+          "source_item_id": 10304,
+          "count": 20
+        }
+      ],
+      "source_line": 279,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "dragon hide",
+      "fee_gold": 10850,
+      "materials": [
+        {
+          "source_item_id": 5877,
+          "count": 20
+        },
+        {
+          "source_item_id": 16131,
+          "count": 10
+        },
+        {
+          "source_item_id": 11658,
+          "count": 5
+        }
+      ],
+      "source_line": 288,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "lich shroud",
+      "fee_gold": 5650,
+      "materials": [
+        {
+          "source_item_id": 11466,
+          "count": 25
+        },
+        {
+          "source_item_id": 22007,
+          "count": 20
+        },
+        {
+          "source_item_id": 9660,
+          "count": 5
+        }
+      ],
+      "source_line": 297,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "quara scale",
+      "fee_gold": 3650,
+      "materials": [
+        {
+          "source_item_id": 10295,
+          "count": 25
+        },
+        {
+          "source_item_id": 10307,
+          "count": 15
+        },
+        {
+          "source_item_id": 14012,
+          "count": 10
+        }
+      ],
+      "source_line": 306,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-global/npc/imbuement_assistant.lua",
+      "name": "snake skin",
+      "fee_gold": 12550,
+      "materials": [
+        {
+          "source_item_id": 17823,
+          "count": 25
+        },
+        {
+          "source_item_id": 9694,
+          "count": 20
+        },
+        {
+          "source_item_id": 11702,
+          "count": 10
+        }
+      ],
+      "source_line": 315,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "bash",
+      "fee_gold": 6250,
+      "materials": [
+        {
+          "source_item_id": 9657,
+          "count": 20
+        },
+        {
+          "source_item_id": 22189,
+          "count": 15
+        },
+        {
+          "source_item_id": 10405,
+          "count": 10
+        }
+      ],
+      "source_line": 105,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "blockade",
+      "fee_gold": 16150,
+      "materials": [
+        {
+          "source_item_id": 9641,
+          "count": 20
+        },
+        {
+          "source_item_id": 11703,
+          "count": 25
+        },
+        {
+          "source_item_id": 20199,
+          "count": 25
+        }
+      ],
+      "source_line": 114,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "chop",
+      "fee_gold": 13050,
+      "materials": [
+        {
+          "source_item_id": 10196,
+          "count": 20
+        },
+        {
+          "source_item_id": 11447,
+          "count": 25
+        },
+        {
+          "source_item_id": 21200,
+          "count": 20
+        }
+      ],
+      "source_line": 123,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "epiphany",
+      "fee_gold": 10650,
+      "materials": [
+        {
+          "source_item_id": 9635,
+          "count": 25
+        },
+        {
+          "source_item_id": 11452,
+          "count": 15
+        },
+        {
+          "source_item_id": 10309,
+          "count": 15
+        }
+      ],
+      "source_line": 132,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "precision",
+      "fee_gold": 6750,
+      "materials": [
+        {
+          "source_item_id": 11464,
+          "count": 25
+        },
+        {
+          "source_item_id": 18994,
+          "count": 20
+        },
+        {
+          "source_item_id": 10298,
+          "count": 10
+        }
+      ],
+      "source_line": 141,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "slash",
+      "fee_gold": 6550,
+      "materials": [
+        {
+          "source_item_id": 9691,
+          "count": 25
+        },
+        {
+          "source_item_id": 21202,
+          "count": 25
+        },
+        {
+          "source_item_id": 9654,
+          "count": 5
+        }
+      ],
+      "source_line": 150,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "featherweight",
+      "fee_gold": 12250,
+      "materials": [
+        {
+          "source_item_id": 25694,
+          "count": 20
+        },
+        {
+          "source_item_id": 25702,
+          "count": 10
+        },
+        {
+          "source_item_id": 20205,
+          "count": 5
+        }
+      ],
+      "source_line": 160,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "strike",
+      "fee_gold": 16700,
+      "materials": [
+        {
+          "source_item_id": 11444,
+          "count": 20
+        },
+        {
+          "source_item_id": 10311,
+          "count": 25
+        },
+        {
+          "source_item_id": 22728,
+          "count": 5
+        }
+      ],
+      "source_line": 169,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "swiftness",
+      "fee_gold": 5225,
+      "materials": [
+        {
+          "source_item_id": 17458,
+          "count": 15
+        },
+        {
+          "source_item_id": 10302,
+          "count": 25
+        },
+        {
+          "source_item_id": 14081,
+          "count": 20
+        }
+      ],
+      "source_line": 178,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "vampirism",
+      "fee_gold": 10475,
+      "materials": [
+        {
+          "source_item_id": 9685,
+          "count": 25
+        },
+        {
+          "source_item_id": 9633,
+          "count": 15
+        },
+        {
+          "source_item_id": 9663,
+          "count": 5
+        }
+      ],
+      "source_line": 187,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "vibrancy",
+      "fee_gold": 15000,
+      "materials": [
+        {
+          "source_item_id": 22053,
+          "count": 20
+        },
+        {
+          "source_item_id": 23507,
+          "count": 15
+        },
+        {
+          "source_item_id": 28567,
+          "count": 5
+        }
+      ],
+      "source_line": 196,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "void",
+      "fee_gold": 17400,
+      "materials": [
+        {
+          "source_item_id": 11492,
+          "count": 25
+        },
+        {
+          "source_item_id": 20200,
+          "count": 25
+        },
+        {
+          "source_item_id": 22730,
+          "count": 5
+        }
+      ],
+      "source_line": 205,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "electrify",
+      "fee_gold": 3770,
+      "materials": [
+        {
+          "source_item_id": 18993,
+          "count": 25
+        },
+        {
+          "source_item_id": 21975,
+          "count": 5
+        },
+        {
+          "source_item_id": 23508,
+          "count": 1
+        }
+      ],
+      "source_line": 215,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "frost",
+      "fee_gold": 9750,
+      "materials": [
+        {
+          "source_item_id": 9661,
+          "count": 25
+        },
+        {
+          "source_item_id": 21801,
+          "count": 10
+        },
+        {
+          "source_item_id": 9650,
+          "count": 5
+        }
+      ],
+      "source_line": 224,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "reap",
+      "fee_gold": 3475,
+      "materials": [
+        {
+          "source_item_id": 11484,
+          "count": 25
+        },
+        {
+          "source_item_id": 9647,
+          "count": 20
+        },
+        {
+          "source_item_id": 10420,
+          "count": 5
+        }
+      ],
+      "source_line": 233,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "scorch",
+      "fee_gold": 15875,
+      "materials": [
+        {
+          "source_item_id": 9636,
+          "count": 25
+        },
+        {
+          "source_item_id": 5920,
+          "count": 5
+        },
+        {
+          "source_item_id": 5954,
+          "count": 5
+        }
+      ],
+      "source_line": 242,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "venom",
+      "fee_gold": 1820,
+      "materials": [
+        {
+          "source_item_id": 9686,
+          "count": 25
+        },
+        {
+          "source_item_id": 9640,
+          "count": 20
+        },
+        {
+          "source_item_id": 21194,
+          "count": 2
+        }
+      ],
+      "source_line": 251,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "cloud fabric",
+      "fee_gold": 13775,
+      "materials": [
+        {
+          "source_item_id": 9644,
+          "count": 20
+        },
+        {
+          "source_item_id": 14079,
+          "count": 15
+        },
+        {
+          "source_item_id": 9665,
+          "count": 10
+        }
+      ],
+      "source_line": 261,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "demon presence",
+      "fee_gold": 20250,
+      "materials": [
+        {
+          "source_item_id": 9639,
+          "count": 25
+        },
+        {
+          "source_item_id": 9638,
+          "count": 25
+        },
+        {
+          "source_item_id": 10304,
+          "count": 20
+        }
+      ],
+      "source_line": 270,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "dragon hide",
+      "fee_gold": 10850,
+      "materials": [
+        {
+          "source_item_id": 5877,
+          "count": 20
+        },
+        {
+          "source_item_id": 16131,
+          "count": 10
+        },
+        {
+          "source_item_id": 11658,
+          "count": 5
+        }
+      ],
+      "source_line": 279,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "lich shroud",
+      "fee_gold": 5650,
+      "materials": [
+        {
+          "source_item_id": 11466,
+          "count": 25
+        },
+        {
+          "source_item_id": 22007,
+          "count": 20
+        },
+        {
+          "source_item_id": 9660,
+          "count": 5
+        }
+      ],
+      "source_line": 288,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "quara scale",
+      "fee_gold": 3650,
+      "materials": [
+        {
+          "source_item_id": 10295,
+          "count": 25
+        },
+        {
+          "source_item_id": 10307,
+          "count": 15
+        },
+        {
+          "source_item_id": 14012,
+          "count": 10
+        }
+      ],
+      "source_line": 297,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    },
+    {
+      "path": "data-crystal/npc/imbuement_assistant.lua",
+      "name": "snake skin",
+      "fee_gold": 12550,
+      "materials": [
+        {
+          "source_item_id": 17823,
+          "count": 25
+        },
+        {
+          "source_item_id": 9694,
+          "count": 20
+        },
+        {
+          "source_item_id": 11702,
+          "count": 10
+        }
+      ],
+      "source_line": 306,
+      "role": "CUSTOM_OTS_WARES_NOT_GLOBAL"
+    }
+  ],
+  "previous_reference_comparison": {
+    "canary": {
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "new_base_prices": [
+        7500,
+        60000,
+        250000
+      ],
+      "previous_base_prices": [
+        5000,
+        30000,
+        200000
+      ],
+      "record_differences": [
+        {
+          "name": "Punch",
+          "tier": 1,
+          "field": "materials",
+          "new_branch": [
+            {
+              "source_item_id": 10281,
+              "count": 25
+            }
+          ],
+          "previous_reference": [
+            {
+              "source_item_id": 9690,
+              "count": 20
+            }
+          ]
+        },
+        {
+          "name": "Punch",
+          "tier": 3,
+          "field": "storage",
+          "new_branch": 50490,
+          "previous_reference": 50492
+        },
+        {
+          "name": "Strike",
+          "tier": 1,
+          "field": "effect",
+          "new_branch": {
+            "key": "effect",
+            "type": "skill",
+            "value": "critical",
+            "bonus": "500",
+            "chance": "500"
+          },
+          "previous_reference": {
+            "key": "effect",
+            "type": "skill",
+            "value": "critical",
+            "bonus": "1500",
+            "chance": "1000"
+          }
+        },
+        {
+          "name": "Strike",
+          "tier": 2,
+          "field": "effect",
+          "new_branch": {
+            "key": "effect",
+            "type": "skill",
+            "value": "critical",
+            "bonus": "1500",
+            "chance": "500"
+          },
+          "previous_reference": {
+            "key": "effect",
+            "type": "skill",
+            "value": "critical",
+            "bonus": "2500",
+            "chance": "1000"
+          }
+        },
+        {
+          "name": "Strike",
+          "tier": 3,
+          "field": "effect",
+          "new_branch": {
+            "key": "effect",
+            "type": "skill",
+            "value": "critical",
+            "bonus": "4000",
+            "chance": "500"
+          },
+          "previous_reference": {
+            "key": "effect",
+            "type": "skill",
+            "value": "critical",
+            "bonus": "5000",
+            "chance": "1000"
+          }
+        },
+        {
+          "name": "Vibrancy",
+          "tier": 1,
+          "field": "effect",
+          "new_branch": {
+            "key": "effect",
+            "type": "vibrancy",
+            "chance": "15"
+          },
+          "previous_reference": {
+            "key": "effect",
+            "type": "paralysis",
+            "chance": "15",
+            "pvpDeflect": "1"
+          }
+        },
+        {
+          "name": "Vibrancy",
+          "tier": 2,
+          "field": "effect",
+          "new_branch": {
+            "key": "effect",
+            "type": "vibrancy",
+            "chance": "25"
+          },
+          "previous_reference": {
+            "key": "effect",
+            "type": "paralysis",
+            "chance": "25",
+            "pvpDeflect": "1"
+          }
+        },
+        {
+          "name": "Vibrancy",
+          "tier": 3,
+          "field": "effect",
+          "new_branch": {
+            "key": "effect",
+            "type": "vibrancy",
+            "chance": "50"
+          },
+          "previous_reference": {
+            "key": "effect",
+            "type": "paralysis",
+            "chance": "50",
+            "pvpDeflect": "1"
+          }
+        },
+        {
+          "name": "Vibrancy",
+          "tier": 3,
+          "field": "storage",
+          "new_branch": 46317,
+          "previous_reference": 0
+        }
+      ]
+    },
+    "crystal": {
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "new_base_prices": [
+        7500,
+        60000,
+        250000
+      ],
+      "previous_base_prices": [
+        7500,
+        60000,
+        250000
+      ],
+      "record_differences": []
+    }
+  },
+  "selected_catalogue_comparison": {
+    "reference": "imbuements-candidate.json",
+    "effect_normalization": "Strike combines XML deltas with explicit universal player baseline; leech chance XML is percent, critical chance is basis points. Vibrancy chance numbers match, but XML deflection description does not implement the selected paralysis recovery sequence and its loader ignores this effect entirely.",
+    "records": [
+      {
+        "name": "Bash",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "club",
+          "amount": 1
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "club",
+          "amount": 1
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53751,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Bash",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "club",
+          "amount": 2
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "club",
+          "amount": 2
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51724,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Bash",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "club",
+          "amount": 4
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "club",
+          "amount": 4
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51444,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Blockade",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "shielding",
+          "amount": 1
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "shielding",
+          "amount": 1
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53752,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Blockade",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "shielding",
+          "amount": 2
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "shielding",
+          "amount": 2
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51725,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Blockade",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "shielding",
+          "amount": 4
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "shielding",
+          "amount": 4
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51445,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Chop",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "axe",
+          "amount": 1
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "axe",
+          "amount": 1
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53753,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Chop",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "axe",
+          "amount": 2
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "axe",
+          "amount": 2
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51726,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Chop",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "axe",
+          "amount": 4
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "axe",
+          "amount": 4
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51446,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Cloud Fabric",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "energy",
+          "absorb_bps": 300
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "energy",
+          "absorb_bps": 300
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53754,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Cloud Fabric",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "energy",
+          "absorb_bps": 800
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "energy",
+          "absorb_bps": 800
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51727,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Cloud Fabric",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "energy",
+          "absorb_bps": 1500
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "energy",
+          "absorb_bps": 1500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51447,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Demon Presence",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "holy",
+          "absorb_bps": 300
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "holy",
+          "absorb_bps": 300
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53755,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Demon Presence",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "holy",
+          "absorb_bps": 800
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "holy",
+          "absorb_bps": 800
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51728,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Demon Presence",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "holy",
+          "absorb_bps": 1500
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "holy",
+          "absorb_bps": 1500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51448,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Dragon Hide",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "fire",
+          "absorb_bps": 300
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "fire",
+          "absorb_bps": 300
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53756,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Dragon Hide",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "fire",
+          "absorb_bps": 800
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "fire",
+          "absorb_bps": 800
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51729,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Dragon Hide",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "fire",
+          "absorb_bps": 1500
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "fire",
+          "absorb_bps": 1500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51449,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Electrify",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "energy",
+          "share_bps": 1000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "energy",
+          "share_bps": 1000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53757,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Electrify",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "energy",
+          "share_bps": 2500
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "energy",
+          "share_bps": 2500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51730,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Electrify",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "energy",
+          "share_bps": 5000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "energy",
+          "share_bps": 5000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51450,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Epiphany",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "magic_level",
+          "amount": 1
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "magic_level",
+          "amount": 1
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53758,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Epiphany",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "magic_level",
+          "amount": 2
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "magic_level",
+          "amount": 2
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51731,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Epiphany",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "magic_level",
+          "amount": 4
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "magic_level",
+          "amount": 4
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51451,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Featherweight",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "capacity_bonus",
+          "increase_bps": 300
+        },
+        "selected_effect": {
+          "kind": "capacity_bonus",
+          "increase_bps": 300
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53759,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Featherweight",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "capacity_bonus",
+          "increase_bps": 800
+        },
+        "selected_effect": {
+          "kind": "capacity_bonus",
+          "increase_bps": 800
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51732,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Featherweight",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "capacity_bonus",
+          "increase_bps": 1500
+        },
+        "selected_effect": {
+          "kind": "capacity_bonus",
+          "increase_bps": 1500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51452,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Frost",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "ice",
+          "share_bps": 1000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "ice",
+          "share_bps": 1000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53760,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Frost",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "ice",
+          "share_bps": 2500
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "ice",
+          "share_bps": 2500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51733,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Frost",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "ice",
+          "share_bps": 5000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "ice",
+          "share_bps": 5000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51453,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Lich Shroud",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "death",
+          "absorb_bps": 200
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "death",
+          "absorb_bps": 200
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53761,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Lich Shroud",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "death",
+          "absorb_bps": 500
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "death",
+          "absorb_bps": 500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51734,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Lich Shroud",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "death",
+          "absorb_bps": 1000
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "death",
+          "absorb_bps": 1000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51454,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Precision",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "distance",
+          "amount": 1
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "distance",
+          "amount": 1
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53762,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Precision",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "distance",
+          "amount": 2
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "distance",
+          "amount": 2
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51735,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Precision",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "distance",
+          "amount": 4
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "distance",
+          "amount": 4
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51455,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Punch",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "fist",
+          "amount": 1
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "fist",
+          "amount": 1
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53763,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Punch",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "fist",
+          "amount": 2
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "fist",
+          "amount": 2
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51736,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Punch",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "fist",
+          "amount": 4
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "fist",
+          "amount": 4
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51456,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Quara Scale",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "ice",
+          "absorb_bps": 300
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "ice",
+          "absorb_bps": 300
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53764,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Quara Scale",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "ice",
+          "absorb_bps": 800
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "ice",
+          "absorb_bps": 800
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51737,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Quara Scale",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "ice",
+          "absorb_bps": 1500
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "ice",
+          "absorb_bps": 1500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51457,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Reap",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "death",
+          "share_bps": 1000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "death",
+          "share_bps": 1000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53765,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Reap",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "death",
+          "share_bps": 2500
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "death",
+          "share_bps": 2500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51738,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Reap",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "death",
+          "share_bps": 5000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "death",
+          "share_bps": 5000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51458,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Scorch",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "fire",
+          "share_bps": 1000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "fire",
+          "share_bps": 1000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53766,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Scorch",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "fire",
+          "share_bps": 2500
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "fire",
+          "share_bps": 2500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51739,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Scorch",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "fire",
+          "share_bps": 5000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "fire",
+          "share_bps": 5000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51459,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Slash",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "sword",
+          "amount": 1
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "sword",
+          "amount": 1
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53767,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Slash",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "sword",
+          "amount": 2
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "sword",
+          "amount": 2
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51740,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Slash",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "skill_bonus",
+          "skill": "sword",
+          "amount": 4
+        },
+        "selected_effect": {
+          "kind": "skill_bonus",
+          "skill": "sword",
+          "amount": 4
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51460,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Snake Skin",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "earth",
+          "absorb_bps": 300
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "earth",
+          "absorb_bps": 300
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53768,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Snake Skin",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "earth",
+          "absorb_bps": 800
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "earth",
+          "absorb_bps": 800
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51741,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Snake Skin",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "protection",
+          "element": "earth",
+          "absorb_bps": 1500
+        },
+        "selected_effect": {
+          "kind": "protection",
+          "element": "earth",
+          "absorb_bps": 1500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51461,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Strike",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "critical",
+          "chance_bps": 1000,
+          "extra_damage_bps": 1500
+        },
+        "selected_effect": {
+          "kind": "critical",
+          "chance_bps": 1000,
+          "extra_damage_bps": 1500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53769,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Strike",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "critical",
+          "chance_bps": 1000,
+          "extra_damage_bps": 2500
+        },
+        "selected_effect": {
+          "kind": "critical",
+          "chance_bps": 1000,
+          "extra_damage_bps": 2500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51742,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Strike",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "critical",
+          "chance_bps": 1000,
+          "extra_damage_bps": 5000
+        },
+        "selected_effect": {
+          "kind": "critical",
+          "chance_bps": 1000,
+          "extra_damage_bps": 5000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51462,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Swiftness",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "speed_bonus",
+          "amount": 10
+        },
+        "selected_effect": {
+          "kind": "speed_bonus",
+          "amount": 10
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53770,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Swiftness",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "speed_bonus",
+          "amount": 15
+        },
+        "selected_effect": {
+          "kind": "speed_bonus",
+          "amount": 15
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51743,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Swiftness",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "speed_bonus",
+          "amount": 30
+        },
+        "selected_effect": {
+          "kind": "speed_bonus",
+          "amount": 30
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51463,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Vampirism",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 500,
+          "resource": "health"
+        },
+        "selected_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 500,
+          "resource": "health"
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53771,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Vampirism",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 1000,
+          "resource": "health"
+        },
+        "selected_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 1000,
+          "resource": "health"
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51744,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Vampirism",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 2500,
+          "resource": "health"
+        },
+        "selected_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 2500,
+          "resource": "health"
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51464,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Venom",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "earth",
+          "share_bps": 1000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "earth",
+          "share_bps": 1000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53772,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Venom",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "earth",
+          "share_bps": 2500
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "earth",
+          "share_bps": 2500
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51745,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Venom",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "elemental_conversion",
+          "element": "earth",
+          "share_bps": 5000
+        },
+        "selected_effect": {
+          "kind": "elemental_conversion",
+          "element": "earth",
+          "share_bps": 5000
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51465,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Vibrancy",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "paralysis_deflection",
+          "chance_bps": 1500
+        },
+        "selected_effect": {
+          "kind": "paralysis_recovery",
+          "remove_chance_bps": 1500,
+          "trigger": "additional_paralysis_attack_while_paralysed",
+          "sequence_profile": "imbuement-combat.json#vibrancy_sequence"
+        },
+        "effect_configuration_matches": false,
+        "strength_numbers_match": true,
+        "loader_applies_effect": false,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53773,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Vibrancy",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "paralysis_deflection",
+          "chance_bps": 2500
+        },
+        "selected_effect": {
+          "kind": "paralysis_recovery",
+          "remove_chance_bps": 2500,
+          "trigger": "additional_paralysis_attack_while_paralysed",
+          "sequence_profile": "imbuement-combat.json#vibrancy_sequence"
+        },
+        "effect_configuration_matches": false,
+        "strength_numbers_match": true,
+        "loader_applies_effect": false,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51746,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Vibrancy",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "paralysis_deflection",
+          "chance_bps": 5000
+        },
+        "selected_effect": {
+          "kind": "paralysis_recovery",
+          "remove_chance_bps": 5000,
+          "trigger": "additional_paralysis_attack_while_paralysed",
+          "sequence_profile": "imbuement-combat.json#vibrancy_sequence"
+        },
+        "effect_configuration_matches": false,
+        "strength_numbers_match": true,
+        "loader_applies_effect": false,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51466,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Void",
+        "tier": 1,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 300,
+          "resource": "mana"
+        },
+        "selected_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 300,
+          "resource": "mana"
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": false,
+        "selected_scroll_item_id": 53774,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Void",
+        "tier": 2,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 500,
+          "resource": "mana"
+        },
+        "selected_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 500,
+          "resource": "mana"
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51747,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      },
+      {
+        "name": "Void",
+        "tier": 3,
+        "materials_match": true,
+        "configured_normalized_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 800,
+          "resource": "mana"
+        },
+        "selected_effect": {
+          "kind": "leech",
+          "chance_bps": 10000,
+          "share_bps": 800,
+          "resource": "mana"
+        },
+        "effect_configuration_matches": true,
+        "strength_numbers_match": true,
+        "loader_applies_effect": true,
+        "scroll_id_matches": true,
+        "selected_scroll_item_id": 51467,
+        "apply_fee_matches": true,
+        "clear_fee_matches": true,
+        "duration_matches": true
+      }
+    ],
+    "summary": {
+      "records": 72,
+      "recipes_matching": 72,
+      "effects_config_matching": 69,
+      "strength_numbers_matching": 72,
+      "effects_loaded": 69,
+      "scroll_ids_matching": 48,
+      "fees_matching": 72
+    }
+  },
+  "architecture_conflicts": [
+    {
+      "field": "apply fees",
+      "accepted": [
+        5000,
+        30000,
+        200000
+      ],
+      "branch": [
+        7500,
+        60000,
+        250000
+      ],
+      "selection": "Selected Global source already uses branch values."
+    },
+    {
+      "field": "scroll inscription Basic",
+      "accepted": "any tier",
+      "branch": "tiers 2/3 only",
+      "selection": "Primary official creation text supports Intricate/Powerful; Basic client objects do not prove craft route."
+    },
+    {
+      "field": "material sourcing",
+      "accepted": "backpack-only first slice",
+      "branch": "inventory+stash",
+      "selection": "Source comparison only; architecture owning amendment required."
+    },
+    {
+      "field": "equipment requirement",
+      "accepted": "unequipped transaction target",
+      "branch": "equipped scroll targets accepted",
+      "selection": "OTS hypothesis only; primary observation not available."
+    }
+  ],
+  "unresolved": [
+    "No complete official behavior proof for Etcher consumption, equipped scroll targets, exact frozen-date item-type matrix or fine-grained timers.",
+    "Branch has dormant Vibrancy and malformed quest-storage lookup; no blanket reuse can preserve correctness.",
+    "Output insertion/consumption methods are not proven atomic; faithful runtime needs fenced, validated transactions rather than copying these failure paths."
+  ]
+}

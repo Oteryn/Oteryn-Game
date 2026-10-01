@@ -1,0 +1,480 @@
+{
+  "schema": "OTERYN_IMBUEMENT_COMBAT_EVIDENCE/v1",
+  "activation": "DRAFT_NOT_RUNTIME_READY",
+  "target": "global-tibia-observable-2026-07-28-post-server-save",
+  "sources": [
+    {
+      "id": "official_vibrancy_4779",
+      "url": "https://www.tibia.com/news?subtopic=newsarchive&id=4779",
+      "captured_on": "2026-10-01",
+      "access_status": "INDEXED_EXCERPT_ONLY",
+      "sha256": "c757e25130702e7ef6f814904994589a5f18508e0a395ce6fd1c9e30763391ce",
+      "digest_scope": "UTF-8 indexed content excerpts joined with one newline; no full page claim",
+      "observed_facts": []
+    },
+    {
+      "id": "fandom_vibrancy",
+      "url": "https://tibia.fandom.com/wiki/Vibrancy",
+      "captured_on": "2026-10-01",
+      "access_status": "INDEXED_EXCERPT_ONLY",
+      "sha256": "b4b73a455a5958df33b342d23a87dee62932fdaa9da815f356d4d2ae9ac40360",
+      "digest_scope": "UTF-8 indexed content excerpts joined with one newline; no full page claim",
+      "observed_facts": []
+    },
+    {
+      "id": "fandom_powerful_vibrancy",
+      "url": "https://tibia.fandom.com/wiki/Powerful_Vibrancy",
+      "captured_on": "2026-10-01",
+      "access_status": "INDEXED_EXCERPT_ONLY",
+      "sha256": "2d0c69af997dabb6d8a570b546cbc6704d98837a69c8a87e7ef5440b62a563d0",
+      "digest_scope": "UTF-8 indexed content excerpts joined with one newline; no full page claim",
+      "observed_facts": []
+    },
+    {
+      "id": "fandom_basic_vibrancy",
+      "url": "https://tibia.fandom.com/wiki/Basic_Vibrancy",
+      "captured_on": "2026-10-01",
+      "access_status": "INDEXED_EXCERPT_ONLY",
+      "sha256": "73dd22aeddafe692911ccdff952e8fff5c4e7201afc039a3b348cc3b5cc6d3a8",
+      "digest_scope": "UTF-8 indexed content excerpts joined with one newline; no full page claim",
+      "observed_facts": []
+    },
+    {
+      "id": "vibrancy_2018_teaser_mirror",
+      "url": "https://tibiopedia.pl/forum/t/24591,The-Challenger-Paralyse-Attacks,1",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "6240bcd1f76dd905ef05fb8df977ff56fda9a4b8924fe9702ee27921162a0eb1",
+      "digest_scope": "Exact retrieved response bytes",
+      "observed_facts": [
+        "2018-11-05 pre-release teaser; additional paralysis can remove existing paralysis, probability15/25/50",
+        "Original teaser also proposed reflection; that historical proposal does not establish current reflection"
+      ]
+    },
+    {
+      "id": "tibiapal_leech",
+      "url": "https://tibiapal.com/leech",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "140fc07ecd7d5a05de99b407216b017115c0bb417ff0fa848e3c57b0344d064c",
+      "digest_scope": "Exact retrieved response bytes",
+      "observed_facts": [
+        "First target factor100%; additional targets10% each; six equal hits yield150% of single-target leech"
+      ]
+    },
+    {
+      "id": "tibiapal_leech_calculator",
+      "url": "https://tibiapal.com/scripts/leech.js",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "1ecadfb476ee2be2cc3ab7c1d0d15c41922ea3f0350431b9bfc4b093eadffd92",
+      "digest_scope": "Exact retrieved response bytes",
+      "observed_facts": [
+        "Leech amount = supplied_damage * supplied_leech_percent/100 * (0.1*monsters_hit+0.9)",
+        "Calculator display uses ceiling; calculator rounding is not a Global transaction observation"
+      ]
+    },
+    {
+      "id": "wiki_br_vibrancy_detail",
+      "url": "https://www.tibiawiki.com.br/wiki/Vibrancy_(Remo%C3%A7%C3%A3o_de_Paralisia)",
+      "captured_on": "2026-10-01",
+      "access_status": "SEARCH_RETURNED_FULL_MARKDOWN",
+      "sha256": "215979e0bde8b0417a2d53df4c3cee975bd087a80b1d40b0afa013cb73bdd517",
+      "digest_scope": "UTF-8 markdown raw_content returned by search",
+      "observed_facts": [
+        "When receiving two consecutive paralysis-causing attacks, the imbuement may remove the first paralysis",
+        "Introduced12.00 on2018-12-03; recovery chances15/25/50"
+      ]
+    },
+    {
+      "id": "vocation_adjustments_8783_test",
+      "url": "https://tibiaroute.com/news/Vocation-Adjustments-8783-ZZhk",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_MARKDOWN_OFFICIAL_NEWS_MIRROR",
+      "sha256": "094cff76bb020a86262f96818da78af326ca5acf16406478cf11b045232614f0",
+      "digest_scope": "UTF-8 retrieved mirror markdown",
+      "published_on": "2026-05-05",
+      "observed_facts": [
+        "Explicitly test servers; Nothing is final yet",
+        "Blessing of the Grove critical healing and removal of wand/rod Strike limitations are test changes, not automatically live rules"
+      ]
+    },
+    {
+      "id": "tibiopedia_general_guide",
+      "url": "https://tibiopedia.pl/articles/3,Imbuing-nasycenia",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "6305b5345451878a955a75c43c566cdd8a331b8b0cb5e3b4c47f68936072c40e",
+      "digest_scope": "Exact retrieved HTML response bytes",
+      "observed_facts": [
+        "Guide contains recipes and categories, but no explicit same-effect equipment composition formula"
+      ],
+      "limits": "Guide has stale Strike and Swiftness strength values; these are rejected elsewhere. Absence of composition wording does not select a formula."
+    }
+  ],
+  "rules": [
+    {
+      "id": "vibrancy_sequence",
+      "value": {
+        "trigger": "additional_paralysis_attack_while_paralysed",
+        "initial_paralysis_intercepted": false,
+        "remove_chance_bps_by_tier": [
+          1500,
+          2500,
+          5000
+        ],
+        "recovery_sources": [
+          "monster",
+          "player"
+        ],
+        "deflect_additional_pvp_paralysis": null,
+        "reflect_to_attacker": null,
+        "pvp_gate_profile": "vibrancy_pvp_gate"
+      },
+      "status": "PRIMARY_INDEXED_WITH_COMMUNITY_CORROBORATION",
+      "evidence": [
+        "official_vibrancy_4779",
+        "wiki_br_vibrancy_detail",
+        "fandom_vibrancy",
+        "fandom_basic_vibrancy",
+        "fandom_powerful_vibrancy"
+      ],
+      "notes": "Repeated-attack recovery is corroborated by current BR notes and the historical primary teaser. Current Fandom family wording qualifies PvP additional-attack deflection with if initially successful; shorter tier excerpts omit that qualification. Do not select unconditional PvP protection. Reflection from the historical teaser remains excluded.",
+      "target_time_status": "PRE_TARGET_INTRODUCTION_WITH_CURRENT_CORROBORATION_NOT_FULL_SNAPSHOT"
+    },
+    {
+      "id": "leech_equal_damage_aoe_scaling",
+      "value": {
+        "scope": "EQUAL_DAMAGE_PER_TARGET_EXAMPLES",
+        "first_target_factor_bps": 10000,
+        "additional_target_factor_bps": 1000,
+        "formula": "damage_per_target * leech_share * (1 + 0.1 * (hit_targets - 1))",
+        "examples": [
+          {
+            "damage_per_target": 1000,
+            "leech_share_bps": 2500,
+            "hit_targets": 1,
+            "unrounded_amount": 250
+          },
+          {
+            "damage_per_target": 1000,
+            "leech_share_bps": 2500,
+            "hit_targets": 6,
+            "unrounded_amount": 375
+          }
+        ]
+      },
+      "status": "COMMUNITY_EXPLICIT",
+      "evidence": [
+        "tibiapal_leech",
+        "tibiapal_leech_calculator"
+      ],
+      "notes": "Public calculator confirms equal-hit examples and prevents selecting flat leech from the whole summed AoE damage. It does not certify unequal damage, zero-damage target count, overkill or rounding.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+    },
+    {
+      "id": "leech_rounding",
+      "value": null,
+      "status": "PUBLIC_EVIDENCE_UNRESOLVED",
+      "evidence": [
+        "tibiapal_leech_calculator"
+      ],
+      "notes": "Ceiling used by an external calculator is not an observed Global server rounding rule. Keep this separate from exact coefficients.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+    },
+    {
+      "id": "leech_unequal_damage_and_overkill_order",
+      "value": null,
+      "status": "PUBLIC_EVIDENCE_UNRESOLVED",
+      "evidence": [
+        "tibiapal_leech",
+        "tibiapal_leech_calculator"
+      ],
+      "notes": "Equal-hit formula cannot establish per-target averaging, damage clipping to remaining health, per-target rounding or ordering of charm/proficiency contributions.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+    },
+    {
+      "id": "vibrancy_reflection_current",
+      "value": null,
+      "status": "PUBLIC_EVIDENCE_UNRESOLVED",
+      "evidence": [
+        "vibrancy_2018_teaser_mirror",
+        "fandom_vibrancy"
+      ],
+      "notes": "Do not implement reflected paralysis solely from the historical teaser; current pages describe deflection. Source disagreement/history requires qualification.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+    },
+    {
+      "id": "critical_healing_scope",
+      "value": null,
+      "status": "PUBLIC_EVIDENCE_UNRESOLVED",
+      "evidence": [
+        "vocation_adjustments_8783_test"
+      ],
+      "notes": "Test announcement limits critical healing to Blessing of the Grove. It does not prove all healing spells or all vocations can critically heal on the target server.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+    },
+    {
+      "id": "leech_equipment_composition",
+      "value": null,
+      "status": "PUBLIC_EVIDENCE_UNRESOLVED",
+      "evidence": [
+        "tibiapal_leech",
+        "tibiopedia_general_guide"
+      ],
+      "notes": "A single-percent calculator input does not prove additive stacking across equipment. Native guide has no explicit formula; FandomResistanceHTTP402/BRProtectionHTTP403/TibiaTools403, Tavilyplanusage432. Keep an equipment-composition claim unselected.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+    },
+    {
+      "id": "protection_equipment_composition",
+      "value": null,
+      "status": "PUBLIC_EVIDENCE_UNRESOLVED",
+      "evidence": [
+        "tibiapal_leech",
+        "tibiopedia_general_guide"
+      ],
+      "notes": "Accepted architecture says absorbs are summed, whereas Crystal applies each equipped slot sequentially with ceil. No independent public Global composition statement was retrieved; reconcile against real observations before implementing either as certified parity.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+    },
+    {
+      "id": "vibrancy_pvp_gate",
+      "value": null,
+      "status": "PUBLIC_EVIDENCE_UNRESOLVED",
+      "evidence": [
+        "fandom_vibrancy",
+        "fandom_basic_vibrancy",
+        "fandom_powerful_vibrancy"
+      ],
+      "notes": "Family excerpt explicitly includes if initially successful; tier excerpts state always deflects PvP paralysis upon additional attacks. The exact success-state predicate and transition are not established by these snippets. Historical teaser cannot resolve a present state gate.",
+      "target_time_status": "CURRENT_INDEXED_SOURCE_CONFLICT_NO_EXACT_TARGET_CERTIFICATION"
+    }
+  ],
+  "excluded_test_server_changes": [
+    {
+      "source": "vocation_adjustments_8783_test",
+      "claims": [
+        "Unrestricted Strike on wands and rods",
+        "Blessing of the Grove critical healing"
+      ],
+      "admission": "NOT_ADMITTED_WITHOUT_LIVE_RELEASE_EVIDENCE",
+      "reason": "2026-05-05 text explicitly announces a test, says nothing is final; publication date before target is not release proof."
+    }
+  ],
+  "architecture_conflicts": [
+    {
+      "field": "Vibrancy CONDITIONS-0 initial-admission probability",
+      "selected": "Recovery of existing paralysis upon another attack, with separate PvP deflection",
+      "owning_document": "docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "integration": "RECONCILE_BEFORE_RUNTIME"
+    }
+  ],
+  "research_limits": [
+    {
+      "url": "https://www.tibia.com/news?subtopic=newsarchive&id=4779",
+      "result": "Native HTTP403; primary indexed excerpts and labelled historical mirror retained"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Life_Leech",
+      "result": "Native HTTP402; no invented full-page capture"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Life_Leech",
+      "result": "Native HTTP403; selected an independently retrieved public calculator instead"
+    },
+    {
+      "tool": "Tavily extract",
+      "result": "HTTP429; sequential search and ordinary public HTTP used"
+    },
+    {
+      "tool": "Tavily search",
+      "result": "HTTP432 plan usage limit after bounded research; no more metered calls made. Native public sources and recorded hypotheses complete available research."
+    }
+  ],
+  "engine_combat_hypotheses": [
+    {
+      "catalogue": "crystal-imbuements-evidence.json",
+      "id": "non_aggressive_timer_configuration",
+      "value": {
+        "default_fight_only": false,
+        "categories": [
+          "Swiftness",
+          "Featherweight",
+          "Vibrancy"
+        ],
+        "false": "direct-equipped timers tick in PZ and out of combat",
+        "true": "all categories require combat outside PZ"
+      },
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "source_anchors": [
+        {
+          "path": "config.lua.dist",
+          "line": 399,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/config.lua.dist#L399"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 985,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L985"
+        }
+      ]
+    },
+    {
+      "catalogue": "crystal-imbuements-evidence.json",
+      "id": "aggressive_timer",
+      "value": {
+        "requires_equipped": true,
+        "requires_in_fight": true,
+        "paused_in_protection_zone": true
+      },
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "source_anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 952,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L952"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 985,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L985"
+        }
+      ]
+    },
+    {
+      "catalogue": "crystal-imbuements-evidence.json",
+      "id": "condition_deflection_mechanism",
+      "value": {
+        "stacking": "maximum_chance",
+        "checks": "condition start/update",
+        "pvp_only_guard": false
+      },
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "source_anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 12297,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L12297"
+        },
+        {
+          "path": "src/creatures/combat/condition.cpp",
+          "line": 425,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/condition.cpp#L425"
+        }
+      ]
+    },
+    {
+      "catalogue": "crystal-imbuements-evidence.json",
+      "id": "leech_aoe_and_rounding",
+      "value": {
+        "formula": "clamp(lround(realDamage * share_bps / 10000 * (0.1*N + 0.9) / N), 0, realDamage)",
+        "per_target": true,
+        "rounding": "nearest integer, C++ lround"
+      },
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "source_anchors": [
+        {
+          "path": "src/game/game.cpp",
+          "line": 8671,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8671"
+        },
+        {
+          "path": "src/game/game.cpp",
+          "line": 8672,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8672"
+        }
+      ]
+    },
+    {
+      "catalogue": "crystal-imbuements-evidence.json",
+      "id": "leech_overkill_basis",
+      "value": "actual health removed",
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "source_anchors": [
+        {
+          "path": "src/game/game.cpp",
+          "line": 8284,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8284"
+        },
+        {
+          "path": "src/game/game.cpp",
+          "line": 8339,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8339"
+        }
+      ]
+    },
+    {
+      "catalogue": "crystal-imbuements-evidence.json",
+      "id": "critical_roll_scope",
+      "value": "one Combat::applyExtensions call before target iteration",
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "source_anchors": [
+        {
+          "path": "src/creatures/combat/combat.cpp",
+          "line": 2687,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L2687"
+        },
+        {
+          "path": "src/creatures/combat/combat.cpp",
+          "line": 2700,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L2700"
+        }
+      ]
+    },
+    {
+      "catalogue": "crystal-imbuements-evidence.json",
+      "id": "protection_composition",
+      "value": "per-slot sequential damage -= ceil(current_damage * percentage / 100)",
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "source_anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 3907,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3907"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 3910,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3910"
+        }
+      ]
+    },
+    {
+      "catalogue": "crystal-imbuements-evidence.json",
+      "id": "elemental_conversion_rounding",
+      "value": "independent integer assignment of physical residual and elemental share",
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "source_anchors": [
+        {
+          "path": "src/creatures/combat/combat.cpp",
+          "line": 1004,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L1004"
+        },
+        {
+          "path": "src/creatures/combat/combat.cpp",
+          "line": 1005,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L1005"
+        }
+      ]
+    }
+  ],
+  "source_conflicts": [
+    {
+      "field": "leech overkill basis",
+      "global_reference": "global-rules-evidence.json#leech_overkill_counts, derived Fandom indexed statement: overkill counts",
+      "crystal_imbuements": "actual health removed; damage is clamped to remaining target health",
+      "resolution": "Do not use the engine to override the community Global claim; exact target pipeline remains unqualified."
+    },
+    {
+      "field": "elemental protection composition",
+      "accepted_architecture": "sum absorbs",
+      "crystal_imbuements": "sequential per-slot reduction with ceil",
+      "resolution": "Explicit source conflict; neither architecture nor engine is official Global observation."
+    },
+    {
+      "field": "Vibrancy PvP additional-attack success gate",
+      "family_page_claim": "It always deflects additional paralysis attacks if initially successful",
+      "tier_page_claim": "Always deflects PvP paralysis upon additional paralyse attacks; qualification omitted from the retrieved excerpts",
+      "resolution": "Preserve both indexed claims; success-state predicate remains unqualified; no unconditional selected boolean."
+    }
+  ]
+}

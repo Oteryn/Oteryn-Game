@@ -51,7 +51,7 @@ class EligibilityEvidenceTests(unittest.TestCase):
     def test_canonical_existence_and_revisioned_names_guard_reference_namespace(self):
         for item_id in (49160, 53192):
             self.assertIsNone(self.items[item_id]["item_ref"])
-            self.assertEqual(self.items[item_id]["status"], "CANONICAL_ITEM_ABSENT")
+            self.assertEqual(self.items[item_id]["binding_status"], "CANONICAL_ITEM_ABSENT")
         for row in self.items.values():
             if row["binding_status"] == "CANONICAL_CLIENT_NAME_DISPUTE":
                 self.assertIsNone(row["item_ref"])
@@ -63,6 +63,29 @@ class EligibilityEvidenceTests(unittest.TestCase):
         self.assertEqual(self.items[23223]["status"], "RETIRED_SOURCE_ITEM_EXCLUDED")
         self.assertIsNone(self.items[23223]["item_ref"])
         self.assertEqual(self.packet["source_registry"]["tibiopedia_i23223"]["withdrawn_version"], "11.50")
+
+    def test_preloaded_post_target_item_is_retained_but_excluded_from_target(self):
+        row = self.items[53192]
+        self.assertEqual(row["allowed_types"], {"featherweight": 3})
+        self.assertEqual(row["status"], "POST_TARGET_RELEASE_EXCLUDED")
+        self.assertEqual(row["target_time_evidence"]["date"], "2026-08-04")
+        self.assertEqual(self.packet["summary"]["typed_items"], 629)
+        self.assertEqual(self.packet["summary"]["target_candidate_typed_items"], 628)
+        packet = copy.deepcopy(self.packet)
+        packet["normalized_sources"]["release_dates"]["15.32.fc9100"]["date"] = "2026-07-01"
+        with self.assertRaisesRegex(ValueError, "release date differs from pinned source"):
+            eligibility.build(packet)
+
+    def test_dated_item_patch_corrects_one_cap_without_promoting_whole_profile(self):
+        row = self.items[44636]
+        self.assertEqual(row["community_comparison"]["wiki_helmets"]["allowed_types"]["epiphany"], 1)
+        self.assertEqual(row["allowed_types"]["epiphany"], 2)
+        self.assertEqual(row["evidence_status"], "COMMUNITY_SINGLE_SOURCE_WITH_CORROBORATED_FIELD")
+        self.assertEqual(len(row["selected_type_amendments"]), 1)
+        self.assertEqual(self.packet["source_registry"]["tibiopedia_release_13_32_14544"]["release_date"], "2024-01-23")
+        audit = self.packet["source_registry"]["type_profile_followup_audit"]
+        self.assertEqual(audit["full_profiles_newly_corroborated"], 0)
+        self.assertEqual(audit["remaining_independent_profile_proof"], 22)
 
     def test_native_tier_cap_wins_without_erasing_helper_conflict(self):
         row = self.items[50164]  # Umbral Katar: helper advertises tier 3, explicit table caps tier 1.

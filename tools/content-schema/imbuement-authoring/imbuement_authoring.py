@@ -17,15 +17,21 @@ REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-access.json": "7b18978f9c2b31d98bc42dba5a9a799d8845f974beb51299efd92bac7fc00334",
-    "imbuement-eligibility.json": "f39b7a1c1593907e424f70ed2db6d27ba9b8c4835346d30cb3a35e4112f0e677",
-    "global-rules-evidence.json": "051d86fbbe7f3fd48cc4361bc1dcea41f9d8912fe6c3db75af29da72308e40ea",
+    "imbuement-access.json": "8b1162f4732bbe1e9cc7fc1ddec5e9165588b8302e7410629b325abeadbcbd1d",
+    "imbuement-eligibility.json": "9798fec253f95f14171dd3f3021345c076d193b80e0ae1a3b55bada469e8e26a",
+    "global-rules-evidence.json": "3e2675715427827d23822fb5d2151be0175d275a7008b50e446d0d40f722f652",
+    "imbuement-combat.json": "fd2b96e18ab2852c996483a5fd1e3240ac0652c4b0c077dfafd01ef9af93bd70",
+    "crystal-imbuements-evidence.json": "765715f0f7a0b7e8a2b10bbecc065be2bad6695295224dd1e598b95f2accf424",
+    "missing-item-definitions.json": "14c3a5316cf53f89c4d35b5b1e2afb0d6bd09bfadecf2862bf397e4fd967dc02",
+    "missing-item-source-facts.json": "3b85d6dc6a033919f1cda01eff7bbf222e740286fc7ff1d911d5ebf235d0dab4",
 }
 
 
 def supporting():
     expected = {"imbuement-bindings.json", "imbuement-access.json",
-                "imbuement-eligibility.json", "global-rules-evidence.json"}
+                "imbuement-eligibility.json", "global-rules-evidence.json",
+                "imbuement-combat.json", "crystal-imbuements-evidence.json",
+                "missing-item-definitions.json", "missing-item-source-facts.json"}
     if set(EVIDENCE_PINS) != expected:
         raise ValueError("supporting evidence pins are incomplete")
     packets = {}
@@ -45,6 +51,14 @@ def supporting():
     slots = packets["imbuement-eligibility.json"]["items"]
     if len(slots) != 663 or len({r["client_id"] for r in slots}) != 663:
         raise ValueError("eligibility census must cover all 663 distinct primary items")
+    import combat_evidence
+    import newbranch_evidence
+    combat_evidence.validate(packets["imbuement-combat.json"])
+    newbranch_evidence.validate(packets["crystal-imbuements-evidence.json"])
+    proposals = packets["missing-item-definitions.json"]["proposals"]
+    if {p["source_client_id"] for p in proposals} != {49160, 53192} or any(
+            p["identity_state"] != "PROPOSED_NOT_REGISTERED" for p in proposals):
+        raise ValueError("missing Item proposals cannot masquerade as canonical bindings")
     return packets
 
 # IMBUE-FORGE-0 sections 3 and 5: 24 types, 20 exclusion categories.
@@ -68,7 +82,7 @@ LAYOUT = {
     "Epiphany": ("skill_bonus", "magic_level"), "Punch": ("skill_bonus", "fist"),
     "Swiftness": ("speed_bonus", None),
     "Featherweight": ("capacity_bonus", None),
-    "Vibrancy": ("paralysis_deflection", None),
+    "Vibrancy": ("paralysis_recovery", None),
 }
 
 
@@ -109,7 +123,9 @@ def schema():
         obj({"kind": {"const": "skill_bonus"}, "skill": enum("axe", "sword", "club", "shielding", "distance", "magic_level", "fist"), "amount": integer()}),
         obj({"kind": {"const": "speed_bonus"}, "amount": integer()}),
         obj({"kind": {"const": "capacity_bonus"}, "increase_bps": percent}),
-        obj({"kind": {"const": "paralysis_deflection"}, "chance_bps": percent}),
+        obj({"kind": {"const": "paralysis_recovery"}, "remove_chance_bps": percent,
+             "trigger": {"const": "additional_paralysis_attack_while_paralysed"},
+             "sequence_profile": {"const": "imbuement-combat.json#vibrancy_sequence"}}),
     ]
     item_ref = obj({"family": {"const": "Item"},
                     "key": {"type": "string", "pattern": "^oteryn:item\\.tibia\\.i[0-9]+$"},
@@ -142,6 +158,9 @@ def schema():
                 "supporting_catalogues": obj({name: {"type": "string", "pattern": "^[0-9a-f]{64}$"}
                                               for name in sorted(EVIDENCE_PINS)}),
                 "global_rules_profile": {"const": "global-rules-evidence.json"},
+                "combat_profile": {"const": "imbuement-combat.json"},
+                "missing_item_proposals": {"const": "missing-item-definitions.json"},
+                "engine_reference_profile": {"const": "crystal-imbuements-evidence.json"},
                 "architecture_reconciliation": {"const": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE"},
                 "definitions": array(definition, 24, 24)})
     return {"$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -167,7 +186,9 @@ def effect(name, numbers):
         "skill_bonus": {"skill": detail, "amount": value},
         "speed_bonus": {"amount": value},
         "capacity_bonus": {"increase_bps": value * 100},
-        "paralysis_deflection": {"chance_bps": value * 100},
+        "paralysis_recovery": {"remove_chance_bps": value * 100,
+                               "trigger": "additional_paralysis_attack_while_paralysed",
+                               "sequence_profile": "imbuement-combat.json#vibrancy_sequence"},
     }
     if kind in ("critical", "leech"):
         fields[kind] = {"chance_bps": numbers[1] * 100,
@@ -211,11 +232,15 @@ def build():
             "target": sources["decision"]["findings"]["target"], "source_facts_sha256": FACTS_SHA256,
             "supporting_catalogues": dict(sorted(EVIDENCE_PINS.items())),
             "global_rules_profile": "global-rules-evidence.json",
+            "combat_profile": "imbuement-combat.json",
+            "missing_item_proposals": "missing-item-definitions.json",
+            "engine_reference_profile": "crystal-imbuements-evidence.json",
             "architecture_reconciliation": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE", "definitions": definitions}
 
 
 def comparison():
     sources = source_facts()
+    packets = supporting()
     engines = {e: {(r["name"], r["tier"]): r for r in sources[e]["records"]} for e in ("canary", "crystal")}
     differences = []
     for name, tier in sorted(engines["canary"]):
@@ -225,11 +250,28 @@ def comparison():
                 differences.append({"name": name, "tier": tier, "field": field, "canary": a[field], "crystal": b[field]})
     return {"schema": "OTERYN_IMBUEMENT_SOURCE_COMPARISON/v1", "source_facts_sha256": FACTS_SHA256,
             "engine_comparison_key": ["name", "tier"], "differences": differences,
+            "comparison_scope": "Raw XML facts, not final engine outcomes. Crystal imbuements branch includes player baselines; use the qualified effective-strength comparison in its separate packet.",
             "selection": "Wiki BR effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
             "global_fee_conflict": {"accepted_decision": [5000, 30000, 200000],
                                     "global_since_2025": [7500, 60000, 250000]},
             "supporting_catalogues": dict(sorted(EVIDENCE_PINS.items())),
-            "blocked": ["Accepted architecture fee correction", "Canonical Quest runtime state",
+            "completion": {
+                "definitions": 24, "tier_recipes": 72,
+                "material_bindings": len(packets["imbuement-bindings.json"]["material_bindings"]),
+                "scroll_bindings": sum(len(r) for r in packets["imbuement-bindings.json"]["scroll_bindings"].values()),
+                "current_equipment_typed": packets["imbuement-eligibility.json"]["summary"]["typed_items"],
+                "target_equipment_typed": packets["imbuement-eligibility.json"]["summary"]["target_candidate_typed_items"],
+                "target_existing_item_refs": packets["imbuement-eligibility.json"]["summary"]["target_candidate_bound_items"],
+                "validated_missing_item_proposals": len(packets["missing-item-definitions.json"]["proposals"]),
+                "source_defined_shrine_routes": 72,
+                "completed_scroll_loot_records": 48,
+                "global_rules": len(packets["global-rules-evidence.json"]["rules"]),
+                "combat_rule_profiles": len(packets["imbuement-combat.json"]["rules"]),
+                "crystal_imbuements_revision": packets["crystal-imbuements-evidence.json"]["revision"],
+                "gold_token_exchange_bundles": len(packets["imbuement-access.json"]["material_acquisition"]["yana_gold_token_exchange"]["recipes"]),
+            },
+            "remaining_global_observation_requirements": packets["global-rules-evidence.json"]["unresolved"],
+            "blocked": ["Accepted architecture reconciliation (fees, Basic inscription, Stash, Vibrancy)", "Canonical Quest runtime state",
                         "Per-field evidence gaps listed in eligibility and Global rules packets",
                         "Runtime, persistence and wire implementation"]}
 
