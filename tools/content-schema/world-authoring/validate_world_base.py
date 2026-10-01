@@ -623,13 +623,9 @@ def transition_links(root: Path) -> Counter:
 def check_teleports(
     summary: dict, decoded: Counter, root: Path, errors: list[str]
 ) -> None:
-    """Every carried teleport has its Transition record and every record its teleport.
-
-    Enforced once the capture summary records `excluded_teleports`, that is from the first
-    regeneration with the exclusion rule on."""
+    """Every carried teleport has its Transition record and every record its teleport; a
+    populated base must record its excluded teleports."""
     excluded = summary.get("excluded_teleports")
-    if excluded is None:
-        return
     if (
         not isinstance(excluded, dict)
         or set(excluded) != {"rule", *TELEPORT_REASONS}

@@ -565,11 +565,13 @@ class ConvertAndValidateTest(unittest.TestCase):
             validate.validate(root),
             [f"{validate.SUMMARY}: excluded_teleports is malformed"],
         )
-        # a summary from before the rule carries no record and is not matched yet
+        # a populated base must record the exclusion, and the match never switches off
         del summary["excluded_teleports"]
         path.write_bytes(validate.canonical(summary))
         shard.unlink()
-        self.assertEqual(validate.validate(root), [])
+        errors = validate.validate(root)
+        self.assertIn(f"{validate.SUMMARY}: excluded_teleports is malformed", errors)
+        self.assertIn("have no Transition record", " ".join(errors))
 
     def test_fill_output_validates_and_pins_are_checked(self):
         out = self.build_with_fill(self.standard_fill())

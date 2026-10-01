@@ -180,6 +180,21 @@ sha256-pinned and `OtsHypothesisOnly`.
 - `cargo test --locked -p oteryn-game-server --test content_world_project_repository` and
   `cargo fmt --all -- --check` pass; the legacy seed reproduction diff is empty.
 
+## Teleport exclusion and regeneration (2026-10-01)
+
+- The control-plane FIX finding and Codex P1 4149962613 are addressed:
+  - The converter carries a teleport attribute only when a Transition.Teleport record has the same position, item and destination. The other 1,583 attributes are excluded with a recorded reason: 1,577 `unset_destination`, 1 `destination_outside_map` and 5 `destination_tile_absent`. Each item itself stays.
+  - `validate_world_base.py` requires `excluded_teleports` for a populated base and matches the carried teleports one to one with the Transition records (872 = 872).
+- Regeneration of #1170 only, approved by the owner (1a):
+  - `content/world/placements`: 370 region files and `index.json`;
+  - `samples/world-base-capture-v1.json`;
+  - the `source.base_map.sha256` pin that `convert_islands.py` rewrites in `content/world/areas/islands/index.json` and `samples/islands-capture-v1.json`.
+  Nothing else in `content/**` changed.
+- Inputs, all verified against the pins in the tools:
+  - `zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f`: `data-global/world/world.otbm`, `data-global/world/maps.7z` and `data/items/items.xml`;
+  - the 19 tibiamaps files of `edron_rework.TIBIAMAPS_FILES` and `minimap_draft.FILES`, fetched from `raw.githubusercontent.com/tibiamaps/tibia-map-data/main/data/`, each matching its pinned sha256.
+- Source check: on these inputs the pre-fix converter (`2ffba017`) reproduces the previously committed placements byte for byte (`--check` exit 0).
+
 ## Handover
 
 Owner decisions 1a (Blue Valley floor 7; Edron underground), 2a (Temple of Light draft) and 2b (summer-update-2025),

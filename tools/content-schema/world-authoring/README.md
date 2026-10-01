@@ -298,7 +298,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   stays. On the pinned sources that is 1,577 unset destinations (4 of them from the fill) and
   6 real-destination orphans (1 outside the map, 5 on absent tiles), matching the 1,573 + 1 + 5
   that #1160 does not import. A Transition whose teleport the map lacks fails the conversion.
-  Once the summary records `excluded_teleports`, `validate_world_base.py` requires the carried
+  `validate_world_base.py` requires `excluded_teleports` for a populated base and the carried
   teleports and the committed Transition records to match one to one.
 - **Item identity (palette):** a region file never names an item. It stores, per item, an
   index into `palette` in `index.json`. The palette holds the distinct server item
