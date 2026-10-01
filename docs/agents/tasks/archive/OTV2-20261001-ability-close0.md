@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-ability-close-0
-pr: "named in the #162 FREEZE_SHA entry"
+pr: "1430"
 base_sha: "origin/main at branch creation"
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -67,7 +67,7 @@ No code, migration, manifest or content change is made.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1430. Merge commit/result: its squash merge.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
