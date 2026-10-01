@@ -194,6 +194,10 @@ Premium (PREM-1) and promotion (PREM-2).
 ## 5. Out of scope (explicit later items)
 
 - Gems, the Gem Atelier, fragments, mod grades and gem revelation bonuses.
+  **Amendment (pending on acceptance of WHEEL-GEM-0;
+  `reviews/OTERYN_GAME_WHEEL_GEM0_GEM_ATELIER_DECISION_2026-09-30.md` §5-§10).** Decided there:
+  revealed gems and mod grades as Character state written on CHAR-REV-SEQ-1, vessels in the Wheel
+  writer, and gem effects through the Wheel contribution.
 - Promotion scrolls and the monk quest extra points.
 - Dedication perks (health, mana, capacity and resistance per point), and conviction perks that are not
   spell augments.
