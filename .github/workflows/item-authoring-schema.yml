@@ -151,6 +151,7 @@ jobs:
         run: |
           python test_world_objects.py
           python test_official_corpses.py
+          python test_qualified_world.py
 
       - name: WorldObject and Terrain catalogue drift against pinned Crystal
         working-directory: tools/content-schema/world-object-authoring
@@ -177,7 +178,7 @@ jobs:
               "https://raw.githubusercontent.com/$DONOR_REPO/$DONOR_REV/$path" \
               -o "$DONOR_SRC/$path"
           done
-          python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --check
+          python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --qualified-world --check
 
       - name: Item Master census
         working-directory: .
