@@ -192,6 +192,11 @@ Upgrade/tier/enchantment/modifier state is typed, bounded and resolves to stable
 
 No arbitrary free-form attribute map may define authoritative bonuses or item behavior.
 
+**Amendment (pending on acceptance of WORLD-INTERACTION-0;
+`reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`
+§4.4).** A key capability: an ItemType that declares it gives each instance one immutable typed
+`key_number` in `1..65,535`, set at MINT and never changed; key instances are not stackable.
+
 ## 5. Authoritative state guardrails
 
 The following are rejected as canonical authoritative item-state design:

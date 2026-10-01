@@ -448,6 +448,12 @@ fields and condition ticks: no second combat path. A summon's actions are its ow
    character; an area effect skips it.
 7. **Black skull:** a black-skulled attacker cannot harm an unmarked character.
 
+**Amendment (pending on acceptance of WORLD-INTERACTION-0;
+`OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md` §8.2).**
+Rule 6 does not filter a player-made field's damage to a character who enters or stands in it (the
+manual: fields give incidental skulls); rules 1-5 and 7 apply at each application. A field hurts
+its own caster only on `HARDCORE`.
+
 A refused single target answers `PVP_REFUSED {reason}`; an area effect skips the actor.
 
 ### 7.3 Damage factor

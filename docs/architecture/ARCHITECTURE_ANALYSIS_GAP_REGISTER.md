@@ -236,6 +236,13 @@ Still unresolved:
 - NPC movement, schedules, service behavior and conversation ownership;
 - overload degradation that cannot block the authoritative channel writer.
 
+Amendment (pending on acceptance of CREATURE-AI-0;
+`reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md`). It
+resolves the representation, perception, targeting and leash, pathfinding budgets and stale-result
+rejection, spawns, respawn and occupancy, channel-local spawn scope, summon ownership, attribution
+and despawn, and overload items above. Boss phases and encounter recovery go to BOSS-RAID-0; NPC
+behaviour stays unresolved.
+
 ## 12. World interaction and environmental mechanics
 
 - Coverage status: **REGISTERED_UNRESOLVED**

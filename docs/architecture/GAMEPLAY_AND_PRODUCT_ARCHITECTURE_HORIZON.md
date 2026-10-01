@@ -395,6 +395,13 @@ Must decide:
 - dynamic populations/ecology only through explicit bounded policies;
 - overload degradation that cannot block the authoritative channel loop.
 
+Amendment (pending on acceptance of CREATURE-AI-0; `reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md`).
+Under owner decisions 4a, 5a and 6a (2026-10-01, #162) CREATURE-AI-0 decides creature runtime
+ownership per channel, perception, targeting and target change, flee, chase and pathfinding
+budgets, leash and walk back, floors, spawns and respawn per channel, monster and player summons
+with their attribution and removal, durability and overload. Boss phases, encounters and raids stay
+with BOSS-RAID-0 and the encounter runtime; NPC behaviour and dynamic populations stay open.
+
 Must preserve:
 
 - channel-local simulation unless a named world/instance owner exists;
@@ -421,6 +428,15 @@ Must preserve:
 
 - no global mutable world object available to scripts;
 - no interaction may bypass item, lease, transaction or channel ownership invariants.
+
+**Amendment (pending on acceptance of WORLD-INTERACTION-0;
+`reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`).**
+WORLD-INTERACTION-0 decides the first slice of this gate: doors, keys, levers, switches, floor
+changes, tools, teleports, pushing, fields, walls, traps and the World clock. World-object state is
+per channel and volatile, reset at the planned world reset and at a channel restart (owner 6a);
+quest progress stays durable per character; one Tibia clock per World derived from a World epoch
+(owner 7a). Levers and triggers use a closed child set with no script engine. Readable and
+writable objects, beds and boss rooms stay open.
 
 # Product, safety and operational gates
 
