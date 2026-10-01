@@ -405,6 +405,10 @@ The quest exchange amendment in §39.3 admits the closed `QuestExchangeCause`.
 admits the closed `ConjureCause` (a BURN of one reagent unit with a MINT of the conjured units).
 Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
 
+**Amendment (pending on acceptance of RANGED-0;
+`reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
+The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition, Throwing}`.
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy
@@ -845,6 +849,11 @@ Content definition or a production quantity ceiling.
 §39.1).** The rune and conjure amendment in §39.3 also admits a one-unit BURN under
 `ItemUseCause::Rune`, and one reagent-unit BURN with one MINT of the conjured units into an
 existing stack or a fresh entry under `ConjureCause`.
+
+**Amendment (pending on acceptance of RANGED-0;
+`reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
+The weapon use amendment in §39.3 also admits a one-unit BURN, or a one-unit split, merge into a
+dropped Ground stack, or whole-item TRANSFER to Ground, under `WeaponUseCause`.
 
 **Amendment (pending on acceptance of WORLD-INTERACTION-0;
 `reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`
@@ -1663,6 +1672,38 @@ conjure's mana and soul debit as the MINT source, and the runtime settles or rel
 caster's holds only from that durable outcome (RUNE-USE-0 `RUNEUSE0-C2`). Both supersede the §39.1 exclusions of burn,
 mint into an existing stack and multiple touched items for these shapes only, with one audit
 event each and their own suffixed rows (`DUR03-RL-01-RUNE`, `DUR03-RL-01-CONJURE`).
+
+**Amendment (pending on acceptance of RANGED-0;
+`reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md`
+§6).** Once accepted, in its RANGED-1 child and for these shapes only, under the closed cause
+`WeaponUseCause {Ammunition, Throwing}` keyed by the swing `(WorldId, ChannelId, scope ownership
+generation, runtime actor id, actor generation, swing sequence, CharacterId)`, fenced by the
+composition decision's server-originated variant (the actor's current admitted session's
+`CurrentCharacterItemFence`, no CommandRef) and, for a Ground drop, the §32 scope fence; one
+transaction per swing, with the shot unit reserved under §7.1 at PREPARE and committed before the
+swing's effect:
+
+- **Ammunition burn.** One BURN line (§17) of exactly one unit from the shot direct entry of the
+  equipped quiver, which keeps its identity (§11.1) or retires at zero (§11.5).
+- **Throwing burn.** The same one-unit BURN from the right-hand stack when the frozen break draw
+  breaks it or the drop was refused at PREPARE.
+- **Throwing drop.** One unit of the right-hand stack to the landing tile's Ground: a §13 quantity
+  transfer into the tile's top Ground item (highest database-assigned Ground ordinal, RANGED-0
+  §6.1.2) when it is an unreserved compatible stack with room, reserved under §7.1 at PREPARE and
+  rechecked at commit under the tile row `FOR SHARE` (the hand stack
+  shrinks or retires at zero, the receiver grows and keeps its identity); otherwise a new item at the
+  top of the tile, by a §12 split into a planned identity (§11.3), or a whole TRANSFER from the
+  right-hand slot when it is the last unit, under the ITEM-MOVE-WIRE-1 §5 Ground rules (tile and
+  channel limits, house tiles refused, the tile row lock and counter). Every Ground write takes the
+  ITEM-MOVE-WIRE-1 §6.2 scope fence; D191 reset retirement applies. A database refusal is a refused
+  commit under the same TransactionId (§23).
+- **Supersession.** For these shapes only, as ITEM-MOVE-WIRE-1 §6.1 did for its own: the §39.1
+  exclusions of burn, multiple touched items (at most 2), quantity redistribution (the split, and the
+  merge into a live dropped Ground stack), nested containers (an entry of the equipped quiver, depth
+  1), the source custodies (the right-hand slot and quiver entries as BURN, split or merge sources),
+  Ground insertion by split, and a whole TRANSFER from a slot to Ground under `WeaponUseCause`. Every other §39 obligation is unchanged. One audit event per swing
+  consequence (a `OneItemTransactionV1` operation assigned by RANGED-1); rows `DUR03-RL-0x-WEAPON` as
+  RANGED-0 §6.3 (one participant per touched item).
 
 ## 40. Durable acknowledgement
 

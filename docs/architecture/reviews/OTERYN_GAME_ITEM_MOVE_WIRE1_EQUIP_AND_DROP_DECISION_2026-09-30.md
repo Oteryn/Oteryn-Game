@@ -102,6 +102,16 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   unknown `equipment` semantics, a hands conflict (refused, not resolved, as in Canary), and any
   item with `container` semantics (a quiver or a bag), whose entries would need a second
   container location.
+
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §3).** Once
+  accepted (QUIVER-1): a quiver (content flag `quiver`) is admitted in the left hand for its
+  vocation, as a depth-1 container whose entries are ammunition keyed to it as their parent item,
+  and only for a session that negotiated `CONTAINER_TREE_V1` (else `SLOT_MISMATCH`); such a
+  session alone may move an equipped quiver or shoot from it. The `ammo` slot is the manual's
+  Extra slot: it admits any whole item without `container` semantics, whatever its equipment
+  semantics (the unknown-semantics refusal does not apply there), with no level, vocation or
+  Premium check; an item there grants no equipment effect except EQUIP-0's light and is never
+  shot.
 - **Requirements.** Level and vocation are checked inside the transaction under the
   `character_root` lock. Premium is read from PROD-ENTITLEMENTS-01 §6 evidence at commit and fails
   closed when stale or unavailable. An item stays equipped when the level drops or Premium ends; a
@@ -121,7 +131,8 @@ How does a player equip and unequip items, and drop and pick up items on the gro
 `reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §6, §9).**
 A container with contents may enter the empty container slot and may leave it as a tree to a
 destination whose BAGS-0 child admits it (Ground, a depot box). Unequip may target a nested
-container. The nine other slots still refuse containers. Dropping and picking up a tree is built by
+container. The nine other slots still refuse containers, except the quiver in the left hand once
+RANGED-0 is accepted (§4 amendment above). Dropping and picking up a tree is built by
 BAGS-GROUND-1. The §5 Ground counter (`ITEMMOVE1-RL-02`) then counts every item reachable from a
 Ground root, adjusted atomically by the tree's item count on drop and pickup, by the extracted
 subtree's item count when an entry is moved out of a Ground tree into the character's own trees,
@@ -151,6 +162,9 @@ exactly the change, under the tile and counter row lock.
   actor out of a snapshot (§7.3).
 - **Reset.** Dropped items follow D191: they survive a crash and are retired at the planned world
   reset by `WorldReset`. No new sink.
+- **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Every
+  Ground location row gets a database-assigned `ground_ordinal` from one sequence at insert; the
+  tile's top Ground item is the live root with the highest ordinal (Tibia's top item).
 
 ## 6. Persistence and DUR-03
 
