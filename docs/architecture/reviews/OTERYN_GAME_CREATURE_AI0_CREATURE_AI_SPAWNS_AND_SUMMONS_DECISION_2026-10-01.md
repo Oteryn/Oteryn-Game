@@ -461,8 +461,9 @@ allocation.
   active (§4.1); speed and paralysis act through the step duration.
 - **GAME-ABILITY-01:** every creature effect is a typed intent with `ProposalSource::Ai` (§4.4);
   overrides arrive as Ability commits (§4.3).
-- **Party and PvP:** §8.3 and §8.5. **D3, DUR-03 A4, VSL-COMBAT-01:** unchanged; summon deaths
-  make no death (§8.2). **D54** (no player death from creatures) stays until the player death
+- **Party and PvP:** §8.3 and §8.5. **D3, DUR-03 A4, VSL-COMBAT-01:** unchanged; a lethal summon death
+  creates or recognizes its one death key and occurrence, which starts no corpse, loot or credit
+  workflow (§8.2); only a removal (§8.4) makes no death. **D54** (no player death from creatures) stays until the player death
   decision replaces it.
 - **BOSS-RAID-0:** boss spawns, raid runs and encounters are not redecided; their creatures use
   §3-§5 unless their encounter overrides.
