@@ -441,6 +441,8 @@ quest doors, quest format §3.1) stays sealed.
   with the `ITEMMOVE1-RL-01` tile limit at B and a real row lock on both tile rows, taken after the
   item rows in ascending tile key order (composition rule 4). A tree moves by its root (BAGS-0
   §4.3); the Ground counter does not change. Rows in §12. A dropped item keeps its D191 reset.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4).** A stackable merges into the destination tile's top
+  compatible stack, and an optional `count` moves part of a stack.
 - **Water.** A tile that does not accept items (water included) refuses them (`BLOCKED`); Global
   destroys them, a sink this decision does not add (declared, §14).
 

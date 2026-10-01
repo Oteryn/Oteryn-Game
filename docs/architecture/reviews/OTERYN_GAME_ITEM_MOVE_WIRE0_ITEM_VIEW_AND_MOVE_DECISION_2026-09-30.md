@@ -173,6 +173,8 @@ a view command (open, close, up) and handles for inner entries; command 9 gains 
   container with a complete container-slot equip pattern; otherwise the main backpack, where the
   writer merges, tops up or adds a new direct entry (D83).
 - **Whole item only.** The whole stack moves.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §3).** Under `ITEM_STACK_COUNT_V1` an optional `count` moves
+  part of a stack; absent keeps this rule.
 - **Value.** One admitted DUR-03 TRANSFER (`0014` shape) through the existing writer, with the
   command's CommandRef as its cause. No new DUR-03 shape.
 - **Replay first.** Before resolving the handle, the runtime looks up the CommandRef's committed

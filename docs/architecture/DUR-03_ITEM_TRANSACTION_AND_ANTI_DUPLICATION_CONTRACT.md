@@ -863,6 +863,10 @@ locked after the item rows in tile key order; a container tree moves by its root
 Rows `DUR03-RL-0x-GROUND-MOVE`: 1 touched item, 2 location lines, 1 participant, 3 work units. A
 key's immutable `key_number` is part of the MINT and TRANSFER typed evidence (`DUR03-RL-07-KEY`).
 
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md`
+§5).** The stack amendment in §39.3 also admits, for player command 9 moves, a §12 split and §13
+quantity transfers of up to three touched items (rows `DUR03-RL-0x-STACK`).
+
 Each aggregate covers the complete applicable §39 semantic evidence. This includes
 typed item identity/lifecycle/type/quantity before and after; location/custody
 before and after; authorized source/occurrence/cause and conservation summary;
@@ -1623,6 +1627,19 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
   event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
   use's effect, with its own suffixed resource rows.
+
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4-§6).** Once accepted, in its STACK-1 child and for player
+command 9 moves only (CommandRef cause, composition rules 1-4): one transaction with at most three
+touched items, combining a §12 split of the moved units into a planned identity, a §13 quantity
+transfer into a reserved compatible receiver (a container stack in display order, the slot's item, or
+the tile's top Ground item rechecked under its tile row, whose lock mode the frozen plan fixes and
+never upgrades), a TRANSFER of a whole source or of a displaced slot item, and the source's
+retirement at zero, with a STACK receipt carrying the frozen plan (STACK-0 §5.3). Supersession, for
+these shapes only: the §39.1 exclusions of multiple touched items (at most 3) and quantity
+redistribution, and the §39.1 and §39.3 source and destination limits for split insertion and
+quantity changes in the Ground, slot, container, depot and Inbox families STACK-0 §4.5 admits.
+The D133 window and `CorpseNotPickupable` triggers bind split and quantity lines from a corpse entry.
+Rows `DUR03-RL-0x-STACK` as STACK-0 §6.
 
 **Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §6.5, §8).** Once
 accepted: in its ENC-OUTCOME-1 child, a one-item MINT into Ground custody of the encounter's scope
