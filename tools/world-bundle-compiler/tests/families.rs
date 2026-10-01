@@ -79,18 +79,22 @@ fn build(
         regions: &regions,
         palette: &palette,
         identity: Identity::default(),
-        world: Extent {
-            min_x: 0,
-            min_y: 0,
-            max_x: 256,
-            max_y: 256,
-            floors: vec![-7, -6],
-        },
+        world: world(),
         build_class: BuildClass::NonProduction,
         draft_areas: Vec::new(),
         families,
     };
     compile(&input, &Resolver)
+}
+
+fn world() -> Extent {
+    Extent {
+        min_x: 0,
+        min_y: 0,
+        max_x: 256,
+        max_y: 256,
+        floors: vec![-7, -6],
+    }
 }
 
 fn families() -> Families {
@@ -236,7 +240,14 @@ fn family_shards_load_in_the_native_frame_and_fail_closed() -> TestResult {
 fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
     let regions = [region(map())?];
     let compiled = build(map(), &families())?;
-    let proof = equivalence(&regions, &keys(), &Resolver, &families(), &compiled.bytes)?;
+    let proof = equivalence(
+        &regions,
+        &keys(),
+        &Resolver,
+        &families(),
+        &world(),
+        &compiled.bytes,
+    )?;
     // The provisional entry and its content, a dropped teleport, are left out.
     assert_eq!((proof.tiles, proof.dropped_teleports), (4, 2));
     assert_eq!((proof.entries, proof.skipped_entries), (5, 2));
@@ -249,6 +260,7 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
             &keys(),
             &Resolver,
             &families(),
+            &world(),
             &compiled.bytes
         )
         .is_err()
@@ -256,7 +268,17 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
     let swapped: Vec<String> = ["item:bag", "item:teleport", "donor:99"]
         .map(String::from)
         .to_vec();
-    assert!(equivalence(&regions, &swapped, &Resolver, &families(), &compiled.bytes).is_err());
+    assert!(
+        equivalence(
+            &regions,
+            &swapped,
+            &Resolver,
+            &families(),
+            &world(),
+            &compiled.bytes
+        )
+        .is_err()
+    );
     let mut fewer = map();
     fewer.pop();
     assert!(
@@ -265,6 +287,7 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
             &keys(),
             &Resolver,
             &families(),
+            &world(),
             &compiled.bytes
         )
         .is_err()
@@ -280,18 +303,48 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
             }
         }
     }
-    assert!(equivalence(&regions, &keys(), &Other, &families(), &compiled.bytes).is_err());
+    assert!(
+        equivalence(
+            &regions,
+            &keys(),
+            &Other,
+            &families(),
+            &world(),
+            &compiled.bytes
+        )
+        .is_err()
+    );
     let read = bundle::read(&compiled.bytes)?;
     let mut manifest = read.manifest.clone();
     manifest.skipped_provisional_keys.push("donor:x".into());
     let claimed = bundle::write(&manifest, &read.sectors)?;
-    assert!(equivalence(&regions, &keys(), &Resolver, &families(), &claimed).is_err());
+    assert!(
+        equivalence(
+            &regions,
+            &keys(),
+            &Resolver,
+            &families(),
+            &world(),
+            &claimed
+        )
+        .is_err()
+    );
     // A manifest that omits a dropped teleport key is not equivalent: its entry would be
     // materialized.
     let mut manifest = read.manifest.clone();
     manifest.dropped_teleports.pop();
     let omitted = bundle::write(&manifest, &read.sectors)?;
-    assert!(equivalence(&regions, &keys(), &Resolver, &families(), &omitted).is_err());
+    assert!(
+        equivalence(
+            &regions,
+            &keys(),
+            &Resolver,
+            &families(),
+            &world(),
+            &omitted
+        )
+        .is_err()
+    );
     // The Transition rule is checked again from the families: a record to elsewhere, a
     // record on a (0,0,0) tile, a missing record and an unmet record all fail.
     let mut elsewhere = families();
@@ -303,7 +356,62 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
     let mut unmet = families();
     unmet.teleports.insert((7, 7, 7), (9, 9, 6));
     for wrong in [elsewhere, on_zero, missing, unmet] {
-        assert!(equivalence(&regions, &keys(), &Resolver, &wrong, &compiled.bytes).is_err());
+        assert!(
+            equivalence(
+                &regions,
+                &keys(),
+                &Resolver,
+                &wrong,
+                &world(),
+                &compiled.bytes
+            )
+            .is_err()
+        );
     }
+    let fails = |result: Result<_, Error>, why: &str| matches!(result, Err(Error::Format(what)) if what.contains(why));
+    // A house id is checked again against the House family.
+    let mut no_house = families();
+    no_house.houses.clear();
+    assert!(fails(
+        equivalence(
+            &regions,
+            &keys(),
+            &Resolver,
+            &no_house,
+            &world(),
+            &compiled.bytes
+        ),
+        "not in the House family"
+    ));
+    // The manifest World must be the World record.
+    let mut wider = world();
+    wider.max_x = 512;
+    assert!(fails(
+        equivalence(
+            &regions,
+            &keys(),
+            &Resolver,
+            &families(),
+            &wider,
+            &compiled.bytes
+        ),
+        "not the World record"
+    ));
+    // A key that resolves nowhere fails even as a descendant of a skipped provisional entry.
+    let mut hidden = map();
+    hidden[3].items[1].palette = 3;
+    let mut unknown = keys();
+    unknown.push("item:none".into());
+    assert!(fails(
+        equivalence(
+            &[region(hidden)?],
+            &unknown,
+            &Resolver,
+            &families(),
+            &world(),
+            &compiled.bytes
+        ),
+        "unresolved palette entry"
+    ));
     Ok(())
 }

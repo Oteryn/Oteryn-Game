@@ -77,6 +77,17 @@ Real-map rerun: same digest `fa65ffb1…`, 1,577 dropped keys matched, 41 s.
 Architect ruling 5918085982 confirmed the stated assumptions 1 and 2 below, and noted 5,995
 provisional keys as superseding "five" in ADR-0021 §4.5.
 
+## Review round 3 (Codex review 5373916724 of `5e54fe0c`)
+
+Repair candidate after returning to AUTHORING; the three P1 findings are fixed in `compile.rs`:
+
+- `equivalence` rejects a source entry whose key the resolver does not know before it skips a
+  provisional subtree, so an unknown descendant cannot hide under a provisional parent.
+- `equivalence` takes the World record's extent and requires the manifest World to equal it.
+- `equivalence` checks every nonzero house id against the House family again.
+
+Real-map rerun: same digest `fa65ffb1…`, 41 s.
+
 ## Stated assumptions (reversible; for the control plane)
 
 - An Item key that no catalogue record points at is a plain Item and resolves to `item`
@@ -102,8 +113,8 @@ provisional keys as superseding "five" in ADR-0021 §4.5.
 ## Validation
 
 - `cargo fmt --check`; `cargo clippy --locked -p oteryn-world-bundle-compiler --all-targets --
-  -D warnings`; `cargo test --locked -p oteryn-world-bundle-compiler` (18 tests, round 1
-  assertions added).
+  -D warnings`; `cargo test --locked -p oteryn-world-bundle-compiler` (18 tests, with the
+  round 1 to 3 assertions added).
 - `python3 tools/agents/validate_governance.py`; `python3
   tools/repository/validate_repository_policy.py`; `git diff --check`.
 

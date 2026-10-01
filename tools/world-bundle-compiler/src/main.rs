@@ -128,11 +128,12 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
             "the World Project must hold one World shard".into(),
         ));
     };
+    let world = project::world_extent(world)?;
     let input = Input {
         regions: &project.regions,
         palette: &palette,
         identity,
-        world: project::world_extent(world)?,
+        world: world.clone(),
         build_class,
         draft_areas: project::draft_areas(&project.index)?,
         families: &project.families,
@@ -143,6 +144,7 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
         &palette,
         &registry,
         &project.families,
+        &world,
         &compiled.bytes,
     )?;
     fs::write(out, &compiled.bytes)

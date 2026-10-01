@@ -383,8 +383,10 @@ pub struct Equivalence {
 /// native position with the same flags, house and zones, and every entry keeps its depth,
 /// attributes and palette key, except the rules of the format document: a subtree under a key
 /// `resolver` calls provisional is left out, a (0,0,0) teleport is dropped, and a teleport floor
-/// is native. Every teleport is checked again against `families` (§4.5), and every Transition
-/// record must meet its attribute. The bundle holds no other tile, `skipped_provisional_keys` is
+/// is native. The manifest World must equal `world`, the extent of the World record; every key,
+/// a skipped one included, must resolve; every house id must be in the House family; every
+/// teleport is checked again against `families` (§4.5), and every Transition record must meet
+/// its attribute. The bundle holds no other tile, `skipped_provisional_keys` is
 /// exactly the set of provisional keys met, and `dropped_teleports` is exactly the set of
 /// placement keys of the kept top-level entries that lost a (0,0,0) teleport.
 pub fn equivalence(
@@ -392,10 +394,14 @@ pub fn equivalence(
     palette: &[String],
     resolver: &dyn KeyResolver,
     families: &Families,
+    world: &Extent,
     bundle: &[u8],
 ) -> Result<Equivalence, Error> {
     let read = bundle::read(bundle)?;
     let differs = |what: String| Err(Error::Format(format!("equivalence: {what}")));
+    if read.manifest.world != *world {
+        return differs("manifest World is not the World record".into());
+    }
     for entry in &read.manifest.palette {
         if resolver.resolve(&entry.key) != Resolution::Resolved(entry.family, entry.id) {
             return differs(format!("palette entry {} is not its resolution", entry.key));
@@ -503,6 +509,12 @@ impl<'a> Context<'a, '_> {
     fn entries(&mut self, tile: &Tile) -> Result<Vec<Entry<'a>>, Error> {
         let differs = |what: String| Error::Format(format!("equivalence: {what}"));
         let from = (tile.x, tile.y, self.z);
+        if tile.house != 0 && !self.families.houses.contains(&tile.house) {
+            return Err(differs(format!(
+                "house {} at {from:?} is not in the House family",
+                tile.house
+            )));
+        }
         let mut items = Vec::with_capacity(tile.items.len());
         let mut skip_below: Option<u8> = None;
         // Kept top-level entries so far; the last one owns the contents that follow it.
@@ -527,6 +539,10 @@ impl<'a> Context<'a, '_> {
             };
             let key = self.palette.get(item.palette as usize).map(String::as_str);
             let own = self.resolved.get(item.palette as usize);
+            // Every entry resolves, the contents of a skipped provisional entry included.
+            if matches!(own, None | Some(Resolution::Unknown)) {
+                return Err(differs(format!("unresolved palette entry at {from:?}")));
+            }
             if skip_below.is_some() || own == Some(&Resolution::Provisional) {
                 skip_below = skip_below.or(Some(item.depth));
                 self.report.skipped_entries += 1;
