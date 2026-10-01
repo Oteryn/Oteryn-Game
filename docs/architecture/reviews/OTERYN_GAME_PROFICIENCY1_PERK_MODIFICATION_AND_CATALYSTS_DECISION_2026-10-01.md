@@ -25,7 +25,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| PROF-SHAPE-1 | hard (persistence), persistence review | the modification table and its constraints (§3), the reserved causes, the operation commands answering `NOT_ADMITTED` (§4), the shaping-revision retention check (§3) | PROF-1 |
+| PROF-SHAPE-1 | hard (persistence), persistence review | the modification table and its constraints (§3), the reserved causes, the operation commands answering `NOT_ADMITTED` (§4) | PROF-1 |
 | PROF-SHAPE-CONTENT-1 | content lane | evidence for pools, odds, rank values, costs and catalyst effects (§2), each with its evidence class | PROF-CONTENT-1 |
 
 The operations themselves, their receipts and their wire are built after PROFICIENCY-1B.
@@ -84,9 +84,11 @@ Table `game_character_proficiency_modifications`:
 - **Modified levels keep their selection.** A `perk_selection` that changes or clears the selection
   of a level with a row is refused `MODIFIED_LEVEL`. Amended: PROFICIENCY-0 §4.4's result codes.
 - **Shaping revisions.** `modified_perk` and `pending_offer` name entries of the shaping revision they
-  were drawn from. That revision is **retained while any row references it**: content validation
-  refuses a build that drops or changes a referenced shaping revision, so a stored row always
-  resolves to the same perk, and a row is evaluated against its own stored revision.
+  were drawn from. **Invariant:** a shaping revision is retained while any row references it, so a
+  stored row always resolves to the same perk, and a row is evaluated against its own stored
+  revision. Since no row can exist before PROFICIENCY-1B, the check that enforces this is a 1B entry
+  condition (§6 item 10): it must be serialized with content activation and proficiency writes, not
+  only run at build time.
 - **Definition revisions.** An incompatible definition revision whose migration changes a modified
   level clears that row in its `migration` receipt (PROFICIENCY-0 §4.1), with no refund
   (`PARITY_PENDING`, R2); the migration line carries both slots' rows before and after.
@@ -94,7 +96,7 @@ Table `game_character_proficiency_modifications`:
   burn cause `ProficiencyCause {track, slot, operation, occurrence}` are reserved names. Their lines,
   CHECKs and shapes are PROFICIENCY-1B's.
 - While every operation is `NOT_ADMITTED` (§4), no row is ever written; the table, keys and
-  retention check exist so that PROFICIENCY-1B adds behaviour, not a schema change.
+  retention invariant exist so that PROFICIENCY-1B adds behaviour, not a schema change.
 
 ## 4. Operations and the gate
 
@@ -120,13 +122,12 @@ evidence shows it exists on Global servers.
 | `PROF1-RL-02` rank | 1..10 |
 
 Each with max and max+1 tests, plus: a second row for an already modified level violates the
-UNIQUE key; every operation and catalyst use answers `NOT_ADMITTED` and writes nothing; a content
-build that drops a referenced shaping revision is refused.
+UNIQUE key; every operation and catalyst use answers `NOT_ADMITTED` and writes nothing.
 
 ## 6. Entry conditions for PROFICIENCY-1B
 
 PROFICIENCY-1B, the value-shape amendment, is accepted only when it states and tests each of these
-(the findings of review rounds 1-5 on this PR):
+(the findings of review rounds 1-6 on this PR):
 
 1. **Occurrence.** The occurrence derives from the CommandId exactly as PROFICIENCY-0 §4.3 does; a
    retry returns the first receipt by key before any write.
@@ -148,6 +149,12 @@ PROFICIENCY-1B, the value-shape amendment, is accepted only when it states and t
 8. **Wire.** Command payloads with a **measured** byte bound, and the re-measured `ACTOR_PROFICIENCY`
    snapshot bound (PROF-WIRE-0 RL-01) including the rows.
 9. **Values** for every admitted operation, by the evidence order of §4.
+10. **Retention check.** The §3 invariant is enforced serialized with content activation and with
+    proficiency writes (an activation that would drop or change a referenced shaping revision is
+    refused, and a write cannot reference a revision being retired), not only at build time.
+11. **Integrity.** PROFICIENCY-0's per-track current-state guard, the shared receipt-chain guard,
+    reconciliation and `verify_character_integrity` are extended to the modification rows and the
+    `perk_modification` cause, so each row equals the after value of its latest line.
 
 ## 7. Rejected options
 
@@ -177,7 +184,7 @@ None now. A gold cost, or a value that evidence never settles, comes back to the
   the selection rule must know the modification rows exist.
 - **Blocked:** PROF-1's migration line and `MODIFIED_LEVEL`; PROFICIENCY-1B.
 - **Minimum sufficient:** one table with its keys, two reserved causes, a closed operation list that
-  answers `NOT_ADMITTED`, a retention rule and the entry conditions for 1B.
+  answers `NOT_ADMITTED`, a retention invariant and the entry conditions for 1B.
 - **Harder later:** the table and its keys join the Character state, so changing them needs a
   migration; the retained shaping revisions grow the content build while referenced; the six
   operation names are fixed.
