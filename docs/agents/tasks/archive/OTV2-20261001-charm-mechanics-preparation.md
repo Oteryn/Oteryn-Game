@@ -118,6 +118,11 @@ completion. The branch returned to AUTHORING for portable execution harnesses an
 evidence. Successor qualification supersedes the first published preparation head; the current
 PR metadata names the exact frozen candidate. No runtime connection was added.
 
+Hosted Charm CI then exposed a Ruff import-classification difference between repository-root
+and authoring-directory execution. The branch returned to AUTHORING for a test-local jsonschema
+import; both exact Ruff invocations pass. Fixtures and browser/Node harnesses are unchanged.
+Final qualification must include the authoring-directory commands used by CI.
+
 ## Closeout boundary
 
 This record is included in the preparation PR's final authoring commit, so it reaches protected

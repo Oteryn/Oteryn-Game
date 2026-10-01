@@ -10,7 +10,6 @@ import unittest
 from pathlib import Path
 
 import charm_mechanics as cm
-from jsonschema import Draft202012Validator
 
 
 class CharmMechanicsTests(unittest.TestCase):
@@ -27,6 +26,8 @@ class CharmMechanicsTests(unittest.TestCase):
         return next(r for r in rows if r["key"] == "oteryn:charm." + name)
 
     def test_complete_current_package_and_schema(self):
+        from jsonschema import Draft202012Validator
+
         Draft202012Validator.check_schema(cm.load(cm.SCHEMA))
         self.assertEqual(self.check(), [])
         self.assertEqual(cm.validate_index(cm.load(cm.INDEX)), [])
