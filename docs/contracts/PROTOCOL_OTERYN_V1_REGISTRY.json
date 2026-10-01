@@ -61,6 +61,16 @@
       "state_domains": [1],
       "offered": false,
       "offer_gate": "VIS-3: the server does not offer this capability before the connection composes the VIS-1 interest set. Without it selected, domain 1 carries only the v1 types (own actor) and type 2 is never sent."
+    },
+    {
+      "id": 7,
+      "name": "CHAT_V1",
+      "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 §7 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
+      "owner": "World communication (current ChannelRuntime for local speech)",
+      "command_types": [13],
+      "state_domains": [12],
+      "offered": false,
+      "offer_gate": "CHAT-1b-2: the server does not offer this capability before the connection composes chat (capability negotiation from CHARM-5-COMP, the per-session egress queue of CHAT0-RL-11). Without it selected, domain 12 is never sent and command type 13 is refused as unsupported."
     }
   ],
   "command_types": [
@@ -119,6 +129,16 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsResult",
       "max_payload_bytes": 6,
       "max_result_payload_bytes": 32788
+    },
+    {
+      "id": 13,
+      "name": "CHAT_INTENT",
+      "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 §7 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
+      "capability": 7,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatIntentResultV1",
+      "max_payload_bytes": 1148,
+      "max_result_payload_bytes": 8
     }
   ],
   "state_domains": [
@@ -247,6 +267,36 @@
           "name": "CHARACTER_CHARMS_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmViewV1",
           "max_payload_bytes": 554
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "CHAT",
+      "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 §7 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
+      "owner": "World communication (current ChannelRuntime for local speech)",
+      "capability": 7,
+      "revision": "per GameSessionId, strictly above any revision the session has seen, across reconnect, resume and transfer (the NPC-0 pattern); every admission, reconnect, resume and transfer starts with a snapshot of the open rooms; lines are never replayed from storage",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "CHAT_LINE_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatLineV1",
+          "max_payload_bytes": 1194
+        },
+        {
+          "id": 2,
+          "name": "CHAT_ROOMS_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatRoomsV1",
+          "max_payload_bytes": 4
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "CHAT_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatRoomsV1",
+          "max_payload_bytes": 4
         }
       ]
     }

@@ -1,0 +1,517 @@
+{
+ "schema": "OTERYN_OFFICIAL_LIBRARY_FACTS/v1",
+ "decision": "D47",
+ "captured": "2026-09-30",
+ "api": "https://api.tibiadata.com/v4/creature/",
+ "library_entries": 27,
+ "news_checked": [
+  {
+   "id": 8947,
+   "date": "2026-09-28",
+   "title": "Exaltation Overload"
+  },
+  {
+   "id": 8979,
+   "date": "2026-09-28",
+   "title": "server save ticker"
+  },
+  {
+   "id": 8980,
+   "date": "2026-09-29",
+   "title": "Fixes and Changes"
+  },
+  {
+   "id": 8989,
+   "date": "2026-09-30",
+   "title": "TibiaDaily.com ticker"
+  }
+ ],
+ "monsters": [
+  {
+   "monster": "bluebeak",
+   "canary_name": "Bluebeak",
+   "title": "Bluebeaks",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=bluebeak",
+   "captured": "2026-09-30",
+   "content_sha256": "47895558ea5c88b3ea57830b4d77f9d1c6a4f1c198dea97bde7cb7b9ea3e5f17",
+   "facts": {
+    "race": "bluebeak",
+    "name": "Bluebeaks",
+    "hitpoints": 2430,
+    "experience_points": 2330
+   },
+   "fields": {
+    "max_health": 2430,
+    "experience": 2330
+   }
+  },
+  {
+   "monster": "bramble_wyrmling",
+   "canary_name": "Bramble Wyrmling",
+   "title": "Bramble Wyrmlings",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=bramblewyrmling",
+   "captured": "2026-09-30",
+   "content_sha256": "84ba41e2271f0e377de5e7c68b84f1cfab314ca3289a7d1838928353f0a6f817",
+   "facts": {
+    "race": "bramblewyrmling",
+    "name": "Bramble Wyrmlings",
+    "hitpoints": 2350,
+    "experience_points": 2350
+   },
+   "fields": {
+    "max_health": 2350,
+    "experience": 2350
+   }
+  },
+  {
+   "monster": "cinder_wyrmling",
+   "canary_name": "Cinder Wyrmling",
+   "title": "Cinder Wyrmlings",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=cinderwyrmling",
+   "captured": "2026-09-30",
+   "content_sha256": "915e0a6494caa90a1abe84c49603031a98b132dc1636ee2be07bedf6c6d0c173",
+   "facts": {
+    "race": "cinderwyrmling",
+    "name": "Cinder Wyrmlings",
+    "hitpoints": 2350,
+    "experience_points": 2350
+   },
+   "fields": {
+    "max_health": 2350,
+    "experience": 2350
+   }
+  },
+  {
+   "monster": "creepy_crawler",
+   "canary_name": "Creepy Crawler",
+   "title": "Creepy Crawlers",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=creepycrawler",
+   "captured": "2026-09-30",
+   "content_sha256": "b94b1cb59c088ed264dcec3c2c2a36d3e4e63f98a4d00d4369f0ed7a51e26a29",
+   "facts": {
+    "race": "creepycrawler",
+    "name": "Creepy Crawlers",
+    "hitpoints": 27000,
+    "experience_points": 22380
+   },
+   "fields": {
+    "max_health": 27000,
+    "experience": 22380
+   }
+  },
+  {
+   "monster": "crusader",
+   "canary_name": "Crusader",
+   "title": "Crusaders",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=crusader",
+   "captured": "2026-09-30",
+   "content_sha256": "a5582d9a3c7e4a16da0a1702b88214e713f6902e998bf867d326607f6fac9748",
+   "facts": {
+    "race": "crusader",
+    "name": "Crusaders",
+    "hitpoints": 3400,
+    "experience_points": 3300
+   },
+   "fields": {
+    "max_health": 3400,
+    "experience": 3300
+   }
+  },
+  {
+   "monster": "crypt_construct",
+   "canary_name": "Crypt Construct",
+   "title": "Crypt Constructs",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=cryptconstruct",
+   "captured": "2026-09-30",
+   "content_sha256": "47efd61189267a59e4299c6f9eebffb481c302e995b1d3e87724b03e38e13495",
+   "facts": {
+    "race": "cryptconstruct",
+    "name": "Crypt Constructs",
+    "hitpoints": 25000,
+    "experience_points": 19730
+   },
+   "fields": {
+    "max_health": 25000,
+    "experience": 19730
+   }
+  },
+  {
+   "monster": "crypt_fiend",
+   "canary_name": "Crypt Fiend",
+   "title": "Crypt Fiends",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=cryptfiend",
+   "captured": "2026-09-30",
+   "content_sha256": "9934dc311e53b3b372cb8f575726f759835252c4fb219e7d6ebc90ddecb3d659",
+   "facts": {
+    "race": "cryptfiend",
+    "name": "Crypt Fiends",
+    "hitpoints": 30000,
+    "experience_points": 19070
+   },
+   "fields": {
+    "max_health": 30000,
+    "experience": 19070
+   }
+  },
+  {
+   "monster": "crypt_mage",
+   "canary_name": "Crypt Mage",
+   "title": "Crypt Mages",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=cryptmage",
+   "captured": "2026-09-30",
+   "content_sha256": "defb8bc24149a204966e65ffbf101db3bb9602908086b1c1b5ca43c668b4335b",
+   "facts": {
+    "race": "cryptmage",
+    "name": "Crypt Mages",
+    "hitpoints": 14000,
+    "experience_points": 14200
+   },
+   "fields": {
+    "max_health": 14000,
+    "experience": 14200
+   }
+  },
+  {
+   "monster": "cyclursus",
+   "canary_name": "Cyclursus",
+   "title": "Cyclursuses",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=cyclursus",
+   "captured": "2026-09-30",
+   "content_sha256": "1debbbbd228167d19e453bf071e1d2d05a0312d08686a836240d4baaf68a47ce",
+   "facts": {
+    "race": "cyclursus",
+    "name": "Cyclursuses",
+    "hitpoints": 13500,
+    "experience_points": 11775
+   },
+   "fields": {
+    "max_health": 13500,
+    "experience": 11775
+   }
+  },
+  {
+   "monster": "dworc_shadowstalker",
+   "canary_name": "Dworc Shadowstalker",
+   "title": "Dworc Shadowstalkers",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=norcferatudworc",
+   "captured": "2026-09-30",
+   "content_sha256": "4bfab1c36a609a6c296f181e79ce2b53c9729d1d7e1d8b300e62eaf73eaf767b",
+   "facts": {
+    "race": "norcferatudworc",
+    "name": "Dworc Shadowstalkers",
+    "hitpoints": 8900,
+    "experience_points": 8930
+   },
+   "fields": {
+    "max_health": 8900,
+    "experience": 8930
+   }
+  },
+  {
+   "monster": "gloom_maw",
+   "canary_name": "Gloom Maw",
+   "title": "Gloom Maws",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=batface",
+   "captured": "2026-09-30",
+   "content_sha256": "603c4ff16a2385a0dba37338676295690ac649163bd4762932900e39c4b62df5",
+   "facts": {
+    "race": "batface",
+    "name": "Gloom Maws",
+    "hitpoints": 8700,
+    "experience_points": 8770
+   },
+   "fields": {
+    "max_health": 8700,
+    "experience": 8770
+   }
+  },
+  {
+   "monster": "haunted_hunter",
+   "canary_name": "Haunted Hunter",
+   "title": "Haunted Hunters",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=hauntedhunter",
+   "captured": "2026-09-30",
+   "content_sha256": "3fbf3a24686684f4e84e0e5fc619bfcb20a9111a909c320abed48f4952317665",
+   "facts": {
+    "race": "hauntedhunter",
+    "name": "Haunted Hunters",
+    "hitpoints": 23000,
+    "experience_points": 19500
+   },
+   "fields": {
+    "max_health": 23000,
+    "experience": 19500
+   }
+  },
+  {
+   "monster": "hawk_hopper",
+   "canary_name": "Hawk Hopper",
+   "title": "Hawk Hoppers",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=hawkhopper",
+   "captured": "2026-09-30",
+   "content_sha256": "17b0d85981cbab07ad52eafcea29988829a0909f072dfa784fb6bc3cee9eb7bd",
+   "facts": {
+    "race": "hawkhopper",
+    "name": "Hawk Hoppers",
+    "hitpoints": 2180,
+    "experience_points": 2250
+   },
+   "fields": {
+    "max_health": 2180,
+    "experience": 2250
+   }
+  },
+  {
+   "monster": "headwalker",
+   "canary_name": "Headwalker",
+   "title": "Headwalkers",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=headwalker",
+   "captured": "2026-09-30",
+   "content_sha256": "5ca99d3ab4c728dd7149c3533cb3a8a80792300da8823d4071eb2e252f2cc614",
+   "facts": {
+    "race": "headwalker",
+    "name": "Headwalkers",
+    "hitpoints": 2460,
+    "experience_points": 2250
+   },
+   "fields": {
+    "max_health": 2460,
+    "experience": 2250
+   }
+  },
+  {
+   "monster": "lion_hydra",
+   "canary_name": "Lion Hydra",
+   "title": "Lion Hydras",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=lionhydra",
+   "captured": "2026-09-30",
+   "content_sha256": "da80786fadd2c8769f7ea1ac77b2c871d790187a5b56ef9df116a7abd45b0293",
+   "facts": {
+    "race": "lionhydra",
+    "name": "Lion Hydras",
+    "hitpoints": 2760,
+    "experience_points": 2600
+   },
+   "fields": {
+    "max_health": 2760,
+    "experience": 2600
+   }
+  },
+  {
+   "monster": "night_harpy",
+   "canary_name": "Night Harpy",
+   "title": "Night Harpies",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=nightharpy",
+   "captured": "2026-09-30",
+   "content_sha256": "b413530f18ef6df36b3b61dce2567af975f9ffaa5d062a4de769e81ecbfec7e5",
+   "facts": {
+    "race": "nightharpy",
+    "name": "Night Harpies",
+    "hitpoints": 14000,
+    "experience_points": 21000
+   },
+   "fields": {
+    "max_health": 14000,
+    "experience": 21000
+   }
+  },
+  {
+   "monster": "norcferatu_heartless",
+   "canary_name": "Norcferatu Heartless",
+   "title": "Norcferatu Heartlesses",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=norcferatuheartless",
+   "captured": "2026-09-30",
+   "content_sha256": "1c71a9ee4f27d31c360785a6bde1e019064b6cb9f4273c10a8eb11ce33503a0d",
+   "facts": {
+    "race": "norcferatuheartless",
+    "name": "Norcferatu Heartlesses",
+    "hitpoints": 5700,
+    "experience_points": 5900
+   },
+   "fields": {
+    "max_health": 5700,
+    "experience": 5900
+   }
+  },
+  {
+   "monster": "norcferatu_nightweaver",
+   "canary_name": "Norcferatu Nightweaver",
+   "title": "Norcferatu Nightweavers",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=norcferatunightweaver",
+   "captured": "2026-09-30",
+   "content_sha256": "8534f80693e73f7bd99b932eb49998b2df7ebf2288ade93f6e5068fa4c3f3ffc",
+   "facts": {
+    "race": "norcferatunightweaver",
+    "name": "Norcferatu Nightweavers",
+    "hitpoints": 6100,
+    "experience_points": 6370
+   },
+   "fields": {
+    "max_health": 6100,
+    "experience": 6370
+   }
+  },
+  {
+   "monster": "orclops_bloodbreaker",
+   "canary_name": "Orclops Bloodbreaker",
+   "title": "Orclops Bloodbreakers",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=norcferatuorclops",
+   "captured": "2026-09-30",
+   "content_sha256": "1fe41987f6480acdd90ce8c967760d5ba173114ef4af04ab6c98e197a9bb3ce7",
+   "facts": {
+    "race": "norcferatuorclops",
+    "name": "Orclops Bloodbreakers",
+    "hitpoints": 10300,
+    "experience_points": 10250
+   },
+   "fields": {
+    "max_health": 10300,
+    "experience": 10250
+   }
+  },
+  {
+   "monster": "raubritter_chastener",
+   "canary_name": "Raubritter Chastener",
+   "title": "Raubritter Chasteners",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=raubritterchastener",
+   "captured": "2026-09-30",
+   "content_sha256": "8ba9f7a00c952d058e85d4a670a8fc065ff24f8e932799c412b138c2e6867d1e",
+   "facts": {
+    "race": "raubritterchastener",
+    "name": "Raubritter Chasteners",
+    "hitpoints": 10000,
+    "experience_points": 9500
+   },
+   "fields": {
+    "max_health": 10000,
+    "experience": 9500
+   }
+  },
+  {
+   "monster": "raubritter_marksman",
+   "canary_name": "Raubritter Marksman",
+   "title": "Raubritter Marksmen",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=raubrittermarksman",
+   "captured": "2026-09-30",
+   "content_sha256": "24aca9c359fb182784a42549e51e41a756e5eda04569d4671345fb67de1c9870",
+   "facts": {
+    "race": "raubrittermarksman",
+    "name": "Raubritter Marksmen",
+    "hitpoints": 10500,
+    "experience_points": 9025
+   },
+   "fields": {
+    "max_health": 10500,
+    "experience": 9025
+   }
+  },
+  {
+   "monster": "raubritter_skirmisher",
+   "canary_name": "Raubritter Skirmisher",
+   "title": "Raubritter Skirmishers",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=raubritterskirmisher",
+   "captured": "2026-09-30",
+   "content_sha256": "b81c92c99b9507c092e78ef6005d1d421a57857ac898ea0eb8e1c156c4d7489c",
+   "facts": {
+    "race": "raubritterskirmisher",
+    "name": "Raubritter Skirmishers",
+    "hitpoints": 11000,
+    "experience_points": 8550
+   },
+   "fields": {
+    "max_health": 11000,
+    "experience": 8550
+   }
+  },
+  {
+   "monster": "roaming_dread",
+   "canary_name": "Roaming Dread",
+   "title": "Roaming Dreads",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=roamingdread",
+   "captured": "2026-09-30",
+   "content_sha256": "46df75cd1cb7d103c56d28dcc3f5065fbb201037942207cc5c95a26bb0aaa820",
+   "facts": {
+    "race": "roamingdread",
+    "name": "Roaming Dreads",
+    "hitpoints": 14500,
+    "experience_points": 10350
+   },
+   "fields": {
+    "max_health": 14500,
+    "experience": 10350
+   }
+  },
+  {
+   "monster": "shell_drake",
+   "canary_name": "Shell Drake",
+   "title": "Shell Drakes",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=shelldrake",
+   "captured": "2026-09-30",
+   "content_sha256": "3558170b2fa90512d0c0062ad2b337e9653605e05325ad3afe82f3de21481388",
+   "facts": {
+    "race": "shelldrake",
+    "name": "Shell Drakes",
+    "hitpoints": 2800,
+    "experience_points": 2900
+   },
+   "fields": {
+    "max_health": 2800,
+    "experience": 2900
+   }
+  },
+  {
+   "monster": "stag",
+   "canary_name": "Stag",
+   "title": "Stags",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=stag",
+   "captured": "2026-09-30",
+   "content_sha256": "0f51f89c989daaad28b16e2d0c185639bcf2ee98545b8f19229fc0bc450f950c",
+   "facts": {
+    "race": "stag",
+    "name": "Stags",
+    "hitpoints": 50,
+    "experience_points": 0
+   },
+   "fields": {
+    "max_health": 50,
+    "experience": 0
+   }
+  },
+  {
+   "monster": "varg",
+   "canary_name": "Varg",
+   "title": "Vargs",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=varg",
+   "captured": "2026-09-30",
+   "content_sha256": "fc3c04d657f41823d759af66adf0cb2c159a83b3ef02a7936d96c21a0b5f1f97",
+   "facts": {
+    "race": "varg",
+    "name": "Vargs",
+    "hitpoints": 5400,
+    "experience_points": 5630
+   },
+   "fields": {
+    "max_health": 5400,
+    "experience": 5630
+   }
+  },
+  {
+   "monster": "walking_dread",
+   "canary_name": "Walking Dread",
+   "title": "Walking Dreads",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=walkingdread",
+   "captured": "2026-09-30",
+   "content_sha256": "d8de4d048aae41e17b2aa75dc25156aff4572a9c0c6a67c2e7e7938763e7bd44",
+   "facts": {
+    "race": "walkingdread",
+    "name": "Walking Dreads",
+    "hitpoints": 25000,
+    "experience_points": 18000
+   },
+   "fields": {
+    "max_health": 25000,
+    "experience": 18000
+   }
+  }
+ ]
+}

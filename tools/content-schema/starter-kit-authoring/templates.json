@@ -1,0 +1,16 @@
+{
+  "schema": "OTERYN_STARTER_KIT_AUTHORING/v1",
+  "templates": [
+    {
+      "label": "oteryn:starter-template.main",
+      "records": [
+        {
+          "destination": "container_slot",
+          "item": {"key": "oteryn:item.tibia.i2854", "revision": "definition-r1"},
+          "key": "oteryn:starter.main_backpack",
+          "quantity": 1
+        }
+      ]
+    }
+  ]
+}

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1479, "Presentation": 2589, "Behavior": 2589, "Loot": 1032, "Ability": 5902, "Effect": 4502, "Formula": 4820,
+    "Creature": 1503, "Presentation": 2613, "Behavior": 2613, "Loot": 1056, "Ability": 6000, "Effect": 4599, "Formula": 4905,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
@@ -36,6 +36,8 @@ PROFICIENCY_COUNT = 443
 PROFICIENCY_BINDING_COUNT = 664  # 642 + 22 bound by the ITEM-ADD-1 donor epoch-2 Items
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
 REWARD_CLAIM_COUNT = 231
+# StarterKit likewise (tools/content-schema/starter-kit-authoring).
+STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
@@ -355,7 +357,7 @@ def main() -> int:
     require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
-                                       "RewardClaim": REWARD_CLAIM_COUNT},
+                                       "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 34031 and len(item_index["shards"]) == 69, "ITEM_INDEX")
@@ -495,6 +497,16 @@ def main() -> int:
         require(shard["family"] == "RewardClaim" and shard["shard"]["count"] == len(shard["records"]), "REWARD_CLAIM_SHARD")
         reward_claim_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
     require(len(reward_claim_keys) == REWARD_CLAIM_COUNT, "REWARD_CLAIM_IDENTITY_UNIQUENESS")
+    starter_kit_index = load(ROOT / "content" / "starter" / "index.json")
+    require(starter_kit_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and starter_kit_index["family"] == "StarterKit",
+            "STARTER_KIT_INDEX")
+    require(starter_kit_index["record_count"] == STARTER_KIT_COUNT, "STARTER_KIT_INDEX_COUNT")
+    starter_kit_keys = set()
+    for shard_path in starter_kit_index["shards"]:
+        shard = load(ROOT / shard_path)
+        require(shard["family"] == "StarterKit" and shard["shard"]["count"] == len(shard["records"]), "STARTER_KIT_SHARD")
+        starter_kit_keys |= {(row["definition"]["template"], row["definition"]["identity"]["key"]) for row in shard["records"]}
+    require(len(starter_kit_keys) == STARTER_KIT_COUNT, "STARTER_KIT_IDENTITY_UNIQUENESS")
     print(
         "PASS items=34031 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
@@ -502,7 +514,7 @@ def main() -> int:
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "
         f"encounter_records={encounter_records} charm_records={CHARM_COUNT} "
         f"proficiency_records={PROFICIENCY_COUNT} proficiency_bindings={PROFICIENCY_BINDING_COUNT} "
-        f"reward_claim_records={REWARD_CLAIM_COUNT}"
+        f"reward_claim_records={REWARD_CLAIM_COUNT} starter_kit_records={STARTER_KIT_COUNT}"
     )
     return 0
 

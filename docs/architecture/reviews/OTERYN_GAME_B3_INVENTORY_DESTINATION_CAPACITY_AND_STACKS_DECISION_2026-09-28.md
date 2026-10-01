@@ -150,6 +150,13 @@ tests; checked before allocation, never truncated.
 The registration proves the exact RL-07 worst case of the merge shapes; if it exceeded the
 registered caps, the merge shapes would return for a new decision instead of widening a cap.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §3, §6).**
+A moved container may have contents. `GAMEITEM01-PLACEMENT-DEPTH` becomes 8 (`BAGS0-RL-01`), a tree
+holds at most 500 items (`BAGS0-RL-02`), `GAMEITEM01-REACHABLE-ITEMS` becomes 509, and `DUR03-RL-05`
+is 8 for the tree shapes. The `MAIN_BACKPACK` destination keeps this decision's rule: direct entries
+only, and a full main backpack is refused (no fall-through into nested bags).
+
 ### 4.6 DUR-03 amendment
 
 This decision explicitly supersedes, for the shapes below only, these DUR-03 statements:

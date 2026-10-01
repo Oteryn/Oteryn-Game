@@ -1,37 +1,38 @@
 {
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
-    "Ability": 5902,
-    "Behavior": 2589,
-    "Creature": 1479,
-    "Effect": 4502,
+    "Ability": 6000,
+    "Behavior": 2613,
+    "Creature": 1503,
+    "Effect": 4599,
     "Encounter": 61,
-    "Formula": 4820,
+    "Formula": 4905,
     "Loot": 23,
-    "Presentation": 2589
+    "Presentation": 2613
   },
   "editor_entry_counts": {
     "Item": 165,
     "Mount": 252
   },
   "family_counts": {
-    "Ability": 5902,
-    "Behavior": 2589,
+    "Ability": 6000,
+    "Behavior": 2613,
     "Charm": 25,
-    "Creature": 1479,
+    "Creature": 1503,
     "Dialogue": 694,
-    "Effect": 4502,
+    "Effect": 4599,
     "Encounter": 61,
-    "Formula": 4820,
+    "Formula": 4905,
     "Item": 34031,
-    "Loot": 1032,
+    "Loot": 1056,
     "Mount": 252,
     "NPC": 1110,
-    "Presentation": 2589,
+    "Presentation": 2613,
     "Proficiency": 443,
     "RewardClaim": 231,
     "Service.Trade": 324,
-    "Service.Travel": 56
+    "Service.Travel": 56,
+    "StarterKit": 1
   },
   "item_authoring_counts": {
     "authoring": 164,
@@ -39,16 +40,16 @@
     "taxonomy": 164
   },
   "legacy_blobs": {
-    "declarations": "04c52da2e1ebbc96c8bf39cde3094b21ea2dc764",
+    "declarations": "47b7568f17f93159bd8bf6dab7ba6498378f1c6a",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "ff679cfeb7ac65310271d6fe99e0fc1f79af3dad",
-    "reference": "0906f6727ebe13b06bd94cab0efc95035d3c93ea",
-    "sources": "454e5932f2b2a2bf8c09e4184ae9125daa4d5bfd"
+    "imports": "196ce8be08c30f1f5583f4a56260ff983a95e143",
+    "reference": "ea4bbcb9c1993985a26a0947d7125af5dc0ea279",
+    "sources": "56d7707c211d11c70cfb5ef7a3deed4b3af2244d"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
-    "Creature": 1479,
+    "Creature": 1503,
     "Encounter": 61,
     "Item": 165,
     "Mount": 252,

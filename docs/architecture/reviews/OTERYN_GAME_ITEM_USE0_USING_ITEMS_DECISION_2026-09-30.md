@@ -99,6 +99,12 @@ How does a player eat and drink a potion?
 - **New dispositions** (only under `ITEM_USE_V1`): `REQUIREMENT_NOT_MET`, `EXHAUSTED`, `FULL`,
   `NO_TARGET`. The result stays at most 4 bytes, and the payload stays within 529 bytes.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §8).**
+Field 2 may name any entry of an open container view in the character's own trees. Field 5 searches
+breadth-first: the equipment slots, the main backpack's direct entries in display order, then each
+container level by level, closed bags included. The runtime search reads at most 509 items.
+
 ## 4. DUR-03 (ITEM-USE-1)
 
 ### 4.1 Shapes
@@ -124,6 +130,12 @@ A closed `ItemUseCause` with variants `Food` and `Potion`. Its identity is the u
 CommandRef. One audit event per use, as a new `OneItemTransactionV1` operation whose tag and ANL
 registry entry ITEM-USE-1 assigns. Later variants (rune, ammunition, bait) need an amendment of
 this list.
+
+**Amendment (pending on acceptance of RUNE-USE-0;
+`OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4.2).** RUNE-USE-0 §5 adds a third
+variant, `Rune`: a one-unit burn of the used rune stack with the same audit operation, committed
+before the rune's frozen cast applies. Runes use their own in-flight slot, beside this decision's
+(RUNE-USE-0 §7).
 
 ### 4.3 Supersession
 

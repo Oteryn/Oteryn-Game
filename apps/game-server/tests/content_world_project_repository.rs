@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "67f08b3425c668112041b2f10e86631b367216f38a8df7d19fdf0c5bffd2398d",
+        "97ca45a0995d063bbbfd9e3b58a56b98efe8b2a1d682336a0d0528833eb4d150",
     ),
     (
         "definitions/declarations.json",
-        14_978_131,
-        "bb78c1914a1c3eab64c7342de2bd83dc2295862b6ab3b61dc7a8af51990e2a4b",
+        15_148_142,
+        "01c03a2c2c73ad28d82756a5aebac0ad75bfbf1bd263f1488accf21319917722",
     ),
     (
         "definitions/reference.json",
-        22_411_134,
-        "99736ee23439c6e23fc463ed5774e8e879ed0d337b80a33d2495d1ffc9aaea7e",
+        22_538_307,
+        "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "6fa860198d75bdc5d4524a5051640b96e5189ad07ec77238665f9a6d81fe0bfa",
+        "f2afbb2eaa7b1b4914f503c907186ed77c4123c5ab00df3cc1325e0b2cf39a04",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "e00268113747db10e92831a6cb950454d894fa71446bed2c000ea51caf20251d",
+        "e44ea14fb1c1df14a077177e28c056905b1d79564c52f0f03e324a3d34bb1345",
     ),
     (
         "provenance/imports.json",
         33_077,
-        "c3bf5ddb1b2bb9ded4d022423baef0395e9075b6e81b378a517822e0b1d88eaf",
+        "a6865cf27269c6d3cabb80b9b7895aab202d11d829675e7fda17b1c2cda89763",
     ),
     (
         "provenance/sources.json",
-        1_308_924,
-        "d823a995a0766ff5d8d1371dc059fd2ea6ed7f6d2349d2f352257fefe0080f18",
+        1_317_786,
+        "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1",
     ),
     (
         "worlds/world.json",
@@ -107,16 +107,16 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "9fb3b6e30718169e761dd777da280c3f119bf474ae1102357936a8b8c8234fda";
+const TREE_SHA256: &str = "563578738baafc89398ca94f5e4324f6a0718f1533332f163cdb81ec79443139";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1479;
-const CREATURE_RECORDS: usize = 20693;
-const CREATURE_PROFILES: usize = 19745;
+const CREATURES: usize = 1503;
+const CREATURE_RECORDS: usize = 21069;
+const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1110;
 const NPC_RECORDS: usize = 2220;
@@ -727,11 +727,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             if binding.source_key == "oteryn:source.crystalserver" {
                 assert_eq!(binding.source_revision, v2.sources[2].revision);
                 assert_eq!(binding.identity_namespace, "crystalserver/monster-file");
-                assert!(
-                    binding
-                        .external_id
-                        .starts_with("data-global/monster/summer_update_2026/")
-                );
+                assert!(binding.external_id.starts_with("data-global/monster/"));
                 assert!(binding.target.key.starts_with("oteryn:creature."));
                 assert!(creature_files.insert(&binding.external_id));
                 crystal_creatures += 1;
@@ -793,7 +789,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(creature_files.len(), CREATURES - 1);
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
-    assert_eq!(crystal_creatures, 13);
+    assert_eq!(crystal_creatures, 37);
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));
@@ -988,9 +984,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         });
     // Wave 1 promoted 290 atoms on 164 items; ITEM-SEM-2b adds TibiaWiki weapon types and
     // imbuement slot counts on the same paths for 1,269 more atoms (995 more items), and
-    // ITEM-ADD-1 49 more on 27 donor epoch-2 Items.
+    // ITEM-ADD-1 49 more on 27 donor epoch-2 Items. STARTER-CONTENT-1 adds `stackable: false`
+    // on the backpack, which already has a slot count.
     assert_eq!(wave1_items, 164 + 995 + 27);
-    assert_eq!(wave1_fields, 290 + 1_269 + 49);
+    assert_eq!(wave1_fields, 290 + 1_269 + 49 + 1);
 }
 
 #[test]

@@ -860,7 +860,7 @@ where
             Achievements(AccountAchievementsReply),
             Unregistered,
         }
-        let dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+        let mut dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
             match decode_step_intent(command.payload) {
                 Ok(direction) => Dispatch::Step(authority.step(actor, direction).await),
                 Err(_) => Dispatch::Step(StepOutcome::rejected()),
@@ -920,7 +920,7 @@ where
         next_command = following;
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.next_command_id = next_command;
-        let (status, result_payload) = match &dispatch {
+        let (status, result_payload) = match &mut dispatch {
             Dispatch::Step(outcome) => (
                 if outcome.disposition == StepDisposition::Rejected {
                     CommandStatus::Rejected
@@ -946,7 +946,8 @@ where
                 encode_spell_cast_result(outcome.disposition),
             ),
             Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
-                (CommandStatus::Accepted, payload.clone())
+                // The page is written once; move it out instead of copying up to 32 KiB.
+                (CommandStatus::Accepted, std::mem::take(payload))
             }
             Dispatch::Achievements(
                 AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,

@@ -110,6 +110,12 @@ Where does a character keep items outside its backpack, and how does it reach th
 - **Lifetime.** Never touched by death, `WorldReset` or channel changes. `character_id` references
   the Character root with RESTRICT, so a future deletion workflow must empty the depot first.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §9).**
+A container with contents may enter a box as a tree (BAGS-DEPOT-1). Every item of the tree counts
+against `DEPOT0-RL-01` and the account limit, and a bag in a box opens in a view anchored to the
+depot view.
+
 ## 4. Wire and access (DEPOT-WIRE-1)
 
 ### 4.1 Opening the depot

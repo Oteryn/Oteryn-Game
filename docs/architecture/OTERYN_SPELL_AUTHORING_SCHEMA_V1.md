@@ -424,6 +424,12 @@ player layer; `ProjectV2AbilityDetails` (`v2/creature.rs`) carries the monster e
 
 GAP rows are added to v2 only when a spell in the current playable slice needs them (P3).
 
+**Amendment (pending on acceptance of RUNE-USE-0; `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md` §6).**
+In current Global a rune is single use and stacks to 100. `rune.charges` is a legacy value equal
+to the conjuring spell's `count`; no runtime reads it for use, and one use burns one unit
+(`reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md` §3). RUNE-CONTENT-1 checks
+the equality.
+
 ## 7. Boundaries
 
 This candidate does not change WorldProject/v2, the compiler, the runtime ability engine, protocol or

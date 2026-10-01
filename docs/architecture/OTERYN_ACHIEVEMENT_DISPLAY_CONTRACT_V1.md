@@ -158,8 +158,10 @@ position.
    adding it is part of the implementation PR, not this contract.
 3. A fact whose key has no catalogue record cannot occur (the grant fails closed for an absent key, owner
    contract §3.3, and keys are never removed, §2.1). If it occurs it is a server integrity error: the query fails
-   closed with an operation-terminal error rather than skipping the fact, because a skip would understate the
-   points.
+   closed with the operation-terminal error `1050 ACCOUNT_DATA_INTEGRITY` (registry; `INTERNAL_UNAVAILABLE`,
+   `OPERATION_TERMINAL`) and no rows rather than skipping the fact, because a skip would understate the points.
+   The server also writes one error-level operator log line naming the account and the key (owner decision
+   2026-09-30).
 4. Grants. Migration 0021 grants `SELECT, INSERT` on both tables to `oteryn_game_runtime` (the `GRANT SELECT,
    INSERT ON game_account_achievement_grant_requests, game_account_achievements TO oteryn_game_runtime`
    statement) and `SELECT` to `oteryn_game_control`. The query needs `SELECT` only, so it needs no migration and

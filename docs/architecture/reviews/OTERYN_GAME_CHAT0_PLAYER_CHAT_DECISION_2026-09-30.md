@@ -78,6 +78,9 @@ How do players talk to each other: nearby, privately, and to the whole World?
   types and sends command 3 instead of a chat line, so the player experience matches Tibia.
   Showing a successful cast's words to spectators is left to a later spell presentation decision;
   until then spectators see the cast's effect only (`SpellBook::spoken` has no production caller).
+  **Amendment (pending on acceptance of SPELL-PRESENT-0; `OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md` §6).**
+  A successful cast's words reach players in the `say` range as a presentation event carrying the
+  spell index, not as a `CHAT` line; `SpellBook::spoken` keeps no production caller.
 - **NPC greeting.** When the speaker's client has capability 3, a `say` whose text contains, as a
   word, a greeting of an NPC within that NPC's talk range (`CHAT0-RL-08`, 4 tiles until NPC-0 fixes
   its own) also starts that NPC's conversation, as command 7 would. With several NPCs in range, the
@@ -141,6 +144,12 @@ How do players talk to each other: nearby, privately, and to the whole World?
   the sender's current guild.
 - **Privacy:** text is never written to a table or to ordinary logs (FND-02 §20); the per-session
   egress queue (§7) holds lines in memory only, and nothing is replayed from storage.
+
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §9).** The relay
+gains one payload kind, the mail notice: the recipient CharacterId, with no sender name and no
+text, sealed like every line. It is sent after a posting commits, at most once and best effort;
+the node holding the recipient's session shows "New mail has arrived." next to a depot locker. It
+does not use the sender's spam bucket, which MAIL-0's posting rate replaces.
 
 ## 6. Spam control and gates (CHAT-1; durable row CHAT-2)
 

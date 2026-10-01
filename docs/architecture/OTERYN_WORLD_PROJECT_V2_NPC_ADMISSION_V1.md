@@ -116,6 +116,11 @@ definitions in one slice.
 - Validation covers ranges, sorting and uniqueness and exact Item references; everything stays
   candidate-only. Gated routes and offers are never admitted: a condition belongs to the runtime owner.
 
+**Amendment (pending on acceptance of TRAVEL-0; `reviews/OTERYN_GAME_TRAVEL0_NPC_TRAVEL_DECISION_2026-09-30.md` §4).**
+`ProjectV2TravelRoute` gains `keywords`, an optional QUEST-GATE-0 `gate` and at most four
+`discounts {key, gate, amount}`. A route with a typed gate is admitted; the runtime owner checks
+it. Lua-only predicates stay held.
+
 Implemented in slice 2 (`apps/game-server/src/content/project/v2.rs`): `ProjectV2ServiceOffer.count`
 (positive) and `.sub_type`; `Service.routes` of `ProjectV2TravelRoute { key, destination:
 ProjectV2TravelDestination { coordinate_frame, x, y, floor }, price, premium, min_level }`. Offers are
