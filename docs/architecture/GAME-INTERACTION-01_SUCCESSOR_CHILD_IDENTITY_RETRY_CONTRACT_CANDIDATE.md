@@ -617,6 +617,10 @@ This successor does not choose that owner.
 
 Owning contract: `UNKNOWN / NOT YET ACCEPTED`.
 
+**Amendment (pending on acceptance of MAIL-0 and WRITE-0; `reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md`).** The
+owner is MAIL-0 §4 as widened by WRITE-0: every writable ItemInstance, writable map objects as
+volatile per-channel text, reports and moderation clears.
+
 **Implementation blocker:** any authoritative durable writable-text interaction is blocked until a named accepted owner contract exists.
 
 This successor does not choose that owner.
