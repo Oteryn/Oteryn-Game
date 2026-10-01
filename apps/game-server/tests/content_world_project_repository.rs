@@ -16,18 +16,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        388,
-        "3ef6f318929621c1c26fc8a94052180242a398f7ad0c0e1950728f4d1dec2348",
+        397,
+        "a066f2959fbfbad9fd68a9a9429a9365cc4cfd3bc1701098d1d21e006bdeda12",
     ),
     (
         "definitions/declarations.json",
-        17_026_312,
-        "ece0452da927a4802eec8bd686b72c4782413e9878e57fbf049c4de4c62c271d",
+        17_049_454,
+        "6fa670b655d396a1e9bc120e91bd57ea73f28c146c68c606dac50a7d5b33d383",
     ),
     (
         "definitions/reference.json",
-        22_538_307,
-        "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3",
+        22_541_939,
+        "56c872d5a036d070cce72a1156ee2a4e3e6b8698c1f7352263b93624d7e7eca9",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_945,
-        "7cf502521cdd0e8e7f2e2e10acce0b3a5f119d97b4e66dcc2829492a6237bc4a",
+        1_948,
+        "2d3fb5b1f879b83eb0611a3048653cbdb0c156eb49b344b1553ee2a4560c548e",
     ),
     (
         "presentations/bindings.json",
@@ -46,18 +46,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        398,
-        "d277da1e3d6956de76c9eba6c9a41e36f06893af891409ed88d69db570890f2c",
+        401,
+        "ddb2d7662b6d022358c35ab7f1a605f4089a36b2da385a2efd3f0de1d1eb5264",
     ),
     (
         "provenance/imports.json",
-        33_077,
-        "a6865cf27269c6d3cabb80b9b7895aab202d11d829675e7fda17b1c2cda89763",
+        33_678,
+        "0e4fa1d9d9ecc776e545ba59b389236d0a268a4d1534e6dcee579c4d5ef82f75",
     ),
     (
         "provenance/sources.json",
-        1_317_786,
-        "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1",
+        1_324_519,
+        "40c07b2f46b0df1acc26acf24ce1746f00ab14f314e457c898376d651e1a1e0c",
     ),
     (
         "worlds/world.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "7f2faa83d5abb7aa2025a5d511584a9c602b82c65caea9605fb79d54757ec292";
+const TREE_SHA256: &str = "c09ad3f54b088cae5cc22a397161554571b9cb7da50811e94b158f83a42d7589";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -125,11 +125,11 @@ const CREATURES: usize = 1503;
 const CREATURE_RECORDS: usize = 21069;
 const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1110;
-const NPC_RECORDS: usize = 2220;
-const NPC_DECLARATIONS: usize = 2186;
-const NPC_DIALOGUES: usize = 696;
-const NPC_BINDINGS: usize = 2376;
+const NPCS: usize = 1122;
+const NPC_RECORDS: usize = 2244;
+const NPC_DECLARATIONS: usize = 2205;
+const NPC_DIALOGUES: usize = 703;
+const NPC_BINDINGS: usize = 2400;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -152,7 +152,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 12,
+        max_import_records: 13,
         max_reimport_states: ENCOUNTERS,
     }
 }
@@ -321,8 +321,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-service-scope-r13");
-    assert_eq!(project.imports().len(), 12);
+    assert_eq!(project.project_revision(), "g4-npc-qualified-summer-r14");
+    assert_eq!(project.imports().len(), 13);
     let provenance = &project.imports()[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
@@ -561,7 +561,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 11);
+    assert_eq!(v2.sources.len(), 12);
     assert_eq!(v2.sources[0].key, "oteryn:source.canary");
     assert_eq!(v2.sources[0].import_batch_id, creature_import.batch_id);
     assert_eq!(v2.sources[0].revision, creature_import.source_revision);
@@ -669,21 +669,26 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "OTERYN_NPC_TIBIOPEDIA_FACTS/v1"
     );
     assert!(npc_tibiopedia_import.candidates.is_empty());
-    assert_eq!(v2.sources[10].key, "oteryn:source.tibiawiki");
+    let tibiopedia_source = v2
+        .sources
+        .iter()
+        .find(|source| source.import_batch_id == npc_tibiopedia_import.batch_id)
+        .expect("Tibiopedia import must have its own source binding");
+    assert_eq!(tibiopedia_source.key, "oteryn:source.tibiawiki");
     assert_eq!(
-        v2.sources[10].import_batch_id,
+        tibiopedia_source.import_batch_id,
         npc_tibiopedia_import.batch_id
     );
     assert_eq!(
-        v2.sources[10].revision,
+        tibiopedia_source.revision,
         npc_tibiopedia_import.source_revision
     );
     assert_eq!(
-        v2.sources[10].sha256,
+        tibiopedia_source.sha256,
         npc_tibiopedia_import.source_artifact_sha256
     );
-    assert_eq!(v2.sources[10].evidence, ProjectV2EvidenceClass::Derived);
-    let npc_import = &project.imports()[10];
+    assert_eq!(tibiopedia_source.evidence, ProjectV2EvidenceClass::Derived);
+    let npc_import = &project.imports()[11];
     assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r9");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[8].key, v2.sources[5].key);
@@ -691,17 +696,47 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[8].revision, npc_import.source_revision);
     assert_eq!(v2.sources[8].evidence, ProjectV2EvidenceClass::Derived);
     // D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki.
-    let wiki_creature_import = &project.imports()[11];
+    let wiki_creature_import = &project.imports()[12];
     assert_eq!(
         wiki_creature_import.batch_id,
         "g4-wiki-authored-creature-d44-r1"
     );
     assert_eq!(wiki_creature_import.source_repository, "tibia.fandom.com");
     assert!(wiki_creature_import.candidates.is_empty());
-    assert_eq!(v2.sources[9].key, "oteryn:source.tibiawiki");
-    assert_eq!(v2.sources[9].import_batch_id, wiki_creature_import.batch_id);
-    assert_eq!(v2.sources[9].revision, wiki_creature_import.source_revision);
-    assert_eq!(v2.sources[9].evidence, ProjectV2EvidenceClass::Derived);
+    let wiki_creature_source = v2
+        .sources
+        .iter()
+        .find(|source| source.import_batch_id == wiki_creature_import.batch_id)
+        .expect("wiki creature import must have its own source binding");
+    assert_eq!(wiki_creature_source.key, "oteryn:source.tibiawiki");
+    assert_eq!(
+        wiki_creature_source.import_batch_id,
+        wiki_creature_import.batch_id
+    );
+    assert_eq!(
+        wiki_creature_source.revision,
+        wiki_creature_import.source_revision
+    );
+    assert_eq!(
+        wiki_creature_source.evidence,
+        ProjectV2EvidenceClass::Derived
+    );
+    let summer_import = &project.imports()[10];
+    assert_eq!(
+        summer_import.batch_id,
+        "g4-npc-summer-definition-overlay-fandom-r13"
+    );
+    assert_eq!(summer_import.source_repository, "tibia.fandom.com");
+    assert!(summer_import.candidates.is_empty());
+    let summer_source = v2
+        .sources
+        .iter()
+        .find(|source| source.import_batch_id == summer_import.batch_id)
+        .expect("summer NPC subset import must have its own source binding");
+    assert_eq!(summer_source.key, "oteryn:source.tibiawiki");
+    assert_eq!(summer_source.revision, summer_import.source_revision);
+    assert_eq!(summer_source.sha256, summer_import.source_artifact_sha256);
+    assert_eq!(summer_source.evidence, ProjectV2EvidenceClass::Derived);
     assert_eq!(
         v2.source_identity_bindings
             .iter()
@@ -740,7 +775,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         if binding.target.family == ProjectV2Family::Creature {
             if binding.source_key == "oteryn:source.tibiawiki" {
                 // D44 wiki-authored creature, checked above.
-                assert_eq!(binding.source_revision, v2.sources[9].revision);
+                assert_eq!(binding.source_revision, wiki_creature_source.revision);
                 assert!(binding.target.key.starts_with("oteryn:creature."));
                 continue;
             }

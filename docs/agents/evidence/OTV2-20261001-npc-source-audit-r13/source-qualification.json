@@ -1,0 +1,641 @@
+{
+  "appearance_qualifications": [
+    {
+      "br_image": {
+        "sha256": "a43abdaedac142a862137e1ed39fbfb317bb9509166ec767e4712884abed1828",
+        "url": "https://www.tibiawiki.com.br/images/e/ee/Dhira.gif"
+      },
+      "br_page": {
+        "capture_sha256": "3e58ce7dbfe7b378f2c203d6edcf94620ed623df7cda2ac9515dc0c2974a8e00",
+        "pageid": 55680,
+        "revid": 413318,
+        "title": "Dhira"
+      },
+      "fit_score": 0.31,
+      "name": "Dhira",
+      "qualified_appearance": {
+        "addons": 0,
+        "body": 77,
+        "feet": 3,
+        "head": 124,
+        "legs": 3,
+        "look_type": 1539,
+        "mount": 0
+      },
+      "selector_correction": null,
+      "source_key": "crystal:npc/dhira",
+      "tibiopedia_image": {
+        "image_sha256": "ffb95439fc4bb6e420c9cad7521165a1a11139368d0d58f050d105a312af4bc6",
+        "image_url": "https://tibiopedia.pl/images/static/npcs/dhira.gif",
+        "page_sha256": "d0c995c342caa0f2bb18f04363f7eee700fee5dabc85e04e81640db517ea09f0",
+        "page_url": "https://tibiopedia.pl/npcs/Dhira"
+      }
+    },
+    {
+      "br_image": {
+        "sha256": "e56853edb0fc3b000420a19f1df4c356763c11d4e3035261aaf6690b77c5c96d",
+        "url": "https://www.tibiawiki.com.br/images/d/d1/Nilavarna.gif"
+      },
+      "br_page": {
+        "capture_sha256": "3e58ce7dbfe7b378f2c203d6edcf94620ed623df7cda2ac9515dc0c2974a8e00",
+        "pageid": 55678,
+        "revid": 365282,
+        "title": "Nilavarna"
+      },
+      "fit_score": 0.43,
+      "name": "Nilavarna",
+      "qualified_appearance": {
+        "addons": 1,
+        "body": 49,
+        "feet": 3,
+        "head": 0,
+        "legs": 10,
+        "look_type": 1539,
+        "mount": 0
+      },
+      "selector_correction": {
+        "enumeration": [
+          {
+            "addons": 0,
+            "score": 38.06
+          },
+          {
+            "addons": 1,
+            "score": 0.43
+          },
+          {
+            "addons": 2,
+            "score": 85.96
+          },
+          {
+            "addons": 3,
+            "score": 54.84
+          }
+        ],
+        "source_addons": 0,
+        "wiki_confirmed_addons": 1
+      },
+      "source_key": "crystal:npc/nilavarna",
+      "tibiopedia_image": {
+        "image_sha256": "7c20ddae9263a304e124d479fdaaf41bc064f9237ae5471fec1c7c80ed0ff40b",
+        "image_url": "https://tibiopedia.pl/images/static/npcs/nilavarna.gif",
+        "page_sha256": "07157ef64afaedff965148fda83ae2053b2fc64068cd5c32e656022f3da52c4d",
+        "page_url": "https://tibiopedia.pl/npcs/Nilavarna"
+      }
+    },
+    {
+      "br_image": {
+        "sha256": "277162939a7e0f55d6405afc2623bafa5869370c5155f5158d7c2328b8e555d5",
+        "url": "https://www.tibiawiki.com.br/images/f/fe/Niral.gif"
+      },
+      "br_page": {
+        "capture_sha256": "3e58ce7dbfe7b378f2c203d6edcf94620ed623df7cda2ac9515dc0c2974a8e00",
+        "pageid": 59874,
+        "revid": 437721,
+        "title": "Niral"
+      },
+      "fit_score": 0.98,
+      "name": "Niral",
+      "qualified_appearance": {
+        "addons": 2,
+        "body": 57,
+        "feet": 104,
+        "head": 10,
+        "legs": 9,
+        "look_type": 1648,
+        "mount": 0
+      },
+      "selector_correction": null,
+      "source_key": "crystal:npc/niral",
+      "tibiopedia_image": {
+        "image_sha256": "38ddb0937a731ed105747be57798c2bc025208427d066b2670c23129e9edf65f",
+        "image_url": "https://tibiopedia.pl/images/static/npcs/niral.gif",
+        "page_sha256": "3472e9be683bf53efa500c2cfb35193b14a5a55c246962753f6845a09b292038",
+        "page_url": "https://tibiopedia.pl/npcs/Niral"
+      }
+    },
+    {
+      "br_image": {
+        "sha256": "0de07ebe781ae040747e53791df7422de5451c10b35bd94c4cf40caed38fb677",
+        "url": "https://www.tibiawiki.com.br/images/8/8d/Saraki.gif"
+      },
+      "br_page": {
+        "capture_sha256": "3e58ce7dbfe7b378f2c203d6edcf94620ed623df7cda2ac9515dc0c2974a8e00",
+        "pageid": 55677,
+        "revid": 413310,
+        "title": "Saraki"
+      },
+      "fit_score": 0.05,
+      "name": "Saraki",
+      "qualified_appearance": {
+        "addons": 1,
+        "body": 94,
+        "feet": 3,
+        "head": 114,
+        "legs": 0,
+        "look_type": 1543,
+        "mount": 0
+      },
+      "selector_correction": {
+        "enumeration": [
+          {
+            "addons": 0,
+            "score": 36.67
+          },
+          {
+            "addons": 1,
+            "score": 0.05
+          },
+          {
+            "addons": 2,
+            "score": 118.48
+          },
+          {
+            "addons": 3,
+            "score": 67.18
+          }
+        ],
+        "source_addons": 0,
+        "wiki_confirmed_addons": 1
+      },
+      "source_key": "crystal:npc/saraki",
+      "tibiopedia_image": {
+        "image_sha256": "57c0e3ca2c887ba10e47fced7e6543cfd5c0976307d78565d7c1099d0c9e1772",
+        "image_url": "https://tibiopedia.pl/images/static/npcs/saraki.gif",
+        "page_sha256": "adc02e30d57da7a3540473798b6ecf7618ab653f18470a4ff59dea6c997f1bae",
+        "page_url": "https://tibiopedia.pl/npcs/Saraki"
+      }
+    },
+    {
+      "br_image": {
+        "sha256": "cb9ca02223cd06f67b139e377ba4bf007a6fe15b420b17fb5547e3394db384e8",
+        "url": "https://www.tibiawiki.com.br/images/0/0d/Sharai.gif"
+      },
+      "br_page": {
+        "capture_sha256": "3e58ce7dbfe7b378f2c203d6edcf94620ed623df7cda2ac9515dc0c2974a8e00",
+        "pageid": 67593,
+        "revid": 440492,
+        "title": "Sharai"
+      },
+      "fit_score": 1.83,
+      "name": "Sharai",
+      "qualified_appearance": {
+        "addons": 2,
+        "body": 0,
+        "feet": 9,
+        "head": 0,
+        "legs": 9,
+        "look_type": 1961,
+        "mount": 0
+      },
+      "selector_correction": {
+        "enumeration": [
+          {
+            "addons": 0,
+            "score": 70.33
+          },
+          {
+            "addons": 1,
+            "score": 101.74
+          },
+          {
+            "addons": 2,
+            "score": 1.83
+          },
+          {
+            "addons": 3,
+            "score": 26.17
+          }
+        ],
+        "source_addons": 3,
+        "wiki_confirmed_addons": 2
+      },
+      "source_key": "crystal:npc/sharai",
+      "tibiopedia_image": {
+        "image_sha256": "b9a1fd90a05e88658156cbab8fb2354b75b721637b7c0c4ac62c7341ac1338d3",
+        "image_url": "https://tibiopedia.pl/images/static/npcs/sharai.gif",
+        "page_sha256": "ffa4c5d7b7abc3910b96483f3a353446384a8823ece4da1ecc3f6492dc002dc8",
+        "page_url": "https://tibiopedia.pl/npcs/Sharai"
+      }
+    },
+    {
+      "br_image": {
+        "sha256": "cd2e9d3de6b63291bc483e12f22cda85082efa36c9e049c959ee9ca6e814a617",
+        "url": "https://www.tibiawiki.com.br/images/9/97/Tarisu.gif"
+      },
+      "br_page": {
+        "capture_sha256": "3e58ce7dbfe7b378f2c203d6edcf94620ed623df7cda2ac9515dc0c2974a8e00",
+        "pageid": 55674,
+        "revid": 413393,
+        "title": "Tarisu"
+      },
+      "fit_score": 0.62,
+      "name": "Tarisu",
+      "qualified_appearance": {
+        "addons": 0,
+        "body": 66,
+        "feet": 15,
+        "head": 95,
+        "legs": 8,
+        "look_type": 1539,
+        "mount": 0
+      },
+      "selector_correction": null,
+      "source_key": "crystal:npc/tarisu",
+      "tibiopedia_image": {
+        "image_sha256": "0331c08e05f8d6f5dce35fb2583f2be2306c2d8222b0e257ade8eaf7c59358cd",
+        "image_url": "https://tibiopedia.pl/images/static/npcs/tarisu.gif",
+        "page_sha256": "334a17222b483699279bd02fb9895bf02607ad91a3ccb8e7eaea70e926730c0d",
+        "page_url": "https://tibiopedia.pl/npcs/Tarisu"
+      }
+    },
+    {
+      "br_image": {
+        "sha256": "b3262c60a39cd837ef51d99b6f6bcd34d52dd7897e65b2a090f6bca3d9a228ca",
+        "url": "https://www.tibiawiki.com.br/images/1/1a/Udu.gif"
+      },
+      "br_page": {
+        "capture_sha256": "3e58ce7dbfe7b378f2c203d6edcf94620ed623df7cda2ac9515dc0c2974a8e00",
+        "pageid": 55679,
+        "revid": 365357,
+        "title": "Udu"
+      },
+      "fit_score": 0.52,
+      "name": "Udu",
+      "qualified_appearance": {
+        "addons": 0,
+        "body": 53,
+        "feet": 19,
+        "head": 95,
+        "legs": 0,
+        "look_type": 1538,
+        "mount": 0
+      },
+      "selector_correction": null,
+      "source_key": "crystal:npc/udu",
+      "tibiopedia_image": {
+        "image_sha256": "47c8e459e4c0ed8a37a2d1857484a6dbe7d972d1bad337b3e13e539f863c0560",
+        "image_url": "https://tibiopedia.pl/images/static/npcs/udu.gif",
+        "page_sha256": "6f93c40c812c3ad600dc7075c42f3d2afb17c8fd3b4884af4930013f3f0d64bb",
+        "page_url": "https://tibiopedia.pl/npcs/Udu"
+      }
+    }
+  ],
+  "authoring_only": true,
+  "baseline_candidate_sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+  "dialogue_and_callback_admission": "D9_STATIC_DIALOGUE_FOR_SEVEN; SOURCE_AUTHORED_TEXT_D16_FOR_FIVE_EXCLUDED; SCRIPTED_CALLBACKS_EXCLUDED; NO_NATIVE_QUEST_LOWERING",
+  "fandom_subset_sha256": "feefe781d45049d7cc7d86c2db7d31b9a6f533c595df2dbf48201c840f3eb453",
+  "historical_tables_and_packets_unchanged": true,
+  "inputs": [
+    {
+      "path": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+      "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+    },
+    {
+      "path": "imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+      "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+    },
+    {
+      "path": "/workspace/npc-r12-research/dialogue/summer-fandom-browser-api.json",
+      "sha256": "4079c295a2663487e2524fe017f8ed499595983cb6d78bf2021fda22fe7cbc64"
+    },
+    {
+      "path": "/workspace/npc-r7-work/dialogue/crystal-summer-tree.json",
+      "sha256": "40eeb39b4d01b0f5ed5134734ee08bdd6148fad44385c47ee05473282b718878"
+    },
+    {
+      "path": "/workspace/npc-r12-research/presentation/qualified-summer-presentations.json",
+      "sha256": "0de6fd633bc9d41c84ddd892391b58409da697dc60a1059d8a2d9a0b16e7d060"
+    },
+    {
+      "path": "/workspace/npc-r7-work/identities/display-name-catalogue.json",
+      "sha256": "e6ee46a2948adcec202932b9a5d0aa13c3e1e15950f18a5e56d4bea26a53205b"
+    }
+  ],
+  "item_map_authority_claimed": false,
+  "mature_dialogue_stage_sha256": "37f95c98d29d7415a9dc30ba57b14a9348d0507bf9abc69990a350def8830e74",
+  "mature_stage_helper_sha256": "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff",
+  "native_before_sha256": "ece0452da927a4802eec8bd686b72c4782413e9878e57fbf049c4de4c62c271d",
+  "native_npc_before_count": 1110,
+  "new_imports": [
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-summer-definition-overlay-fandom-r13",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_D16_SUPPLEMENT_OVERLAY/v1",
+      "mapper": "NPC_BOUNDED_D16_SUPPLEMENT_OVERLAY/v1",
+      "mapper_revision": "npc-summer-definition-r13",
+      "mapper_sha256": "0bdc54fa74a3fd1a179527e24a2961f005edaec6a35ebf50d6ae456f97129f01",
+      "reimport_states": [],
+      "source_artifact_sha256": "feefe781d45049d7cc7d86c2db7d31b9a6f533c595df2dbf48201c840f3eb453",
+      "source_generation_profile": "NPC_FANDOM_FACT_SUBSET/v1",
+      "source_repository": "tibia.fandom.com",
+      "source_revision": "tibiawiki-npc-subset-feefe781d45049d7"
+    }
+  ],
+  "new_sources": [
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-summer-definition-overlay-fandom-r13",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-npc-subset-feefe781d45049d7",
+      "sha256": "feefe781d45049d7cc7d86c2db7d31b9a6f533c595df2dbf48201c840f3eb453"
+    }
+  ],
+  "placements_materialized": false,
+  "reference_before_sha256": "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3",
+  "reused_crystal_import": {
+    "evidence": "OtsHypothesisOnly",
+    "import_batch_id": "g4-npc-crystal-summer-supplement-r1",
+    "key": "oteryn:source.crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "sha256": "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5"
+  },
+  "runtime_eligible": false,
+  "schema": "NPC_BOUNDED_D16_SUPPLEMENT_OVERLAY/v1",
+  "single_source_counterpart_evidence": {
+    "canary_source_files_checked": 1036,
+    "catalogue_sha256": "e6ee46a2948adcec202932b9a5d0aa13c3e1e15950f18a5e56d4bea26a53205b",
+    "exact_registered_or_display_name_matches": [],
+    "scope": "DONOR_NPC_SOURCE_NAMES_ONLY; NO_GLOBAL_ABSENCE_CLAIM",
+    "source_revisions": [
+      "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    ]
+  },
+  "source_conversion_dependency": "lupa==2.8",
+  "source_program_proofs": [
+    {
+      "excluded_scripted_handlers": [],
+      "git_blob_sha1": "23adebcf476200ede5320eeb7badc2a526898d2e",
+      "path": "data-global/npc/g_ezkho.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4",
+      "source_key": "crystal:npc/g_ezkho",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/g_ezkho.lua"
+    },
+    {
+      "excluded_scripted_handlers": [],
+      "git_blob_sha1": "4e964332940257232e004951462815273ee064df",
+      "path": "data-global/npc/goldro.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8",
+      "source_key": "crystal:npc/goldro",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/goldro.lua"
+    },
+    {
+      "excluded_scripted_handlers": [],
+      "git_blob_sha1": "12e28ebeb91d89f7334bff8b2a2cbdde3e1510c6",
+      "path": "data-global/npc/nekaret.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd",
+      "source_key": "crystal:npc/nekaret",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/nekaret.lua"
+    },
+    {
+      "excluded_scripted_handlers": [],
+      "git_blob_sha1": "b050266b75ffe7f1b0c7979e99790fc957fedbbd",
+      "path": "data-global/npc/omar.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb",
+      "source_key": "crystal:npc/omar",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/omar.lua"
+    },
+    {
+      "excluded_scripted_handlers": [],
+      "git_blob_sha1": "4ec30763f04bafda887e7205e8f0883d2b8c6740",
+      "path": "data-global/npc/zofia_bolter.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1",
+      "source_key": "crystal:npc/zofia_bolter",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/zofia_bolter.lua"
+    },
+    {
+      "excluded_scripted_handlers": [
+        "CALLBACK_MESSAGE_DEFAULT"
+      ],
+      "git_blob_sha1": "b65532573905bf3c5faabe569df2ef90cb3ababd",
+      "path": "data-global/npc/dhira.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9",
+      "source_key": "crystal:npc/dhira",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/dhira.lua"
+    },
+    {
+      "excluded_scripted_handlers": [
+        "CALLBACK_MESSAGE_DEFAULT"
+      ],
+      "git_blob_sha1": "e29d1ef6d661e82b5fede27cfc58e1f2116e58d5",
+      "path": "data-global/npc/nilavarna.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "ed7dcc976d2adfecbf3c448658b183a5640bcd1b68da0e948b6f738833fca979",
+      "source_key": "crystal:npc/nilavarna",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/nilavarna.lua"
+    },
+    {
+      "excluded_scripted_handlers": [
+        "CALLBACK_MESSAGE_DEFAULT"
+      ],
+      "git_blob_sha1": "753c9a0c2aeb204e432adadfd8a6f2d7f709f848",
+      "path": "data-global/npc/niral.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86",
+      "source_key": "crystal:npc/niral",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/niral.lua"
+    },
+    {
+      "excluded_scripted_handlers": [
+        "CALLBACK_MESSAGE_DEFAULT"
+      ],
+      "git_blob_sha1": "4ba853b86ac3f5275a2e824138ac4fbdbe08d21a",
+      "path": "data-global/npc/saraki.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659",
+      "source_key": "crystal:npc/saraki",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/saraki.lua"
+    },
+    {
+      "excluded_scripted_handlers": [
+        "CALLBACK_MESSAGE_DEFAULT"
+      ],
+      "git_blob_sha1": "5b99390ce90e4b5727a2699183c452d9e1f16778",
+      "path": "data-global/npc/sharai.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a",
+      "source_key": "crystal:npc/sharai",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/sharai.lua"
+    },
+    {
+      "excluded_scripted_handlers": [
+        "CALLBACK_MESSAGE_DEFAULT"
+      ],
+      "git_blob_sha1": "415de19235468f4f5e81a6f5983e1b4bb4c69412",
+      "path": "data-global/npc/tarisu.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e",
+      "source_key": "crystal:npc/tarisu",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/tarisu.lua"
+    },
+    {
+      "excluded_scripted_handlers": [
+        "CALLBACK_MESSAGE_DEFAULT"
+      ],
+      "git_blob_sha1": "b0fde760e3b1ebc73d7173a6d26b8fb6f19e7cb7",
+      "path": "data-global/npc/udu.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7",
+      "source_key": "crystal:npc/udu",
+      "source_services_empty": true,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/udu.lua"
+    }
+  ],
+  "static_dialogue_proofs": [
+    {
+      "TODO_text_absent": true,
+      "declaration_sha256": "96444af285cb0cb413095e28a9cd6016f96e30b6c3dce07bb8757e9509476c4d",
+      "keyword_nodes": 6,
+      "npc": "oteryn:npc.dhira",
+      "qualification": "D9_SINGLE_SOURCE_STATIC_SAY; SOURCE_CALLBACKS_EXCLUDED",
+      "raw_sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9",
+      "source_key": "crystal:npc/dhira",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "static_drop_counts": {
+        "keyword_nodes": 6
+      },
+      "static_sha256": "4b0605d1f019f2275f903bfc8be8af769be67f3aecaac0ef550a40debe730e96",
+      "text_bundle_sha256": "4d0222df5b0f22d1e3c94899c484c1c17230746f22191d4fe7e7ef65860df1fe"
+    },
+    {
+      "TODO_text_absent": true,
+      "declaration_sha256": "d1fd3476666cc4187874fc1ee3087b59fa9eb1cd5071fe1710ed0a10b0409d20",
+      "keyword_nodes": 8,
+      "npc": "oteryn:npc.nilavarna",
+      "qualification": "D9_SINGLE_SOURCE_STATIC_SAY; SOURCE_CALLBACKS_EXCLUDED",
+      "raw_sha256": "ed7dcc976d2adfecbf3c448658b183a5640bcd1b68da0e948b6f738833fca979",
+      "source_key": "crystal:npc/nilavarna",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "static_drop_counts": {
+        "keyword_nodes": 8
+      },
+      "static_sha256": "291c7b0e7fd09ce89ea1fc5a488847254590d40a7caf59e4a5807dad75585dfe",
+      "text_bundle_sha256": "e57ef3396469e1fac864718efe3982c59cdb498fbf32ce501291edd98d5d5384"
+    },
+    {
+      "TODO_text_absent": true,
+      "declaration_sha256": "5db821d1e98bf50667d42889ab3907d6155aba22ace4c5ae27b84687ee8134f6",
+      "keyword_nodes": 7,
+      "npc": "oteryn:npc.niral",
+      "qualification": "D9_SINGLE_SOURCE_STATIC_SAY; SOURCE_CALLBACKS_EXCLUDED",
+      "raw_sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86",
+      "source_key": "crystal:npc/niral",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "static_drop_counts": {
+        "keyword_nodes": 7
+      },
+      "static_sha256": "c5ad69506c5148914bb8d20df7b541397e14f9cdf55f9dfea241d1178173a815",
+      "text_bundle_sha256": "c0f70758bdfa646699e8ac856119ce67dda49b792723591c244d10c81b124ea4"
+    },
+    {
+      "TODO_text_absent": true,
+      "declaration_sha256": "e37d0fdf79b1d4ae0811c958287e6549af60d12ad3e8eee92a9d95cd5bdbd63f",
+      "keyword_nodes": 7,
+      "npc": "oteryn:npc.saraki",
+      "qualification": "D9_SINGLE_SOURCE_STATIC_SAY; SOURCE_CALLBACKS_EXCLUDED",
+      "raw_sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659",
+      "source_key": "crystal:npc/saraki",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "static_drop_counts": {
+        "keyword_nodes": 7
+      },
+      "static_sha256": "f6b5a0f330d8db771a2a6f40c3475d61e184a13352d0e9f3f3d63dd5b4b9b887",
+      "text_bundle_sha256": "ee7c748733c9b0438f8ef8a257127a4d518f943cc81a23ae421672c72b0d7b7d"
+    },
+    {
+      "TODO_text_absent": true,
+      "declaration_sha256": "6a26f894cfed84d8e43989de0e24b1a6c3bf8c4ed1b83e301dfb41e4cb0b71b1",
+      "keyword_nodes": 5,
+      "npc": "oteryn:npc.sharai",
+      "qualification": "D9_SINGLE_SOURCE_STATIC_SAY; SOURCE_CALLBACKS_EXCLUDED",
+      "raw_sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a",
+      "source_key": "crystal:npc/sharai",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "static_drop_counts": {
+        "keyword_nodes": 5
+      },
+      "static_sha256": "91084d25dcf37860e0cb612d2072e60229e1266427a3c6aab6d823c7f246386f",
+      "text_bundle_sha256": "f466a2e8f14e78aae425fcbd6a2f8754c3e11c3bcff3f9ae34e838b84a2cb092"
+    },
+    {
+      "TODO_text_absent": true,
+      "declaration_sha256": "66e45cc0d8c8fc4ba3cfa0b8ffc6922da8c8198831354c174f6569d559205663",
+      "keyword_nodes": 5,
+      "npc": "oteryn:npc.tarisu",
+      "qualification": "D9_SINGLE_SOURCE_STATIC_SAY; SOURCE_CALLBACKS_EXCLUDED",
+      "raw_sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e",
+      "source_key": "crystal:npc/tarisu",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "static_drop_counts": {
+        "keyword_nodes": 5
+      },
+      "static_sha256": "e986abaa1ef565d7ec36b417b5fc07cad68b83f16ce11a2f5bcb6e3ce2a55ff9",
+      "text_bundle_sha256": "3e95b813ec05716260031130a7467a46707645dd0d504d346c9cb44d1e6c350b"
+    },
+    {
+      "TODO_text_absent": true,
+      "declaration_sha256": "6e04904e758f9442c2760e9b434b29add7325b4e9ff7899216f5700d8d8e8494",
+      "keyword_nodes": 5,
+      "npc": "oteryn:npc.udu",
+      "qualification": "D9_SINGLE_SOURCE_STATIC_SAY; SOURCE_CALLBACKS_EXCLUDED",
+      "raw_sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7",
+      "source_key": "crystal:npc/udu",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "static_drop_counts": {
+        "keyword_nodes": 5
+      },
+      "static_sha256": "abfbbbf5253d132c01a5c5ba5b96e1909fe886dadba38720abeb7c91b690cc79",
+      "text_bundle_sha256": "26a2b2eca80dd86c3efcadd6dea45d088337992adb02c06964a2b91f2f10c6c2"
+    }
+  ],
+  "supporting_library_proofs": [
+    {
+      "git_blob_sha1": "a1e339d1878fc962a18d4c4d39398b6255d3cbc2",
+      "path": "data/npclib/npc_system/custom_modules.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "c6c61e4fb58702132c94648fd73a929eb93f6476d9931290b487042465c7a204"
+    },
+    {
+      "git_blob_sha1": "677ec7ed90f72e06e2e98dcbb468b9cbc99bc495",
+      "path": "data/npclib/npc_system/keyword_handler.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "0a8b3ec3824d985b69d5ccd5944ce2936243f4ac7a4a370f19bd871f0d682fc1"
+    },
+    {
+      "git_blob_sha1": "ac0fa8d5d9abff50458f6344a66ba828914a8dbe",
+      "path": "data/npclib/npc_system/modules.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "13b3fa5e827d592bc8ce6c81e64b41ac2ae528fceac305e7a8e08d566a4cb024"
+    },
+    {
+      "git_blob_sha1": "5ac57f68c335e7aa5e2d03ab032ef5f42a5e266d",
+      "path": "data/npclib/npc_system/npc_handler.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+    },
+    {
+      "git_blob_sha1": "42b7a8bab4be37f11fc04ffc90e725d7f19d4105",
+      "path": "data/libs/functions/string.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "e90c3d09ea1b73000e53e4e5e65346059ae3efe71a122e87abec7acea6b7c536"
+    }
+  ]
+}

@@ -1,0 +1,2108 @@
+{
+  "from_project_revision": "g4-npc-service-scope-r13",
+  "native_additions": {
+    "authoring_profiles": [
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false,
+              "wander": {
+                "interval_ms": 2000,
+                "radius_tiles": 2
+              }
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.dhira",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false,
+              "wander": {
+                "interval_ms": 2000,
+                "radius_tiles": 1
+              }
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.g_ezkho",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false,
+              "wander": {
+                "interval_ms": 2000,
+                "radius_tiles": 1
+              }
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.goldro",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false,
+              "wander": {
+                "interval_ms": 2000,
+                "radius_tiles": 1
+              }
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.nekaret",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": false,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.nilavarna",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": false,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.niral",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false,
+              "wander": {
+                "interval_ms": 2000,
+                "radius_tiles": 1
+              }
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.omar",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": false,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.saraki",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": false,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.sharai",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false,
+              "wander": {
+                "interval_ms": 2000,
+                "radius_tiles": 1
+              }
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.tarisu",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": false,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.udu",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": false,
+              "pushable": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false,
+              "wander": {
+                "interval_ms": 2000,
+                "radius_tiles": 1
+              }
+            },
+            "targeting": {
+              "can_target": false,
+              "flee_health": 0,
+              "hostile": false,
+              "sense_invisible": false,
+              "static_attack_chance_ppm": 0,
+              "target_distance_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.zofia_bolter",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/1539",
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/124",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/77",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/3",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/3",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.dhira",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/115",
+            "light_level": 0
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.g_ezkho",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/160",
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/39",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/79",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/97",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/98",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.goldro",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/65",
+            "light_level": 0
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.nekaret",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/1539",
+            "attachment_bindings": [
+              {
+                "asset_binding": "canary.appearance:outfit/1539/addon-1",
+                "slot": "Addon"
+              }
+            ],
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/49",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/10",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/3",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.nilavarna",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/1648",
+            "attachment_bindings": [
+              {
+                "asset_binding": "canary.appearance:outfit/1648/addon-2",
+                "slot": "Addon"
+              }
+            ],
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/10",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/57",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/9",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/104",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.niral",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/146",
+            "attachment_bindings": [
+              {
+                "asset_binding": "canary.appearance:outfit/146/addon-1",
+                "slot": "Addon"
+              },
+              {
+                "asset_binding": "canary.appearance:outfit/146/addon-2",
+                "slot": "Addon"
+              }
+            ],
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/37",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/86",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/77",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/75",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.omar",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/1543",
+            "attachment_bindings": [
+              {
+                "asset_binding": "canary.appearance:outfit/1543/addon-1",
+                "slot": "Addon"
+              }
+            ],
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/114",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/94",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/3",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.saraki",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/1961",
+            "attachment_bindings": [
+              {
+                "asset_binding": "canary.appearance:outfit/1961/addon-2",
+                "slot": "Addon"
+              }
+            ],
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/9",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/9",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.sharai",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/1539",
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/95",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/66",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/8",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/15",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.tarisu",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/1538",
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/95",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/53",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/19",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.udu",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/140",
+            "attachment_bindings": [
+              {
+                "asset_binding": "canary.appearance:outfit/140/addon-1",
+                "slot": "Addon"
+              },
+              {
+                "asset_binding": "canary.appearance:outfit/140/addon-2",
+                "slot": "Addon"
+              }
+            ],
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/50",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/61",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/50",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/76",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.zofia_bolter",
+          "revision": "definition-r1"
+        }
+      }
+    ],
+    "declarations": [
+      {
+        "farewell": [
+          "Mind the beavers on your way out."
+        ],
+        "fields": [],
+        "greet": [
+          "Greetings, two-leg."
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.dhira",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "key": "name",
+            "reply": [
+              "Dhira. The beavers call me something else, but you could not pronounce it."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I look after the beavers of Silvertides."
+            ],
+            "triggers": [
+              "job"
+            ]
+          },
+          {
+            "key": "beaver",
+            "reply": [
+              "They are cleverer than most two-legs and they complain less."
+            ],
+            "triggers": [
+              "beaver",
+              "beavers"
+            ]
+          },
+          {
+            "key": "lagoon",
+            "reply": [
+              "Beautiful place, if you keep an eye out for parders and jungle moas."
+            ],
+            "triggers": [
+              "lagoon",
+              "sparkling lagoon"
+            ]
+          },
+          {
+            "key": "tide_veil",
+            "reply": [
+              "Both grow out in the lagoon, and both have that silvery sheen now. Cut a sample with a knife and take it to the laboratory."
+            ],
+            "triggers": [
+              "tide veil",
+              "whisper reed"
+            ]
+          },
+          {
+            "key": "laboratory",
+            "reply": [
+              "The refiner of magic in the laboratory here in Silvertides will tell you what is in those leaves."
+            ],
+            "triggers": [
+              "laboratory"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "walkaway": [
+          "Mind the beavers on your way out."
+        ]
+      },
+      {
+        "farewell": [
+          "Go with the tide."
+        ],
+        "fields": [],
+        "greet": [
+          "Greetings, two-leg. What a rare sight around here."
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.nilavarna",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "key": "name",
+            "reply": [
+              "Nilavarna, of the Silvertides."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I lead the nagas of these shores. The sea tells me what it wants and I listen."
+            ],
+            "triggers": [
+              "job"
+            ]
+          },
+          {
+            "key": "silvertides",
+            "reply": [
+              "Our home. Where the tide meets the stone and neither one wins."
+            ],
+            "triggers": [
+              "silvertides"
+            ]
+          },
+          {
+            "key": "amati",
+            "reply": [
+              "The moon goddess. She fell once and the stars carried her back. We have not forgotten."
+            ],
+            "triggers": [
+              "amati"
+            ]
+          },
+          {
+            "key": "tarisu",
+            "reply": [
+              "Our shaman. He hears the tides the way you hear voices."
+            ],
+            "triggers": [
+              "tarisu"
+            ]
+          },
+          {
+            "key": "dhira",
+            "reply": [
+              "She cares for the beavers and knows the plants of the lagoon better than any scholar."
+            ],
+            "triggers": [
+              "dhira"
+            ]
+          },
+          {
+            "key": "nipuna",
+            "reply": [
+              "She keeps the shop and works the yukti. If the magic is off, she noticed first."
+            ],
+            "triggers": [
+              "nipuna"
+            ]
+          },
+          {
+            "key": "yukti",
+            "reply": [
+              "The gestures that shape magic. Ask Nipuna, she lives by them."
+            ],
+            "triggers": [
+              "yukti"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "walkaway": [
+          "Go with the tide."
+        ]
+      },
+      {
+        "farewell": [
+          "Walk in balance, traveller."
+        ],
+        "fields": [],
+        "greet": [
+          "Greetings, traveller!"
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.niral",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "key": "name",
+            "reply": [
+              "Niral."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I keep the balance between the beast and the person here in Oskayaat."
+            ],
+            "triggers": [
+              "job"
+            ]
+          },
+          {
+            "key": "rakesh",
+            "reply": [
+              "He was one of us. Then he filled himself with moonsilver and stopped being anyone at all."
+            ],
+            "triggers": [
+              "rakesh"
+            ]
+          },
+          {
+            "key": "amati",
+            "reply": [
+              "The moon goddess. We do not worship her the way the nagas do, but we respect what she can do."
+            ],
+            "triggers": [
+              "amati"
+            ]
+          },
+          {
+            "key": "runes",
+            "reply": [
+              "The same runes that ended our uncontrolled were sickness. Drawn in blessed blue lava, they will silence the shard."
+            ],
+            "triggers": [
+              "runes"
+            ]
+          },
+          {
+            "key": "blue_lava",
+            "reply": [
+              "It runs in the old volcano on the eastern coast. Take a crystal flask and wear your moon mirror, or the heat will have you."
+            ],
+            "triggers": [
+              "blue lava"
+            ]
+          },
+          {
+            "key": "curse",
+            "reply": [
+              "The beast can be controlled. The moon cannot. Never confuse the two."
+            ],
+            "triggers": [
+              "curse",
+              "were sickness"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "walkaway": [
+          "Walk in balance, traveller."
+        ]
+      },
+      {
+        "farewell": [
+          "May the Moon Goddess light your path."
+        ],
+        "fields": [],
+        "greet": [
+          "Greetings, traveller. May the Moon Goddess bless you."
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.saraki",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "key": "name",
+            "reply": [
+              "I am Saraki, maharani of Moonfall."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I rule Moonfall and I watch over the peace of my people."
+            ],
+            "triggers": [
+              "job"
+            ]
+          },
+          {
+            "key": "moonfall",
+            "reply": [
+              "Moonfall is where the goddess touched the world. We have guarded this place ever since."
+            ],
+            "triggers": [
+              "moonfall"
+            ]
+          },
+          {
+            "key": "amati",
+            "reply": [
+              "The Moon Goddess fell upon this island long ago, and the stars themselves descended to carry her home."
+            ],
+            "triggers": [
+              "amati"
+            ]
+          },
+          {
+            "key": "udu",
+            "reply": [
+              "Our astronomer. She sleeps by day and argues with the sky by night."
+            ],
+            "triggers": [
+              "udu"
+            ]
+          },
+          {
+            "key": "sundara",
+            "reply": [
+              "She keeps the potion shop here in Moonfall and knows the yukti better than anyone."
+            ],
+            "triggers": [
+              "sundara"
+            ]
+          },
+          {
+            "key": "yukti",
+            "reply": [
+              "Our magic. Ask Sundara about it, she will explain it far better than I could."
+            ],
+            "triggers": [
+              "yukti"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "walkaway": [
+          "May the Moon Goddess light your path."
+        ]
+      },
+      {
+        "farewell": [
+          "The sea remembers everything, two-leg."
+        ],
+        "fields": [],
+        "greet": [
+          "Greetings, two-leg."
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.sharai",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "key": "name",
+            "reply": [
+              "Sharai."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I watch this stretch of coast. Lately it has been giving me plenty to watch."
+            ],
+            "triggers": [
+              "job"
+            ]
+          },
+          {
+            "key": "citadel",
+            "reply": [
+              "An asura complex, drowned centuries ago. The sea took it slowly, wall by wall."
+            ],
+            "triggers": [
+              "citadel",
+              "complex"
+            ]
+          },
+          {
+            "key": "asura",
+            "reply": [
+              "They claim the place now. Not all of them agree on what to do with it, which is the only good news."
+            ],
+            "triggers": [
+              "asura",
+              "asuri"
+            ]
+          },
+          {
+            "key": "oskayaat",
+            "reply": [
+              "They learned to live with the moon's darker face. If anyone can seal that shard, it is them."
+            ],
+            "triggers": [
+              "oskayaat"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "walkaway": [
+          "The sea remembers everything, two-leg."
+        ]
+      },
+      {
+        "farewell": [
+          "May the tides always guide you safely."
+        ],
+        "fields": [],
+        "greet": [
+          "May the tides always guide you safely."
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.tarisu",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "key": "name",
+            "reply": [
+              "Tarisu, shaman of Silvertides."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I listen to the sea and tell my people what it says."
+            ],
+            "triggers": [
+              "job"
+            ]
+          },
+          {
+            "key": "ocean",
+            "reply": [
+              "The sea has one voice for every hour of the day. Lately one of them is a stranger."
+            ],
+            "triggers": [
+              "ocean",
+              "sea"
+            ]
+          },
+          {
+            "key": "amati",
+            "reply": [
+              "The moon pulls the water. When the moon is troubled, so is the tide."
+            ],
+            "triggers": [
+              "amati"
+            ]
+          },
+          {
+            "key": "marker",
+            "reply": [
+              "Three stones along the coast, set by my grandmother's grandmother. They have measured the water ever since."
+            ],
+            "triggers": [
+              "marker",
+              "markers"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "walkaway": [
+          "May the tides always guide you safely."
+        ]
+      },
+      {
+        "farewell": [
+          "Mind the sky once in a while."
+        ],
+        "fields": [],
+        "greet": [
+          "Greetings, two-leg."
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.udu",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "key": "name",
+            "reply": [
+              "Udu. Astronomer, insomniac, and the only one here who looks up."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I watch the sky above Marapur every night and write down what it does."
+            ],
+            "triggers": [
+              "job"
+            ]
+          },
+          {
+            "key": "sky",
+            "reply": [
+              "The stars are reliable. It is everything else that keeps surprising me."
+            ],
+            "triggers": [
+              "sky",
+              "stars"
+            ]
+          },
+          {
+            "key": "emerald_gardens",
+            "reply": [
+              "East of Marapur, out where the water goes green. That is where it came down."
+            ],
+            "triggers": [
+              "emerald gardens"
+            ]
+          },
+          {
+            "key": "amati",
+            "reply": [
+              "Whatever the priests say, something tore loose from her that night."
+            ],
+            "triggers": [
+              "amati"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "walkaway": [
+          "Mind the sky once in a while."
+        ]
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.dhira",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.dhira",
+          "revision": "definition-r1"
+        },
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.dhira",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.dhira",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.g_ezkho",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.g_ezkho",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.g_ezkho",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.goldro",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.goldro",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.goldro",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.nekaret",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.nekaret",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.nekaret",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.nilavarna",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.nilavarna",
+          "revision": "definition-r1"
+        },
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.nilavarna",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.nilavarna",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.niral",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.niral",
+          "revision": "definition-r1"
+        },
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.niral",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.niral",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.omar",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.omar",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.omar",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.saraki",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.saraki",
+          "revision": "definition-r1"
+        },
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.saraki",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.saraki",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.sharai",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.sharai",
+          "revision": "definition-r1"
+        },
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.sharai",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.sharai",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.tarisu",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.tarisu",
+          "revision": "definition-r1"
+        },
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.tarisu",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.tarisu",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.udu",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.udu",
+          "revision": "definition-r1"
+        },
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.udu",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.udu",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.zofia_bolter",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [],
+        "identity": {
+          "key": "oteryn:npc.zofia_bolter",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.zofia_bolter",
+          "revision": "definition-r1"
+        },
+        "services": []
+      }
+    ],
+    "records": [
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.dhira",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.g_ezkho",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.goldro",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.nekaret",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.nilavarna",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.niral",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.omar",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.saraki",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.sharai",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.tarisu",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.udu",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.zofia_bolter",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.dhira",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.g_ezkho",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.goldro",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.nekaret",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.nilavarna",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.niral",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.omar",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.saraki",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.sharai",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.tarisu",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.udu",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.zofia_bolter",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      }
+    ],
+    "source_identity_bindings": [
+      {
+        "disposition": "EXACT",
+        "external_id": "dhira",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.dhira",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "g_ezkho",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.g_ezkho",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "goldro",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.goldro",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "nekaret",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.nekaret",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "nilavarna",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.nilavarna",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "niral",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.niral",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "omar",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.omar",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "saraki",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.saraki",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "sharai",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.sharai",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "tarisu",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.tarisu",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "udu",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.udu",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "zofia_bolter",
+        "identity_namespace": "crystalserver/npc-file",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.zofia_bolter",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "102854",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.niral",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "110729",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.sharai",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "110732",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.omar",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "110734",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.g_ezkho",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "110735",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.nekaret",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "110736",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.goldro",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "110737",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.zofia_bolter",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "98770",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.tarisu",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "98773",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.saraki",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "98774",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.nilavarna",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "98775",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.udu",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "disposition": "EXACT",
+        "external_id": "98776",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-npc-subset-feefe781d45049d7",
+        "target": {
+          "family": "NPC",
+          "key": "oteryn:npc.dhira",
+          "revision": "definition-r1"
+        }
+      }
+    ]
+  },
+  "new_imports": [
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-summer-definition-overlay-fandom-r13",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_D16_SUPPLEMENT_OVERLAY/v1",
+      "mapper": "NPC_BOUNDED_D16_SUPPLEMENT_OVERLAY/v1",
+      "mapper_revision": "npc-summer-definition-r13",
+      "mapper_sha256": "0bdc54fa74a3fd1a179527e24a2961f005edaec6a35ebf50d6ae456f97129f01",
+      "reimport_states": [],
+      "source_artifact_sha256": "feefe781d45049d7cc7d86c2db7d31b9a6f533c595df2dbf48201c840f3eb453",
+      "source_generation_profile": "NPC_FANDOM_FACT_SUBSET/v1",
+      "source_repository": "tibia.fandom.com",
+      "source_revision": "tibiawiki-npc-subset-feefe781d45049d7"
+    }
+  ],
+  "new_sources": [
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-summer-definition-overlay-fandom-r13",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-npc-subset-feefe781d45049d7",
+      "sha256": "feefe781d45049d7cc7d86c2db7d31b9a6f533c595df2dbf48201c840f3eb453"
+    }
+  ],
+  "project_revision": "g4-npc-qualified-summer-r14",
+  "reused_crystal_import": {
+    "evidence": "OtsHypothesisOnly",
+    "import_batch_id": "g4-npc-crystal-summer-supplement-r1",
+    "key": "oteryn:source.crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "sha256": "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5"
+  },
+  "schema": "OTERYN_NPC_QUALIFIED_SUMMER_ADMISSION/v1"
+}
