@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-world-interaction-0
-pr: "named in the #162 FREEZE_SHA entry"
+pr: "1432"
 base_sha: b73fe23c
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -99,7 +99,7 @@ FIELD-2, PUSH-1 and HAZARD-1 combat review; WORLDINT-USE-1, DOOR-1 security revi
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1432. Merge commit/result: its squash merge.
 - Amendments, each pending on acceptance of WORLD-INTERACTION-0: the GAME-INTERACTION-01 horizon
   section, the scope matrix, RUNE-USE-0 §11, QUEST-GATE-0 §3.1, PARTY-PVP-0 §7.2, DUR-03 §39.1,
   GAME-ITEM-01 §4. The FND-04 admission amendment belongs to WORLDINT-ADMIT-1.
