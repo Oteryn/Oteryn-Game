@@ -23,7 +23,7 @@
     "Effect": 4599,
     "Encounter": 61,
     "Formula": 4905,
-    "Item": 34031,
+    "Item": 34032,
     "Loot": 1056,
     "Mount": 252,
     "NPC": 1110,
@@ -43,7 +43,7 @@
     "declarations": "47b7568f17f93159bd8bf6dab7ba6498378f1c6a",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "196ce8be08c30f1f5583f4a56260ff983a95e143",
-    "reference": "ea4bbcb9c1993985a26a0947d7125af5dc0ea279",
+    "reference": "7b4045c25c587f307c17031f7a2e7071c29212f9",
     "sources": "56d7707c211d11c70cfb5ef7a3deed4b3af2244d"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
