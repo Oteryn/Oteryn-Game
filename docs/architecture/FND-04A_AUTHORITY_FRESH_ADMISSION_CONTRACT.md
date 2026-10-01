@@ -177,8 +177,8 @@ Immediately before/atomically with authority creation revalidate:
 - current Platform-security evidence using authenticated source observation provenance, accepted upper-bound age <=5s, non-rollback source revision/fence and account generation/state;
 - route/runtime observation, target lifecycle, scope ownership, runtime owner/placement/readiness;
 - protocol_major and transport_profile;
-- the scope's effective required capability set is contained in the supported list (ADMIT-0, pending on acceptance);
 - each `ruleset_revision`, `content_revision`, `map_revision`, `world_policy_revision`, `offer_revision` independently;
+- the scope's effective required capability set is contained in the supported list, after the revision equality above (ADMIT-0, pending on acceptance);
 - AccountId->CharacterId ownership/lifecycle first;
 - CharacterId->WorldId/world eligibility second;
 - GrantNonce;

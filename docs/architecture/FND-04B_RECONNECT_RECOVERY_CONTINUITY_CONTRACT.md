@@ -342,11 +342,13 @@ world_policy_revision
 
 No opaque `compatibility_revision` exists. FND-02 `schema_revision` remains diagnostic/build evidence.
 
-**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §4).** After the recovery credential is authenticated and
-ownership and world are classified safe (§19 order), same-session and post-grace recovery also require
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §4).** After the recovery credential is authenticated,
+ownership and world are classified safe and §19 dispatch has chosen the path, immediately before that
+path's commit revalidation, same-session and post-grace recovery also require
 the resume capability evidence to contain the current scope generation's effective required set;
 otherwise `RECOVERY_CAPABILITY_REQUIRED` with no authority mutation. A post-grace recovery that creates
-a GameSession selects every capability of the set.
+a GameSession selects every capability of the set. When a resumed selection differs from the
+predecessor's, reconciliation uses a replacement snapshot (FND-02 §16), never replay.
 
 Platform-security and recovery key/profile trust evidence preserve FND-04A semantics:
 

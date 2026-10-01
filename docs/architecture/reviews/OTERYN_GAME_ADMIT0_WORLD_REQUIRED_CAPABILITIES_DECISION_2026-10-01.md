@@ -67,10 +67,11 @@ hurt or block its character, without making those capabilities core protocol for
 
 - The D1 configuration declares, beside each channel scope's `world_policy_revision`,
   `required_gameplay_capabilities`: a sorted, unique list of registered capability ids, at most 16
-  (`ADMIT0-RL-01`).
-- The pair is immutable: a `world_policy_revision` token always names the same list. A different
-  list needs a different token, which the Platform must also put in grants (D5), so every grant
-  already binds the list through the token.
+  declared ids (`ADMIT0-RL-01`); the closure (§3.2) is bounded by `MAX_CAPABILITY_COUNT`. Amended:
+  node-boot D1 and D5 (this PR).
+- **Operator rule:** a changed list is deployed with a new `world_policy_revision` token. Safety does
+  not depend on it: every check runs against the current scope generation's set, and the Platform
+  needs only the token (D5).
 - Every public World's channels under WORLD-INTERACTION-0 declare `MAP_STATE_V1`,
   `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1` (owner answer 4a). An empty list behaves as
   today.
@@ -84,9 +85,14 @@ hurt or block its character, without making those capabilities core protocol for
   unregistered id, a cycle, or an id this build does not offer (its offer gate is closed): a
   required capability must be one the server can serve.
 - The effective set is fixed for the scope's ownership generation. A changed list takes effect only
-  with a new boot, that is a new ownership generation; a session reaches the new generation only
-  through fresh admission, reconnect or recovery, each of which checks it (§4). No session ever
-  controls an actor on a scope whose set it lacks.
+  with a new boot, that is a new ownership generation. **Premise:** node-boot D3's stop-then-start
+  replacement, under which a session reaches a new channel generation only through fresh admission,
+  reconnect or recovery, each of which checks it (§4). Overlapping replacement, healthy-session
+  migration (FND-04B §10) and the Channel to Instance handoff (FND-03 §3.4, FND-04B §23) are
+  superseding triggers: each must check the destination's set against the session's support before
+  its commit, in its own contract.
+- **Instances:** an InstanceRuntime scope has no declared set and applies no player field or wall
+  effects until the handoff contract adds that check.
 
 ### 3.3 Selection
 
@@ -104,8 +110,12 @@ It runs after authentication and only against the current scope generation's set
 - **Same-session reconnect** (FND-04B §12 and §13 item 10): after the reconnect proof is
   authenticated (§9) and the session resolved, against the current scope generation's set.
 - **Recovery, same-session or post-grace** (FND-04B §18-§21): after the recovery credential is
-  authenticated and ownership and world are classified safe (§19 order), against the current scope
-  generation's set; a post-grace recovery that creates a new GameSession selects the set (§3.3).
+  authenticated, ownership and world are classified safe, and §19 dispatch has chosen the path,
+  immediately before that path's commit revalidation, against the current scope generation's set;
+  a post-grace recovery that creates a new GameSession selects the set (§3.3).
+- **Reconciliation:** when a resumed session's selected set differs from its predecessor's (a new
+  scope generation added a capability), reconciliation uses a replacement snapshot (FND-02 §16),
+  never replay, so no newly selected domain receives deltas without a baseline.
 - The check reads declared support only. Support is a claim, not trust: the server still sends and
   enforces everything; the rule guarantees only that the client said it can render what can hurt
   or block it.
@@ -120,7 +130,7 @@ It runs after authentication and only against the current scope generation's set
 
 - Correlation: the missing registered capability ids, emitted only after the authentication point
   of §4 (FND-04B §24).
-- Amended in this PR: FND-04A §11 (rows and precedence) and §12 (fixtures), FND-04B §25 (rows) and
+- Amended in this PR: FND-04A §11 (rows) and §12 (fixtures), FND-04B §25 (rows) and
   §26 (fixtures), FND-04C §2.1 (the correlation field), §4.1-§4.3 (rows) and §9 (fixtures).
 
 ## 6. Activation (ADMIT-CAP-2)
@@ -170,8 +180,8 @@ None. Owner answer 4a gave consent; every other choice applies FND-02 and FND-04
 ## 11. Before-freeze checklist
 
 1. **Contract amendments**, all applied in this PR: FND-02 §9; FND-04A §6, §7 (step 11), §7.1, §11,
-   §12; FND-04B §13, §18, §25, §26; FND-04C §2.1, §4.1-§4.3, §9; RUNE-USE-0 §11;
-   WORLD-INTERACTION-0 §8.6. The registry `requires` field and the D1 configuration key are built by
+   §12; FND-04B §13, §18, §25, §26; FND-04C §2.1, §4.1-§4.3, §7, §9; node-boot D1 and D5;
+   RUNE-USE-0 §11; WORLD-INTERACTION-0 §8.6. The registry `requires` field and the D1 configuration key are built by
    ADMIT-CAP-1.
 2. **Serialization:** the check runs inside each path's existing atomic revalidation; the set is
    fixed per scope ownership generation, so no publication can race an admission.

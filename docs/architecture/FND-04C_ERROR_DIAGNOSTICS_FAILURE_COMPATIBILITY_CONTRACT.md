@@ -209,6 +209,10 @@ Recovery independently binds profile, protocol_major, transport_profile, ruleset
 
 FND-02 `schema_revision` remains diagnostic/build evidence rather than exact gameplay admission/recovery equality.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3).** A channel scope's required capability set is a
+compatibility dimension carried by its `world_policy_revision` token: a non-empty list is declared only
+after a client build supporting it is deployed to players.
+
 ## 8. Producer/consumer rollout and rollback
 
 Platform is producer of bounded fresh/recovery attempt grants; Oteryn-v2 is final game-domain consumer/authority.
