@@ -162,6 +162,9 @@ exactly the change, under the tile and counter row lock.
   actor out of a snapshot (§7.3).
 - **Reset.** Dropped items follow D191: they survive a crash and are retired at the planned world
   reset by `WorldReset`. No new sink.
+- **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Every
+  Ground insertion assigns the tile's next `ground_ordinal` under the tile row lock; the tile's top
+  dropped item is the one with the highest ordinal (Tibia's top item).
 
 ## 6. Persistence and DUR-03
 

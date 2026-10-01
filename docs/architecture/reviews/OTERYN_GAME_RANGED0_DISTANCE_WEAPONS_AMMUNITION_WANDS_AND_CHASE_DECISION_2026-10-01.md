@@ -219,14 +219,23 @@ The content `on_use` decides:
   quiver entry or the right-hand stack, which keeps its identity or retires at zero (§11.1, §11.5),
   hit or miss.
 - **`DROP`** (spears and other recoverable thrown weapons): the frozen break draw decides. Broken,
-  or a drop refused at PREPARE: the same one-unit BURN. Not broken: one unit to the landing tile's
-  Ground, always as a new item: a §12 split into a planned identity (§11.3), or the whole item when it
-  is the last unit. Canary merges it into a matching stack on the tile; Oteryn does not (no Ground
-  stacking order exists yet; `PARITY_PENDING`). The drop follows ITEM-MOVE-WIRE-1 §5's Ground rules
-  (tile and channel limits with the tile row lock and counter, house tiles refused) and §6.2's §32
-  scope fence, and D191 reset retirement; reach and line of sight do not apply. A database refusal of
-  the drop is a refused commit under the same TransactionId (§23): the swing has no effect and the
-  unit stays.
+  or a drop refused at PREPARE: the same one-unit BURN. Not broken: one unit goes to the landing
+  tile's Ground, as in Canary:
+  - **Merge** when the tile's **top dropped item** (the highest Ground ordinal, §6.1.2) is a
+    compatible stack with room: same definition key and revision, both stackable, equal state apart
+    from quantity (B3 §4.4), quantity below the stack maximum (D82). The unit moves into it by a
+    DUR-03 §13 quantity transfer: the receiver keeps its identity and grows by one; the hand stack
+    shrinks by one, or retires at zero (§11.5). No new Ground item, so the tile and channel limits are
+    not consumed.
+  - **New item** otherwise: a §12 split into a planned identity (§11.3), or the whole item when it is
+    the last unit, at the top of the tile (the next Ground ordinal), under ITEM-MOVE-WIRE-1 §5's Ground
+    rules (tile and channel limits with the tile row lock and counter, house tiles refused).
+  - Merge or new item is chosen at PREPARE and frozen; a merge receiver is reserved under DUR-03 §7.1
+    at PREPARE, so no pickup or move can take it meanwhile. At commit the receiver must still be live
+    on that tile, compatible and with room; otherwise the commit is refused under the same
+    TransactionId (§23) and the swing has no effect (the unit stays).
+  - Every Ground write takes ITEM-MOVE-WIRE-1 §6.2's §32 scope fence; D191 reset retirement applies;
+    reach and line of sight do not apply.
 - **`NONE`** and wands: no transaction.
 
 ### 6.1.1 Database deltas (RANGED-1)
@@ -234,8 +243,22 @@ The content `on_use` decides:
 - deletion of a quiver entry or the right-hand slot row by a BURN at zero;
 - Ground insertion by split with a planned identity, and by whole TRANSFER from the right-hand slot
   under `WeaponUseCause`;
+- a quantity change of a live dropped Ground stack by a §13 merge, with the source's retirement at
+  zero, and the merge receiver's reservation;
+- the Ground ordinal of §6.1.2;
 - the weapon receipt keyed by the swing key (§6.2), with the frozen consequence;
 - reservation of the shot entry or hand stack under §7.1.
+
+### 6.1.2 Ground stacking order (amends ITEM-MOVE-WIRE-1 §5 and §6.2)
+
+- Every live Ground item of a tile carries a `ground_ordinal`, assigned at its Ground insertion as
+  the tile's highest plus one, under the tile row lock every Ground insertion already takes
+  (ITEM-MOVE-WIRE-1 §5); ordinals are never reused or renumbered while the item lies there. Every
+  Ground insertion (a drop, a split, a Ground move, a reset rebuild) assigns it; a merge does not.
+- The **top dropped item** of a tile is its live dropped item with the highest ordinal, the item
+  Tibia shows on top. Map-authored items are not dropped items. The ordinal never orders by
+  ItemInstanceId (DUR-03 §13: "UUID/client list ordering never selects survivor/receiver").
+- This is the Ground stacking order later Ground decisions reuse (for example a top-item pickup).
 
 ### 6.2 Cause, key and fence
 
@@ -257,9 +280,9 @@ The content `on_use` decides:
 
 | Row | Value |
 |---|---|
-| `DUR03-RL-01-WEAPON` touched items | burn 1; split drop 2 (source and new item); whole drop 1 |
-| `DUR03-RL-02-WEAPON` location/quantity lines | burn 1; split 2; whole drop 2 |
-| `DUR03-RL-06-WEAPON` participants / effect work units | one participant per touched item: burn 1 / 3 (participant, removal, retirement at zero); split 2 / 4; whole drop 1 / 3; with max and max+1 boundary tests |
+| `DUR03-RL-01-WEAPON` touched items | burn 1; split drop 2 (source and new item); whole drop 1; merge 2 (source and receiver) |
+| `DUR03-RL-02-WEAPON` location/quantity lines | burn 1; split 2; whole drop 2; merge 2 quantity changes and, when the source retires, 1 removal |
+| `DUR03-RL-06-WEAPON` participants / effect work units | one participant per touched item: burn 1 / 3 (participant, removal, retirement at zero); split 2 / 4; whole drop 1 / 3; merge 2 / 5 (source participant, decrement, retirement at zero; receiver participant, increment); with max and max+1 boundary tests |
 | `DUR03-RL-07-WEAPON` envelope and payload | the one-item caps; RANGED-1 proves the split within them |
 | `RANGED0-RL-01` weapon transactions in flight per channel | 256; above it a due swing makes no attack (a stall) |
 | `RANGED0-RL-02` ambiguous commit bound | 2,000 ms |
@@ -309,8 +332,11 @@ The content `on_use` decides:
 - **A runtime ammunition counter flushed later.** A crash would duplicate arrows (DUR-03 §4).
 - **Burning a batch of shots ahead.** Unused units would need a refund MINT; one unit per swing is
   the accepted rune shape.
-- **Always burning thrown weapons.** Spears that land on the ground are Tibia; the split and Ground
-  shapes already exist.
+- **Always burning thrown weapons.** Spears that land on the ground are Tibia; the split, merge and
+  Ground shapes exist.
+- **Never merging on the ground.** Owner answer 1a (#162 5930136984): faithful, as Tibia.
+- **Choosing the merge receiver by ItemInstanceId.** DUR-03 §13 forbids it; the Ground ordinal is
+  Tibia's top item.
 - **Client-driven chase.** VSL-MOVE-01 forbids a client route as authority; Tibia chases on the
   server.
 - **A separate ranged timer.** It would allow two swings per interval.
@@ -320,8 +346,8 @@ The content `on_use` decides:
 - **R1. Commit order.** a) Burn before the effect, RUNE-USE-0's PREPARE and PRIMARY COMMIT
   (recommended: no duplication or free shot after a crash); b) effect first, reconcile later.
   **Ruled a).**
-- **R2. Thrown weapons.** a) Tibia: break chance, else drop one unit (recommended); b) always burn.
-  **Ruled a).**
+- **R2. Thrown weapons.** a) Tibia: break chance, else drop one unit, merging into a compatible top
+  stack (recommended; owner answer 1a); b) always burn. **Ruled a).**
 - **R3. Chase steps.** a) Server-driven through the Movement owner on CREATURE-AI-0's profile with
   player differences (recommended); b) client-driven. **Ruled a).**
 - **R4. Overload.** a) No attack for a due deadline above 256 weapon transactions in flight per
@@ -349,12 +375,13 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 1. **Contract amendments**, all applied in this PR: DUR-03 §15, §39.1 and §39.3 (`WeaponUseCause`
    shapes and supersessions); the composition decision (server-originated swing variant);
-   ITEM-MOVE-WIRE-1 §4 (quiver, Extra slot); BAGS-0 §3, §6 and §10 (quiver tree, reachable items);
+   ITEM-MOVE-WIRE-1 §4 (quiver, Extra slot), §5 and §6.2 (Ground ordinal); BAGS-0 §3, §6 and §10 (quiver tree, reachable items);
    ATTACK-0 §3 (chase) and §4 (variants, RNG purposes); CONDITIONS-0 §4.3 (chase steps);
    CREATURE-AI-0 §7 (player chase searches); SPELL-PRESENT-0 §5 (weapon projectiles).
 2. **Serialization:** one weapon-use slot per actor; the shot unit is reserved under DUR-03 §7.1, so a
    concurrent move of that entry is refused; rule 4's lock order; the Ground tile row lock and
-   counter for drops; a known abort releases, an ambiguous commit keeps the unit unspendable.
+   counter for drops; the merge receiver is reserved at PREPARE and rechecked at commit; a known abort
+   releases, an ambiguous commit keeps the unit unspendable.
 3. **Restart:** the cause key includes the scope ownership and actor generations; a committed
    receipt replays; an uncommitted swing has no effect; chase, target and modes are runtime.
 4. **Typed references:** weapons and ammunition are A12 keys; the shot entry is its ItemInstanceId
