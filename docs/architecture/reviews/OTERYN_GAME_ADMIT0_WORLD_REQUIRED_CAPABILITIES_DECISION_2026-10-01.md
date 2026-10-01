@@ -84,8 +84,9 @@ hurt or block its character, without making those capabilities core protocol for
   **Amendment (pending on acceptance of SEC-CLIENT-01; `reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md` §4.1).** The
   set the predicate checks for a session is the channel's effective set **plus a transport profile
   set**: for profile 1 (native) `CLIENT_INTEGRITY_V1` and `INPUT_TELEMETRY_V1`, each once the build
-  offers it; for a future browser profile `INPUT_TELEMETRY_V1`. The same points, order and codes
-  apply; the profile set is not part of the channel's boot validation.
+  offers it; for a future browser profile `INPUT_TELEMETRY_V1`. On a production scope the offer of
+  `INPUT_TELEMETRY_V1` opens only when SEC-CLIENT-01 §5.1's production collection gate is met. The
+  same points, order and codes apply; the profile set is not part of the channel's boot validation.
 
 ### 3.2 Closure and boot validation
 
