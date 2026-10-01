@@ -16,12 +16,12 @@ CATALOGUE = HERE / "samples/imbuements-candidate.json"
 REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
-    "global-research-closure.json": "203f19e1d2e3dd31a0de56ce884c9af6a2133c607e1615c5878344d449384b5d",
+    "global-research-closure.json": "8735fb085aaaf6ad87f5a457d0edcdbabe002a8cede984cb9320c0ba70378fbb",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
-    "imbuement-eligibility.json": "c26be2542ce0b048258f1a4bcc2604145608af6cb669e20dbeb75f0ee76c062e",
+    "imbuement-eligibility.json": "4a9d7b93ea2a704f40e1f3cd35ef6b1686ed917457926ca9d5c359c9cd46586e",
     "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
-    "imbuement-combat.json": "6e2b0dde46c4636ea8b1c4acf6afaf195a7d514f42144d674e09a8ade0a6b61d",
+    "imbuement-combat.json": "39e8eaa16f7c1cd8358d70e620d23644a728c91a85a70ff9eb1659aadbe524d2",
     "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
     "missing-item-definitions.json": "d1d324a100dbda840c1730561401f803aea4ec6014ec11dec23389e3280fd40d",
     "missing-item-source-facts.json": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d",

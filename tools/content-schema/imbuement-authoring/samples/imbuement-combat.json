@@ -699,7 +699,7 @@
         "tibiapal_leech_calculator",
         "fandom_formulae_1205374"
       ],
-      "notes": "The current dated Mana reference selects per-target scaling, ceiling and overkill inclusion. Historical equal-hit Life examples and named charm exclusion tests are separately scoped. Unequal-Life, zero-damage counting, overkill order, current charm/proficiency composition and generic pipelines remain unqualified. The separately bounded full pre-target Life reference also excludes DamagePreys, without selecting other modifier order, rounding or overkill basis.",
+      "notes": "The current dated Mana reference selects per-target scaling, ceiling and overkill inclusion. Historical equal-hit Life examples and named charm exclusion tests are separately scoped. Unequal-Life, zero-damage counting, overkill order, current charm/proficiency composition and generic pipelines remain unqualified. The separately bounded full pre-target Life reference also excludes DamagePreys, without selecting other modifier order, rounding or overkill basis. New Globalresearchclosure fact life_leech_overkill_reported_damage_basis_2024 supplies a dated Life-specific would-deal damage statement; currentcontinuity and precise rounding/unequal/zero/order staynull.",
       "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION",
       "bounded_profiles": [
         "mana_leech_current_reference_formula",
@@ -764,7 +764,7 @@
         "tibiapal_leech",
         "tibiopedia_general_guide"
       ],
-      "notes": "Candidate architecture says absorbs are summed, whereas Crystal applies each equipped slot sequentially with ceil. No independent public Global composition statement was retrieved; reconcile against real observations before implementing either as certified parity. A current reference named ZaoanHelmet/ProtectionAmulet percentage-reduction example is separately selected; it does not settle arbitrary imbuement/native/Wheel order or rounding.",
+      "notes": "Candidate architecture says absorbs are summed, whereas Crystal applies each equipped slot sequentially with ceil. No independent public Global composition statement was retrieved; reconcile against real observations before implementing either as certified parity. A current reference named ZaoanHelmet/ProtectionAmulet percentage-reduction example is separately selected; it does not settle arbitrary imbuement/native/Wheel order or rounding. Globalresearchclosure physical_armor_stage_current_reported_test_reference now selects a scoped current authored testing reference (resistance beforearmor), not the universal wholepipeline.",
       "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION",
       "bounded_profiles": [
         "native_equipment_percentage_reduction_example"
@@ -781,7 +781,7 @@
         "fandom_vibrancy_archive_2025",
         "fandom_vibrancy_current_1194726"
       ],
-      "notes": "The complete current public family revision1194726, captured on1 October2026, explicitly qualifies deflection of additional PvP paralysis with initial success; full archived revision884982 corroborates historical wording. The public conditional claim is known. This null profile concerns the finer state predicate: definition of initial success, lifetime/reset and state transitions. It does not invent unconditional protection or treat the generic50% example as a probability for all tiers.",
+      "notes": "The complete current public family revision1194726, captured on1 October2026, explicitly qualifies deflection of additional PvP paralysis with initial success; full archived revision884982 corroborates historical wording. The public conditional claim is known. This null profile concerns the finer state predicate: definition of initial success, lifetime/reset and state transitions. It does not invent unconditional protection or treat the generic50% example as a probability for all tiers. Globalresearchclosure vibrancy_successful_pvp_retrigger_net_result completes the sourced singleinteraction net result. No speculativepersistentstate is required for this authored example.",
       "target_time_status": "CURRENT_COMMUNITY_CONDITIONAL_PVP_WORDING_STATE_GATE_UNRESOLVED"
     },
     {

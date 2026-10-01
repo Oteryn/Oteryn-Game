@@ -43,6 +43,35 @@ class ResearchClosureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing selected profiles"):
             research_closure.validate(self.packet)
 
+    def test_reported_armor_order_cannot_be_reversed(self):
+        fact = next(f for f in self.packet["facts"] if f["id"] == "physical_armor_stage_current_reported_test_reference")
+        fact["value"]["physical_stage"] = "ARMOR_BEFORE_RESISTANCE"
+        with self.assertRaisesRegex(ValueError, "qualified completion"):
+            research_closure.validate(self.packet)
+
+    def test_historical_life_statement_cannot_certify_current_continuity(self):
+        fact = next(f for f in self.packet["facts"] if f["id"] == "life_leech_overkill_reported_damage_basis_2024")
+        fact["value"]["current_target_continuity"] = True
+        with self.assertRaisesRegex(ValueError, "qualified completion"):
+            research_closure.validate(self.packet)
+
+    def test_vibrancy_example_cannot_become_future_attack_immunity(self):
+        fact = next(f for f in self.packet["facts"] if f["id"] == "vibrancy_successful_pvp_retrigger_net_result")
+        fact["value"]["future_attacks_always_deflected"] = True
+        with self.assertRaisesRegex(ValueError, "qualified completion"):
+            research_closure.validate(self.packet)
+
+    def test_primary_strike_exceptions_cannot_be_erased(self):
+        fact = next(f for f in self.packet["facts"] if f["id"] == "wand_rod_strike_current_primary_threshold_and_exceptions")
+        fact["value"]["named_exceptions"].remove("Deepling Fork")
+        with self.assertRaisesRegex(ValueError, "qualified completion"):
+            research_closure.validate(self.packet)
+
+    def test_source_choice_matrix_cannot_change_selected_types(self):
+        self.packet["equipment_source_disposition"]["current_source_choice_matrix"]["items"][0]["selected_allowed_types"] = {}
+        with self.assertRaisesRegex(ValueError, "matrix selection"):
+            research_closure.validate(self.packet)
+
     def test_fabricated_quote_is_rejected(self):
         self.packet["facts"][0]["quote_refs"][0]["text"] = "Every rejected scroll is always refunded."
         with self.assertRaisesRegex(ValueError, "quote is not present"):

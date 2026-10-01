@@ -50,7 +50,7 @@ research provenance, with no invented gameplay observations or expected results.
 
 The authoritative per-group scope correction is in
 [global-research-closure.md](global-research-closure.md) and its validated
-[public-fact packet](samples/global-research-closure.json):31 bounded facts with
+[public-fact packet](samples/global-research-closure.json):35 bounded facts with
 literal source text, source identities and date/method qualifications. Both primary June release articles now qualify Druid/Grove critical healing, Terra Wave II 10% Life Leech and the bounded wand/rod Strike limitation removal. Public
 statements can qualify their described fields without gameplay recordings.
 The27 prospective recordings remain supplemental alternatives.
@@ -89,3 +89,17 @@ checks does not complete those implementation children or their restart,
 transaction-failure, transfer, combat and client integration tests.
 
 Video-event qualification: the121.000–122.350icon change is not identified as the namedVampirism application. Equipped permission is a bounded inference from before/after torso placement and the named20:00h/success result, corroborated by the pinned engines; direct equipment state at the application instant is unproved. No exact consumption value is selected.
+
+## Targeted completion evidence, 2026-10-01
+
+The packet contains **35 bounded facts and 32 sources**. This batch adds these source-qualified results:
+
+- **101 equipment differences:** [Mirade’s official reply, 3 July 2026](https://www.tibia.com/forum/?action=thread&postid=39592694#post39592694), read with ordinary HTTP 200, gives the Dream Blossom Staff threshold and five named Strike exceptions. It corroborates the selected Strike III for Deepling Ceremonial Dagger and Energized Limb. It names Deepling Fork as an exception; the item’s current table supplies its exact exclusion. All 101 rows have explicit source-choice dispositions. Nine priority item tables were freshly reread and unchanged. The WandsRods helper is dated 16 June 2026; other helpers are mostly from 2024. No exhaustive official allowlist is invented.
+- **Physical order:** [TibiaTools’ immutable authored test report](https://github.com/kik-tibia/tibiatools/blob/a1d368906caa8ae98bcb7123f2431733d318d710/src/lib/damage-calc/calc.ts#L21), read with ordinary HTTP, reports resistance before armor in tests on Gazer Spectres and spike traps. Its executable companion models outgoing player-to-creature damage. Current Formulae corroborates a named equipment example; QA87’s dissent remains visible. This selects a scoped reference. All attack types, incoming equipment pipelines and universal rounding remain unproved. The file modification date, 17 September, is not the unknown test date.
+- **Life overkill:** [Tibia Analise, 5 January 2024](https://www.youtube.com/watch?v=JQRKU3Jd3gY), read through public Chrome/CDP Show transcript after ordinary access failed, says at 7:27–7:47 that Life and Mana use the damage an attack would deal regardless of remaining HP. The author also says published formulas did not match all his January 2024 tests. This is a dated report; current continuity and exact rounding, unequal-hit and zero-hit rules remain unasserted. The 30 HP / 78 illustration is Mana; the later 223 / 35 example is simulation. Neither is a measured Life result.
+- **Vibrancy:** current revision 1194726 and actual 2021 revisions 884981/884982, read through Chrome/CDP, give the same already-paralyzed PvP retrigger example. With the independently named Powerful 50% success, the interaction ends no longer paralyzed. The same attack therefore leaves no active reapplication. This selects the net result, without inventing execution order, persistent immunity, future-attack protection or reset data.
+- **PZ:** [TibiaTrends](https://tibiatrends.com/imbuements/), ordinary HTTP, modified 27 September, repeats blanket pause except backpacks without stating a test method. Contrary combat-countdown sources remain; the precise boundary is unresolved.
+
+**Global evidence still insufficient:** exact Etcher success/rejection units; filled-scroll units on success, full slots, incompatible items or duplicate families; the explicit Premium predicate for NPC Etcher purchase; numerical remaining duration across a named ownership transfer; the precise PZ combat boundary; current universal Life rounding, unequal-hit, zero-hit and overkill continuity. Equipped scroll permission remains a dated before/after inference without direct application-instant proof. These values stay null; Crystal/Canary implementation values remain separately available.
+
+Consumption research read four filled-scroll descriptions and 66 full CM posts from a 125-post June–August 2025 index. Fetches stopped at HTTP 429; 58 bodies were not read. Official news 4828 returned Cloudflare verification even in Chrome, so its new discussion link was inaccessible. Both current Life family pages were read in Chrome and contained no precise formula. Remote Desktop was used only for public browser research; the root-owned tab was closed.
