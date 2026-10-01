@@ -3,7 +3,7 @@
   "target_date": "2026-09-27",
   "runtime_admitted": false,
   "live_global_parity_confirmed": false,
-  "spell_input_sha256": "fc1680a45bf0d28a71b7f16b700146a4e804119f39a771cf9cf8af93addf673c",
+  "spell_input_sha256": "6f0149fb6e072c1abe2a07a3b4ae65c125dd82fbc823d2a70bbf042c6aaba834",
   "primary_sources": {
     "official_news": {
       "8783": {
@@ -78,6 +78,16 @@
           "Wrath of Nature"
         ]
       }
+    },
+    "official_planner": {
+      "url": "https://www.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M0Y2AgDP4jAQA",
+      "observed_on": "2026-10-01",
+      "field": "MediumPerkInfos.46.Aug2Info",
+      "value_text": "+60% Base Damage",
+      "library_url": "https://static.tibia.com/javascripts/wheelofdestiny/SkillwheelStringsJsonLibrary.json?version=8425497eb1aa03a8010468c21a5da32f",
+      "library_sha256": "a5a50b3cc214eae9c28d6248cd9b1a33921544b847a7d48455f4063bdee5d893",
+      "method": "NORMAL_HTTPS_AND_REMOTE_CHROME_PLAYWRIGHT_CDP",
+      "scope": "Only the Mystic Repulse II row receives an Oct1 official-planner correction; other rows retain their recorded target-date sources. No runtime or full Global-parity claim."
     }
   },
   "selection_policy": "Released official news, with later changes superseding earlier values; current official Tibia.com planner for directly exposed values not superseded by official news; captured EnglishWiki and Canary only when official evidence is absent. The Oct1 authoring repair preserves raw conflicting observations and does not grant runtime or complete Global parity.",

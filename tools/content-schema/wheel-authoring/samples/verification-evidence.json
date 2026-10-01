@@ -152,7 +152,7 @@
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "069bb65eb1fe60e1dcf6a2e201c123698d70fbc7deded89926fd3fc93c275db0"
+    "sha256": "74408c18ff71a06ad7507b78c27abef35165277650b86667dd7fc38a8cbc5e32"
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",

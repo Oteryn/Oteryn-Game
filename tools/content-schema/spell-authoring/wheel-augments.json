@@ -1,6 +1,6 @@
 {
   "schema": "oteryn.spell-wheel-augments.v1",
-  "note": "Evidence for the Wheel of Destiny spell augments and revelation perks of player spells at the target date (S6, S24): official tibia.com news (TibiaData API) > TibiaWiki Fandom at the target date > Canary 99902524 (hypothesis). An entry whose source is canary only is a hypothesis. Not a runtime contract: the Wheel owner decides the Wheel model; the spell bundles keep wheel_unlock fail-closed.",
+  "note": "Evidence for the Wheel of Destiny spell augments and revelation perks of player spells at the target date (S6, S24): official tibia.com news (TibiaData API) > TibiaWiki Fandom at the target date > Canary 99902524 (hypothesis). An entry whose source is canary only is a hypothesis. Not a runtime contract: the Wheel owner decides the Wheel model; the spell bundles keep wheel_unlock fail-closed. Owner-directed2026-10-01 correction: the current official planner supersedes the historical Mystic RepulseII40% with60%; per-row observation date is recorded without retroactively changing other Sept27 rows.",
   "target_date": "2026-09-27",
   "sources": {
     "official_news": {
@@ -76,6 +76,16 @@
           "Wrath of Nature"
         ]
       }
+    },
+    "official_planner": {
+      "url": "https://www.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M0Y2AgDP4jAQA",
+      "observed_on": "2026-10-01",
+      "field": "MediumPerkInfos.46.Aug2Info",
+      "value_text": "+60% Base Damage",
+      "library_url": "https://static.tibia.com/javascripts/wheelofdestiny/SkillwheelStringsJsonLibrary.json?version=8425497eb1aa03a8010468c21a5da32f",
+      "library_sha256": "a5a50b3cc214eae9c28d6248cd9b1a33921544b847a7d48455f4063bdee5d893",
+      "method": "NORMAL_HTTPS_AND_REMOTE_CHROME_PLAYWRIGHT_CDP",
+      "scope": "Only the Mystic Repulse II row receives an Oct1 official-planner correction; other rows retain their recorded target-date sources. No runtime or full Global-parity claim."
     }
   },
   "notes": [
@@ -880,14 +890,23 @@
       "vocation": "monk",
       "spell": "Mystic Repulse",
       "augment": 2,
-      "effect": "base damage +40%",
-      "value": 40,
+      "effect": "base damage +60%",
+      "value": 60,
       "unit": "percent_base_damage",
-      "source": "fandom:1206174",
-      "corroborated_by": [
-        "canary"
+      "source": "official:wheelofdestinyplanner:2026-10-01",
+      "corroborated_by": [],
+      "superseded": [
+        {
+          "source": "fandom:1206174",
+          "value": 40,
+          "unit": "percent_base_damage",
+          "corroborated_by": [
+            "canary"
+          ],
+          "note": "Superseded in the owner-directed2026-10-01 synchronization by the current official Tibia.com planner; retained as historical conflict evidence."
+        }
       ],
-      "superseded": []
+      "observed_on": "2026-10-01"
     },
     {
       "vocation": "monk",

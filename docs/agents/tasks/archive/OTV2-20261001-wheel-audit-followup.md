@@ -96,3 +96,13 @@ All15Gem lists/1580Basic values/376Supreme texts/415Supreme values agreed in the
 fresh audit. Raw observations and historical conflicts remain available. No
 runtime admission, protected integration or complete Global-parity claim.
 Final repair qualification and new FREEZE_SHA are recorded externally in#162.
+
+## Spell source synchronization
+
+Owner explicitly requested the remaining Mystic RepulseII Spell-source repair.
+Returned to AUTHORING froma3011ca8; scope extended only to
+spell-authoring/wheel-augments.json and itsREADME, plus the existing Wheel
+bindings/report/evidence/test. Shared Spell source now selects60% and preserves
+prior40% as superseded; source date applies only to this row. Added a cross-source
+value/unit check so updating a file digest cannot hide the old40% from Wheel
+qualification. New frozen-head packet supersedes5940115691.
