@@ -89,6 +89,9 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   `EquipmentSlotV1` with `UNSPECIFIED = 0` and the nine non-container slots (head, necklace,
   armor, right hand, left hand, legs, feet, ring, ammo). The container slot is not a destination.
 - Every move is of a whole item. There is no count field.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §3-§4).** Under `ITEM_STACK_COUNT_V1` command 9 takes an
+  optional `count`; slots and Ground merge into a compatible stack (the slot's item, the tile's top
+  Ground item), and a partial move onto an occupied slot exchanges as Canary.
 - Domain 9 gains the nine slots: each empty, or with a handle, definition, count and sub-type.
 - New results: `SLOT_MISMATCH` (wrong slot, a hands conflict, a container, or unknown
   equipment semantics), `REQUIREMENT_NOT_MET`, `BLOCKED` (the tile does not accept the item, no

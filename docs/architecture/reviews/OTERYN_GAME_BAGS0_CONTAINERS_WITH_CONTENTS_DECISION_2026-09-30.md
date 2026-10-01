@@ -220,6 +220,7 @@ drop it whole, with every item still in exactly one location?
   depot, Inbox or Ground source when its child admits it.
 - **Merge.** A stackable item moved into a container merges or tops up into a compatible stack of
   that container, first in display order, by the D83 shapes; else it takes a new entry. Merging
+  (Amendment, pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md`: with an optional `count`, STACK-0 §4 moves part of a stack.)
   never searches other containers.
 - **`MAIN_BACKPACK`** keeps B3: only direct entries; a full main backpack is `NO_ROOM`. There is no
   fall-through into nested bags (R2).

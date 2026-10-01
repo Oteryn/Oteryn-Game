@@ -123,6 +123,9 @@ the same definition key and revision, both stackable, and equal item state apart
 | B.q + q > max, a free entry exists | top-up: B grows to max, A keeps its id with the remainder and moves to a new entry (new ordinal) | 2 | 2 | 2 |
 | B.q + q > max, no free entry | rejected; nothing moves (partial pickup is `UNKNOWN` parity) | 0 | 0 | 0 |
 
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4.2).** The last row becomes Canary's partial fit: B grows to max,
+A keeps its identity with the remainder in place, and the result is `PARTIAL`.
+
 Quantity changes are item state of the touched ItemInstances, recorded as their before and after
 evidence; they are not value lines (RL-03 counts non-item value and account lines, DUR-03 §18).
 Exact units are conserved (`SPLIT_MERGE_QUANTITY`). A retry of the same pickup command returns the

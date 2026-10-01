@@ -1605,6 +1605,15 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
   use's effect, with its own suffixed resource rows.
 
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4-§6).** Once accepted, in its STACK-1 child and for player
+command 9 moves only (CommandRef cause, composition rules 2-4): one transaction with at most three
+touched items, combining a §12 split of the moved units into a planned identity, a §13 quantity
+transfer into a reserved compatible receiver (a container stack in display order, the slot's item, or
+the tile's top Ground item rechecked under the tile row `FOR SHARE`), a TRANSFER of a whole source or
+of a displaced slot item, and the source's retirement at zero. Supersession, for these shapes only:
+the §39.1 exclusions of multiple touched items (at most 3), quantity redistribution, and Ground
+insertion by split or quantity change of a live Ground stack. Rows `DUR03-RL-0x-STACK` as STACK-0 §6.
+
 **Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
 Once accepted, in its NPC-QUEST-1 child:
 
