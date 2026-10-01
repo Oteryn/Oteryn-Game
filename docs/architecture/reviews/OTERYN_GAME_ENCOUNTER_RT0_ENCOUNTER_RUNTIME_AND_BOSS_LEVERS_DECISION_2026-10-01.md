@@ -30,8 +30,10 @@
 | ENC-PARITY-1 | impl | fixtures against Canary and TibiaWiki: a transform boss (Urmahlullu), a prevent-death boss, a timer boss (King Zelos), a lever room for 5, the Soul War zone rule | every child above |
 
 Tests: one fight replayed from its seed gives the same rule order, draws and outcomes; a trigger
-loop over `ENCRT0-RL-01`, or an inline re-entry over `ENCRT0-RL-08`/`-RL-09`, faults the instance
-without an outcome, and a root hit at the inline bound that would kill a reward boss produces no
+loop over `ENCRT0-RL-01`, or an inline re-entry over `ENCRT0-RL-08`/`-RL-09` (a chain at exactly 4
+levels and 128 steps completes normally; the fifth level or the 129th step discards the hit),
+faults the instance without an outcome, and a root hit exceeding the inline bound that would kill a
+reward boss produces no
 death, no death composition and no reward; a timer backlog over `ENCRT0-RL-12` faults; a period
 below `ENCRT0-RL-11` is rejected by content validation; each `InstanceRetire` step of an instance
 retires its own item; a stalled host fires every due timer, in order; a crash loses the fight and
@@ -173,8 +175,10 @@ change that entered the first inline hook) carries a depth counter and a work co
 `ENCRT0-RL-08` nested inline levels and `ENCRT0-RL-09` inline rule steps per root hit.
 **Staging.** Every effect of a root hit and its inline chain (health changes, deaths, spawns,
 overlay changes, outcomes) is staged in owner memory and applied only when the root hit completes;
-death processing (the death composition, rewards, outcomes) starts only after that. Reaching either
-bound is a content loop with a fixed outcome: the **whole root hit is discarded** (no health change,
+death processing (the death composition, rewards, outcomes) starts only after that. The bounds are
+permitted maxima: 4 levels and 128 steps run normally. **Exceeding** either (the inline hook that
+would be the fifth nested level, or the rule step that would be the 129th) is a content loop with a
+fixed outcome: the **whole root hit is discarded** (no health change,
 no death, no death composition, no reward, no outcome) and the instance faults (§3.3) before any
 death is processed. The bound and the outcome are the same on every replay.
 Encounter modifiers that last (a `damage_modifier` with a duration, `shared_life`) are held by the
