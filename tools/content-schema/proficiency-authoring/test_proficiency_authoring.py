@@ -210,9 +210,10 @@ def test_registration_is_idempotent() -> None:
 def test_item_bindings() -> None:
     bindings = pa.item_bindings(committed())
     rows = bindings["records"]
-    assert bindings["record_count"] == len(rows) == 642
+    # ITEM-ADD-1: the donor epoch-2 Items define 22 more bound weapons.
+    assert bindings["record_count"] == len(rows) == 664
     assert bindings["excluded"] == {
-        "item_not_defined": 23,
+        "item_not_defined": 1,
         "unknown_threshold_class": 1,
     }
     items = pa.content_item_revisions()

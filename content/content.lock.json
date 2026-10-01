@@ -23,7 +23,7 @@
     "Effect": 4502,
     "Encounter": 61,
     "Formula": 4820,
-    "Item": 33567,
+    "Item": 34031,
     "Loot": 1032,
     "Mount": 252,
     "NPC": 1102,
@@ -42,8 +42,8 @@
   "legacy_blobs": {
     "declarations": "d1859cf1001171f97688a716f113bb3850d891b8",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "a3c7a265406cf47e38384abd3e5eeb92e35cba6b",
-    "reference": "4afff67a063e8f5ee651b7a0db461207780a52dd",
+    "imports": "e4c0f8658281dca49d85d9c609704311849dbf7c",
+    "reference": "44201d626eeb3475aee382e48fe0025ac9a682e3",
     "sources": "ce24f4e8bb9cebcb88e48426b487882cb3ad9f2d"
   },
   "project_revision": "tree-npc-fan-wiki-parity-r1",

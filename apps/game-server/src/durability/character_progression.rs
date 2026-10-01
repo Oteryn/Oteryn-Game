@@ -133,6 +133,8 @@ pub enum CharacterProgressionError {
     RespawnPending,
     /// The death intent's held blessings are not the durable held set.
     HeldBlessingsMismatch,
+    /// A build change does not start from the stored build (or stance, for a prune).
+    BuildStateMismatch,
     Calculation(ProgressionCalculationError),
     Unavailable(DurabilityError),
 }
@@ -165,6 +167,9 @@ impl std::fmt::Display for CharacterProgressionError {
             Self::RespawnPending => formatter.write_str("a Character respawn is still pending"),
             Self::HeldBlessingsMismatch => {
                 formatter.write_str("death intent blessings are not the held blessings")
+            }
+            Self::BuildStateMismatch => {
+                formatter.write_str("build change does not start from the stored build")
             }
             Self::Calculation(error) => {
                 write!(formatter, "progression calculation rejected: {error:?}")

@@ -40,7 +40,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 33567
+      "records": 34031
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -459,7 +459,10 @@
       "path": "content/items/definitions/items-33000-33499.json"
     },
     {
-      "path": "content/items/definitions/items-33500-33566.json"
+      "path": "content/items/definitions/items-33500-33999.json"
+    },
+    {
+      "path": "content/items/definitions/items-34000-34030.json"
     },
     {
       "path": "content/items/index.json"

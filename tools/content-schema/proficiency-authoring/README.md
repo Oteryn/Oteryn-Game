@@ -112,10 +112,11 @@ WorldProject v2 (PROF-CONTENT-1b). `content/world` stays unmodified.
 - **Threshold class:** `item_weapon_proficiency.py` applies the rule (D197, D198, D200) to each binding
   when content is built and writes it to `content/proficiencies/bindings.json`; the Item Authoring
   Schema CI drift-checks it (`--check`).
-- **Result:** 642 weapons bound: 461 standard, 146 knight, 35 crossbow.
+- **Result:** 664 weapons bound: 469 standard, 158 knight, 37 crossbow (642 before ITEM-ADD-1 added
+  the donor epoch-2 Items).
 - **Not bound:**
   - 1 weapon whose class is `unknown` (ink sword 51666);
-  - 23 client objects with no Item definition.
+  - 1 client object with no Item definition.
 
   Both are only counted (`excluded`), and they get no proficiency.
 
