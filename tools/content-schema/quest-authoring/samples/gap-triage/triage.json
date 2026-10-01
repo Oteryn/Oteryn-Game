@@ -64,15 +64,15 @@
   ]
  },
  "counts": {
-  "unresolved_lines": 2002,
+  "unresolved_lines": 2010,
   "unresolved_conditions": 1758,
   "blocked_children": 486,
   "reference_gaps": 1,
-  "total_unresolved_items": 4247,
+  "total_unresolved_items": 4255,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3635
+   "bespoke": 3643
   },
   "quests_triaged": 268,
   "quests_with_bespoke_work": 104,
@@ -1281,7 +1281,7 @@
    "counts": {
     "owner_pending": 24,
     "shared_mechanism": 7,
-    "bespoke": 128
+    "bespoke": 130
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1298,7 +1298,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:128"
+    "bespoke:130"
    ]
   },
   {
@@ -3002,7 +3002,7 @@
    "counts": {
     "owner_pending": 6,
     "shared_mechanism": 2,
-    "bespoke": 46
+    "bespoke": 51
    },
    "owners_needed": [
     "boss_cooldown",
@@ -3019,7 +3019,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:46"
+    "bespoke:51"
    ]
   },
   {
@@ -3330,7 +3330,7 @@
    "counts": {
     "owner_pending": 4,
     "shared_mechanism": 0,
-    "bespoke": 23
+    "bespoke": 24
    },
    "owners_needed": [
     "scheduler"
@@ -3338,7 +3338,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:23"
+    "bespoke:24"
    ]
   },
   {

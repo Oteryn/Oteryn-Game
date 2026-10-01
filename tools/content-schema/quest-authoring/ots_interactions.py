@@ -665,6 +665,87 @@ class Script:
             return (value['x'], value['y'], value['z'])
         return None
 
+    def finite_reward_lookup(self, expr, number, receiver):
+        """SOURCE-only finite UID selection; each primitive leaf is a separate guarded grant.
+
+        Never execute the selector or replace it with an unconditional bundle of rewards.
+        Unknown selectors retain the original opaque child through an otherwise branch.
+        """
+        match = re.fullmatch(r'(\w+)\[(\w+)\.uid\]', expr.strip())
+        if not match or self.roles.get(match.group(2)) != 'source':
+            return None
+        root, selector = match.groups()
+        if number not in self.line_scopes or any(p[0] == 'opaque' for p in self.line_scopes[number]):
+            return None
+        body = [self.lines[n - 1] for n in sorted(self.line_scopes)]
+        if not builtin_binding_is_pristine(body, selector) or not builtin_binding_is_pristine(body, receiver):
+            return None  # reassignment, shadowing, mutation or escaping source object
+        declarations = [n for n in unconditional_prefix(self.lines)
+                        if re.match(rf'\s*local\s+{re.escape(root)}\s*=\s*\{{', self.lines[n - 1])]
+        if len(declarations) != 1 or declarations[0] >= number:
+            return None
+        try:
+            text = '\n'.join(self.lines[declarations[0] - 1:])
+            parser = LiteralParser(text[text.index('{'):])
+            values = lua_tables.as_python(parser.table())
+        except (lua_tables.LuaError, IndexError, TypeError, ValueError):
+            return None
+        if (not isinstance(values, dict) or not values or len(values) > 128
+                or not all(type(k) is int and 0 < k <= 65535 and type(v) in (int, str)
+                           for k, v in values.items())):
+            return None
+        paths = scalar_leaf_paths(values, root) | {expr.strip()}
+        tokens = [t for t in lua_tables.tokenize('\n'.join(self.lines))
+                  if t[0] not in ('comment', 'lcomment', 'string', 'lstring')]
+        # The shared immutable-name proof rejects simple writes; also reject a
+        # leaf in the first/middle slot of a compound assignment LHS.
+        def after_path(index):
+            index += 1
+            while index < len(tokens):
+                if tokens[index][1] == '.' and index + 1 < len(tokens):
+                    index += 2
+                elif tokens[index][1] == '[':
+                    depth = 1
+                    index += 1
+                    while index < len(tokens) and depth:
+                        depth += (tokens[index][1] == '[') - (tokens[index][1] == ']')
+                        index += 1
+                else:
+                    break
+            return index
+        for i, token in enumerate(tokens):
+            if token[0] != 'name' or token[1] != root or i and tokens[i - 1][1] in ('.', ':'):
+                continue
+            end = after_path(i)
+            compound = end < len(tokens) and tokens[end][1] == ','
+            while end + 1 < len(tokens) and tokens[end][1] == ',' and tokens[end + 1][0] == 'name':
+                end = after_path(end + 1)
+            if compound and end < len(tokens) and tokens[end][1] == '=':
+                return None
+        dynamic_environment = any(t[0] == 'name' and t[1] in {
+            '_G', '_ENV', 'rawset', 'getfenv', 'setfenv', 'load', 'loadstring', 'loadfile', 'dofile', 'require', 'debug'
+        } for t in tokens)
+        if dynamic_environment:
+            return None
+        pristine_pairs = all(i + 1 < len(tokens) and tokens[i + 1][1] == '('
+                             and (i == 0 or tokens[i - 1][1] not in ('function', 'local', '.', ':'))
+                             for i, t in enumerate(tokens) if t[0] == 'name' and t[1] == 'pairs')
+        # pairs returns the original table as iterator state; only generic-for
+        # reads are allowed, never a captured iterator/state assignment.
+        generic_pairs = all(re.fullmatch(r'\s*for\s+\w+(?:\s*,\s*\w+)?\s+in\s+pairs\(\s*\w+\s*\)\s+do\s*', line)
+                            for line in self.code_lines if re.search(r'\bpairs\s*\(', line))
+        copies = {'pairs'} if pristine_pairs and generic_pairs else set()
+        if not static_name_is_immutable(self.lines, root, references=True,
+                                        scalar_paths=paths, copy_calls=copies):
+            return None
+        resolved = {}
+        for uid, value in values.items():
+            ident = value if type(value) is int else item_names(self.repo).get(value.lower())
+            if type(ident) is not int or ident <= 0:
+                return None
+            resolved[uid] = ident
+        return resolved
+
     def item_id(self, expr):
         value = self.literal(expr)
         if type(value) is int and value > 0:
@@ -985,8 +1066,21 @@ class Script:
             child = {'owner': 'Item', 'request': 'hand_out',
                      **({'item': ref('Item', f'{self.namespace}:item/{ident}'), 'count': count}
                         if ident and type(count) is int and count > 0 else {'value_source_line': number})}
-            found.append(child)
-            if 'item' in child and (alias := re.match(r'local\s+(\w+)\s*=', raw)):
+            if 'value_source_line' in child and ident:
+                child['item'] = ref('Item', f'{self.namespace}:item/{ident}')
+            if len(args) > 2:
+                self.unresolved.append({'line': number, 'reason': 'Item hand-out additional arguments outside the transcribed vocabulary'})
+            selection = (self.finite_reward_lookup(args[0], number, m.group(1))
+                         if args and len(args) <= 2 and type(count) is int and count > 0 and not in_loop else None)
+            if selection:
+                found.append({'branch': [
+                    {'when': {'object': {'role': 'source', 'field': 'unique_id', 'op': '==', 'value': uid}, 'negate': False},
+                     'then': [{'owner': 'Item', 'request': 'hand_out',
+                               'item': ref('Item', f'{self.namespace}:item/{item_id}'), 'count': count}]}
+                    for uid, item_id in sorted(selection.items())], 'otherwise': [child]})
+            else:
+                found.append(child)
+            if 'item' in child and 'count' in child and (alias := re.match(r'local\s+(\w+)\s*=', raw)):
                 self.containers[alias.group(1)] = child
                 self.container_scopes[alias.group(1)] = (number, self.line_scopes.get(number, ()))
         if lexical_search(r':addAchievement\(', raw):

@@ -18,12 +18,12 @@
     {
       "path": "tools/content-schema/quest-authoring/samples/interactions/interactions.json",
       "role": "interactions",
-      "sha256": "f6b9ea950ad9b7f7e0ed1fd0af7cdc7b6e818267a153a193a99e157ec2063eb1"
+      "sha256": "afed25fa9a436597b13f50ced1f84111b564872712bcebd85444275acd08732c"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/interactions/manifest.json",
       "role": "interactions_manifest",
-      "sha256": "e345d7aa587083fc008bb739fdb701b18d33901eb0b55fb47627c81e3fb9ba64"
+      "sha256": "230d1b635fb22b8572392cf79f1ff58a955f0859ef827e2c45d4e3a9b148f37b"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/progress.json",
@@ -38,7 +38,7 @@
     {
       "path": "tools/content-schema/quest-authoring/samples/catalogue/catalogue.json",
       "role": "wiki_catalogue",
-      "sha256": "d510d37119cc81242e344e0824e6b17372ad848162507673d7066250dcd42311"
+      "sha256": "eb0e47e9e16c45be450e613fc09b4a2c379507db8c51f0609893d8eddcf46a9f"
     }
   ],
   "schema": "OTERYN_SOURCE_TEXT_REGISTRY/v1",

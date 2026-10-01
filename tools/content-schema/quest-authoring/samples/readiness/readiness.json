@@ -1369,8 +1369,8 @@
    ],
    "interactions": 39,
    "data_gaps": {
-    "interactions_with_gaps": 34,
-    "unresolved_items": 141
+    "interactions_with_gaps": 35,
+    "unresolved_items": 143
    }
   },
   {
@@ -3173,7 +3173,7 @@
    "interactions": 16,
    "data_gaps": {
     "interactions_with_gaps": 16,
-    "unresolved_items": 49
+    "unresolved_items": 54
    }
   },
   {
@@ -3282,7 +3282,7 @@
    "interactions": 10,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 39
+    "unresolved_items": 40
    }
   },
   {
@@ -3541,7 +3541,7 @@
    "interactions": 6,
    "data_gaps": {
     "interactions_with_gaps": 5,
-    "unresolved_items": 23
+    "unresolved_items": 24
    }
   },
   {

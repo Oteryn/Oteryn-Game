@@ -7547,9 +7547,38 @@
               },
               "then": [
                 {
-                  "owner": "Item",
-                  "request": "hand_out",
-                  "value_source_line": 7
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 58104
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/8453",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "value_source_line": 7
+                    }
+                  ]
                 },
                 {
                   "owner": "Presentation",
@@ -37345,7 +37374,12 @@
                     {
                       "owner": "Item",
                       "request": "hand_out",
-                      "value_source_line": 9
+                      "value_source_line": 9,
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/23733",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
                     },
                     {
                       "owner": "Quest",
@@ -37388,7 +37422,12 @@
                     {
                       "owner": "Item",
                       "request": "hand_out",
-                      "value_source_line": 18
+                      "value_source_line": 18,
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/23731",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
                     },
                     {
                       "owner": "Quest",
@@ -37404,7 +37443,16 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 9,
+          "reason": "Item hand-out additional arguments outside the transcribed vocabulary"
+        },
+        {
+          "line": 18,
+          "reason": "Item hand-out additional arguments outside the transcribed vocabulary"
+        }
+      ]
     },
     {
       "identity": {
@@ -43761,9 +43809,38 @@
               },
               "then": [
                 {
-                  "owner": "Item",
-                  "request": "hand_out",
-                  "value_source_line": 7
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 58001
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/43862",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "value_source_line": 7
+                    }
+                  ]
                 },
                 {
                   "owner": "Presentation",
@@ -59630,9 +59707,245 @@
                   "transition": "canary:quest/no_rest_for_the_wicked_quest#the_doomforge:action_1"
                 },
                 {
-                  "owner": "Item",
-                  "request": "hand_out",
-                  "value_source_line": 19
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57237
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49520",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57238
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49522",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57239
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49523",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57240
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49524",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57241
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49525",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57242
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49526",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57243
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49527",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57244
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49530",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57245
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49528",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 57246
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/49529",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "value_source_line": 19
+                    }
+                  ]
                 },
                 {
                   "owner": "Presentation",
@@ -63311,9 +63624,38 @@
               },
               "then": [
                 {
-                  "owner": "Item",
-                  "request": "hand_out",
-                  "value_source_line": 7
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 58103
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/35562",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "value_source_line": 7
+                    }
+                  ]
                 },
                 {
                   "owner": "Presentation",
@@ -88334,6 +88676,10 @@
       "anchors": [],
       "unresolved": [
         {
+          "line": 49,
+          "reason": "Item hand-out additional arguments outside the transcribed vocabulary"
+        },
+        {
           "line": 57,
           "reason": "effect receiver not proven to be the acting player in this scope"
         },
@@ -88348,6 +88694,10 @@
         {
           "line": 62,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 67,
+          "reason": "Item hand-out additional arguments outside the transcribed vocabulary"
         }
       ]
     },
@@ -88639,12 +88989,24 @@
       "anchors": [],
       "unresolved": [
         {
+          "line": 102,
+          "reason": "Item hand-out additional arguments outside the transcribed vocabulary"
+        },
+        {
           "line": 103,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 108,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 113,
+          "reason": "Item hand-out additional arguments outside the transcribed vocabulary"
+        },
+        {
+          "line": 115,
+          "reason": "Item hand-out additional arguments outside the transcribed vocabulary"
         }
       ]
     },
@@ -94957,9 +95319,222 @@
                   "transition": "canary:quest/the_inquisition_quest#mission_7_the_shadow_nexus:action_2"
                 },
                 {
-                  "owner": "Item",
-                  "request": "hand_out",
-                  "value_source_line": 19
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1300
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8062",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1301
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8090",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1302
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8053",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1303
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8060",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1304
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8023",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1305
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8096",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1306
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8100",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1307
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8102",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 1308
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8026",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "value_source_line": 19
+                    }
+                  ]
                 },
                 {
                   "owner": "Presentation",
@@ -98737,9 +99312,61 @@
               },
               "then": [
                 {
-                  "owner": "Item",
-                  "request": "hand_out",
-                  "value_source_line": 23
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 47404
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/635",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "unique_id",
+                          "op": "==",
+                          "value": 47405
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/2822",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "value_source_line": 23
+                    }
+                  ]
                 },
                 {
                   "branch": [
@@ -113982,7 +114609,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 18,
+          "reason": "Item hand-out additional arguments outside the transcribed vocabulary"
+        }
+      ]
     },
     {
       "identity": {

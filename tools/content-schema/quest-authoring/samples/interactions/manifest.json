@@ -14,7 +14,7 @@
       "Ability": 211,
       "Achievement": 27,
       "Experience": 9,
-      "Item": 343,
+      "Item": 367,
       "Mount": 2,
       "Movement": 801,
       "Outfit": 10,
@@ -38,12 +38,12 @@
     },
     "overlay_operations_with_revert_after": 0,
     "quest_children_naming_a_transition": 205,
-    "unresolved_lines": 2002,
+    "unresolved_lines": 2010,
     "unresolved_conditions": 1758,
     "by_status": {
-      "conflict": 1,
-      "mapped": 247,
-      "unresolved_semantics": 973
+      "conflict": 2,
+      "mapped": 245,
+      "unresolved_semantics": 974
     }
   },
   "undeclared_progress_tracks": [],
@@ -5903,7 +5903,7 @@
     },
     {
       "destination": "canary:interaction/forgotten_knowledge/actions_old_desk",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -16072,8 +16072,8 @@
     },
     {
       "destination": "canary:interaction/the_inquisition_quest/actions_rewards",
-      "status": "mapped",
-      "resolution": "identical in both servers",
+      "status": "conflict",
+      "resolution": "the servers differ; the Canary transcription is kept",
       "sources": [
         {
           "source": "canary",
@@ -16086,6 +16086,671 @@
           "path": "data-global/scripts/quests/the_inquisition_quest/actions_rewards.lua",
           "callback_line": 15,
           "blob_sha1": "b65defb2ff8848b3e91b2628f3d9ad1a6ab3b4fe"
+        }
+      ],
+      "conflict_alternatives": [
+        {
+          "source": "canary",
+          "interaction": {
+            "identity": {
+              "key": "canary:interaction/the_inquisition_quest/actions_rewards",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "source": {
+              "edge": "USE",
+              "callback": "onUse",
+              "target_registrations": [
+                "uid(uniqueId)"
+              ]
+            },
+            "rules": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "quest_stage": {
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward",
+                        "op": "<",
+                        "value": 1
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward",
+                        "to": 1
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+                        "to": 25
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/mission07",
+                        "to": 5,
+                        "transition": "canary:quest/the_inquisition_quest#mission_7_the_shadow_nexus:action_2"
+                      },
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1300
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8062",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1301
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8090",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1302
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8053",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1303
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8060",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1304
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8023",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1305
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8096",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1306
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8100",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1307
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8102",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1308
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8026",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "value_source_line": 19
+                          }
+                        ]
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 20
+                      },
+                      {
+                        "owner": "Achievement",
+                        "request": "grant",
+                        "achievement": {
+                          "family": "Achievement",
+                          "key": "canary:achievement/master_of_the_nexus",
+                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                        }
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 288,
+                        "addon": 2
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 288,
+                        "addon": 1
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 289,
+                        "addon": 1
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 289,
+                        "addon": 2
+                      }
+                    ]
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "owner": "Presentation",
+                    "effect": "message",
+                    "authoritative": false,
+                    "source_line": 27
+                  }
+                ]
+              }
+            ],
+            "anchors": [],
+            "unresolved": []
+          }
+        },
+        {
+          "source": "crystalserver",
+          "interaction": {
+            "identity": {
+              "key": "crystalserver:interaction/the_inquisition_quest/actions_rewards",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "source": {
+              "edge": "USE",
+              "callback": "onUse",
+              "target_registrations": [
+                "uid(uniqueId)"
+              ]
+            },
+            "rules": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "quest_stage": {
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward",
+                        "op": "<",
+                        "value": 1
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward",
+                        "to": 1
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+                        "to": 25
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/mission07",
+                        "to": 5,
+                        "transition": "canary:quest/the_inquisition_quest#mission_7_the_shadow_nexus:action_2"
+                      },
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1300
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8062",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1301
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8090",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1302
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8053",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1303
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8060",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1304
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8023",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1305
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8096",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1306
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8100",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1307
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8102",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1308
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8026",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1309
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/50261",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "value_source_line": 20
+                          }
+                        ]
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 21
+                      },
+                      {
+                        "owner": "Achievement",
+                        "request": "grant",
+                        "achievement": {
+                          "family": "Achievement",
+                          "key": "crystalserver:achievement/master_of_the_nexus",
+                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                        }
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 288,
+                        "addon": 2
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 288,
+                        "addon": 1
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 289,
+                        "addon": 1
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 289,
+                        "addon": 2
+                      }
+                    ]
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "owner": "Presentation",
+                    "effect": "message",
+                    "authoritative": false,
+                    "source_line": 28
+                  }
+                ]
+              }
+            ],
+            "anchors": [],
+            "unresolved": []
+          }
         }
       ]
     },

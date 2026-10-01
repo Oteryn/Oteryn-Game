@@ -204,3 +204,12 @@ lines; incomplete or unproven predicates remain UNKNOWN. The exact unshadowed
 `Tile(...):getItemById(literal):remove()` chain retains SOURCE REMOVE only when
 its coordinates and finite loop bounds are proven. These rules do not establish
 Native placement identity or playable quest completeness.
+
+### Finite SOURCE reward selections
+
+A proven immutable literal table selected by item UID retains mutually exclusive
+UID guards and an unresolved fallback for unlisted selectors. Aliases, mutation,
+escapes or unproven metaprogramming keep selection opaque. Additional addItem
+arguments retain literal Item evidence with explicit unsupported-argument holds;
+raw quantities are not interpreted as charges. Donor alternatives remain conflict
+evidence, including the extra Crystal Inquisition reward.
