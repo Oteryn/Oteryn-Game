@@ -1,0 +1,2599 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_WHEEL_AUTHORING_CANDIDATE/v1"
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "release": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "initial"
+            },
+            "predecessor": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "kind",
+            "predecessor"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "value_only",
+                "wheel_reset"
+              ]
+            },
+            "predecessor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "predecessor"
+          ]
+        }
+      ]
+    },
+    "runtime_admitted": {
+      "const": false
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      },
+      "minItems": 1
+    },
+    "input_digests": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source-wheel-reference.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source-graph.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source-parameters.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "source-wheel-reference.json",
+        "source-graph.json",
+        "source-parameters.json"
+      ]
+    },
+    "topology": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/topology"
+      },
+      "minItems": 36,
+      "maxItems": 36
+    },
+    "vocations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "knight": {
+          "$ref": "#/$defs/vocation"
+        },
+        "paladin": {
+          "$ref": "#/$defs/vocation"
+        },
+        "sorcerer": {
+          "$ref": "#/$defs/vocation"
+        },
+        "druid": {
+          "$ref": "#/$defs/vocation"
+        },
+        "monk": {
+          "$ref": "#/$defs/vocation"
+        }
+      },
+      "required": [
+        "knight",
+        "paladin",
+        "sorcerer",
+        "druid",
+        "monk"
+      ]
+    },
+    "gems": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "excluded_empty_basic_mod_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 0,
+          "maxItems": 255,
+          "uniqueItems": true
+        },
+        "qualities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/gem_quality"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "basic_mods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/basic_mod"
+          },
+          "minItems": 1,
+          "maxItems": 255
+        },
+        "supreme_mods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/supreme_mod"
+          },
+          "minItems": 1,
+          "maxItems": 255
+        },
+        "grade_costs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/grade_cost"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "atelier": {
+          "$ref": "#/$defs/atelier"
+        },
+        "reference_corrections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/correction"
+          },
+          "minItems": 0
+        },
+        "initial_gems": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "count": {
+              "const": 8
+            },
+            "composition": {
+              "const": "one_lesser_and_one_regular_per_domain"
+            }
+          },
+          "required": [
+            "count",
+            "composition"
+          ]
+        },
+        "parameter_state": {
+          "const": "REFERENCE_CATALOGUE_NOT_RUNTIME_ADMITTED"
+        }
+      },
+      "required": [
+        "excluded_empty_basic_mod_ids",
+        "qualities",
+        "basic_mods",
+        "supreme_mods",
+        "grade_costs",
+        "atelier",
+        "reference_corrections",
+        "initial_gems",
+        "parameter_state"
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "planner_unlock_states_checked": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "planner_unlock_mismatches": {
+          "const": 0
+        },
+        "legal_allocation_snapshots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "live_website_verified": {
+          "const": false
+        },
+        "wiki_verified": {
+          "const": false
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "planner_unlock_states_checked",
+        "planner_unlock_mismatches",
+        "legal_allocation_snapshots",
+        "live_website_verified",
+        "wiki_verified",
+        "blockers"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "revision",
+    "release",
+    "runtime_admitted",
+    "sources",
+    "input_digests",
+    "topology",
+    "vocations",
+    "gems",
+    "verification"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wheel of Destiny authoring candidate v1",
+  "$defs": {
+    "icon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sprite": {
+          "enum": [
+            "dedication",
+            "conviction",
+            "revelation",
+            "basic_mod",
+            "supreme_mod"
+          ]
+        },
+        "source_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "verification": {
+          "const": "SOURCE_MAPPING_ONLY"
+        },
+        "layout": {
+          "const": "horizontal_square_cells"
+        },
+        "asset_url": {
+          "type": "string",
+          "pattern": "^https://static\\.tibia\\.com/images/"
+        }
+      },
+      "required": [
+        "sprite",
+        "source_index",
+        "verification",
+        "layout",
+        "asset_url"
+      ]
+    },
+    "conviction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "category": {
+          "enum": [
+            "unique",
+            "skill_bonus",
+            "leech",
+            "augmentation",
+            "vessel_resonance",
+            "other"
+          ]
+        },
+        "source_info_id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "native_value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "unit": {
+          "enum": [
+            "flat",
+            "percent_points",
+            "native",
+            "stages"
+          ]
+        },
+        "reference_description": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "augment_stages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/augment_stage"
+          },
+          "minItems": 0,
+          "maxItems": 2
+        },
+        "icon": {
+          "$ref": "#/$defs/icon"
+        }
+      },
+      "required": [
+        "key",
+        "name",
+        "category",
+        "source_info_id",
+        "native_value",
+        "unit",
+        "reference_description",
+        "augment_stages",
+        "icon"
+      ]
+    },
+    "dedication": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stat": {
+          "enum": [
+            "max_health",
+            "max_mana",
+            "capacity",
+            "mitigation_multiplier"
+          ]
+        },
+        "value_per_point": {
+          "type": "number",
+          "minimum": 0
+        },
+        "unit": {
+          "enum": [
+            "flat",
+            "percent_points"
+          ]
+        },
+        "stacking": {
+          "enum": [
+            "add_to_maximum",
+            "increase_base_mitigation_multiplicatively"
+          ]
+        }
+      },
+      "required": [
+        "stat",
+        "value_per_point",
+        "unit",
+        "stacking"
+      ]
+    },
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state_slot": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36
+        },
+        "dedication": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dedication"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        },
+        "dedication_icon": {
+          "$ref": "#/$defs/icon"
+        },
+        "conviction": {
+          "$ref": "#/$defs/conviction"
+        }
+      },
+      "required": [
+        "state_slot",
+        "dedication",
+        "dedication_icon",
+        "conviction"
+      ]
+    },
+    "revelation_stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "minimum_domain_points": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "reference_description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "numeric_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/revelation_effect"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "stage",
+        "minimum_domain_points",
+        "reference_description",
+        "numeric_effects"
+      ]
+    },
+    "revelation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "enum": [
+            "green",
+            "red",
+            "blue",
+            "purple"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "source_info_id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "stage_zero_description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/revelation_stage"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "parameter_state": {
+          "const": "REFERENCE_PARAMETERS_CAPTURED"
+        },
+        "icon": {
+          "$ref": "#/$defs/icon"
+        }
+      },
+      "required": [
+        "domain",
+        "key",
+        "name",
+        "source_info_id",
+        "stage_zero_description",
+        "stages",
+        "parameter_state",
+        "icon"
+      ]
+    },
+    "vocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gem_family": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "family": {
+              "enum": [
+                "guardian",
+                "marksman",
+                "sage",
+                "mystic",
+                "spiritualist"
+              ]
+            },
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "lesser": {
+                  "type": "string",
+                  "pattern": "^oteryn:item.tibia.i[0-9]+$"
+                },
+                "regular": {
+                  "type": "string",
+                  "pattern": "^oteryn:item.tibia.i[0-9]+$"
+                },
+                "greater": {
+                  "type": "string",
+                  "pattern": "^oteryn:item.tibia.i[0-9]+$"
+                }
+              },
+              "required": [
+                "lesser",
+                "regular",
+                "greater"
+              ]
+            }
+          },
+          "required": [
+            "family",
+            "items"
+          ]
+        },
+        "resonance_slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "green": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 36
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": true
+            },
+            "red": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 36
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": true
+            },
+            "blue": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 36
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": true
+            },
+            "purple": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 36
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "green",
+            "red",
+            "blue",
+            "purple"
+          ]
+        },
+        "slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slot"
+          },
+          "minItems": 36,
+          "maxItems": 36
+        },
+        "revelations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/revelation"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "gem_names": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "lesser": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            },
+            "regular": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            },
+            "greater": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "lesser",
+            "regular",
+            "greater"
+          ]
+        },
+        "basic_mods_position_1": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 1,
+          "maxItems": 255,
+          "uniqueItems": true
+        },
+        "basic_mods_position_2": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 1,
+          "maxItems": 255,
+          "uniqueItems": true
+        },
+        "supreme_mods": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 1,
+          "maxItems": 255,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "gem_family",
+        "resonance_slots",
+        "slots",
+        "revelations",
+        "gem_names",
+        "basic_mods_position_1",
+        "basic_mods_position_2",
+        "supreme_mods"
+      ]
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state_slot": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36
+        },
+        "domain": {
+          "enum": [
+            "green",
+            "red",
+            "blue",
+            "purple"
+          ]
+        },
+        "capacity": {
+          "enum": [
+            50,
+            75,
+            100,
+            150,
+            200
+          ]
+        },
+        "minimum_available_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4000
+        },
+        "unlock_from_any_full_slot": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 36
+          },
+          "minItems": 0,
+          "maxItems": 8,
+          "uniqueItems": true
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "canary_enum": {
+              "type": "string",
+              "pattern": "^SLOT_(GREEN|RED|BLUE|PURPLE)_[A-Z0-9_]+$"
+            },
+            "canary_slot_id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 36
+            },
+            "tibiapal_tile": {
+              "type": "string",
+              "pattern": "^Q(TL|TR|BL|BR)[0-8]$"
+            }
+          },
+          "required": [
+            "canary_enum",
+            "canary_slot_id",
+            "tibiapal_tile"
+          ]
+        }
+      },
+      "required": [
+        "state_slot",
+        "domain",
+        "capacity",
+        "minimum_available_points",
+        "unlock_from_any_full_slot",
+        "source"
+      ]
+    },
+    "basic_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_effect_id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "unit": {
+          "enum": [
+            "flat",
+            "percent_points"
+          ]
+        },
+        "values_by_vocation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "knight": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "paladin": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "sorcerer": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "druid": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "monk": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            }
+          },
+          "required": [
+            "knight",
+            "paladin",
+            "sorcerer",
+            "druid",
+            "monk"
+          ]
+        }
+      },
+      "required": [
+        "source_effect_id",
+        "name",
+        "unit",
+        "values_by_vocation"
+      ]
+    },
+    "basic_mod": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/basic_effect"
+          },
+          "minItems": 1,
+          "maxItems": 3
+        },
+        "icon": {
+          "$ref": "#/$defs/icon"
+        }
+      },
+      "required": [
+        "source_id",
+        "effects",
+        "icon"
+      ]
+    },
+    "supreme_mod": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "summary_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "grades": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mod_grade"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "reference_summary": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "icon": {
+          "$ref": "#/$defs/icon"
+        }
+      },
+      "required": [
+        "source_id",
+        "name",
+        "summary_name",
+        "format",
+        "grades",
+        "reference_summary",
+        "icon"
+      ]
+    },
+    "gem_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quality": {
+          "enum": [
+            "lesser",
+            "regular",
+            "greater"
+          ]
+        },
+        "basic_mod_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "supreme_mod_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "matching_vessel_stage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "matching_damage_healing_bonus": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        }
+      },
+      "required": [
+        "quality",
+        "basic_mod_count",
+        "supreme_mod_count",
+        "matching_vessel_stage",
+        "matching_damage_healing_bonus"
+      ]
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gold": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fragments": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "gold",
+        "fragments"
+      ]
+    },
+    "grade_cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target_grade": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "basic": {
+          "$ref": "#/$defs/cost"
+        },
+        "supreme": {
+          "$ref": "#/$defs/cost"
+        }
+      },
+      "required": [
+        "target_grade",
+        "basic",
+        "supreme"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 128
+        },
+        "repository": {
+          "type": "string",
+          "pattern": "^https://github.com/"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      },
+      "required": [
+        "id",
+        "repository",
+        "commit"
+      ]
+    },
+    "revelation_effect": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "restored_max_health"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "restored_max_mana"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "exclusive_overkill_limit"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "spell_cooldown_reduction"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "battle_sign_cooldown"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "flat_damage_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "flat"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "flat_healing_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "flat"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "cooldown"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "additional_targets"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "targets"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "low_health_damage_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "exclusive_target_health_limit"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "missing_health_step"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "damage_reduction_per_step"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "damage_bonus_per_step"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "shield_defensive_multiplier"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "multiplier"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "two_handed_offensive_multiplier"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "multiplier"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "duration"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "damage_reduction"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "critical_hit_chance"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "critical_extra_damage"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "explosion_delay"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "base_damage_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "damage_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "flanking_damage"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "damage_bonus_per_central_target"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "central_target_cap"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "targets"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "other_spell_cooldown_reduction_per_target"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "other_spell_cooldown_reduction_cap"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "mastery_flames_fire_damage_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "mastery_thunder_critical_chance"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "mastery_decay_critical_extra_damage"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "healing_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "exclusive_low_target_health_limit"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "low_health_healing_multiplier"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "multiplier"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "shared_cooldown"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "high_health_damage_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "exclusive_minimum_target_health"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "full_harmony_repeat_delay"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "full_harmony_repeat_damage"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "harmony_base_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "autoattack_mantra_damage"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        }
+      ]
+    },
+    "supreme_effect": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "dodge"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "critical_extra_damage"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "life_leech"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "mana_leech"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "base_damage_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "base_healing_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "cooldown_reduction"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "momentum_chance"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "revelation_mastery_points"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "points"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit",
+            "target"
+          ]
+        }
+      ]
+    },
+    "atelier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "clockwise_domains": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "green",
+              "red",
+              "blue",
+              "purple"
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true
+        },
+        "basic_pair_compatibility": {
+          "const": "different_source_mod_ids"
+        },
+        "effective_grade_order": {
+          "const": [
+            "basic_1",
+            "basic_2",
+            "supreme"
+          ]
+        },
+        "effective_grade_rule": {
+          "const": "minimum_of_self_and_present_preceding_mod_grades"
+        },
+        "grade_iv_promotion_points_per_mod_type": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fees": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "reveal": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "lesser": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "regular": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "greater": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "lesser",
+                "regular",
+                "greater"
+              ]
+            },
+            "switch_domain": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "lesser": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "regular": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "greater": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "lesser",
+                "regular",
+                "greater"
+              ]
+            }
+          },
+          "required": [
+            "reveal",
+            "switch_domain"
+          ]
+        },
+        "fragment_items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "basic": {
+              "type": "string",
+              "pattern": "^oteryn:item.tibia.i[0-9]+$"
+            },
+            "supreme": {
+              "type": "string",
+              "pattern": "^oteryn:item.tibia.i[0-9]+$"
+            }
+          },
+          "required": [
+            "basic",
+            "supreme"
+          ]
+        },
+        "fragment_yields": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "lesser": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "fragment": {
+                  "enum": [
+                    "basic",
+                    "supreme"
+                  ]
+                },
+                "unrevealed": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "revealed": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "required": [
+                "fragment",
+                "unrevealed",
+                "revealed"
+              ]
+            },
+            "regular": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "fragment": {
+                  "enum": [
+                    "basic",
+                    "supreme"
+                  ]
+                },
+                "unrevealed": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "revealed": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "required": [
+                "fragment",
+                "unrevealed",
+                "revealed"
+              ]
+            },
+            "greater": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "fragment": {
+                  "enum": [
+                    "basic",
+                    "supreme"
+                  ]
+                },
+                "unrevealed": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "revealed": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "required": [
+                "fragment",
+                "unrevealed",
+                "revealed"
+              ]
+            }
+          },
+          "required": [
+            "lesser",
+            "regular",
+            "greater"
+          ]
+        },
+        "yield_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "fee_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "grade_scope": {
+          "const": "character_mod_type"
+        },
+        "resonance_activation_order": {
+          "const": [
+            "basic_1",
+            "basic_2",
+            "supreme"
+          ]
+        }
+      },
+      "required": [
+        "clockwise_domains",
+        "basic_pair_compatibility",
+        "effective_grade_order",
+        "effective_grade_rule",
+        "grade_iv_promotion_points_per_mod_type",
+        "fees",
+        "fragment_items",
+        "fragment_yields",
+        "yield_evidence",
+        "fee_evidence",
+        "grade_scope",
+        "resonance_activation_order"
+      ]
+    },
+    "correction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 128
+        },
+        "parameter": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 128
+        },
+        "stage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "planner_value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "selected_value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "key",
+        "parameter",
+        "stage",
+        "planner_value",
+        "selected_value",
+        "evidence"
+      ]
+    },
+    "augment_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "base_damage_bonus",
+            "base_healing_bonus",
+            "cooldown_reduction",
+            "secondary_cooldown_reduction",
+            "mana_cost_reduction",
+            "life_leech",
+            "critical_hit_chance",
+            "critical_extra_damage",
+            "additional_targets",
+            "range_increase",
+            "next_attack_damage_reduction",
+            "duration_increase"
+          ]
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "unit": {
+          "enum": [
+            "percent_points",
+            "seconds",
+            "mana",
+            "targets",
+            "tiles"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "unit"
+      ]
+    },
+    "augment_stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "reference_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "numeric_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/augment_effect"
+          },
+          "minItems": 0
+        },
+        "unresolved_parameters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 0,
+          "maxItems": 0,
+          "uniqueItems": true
+        },
+        "area_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            null,
+            "five_squares_front_row",
+            "AREA_WAVE7",
+            "radius_4"
+          ]
+        }
+      },
+      "required": [
+        "stage",
+        "reference_text",
+        "numeric_effects",
+        "unresolved_parameters",
+        "area_reference"
+      ]
+    },
+    "mod_grade": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "grade": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "reference_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "numeric_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/supreme_effect"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "grade",
+        "reference_text",
+        "numeric_effects"
+      ]
+    }
+  }
+}

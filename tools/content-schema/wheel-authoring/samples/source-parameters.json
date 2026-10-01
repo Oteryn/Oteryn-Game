@@ -1,0 +1,1075 @@
+{
+  "revelations": {
+    "gift_of_life": [
+      {
+        "kind": "restored_max_health",
+        "values": [
+          20,
+          25,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "restored_max_mana",
+        "values": [
+          20,
+          25,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "exclusive_overkill_limit",
+        "values": [
+          20,
+          25,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "spell_cooldown_reduction",
+        "values": [
+          60,
+          60,
+          60
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "battle_sign_cooldown",
+        "values": [
+          108000,
+          72000,
+          36000
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "executioner_s_throw": [
+      {
+        "kind": "cooldown",
+        "values": [
+          18,
+          14,
+          10
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "additional_targets",
+        "values": [
+          2,
+          3,
+          4
+        ],
+        "unit": "targets"
+      },
+      {
+        "kind": "low_health_damage_bonus",
+        "values": [
+          100,
+          125,
+          150
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "exclusive_target_health_limit",
+        "values": [
+          30,
+          30,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "combat_mastery": [
+      {
+        "kind": "missing_health_step",
+        "values": [
+          14,
+          12,
+          10
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "damage_reduction_per_step",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "damage_bonus_per_step",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "shield_defensive_multiplier",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "unit": "multiplier"
+      },
+      {
+        "kind": "two_handed_offensive_multiplier",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "unit": "multiplier"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "avatar_of_steel": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "avatar_of_light": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "avatar_of_storm": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "avatar_of_nature": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "avatar_of_balance": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "divine_grenade": [
+      {
+        "kind": "cooldown",
+        "values": [
+          26,
+          20,
+          14
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "explosion_delay",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "base_damage_bonus",
+        "values": [
+          0,
+          16,
+          32
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "divine_empowerment": [
+      {
+        "kind": "cooldown",
+        "values": [
+          32,
+          28,
+          24
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "duration",
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_bonus",
+        "values": [
+          8,
+          10,
+          12
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "beam_mastery": [
+      {
+        "kind": "flanking_damage",
+        "values": [
+          25,
+          40,
+          70
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "damage_bonus_per_central_target",
+        "values": [
+          10,
+          12,
+          14
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "central_target_cap",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "unit": "targets"
+      },
+      {
+        "kind": "other_spell_cooldown_reduction_per_target",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "other_spell_cooldown_reduction_cap",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "lord_of_destruction": [
+      {
+        "kind": "mastery_flames_fire_damage_bonus",
+        "values": [
+          2,
+          3,
+          4
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "mastery_thunder_critical_chance",
+        "values": [
+          2,
+          3,
+          4
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "mastery_decay_critical_extra_damage",
+        "values": [
+          15,
+          22.5,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "blessing_of_the_grove": [
+      {
+        "kind": "exclusive_target_health_limit",
+        "values": [
+          60,
+          60,
+          60
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "healing_bonus",
+        "values": [
+          5,
+          7.5,
+          10
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "exclusive_low_target_health_limit",
+        "values": [
+          30,
+          30,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "low_health_healing_multiplier",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "unit": "multiplier"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "twin_bursts": [
+      {
+        "kind": "shared_cooldown",
+        "values": [
+          22,
+          18,
+          14
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "high_health_damage_bonus",
+        "values": [
+          20,
+          40,
+          60
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "exclusive_minimum_target_health",
+        "values": [
+          60,
+          60,
+          60
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "spiritual_outburst": [
+      {
+        "kind": "cooldown",
+        "values": [
+          24,
+          20,
+          16
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "additional_targets",
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "unit": "targets"
+      },
+      {
+        "kind": "full_harmony_repeat_delay",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "full_harmony_repeat_damage",
+        "values": [
+          37.5,
+          50,
+          62.5
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "ascetic": [
+      {
+        "kind": "harmony_base_bonus",
+        "values": [
+          1,
+          2,
+          3
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "autoattack_mantra_damage",
+        "values": [
+          100,
+          200,
+          300
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ]
+  },
+  "corrections": [
+    {
+      "key": "lord_of_destruction",
+      "parameter": "mastery_decay_critical_extra_damage",
+      "stage": 2,
+      "planner_value": 25.5,
+      "selected_value": 22.5,
+      "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text."
+    }
+  ],
+  "augment_parameters": {
+    "augmented_divine_dazzle": {
+      "stage": 2,
+      "kind": "duration_increase",
+      "value": 4,
+      "unit": "seconds"
+    }
+  },
+  "area_references": {
+    "augmented_front_sweep": {
+      "stage": 2,
+      "reference": "five_squares_front_row",
+      "evidence": "spell-authoring/wheel-augments.json official:8833"
+    },
+    "augmented_energy_wave": {
+      "stage": 1,
+      "reference": "AREA_WAVE7",
+      "evidence": "native behaviours appendix A.1"
+    },
+    "augmented_strong_ice_wave": {
+      "stage": 2,
+      "reference": "AREA_WAVE7",
+      "evidence": "native behaviours appendix A.1"
+    },
+    "augmented_mass_healing": {
+      "stage": 2,
+      "reference": "radius_4",
+      "evidence": "native behaviours appendix A.1"
+    }
+  },
+  "gems": {
+    "clockwise_domains": [
+      "green",
+      "red",
+      "purple",
+      "blue"
+    ],
+    "basic_pair_compatibility": "different_source_mod_ids",
+    "effective_grade_order": [
+      "basic_1",
+      "basic_2",
+      "supreme"
+    ],
+    "effective_grade_rule": "minimum_of_self_and_present_preceding_mod_grades",
+    "grade_iv_promotion_points_per_mod_type": 1,
+    "fees": {
+      "reveal": {
+        "lesser": 125000,
+        "regular": 1000000,
+        "greater": 6000000
+      },
+      "switch_domain": {
+        "lesser": 125000,
+        "regular": 250000,
+        "greater": 500000
+      }
+    },
+    "fragment_items": {
+      "basic": "oteryn:item.tibia.i46625",
+      "supreme": "oteryn:item.tibia.i46626"
+    },
+    "fragment_yields": {
+      "lesser": {
+        "fragment": "basic",
+        "unrevealed": [
+          1,
+          2
+        ],
+        "revealed": [
+          1,
+          3
+        ]
+      },
+      "regular": {
+        "fragment": "basic",
+        "unrevealed": [
+          2,
+          4
+        ],
+        "revealed": [
+          2,
+          5
+        ]
+      },
+      "greater": {
+        "fragment": "supreme",
+        "unrevealed": [
+          1,
+          2
+        ],
+        "revealed": [
+          1,
+          3
+        ]
+      }
+    },
+    "yield_evidence": "CIPSOFT_OFFICIAL: docs/reference/tibia-manual/characters.md; overrides conflicting OTS yields",
+    "fee_evidence": "OTS_HYPOTHESIS_ONLY: pinned Canary config.lua.dist; accepted as candidate values in WHEEL-GEM0 section 2",
+    "grade_scope": "character_mod_type",
+    "resonance_activation_order": [
+      "basic_1",
+      "basic_2",
+      "supreme"
+    ]
+  },
+  "gem_families": {
+    "knight": {
+      "family": "guardian",
+      "items": {
+        "lesser": "oteryn:item.tibia.i44602",
+        "regular": "oteryn:item.tibia.i44603",
+        "greater": "oteryn:item.tibia.i44604"
+      }
+    },
+    "paladin": {
+      "family": "marksman",
+      "items": {
+        "lesser": "oteryn:item.tibia.i44605",
+        "regular": "oteryn:item.tibia.i44606",
+        "greater": "oteryn:item.tibia.i44607"
+      }
+    },
+    "sorcerer": {
+      "family": "sage",
+      "items": {
+        "lesser": "oteryn:item.tibia.i44608",
+        "regular": "oteryn:item.tibia.i44609",
+        "greater": "oteryn:item.tibia.i44610"
+      }
+    },
+    "druid": {
+      "family": "mystic",
+      "items": {
+        "lesser": "oteryn:item.tibia.i44611",
+        "regular": "oteryn:item.tibia.i44612",
+        "greater": "oteryn:item.tibia.i44613"
+      }
+    },
+    "monk": {
+      "family": "spiritualist",
+      "items": {
+        "lesser": "oteryn:item.tibia.i49371",
+        "regular": "oteryn:item.tibia.i49372",
+        "greater": "oteryn:item.tibia.i49373"
+      }
+    }
+  }
+}
