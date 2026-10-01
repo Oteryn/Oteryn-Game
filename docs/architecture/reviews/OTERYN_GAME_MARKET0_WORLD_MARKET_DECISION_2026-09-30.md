@@ -106,6 +106,11 @@ depot, escrow or Inbox. Its coins stay on Platform: a coin sell offer claims a P
 fills move held coins by SETTLE instructions. The Market fee applies unchanged; the Premium gate
 of §4 does not apply to coin offers (Global).
 
+**Amendment (pending on acceptance of IMBUE-FORGE-0;
+`reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md` §13).**
+The default state also means item tier 0 and no imbuement. An imbued instance is never a ware. A
+tiered instance is refused until MARKET-TIER-1 keys a ware by (definition, tier), as Global does.
+
 ### 3.2 Numbers
 
 - `amount` 1 to 64,000 (`MARKET0-RL-02`); `piece_price` 1 to 999,999,999,999; `total =

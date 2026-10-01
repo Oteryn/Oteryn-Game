@@ -1,0 +1,124 @@
+# OTV2-20260930-imbue-forge0
+
+```yaml
+task_id: OTV2-20260930-imbue-forge0
+title: "IMBUE-FORGE-0 imbuements and the Exaltation Forge"
+mode: CONTRACT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/arch-imbue-forge-0
+pr: 1415
+base_sha: a6a054e6
+head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
+final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
+final_head_frozen_at: null
+owner: claude-code-session-01KbqAgmFfAYDSKHKkFmWKWW (Sol Supervising Architect)
+created_at: 2026-09-30
+updated_at: 2026-09-30
+execution_policy: continuous_progress
+owned_paths:
+  - docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md
+  - docs/agents/tasks/archive/OTV2-20260930-imbue-forge0.md
+  - docs/architecture/reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md
+  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md
+public_contracts: []
+depends_on: []
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Outcome
+
+IMBUE-FORGE-0 decides imbuements and the Exaltation Forge at full Global parity (owner direction,
+2026-09-30).
+
+- **Imbuing:** shrine USE under `IMBUE_V1`; 24 types × 3 tiers; up to 3 slots, one per category;
+  always succeeds, no protection charm (ruling R2); materials burned, fee burned (I1 a).
+- **Imbuement state:** an item-state row per (ItemInstance, slot), not Character state; time
+  ticks while equipped and in fight outside a protection zone (non-aggressive types: while
+  equipped); exact runtime counter checkpointed every 60 s of ticking and at every boundary, so a
+  node crash returns at most 60 s (ruling R1); audited expiry; effects via GAME-ABILITY-01 stages.
+- **Forge:** item tier as an item-state row (`PRESERVE_INSTANCE`); fusion, convergence fusion,
+  transfer, convergence transfer and conversions with Global outcomes, costs spent on failure,
+  server-seeded rolls stored in the receipt; closed `ForgeCause`.
+- **Resources:** forge dust as a per-Character non-item asset with a ledger and a limit (100-225);
+  slivers and exalted cores as items; dust from influenced and fiendish kills and sliver loot
+  (I2 a).
+- **Market:** default state excludes tier and imbuements; imbued items never listed; tiered wares
+  wait for MARKET-TIER-1.
+- **Owner questions I1** (fees, D178) and **I2** (value sources, D208) are answered a)
+  (2026-09-30).
+
+No code, migration or content change is made.
+
+## Architecture and source of truth
+
+- `PROVEN`: DUR-03 §14-§18, §39; the composition decision; the gold fee decision; BANK-0,
+  BANK-FEE-0, MARKET-0, NPC-0, ITEM-USE-0, ATTACK-0, CHARM-0 (repository texts).
+- `DERIVED`: the Tibia manual (`characters.md` §5.1.8, `interface.md`, `world.md`); Canary
+  `04b83b51` as `OTS_HYPOTHESIS_ONLY`.
+
+## High-risk authority/recovery qualification
+
+`NOT_APPLICABLE`: docs only. IMBUE-1, FORGE-1 and MARKET-TIER-1 need persistence and economy
+review; IMBUE-RT-1, FORGE-CREATURE-1 and TIER-EFFECT-1 combat review; the wire children protocol
+review.
+
+## Acceptance criteria
+
+- [ ] Decision on an exact frozen head with passing validators.
+- [ ] Independent exact-head review (persistence, economy, combat, protocol).
+- [ ] Protected Merge Queue integration.
+- [x] Owner answers to I1 and I2 recorded on #162 (2026-09-30).
+
+## Excluded scope
+
+- Code, migrations and content; the Stash, the house shrine, Store cores, the Soul Pit, Find
+  Fiend.
+
+## Validation
+
+- `python3 tools/agents/validate_governance.py`: PASS on the draft authoring tree.
+- `python3 tools/repository/validate_repository_policy.py`: PASS on the draft authoring tree.
+- `git diff --cached --check`: clean.
+- Codex round-1 repair (PR #1415, 4 findings): forge revision binding (§10), failed-checkpoint
+  suspension and committed Featherweight capacity (§4.3, §5.1), the quest predicate on every direct
+  shrine imbuement (§3), `ScrollCreate` producer eligibility (§7).
+- Codex round-2 repair (PR #1415, 1 finding): `REVISION_CHANGED` persisted as a receipt-only
+  terminal record keyed by (occurrence, character); every later replay returns the same
+  rejection (§10).
+- Codex round 3 (#1415, 1 P1, 2 P2): bounded checkpoint transactions (10 items,
+  max+1 rejected, §4.3, §15); `FeeBurnCause::ForgeFusion` carries kind, items and occurrence (§10);
+  concrete PR number in the record.
+- Codex round 4 (#1415, 2 P1): the checkpoint bound has its own ID `IMBFORGE0-RL-13`
+  (`RL-11` stays the 2,000 ms ambiguity bound); checkpoint-specific `DUR03-RL-06` participant (1)
+  and effect-work-unit (10) ceilings registered with max+1 rejection; the 10-items-per-checkpoint
+  cap recorded as owner-confirmed (#162 comment 5919525206).
+- Codex round 5 (final batched round, #1415, 2 P1): 4149452753 fixed: the checkpoint
+  `DUR03-RL-06` rows count one participant per touched ItemInstance, as the registry does: 10
+  participants (max+1 11) and 40 effect work units, 10 × (1 + 3 row mutations) (max+1 41) (§15);
+  4149452756 fixed: Apply, Clear, ScrollCreate and ScrollApply occurrences bind the content,
+  ruleset and SIM profile revisions at reservation, with the §10 terminal `REVISION_CHANGED`
+  behavior; the IMBUE wire result and the DUR-03 §39.3 amendment name it (§6, §7, §14, §21).
+- Owner answers (2026-09-30, #162): I1 a) (all imbuing and forge gold fees at Global prices,
+  D178) and I2 a) (dust, slivers and the conversions as in Global, D208) made binding in the
+  decision and the gold fee §4.4 amendment.
+
+## Closeout
+
+- PR: #1415. Merge commit/result: its squash merge.
+- Amendments follow the control-plane rule (#162 5912405163): pending on acceptance. Amended:
+  MARKET-0 §3.1, the gold fee decision §4.4. DUR-03 §15, §17, §18, §39.3 and composition rule 1
+  are left to IMBUE-1 and FORGE-1.
+- This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
+
+```yaml
+last_progress: draft authored; awaiting architect review and publication
+status: completed
+branch: claude/arch-imbue-forge-0
+owner_action_required: null
+blocker: null
+next_action: "architect freezes the head with the owner answers and requests review"
+```
