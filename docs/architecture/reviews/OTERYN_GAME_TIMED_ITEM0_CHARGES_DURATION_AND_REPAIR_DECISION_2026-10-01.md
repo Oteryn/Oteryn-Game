@@ -101,7 +101,9 @@ unlit torch:
   duration of its active form; the first transform into the active form creates the row. Items minted before TIMED-1 lands get their row from a TIMED-1 backfill with the
   definition's values. Amended: DUR-03 §39.3.
 - **Backfill, sequenced through one-item transactions.** TIMED-1 ships with timed behaviour off and
-  the deferred guard and the RL-05 check not yet enabled. Its migration then runs, resumably, only
+  the deferred guard not yet enabled, but with the RL-05 admission check (§4) **on** from the start,
+  so no move, MINT or transform can add a `continuous` timed item to a tree at or above 32 while the
+  backfill runs and the preflight's result cannot be invalidated afterwards. Its migration then runs, resumably, only
   admitted one-item DUR-03 transactions, each under the item writer's fence and the holder's
   `character_root` lock:
   1. **Rows.** One `STATE_MUTATION` per live timed item without a row, under
@@ -114,7 +116,7 @@ unlit torch:
      the BAGS-0 tree lock `FOR SHARE` to recount and writes nothing once the tree has 32 or fewer.
      Nothing is lost; the player can light it again when the tree has room.
   3. **Enable.** A preflight confirms that every live timed item has its row and every tree meets
-     RL-05. Only then are the deferred guard, the RL-05 check and timed behaviour enabled.
+     RL-05. Only then are the deferred guard and timed behaviour enabled.
 
   A `continuous` item with no inactive form cannot be put out: if step 3's preflight finds a tree
   still above 32, nothing is enabled and the trees are reported; TIMED-1 is not enabled until an
@@ -189,6 +191,11 @@ An item's time runs only while it is **live**, as in Canary:
   any transform into a `continuous` form.
 - A single-item transfer that crosses between live, deadline and frozen classes carries its one-row
   write in the same transaction. Amended: DUR-03 §39.3.
+- **Player trade.** A trade is live to live, so it would carry a persisted value up to one
+  checkpoint old. PLAYER-TRADE-0 therefore refuses as `NOT_TRADEABLE` an offer of an item whose
+  clock is running (a lit `continuous` item, an equipped active `on_equip` item), or of a tree that
+  contains one; the player puts it out or unequips it first, which writes the live value. The trade
+  aggregate gains no timed line. Amended: PLAYER-TRADE-0 §4.
 - **Decay target.** An item's decay target is its definition's `transform {trigger: decay}` if
   present, else `temporal.decay_target`; content validation rejects a definition with both set to
   different targets. The same target applies whether the item runs out of time or of charges.
@@ -241,8 +248,10 @@ An item's time runs only while it is **live**, as in Canary:
     occurrence}`;
   - one `TRANSFORM` (`PRESERVE_INSTANCE`) of one live, non-equipped item of `from_item` in the
     player's backpack or its containers (the first in inventory order, as NPC-0 SELL finds its item),
-    into `to_item`. The old timed row is deleted and a fresh one is created from `to_item`'s
-    definition: full charges and full duration. Nothing carries over from the worn item.
+    into `to_item`. The old timed row is deleted and a fresh one is created with full charges and
+    full duration from `to_item`'s definition, or, when `to_item` is an inactive form (unworn soft
+    boots), from its paired active form's definition, as the §3 guard reads it. Nothing carries over
+    from the worn item.
   - The gold fee plan is admitted with at most **19** coin inputs here (not 20), so the 19 inputs,
     at most 2 change stacks and the repaired item stay within the fee shape's 22 touched items and
     64 work units (DUR-03 §39.3). 10,000 gold fits in one crystal coin, so this only refuses a
@@ -312,7 +321,9 @@ timer does not reset); putting out a torch and lighting it again keeps its remai
 or stale `Expire` writes nothing; dropping a held lit torch 59 s after its last checkpoint sets its
 deadline from the live budget, and a pick-up/drop cycle never adds time; a pre-TIMED-1 tree with 33
 lit torches is backfilled with 32 lit and 1 put out, all rows present, and the guard is enabled only
-after; loot minted lit into a corpse and a ground item that expires into another timed stage get a
+after, and a bag move that would put a 33rd lit item into a tree during the backfill is refused;
+a trade offer of a lit torch, or of a bag holding one, is refused; repairing worn soft boots into
+unworn ones gives the row the active form's full duration; loot minted lit into a corpse and a ground item that expires into another timed stage get a
 deadline in that transaction; a repair paid from 19 coin
 stacks commits and from 20 is refused; a life ring's regeneration ticks alongside food regeneration; the
 energy ring's shield stays while mana is 0 and ends at unequip; a lit torch inside a dropped bag gets its Ground deadline in the drop
@@ -371,6 +382,7 @@ None open. Owner answer 1a settled the only fee source.
 ## 16. Before-freeze checklist
 
 1. **Contract amendments:** EQUIP-0 §3.1 and §3.2; DUR-03 §15, §33 and §39.3; ITEM-MOVE-WIRE-1 §6;
+   PLAYER-TRADE-0 §4;
    ITEM-USE-0; NPC-0 (repair offer); CONDITIONS-0 §3; OFFLINE-0 (exercise weapons pointer). Applied
    in this PR.
 2. **Serialization:** every timed write is a one-item DUR-03 transaction (or a bounded `TimedTreeMove`) under the item writer's

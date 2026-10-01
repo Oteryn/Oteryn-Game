@@ -26,6 +26,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md
+  - docs/architecture/reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md
 public_contracts:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
@@ -84,7 +85,7 @@ No code, migration or content change is made.
 ## Closeout
 
 - PR: #1471. Review: Codex round 1 (5382769280) on `e8212a64` answered in the next head; the exact frozen heads are in the #162 FREEZE_SHA entries. Merge commit/result: its squash merge.
-- Amendments, each pending on acceptance of TIMED-ITEM-0: EQUIP-0 §3.2; DUR-03 §15, §33, §39.3;
+- Amendments, each pending on acceptance of TIMED-ITEM-0: EQUIP-0 §3.2; PLAYER-TRADE-0 §4; DUR-03 §15, §33, §39.3;
   ITEM-MOVE-WIRE-1 §6; ITEM-USE-0 §6; NPC-0 §6.2; CONDITIONS-0 §3; OFFLINE-0 scope.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
