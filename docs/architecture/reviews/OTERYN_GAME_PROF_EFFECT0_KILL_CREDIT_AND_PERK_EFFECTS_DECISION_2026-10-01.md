@@ -252,6 +252,11 @@ None. Every choice follows the official manual, TibiaWiki or an existing owner a
 
 - **Must decide now:** YES. PROF-2 cannot accrue for groups or apply any perk without it.
 - **Minimum sufficient:** no durable state, no new stage, one row; content rows for the point table.
+- **Blocked:** PROF-2's accrual for groups and every perk effect; PROF-CONTENT-2's point rows.
+- **Harder later:** crediting every contributor fixes the death settlement's fan-out to the damage
+  record, so narrowing it later changes player-visible progress rates; one critical roll shared with
+  imbuements (amended IMBUE-FORGE-0 §5) binds every later crit source to that roll; the point table as
+  content rows ties PROF-2 to Bestiary difficulty and Bosstiary category keys.
 - **Superseding evidence:** an official source on perk formulas or credit; TibiaPal fixtures.
 - **Deliberately not decided:** influenced and fiendish creatures, proficiency catalysts, modified
   perks (PROFICIENCY-1), Mastery titles and achievements.
