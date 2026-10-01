@@ -105,7 +105,18 @@ pub enum FeePlanError {
 /// entry count, coins and other items together, before the burn (B3 bounds it by
 /// [`BACKPACK_ENTRIES_MAX`]; the plan does not rely on that bound).
 pub fn plan_fee(fee: u64, stacks: &[CoinStack], entries: usize) -> Result<FeePlan, FeePlanError> {
-    if fee == 0 || stacks.len() > entries {
+    plan_fee_within(fee, stacks, entries, BACKPACK_ENTRIES_MAX)
+}
+
+/// [`plan_fee`] for a backpack declaring `capacity` direct entries (at most
+/// [`BACKPACK_ENTRIES_MAX`]): the change must fit that capacity after the burn.
+pub fn plan_fee_within(
+    fee: u64,
+    stacks: &[CoinStack],
+    entries: usize,
+    capacity: usize,
+) -> Result<FeePlan, FeePlanError> {
+    if fee == 0 || stacks.len() > entries || !(1..=BACKPACK_ENTRIES_MAX).contains(&capacity) {
         return Err(FeePlanError::InvalidInput);
     }
     let mut order: Vec<usize> = (0..stacks.len()).collect();
@@ -171,7 +182,8 @@ pub fn plan_fee(fee: u64, stacks: &[CoinStack], entries: usize) -> Result<FeePla
         .iter()
         .filter(|line| line.burned == stacks[line.input].quantity)
         .count();
-    if plan.change_outputs() > BACKPACK_ENTRIES_MAX.saturating_sub(entries) + whole {
+    // `whole <= stacks.len() <= entries`; an over-capacity backpack stays refused.
+    if entries - whole + plan.change_outputs() > capacity {
         return Err(FeePlanError::ChangeDoesNotFit);
     }
     Ok(plan)
@@ -341,6 +353,29 @@ mod tests {
             Err(FeePlanError::ChangeDoesNotFit)
         );
         assert_eq!(plan_fee(9_900, &stacks, 19).unwrap().change_outputs(), 1);
+        // A backpack declaring 8 entries holds 8 at most: full, a partial burn frees nothing.
+        assert_eq!(
+            plan_fee_within(9_900, &stacks, 8, 8),
+            Err(FeePlanError::ChangeDoesNotFit)
+        );
+        assert_eq!(
+            plan_fee_within(9_900, &stacks, 7, 8)
+                .unwrap()
+                .change_outputs(),
+            1
+        );
+        // A backpack already over its declared capacity (12 entries, 8 declared) gets no
+        // change even when the burn frees entries.
+        stacks[0].quantity = 1;
+        assert_eq!(
+            plan_fee_within(2_350, &stacks, 12, 8),
+            Err(FeePlanError::ChangeDoesNotFit)
+        );
+        assert!(plan_fee_within(2_350, &stacks, 7, 8).is_ok());
+        assert_eq!(
+            plan_fee_within(9_900, &stacks, 1, 0),
+            Err(FeePlanError::InvalidInput)
+        );
     }
 
     #[test]

@@ -2250,6 +2250,12 @@ mod character_death_receipts_postgres_cases;
 #[path = "support/check_function_privileges_postgres_cases.rs"]
 mod check_function_privileges_postgres_cases;
 
+// HOUSE-CUSTODY-1 HouseInterior, reclaim provenance and the item location
+// exclusivity guard (migration 0025) share their cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/house_custody_postgres_cases.rs"]
+mod house_custody_postgres_cases;
+
 // STANCE-0 stance slot and stance receipts (migration 0017) share their cases
 // with the focused standalone target through the same protected lane.
 #[path = "support/character_stance_postgres_cases.rs"]

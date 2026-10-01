@@ -6,6 +6,7 @@ pub mod b3;
 pub mod bundle;
 pub mod compile;
 pub mod project;
+pub mod resolve;
 pub mod sector;
 
 use std::fmt;

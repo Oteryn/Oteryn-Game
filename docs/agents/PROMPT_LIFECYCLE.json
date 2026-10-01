@@ -76,7 +76,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "2.8",
+      "version": "2.9",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "Primary Game Work control plane rooted directly in protected repository instructions, bound META policy, routed Game contracts, current allocation/custody and live GitHub state; bounded worker dispatch/integration with fail-closed architecture escalation, no authority expansion, and registered scoped dispatch aliases that resolve to this same profile identity.",

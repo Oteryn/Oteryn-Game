@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.dev/schemas/content/world-metadata/v1",
+  "title": "Oteryn world metadata authoring files v1 (HuntingPlace Area, teleport Transition)",
+  "description": "Family index and shard files for world metadata. Static source facts only. Cities and Regions are owned by the Area catalogue (content/world/areas/, area-authoring), Houses by the House catalogue (content/houses/), Terrain and WorldObjects by content/world/terrain and objects. Placements are out of scope.",
+  "oneOf": [
+    { "$ref": "#/$defs/family_index" },
+    { "$ref": "#/$defs/hunting_place_shard" },
+    { "$ref": "#/$defs/transition_shard" }
+  ],
+  "$defs": {
+    "slug_key": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "u16": { "type": "integer", "minimum": 0, "maximum": 65535 },
+    "floor": { "type": "integer", "minimum": 0, "maximum": 15 },
+    "level": { "type": "integer", "minimum": 1, "maximum": 5000 },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "coordinate_frame": { "const": "global-target-2026-09-27" },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coordinate_frame", "floor", "x", "y"],
+      "properties": {
+        "coordinate_frame": { "$ref": "#/$defs/coordinate_frame" },
+        "floor": { "$ref": "#/$defs/floor" },
+        "x": { "$ref": "#/$defs/u16" },
+        "y": { "$ref": "#/$defs/u16" }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "revision"],
+      "properties": {
+        "key": { "$ref": "#/$defs/slug_key" },
+        "revision": { "const": "definition-r1" }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "key", "revision"],
+      "properties": {
+        "family": { "enum": ["Area", "Item", "Terrain", "Transition", "WorldObject"] },
+        "key": { "$ref": "#/$defs/slug_key" },
+        "revision": { "const": "definition-r1" }
+      }
+    },
+    "source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "external_id", "identity_namespace", "source_key", "source_revision", "target"],
+      "properties": {
+        "disposition": { "const": "EXACT" },
+        "external_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "identity_namespace": {
+          "const": "crystalserver/map-item-position"
+        },
+        "source_key": { "const": "oteryn:source.crystalserver" },
+        "source_revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "target": { "$ref": "#/$defs/reference" }
+      }
+    },
+    "source_bindings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "$ref": "#/$defs/source_binding" }
+    },
+    "wiki_source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "disposition", "external_id", "identity_namespace", "source_key", "source_revision", "target"
+      ],
+      "properties": {
+        "disposition": { "const": "EXACT" },
+        "external_id": { "type": "string", "pattern": "^[1-9][0-9]{0,11}$" },
+        "identity_namespace": { "const": "tibiawiki-fandom/page-id" },
+        "source_key": { "const": "oteryn:source.tibiawiki" },
+        "source_revision": { "type": "string", "pattern": "^[1-9][0-9]{0,11}$" },
+        "target": { "$ref": "#/$defs/reference" }
+      }
+    },
+    "hunting_place_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declaration", "source_bindings"],
+      "properties": {
+        "declaration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["area_kind", "identity", "kind", "name"],
+          "properties": {
+            "area_kind": { "const": "hunting_place" },
+            "city": {
+              "allOf": [
+                { "$ref": "#/$defs/reference" },
+                { "properties": { "family": { "const": "Area" }, "key": { "pattern": "^oteryn:content\\.area\\.city\\.[a-z0-9]+(_[a-z0-9]+)*$" } } }
+              ]
+            },
+            "identity": {
+              "allOf": [
+                { "$ref": "#/$defs/identity" },
+                { "properties": { "key": { "pattern": "^oteryn:area\\.hunting_place\\.[a-z0-9]+(_[a-z0-9]+)*$" } } }
+              ]
+            },
+            "kind": { "const": "Area" },
+            "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+            "position": { "$ref": "#/$defs/position" },
+            "recommended_levels": {
+              "type": "object",
+              "additionalProperties": false,
+              "minProperties": 1,
+              "properties": {
+                "knight": { "$ref": "#/$defs/level" },
+                "mage": { "$ref": "#/$defs/level" },
+                "paladin": { "$ref": "#/$defs/level" }
+              }
+            },
+            "source_facts": {
+              "type": "object",
+              "additionalProperties": false,
+              "minProperties": 1,
+              "properties": {
+                "city_name": { "type": "string", "minLength": 1, "maxLength": 64 },
+                "creature_names": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 '().,:&!/-]{0,63}$" }
+                }
+              }
+            }
+          }
+        },
+        "source_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/wiki_source_binding" }
+        }
+      }
+    },
+    "transition_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declaration", "source_bindings"],
+      "properties": {
+        "declaration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["from", "identity", "kind", "to", "transition_kind"],
+          "properties": {
+            "from": { "$ref": "#/$defs/position" },
+            "identity": {
+              "allOf": [
+                { "$ref": "#/$defs/identity" },
+                { "properties": { "key": { "pattern": "^oteryn:transition\\.teleport\\.x[0-9]+_y[0-9]+_z[0-9]+(_[0-9]+)?$" } } }
+              ]
+            },
+            "kind": { "const": "Transition" },
+            "object": {
+              "allOf": [
+                { "$ref": "#/$defs/reference" },
+                {
+                  "oneOf": [
+                    { "properties": { "family": { "const": "WorldObject" }, "key": { "pattern": "^oteryn:world-object\\.tibia\\.i[1-9][0-9]*$" } } },
+                    { "properties": { "family": { "const": "Terrain" }, "key": { "pattern": "^oteryn:terrain\\.tibia\\.i[1-9][0-9]*$" } } },
+                    { "properties": { "family": { "const": "Item" } } }
+                  ]
+                }
+              ]
+            },
+            "to": { "$ref": "#/$defs/position" },
+            "transition_kind": { "const": "teleport" }
+          }
+        },
+        "source_bindings": { "$ref": "#/$defs/source_bindings" }
+      }
+    },
+    "shard_header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "end", "index", "start"],
+      "properties": {
+        "count": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "end": { "type": "integer", "minimum": 0 },
+        "index": { "type": "integer", "minimum": 0 },
+        "start": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "hunting_place_shard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "records", "schema", "shard"],
+      "properties": {
+        "family": { "const": "Area.HuntingPlace" },
+        "records": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "$ref": "#/$defs/hunting_place_record" } },
+        "schema": { "const": "OTERYN_AREA_AUTHORING_SHARD/v1" },
+        "shard": { "$ref": "#/$defs/shard_header" }
+      }
+    },
+    "transition_shard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "records", "schema", "shard"],
+      "properties": {
+        "family": { "const": "Transition.Teleport" },
+        "records": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "$ref": "#/$defs/transition_record" } },
+        "schema": { "const": "OTERYN_TRANSITION_AUTHORING_SHARD/v1" },
+        "shard": { "$ref": "#/$defs/shard_header" }
+      }
+    },
+    "family_index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coordinate_frame", "family", "generator", "population_state", "record_count", "schema",
+        "shard_size", "shards", "source"
+      ],
+      "properties": {
+        "coordinate_frame": { "$ref": "#/$defs/coordinate_frame" },
+        "family": { "enum": ["Area.HuntingPlace", "Transition.Teleport"] },
+        "generator": {
+          "enum": [
+            "tools/content-schema/world-authoring/convert_world_metadata.py",
+            "tools/content-schema/world-authoring/convert_hunting_places.py"
+          ]
+        },
+        "population_state": { "const": "POPULATED" },
+        "record_count": { "type": "integer", "minimum": 1 },
+        "schema": { "const": "OTERYN_FAMILY_INDEX/v1" },
+        "shard_size": { "const": 500 },
+        "shards": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^content/[a-z/-]+/[a-z-]+-[0-9]{5}-[0-9]{5}\\.json$" }
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["evidence", "files", "ref", "repository", "revision", "source_key"],
+              "properties": {
+                "evidence": { "const": "OtsHypothesisOnly" },
+                "files": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["path", "sha256"],
+                    "properties": {
+                      "path": { "type": "string", "pattern": "^[A-Za-z0-9._/-]+$" },
+                      "sha256": { "$ref": "#/$defs/sha256" }
+                    }
+                  }
+                },
+                "ref": { "type": "string", "minLength": 1 },
+                "repository": { "const": "zimbadev/crystalserver" },
+                "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+                "source_key": { "const": "oteryn:source.crystalserver" }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["category", "evidence", "fetched_at", "license", "site", "snapshot", "source_key"],
+              "properties": {
+                "category": { "const": "Category:Hunting Places" },
+                "evidence": { "const": "Derived" },
+                "fetched_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+                "license": { "type": "string", "minLength": 1, "maxLength": 512 },
+                "site": { "const": "https://tibia.fandom.com" },
+                "snapshot": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["path", "sha256"],
+                  "properties": {
+                    "path": { "const": "imports/tibiawiki/hunting-places/fandom-snapshot-v1.json" },
+                    "sha256": { "$ref": "#/$defs/sha256" }
+                  }
+                },
+                "source_key": { "const": "oteryn:source.tibiawiki" }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

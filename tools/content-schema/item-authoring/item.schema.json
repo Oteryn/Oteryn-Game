@@ -2016,68 +2016,6 @@
         "target"
       ]
     },
-    "proficiencyLevel": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "level": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "selection_count": {
-          "const": 1
-        },
-        "perks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/augment"
-          },
-          "minItems": 1
-        }
-      },
-      "required": [
-        "level",
-        "selection_count",
-        "perks"
-      ]
-    },
-    "proficiencyShaping": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "max_rank": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "replace_slots": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "refine_enabled": {
-          "$ref": "#/$defs/bool"
-        },
-        "reshape_enabled": {
-          "$ref": "#/$defs/bool"
-        },
-        "clear_enabled": {
-          "$ref": "#/$defs/bool"
-        },
-        "lunar_ascension_enabled": {
-          "$ref": "#/$defs/bool"
-        },
-        "cost_service": {
-          "$ref": "#/$defs/InteractionRef"
-        }
-      },
-      "required": [
-        "max_rank",
-        "replace_slots",
-        "refine_enabled",
-        "reshape_enabled",
-        "clear_enabled",
-        "lunar_ascension_enabled"
-      ]
-    },
     "proficiencyClientBinding": {
       "type": "object",
       "additionalProperties": false,
@@ -2110,15 +2048,12 @@
         "profile_binding": {
           "$ref": "#/$defs/ProficiencyRef"
         },
-        "levels": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/proficiencyLevel"
-          },
-          "minItems": 0
-        },
-        "shaping": {
-          "$ref": "#/$defs/proficiencyShaping"
+        "threshold_class": {
+          "enum": [
+            "standard",
+            "knight",
+            "crossbow"
+          ]
         },
         "augments": {
           "type": "array",
@@ -2129,6 +2064,14 @@
         }
       },
       "required": [],
+      "dependentRequired": {
+        "profile_binding": [
+          "threshold_class"
+        ],
+        "threshold_class": [
+          "profile_binding"
+        ]
+      },
       "anyOf": [
         {
           "required": [
@@ -2138,11 +2081,6 @@
         {
           "required": [
             "profile_binding"
-          ]
-        },
-        {
-          "required": [
-            "levels"
           ]
         },
         {

@@ -113,6 +113,13 @@ def test_committed_packet_rebuilds():
     assert rebuilt == committed, "committed packet drifted"
     packet = json.loads(committed)
     assert packet["source"]["snapshot_sha256"] == snap["snapshot_sha256"]
+    # ITEM-ADD-1 (owner 2a): appearance-only Items (no source binding) take no stats.
+    for item_id in (40522, 53197):
+        assert item_id not in lower.content_item_ids()
+        assert not any(
+            row["item_key"] == f"oteryn:item.tibia.i{item_id}"
+            for row in packet["promotions"]
+        )
     return packet["counts"]
 
 

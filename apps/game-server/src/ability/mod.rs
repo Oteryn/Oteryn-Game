@@ -10,6 +10,8 @@
 
 pub(crate) mod commit;
 #[allow(dead_code)]
+pub(crate) mod condition;
+#[allow(dead_code)]
 pub(crate) mod creature_bite;
 mod effects;
 #[allow(dead_code)]
