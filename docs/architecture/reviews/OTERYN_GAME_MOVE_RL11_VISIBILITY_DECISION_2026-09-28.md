@@ -114,6 +114,12 @@ degrade and resync dispositions are unchanged
 (`OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §7.3).
 **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Items of one
 tile are ordered by their `ground_ordinal`, top last, so the client's top item is the server's.
+Selection and emission are separate orders. **Selection** (which entities survive the 256 cutoff):
+actors first as above; items by floor distance, Chebyshev distance, then tile key `(x, y, z)` so
+tiles at equal distance have a total order, then within one tile from the top down (descending
+`ground_ordinal`, then entity identity for legacy rows at ordinal 0). A cutoff inside a tile
+therefore drops its bottom items, never its top item. **Emission** (the order the client stacks a
+tile's selected items): ascending `ground_ordinal`, top last.
 
 ### 4.4 Resource rows
 

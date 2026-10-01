@@ -168,8 +168,13 @@ the one exception, light) and is never shot. Amended: ITEM-MOVE-WIRE-1 §4.
    `miss_landing`, then for `on_use = DROP` `break`. Wands draw only `damage_draw`. Amended:
    ATTACK-0 §4's closed purposes gain `miss_landing` and `break`.
 3. **Freeze**: target identity, landing tile, damage magnitudes, and the consequence by `on_use`
-   (§6.1). A tile that cannot take the drop at PREPARE (not walkable, house,
-   tile or channel limit reached, as the database would refuse) fixes a burn now.
+   (§6.1), decided in this order: (a) a landing tile that is not walkable or is a house tile fixes
+   a burn; (b) otherwise a merge receiver (§6.1) is selected and reserved first, and a merge
+   consumes no tile or channel limit, so a tile at its limit still takes it; (c) only without a
+   merge receiver is the new-item path checked, and a tile or channel limit reached (as the
+   database would refuse) fixes a burn. Canary throws with `FLAG_NOLIMIT`; the limits are this
+   repository's protection rows (`ITEMMOVE1-RL-01`, `-RL-02`), so a burn at a full tile is a
+   recorded deviation, limited to tiles at that limit.
 4. Wands: take a mana hold of `mana_per_shot` (RUNE-USE-0 §7 hold rules).
 5. Reserve the shot unit under DUR-03 §7.1 and send the transaction. Wands send none.
 
@@ -234,7 +239,8 @@ The content `on_use` decides:
     rules (tile and channel limits with the tile row lock and counter, house tiles refused).
   - Merge or new item is chosen at PREPARE and frozen; a merge receiver is reserved under DUR-03 §7.1
     at PREPARE, so no pickup, move or second throw can take it meanwhile: a second thrower that finds
-    the top stack reserved takes the new-item path (a spear is never burnt for it). At commit, after
+    the top stack reserved has no merge receiver and takes the new-item path under step 3 (c), so on
+    a tile at its limit its unit burns, as on any full tile (never a free shot). At commit, after
     the item rows in ItemInstanceId order, the tile row is locked `FOR SHARE` (rule 4's order) and the
     receiver must still be live, on that tile, the top Ground item, compatible and with room;
     otherwise the commit is refused under the same TransactionId (§23) and the swing has no effect
@@ -267,8 +273,9 @@ The content `on_use` decides:
 - The **top Ground item** of a tile is its live Ground root with the highest ordinal, the item Tibia
   shows on top. Map-authored LocalObjects are below every Ground root. The ordinal never orders by
   ItemInstanceId (DUR-03 §13: "UUID/client list ordering never selects survivor/receiver").
-- The client shows the items of one tile in `ground_ordinal` order, top last. Amended: MOVE-RL-11
-  §4.3.
+- The client shows the items of one tile in `ground_ordinal` order, top last; the 256-entity
+  cutoff selects a tile's items from the top down, so it never drops the top item. Amended:
+  MOVE-RL-11 §4.3.
 - This is the Ground stacking order later Ground decisions reuse (for example a top-item pickup).
 
 ### 6.2 Cause, key and fence
