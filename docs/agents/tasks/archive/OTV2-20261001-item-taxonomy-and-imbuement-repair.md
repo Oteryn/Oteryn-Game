@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: OTV2-20261001-item-taxonomy-and-imbuement-repair
-title: Repair source-qualified Item taxonomy, imbuement relations and nested authoring limits
+title: Complete family templates and repair source-qualified Item taxonomy and imbuement authoring
 mode: REPAIR
-status: completed_pending_merge
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/item-catalog-audit-20261001
@@ -22,6 +22,7 @@ owned_paths:
   - docs/agents/reports/OTV2-20261001-item-catalog-audit-and-map-handover.md
   - docs/agents/evidence/OTV2-20261001-client-1530-item-taxonomy-check.md
   - docs/agents/evidence/OTV2-20261001-quest-item-category-continuation.md
+  - docs/agents/evidence/OTV2-20261001-item-navigation-completion.md
 public_contracts:
   - OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1
 depends_on: []
@@ -33,7 +34,14 @@ depends_on: []
   The supplements admit 81 validated family fallback rows, two official client
   market/clothing agreements and 18 Extra Slot equipment categories using the existing
   profile catalog. Contradictory or otherwise unadmitted newer wiki categories remain held;
-  3,265 current Items have neither taxonomy nor an existing map owner.
+  At that predecessor, 3,265 current Items had neither taxonomy nor an existing map owner.
+- PROVEN: the continuation adds 119 guarded navigation records: 113 existing owner-reviewed
+  decisions, one corroborated clothing slot, four explicit Fist Weapons market records and
+  one Creature Products market record. New explicit wiki categories and existing map owners
+  retain precedence; exact source-ID bindings and all-present name agreement are required.
+- PROVEN: 23 starting templates cover all 22 catalog profiles. Synthetic examples carry no
+  real Item identity, source claim, admission or runtime behavior. Coverage validation compares
+  the profile set rather than accepting a fixed template count.
 - PROVEN: fresh Quests/Quest Items/Quest Log pages were read through owner-authorized
   Remote Desktop + Chrome/CDP after Tavily 432 and direct HTTP 402 failures. Quest Items
   lists 1,169 dynamic positions; Quest Log explicitly has incomplete coverage. Nine fresh
@@ -58,8 +66,8 @@ depends_on: []
 
 ## Validation
 
-Tree regeneration/validator, materialized tree validator, tree tests and seven taxonomy
-boundary regressions passed. The 252 formal-schema checks, 599 engine checks, three nested
+Tree regeneration/validator, materialized tree validator, tree tests and eight taxonomy
+boundary regressions passed. The 272 formal-schema checks, engine checks, three nested
 limit regressions, Ruff checks/formatting, governance validator, 36 governance tests and
 whitespace checks passed. Exact remote head and repository CI are recorded in PR/check
 evidence after the atomic authoring write. Full-world E2E is not applicable to this batch.
@@ -68,6 +76,12 @@ Self-review covered source disagreement, unknown primary categories, appearance-
 existing non-Item ownership, untouched legacy authoring, zero/unknown slot counts and nested
 ceiling loss. This is navigation/authoring enrichment and generated relations; it performs
 no live production mutation, recovery authorization, protocol or durable-identity change.
+
+## Review and integration
+
+Integration remains pending on draft #1437. The active control plane owns external review
+dispatch and protected integration; this completion record qualifies only the authoring batch.
+Exact successor SHA and CI state are recorded externally after candidate freeze.
 
 ## Continuing work
 

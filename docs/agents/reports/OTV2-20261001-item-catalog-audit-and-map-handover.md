@@ -55,8 +55,9 @@ There are **22 Item profiles**, deliberately represented by one composed authori
 | fluid | Fluids |
 | plant | Plants |
 
-Thirteen templates cover twelve profiles. Missing a dedicated template does not mean a family
-schema is absent. Profile membership and capability completeness are separate questions.
+The original thirteen templates covered twelve profiles. The completion continuation now
+supplies 23 templates across all 22 profiles. Profile membership and capability completeness
+remain separate questions.
 
 ## Item audit findings
 
@@ -336,3 +337,18 @@ taxonomy remains 881; i40522, i44432 and i44433 remain identity holds, and i2984
 Honey Flower/Honeyflower Patch conflict. The retained quest census has 373 quests, only 93
 in the in-game log. No new Quest identity, progress or runtime relation is introduced. See
 [`OTV2-20261001-quest-item-category-continuation.md`](../evidence/OTV2-20261001-quest-item-category-continuation.md).
+
+## All-Item continuation — qualified navigation and templates
+
+Navigation now covers **9,555** records after 119 further guarded additions; all 9,436
+predecessor rows and 21,330 retained map-owner pointers remain unchanged. **3,146** records
+still lack navigation or an existing owner. The formal authoring schema now has 23 synthetic
+templates covering all 22 profiles, with 272/272 validation checks passing. These counts
+describe this authoring candidate, not an integrated or fully complete Item population.
+
+The read-only per-ID inventory covers the entire 12,701 pool, retaining ordinary UNKNOWN
+separately from concrete source-supported gaps. Physical flags, Rune stack metadata, native
+modifiers and 125 source-qualified donor world routes are separate pending batches; they are
+not credited as completed by this taxonomy PR. Source conflicts and model/dependency gaps
+remain explicit. Source access, guards and profile counts are retained in
+[`OTV2-20261001-item-navigation-completion.md`](../evidence/OTV2-20261001-item-navigation-completion.md).

@@ -1,9 +1,9 @@
 {
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
-  "templates": 13,
-  "checks": 252,
-  "passed": 252,
+  "templates": 23,
+  "checks": 272,
+  "passed": 272,
   "failed": 0,
   "results": [
     {
@@ -391,6 +391,12 @@
       "warning_count": 0
     },
     {
+      "name": "template validates: container-equipment.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
       "name": "template validates: container.json",
       "passed": true,
       "error_count": 0,
@@ -415,6 +421,12 @@
       "warning_count": 0
     },
     {
+      "name": "template validates: event-collectible.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
       "name": "template validates: fluid.json",
       "passed": true,
       "error_count": 0,
@@ -433,13 +445,61 @@
       "warning_count": 0
     },
     {
+      "name": "template validates: key.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: light-source.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: plant.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
       "name": "template validates: portable-decoration-kit.json",
       "passed": true,
       "error_count": 0,
       "warning_count": 0
     },
     {
+      "name": "template validates: progression-material.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: quest-item.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
       "name": "template validates: rune.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: tool.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: transformation-item.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: trash.json",
       "passed": true,
       "error_count": 0,
       "warning_count": 0
@@ -463,7 +523,7 @@
       "warning_count": 0
     },
     {
-      "name": "expected template count is 13",
+      "name": "every catalog family has a valid starting template",
       "passed": true
     },
     {
@@ -1175,6 +1235,10 @@
       "passed": true
     },
     {
+      "name": "official template is warning-free: container-equipment.json",
+      "passed": true
+    },
+    {
       "name": "official template is warning-free: container.json",
       "passed": true
     },
@@ -1191,6 +1255,10 @@
       "passed": true
     },
     {
+      "name": "official template is warning-free: event-collectible.json",
+      "passed": true
+    },
+    {
       "name": "official template is warning-free: fluid.json",
       "passed": true
     },
@@ -1203,11 +1271,43 @@
       "passed": true
     },
     {
+      "name": "official template is warning-free: key.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: light-source.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: plant.json",
+      "passed": true
+    },
+    {
       "name": "official template is warning-free: portable-decoration-kit.json",
       "passed": true
     },
     {
+      "name": "official template is warning-free: progression-material.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: quest-item.json",
+      "passed": true
+    },
+    {
       "name": "official template is warning-free: rune.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: tool.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: transformation-item.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: trash.json",
       "passed": true
     },
     {

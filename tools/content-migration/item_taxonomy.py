@@ -11,6 +11,7 @@ from engine_items import (
     build_identity_index,
     load_appearance_objects,
     load_wiki_family_fallback,
+    qualified_navigation_supplement,
     resolve_wiki_family_value,
 )
 
@@ -167,6 +168,23 @@ def build_taxonomy(
                 },
             },
         }
+    supplements = qualified_navigation_supplement(
+        {key[1]: definition for key, definition in definitions.items()},
+        snapshot,
+        client or {},
+        routed_keys,
+    )
+    for key, definition in sorted(definitions.items()):
+        if key in rows or key[1] not in bound_keys or key[1] in routed_keys:
+            continue
+        entry = supplements.get(key[1])
+        if entry:
+            rows[key] = {
+                "target": definition["identity"],
+                "source_taxonomy": {"primary": entry["primary"]},
+                "family_profile": entry["profile"],
+                "source_evidence": entry["source_evidence"],
+            }
     return [rows[key] for key in sorted(rows)]
 
 

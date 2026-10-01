@@ -150,6 +150,36 @@ class TaxonomyTests(unittest.TestCase):
         }
         self.assertEqual(capability_relations(definition, None), [])
 
+    def test_owner_decision_is_reached_without_engine_family_and_respects_owner(self):
+        target = {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i15151",
+            "revision": "definition-r1",
+        }
+        key = tuple(target.values())
+        definition = {
+            "identity": target,
+            "semantics": {
+                "presentation": {
+                    "state": "KNOWN",
+                    "value": {"name": {"state": "KNOWN", "value": "toad stool"}},
+                }
+            },
+        }
+        snapshot = {"records": {}, "snapshot_sha256": "b" * 64}
+        args = ({key: definition}, {}, {}, snapshot, {target["key"]})
+        row = build_taxonomy(*args, set())[0]
+        self.assertEqual(row["family_profile"], "decoration")
+        self.assertEqual(row["source_evidence"]["scope"], "NAVIGATION_ONLY")
+        self.assertEqual(build_taxonomy(*args, {target["key"]}), [])
+        self.assertEqual(
+            build_taxonomy({key: definition}, {}, {}, snapshot, set(), set()), []
+        )
+        definition["semantics"]["presentation"]["value"]["name"]["value"] = (
+            "different item"
+        )
+        self.assertEqual(build_taxonomy(*args, set()), [])
+
 
 if __name__ == "__main__":
     unittest.main()

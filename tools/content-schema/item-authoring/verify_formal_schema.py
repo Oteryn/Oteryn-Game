@@ -1061,8 +1061,15 @@ def main():
                 "warning_count": len(warnings),
             }
         )
+    template_profiles = {read(path)["family_profile"] for path in templates}
+    catalog_profiles = {
+        row["profile_id"] for row in read(ROOT / "profile-catalog.json")["profiles"]
+    }
     results.append(
-        {"name": "expected template count is 13", "passed": len(templates) == 13}
+        {
+            "name": "every catalog family has a valid starting template",
+            "passed": template_profiles == catalog_profiles,
+        }
     )
 
     for field, value in (
