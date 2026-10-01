@@ -202,7 +202,8 @@ DUR-03 §39.3.
     `UPDATE … SET state = CLOSED|EXPIRED WHERE state = OPEN`; the two counters are decremented
     **only if that update changed a row**; commit. A retried close, or a close racing the expiry,
     therefore decrements once; the loser returns the report's current state. The snapshot text is
-    deleted when the report leaves `OPEN` past its retention (the expiry), never by a close alone.
+    deleted `WRITE0-RL-03` after the report was created, whatever its state; for a report still
+    `OPEN` that deletion is the expiry transaction itself.
     Hourly rows are never decremented and are deleted after their hour.
     Reports from many channels therefore never overshoot a limit.
 - **Removal.** A moderation **clear** is keyed by its moderation action id: a retry returns the
