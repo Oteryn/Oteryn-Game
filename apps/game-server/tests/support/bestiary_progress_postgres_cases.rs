@@ -483,8 +483,9 @@ fn concurrent_kills_serialize_on_the_character_revision() -> TestResult {
         let node = &harness.node;
 
         // Two distinct kills against one predecessor revision: the semantic
-        // pass admits one and reports the other unavailable (as for XP); its
-        // retry then fails on the advanced revision.
+        // pass admits one and reports the other unavailable (as for XP), or,
+        // when the first commits before the second takes the pass, fences the
+        // second on the advanced revision; a retry then fails on it.
         let (left, right) = join_two(
             root.commit_bestiary_kill(&authority, node, fence(1)?, kill(60, RAT)?),
             root.commit_bestiary_kill(&authority, node, fence(1)?, kill(61, RAT)?),
@@ -493,10 +494,16 @@ fn concurrent_kills_serialize_on_the_character_revision() -> TestResult {
         let losing = match (left, right) {
             (
                 Ok(BestiaryKillOutcome::Committed(_)),
-                Err(BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable)),
+                Err(
+                    BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable)
+                    | BestiaryProgressError::CharacterRevisionMismatch,
+                ),
             ) => 61,
             (
-                Err(BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable)),
+                Err(
+                    BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable)
+                    | BestiaryProgressError::CharacterRevisionMismatch,
+                ),
                 Ok(BestiaryKillOutcome::Committed(_)),
             ) => 60,
             outcomes => return Err(format!("unexpected concurrent outcomes: {outcomes:?}").into()),
@@ -506,8 +513,9 @@ fn concurrent_kills_serialize_on_the_character_revision() -> TestResult {
                 .await,
             Err(BestiaryProgressError::CharacterRevisionMismatch)
         ));
-        // One occurrence submitted twice at once commits once; its retry
-        // replays.
+        // One occurrence submitted twice at once commits once; the other
+        // call is unavailable or, when it takes the pass after the commit,
+        // replays. A retry replays.
         let (left, right) = join_two(
             root.commit_bestiary_kill(&authority, node, fence(2)?, kill(62, RAT)?),
             root.commit_bestiary_kill(&authority, node, fence(2)?, kill(62, RAT)?),
@@ -516,10 +524,12 @@ fn concurrent_kills_serialize_on_the_character_revision() -> TestResult {
         match (left, right) {
             (
                 Ok(BestiaryKillOutcome::Committed(_)),
-                Err(BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable)),
+                Err(BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable))
+                | Ok(BestiaryKillOutcome::AlreadyCommitted(_)),
             )
             | (
-                Err(BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable)),
+                Err(BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable))
+                | Ok(BestiaryKillOutcome::AlreadyCommitted(_)),
                 Ok(BestiaryKillOutcome::Committed(_)),
             ) => {}
             outcomes => return Err(format!("unexpected concurrent outcomes: {outcomes:?}").into()),

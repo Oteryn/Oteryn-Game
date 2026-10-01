@@ -93,6 +93,8 @@ view, the 18 × 14 map area and the floor rule. The manual states only a charact
   ceiling applies. They are not carried in `WORLD_OBJECT_OVERLAY`, whose registered
   `WOBJ-RL-03` (486 entries) serves object state and stays unchanged.
 - The observer's own actor is always included.
+- **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §3.2).** NPCs are visible actors of entity kind 5 `Npc`,
+  added to capability 6's schema before it is offered; they count in the D87 ceiling.
 
 ### 4.3 Ceiling and degradation (D87)
 
@@ -112,6 +114,9 @@ creatures) before items; within each group it is floor distance, Chebyshev dista
 identity, as above. So dropped items can never push an actor out of a snapshot. The ceiling and the
 degrade and resync dispositions are unchanged
 (`OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §7.3).
+**Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §3.2).** NPCs rank with players and creatures as actors.
+VIS-3 does not offer capability 6 before NPC-VIS-1 adds kind 5 to `world_spatial_v1.proto`
+`EntityKind`.
 **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Items of one
 tile are ordered by their `ground_ordinal`, top last, so the client's top item is the server's.
 Selection and emission are separate orders. **Selection** (which entities survive the 256 cutoff):
