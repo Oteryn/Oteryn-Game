@@ -35,12 +35,31 @@ revisions are monotonic and not contiguous; a delta carries `base_revision` and 
 applies only on an exact match, else the client resyncs (FND-02 §15); every admission, reconnect,
 resume and transfer starts with a full snapshot; deltas are emitted only after the durable commit.
 
+- **Per-track revision.** Every track entry in a snapshot or delta carries the track's
+  `committed_character_revision` (PROFICIENCY-0 §4.2), the CharacterRevision of the receipt that
+  last changed that track. The client sends it back as `expected_revision`, and the server's stale
+  check compares it with the row's current value. Tested: a select with the value from the latest
+  delta is accepted; one with an older value is refused `STALE_REVISION`.
+- **Large commits.** A commit that changes more than `PROFWIRE0-RL-05` (16) tracks (a training
+  checkpoint or a migration can touch up to 666) is not sent as a delta. The server sends a full
+  snapshot at `new_revision` instead, which replaces the client's whole domain state atomically.
+  Tested: a 17-track checkpoint yields one snapshot replacement and no delta.
+
 ## 3. Bounds (PROF-WIRE-1 registers them)
 
 | Row | Value |
 |---|---|
-| `PROFWIRE0-RL-01` `ACTOR_PROFICIENCY` snapshot payload | 12,288 bytes (666 tracks × 17 B, about 11.3 KB, plus framing), sent through `SnapshotChunk` |
-| `PROFWIRE0-RL-02` delta payload | 32 bytes per changed track; one delta message carries at most 16 tracks |
+| `PROFWIRE0-RL-01` `ACTOR_PROFICIENCY` snapshot payload | 32,768 bytes, sent through `SnapshotChunk` |
+| `PROFWIRE0-RL-02` delta payload | 640 bytes (at most 16 track entries of 36 B, plus header) |
+| `PROFWIRE0-RL-05` tracks per delta before a snapshot replacement | 16 |
+
+**Derivation (worst-case protobuf).** One track entry: the entry's own tag and length (3 B); item id
+(tag + varint ≤ 4 B); definition revision (tag + varint ≤ 3 B); progress up to 2³⁵ (tag + varint
+≤ 6 B); `committed_character_revision` (tag + varint ≤ 11 B); 7 selections as a packed repeated
+field (tag + length + 7 B = 9 B). That is 36 B; 666 entries are 23,976 B, plus a header (content
+generation, domain revision) of at most 32 B, about 24,008 B. RL-01 leaves a 36% margin.
+PROFICIENCY-1's modification rows add to the entry and are re-measured by PROF-SHAPE-WIRE-1 before
+its commands ship.
 | `PROFWIRE0-RL-03` `PROFICIENCY_SELECT_PERK` payload | 24 bytes |
 | `PROFWIRE0-RL-04` command result payload | 16 bytes |
 
@@ -56,11 +75,12 @@ command results, not protocol errors. An unnegotiated command keeps PROFICIENCY-
 
 ## 5. Advertising and later commands
 
-- The server advertises capability 2 only when PROF-1 (durability) and PROF-2 (selection legality)
-  are both live; before that no session can negotiate it.
-- The PROFICIENCY-1 operations (refine, reshape, Catalysts, Lunar Orb) take the next free command
-  types at their own acceptance and join capability 2; capability 2 is not advertised before they
-  are decided or explicitly excluded, so adding them is not a breaking change.
+- **One offer gate:** the server advertises capability 2 only when PROF-1 (durability) and PROF-2
+  (accrual and selection legality) are both live. PROFICIENCY-1 is not part of the gate.
+- The PROFICIENCY-1 operations take the next free command types at their own acceptance and join
+  capability 2 as additive commands. Until an operation is admitted, its command is answered with
+  PROFICIENCY-1's typed `NOT_ADMITTED` result, never a protocol error, so adding or admitting them
+  is not a breaking change.
 
 ## 6. Owner questions
 

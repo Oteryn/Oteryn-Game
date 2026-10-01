@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-prof-wire-accept
-pr: "assigned at PR creation; recorded in the #162 FREEZE_SHA entry"
+pr: 1473
 base_sha: aad17f99
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -32,7 +32,8 @@ external_repositories: []
 
 - PROFICIENCY-0 §4.4 accepted by the protocol owner: capability 2 `WEAPON_PROFICIENCY_V1`, command 6
   `PROFICIENCY_SELECT_PERK`, domain 6 `ACTOR_PROFICIENCY`.
-- Character Authority revision rule (#162 5907282001); bounds `PROFWIRE0-RL-01..04`; result codes.
+- Character Authority revision rule (#162 5907282001) with per-track revisions on the wire; snapshot
+  replacement above 16 tracks; bounds `PROFWIRE0-RL-01..05` derived from worst-case protobuf; result codes.
 - Capability advertised only when PROF-1 and PROF-2 are live; PROFICIENCY-1 commands join it later.
 - No owner question (D168).
 
@@ -43,7 +44,7 @@ external_repositories: []
 
 ## Closeout
 
-- PR: recorded in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1473. Review: Codex 5382901706 on `254d0ea3` answered in the next head; frozen heads in the #162 FREEZE_SHA entries. Merge commit/result: its squash merge.
 - Amendment, pending on acceptance: PROFICIENCY-0 §4.4.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
