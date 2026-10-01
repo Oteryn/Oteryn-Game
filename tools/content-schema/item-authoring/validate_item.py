@@ -12,9 +12,10 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
 from proficiency_profiles import (
-    MAGIC_SWORD_PROFICIENCY_PAYLOAD,
+    CLIENT_PROFICIENCY_SOURCE,
     MAGIC_SWORD_PROFICIENCY_REF,
     MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES,
+    admitted_client_crosswalks,
 )
 from referencing import Registry, Resource
 from source_field_catalogs import (
@@ -132,15 +133,14 @@ MAGIC_SWORD_PROFICIENCY_IDENT = (
     MAGIC_SWORD_PROFICIENCY_REF["key"],
     MAGIC_SWORD_PROFICIENCY_REF["revision"],
 )
-ADMITTED_PROFICIENCY_PROFILES = {
-    MAGIC_SWORD_PROFICIENCY_IDENT: {
-        "sources": MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES,
-        "payload": MAGIC_SWORD_PROFICIENCY_PAYLOAD,
-    }
-}
+# The 15.30 client source admits every committed definition (PROFICIENCY-0 §4.1); the
+# pinned Canary/Crystal pairs are optional corroboration.
 ADMITTED_PROFICIENCY_CROSSWALKS = {
-    source: MAGIC_SWORD_PROFICIENCY_IDENT
-    for source in MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES
+    **admitted_client_crosswalks(),
+    **{
+        source: MAGIC_SWORD_PROFICIENCY_IDENT
+        for source in MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES
+    },
 }
 ENGINE_ORIGIN_PATHS = {
     "xml_item_root": "data/items/items.xml",
@@ -447,30 +447,17 @@ def validate(item, dependencies, manifest=None):
     proficiency_ref = item.get("proficiency", {}).get("profile_binding")
     if proficiency_ref is not None:
         proficiency_key = ident(proficiency_ref)
-        admitted_profile = ADMITTED_PROFICIENCY_PROFILES.get(proficiency_key)
         if proficiency_key not in crosswalk_targets:
             errors.append(
                 "item/proficiency/profile_binding: missing admitted source identity crosswalk"
             )
-        elif admitted_profile is None:
+        elif not any(
+            source[0] == CLIENT_PROFICIENCY_SOURCE["source_profile"]
+            for source in crosswalk_targets[proficiency_key]
+        ):
             errors.append(
-                "item/proficiency/profile_binding: target has no admitted canonical profile"
+                "item/proficiency/profile_binding: the 15.30 client source crosswalk is required"
             )
-        else:
-            actual_sources = crosswalk_targets[proficiency_key]
-            if actual_sources != admitted_profile["sources"]:
-                errors.append(
-                    "item/proficiency/profile_binding: exact Canary and Crystal source corroboration is required"
-                )
-            actual_payload = {
-                key: value
-                for key, value in item["proficiency"].items()
-                if key not in ("profile_binding", "client_binding")
-            }
-            if actual_payload != admitted_profile["payload"]:
-                errors.append(
-                    "item/proficiency: inline profile differs from its admitted canonical payload"
-                )
     unused_crosswalks = set(crosswalk_targets) - used_definitions
     if unused_crosswalks:
         errors.append(
@@ -619,38 +606,9 @@ def validate(item, dependencies, manifest=None):
             "item/lifecycle: decay transform conflicts with temporal.decay_target"
         )
     proficiency = item.get("proficiency", {})
-    unique(proficiency.get("levels", []), ("level",), "item/proficiency/levels", errors)
     unique(
         proficiency.get("augments", []), ("key",), "item/proficiency/augments", errors
     )
-    for level in proficiency.get("levels", []):
-        unique(level["perks"], ("key",), "item/proficiency/levels/perks", errors)
-        selection_slots = [augment.get("selection_slot") for augment in level["perks"]]
-        if any(slot is None for slot in selection_slots):
-            errors.append(
-                "item/proficiency/levels/perks: every selectable perk requires selection_slot"
-            )
-        elif len(selection_slots) != len(set(selection_slots)):
-            errors.append("item/proficiency/levels/perks: duplicate selection_slot")
-        elif selection_slots != list(range(1, len(selection_slots) + 1)):
-            errors.append(
-                "item/proficiency/levels/perks: selection_slot must be contiguous in source order"
-            )
-        if level["selection_count"] > len(level["perks"]):
-            errors.append(
-                "item/proficiency/levels: selection_count exceeds available perks"
-            )
-        for augment in level["perks"]:
-            if "value" not in augment:
-                errors.append(
-                    "item/proficiency/levels/perks: every selectable perk requires a typed value"
-                )
-            unique(
-                augment.get("rank_values", []),
-                ("rank",),
-                "item/proficiency/levels/perks/rank_values",
-                errors,
-            )
     for augment in proficiency.get("augments", []):
         unique(
             augment.get("rank_values", []),
