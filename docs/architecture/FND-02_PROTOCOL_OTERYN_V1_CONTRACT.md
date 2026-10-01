@@ -232,6 +232,12 @@ Negotiation rules:
 - duplicate or unsorted selected/required capability IDs fail closed;
 - there is no capability digest and no exact full-list equality requirement.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3).** A World's policy may
+require registered optional capabilities (`required_gameplay_capabilities`, closed under each
+capability's own requirements, at most 16). FND-04 refuses admission, reconnect and recovery of a
+client whose supported list lacks them, and a required capability is always selected. It stays
+optional for protocol major 1: a World with an empty list behaves as before.
+
 ## 10. Wire identifiers
 
 Canonical FND-ID UUID identities exposed directly by this foundation use exactly **16 bytes** in standard UUID network byte order. Nil/all-zero is invalid.

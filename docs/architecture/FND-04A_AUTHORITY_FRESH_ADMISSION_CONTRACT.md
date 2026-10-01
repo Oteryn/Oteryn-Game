@@ -138,6 +138,13 @@ Every authoritative revision is compared independently against the current targe
 
 No silent retarget/downgrade to another World, Channel, owner, content/ruleset/map/policy/offer generation, protocol family or Canary path.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3-§5).** The target World's
+current `world_policy_revision` carries `required_gameplay_capabilities` and its effective set. Step
+11 of §7 and the protocol check of §7.1 also require the bootstrap's supported capability list to
+contain that effective set; otherwise admission is refused with `ADMISSION_CAPABILITY_REQUIRED`
+(FND-04C §4.1) before GrantNonce eligibility, with no authority mutation. A required capability is
+always selected for the new GameSession.
+
 ## 7. Atomic fresh-admission linearization
 
 Precommit checks are fail-fast eligibility only until the atomic authority boundary.

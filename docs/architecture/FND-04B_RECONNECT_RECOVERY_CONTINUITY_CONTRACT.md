@@ -277,6 +277,11 @@ fences predecessor transport authority
 
 Success is externally visible only after commit.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §4).** PREPARE eligibility
+(§12) and item 10 above also require the candidate's resume capability evidence to contain every
+capability the GameSession selected at admission; otherwise `RECONNECT_CAPABILITY_REQUIRED`
+(FND-04C §4.2) and current authority is preserved.
+
 ## 14. Failed/stale COMMIT
 
 Failed candidate never advances generation, revives predecessor, activates candidate proof, invalidates a current proof merely due to failure, consumes RecoveryGrantNonce as success, manufactures protection or rolls authority back to PREPARE-time state.
@@ -335,6 +340,11 @@ world_policy_revision
 ```
 
 No opaque `compatibility_revision` exists. FND-02 `schema_revision` remains diagnostic/build evidence.
+
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §4).** Recovery also requires
+the resume capability evidence to contain the effective `required_gameplay_capabilities` of the
+World's current `world_policy_revision`; otherwise `RECOVERY_CAPABILITY_REQUIRED` (FND-04C §4.3)
+with no authority mutation.
 
 Platform-security and recovery key/profile trust evidence preserve FND-04A semantics:
 
