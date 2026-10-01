@@ -155,3 +155,21 @@ The SOURCE schema does not establish native quest completeness.
 python build_wiki_source_schema.py --check
 python wiki_source_inventory.py --check
 ```
+
+All105 selected SOURCE specifications include4656 factual rows from249 exact
+revisions,197 curated groups,1066 source heading references and98 journal field
+references. Document order remains SOURCE order; execution and canonical bindings
+remain unknown. Provider disagreements, baseline scalars/item identities and
+unparsed requirements remain scoped and preserved.
+
+```sh
+python wiki_source_supplements.py --check
+```
+
+The offline check reconstructs authored facts from digest-bound inputs and their
+recorded acquisition receipt. It does not fetch or recheck public bodies or
+line/spans; those were verified during the recorded acquisition. Output records
+raw_body_rechecked:false, line_spans_rechecked:false, source_revision_verified:false
+and historical_acquisition_verified:true. This recorded provenance is not a
+signature, a fresh online proof or native/gameplay admission. Raw wiki bodies,
+acquisition browser payloads and the donor C++ witness remain unpublished.
