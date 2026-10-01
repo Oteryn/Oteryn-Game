@@ -90,8 +90,11 @@ generation; `COMBAT01-REWARD-PRINCIPALS` 1 (XP only); `ABILITY01-CALC-STAGES` 8.
 - This is independent of `COMBAT01-REWARD-PRINCIPALS`, which governs XP. Accrual is already
   session-local and durable only at PROFICIENCY-0's checkpoints, so crediting several characters adds
   no durable write per kill. The death settlement hands each credited session one bounded accrual
-  input `{creature definition, influence stacks, death occurrence}`; the session resolves its own
-  equipped weapon and adds the points. The settlement emits these inputs once, after its commit; a
+  input `{creature definition, influence stacks, death occurrence, weapon item key}`. The settlement
+  freezes the weapon item key per credited character inside the death commit, from the actor state
+  it already reads (for the killer, the key captured when the killing blow started), so a weapon the
+  blow broke or used up is still credited; the session never re-reads its slot after the commit. The
+  session adds the points to that key's track, or nothing when the key has no promoted proficiency. The settlement emits these inputs once, after its commit; a
   settlement resumed after a channel restart emits none, since those sessions' pending progress was
   lost with the restart anyway (PROFICIENCY-0 §4.3). As a second guard a session ignores a death
   occurrence it already accrued (it keeps the last `PROFEFF0-RL-01`).
@@ -192,14 +195,23 @@ ATTACK-0 or RANGED-0 swing. RNG purposes are new names under the existing SIM-DE
   extra damage applies once. Tibia shows one Critical Hit Chance and one Critical Extra Damage for
   the character, so imbuement Strike (IMBUE-FORGE-0 §5) joins the same roll instead of rolling
   under `imbue_crit` (amended there; `PARITY_PENDING` until PROF-PARITY-1).
-- **On kill and on hit** gains are healing and mana gain occurrences of origin `weapon_proficiency`;
-  like CHARM-0 12b procs, they trigger no charm and no leech.
+- **Reaction perks are inactive (R4).** `LifeLeech`, `ManaLeech`, the `SpellAugment` leech
+  augments, `LifeOnHit`, `ManaOnHit`, `LifeOnKill`, `ManaOnKill` and `HomingMissile` act through
+  post-commit descendant occurrences (GAME-ABILITY-01 §11). Their ceilings `AB-RL-14` to `AB-RL-16`
+  (depth, fan-out, root work) are still `OWNER_DECISION_REQUIRED` and unregistered, and the
+  first-slice limits disable post-commit reactions. These perks therefore stay **inert** (selectable,
+  shown, no effect) until those rows are registered; that is the blocking dependency of this part
+  of PROF-2, and this decision does not set the limits. The rules in the table above are what PROF-2
+  builds once they are.
+- **On kill and on hit** gains, once active, are healing and mana gain occurrences of origin
+  `weapon_proficiency`; like CHARM-0 12b procs, they trigger no charm and no leech.
 - **Homing missile.** After a hit with the weapon, with `probability` (purpose `prof_homing`), one
   descendant damage occurrence of the perk's element hits the same target for
   `trunc(parent damage × multiplier)`, shown with `missile_client_id`. It is its own commit after the
   parent, triggers no charm, leech, on-hit gain or homing, and counts for credit (CHARM-0 12b).
   Which hits can trigger it and what "damage" means (before or after mitigation) are not evidenced:
-  the perk stays **inactive** until PROF-PARITY-1 evidences both (fail closed, R3).
+  the perk stays **inactive** until PROF-PARITY-1 evidences both (fail closed, R3) and R4's rows
+  exist.
 - **ArmorPenetration and ElementalPierce** follow D199's units; the formulas above are the reading
   of "armor penetration (1.0 = +100%)" and "elemental pierce". Both are `PARITY_PENDING`, and
   PROF-PARITY-1 checks them against TibiaPal before release.
@@ -221,7 +233,8 @@ Tested with max and max+1. Also tested: two characters damaging one creature bot
 points; a character whose last damage is 5 min + 1 ms old earns nothing; a summon's kill earns
 nothing; a weapon switched in before the death earns, the one used earlier does not; a replayed death
 adds nothing; an inactive perk of a weapon the character's class cannot use; crit chance from
-imbuement and proficiency in one roll; Alpha Strike at exactly 95% does not apply; a homing perk
+imbuement and proficiency in one roll; a weapon broken by the killing blow is credited by its frozen
+key; a leech or on-hit perk does nothing while `AB-RL-14`..`16` are unregistered; Alpha Strike at exactly 95% does not apply; a homing perk
 does nothing.
 
 ## 6. Rejected options
@@ -243,6 +256,9 @@ does nothing.
   `PARITY_PENDING`.
 - **R3. Unevidenced kinds.** a) Inactive until evidenced (recommended: fail closed); b) a guessed
   formula. **Ruled a)** for the homing missile only; the others have a source reading.
+- **R4. Reaction perks.** a) Inert until `AB-RL-14`..`16` are registered (recommended: no limit is
+  decided here; the owner question goes through the control plane when it is needed); b) set the
+  limits here. **Ruled a).**
 
 ## 8. Owner questions
 
@@ -252,7 +268,8 @@ None. Every choice follows the official manual, TibiaWiki or an existing owner a
 
 - **Must decide now:** YES. PROF-2 cannot accrue for groups or apply any perk without it.
 - **Minimum sufficient:** no durable state, no new stage, one row; content rows for the point table.
-- **Blocked:** PROF-2's accrual for groups and every perk effect; PROF-CONTENT-2's point rows.
+- **Blocked:** PROF-2's accrual for groups and every perk effect; PROF-CONTENT-2's point rows. The
+  reaction perks additionally wait for `AB-RL-14`..`16` (R4).
 - **Harder later:** crediting every contributor fixes the death settlement's fan-out to the damage
   record, so narrowing it later changes player-visible progress rates; one critical roll shared with
   imbuements (amended IMBUE-FORGE-0 §5) binds every later crit source to that roll; the point table as
