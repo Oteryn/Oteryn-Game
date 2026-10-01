@@ -15,6 +15,9 @@ RULE_STATUSES = {
     "vibrancy_reflection_removed_at_release": "PRIMARY_OFFICIAL_HISTORICAL_RELEASE",
     "mana_leech_current_reference_formula": "POST_TARGET_COMMUNITY_EXPLICIT_MANA_ONLY",
     "leech_two_powerful_equipment_pairs": "DATED_COMMUNITY_EXPLICIT_BOUNDED_PAIRS",
+    "life_leech_reported_equal_hit_ceiling": "DATED_COMMUNITY_GAMEPLAY_REPORTED_EXAMPLES",
+    "mana_leech_wheel_equipment_example": "DATED_COMMUNITY_EXPLICIT_WHEEL_MANA_EXAMPLE",
+    "leech_elemental_parry_wound_reported_exclusions": "DATED_COMMUNITY_REPORTED_CHARM_TEST",
     **{name: "PUBLIC_EVIDENCE_UNRESOLVED" for name in (
         "leech_rounding", "leech_unequal_damage_and_overkill_order",
         "vibrancy_reflection_current", "critical_healing_scope",
@@ -41,6 +44,33 @@ PAIR_VALUE = {
     ],
     "other_equipment_composition": None,
 }
+LIFE_CASES = [(1, 438, 110), (2, 387, 54), (3, 383, 39), (4, 438, 36)]
+LIFE_VALUE = {
+    "scope": "ONLY_REPORTED_2020_AVALANCHE_EQUAL_HIT_CASES",
+    "interpretation": "REPORTED_EXAMPLES_FIT_PER_TARGET_CEILING",
+    "setup": {"family": "Vampirism", "tier": "powerful", "instance_count": 1,
+              "leech_share_bps": 2500, "equipment_slot": "armor", "attack": "Avalanche",
+              "wand_equipped": False, "targets": "Dragon Lords", "same_gear": True},
+    "reported_examples": [
+        {"hit_targets": n, "damage_per_target": damage,
+         "healed_each_target": healed, "total_healed": n * healed}
+        for n, damage, healed in LIFE_CASES],
+    "universal_rounding": None, "unequal_target_rounding": None,
+    "current_target_continuity": None, "cap_bps": None, "overkill_behavior": None,
+}
+WHEEL_VALUE = {
+    "scope": "ONLY_POWERFUL_VOID_PLUS_WHEEL_50_BPS_EXAMPLE",
+    "family": "Void", "tier": "powerful", "equipment_share_bps": 800,
+    "wheel_share_bps": 50, "combined_share_bps": 850, "chance_bps": 10000,
+    "other_combinations": None, "life_leech_composition": None,
+    "cap_bps": None, "current_target_continuity": None,
+}
+CHARM_VALUE = {
+    "scope": "ONLY_REPORTED_ELEMENTAL_CHARM_PARRY_WOUND_TEST",
+    "reported_to_trigger_imbuement_leech": {
+        "elemental_charms": False, "parry": False, "wound": False},
+    "other_charms": None, "current_target_continuity": None, "gameplay_calendar_date": None,
+}
 NEW_RULES = {
     "vibrancy_reflection_removed_at_release": (
         {"reflect_to_attacker": False, "scope": "LIVE_RELEASE_2018_12_03_ONLY"},
@@ -51,6 +81,15 @@ NEW_RULES = {
     "leech_two_powerful_equipment_pairs": (
         PAIR_VALUE, "DATED_PRE_TARGET_COMMUNITY_NOT_EXACT_TARGET_OBSERVATION",
         {"tibiaqa_two_mana_2018", "tibiaqa_two_leech_pairs_2021"}),
+    "life_leech_reported_equal_hit_ceiling": (
+        LIFE_VALUE, "HISTORICAL_2020_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+        {"tibiaqa_life_equal_hit_2020", "tibiaqa_life_answer_revisions_14497"}),
+    "mana_leech_wheel_equipment_example": (
+        WHEEL_VALUE, "DATED_2022_COMMUNITY_EXAMPLE_NOT_EXACT_TARGET_OBSERVATION",
+        {"tibiaqa_wheel_void_example_2022"}),
+    "leech_elemental_parry_wound_reported_exclusions": (
+        CHARM_VALUE, "HISTORICAL_2020_2021_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+        {"tibiaqa_charm_leech_test_2020"}),
 }
 SOURCE_PROFILES = {
     "official_vibrancy_release_4828": (
@@ -69,6 +108,38 @@ SOURCE_PROFILES = {
         "https://www.tibiaqa.com/18345/how-does-the-mana-leech-imbuement-work-for-knights",
         "5b19e5b23ac43808947ec7eee5e275a933910e1603224beacb2d42821ea55243",
         "FULL_PUBLIC_HTML_OR_SCRIPT", "COMMUNITY_GLOBAL_REFERENCE"),
+    "tibiaqa_life_equal_hit_2020": (
+        "https://www.tibiaqa.com/14483/how-does-life-leech-work-when-we-attack-more-than-one-monster?show=14483#q14483",
+        "ddcefe4dd18fc91445a0102d86608bd33796a2d38c587bb32d4c631bd6e2aabb",
+        "FULL_PUBLIC_HTML_OR_SCRIPT", "COMMUNITY_GLOBAL_REFERENCE"),
+    "tibiaqa_life_answer_revisions_14497": (
+        "https://www.tibiaqa.com/?qa=revisions/14497",
+        "46d78939b4bedfd0f83a8b5e0ddc0ed4600859676bf1c5615c08158c87789510",
+        "FULL_PUBLIC_HTML_OR_SCRIPT", "COMMUNITY_GLOBAL_REFERENCE"),
+    "tibiaqa_wheel_void_example_2022": (
+        "https://www.tibiaqa.com/31830/does-the-life-leech-and-mana-leech-stack-in-the-wheel-of-destiny?show=31830#q31830",
+        "65356afbab0814650fb043ab5883d16fe91f8eb2b3b1d66459bd91c3d04e2e91",
+        "FULL_PUBLIC_HTML_OR_SCRIPT", "COMMUNITY_GLOBAL_REFERENCE"),
+    "tibiaqa_charm_leech_test_2020": (
+        "https://www.tibiaqa.com/16927/does-damage-dealt-when-charm-activated-triggers-your-leech-imbuements?show=16927#q16927",
+        "e996cd92175cc41528a6d95ef9b0dcd94bf30eb3432e2f7525e8909a5b8947d1",
+        "FULL_PUBLIC_HTML_OR_SCRIPT", "COMMUNITY_GLOBAL_REFERENCE"),
+}
+# Pin full normalized source records, not only their self-reported digests.
+# These offline checks protect captured bytes, claims, revision links and dates;
+# they do not fetch the source or turn a community report into Global telemetry.
+BOUNDED_SOURCE_RECORD_SHA256 = {
+    "tibiaqa_life_equal_hit_2020": "690881ab2e0897cab0949e43505083d398325dac6da0589dc735dc6045b6f238",
+    "tibiaqa_life_answer_revisions_14497": "4693b05ac634043ecd67fb0bf428c40bfc2ea18596c82fa055e8fe8042e51d16",
+    "tibiaqa_wheel_void_example_2022": "7c8871b4dc4435324b9848b7887ff0345506e03d882f3bbc595067fece6a5a0c",
+    "tibiaqa_charm_leech_test_2020": "68182e8300f29d3c7a8f30156ca41a552f2e83276ec00661bb25b7d8b907be00",
+}
+BOUNDED_LINKS = {
+    "leech_rounding": ["mana_leech_current_reference_formula", "life_leech_reported_equal_hit_ceiling"],
+    "leech_equipment_composition": ["leech_two_powerful_equipment_pairs", "mana_leech_wheel_equipment_example"],
+    "leech_unequal_damage_and_overkill_order": [
+        "mana_leech_current_reference_formula", "life_leech_reported_equal_hit_ceiling",
+        "leech_elemental_parry_wound_reported_exclusions"],
 }
 RULE_TIME_STATUSES = {
     **{name: "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION" for name in RULE_STATUSES},
@@ -86,6 +157,21 @@ def mana_reference_example(damages, share_bps):
     count = len(damages)
     denominator = 10000 * 10 * count
     return sum(-(-(damage * share_bps * (count + 9)) // denominator) for damage in damages)
+
+
+def life_reported_example(damage_per_target, hit_targets):
+    """Interpret only the four recorded historical cases; not a Life runtime."""
+    if (type(damage_per_target) is not int or type(hit_targets) is not int
+            or (hit_targets, damage_per_target) not in {(n, d) for n, d, _ in LIFE_CASES}):
+        raise ValueError("Life interpretation is limited to the recorded equal-hit cases")
+    numerator = damage_per_target * 2500 * (hit_targets + 9)
+    denominator = 10000 * 10 * hit_targets
+    ceil_each = -(-numerator // denominator)
+    return {
+        "ceil_each": ceil_each, "total_if_ceil_each": ceil_each * hit_targets,
+        "nearest_each": (2 * numerator + denominator) // (2 * denominator),
+        "ceil_aggregated_once": -(-(numerator * hit_targets) // denominator),
+    }
 
 
 def validate(packet):
@@ -128,6 +214,23 @@ def validate(packet):
                                         separators=(",", ":")).encode()).hexdigest()
         if source["selected_claims_sha256"] != sha:
             raise ValueError("selected combat claims digest disagrees")
+    for source_id, expected_sha in BOUNDED_SOURCE_RECORD_SHA256.items():
+        source = sources[source_id]
+        digest = hashlib.sha256(json.dumps(source, sort_keys=True, ensure_ascii=False,
+                                          separators=(",", ":")).encode()).hexdigest()
+        if digest != expected_sha:
+            raise ValueError("reported combat provenance cannot be rewritten or self-certified")
+    for name, profiles in BOUNDED_LINKS.items():
+        if rules[name].get("bounded_profiles") != profiles:
+            raise ValueError("unresolved rules must preserve qualified bounded profile links")
+    for example in rules["life_leech_reported_equal_hit_ceiling"]["value"]["reported_examples"]:
+        derived = life_reported_example(example["damage_per_target"], example["hit_targets"])
+        if (derived["ceil_each"] != example["healed_each_target"]
+                or derived["total_if_ceil_each"] != example["total_healed"]):
+            raise ValueError("Life interpretation differs from the recorded healing logs")
+    wheel = rules["mana_leech_wheel_equipment_example"]["value"]
+    if wheel["combined_share_bps"] != wheel["equipment_share_bps"] + wheel["wheel_share_bps"]:
+        raise ValueError("bounded Wheel example must preserve its additive calculation")
     release = sources["official_vibrancy_release_4828"]
     if release["published_on"] != "2018-12-03" or release["source_stage"] != "LIVE_RELEASE":
         raise ValueError("the reflection-removal release cannot be replaced by the teaser")

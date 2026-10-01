@@ -77,6 +77,43 @@ unit-consumption, rollback or transfer-timer proof.
 
 ## What remains incomplete
 
+The owner scoped the final completion to **data, schema and research in this
+draft**. An additional exhaustive cross-check covered 24 families, 72 tiers,
+72 distinct scroll references, 72 material names, 816 Item references, quest
+source locators and all 663 eligibility records. It found no identity or selected
+type/tier error, and identified concrete authoring omissions, now repaired:
+
+- Completed-scroll success and invalid-target consumption have explicit Global
+  `null` fields, source-qualified engine hypotheses and dedicated observation
+  scenarios. The previous packet described blank inscription and Etcher use but
+  omitted these completed-scroll quantities entirely.
+- All shrine and completed-scroll routes now use the common typed conversion
+  compatibility guard. Different elemental conversion families, such as Scorch
+  and Venom, conflict; unrelated families do not gain invented exclusions.
+- Shared compatibility also checks the requested tier against the actual
+  `allowed_types[family]` limit in the eligibility catalogue. Stoic Iks Casque
+  accepts Epiphany II and rejects III for both shrine and completed-scroll paths.
+- The six named Blank Scroll drops now point to a complete browser-read article,
+  retained quote and exact revision/hash, replacing unpinned search attribution.
+  Public API metadata dates revision 428617 to 2025-08-23; current template data
+  and the community list remain separate from official target-server proof.
+
+New dated combat evidence records a 2020-02-28 Life Leech report and its public
+revision diff, matching per-target ceiling for the recorded equal-hit Avalanche
+examples. Separate sources supply the bounded Wheel+Void sum and named historical
+charm tests. These sources were read with normal public HTTP. They do not select
+unequal-target Life behavior, arbitrary caps or current charm rules. Another
+historical report shows an occupied Void slot displayed as `0:00h`; neither exact
+seconds nor a new timer policy is inferred from that display.
+
+All twelve unresolved scopes now have 28 concrete, prospective scenarios in
+`samples/global-observation-plan.json`, with capture fields, source/rule links and
+explicit visible/hidden and historical/current limits. Expected Global results
+remain null and collected observations remain zero. Validation rejects missing
+scopes, fabricated outcomes, broken references and invented observation counts.
+Capture groups are independently pinned; each scenario must retain the minimum
+dated public context and the relevant inventory, combat, timer or payment context.
+
 The definition and recipe catalogue is populated. Full Global server parity is
 not established. The immutable target is
 `global-tibia-observable-2026-07-28-post-server-save`; current public pages cannot
@@ -89,7 +126,7 @@ excluded. Per-item allow lists remain community evidence, with zero officially
 verified server allow lists. The two missing canonical Items have validated
 proposals; they are not registered runtime identities.
 
-Exact timer boundaries, life-leech rounding and broader combat composition, Etcher
+Exact timer boundaries, generalized/current life-leech rounding and broader combat composition, Etcher
 consumption, equipped-scroll acceptance, the Vibrancy PvP success gate,
 transaction behavior and preservation across transfers still require qualified
 Global observations. Crystal code supplies hypotheses, not that proof. Some
@@ -103,8 +140,8 @@ Validation uses the explicit offline commands in [README.md](README.md).
 
 ## Validation
 
-All 132 offline tests pass. The seven replay/schema commands in README pass,
+All 148 offline tests pass. The seven replay/schema commands in README pass,
 including both missing Items through the owning Item validator with zero errors
-and warnings, and an additional reparse of the pinned Crystal XML. All 63 rule
-records retain qualified source references. The catalogue preserves 11 named
+and warnings, and an additional reparse of the pinned Crystal XML. All 66 rule
+records retain qualified source references. The catalogue preserves 12 named
 Global observation requirements rather than declaring complete server parity.

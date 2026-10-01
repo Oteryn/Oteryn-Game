@@ -169,6 +169,41 @@ class ImbuementAuthoringTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "digest changed"):
                 authoring.build()
 
+    def test_observation_plan_covers_every_gap_without_inventing_outcomes(self):
+        packets = authoring.supporting()
+        plan = packets["global-observation-plan.json"]
+        self.assertEqual(self.candidate["observation_plan_profile"], "global-observation-plan.json")
+        self.assertEqual({r["id"] for r in plan["requirements"]},
+                         {r["id"] for r in packets["global-rules-evidence.json"]["unresolved"]})
+        authoring.validate_observation_plan(plan, packets)
+        edits = [lambda p: p["requirements"].pop(),
+                 lambda p: p["requirements"][0]["scenarios"][0].update(expected_global_result=1),
+                 lambda p: p["requirements"][0].update(status="GLOBAL_VERIFIED"),
+                 lambda p: p["requirements"][0]["source_refs"][0].update(id="invented_primary"),
+                 lambda p: p["requirements"][0]["scenarios"][0]["capture_fields"].clear(),
+                 lambda p: p["counts"].update(observations_collected_by_this_plan=28),
+                 lambda p: p["requirements"][1]["scenarios"][0].update(
+                     id=p["requirements"][0]["scenarios"][0]["id"])]
+        for edit in edits:
+            with self.subTest(edit=edit):
+                changed = copy.deepcopy(plan)
+                edit(changed)
+                with self.assertRaises(ValueError):
+                    authoring.validate_observation_plan(changed, packets)
+
+    def test_capture_requirements_cannot_be_weakened_with_the_scenario(self):
+        packets = authoring.supporting()
+        plan = copy.deepcopy(packets["global-observation-plan.json"])
+        plan["capture_field_groups"]["public_context"] = ["public_artifact_url"]
+        plan["requirements"][0]["scenarios"][0]["capture_fields"] = ["public_artifact_url"]
+        with self.assertRaisesRegex(ValueError, "independently reviewed minima"):
+            authoring.validate_observation_plan(plan, packets)
+        plan = copy.deepcopy(packets["global-observation-plan.json"])
+        payment = next(r for r in plan["requirements"] if r["id"] == "transaction_payment_sources")
+        payment["scenarios"][0]["capture_group_refs"] = ["public_context", "item_state"]
+        with self.assertRaisesRegex(ValueError, "minimum evidence context"):
+            authoring.validate_observation_plan(plan, packets)
+
     def test_reject_new_unmapped_source_type(self):
         sources = authoring.source_facts()
         sources["wiki_br"]["records"][0]["name"] = "Unknown Imbuement"

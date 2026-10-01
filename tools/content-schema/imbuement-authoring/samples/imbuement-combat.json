@@ -207,6 +207,130 @@
         ]
       },
       "selected_claims_sha256": "337103c6eb0b2aa4dd7007641d8ac0ee20f124ff1e69c9e6144648b023c793d6"
+    },
+    {
+      "id": "tibiaqa_life_equal_hit_2020",
+      "url": "https://www.tibiaqa.com/14483/how-does-life-leech-work-when-we-attack-more-than-one-monster?show=14483#q14483",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "ddcefe4dd18fc91445a0102d86608bd33796a2d38c587bb32d4c631bd6e2aabb",
+      "digest_scope": "Exact retrieved full public HTTP response bytes; public native HTTP200",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "published_on": "2020-02-28",
+      "answer_created_at": "2020-02-28T04:19:02Z",
+      "report_body_edited_on": "2020-02-28",
+      "revision_source": "tibiaqa_life_answer_revisions_14497",
+      "target_time_status": "HISTORICAL_2020_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+      "selected_claims": {
+        "answer_id": 14497,
+        "report_setup": "one Powerful Vampirism armor; same gear; Dragon Lords; Avalanche; no wand",
+        "quotes": [
+          "hitting them with avalanche runes (No wand on)",
+          "05:33 A dragon lord loses 383 hitpoints due to your attack. 05:33 You were healed for 39 hitpoints.",
+          "05:32 A dragon lord loses 387 hitpoints due to your attack. 05:32 You were healed for 54 hitpoints."
+        ],
+        "reported_cases": [
+          {
+            "hit_targets": 1,
+            "damage_per_target": 438,
+            "healed_each_target": 110,
+            "total_healed": 110
+          },
+          {
+            "hit_targets": 2,
+            "damage_per_target": 387,
+            "healed_each_target": 54,
+            "total_healed": 108
+          },
+          {
+            "hit_targets": 3,
+            "damage_per_target": 383,
+            "healed_each_target": 39,
+            "total_healed": 117
+          },
+          {
+            "hit_targets": 4,
+            "damage_per_target": 438,
+            "healed_each_target": 36,
+            "total_healed": 144
+          }
+        ],
+        "universal_algorithm": null,
+        "gameplay_calendar_date": null
+      },
+      "selected_claims_sha256": "5982f23828e93599bcc6515051702a315977e324aaa8075ecbfaf9f2552d4e89"
+    },
+    {
+      "id": "tibiaqa_life_answer_revisions_14497",
+      "url": "https://www.tibiaqa.com/?qa=revisions/14497",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "46d78939b4bedfd0f83a8b5e0ddc0ed4600859676bf1c5615c08158c87789510",
+      "digest_scope": "Exact retrieved full public HTTP response bytes; public native HTTP200",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "published_on": "2020-02-28",
+      "source_stage": "PUBLIC_ANSWER_REVISION_DIFF",
+      "target_time_status": "HISTORICAL_2020_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+      "selected_claims": {
+        "answer_id": 14497,
+        "quotes": [
+          "Current revision Edited Feb 28, 2020 by Ryocrits",
+          "Posted Feb 28, 2020 by Ryocrits"
+        ],
+        "field_report_added_on": "2020-02-28",
+        "gameplay_calendar_date": null
+      },
+      "selected_claims_sha256": "ac55c8ec28527c5bd06ca707b5cc268d9335eab5210eba00a9eb99361fd5c677"
+    },
+    {
+      "id": "tibiaqa_wheel_void_example_2022",
+      "url": "https://www.tibiaqa.com/31830/does-the-life-leech-and-mana-leech-stack-in-the-wheel-of-destiny?show=31830#q31830",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "65356afbab0814650fb043ab5883d16fe91f8eb2b3b1d66459bd91c3d04e2e91",
+      "digest_scope": "Exact retrieved full public HTTP response bytes; public native HTTP200",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "published_on": "2022-11-28",
+      "answer_created_at": "2022-11-28T15:15:48Z",
+      "target_time_status": "DATED_2022_COMMUNITY_EXAMPLE_NOT_EXACT_TARGET_OBSERVATION",
+      "selected_claims": {
+        "answer_id": 31836,
+        "quotes": [
+          "Yes, it does stack additively.",
+          "if you get +0.5% mana leech from skill wheel and equip an item with Powerful Void (+8%) you will then have 8.5% mana leech at a 100% rate."
+        ],
+        "mana_equipment_bps": 800,
+        "mana_wheel_bps": 50,
+        "combined_mana_bps": 850,
+        "chance_bps": 10000,
+        "other_combinations": null,
+        "cap_bps": null
+      },
+      "selected_claims_sha256": "f36704844b615e17e05d0e832f5e06a467dc67105ae30fbe005bd3fb0393a59d"
+    },
+    {
+      "id": "tibiaqa_charm_leech_test_2020",
+      "url": "https://www.tibiaqa.com/16927/does-damage-dealt-when-charm-activated-triggers-your-leech-imbuements?show=16927#q16927",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "e996cd92175cc41528a6d95ef9b0dcd94bf30eb3432e2f7525e8909a5b8947d1",
+      "digest_scope": "Exact retrieved full public HTTP response bytes; public native HTTP200",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "published_on": "2020-06-01",
+      "report_body_edited_on": "2021-05-14",
+      "target_time_status": "HISTORICAL_2020_2021_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+      "selected_claims": {
+        "answer_id": 17284,
+        "quote": "I had the same doubt my self, and tried the elemental charms/parry/wound don't trigger the imbuements",
+        "tested_categories": [
+          "elemental_charms",
+          "parry",
+          "wound"
+        ],
+        "current_continuity": null,
+        "gameplay_calendar_date": null
+      },
+      "selected_claims_sha256": "320b8d6f8e13dba9a04eaa153a66b0bb78669024b0355b2a57bebf6beb519f5e"
     }
   ],
   "rules": [
@@ -277,8 +401,12 @@
         "tibiapal_leech_calculator",
         "fandom_formulae_1205374"
       ],
-      "notes": "General and Life Leech rounding remain unqualified. The separately scoped post-target mana reference explicitly gives per-target ceiling; calculator display ceiling does not justify universal leech rounding.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+      "notes": "Generic rounding remains unqualified. mana_leech_current_reference_formula selects a post-target Mana reference; life_leech_reported_equal_hit_ceiling separately records historical equal-hit LIFE examples fitting per-target ceiling. Neither certifies universal/current Life rounding or unequal-Life behavior.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION",
+      "bounded_profiles": [
+        "mana_leech_current_reference_formula",
+        "life_leech_reported_equal_hit_ceiling"
+      ]
     },
     {
       "id": "leech_unequal_damage_and_overkill_order",
@@ -289,8 +417,13 @@
         "tibiapal_leech_calculator",
         "fandom_formulae_1205374"
       ],
-      "notes": "The dedicated post-target mana reference provides per-target scaling, ceiling and overkill inclusion. General Life Leech, July28continuity, zero-damage target counting, charm/proficiency contribution ordering and generic combat pipelines remain unqualified.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+      "notes": "The post-target Mana reference selects per-target scaling, ceiling and overkill inclusion. Historical equal-hit Life examples and named charm exclusion tests are separately scoped. Unequal-Life, zero-damage counting, overkill order, current charm/proficiency composition and generic pipelines remain unqualified.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION",
+      "bounded_profiles": [
+        "mana_leech_current_reference_formula",
+        "life_leech_reported_equal_hit_ceiling",
+        "leech_elemental_parry_wound_reported_exclusions"
+      ]
     },
     {
       "id": "vibrancy_reflection_current",
@@ -324,8 +457,12 @@
         "tibiaqa_two_mana_2018",
         "tibiaqa_two_leech_pairs_2021"
       ],
-      "notes": "Two specific Powerful Void and Vampirism equipment pairs are separately populated from dated public statements. Arbitrary mixed tiers, more than twoitems, Wheel/proficiency contributions and generic equipment composition remain unqualified.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+      "notes": "leech_two_powerful_equipment_pairs records two specific Powerful pairs; mana_leech_wheel_equipment_example records only800+50=850bps Mana example. Arbitrary mixtures, more items, Life Wheel/proficiency contributions and caps remain unqualified.",
+      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION",
+      "bounded_profiles": [
+        "leech_two_powerful_equipment_pairs",
+        "mana_leech_wheel_equipment_example"
+      ]
     },
     {
       "id": "protection_equipment_composition",
@@ -432,6 +569,104 @@
       ],
       "notes": "Dated public2018answer gives2*8%=16%;2021comment explicitly two25%life leech instances and two8%mana instances. These two Powerful pairs support bounded stacking observations, not arbitrary tier mixtures, moreitems, proficiency or Wheel contributions, Life Leech rounding or general composition.",
       "target_time_status": "DATED_PRE_TARGET_COMMUNITY_NOT_EXACT_TARGET_OBSERVATION"
+    },
+    {
+      "id": "life_leech_reported_equal_hit_ceiling",
+      "value": {
+        "scope": "ONLY_REPORTED_2020_AVALANCHE_EQUAL_HIT_CASES",
+        "interpretation": "REPORTED_EXAMPLES_FIT_PER_TARGET_CEILING",
+        "setup": {
+          "family": "Vampirism",
+          "tier": "powerful",
+          "instance_count": 1,
+          "leech_share_bps": 2500,
+          "equipment_slot": "armor",
+          "attack": "Avalanche",
+          "wand_equipped": false,
+          "targets": "Dragon Lords",
+          "same_gear": true
+        },
+        "reported_examples": [
+          {
+            "hit_targets": 1,
+            "damage_per_target": 438,
+            "healed_each_target": 110,
+            "total_healed": 110
+          },
+          {
+            "hit_targets": 2,
+            "damage_per_target": 387,
+            "healed_each_target": 54,
+            "total_healed": 108
+          },
+          {
+            "hit_targets": 3,
+            "damage_per_target": 383,
+            "healed_each_target": 39,
+            "total_healed": 117
+          },
+          {
+            "hit_targets": 4,
+            "damage_per_target": 438,
+            "healed_each_target": 36,
+            "total_healed": 144
+          }
+        ],
+        "universal_rounding": null,
+        "unequal_target_rounding": null,
+        "current_target_continuity": null,
+        "cap_bps": null,
+        "overkill_behavior": null
+      },
+      "status": "DATED_COMMUNITY_GAMEPLAY_REPORTED_EXAMPLES",
+      "evidence": [
+        "tibiaqa_life_equal_hit_2020",
+        "tibiaqa_life_answer_revisions_14497"
+      ],
+      "notes": "Public answer revision dates field-report addition to Feb28,2020. One Powerful Vampirism armor, equal Dragon Lord hits from Avalanche with no wand: recorded cases fit ceiling for each target before summing. N2/N3 differ from Crystal nearest rounding. This is an interpretation of reported historical examples, not universal/current Life rounding; unequal-Life, overkill and caps remain unqualified.",
+      "target_time_status": "HISTORICAL_2020_REPORT_NOT_EXACT_TARGET_OBSERVATION"
+    },
+    {
+      "id": "mana_leech_wheel_equipment_example",
+      "value": {
+        "scope": "ONLY_POWERFUL_VOID_PLUS_WHEEL_50_BPS_EXAMPLE",
+        "family": "Void",
+        "tier": "powerful",
+        "equipment_share_bps": 800,
+        "wheel_share_bps": 50,
+        "combined_share_bps": 850,
+        "chance_bps": 10000,
+        "other_combinations": null,
+        "life_leech_composition": null,
+        "cap_bps": null,
+        "current_target_continuity": null
+      },
+      "status": "DATED_COMMUNITY_EXPLICIT_WHEEL_MANA_EXAMPLE",
+      "evidence": [
+        "tibiaqa_wheel_void_example_2022"
+      ],
+      "notes": "Dated2022 community statement explicitly combines Powerful Void800bps with Wheel50bps to850bps at10000bps chance. This single Mana example does not prove arbitrary mixed equipment, Life composition, caps or exact target continuity.",
+      "target_time_status": "DATED_2022_COMMUNITY_EXAMPLE_NOT_EXACT_TARGET_OBSERVATION"
+    },
+    {
+      "id": "leech_elemental_parry_wound_reported_exclusions",
+      "value": {
+        "scope": "ONLY_REPORTED_ELEMENTAL_CHARM_PARRY_WOUND_TEST",
+        "reported_to_trigger_imbuement_leech": {
+          "elemental_charms": false,
+          "parry": false,
+          "wound": false
+        },
+        "other_charms": null,
+        "current_target_continuity": null,
+        "gameplay_calendar_date": null
+      },
+      "status": "DATED_COMMUNITY_REPORTED_CHARM_TEST",
+      "evidence": [
+        "tibiaqa_charm_leech_test_2020"
+      ],
+      "notes": "Answer createdJune1,2020 and editedMay14,2021 reports personally testing elemental charms/parry/wound without imbuement leech. Exact gameplay date is unknown. Other charms, later charm changes and current target continuity remain unqualified.",
+      "target_time_status": "HISTORICAL_2020_2021_REPORT_NOT_EXACT_TARGET_OBSERVATION"
     }
   ],
   "excluded_test_server_changes": [
@@ -670,6 +905,13 @@
       "current_community_reference": "Formulae1205374: each target ceiling before sum",
       "crystal_imbuements": "nearest integer lround with clamp to realDamage",
       "resolution": "Current public community statement is not a July28runtime observation; preserve discrepancy and Life Leech uncertainty."
+    },
+    {
+      "topic": "Life Leech rounding in reported equal-hit examples",
+      "public_profile": "life_leech_reported_equal_hit_ceiling",
+      "engine_hypothesis": "leech_aoe_and_rounding",
+      "scope": "HISTORICAL_REPORTED_CASES_ONLY",
+      "disagreement": "N2 damage387: reported54 per target versus lround53; N3 damage383: reported39 versus lround38. Neither engine nor this report establishes current universal Life rounding."
     }
   ]
 }

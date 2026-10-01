@@ -274,6 +274,70 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertIn("BothHTTP200", attempts["native_etcher_and_guide"]["outcome"])
         self.assertTrue(attempts["concrete_implementation_hypotheses"]["urls"])
 
+    def test_historical_zero_minute_display_is_not_exact_expiration_evidence(self):
+        rule = self.rules["historical_minute_display_and_slot_occupancy_example"]
+        value = rule["value"]
+        self.assertEqual(value["scope"], "REPORTED_HISTORICAL_DISPLAY_AND_OCCUPANCY_EXAMPLE")
+        self.assertEqual(value["reported_before"],
+                         {"displayed_time": "13:53", "remaining_duration_display": "0:00h"})
+        self.assertEqual(value["reported_after"],
+                         {"displayed_time": "13:56", "remaining_duration_display": "0:00h"})
+        self.assertTrue(value["reported_reimbue_refused"])
+        self.assertFalse(value["reported_attacking_during_interval"])
+        self.assertIsNone(value["exact_remaining_seconds"])
+        self.assertIsNone(value["display_zero_means_expired"])
+        self.assertEqual(rule["parity_status"], "DERIVED_DATED_PUBLIC_PLAYER_REPORT")
+        source = self.sources[rule["evidence"][0]]
+        self.assertEqual(source["published_date"], "2020-03-19")
+        self.assertEqual(source["accepted_answer_date"], "2020-03-19")
+        self.assertEqual(source["last_edit_date"], "2020-03-20")
+        self.assertIn("NOT_2026_TARGET_OBSERVATION", rule["target_time_status"])
+        self.assertIn(rule["evidence"][0], self.rules["fine_grained_timer_hypothesis"]["evidence"])
+        self.assertIsNone(self.rules["fine_grained_timer_hypothesis"]["value"])
+
+    def test_completed_scroll_consumption_is_separate_and_keeps_ots_hypotheses_pending(self):
+        for key, units in (("scroll_application_consumed_units", 1),
+                           ("scroll_application_invalid_target_consumed_units", 0)):
+            rule = self.rules[key]
+            self.assertIsNone(rule["value"])
+            self.assertEqual(rule["parity_status"], "PARITY_PENDING")
+            self.assertEqual(rule["hypotheses"][0]["value"], units)
+            self.assertEqual(rule["hypotheses"][0]["status"], "OTS_HYPOTHESIS_ONLY")
+            self.assertFalse(rule["hypotheses"][0]["selected_as_global"])
+            self.assertEqual(rule["hypotheses"][0]["evidence"], ["crystal_imbuements_player_impl"])
+        pending = {r["id"] for r in self.packet["unresolved"]}
+        self.assertIn("scroll_consumption", pending)
+        self.assertEqual(len(pending), 12)
+        self.assertIn("failed_transaction_consumption_and_rollback", pending)
+
+    def test_discovery_and_unrelated_trade_receipts_do_not_become_runtime_facts(self):
+        attempts = {r["id"]: r for r in self.packet["research_attempts"]}
+        for key in ("tracker_button_not_duration_observation",
+                    "depot_coin_trade_not_imbuement_preservation",
+                    "tibiabr_article_discovery_only", "tibiabr_article_body_api_denied"):
+            row = attempts[key]
+            self.assertFalse(row["used_for_values"])
+            self.assertTrue(row["urls"])
+            self.assertTrue(set(row["evidence"]) <= self.sources.keys())
+        denied = attempts["tibiabr_article_body_api_denied"]
+        self.assertIn("HTTP403", denied["outcome"])
+        self.assertEqual(len(denied["urls"]), 4)
+        unqualified = {"tibiaqa_tracker_ui_2023", "tibiaqa_depot_coin_trade_2022",
+                       "tibiabr_discovery_index_2026"}
+        self.assertTrue(all(not (set(r["evidence"]) & unqualified)
+                            for r in self.rules.values()))
+        self.assertIsNone(self.sources["tibiabr_discovery_index_2026"]["published_date"])
+        self.assertIsNone(self.rules["transfer_preserves_imbuement_state_and_remaining_duration"]["value"])
+
+    def test_closed_and_unresolved_findings_have_traceable_urls_without_scope_escalation(self):
+        for row in self.packet["closed_gaps"] + self.packet["unresolved"]:
+            self.assertTrue(row["source_urls"], row["id"])
+            self.assertEqual(row["source_urls"], list(dict.fromkeys(
+                self.sources[key]["url"] for key in row["evidence"])))
+            self.assertTrue(row["source_url_scope"])
+        for row in self.packet["unresolved"]:
+            self.assertIn("do not certify", row["source_url_scope"])
+
     def test_user_requested_crystal_branch_is_distinct_and_keeps_ots_confidence(self):
         source = self.sources["crystal_imbuements_player_impl"]
         self.assertEqual(source["branch"], "imbuements")

@@ -17,21 +17,99 @@ REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-access.json": "29f43745a3d0ecc74c183f9a031456a3254f7ca9bb29acbe6323dfa7162ab25e",
+    "imbuement-access.json": "6b07b10880e5458c6387b899f63a8e44a8c4f8418087e33052028237b19e76d9",
     "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
-    "global-rules-evidence.json": "26de8e6af75165727e82d8b7f3bbdef36df973ab14cabbb3d22344c5eac0f96d",
-    "imbuement-combat.json": "2558d32beded7b8707ad521991bca609a0293d00d03a414efcf10b60de8e660a",
+    "global-rules-evidence.json": "99efe3f02a593a90594dc5d1d09c0687243fcd4d50b14846e96d60f8d9858056",
+    "imbuement-combat.json": "4e708050191560c42f825174d293dc8f24a4ac34f0b894047b3dee2a083bcbc2",
     "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
     "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
     "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d",
+    "global-observation-plan.json": "c53588ee8eb229bf5197408eb51e241c7ceaeab5f4d26c17eec24e712d370ff4",
 }
+# Independently anchor reviewed capture requirements. Mutable scenario fields
+# cannot redefine the evidence necessary to qualify their own claims.
+CAPTURE_GROUPS_SHA256 = "b18a064a812601e7791aa3f86e4b33b747fe3d48e1da50cc210e44da8720fda2"
+MINIMUM_CAPTURE_GROUPS = {
+    "exact_target_snapshot": set(),
+    "etcher_consumption": {"item_state", "inventory_resources"},
+    "scroll_application_equipped_target": {"item_state", "inventory_resources"},
+    "fine_grained_timers": {"item_state", "timer_context"},
+    "combat_pipeline": {"item_state", "combat_context"},
+    "vibrancy_pvp_gate": {"item_state", "pvp_context"},
+    "transaction_payment_sources": {"item_state", "inventory_resources", "bank_stash"},
+    "failed_transaction_consumption_and_rollback": {"item_state", "inventory_resources", "bank_stash"},
+    "native_effect_composition": {"item_state", "combat_context", "native_stats"},
+    "transfer_preserves_imbuement_state_and_remaining_duration": {"item_state", "timer_context", "transfer_context"},
+    "etcher_npc_purchase_requires_premium": {"item_state", "inventory_resources"},
+    "scroll_consumption": {"item_state", "inventory_resources"},
+}
+
+
+def validate_observation_plan(plan, packets):
+    ledger = packets["global-rules-evidence.json"]
+    if (plan["schema"] != "OTERYN_IMBUEMENT_GLOBAL_OBSERVATION_PLAN/v1"
+            or plan["activation"] != "DRAFT_NOT_RUNTIME_READY"
+            or plan["target"] != ledger["target"]
+            or plan["status"] != "PUBLIC_EVIDENCE_NOT_SUFFICIENT"):
+        raise ValueError("observation plan cannot certify or activate unobserved behavior")
+    catalogues = {"global-rules-evidence.json", "imbuement-combat.json"}
+    if set(plan["source_catalogues"]) != catalogues:
+        raise ValueError("observation plan references unsupported catalogues")
+    requirements = plan["requirements"]
+    ids = [r["id"] for r in requirements]
+    if len(ids) != len(set(ids)) or set(ids) != {r["id"] for r in ledger["unresolved"]}:
+        raise ValueError("observation requirements differ from the complete unresolved ledger")
+    source_ids = {}
+    rule_ids = {}
+    for name in catalogues:
+        sources = packets[name]["sources"]
+        source_ids[name] = set(sources) if isinstance(sources, dict) else {s["id"] for s in sources}
+        rule_ids[name] = {r["id"] for r in packets[name]["rules"]}
+    scenario_ids = []
+    groups = plan["capture_field_groups"]
+    group_digest = hashlib.sha256(json.dumps(groups, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if group_digest != CAPTURE_GROUPS_SHA256 or set(ids) != set(MINIMUM_CAPTURE_GROUPS):
+        raise ValueError("observation capture requirements differ from independently reviewed minima")
+    for requirement in requirements:
+        if (requirement["status"] != "PUBLIC_EVIDENCE_NOT_SUFFICIENT"
+                or requirement["ledger_ref"] != {"catalogue": "global-rules-evidence.json",
+                                                  "section": "unresolved", "id": requirement["id"]}
+                or not requirement["source_and_capture_limitations"]
+                or not requirement["source_refs"] or not requirement["scenarios"]):
+            raise ValueError("observation requirement lacks its qualified ledger context")
+        for field, known in (("source_refs", source_ids), ("related_rule_refs", rule_ids)):
+            for ref in requirement[field]:
+                if ref["catalogue"] not in known or ref["id"] not in known[ref["catalogue"]]:
+                    raise ValueError("observation plan has an unresolved evidence reference")
+        for scenario in requirement["scenarios"]:
+            scenario_ids.append(scenario["id"])
+            required_groups = MINIMUM_CAPTURE_GROUPS[requirement["id"]] | {"public_context"}
+            if not required_groups <= set(scenario["capture_group_refs"]):
+                raise ValueError("observation scenario omits the minimum evidence context")
+            if (scenario["status"] != "PLANNED_NOT_OBSERVED"
+                    or scenario["method"] != "DATED_PUBLIC_RECORDING_OR_LOG"
+                    or scenario["expected_global_result"] is not None
+                    or not scenario["procedures"] or not scenario["visible_claim_only"]
+                    or not scenario["capture_fields"] or not scenario["capture_group_refs"]):
+                raise ValueError("planned scenarios cannot select expected Global outcomes")
+            for group in scenario["capture_group_refs"]:
+                if group not in groups or not groups[group] or not set(groups[group]) <= set(scenario["capture_fields"]):
+                    raise ValueError("observation scenario omits required capture fields")
+    if len(set(scenario_ids)) != len(scenario_ids) or any(not sid for sid in scenario_ids):
+        raise ValueError("observation scenario identities must be unique and nonempty")
+    if (any(type(v) is not int for v in plan["counts"].values())
+            or plan["counts"] != {"planned_requirements": len(requirements),
+                          "planned_scenarios": len(scenario_ids),
+                          "observations_collected_by_this_plan": 0}):
+        raise ValueError("planned scenario counts cannot masquerade as observed evidence")
 
 
 def supporting():
     expected = {"imbuement-bindings.json", "imbuement-access.json",
                 "imbuement-eligibility.json", "global-rules-evidence.json",
                 "imbuement-combat.json", "crystal-imbuements-evidence.json",
-                "missing-item-definitions.json", "missing-item-source-facts.json"}
+                "missing-item-definitions.json", "missing-item-source-facts.json",
+                "global-observation-plan.json"}
     if set(EVIDENCE_PINS) != expected:
         raise ValueError("supporting evidence pins are incomplete")
     packets = {}
@@ -55,6 +133,7 @@ def supporting():
     import newbranch_evidence
     combat_evidence.validate(packets["imbuement-combat.json"])
     newbranch_evidence.validate(packets["crystal-imbuements-evidence.json"])
+    validate_observation_plan(packets["global-observation-plan.json"], packets)
     proposals = packets["missing-item-definitions.json"]["proposals"]
     if {p["source_client_id"] for p in proposals} != {49160, 53192} or any(
             p["identity_state"] != "PROPOSED_NOT_REGISTERED" for p in proposals):
@@ -159,6 +238,7 @@ def schema():
                 "supporting_catalogues": obj({name: {"type": "string", "pattern": "^[0-9a-f]{64}$"}
                                               for name in sorted(EVIDENCE_PINS)}),
                 "global_rules_profile": {"const": "global-rules-evidence.json"},
+                "observation_plan_profile": {"const": "global-observation-plan.json"},
                 "combat_profile": {"const": "imbuement-combat.json"},
                 "missing_item_proposals": {"const": "missing-item-definitions.json"},
                 "engine_reference_profile": {"const": "crystal-imbuements-evidence.json"},
@@ -243,6 +323,7 @@ def build():
             "target": sources["decision"]["findings"]["target"], "source_facts_sha256": FACTS_SHA256,
             "supporting_catalogues": dict(sorted(EVIDENCE_PINS.items())),
             "global_rules_profile": "global-rules-evidence.json",
+            "observation_plan_profile": "global-observation-plan.json",
             "combat_profile": "imbuement-combat.json",
             "missing_item_proposals": "missing-item-definitions.json",
             "engine_reference_profile": "crystal-imbuements-evidence.json",
@@ -278,6 +359,7 @@ def comparison():
                 "completed_scroll_loot_records": 48,
                 "global_rules": len(packets["global-rules-evidence.json"]["rules"]),
                 "combat_rule_profiles": len(packets["imbuement-combat.json"]["rules"]),
+                "planned_not_observed_scenarios": packets["global-observation-plan.json"]["counts"]["planned_scenarios"],
                 "crystal_imbuements_revision": packets["crystal-imbuements-evidence.json"]["revision"],
                 "gold_token_exchange_bundles": len(packets["imbuement-access.json"]["material_acquisition"]["yana_gold_token_exchange"]["recipes"]),
             },

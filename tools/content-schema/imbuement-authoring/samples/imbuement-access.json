@@ -76,8 +76,21 @@
     "br_blank_scroll": {
       "url": "https://www.tibiawiki.com.br/wiki/Blank_Imbuement_Scroll",
       "role": "COMMUNITY_GLOBAL_REFERENCE",
-      "access_status": "INDEXED_SEARCH_SNIPPET",
-      "scope": "Named blank-scroll monster drops; world shrine construction and individual five-tome NPC purchase prerequisites."
+      "access_status": "FULL_ARTICLE_BROWSER_READ",
+      "scope": "Full article explicitly lists six named Blank Scroll monster drops, Albinius25000gold sale subject to built world temple and five submitted tomes, and blank conversion to Intricate/Powerful. Revision428617 predates July28,2026; the rendered article may incorporate current templates and does not prove exact target-date server loot configuration.",
+      "method": "Remote Desktop + Chrome/CDP",
+      "revision_id": 428617,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Blank_Imbuement_Scroll&oldid=428617",
+      "source_sha256": "1a34e6109d176c756ff1c070a40c384453f4fb97fc1b5a8356ce5dbe1ad35166",
+      "digest_scope": "Complete UTF-8 .mw-parser-output innerText, including category navigation.",
+      "captured_on": "2026-10-01",
+      "target_continuity": "REVISION_PREDATES_TARGET_BUT_RENDERED_TEMPLATES_CURRENT_NOT_EXACT_TARGET_SERVER_CERTIFICATION",
+      "selected_quote": "Loot de:\tHeadwalker, Inkwing, Shell Drake, Sir Leonard, Sir Leopold, Wrathful Archivist.",
+      "revision_timestamp": "2025-08-23T10:16:39Z",
+      "revision_parent_id": 428528,
+      "page_id": 64771,
+      "revision_metadata_url": "https://www.tibiawiki.com.br/api.php?action=query&prop=revisions&revids=428617&rvprop=timestamp%7Cids&format=json",
+      "revision_metadata_method": "Public MediaWiki API read in Chrome/CDP"
     },
     "tibiopedia_yana": {
       "url": "https://tibiopedia.pl/npcs/Yana",
@@ -147,6 +160,21 @@
       "revision": null,
       "target_continuity": "UNVERIFIED",
       "scope": "Explicit Free Account application allowance; this does not prove a Free Account NPC-purchase allowance."
+    },
+    "fandom_imbuing_revision_1194750": {
+      "url": "https://tibia.fandom.com/wiki/Imbuing?oldid=1194750",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "revision_id": 1194750,
+      "revision_timestamp": "2026-07-07T01:22:16Z",
+      "source_sha256": "e07d4be8d37844eeaf4f078ad7de1242047e18466cc999a6686c22c05657c82b",
+      "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
+      "scope": "Distinct elemental-damage conversion imbuements on one item mutually exclude; no blanket rule for other categories is inferred.",
+      "target_continuity": "PRE_TARGET_COMMUNITY_REVISION_NOT_SERVER_CERTIFICATION"
+    },
+    "item_eligibility_catalogue": {
+      "path": "imbuement-eligibility.json",
+      "role": "DERIVED_CLIENT_IDENTITY_AND_COMMUNITY_ELIGIBILITY",
+      "scope": "Primary client establishes item identity and static slot count. Selected per-family maximum tiers are source-qualified community observations and amendments in the eligibility catalogue; neither this reference nor the guard certifies full target-date Global server parity."
     }
   },
   "predicate_definitions": {
@@ -190,12 +218,59 @@
           "type": "item_accepts_imbuement_family"
         },
         {
+          "type": "item_accepts_requested_imbuement_tier",
+          "eligibility_profile": "imbuement-eligibility.json#items",
+          "item_match_field": "item_ref.key",
+          "max_tier_path": "items[].allowed_types[requested_family_key]",
+          "requested_family_key_normalization": "Definition name lowercased with spaces replaced by underscores.",
+          "requested_tier_domain": [
+            1,
+            2,
+            3
+          ],
+          "tier_name_to_number": {
+            "basic": 1,
+            "intricate": 2,
+            "powerful": 3
+          },
+          "comparison": "requested_tier <= selected_item_family_max_tier",
+          "missing_or_invalid_limit": "DO_NOT_GRANT_FROM_THIS_EVIDENCE",
+          "source_refs": [
+            "item_eligibility_catalogue"
+          ],
+          "scope": "The requested family must have a selected item limit of integer1..3, and the requested numeric tier must be integer1..3 within that family limit. Preserve the selected item evidence_status, target_time_status and amendment qualifications; unknown eligibility is not proof of a Global prohibition."
+        },
+        {
           "type": "item_has_no_duplicate_imbuement_family"
+        },
+        {
+          "type": "item_has_no_conflicting_elemental_conversion",
+          "selected_family_scope": [
+            "Scorch",
+            "Venom",
+            "Frost",
+            "Electrify",
+            "Reap"
+          ],
+          "conflicting_existing_families": [
+            "Scorch",
+            "Venom",
+            "Frost",
+            "Electrify",
+            "Reap"
+          ],
+          "rule_profile": "global-rules-evidence.json#shared_category_compatibility",
+          "source_refs": [
+            "fandom_imbuing_revision_1194750"
+          ],
+          "scope": "Only when the selected imbuement is one of the five elemental damage conversions; it requires absence of any other conversion on the same item. Distinct skill, resistance and utility families do not inherit broad category exclusion."
         }
       ],
       "source_refs": [
         "official_tradeable_imbuements",
-        "br_imbuements"
+        "br_imbuements",
+        "fandom_imbuing_revision_1194750",
+        "item_eligibility_catalogue"
       ]
     },
     "forgotten_lady_tenebris": {
@@ -1195,8 +1270,10 @@
         "source_refs": [
           "br_blank_scroll"
         ],
-        "evidence_status": "COMMUNITY_EXPLICIT_NAMED_DROPS",
-        "scope": "Positive named sources from community item page; not an official exhaustive monster drop table."
+        "evidence_status": "COMMUNITY_EXPLICIT_FULL_ARTICLE_REVISION",
+        "scope": "Six explicit named drops from the captured complete community article; not an official exhaustive or exact-target server drop table.",
+        "capture_profile": "sources.br_blank_scroll",
+        "source_revision_id": 428617
       }
     },
     "player_trade": {
@@ -4277,7 +4354,9 @@
     "The world temple construction consists of an earlier collective quest event. The character contributes five Heavy Old Tomes once; world contribution quantities are not charged per imbue.",
     "These records are authoring facts, not a runtime quest implementation or an assertion that source client quest-line IDs are canonical Game quest identities.",
     "The accepted source manifest identifies client version 15.30 but contains no dated snapshot field; this packet does not infer a client capture date from version or file metadata. External access sources were retrieved on captured_on, rather than archived at the client snapshot date.",
-    "Completed Intricate/Powerful monster loot is resolved as empty in all 48 separately inspected Tibiopedia item records. This does not infer absence from the manual, blank-scroll drops or Basic Echo Warden drops, and does not claim official universal server proof."
+    "Completed Intricate/Powerful monster loot is resolved as empty in all 48 separately inspected Tibiopedia item records. This does not infer absence from the manual, blank-scroll drops or Basic Echo Warden drops, and does not claim official universal server proof.",
+    "All 72 direct-shrine and completed-scroll tier routes share compatible_item, including the revision-qualified five-elemental-conversion group exclusion. This is independent of the same-family duplicate restriction and does not promote general architectural categories to Global exclusion rules.",
+    "All72 direct-shrine and72 completed-scroll family/tier routes additionally require requested numeric tier1..3 not exceeding the selected item allowed_types family cap in imbuement-eligibility.json. This source-qualified limit is independent of shrine/quest/Premium exemptions and is not full Global server certification."
   ],
   "target_client_manifest": "imports/cipsoft-staticdata/quest-lines/manifest.json",
   "status_scope": "Source access and crafting predicate definitions; scroll acquisition has separate item-specific evidence statuses.",

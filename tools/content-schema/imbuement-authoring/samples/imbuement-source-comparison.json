@@ -573,10 +573,11 @@
   },
   "supporting_catalogues": {
     "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
-    "global-rules-evidence.json": "26de8e6af75165727e82d8b7f3bbdef36df973ab14cabbb3d22344c5eac0f96d",
-    "imbuement-access.json": "29f43745a3d0ecc74c183f9a031456a3254f7ca9bb29acbe6323dfa7162ab25e",
+    "global-observation-plan.json": "c53588ee8eb229bf5197408eb51e241c7ceaeab5f4d26c17eec24e712d370ff4",
+    "global-rules-evidence.json": "99efe3f02a593a90594dc5d1d09c0687243fcd4d50b14846e96d60f8d9858056",
+    "imbuement-access.json": "6b07b10880e5458c6387b899f63a8e44a8c4f8418087e33052028237b19e76d9",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-combat.json": "2558d32beded7b8707ad521991bca609a0293d00d03a414efcf10b60de8e660a",
+    "imbuement-combat.json": "4e708050191560c42f825174d293dc8f24a4ac34f0b894047b3dee2a083bcbc2",
     "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
     "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
     "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d"
@@ -592,31 +593,95 @@
     "validated_missing_item_proposals": 2,
     "source_defined_shrine_routes": 72,
     "completed_scroll_loot_records": 48,
-    "global_rules": 63,
-    "combat_rule_profiles": 12,
+    "global_rules": 66,
+    "combat_rule_profiles": 15,
+    "planned_not_observed_scenarios": 28,
     "crystal_imbuements_revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
     "gold_token_exchange_bundles": 9
   },
   "remaining_global_observation_requirements": [
     {
       "id": "exact_target_snapshot",
-      "reason": "Current manual and current wiki are dated retrievals; change continuity is evidence, not an archived full Global configuration for28July2026."
+      "reason": "Current manual and current wiki are dated retrievals; change continuity is evidence, not an archived full Global configuration for28July2026.",
+      "evidence": [
+        "official_manual",
+        "fandom_imbuing_full"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibia.fandom.com/wiki/Imbuing"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "etcher_consumption",
-      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification. Exact pinnedCanary public implementation now supplies one unit on success andzero on invalid target as explicit OTS hypotheses; no Global single-use statement retrieved."
+      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification. Exact pinnedCanary public implementation now supplies one unit on success andzero on invalid target as explicit OTS hypotheses; no Global single-use statement retrieved.",
+      "evidence": [
+        "wiki_br_etcher",
+        "tibiopedia_etcher",
+        "crystal_imbuements_player_impl"
+      ],
+      "source_urls": [
+        "https://www.tibiawiki.com.br/wiki/Etcher",
+        "https://tibiopedia.pl/items/Etcher",
+        "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "scroll_application_equipped_target",
-      "reason": "Official unequipped restriction is explicit for shrine; inventory-scroll use does not explicitly specify equipped target acceptance. Exact pinnedCanary player.cpp has an equipped-stat-update branch as explicit OTS hypothesis; general inventory-use wording does not certify equippedGlobal acceptance."
+      "reason": "Official unequipped restriction is explicit for shrine; inventory-scroll use does not explicitly specify equipped target acceptance. Exact pinnedCanary player.cpp has an equipped-stat-update branch as explicit OTS hypothesis; general inventory-use wording does not certify equippedGlobal acceptance.",
+      "evidence": [
+        "official_manual",
+        "canary_scroll_action",
+        "canary_player_impl"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/imbuement_scrolls.lua",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "fine_grained_timers",
-      "reason": "Dated2021 community answer names equipped+online utility timers including Vibrancy; current Fandom warns hiddenLogoutBlock inPZ does not mean outofcombat. Exact PZ/combat deadline, tick rounding, offline restore and transfer boundaries remain unqualified; community claims and OTS implementation may conflict."
+      "reason": "Dated2021 utility profiles and the historical2020 unchanged0:00h Powerful Void display/occupied-slot report bound known community behavior. A minute display does not measure internal seconds or establish expiration. Exact PZ/combat deadlines, tick rounding, offline restore and transfer boundaries remain unqualified; community claims and OTS implementation may conflict.",
+      "evidence": [
+        "official_manual",
+        "wiki_br_imbuements",
+        "fandom_swiftness",
+        "canary_timer_impl",
+        "tibiaqa_zero_minute_display_2020",
+        "tibiaqa_utility_timers_2021",
+        "tibiaqa_pz_residual_combat_2025",
+        "fandom_imbuing_full"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://tibia.fandom.com/wiki/Swiftness",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/imbuements/imbuements.cpp",
+        "https://www.tibiaqa.com/15297/why-hasnt-my-imbuement-period-finished?state=showcomments-15297&show=15297#q15297",
+        "https://www.tibiaqa.com/23884/do-i-have-to-unequip-imbued-items-not-to-waste-my-imbuements",
+        "https://www.tibiaqa.com/36422/what-conditions-are-necessary-to-tick-down-imbuements",
+        "https://tibia.fandom.com/wiki/Imbuing"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "combat_pipeline",
-      "reason": "AoE leech, overkill rounding, critical-per-cast RNG, spell exclusions, conversion order, resistance multiplication and paralysis replacement cannot be certified from recipe/effect tables."
+      "reason": "AoE leech, overkill rounding, critical-per-cast RNG, spell exclusions, conversion order, resistance multiplication and paralysis replacement cannot be certified from recipe/effect tables.",
+      "evidence": [
+        "fandom_formulae_full",
+        "official_news_8421_full",
+        "wiki_br_imbuements"
+      ],
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Formulae",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8421",
+        "https://www.tibiawiki.com.br/wiki/Imbuements"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "vibrancy_pvp_gate",
@@ -626,27 +691,97 @@
         "fandom_basic_vibrancy_gate",
         "fandom_powerful_vibrancy_gate"
       ],
-      "evidence_catalogue": "imbuement-combat.json"
+      "evidence_catalogue": "imbuement-combat.json",
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Vibrancy",
+        "https://tibia.fandom.com/wiki/Basic_Vibrancy",
+        "https://tibia.fandom.com/wiki/Powerful_Vibrancy"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "transaction_payment_sources",
-      "reason": "Normal-shrine inventory-first then Stash/bank preference is now community-qualified. Exact inventory-container search, inter-resource debit order, other transaction routes and failure behavior remain unqualified."
+      "reason": "Normal-shrine inventory-first then Stash/bank preference is now community-qualified. Exact inventory-container search, inter-resource debit order, other transaction routes and failure behavior remain unqualified.",
+      "evidence": [
+        "fandom_imbuing_full"
+      ],
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Imbuing"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
-      "reason": "Guaranteed success does not define failure-path resource consumption, rollback or concurrency semantics."
+      "reason": "Guaranteed success does not define failure-path resource consumption, rollback or concurrency semantics.",
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "native_effect_composition",
-      "reason": "Native abilities, imbuements and other bonuses need source-qualified composition, caps and order; OTS implementation is a hypothesis."
+      "reason": "Native abilities, imbuements and other bonuses need source-qualified composition, caps and order; OTS implementation is a hypothesis.",
+      "evidence": [
+        "wiki_br_imbuements",
+        "tibiopedia_imbuing_guide"
+      ],
+      "source_urls": [
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://tibiopedia.pl/articles/3,Imbuing-nasycenia"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "transfer_preserves_imbuement_state_and_remaining_duration",
-      "reason": "Transferred imbued items are usable according to community guide; exact persistent state and duration preservation across transfer routes is unqualified."
+      "reason": "Transferred imbued items are usable according to community guide; exact persistent state and duration preservation across transfer routes is unqualified.",
+      "evidence": [
+        "tibiopedia_imbuing_guide",
+        "official_manual",
+        "tibiaqa_depot_coin_trade_2022"
+      ],
+      "source_urls": [
+        "https://tibiopedia.pl/articles/3,Imbuing-nasycenia",
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://www.tibiaqa.com/30081/is-it-possible-to-safe-trade-items-in-the-depot-to-another-player"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "etcher_npc_purchase_requires_premium",
-      "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved."
+      "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved.",
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror",
+        "wiki_br_etcher",
+        "tibiopedia_etcher"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7",
+        "https://www.tibiawiki.com.br/wiki/Etcher",
+        "https://tibiopedia.pl/items/Etcher"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+    },
+    {
+      "id": "scroll_consumption",
+      "reason": "Exact completed-scroll units consumed on successful application and explicit invalid-target failures lack Global public proof. Blank-scroll inscription consumption is separate; pinned Crystal1-on-success/0-on-pre-debit-guard branches remain OTS hypotheses.",
+      "evidence": [
+        "official_manual",
+        "crystal_imbuements_player_impl",
+        "tibiabr_discovery_index_2026"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp",
+        "https://www.tibiabr.com/wp-json/wp/v2/search?search=imbuement&per_page=30"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     }
   ],
   "blocked": [

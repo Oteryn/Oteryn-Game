@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import unittest
 
@@ -126,6 +127,96 @@ class CombatEvidenceTests(unittest.TestCase):
             with self.subTest(rule=rule["id"]):
                 self.mutation_rejected(lambda p, name=rule["id"]: next(r for r in p["rules"]
                     if r["id"] == name).update(target_time_status="GLOBAL_TARGET_CERTIFIED"))
+
+    def test_reported_life_healing_distinguishes_nearest_and_aggregate_rounding(self):
+        for targets, damage, reported_each in combat.LIFE_CASES:
+            derived = combat.life_reported_example(damage, targets)
+            self.assertEqual(derived["ceil_each"], reported_each)
+            self.assertEqual(derived["total_if_ceil_each"], targets * reported_each)
+            if targets in (2, 3):
+                self.assertNotEqual(derived["nearest_each"], reported_each)
+            if targets > 1:
+                self.assertNotEqual(derived["ceil_aggregated_once"], targets * reported_each)
+        for damage, count in ((900, 2), (438, 2), (387, 3), (0, 1), (438, True)):
+            with self.assertRaises(ValueError):
+                combat.life_reported_example(damage, count)
+
+    def test_reported_life_cases_cannot_change_healing_or_select_a_generic_algorithm(self):
+        def life(packet):
+            return next(r for r in packet["rules"]
+                if r["id"] == "life_leech_reported_equal_hit_ceiling")["value"]
+        for key, value in {
+            "scope": "ALL_CURRENT_LIFE_LEECH", "interpretation": "UNIVERSAL_CEILING",
+            "universal_rounding": "ceil", "unequal_target_rounding": "ceil",
+            "current_target_continuity": True, "cap_bps": 10000,
+            "overkill_behavior": "INCLUDED",
+        }.items():
+            with self.subTest(key=key):
+                self.mutation_rejected(lambda p, k=key, v=value: life(p).update({k: v}))
+        self.mutation_rejected(lambda p: life(p)["reported_examples"][1].update(
+            healed_each_target=53, total_healed=106))
+        self.mutation_rejected(lambda p: life(p)["reported_examples"][2].update(total_healed=115))
+        self.mutation_rejected(lambda p: life(p)["reported_examples"].append(
+            {"hit_targets": 2, "damage_per_target": 900, "healed_each_target": 124,
+             "total_healed": 248}))
+        self.mutation_rejected(lambda p: life(p)["setup"].update(wand_equipped=0))
+
+    def test_wheel_example_cannot_grant_other_combinations_life_or_caps(self):
+        def wheel(packet):
+            return next(r for r in packet["rules"]
+                if r["id"] == "mana_leech_wheel_equipment_example")["value"]
+        self.assertEqual(wheel(self.packet)["combined_share_bps"], 850)
+        for key, value in {
+            "combined_share_bps": 1600, "wheel_share_bps": 800, "chance_bps": 100,
+            "family": "Vampirism", "other_combinations": "ALL_ADDITIVE",
+            "life_leech_composition": "ADDITIVE", "cap_bps": 10000,
+            "current_target_continuity": True,
+        }.items():
+            with self.subTest(key=key):
+                self.mutation_rejected(lambda p, k=key, v=value: wheel(p).update({k: v}))
+
+    def test_named_charm_report_cannot_exclude_every_charm_or_claim_current_observation(self):
+        def charm(packet):
+            return next(r for r in packet["rules"]
+                if r["id"] == "leech_elemental_parry_wound_reported_exclusions")["value"]
+        self.mutation_rejected(lambda p: charm(p).update(scope="ALL_CURRENT_CHARMS"))
+        self.mutation_rejected(lambda p: charm(p).update(other_charms={"low_blow": False}))
+        self.mutation_rejected(lambda p: charm(p).update(current_target_continuity=True))
+        self.mutation_rejected(lambda p: charm(p).update(gameplay_calendar_date="2026-07-28"))
+        self.mutation_rejected(lambda p: charm(p)["reported_to_trigger_imbuement_leech"].update(parry=0))
+
+    def test_captured_report_dates_raw_bytes_and_revision_history_are_pinned(self):
+        for source_id in combat.BOUNDED_SOURCE_RECORD_SHA256:
+            with self.subTest(source=source_id):
+                def source(packet):
+                    return next(s for s in packet["sources"] if s["id"] == source_id)
+                self.mutation_rejected(lambda p: source(p).update(sha256="0" * 64))
+                self.mutation_rejected(lambda p: source(p).update(published_on="2026-07-28"))
+                self.mutation_rejected(lambda p: source(p).update(role="PRIMARY_OFFICIAL"))
+                self.mutation_rejected(lambda p: source(p).update(target_time_status="TARGET_CERTIFIED"))
+        self.mutation_rejected(lambda p: next(s for s in p["sources"]
+            if s["id"] == "tibiaqa_life_equal_hit_2020").update(report_body_edited_on="2022-06-21"))
+        self.mutation_rejected(lambda p: p["sources"].remove(next(s for s in p["sources"]
+            if s["id"] == "tibiaqa_life_answer_revisions_14497")))
+
+    def test_source_claims_cannot_be_forged_by_rehashing_the_selected_claims(self):
+        def forge(packet):
+            source = next(s for s in packet["sources"] if s["id"] == "tibiaqa_life_equal_hit_2020")
+            source["selected_claims"]["reported_cases"][2].update(healed_each_target=38)
+            source["selected_claims_sha256"] = hashlib.sha256(json.dumps(
+                source["selected_claims"], sort_keys=True, ensure_ascii=False,
+                separators=(",", ":")).encode()).hexdigest()
+        self.mutation_rejected(forge)
+
+    def test_bounded_profiles_do_not_promote_or_disconnect_generic_unknowns(self):
+        for name in combat.BOUNDED_LINKS:
+            rule = next(r for r in self.packet["rules"] if r["id"] == name)
+            self.assertIsNone(rule["value"])
+            with self.subTest(rule=name):
+                self.mutation_rejected(lambda p: next(r for r in p["rules"]
+                    if r["id"] == name).update(bounded_profiles=[]))
+                self.mutation_rejected(lambda p: next(r for r in p["rules"]
+                    if r["id"] == name).update(value="UNIVERSAL_RULE"))
 
 
 if __name__ == "__main__":

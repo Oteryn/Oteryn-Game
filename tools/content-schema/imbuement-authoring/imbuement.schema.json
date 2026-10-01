@@ -23,6 +23,10 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
+        "global-observation-plan.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
         "global-rules-evidence.json": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
@@ -54,6 +58,7 @@
       },
       "required": [
         "crystal-imbuements-evidence.json",
+        "global-observation-plan.json",
         "global-rules-evidence.json",
         "imbuement-access.json",
         "imbuement-bindings.json",
@@ -66,6 +71,9 @@
     },
     "global_rules_profile": {
       "const": "global-rules-evidence.json"
+    },
+    "observation_plan_profile": {
+      "const": "global-observation-plan.json"
     },
     "combat_profile": {
       "const": "imbuement-combat.json"
@@ -641,6 +649,7 @@
     "source_facts_sha256",
     "supporting_catalogues",
     "global_rules_profile",
+    "observation_plan_profile",
     "combat_profile",
     "missing_item_proposals",
     "engine_reference_profile",

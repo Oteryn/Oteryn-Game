@@ -407,6 +407,71 @@
       "digest_scope": "Exact native public HTML bytes extra-public-qa-next-0.html; dated player/guild test assertion without underlying reproducible test record",
       "access_status": "EXTRACTED",
       "method": "ORDINARY_PUBLIC_HTTP"
+    },
+    "tibiaqa_zero_minute_display_2020": {
+      "role": "DERIVED_COMMUNITY_REPORTED_OBSERVATION",
+      "url": "https://www.tibiaqa.com/15297/why-hasnt-my-imbuement-period-finished?state=showcomments-15297&show=15297#q15297",
+      "revision": null,
+      "published_date": "2020-03-19",
+      "accessed_date": "2026-10-01",
+      "sha256": "01a4d22bc39b4186910597541c889ce2df70cef818f1833b4819013a51be1d70",
+      "digest_scope": "Exact ordinary public HTML response bytes; DATED_PUBLIC_PLAYER_BEFORE_AFTER_DISPLAY_LOG_AND_ACCEPTED_EXPLANATION",
+      "access_status": "EXTRACTED",
+      "method": "ORDINARY_PUBLIC_HTTP",
+      "evidence_scope": "DATED_PUBLIC_PLAYER_BEFORE_AFTER_DISPLAY_LOG_AND_ACCEPTED_EXPLANATION",
+      "limitations": [
+        "Same displayed0:00h is minute precision; exact internal remaining seconds not observed.",
+        "No player trade, item movement, depot storage or logout in reported comparison.",
+        "Does not establish utility timers, exact fight deadline, PZ boundary, save/restore semantics or July2026continuity.",
+        "Textual player log, not an independently timestamped recording."
+      ],
+      "last_edit_date": "2020-03-20",
+      "accepted_answer_date": "2020-03-19"
+    },
+    "tibiaqa_tracker_ui_2023": {
+      "role": "RESEARCH_LEAD_NOT_IMBUEMENT_BEHAVIOR_PROOF",
+      "url": "https://www.tibiaqa.com/34153/where-can-find-info-how-much-time-left-for-imbuement-items-and-prey-timers",
+      "revision": null,
+      "published_date": "2023-09-26",
+      "accessed_date": "2026-10-01",
+      "sha256": "d59f6c4818cfa85b13784617e11701159667677a3ca3e8be3847cb39f450fecf",
+      "digest_scope": "Exact ordinary public HTML response bytes; DATED_PUBLIC_CLIENT_UI_GUIDANCE_NOT_TIMER_PERSISTENCE_PROOF",
+      "access_status": "EXTRACTED",
+      "method": "ORDINARY_PUBLIC_HTTP",
+      "evidence_scope": "DATED_PUBLIC_CLIENT_UI_GUIDANCE_NOT_TIMER_PERSISTENCE_PROOF",
+      "limitations": [
+        "Screenshot is control-button location, not two duration readings or transaction validation."
+      ]
+    },
+    "tibiaqa_depot_coin_trade_2022": {
+      "role": "RESEARCH_LEAD_NOT_IMBUEMENT_BEHAVIOR_PROOF",
+      "url": "https://www.tibiaqa.com/30081/is-it-possible-to-safe-trade-items-in-the-depot-to-another-player",
+      "revision": null,
+      "published_date": "2022-04-27",
+      "accessed_date": "2026-10-01",
+      "sha256": "3cd644a4b073713b3e2627fbb02aa1a52dc6279c650c7b04e7fe7a0b7c78235a",
+      "digest_scope": "Exact ordinary public HTML response bytes; NOT_QUALIFIED_FOR_IMBUEMENT_TIMER_CLAIM",
+      "access_status": "EXTRACTED",
+      "method": "ORDINARY_PUBLIC_HTTP",
+      "evidence_scope": "NOT_QUALIFIED_FOR_IMBUEMENT_TIMER_CLAIM",
+      "limitations": [
+        "Cannot infer duration preservation from this general trade example."
+      ]
+    },
+    "tibiabr_discovery_index_2026": {
+      "role": "DISCOVERY_INDEX_ONLY",
+      "url": "https://www.tibiabr.com/wp-json/wp/v2/search?search=imbuement&per_page=30",
+      "revision": null,
+      "published_date": null,
+      "accessed_date": "2026-10-01",
+      "sha256": "57a923da999a1e5d0c1923a490d145aa439bf9b28b07b9f0f4b40db58503f9c5",
+      "digest_scope": "Exact public WordPress search JSON response bytes; article titles and URLs only, not article bodies",
+      "access_status": "DISCOVERY_INDEX_EXTRACTED_ARTICLE_BODIES_UNREAD",
+      "method": "ORDINARY_PUBLIC_HTTP",
+      "evidence_scope": "DISCOVERY_INDEX_ONLY_NOT_GLOBAL_TRANSACTION_PROOF",
+      "limitations": [
+        "No post body, demonstration or exact publication date verified from this search/index response."
+      ]
     }
   },
   "rules": [
@@ -1029,7 +1094,11 @@
         "official_manual",
         "wiki_br_imbuements",
         "fandom_swiftness",
-        "canary_timer_impl"
+        "canary_timer_impl",
+        "tibiaqa_zero_minute_display_2020",
+        "tibiaqa_utility_timers_2021",
+        "tibiaqa_pz_residual_combat_2025",
+        "fandom_imbuing_full"
       ],
       "parity_status": "PARITY_PENDING",
       "target_time_status": "NO_COMPLETE_GLOBAL_TIMING_OBSERVATION",
@@ -1060,7 +1129,7 @@
           }
         }
       ],
-      "notes": "Official manual gives equipped+hunting only. BR generic PZ exception mentions backpack only; Fandom Swiftness explicitly continues out of combat. Their overlap cannot certify every utility timer or exact PZ/combat/tick deadline."
+      "notes": "Official manual gives coarse equipped+hunting only. Dated2021 community answer supports equipped+online utility timers. QA15297 reports unchanged Powerful Void0:00h at13:53/13:56 without attacking and refusal to re-imbue; this historical minute-display/slot example does not measure internal seconds or prove expiration. Community PZ residual-state claims remain conflicting. Exact tick/combat deadline, PZ transitions, logout/save/restore and transfer boundaries remain null."
     },
     {
       "id": "vibrancy_pvp_gate",
@@ -1315,6 +1384,78 @@
       "parity_status": "DERIVED_COMMUNITY_REVISION_EXPLICIT",
       "target_time_status": "REVISION_2026_07_07_PRE_TARGET_NOT_SERVER_OBSERVATION",
       "notes": "Current full Imbuing says Protection Zones hide the Logout Block, so its absence does not indicate outofcombat. This is a bounded combat-state/icon distinction; it does not select aggressive timer ticking for all PZ states or an exact deadline."
+    },
+    {
+      "id": "historical_minute_display_and_slot_occupancy_example",
+      "value": {
+        "scope": "REPORTED_HISTORICAL_DISPLAY_AND_OCCUPANCY_EXAMPLE",
+        "item": "Yalahari Mask",
+        "imbuement": "Powerful Void",
+        "reported_before": {
+          "displayed_time": "13:53",
+          "remaining_duration_display": "0:00h"
+        },
+        "reported_after": {
+          "displayed_time": "13:56",
+          "remaining_duration_display": "0:00h"
+        },
+        "reported_reimbue_refused": true,
+        "reported_attacking_during_interval": false,
+        "reported_location": "outside depot",
+        "accepted_explanation": "Timer decreases when attacking or being attacked by a creature",
+        "exact_remaining_seconds": null,
+        "display_zero_means_expired": null
+      },
+      "evidence": [
+        "tibiaqa_zero_minute_display_2020"
+      ],
+      "parity_status": "DERIVED_DATED_PUBLIC_PLAYER_REPORT",
+      "target_time_status": "HISTORICAL_2020_REPORT_NOT_2026_TARGET_OBSERVATION",
+      "notes": "Question19March2020, edited20March; accepted answer19March. A minute-resolution display remains0:00h and the asker reports refusal to imbue again without attacking. This is a textual player report, not an independently recorded server trace. Neither exact remaining seconds nor zero-display expiration is established; no utility/PZ/offline/transfer/tick or July2026 continuity inference."
+    },
+    {
+      "id": "scroll_application_consumed_units",
+      "value": null,
+      "evidence": [
+        "official_manual",
+        "crystal_imbuements_player_impl"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_EXPLICIT_GLOBAL_COMPLETED_SCROLL_CONSUMPTION_OBSERVATION",
+      "hypotheses": [
+        {
+          "value": 1,
+          "evidence": [
+            "crystal_imbuements_player_impl"
+          ],
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "conditions": "Only the successful removeItemOfType(scrollId,1) branch immediately before setImbuement, player.cpp2851-2852."
+        }
+      ],
+      "notes": "Completed-scroll units consumed on success or an invalid target are not explicitly established by the retrieved Global public sources. The official blank-scroll inscription requirement is a different transaction. Do not select the pinned OTS hypothesis as a Global rule."
+    },
+    {
+      "id": "scroll_application_invalid_target_consumed_units",
+      "value": null,
+      "evidence": [
+        "official_manual",
+        "crystal_imbuements_player_impl"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_EXPLICIT_GLOBAL_COMPLETED_SCROLL_CONSUMPTION_OBSERVATION",
+      "hypotheses": [
+        {
+          "value": 0,
+          "evidence": [
+            "crystal_imbuements_player_impl"
+          ],
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "conditions": "Pre-removal target/client/slot/ownership/missing-definition/duplicate-type/tier guards return before removeItemOfType, player.cpp2772-2848. Bounded to these explicit guards, not every possible failure or atomic rollback."
+        }
+      ],
+      "notes": "Completed-scroll units consumed on success or an invalid target are not explicitly established by the retrieved Global public sources. The official blank-scroll inscription requirement is a different transaction. Do not select the pinned OTS hypothesis as a Global rule."
     }
   ],
   "conflicts": [
@@ -1436,23 +1577,86 @@
   "unresolved": [
     {
       "id": "exact_target_snapshot",
-      "reason": "Current manual and current wiki are dated retrievals; change continuity is evidence, not an archived full Global configuration for28July2026."
+      "reason": "Current manual and current wiki are dated retrievals; change continuity is evidence, not an archived full Global configuration for28July2026.",
+      "evidence": [
+        "official_manual",
+        "fandom_imbuing_full"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibia.fandom.com/wiki/Imbuing"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "etcher_consumption",
-      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification. Exact pinnedCanary public implementation now supplies one unit on success andzero on invalid target as explicit OTS hypotheses; no Global single-use statement retrieved."
+      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification. Exact pinnedCanary public implementation now supplies one unit on success andzero on invalid target as explicit OTS hypotheses; no Global single-use statement retrieved.",
+      "evidence": [
+        "wiki_br_etcher",
+        "tibiopedia_etcher",
+        "crystal_imbuements_player_impl"
+      ],
+      "source_urls": [
+        "https://www.tibiawiki.com.br/wiki/Etcher",
+        "https://tibiopedia.pl/items/Etcher",
+        "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "scroll_application_equipped_target",
-      "reason": "Official unequipped restriction is explicit for shrine; inventory-scroll use does not explicitly specify equipped target acceptance. Exact pinnedCanary player.cpp has an equipped-stat-update branch as explicit OTS hypothesis; general inventory-use wording does not certify equippedGlobal acceptance."
+      "reason": "Official unequipped restriction is explicit for shrine; inventory-scroll use does not explicitly specify equipped target acceptance. Exact pinnedCanary player.cpp has an equipped-stat-update branch as explicit OTS hypothesis; general inventory-use wording does not certify equippedGlobal acceptance.",
+      "evidence": [
+        "official_manual",
+        "canary_scroll_action",
+        "canary_player_impl"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/imbuement_scrolls.lua",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "fine_grained_timers",
-      "reason": "Dated2021 community answer names equipped+online utility timers including Vibrancy; current Fandom warns hiddenLogoutBlock inPZ does not mean outofcombat. Exact PZ/combat deadline, tick rounding, offline restore and transfer boundaries remain unqualified; community claims and OTS implementation may conflict."
+      "reason": "Dated2021 utility profiles and the historical2020 unchanged0:00h Powerful Void display/occupied-slot report bound known community behavior. A minute display does not measure internal seconds or establish expiration. Exact PZ/combat deadlines, tick rounding, offline restore and transfer boundaries remain unqualified; community claims and OTS implementation may conflict.",
+      "evidence": [
+        "official_manual",
+        "wiki_br_imbuements",
+        "fandom_swiftness",
+        "canary_timer_impl",
+        "tibiaqa_zero_minute_display_2020",
+        "tibiaqa_utility_timers_2021",
+        "tibiaqa_pz_residual_combat_2025",
+        "fandom_imbuing_full"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://tibia.fandom.com/wiki/Swiftness",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/imbuements/imbuements.cpp",
+        "https://www.tibiaqa.com/15297/why-hasnt-my-imbuement-period-finished?state=showcomments-15297&show=15297#q15297",
+        "https://www.tibiaqa.com/23884/do-i-have-to-unequip-imbued-items-not-to-waste-my-imbuements",
+        "https://www.tibiaqa.com/36422/what-conditions-are-necessary-to-tick-down-imbuements",
+        "https://tibia.fandom.com/wiki/Imbuing"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "combat_pipeline",
-      "reason": "AoE leech, overkill rounding, critical-per-cast RNG, spell exclusions, conversion order, resistance multiplication and paralysis replacement cannot be certified from recipe/effect tables."
+      "reason": "AoE leech, overkill rounding, critical-per-cast RNG, spell exclusions, conversion order, resistance multiplication and paralysis replacement cannot be certified from recipe/effect tables.",
+      "evidence": [
+        "fandom_formulae_full",
+        "official_news_8421_full",
+        "wiki_br_imbuements"
+      ],
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Formulae",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8421",
+        "https://www.tibiawiki.com.br/wiki/Imbuements"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "vibrancy_pvp_gate",
@@ -1462,27 +1666,97 @@
         "fandom_basic_vibrancy_gate",
         "fandom_powerful_vibrancy_gate"
       ],
-      "evidence_catalogue": "imbuement-combat.json"
+      "evidence_catalogue": "imbuement-combat.json",
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Vibrancy",
+        "https://tibia.fandom.com/wiki/Basic_Vibrancy",
+        "https://tibia.fandom.com/wiki/Powerful_Vibrancy"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "transaction_payment_sources",
-      "reason": "Normal-shrine inventory-first then Stash/bank preference is now community-qualified. Exact inventory-container search, inter-resource debit order, other transaction routes and failure behavior remain unqualified."
+      "reason": "Normal-shrine inventory-first then Stash/bank preference is now community-qualified. Exact inventory-container search, inter-resource debit order, other transaction routes and failure behavior remain unqualified.",
+      "evidence": [
+        "fandom_imbuing_full"
+      ],
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Imbuing"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
-      "reason": "Guaranteed success does not define failure-path resource consumption, rollback or concurrency semantics."
+      "reason": "Guaranteed success does not define failure-path resource consumption, rollback or concurrency semantics.",
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "native_effect_composition",
-      "reason": "Native abilities, imbuements and other bonuses need source-qualified composition, caps and order; OTS implementation is a hypothesis."
+      "reason": "Native abilities, imbuements and other bonuses need source-qualified composition, caps and order; OTS implementation is a hypothesis.",
+      "evidence": [
+        "wiki_br_imbuements",
+        "tibiopedia_imbuing_guide"
+      ],
+      "source_urls": [
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://tibiopedia.pl/articles/3,Imbuing-nasycenia"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "transfer_preserves_imbuement_state_and_remaining_duration",
-      "reason": "Transferred imbued items are usable according to community guide; exact persistent state and duration preservation across transfer routes is unqualified."
+      "reason": "Transferred imbued items are usable according to community guide; exact persistent state and duration preservation across transfer routes is unqualified.",
+      "evidence": [
+        "tibiopedia_imbuing_guide",
+        "official_manual",
+        "tibiaqa_depot_coin_trade_2022"
+      ],
+      "source_urls": [
+        "https://tibiopedia.pl/articles/3,Imbuing-nasycenia",
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://www.tibiaqa.com/30081/is-it-possible-to-safe-trade-items-in-the-depot-to-another-player"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "etcher_npc_purchase_requires_premium",
-      "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved."
+      "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved.",
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror",
+        "wiki_br_etcher",
+        "tibiopedia_etcher"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7",
+        "https://www.tibiawiki.com.br/wiki/Etcher",
+        "https://tibiopedia.pl/items/Etcher"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+    },
+    {
+      "id": "scroll_consumption",
+      "reason": "Exact completed-scroll units consumed on successful application and explicit invalid-target failures lack Global public proof. Blank-scroll inscription consumption is separate; pinned Crystal1-on-success/0-on-pre-debit-guard branches remain OTS hypotheses.",
+      "evidence": [
+        "official_manual",
+        "crystal_imbuements_player_impl",
+        "tibiabr_discovery_index_2026"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp",
+        "https://www.tibiabr.com/wp-json/wp/v2/search?search=imbuement&per_page=30"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     }
   ],
   "rejected_sources": [
@@ -1523,14 +1797,24 @@
         "tibiopedia_release_15_30",
         "tibiopedia_echo_raids"
       ],
-      "resolution": "11June2026 teaser and13July2026 client15.30 release precede frozen target; dated mirror/community confidence retained."
+      "resolution": "11June2026 teaser and13July2026 client15.30 release precede frozen target; dated mirror/community confidence retained.",
+      "source_urls": [
+        "https://tibiaroute.com/news/Echo-Raids-and-Discovery-System-8834-aS71",
+        "https://tibiopedia.pl/news/archives/2452",
+        "https://tibiopedia.pl/articles/32,Echo-Raids"
+      ],
+      "source_url_scope": "Only the bounded resolution and confidence stated in this row."
     },
     {
       "id": "shared_category_compatibility",
       "evidence": [
         "fandom_imbuing_full"
       ],
-      "resolution": "Five elemental conversions mutually exclude across tiers under explicit community revision1194750 dated7July2026. Qualified community compatibility only; no blanket official parity or all20 category proof."
+      "resolution": "Five elemental conversions mutually exclude across tiers under explicit community revision1194750 dated7July2026. Qualified community compatibility only; no blanket official parity or all20 category proof.",
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Imbuing"
+      ],
+      "source_url_scope": "Only the bounded resolution and confidence stated in this row."
     }
   ],
   "research_attempts": [
@@ -1734,6 +2018,121 @@
       "used_for_values": false,
       "conclusion": "Public Chrome read succeeded. Search results and two old question pages do not prove Etcher unit consumption, equipped scroll acceptance, payment failure rollback or timer preservation across transfers. The2019 removal answer corroborates only the already selected shrine clear fee; generic trade safety is outside the missing duration proof.",
       "id": "transaction_browser_followup_after_http403"
+    },
+    {
+      "id": "historical_void_display_2020",
+      "evidence": [
+        "tibiaqa_zero_minute_display_2020"
+      ],
+      "urls": [
+        "https://www.tibiaqa.com/15297/why-hasnt-my-imbuement-period-finished?state=showcomments-15297&show=15297#q15297"
+      ],
+      "outcome": "HTTP200 dated player before/after textual log and accepted explanation read; admitted only as REPORTED_HISTORICAL_DISPLAY_AND_OCCUPANCY_EXAMPLE.",
+      "used_for_values": true,
+      "rule_ids": [
+        "historical_minute_display_and_slot_occupancy_example"
+      ],
+      "unresolved_scope_ids": [
+        "fine_grained_timers"
+      ]
+    },
+    {
+      "id": "tracker_button_not_duration_observation",
+      "evidence": [
+        "tibiaqa_tracker_ui_2023"
+      ],
+      "urls": [
+        "https://www.tibiaqa.com/34153/where-can-find-info-how-much-time-left-for-imbuement-items-and-prey-timers"
+      ],
+      "outcome": "HTTP200 dated UI guidance read; tracker control location supplies no before/after duration or persistence measurement.",
+      "used_for_values": false,
+      "unresolved_scope_ids": [
+        "fine_grained_timers"
+      ]
+    },
+    {
+      "id": "depot_coin_trade_not_imbuement_preservation",
+      "evidence": [
+        "tibiaqa_depot_coin_trade_2022"
+      ],
+      "urls": [
+        "https://www.tibiaqa.com/30081/is-it-possible-to-safe-trade-items-in-the-depot-to-another-player"
+      ],
+      "outcome": "HTTP200 general coins/container trade example read; excludes imbuement identity and duration. Not qualified for transfer preservation.",
+      "used_for_values": false,
+      "unresolved_scope_ids": [
+        "transfer_preserves_imbuement_state_and_remaining_duration"
+      ]
+    },
+    {
+      "id": "tibiabr_article_discovery_only",
+      "evidence": [
+        "tibiabr_discovery_index_2026"
+      ],
+      "urls": [
+        "https://www.tibiabr.com/wp-json/wp/v2/search?search=imbuement&per_page=30",
+        "https://www.tibiabr.com/26824/imbuements-negociaveis/",
+        "https://www.tibiabr.com/26961/atualizacoes-do-test-server-do-summer-update/",
+        "https://www.tibiabr.com/26996/summer-update-2025/",
+        "https://www.tibiabr.com/27825/mudancas-no-winter-update-durante-o-servidor-de-testes/",
+        "https://www.tibiabr.com/26659/ajustes-e-mudancas-13/"
+      ],
+      "outcome": "HTTP200 public search index supplies article leads only. Individual article bodies and publication dates were not verified; no completed-scroll/equipped/failure behavior admitted.",
+      "used_for_values": false,
+      "unresolved_scope_ids": [
+        "scroll_consumption",
+        "scroll_application_equipped_target",
+        "failed_transaction_consumption_and_rollback"
+      ]
+    },
+    {
+      "id": "tibiabr_article_body_api_denied",
+      "evidence": [
+        "tibiabr_discovery_index_2026"
+      ],
+      "urls": [
+        "https://www.tibiabr.com/wp-json/wp/v2/posts/26824",
+        "https://www.tibiabr.com/wp-json/wp/v2/posts/16421",
+        "https://www.tibiabr.com/wp-json/wp/v2/posts/26996",
+        "https://www.tibiabr.com/wp-json/wp/v2/posts/26961"
+      ],
+      "outcome": "Four public post-body API requests returned HTTP403; failed routes were not retried. No body facts or dates inferred from the successful discovery index.",
+      "used_for_values": false,
+      "unresolved_scope_ids": [
+        "scroll_consumption",
+        "scroll_application_equipped_target",
+        "failed_transaction_consumption_and_rollback"
+      ]
+    },
+    {
+      "id": "further_browser_and_multilingual_research",
+      "method": "Normal public HTTP followed by Remote Desktop + Chrome/CDP",
+      "accessed_date": "2026-10-01",
+      "selected_as_global": false,
+      "outcome": "Primary manual was readable in Chrome; Etcher EN/PT/PL queries had no explicit unit-consumption proof. TibiaBR26961/26996 and direct TibiaQA revision14497 showed Cloudflare verification during browser reads, so those contents were not admitted. Public Q2A query-form revision14497 was independently readable with normal HTTP and supplies a dated historical Life report. A later browser-controller request timed out; unreturned pages were not admitted.",
+      "primary_manual_browser": {
+        "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+        "sha256": "3b16fba26a9b1419ceb52844b0174e53d37ca0cc888b0ac3d6415e78eda07537",
+        "digest_scope": "Complete UTF-8 document.body.innerText captured in an owned Chrome research tab; excerpts alone were returned to chat",
+        "claim_scope": "Corroborates existing shrine, scroll and worthy-Etcher description. Premium blank purchase is explicit; Etcher Premium purchase and unit consumption are not."
+      },
+      "browser_read_only": true,
+      "sources_with_no_new_type_claim": [
+        {
+          "url": "https://tibia.fandom.com/wiki/Umbral_Katar",
+          "revision": 1177192,
+          "sha256": "90badb33153bc91a8751fcc533c812508cc58a28372e6fad479ae04513d54ace",
+          "digest_scope": "Complete UTF-8 .mw-parser-output innerText",
+          "result": "One slot; no item notes or explicit imbuement type/tier list."
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Falcon_Sai",
+          "revision": 1148649,
+          "sha256": "181dc22ddb2ff03926b2c9f6790e7520895e00a41b7419ae82e254eb12631d86",
+          "digest_scope": "Complete UTF-8 .mw-parser-output innerText",
+          "result": "Two slots; no item notes or explicit imbuement type/tier list. Proficiency bonuses do not prove type exclusions."
+        }
+      ]
     }
   ],
   "delegated_profiles": [

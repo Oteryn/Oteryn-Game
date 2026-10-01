@@ -24,6 +24,7 @@ The ruleset destination from the full-game tree remains
 | `samples/imbuement-access.json` | All 72 direct shrine routes, scroll routes and exact Powerful unlock alternatives, including claim actions after bosses. |
 | `samples/imbuement-eligibility.json` | Exhaustive 663-item client census with primary slots, per-source type/tier claims, discrepancies and explicit missing evidence. |
 | `samples/global-rules-evidence.json` | Source-qualified rules, concrete transaction/timer hypotheses, architecture conflicts and observation requirements. |
+| `samples/global-observation-plan.json` | All 12 remaining scopes with 28 prospective evidence scenarios, required capture fields and resolved source/rule references; zero observations are claimed. |
 | `samples/imbuement-combat.json` | Sourced Vibrancy sequence, bounded AoE leech formula, engine hypotheses and rejected test-server generalizations. |
 | `samples/crystal-imbuements-evidence.json` | Additional owner-supplied `imbuements` branch: 72 XML records, 13 pinned source files, execution facts and nine token exchanges. |
 | `samples/missing-item-definitions.json`, `samples/missing-item-source-facts.json` | Two concrete Item authoring proposals with primary flags, capacity, weight, slots, acquisition, source revisions and target dates; owning Item validation passes. |
@@ -91,6 +92,7 @@ engine implementation, sprites or client asset bytes are redistributed.
 | Scroll inscription | Official sources describe **Intricate and Powerful** | Basic loot-scroll presence does not prove Basic shrine crafting. |
 | Powerful unlock | Boss completion **plus the applicable reward claim** | Generic boss-only prerequisites omit required steps. |
 | Materials source | Global permits **backpack and Stash** | Oteryn's first slice deliberately limits access to direct backpack entries. |
+| Conversion compatibility | Five elemental conversions are mutually exclusive in revisioned community evidence | The common access predicate now links that rule for every shrine and completed-scroll route. |
 | Item slots | Official client observations take priority in discrepancies | Community tool tables disagree with the client for some items. |
 
 The candidate
@@ -114,6 +116,10 @@ Powerful access uses the per-type source predicate:
   from Yana; an alternative only for the eight sourced families.
 - Vibrancy: The Nightmare Beast completion plus the report to Vanys or Undal.
 - Featherweight: all three Dangerous Depths boss/pump steps.
+
+Shared compatibility checks the requested family and integer tier against the
+item catalogue’s `allowed_types[family]` maximum, and prevents conflicting
+elemental conversions. Both shrine and completed-scroll routes use these guards.
 
 Completed-scroll application has separate compatibility predicates and Premium/
 quest exemptions. Basic exemption strength is labelled as derived from primary
@@ -201,6 +207,28 @@ it once produces isolated totals of 10% chance and +15/25/50% damage. Other
 equipment, proficiency and combat interactions are not implied by this example.
 The post-target Formulae page supplies a mana-specific per-target ceiling and
 overkill formula. It does not close life-leech rounding or prove the July target.
+Separate historical Life evidence now exists: a public answer and revision history
+dated 2020-02-28 report per-target Avalanche damage/healing logs for 1–4 Dragon
+Lords, wearing one Powerful Vampirism armour and no wand. The reported examples
+fit per-target ceiling; unequal damage, other configurations and current target
+continuity remain unqualified. A dated Wheel example separately reports 8% Void
++0.5% Wheel = 8.5% mana leech. Named historical charm tests do not become blanket
+current charm exclusions.
+
+The final completeness sweep added previously absent completed-scroll success
+and invalid-target consumption fields. Their Global values remain explicit
+`null` with qualified OTS hypotheses; stackability does not establish single use.
+Blank-scroll monster loot now has a full browser capture, exact six-name quote,
+revision 428617 and public revision timestamp 2025-08-23, replacing hashless
+snippet attribution. A historical `0:00h` Void report records a still occupied
+slot: a rounded display alone does not prove expiration or exact internal seconds.
+
+Every unresolved scope has a concrete evidence requirement in the observation
+plan, including version/time context, before/after resources, item identity and
+timer/combat observations. All scenarios are `PLANNED_NOT_OBSERVED`, with no
+expected Global result selected. Current recordings cannot reconstruct the
+historical target or certify hidden server atomicity. These are research limits,
+not missing definition/recipe rows; the catalogue covers all 24 families and 72 tiers.
 
 Runtime activation stays `DRAFT_NOT_RUNTIME_READY`. Implementing the proposed
 persistence table, timers/checkpoints, ability effects, protocol/UI, quest-state
