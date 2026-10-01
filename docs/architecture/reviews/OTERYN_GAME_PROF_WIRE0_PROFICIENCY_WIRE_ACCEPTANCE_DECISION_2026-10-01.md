@@ -82,11 +82,25 @@ command results, not protocol errors. An unnegotiated command keeps PROFICIENCY-
   PROFICIENCY-1's typed `NOT_ADMITTED` result, never a protocol error, so adding or admitting them
   is not a breaking change.
 
-## 6. Owner questions
+## 6. Decision test
+
+- **Must decide now:** YES. PROF-1 and PROF-2 are allocated (D281), and PROF-WIRE-1 cannot reserve
+  registry rows or build the client view without accepted IDs, revision semantics and bounds.
+- **Blocked:** PROF-WIRE-1 (registry rows, `.proto`, client view) and the release of Weapon
+  Proficiency to players.
+- **Harder later:** capability 2, command 6 and domain 6 become permanent registry identities that
+  cannot be reused; the per-track `committed_character_revision` and the snapshot-replacement rule
+  become client compatibility obligations; the bounds RL-01 to RL-04 constrain later additions
+  (PROFICIENCY-1's rows must re-measure RL-01).
+- **Superseding evidence:** a measured snapshot above RL-01, or a client need the delta model cannot
+  meet.
+- **Deliberately not decided:** PROFICIENCY-1's command numbers and payloads (§5), Mastery display.
+
+## 7. Owner questions
 
 None (D168 settles the capability choice).
 
-## 7. Before-freeze checklist
+## 8. Before-freeze checklist
 
 1. **Contract amendments:** PROFICIENCY-0 §4.4 (accepted). Applied in this PR.
 2. **Wire:** one capability, one command, one domain; bounds above.
