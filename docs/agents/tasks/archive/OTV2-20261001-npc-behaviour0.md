@@ -23,6 +23,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md
   - docs/architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md
   - docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md
+  - docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -41,8 +42,8 @@ base-mechanics close-out plan (#162 5929069698).
 - **Walking:** Canary's random step inside the walk square, never while talking, never onto floor
   changes or teleports, staying on its side of protection-zone boundaries.
 - **Voices:** admitted lines as local speech at the content cadence and chance.
-- **Focus:** a customer queue; the NPC faces its newest customer; leaving talk range ends the
-  conversation with the walk-away line.
+- **Focus:** a customer queue owned by GAME-NPC-SERVICE; the NPC faces its newest customer; a range
+  check on every committed move ends a conversation beyond talk range with the walk-away line.
 - **Owner questions:** none; R1-R3 are architect rulings.
 
 No code, migration or content change is made.
@@ -78,8 +79,8 @@ review.
 ## Closeout
 
 - PR: recorded in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
-- Amendments, each pending on acceptance of NPC-BEHAVIOUR-0: MOVE-RL-11 §4.2; CREATURE-AI-0 §7;
-  CHAT-0 §3.
+- Amendments, each pending on acceptance of NPC-BEHAVIOUR-0: MOVE-RL-11 §4.2, §4.3; CREATURE-AI-0
+  §4.1, §7; CHAT-0 §3; NPC-0 §4.1.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

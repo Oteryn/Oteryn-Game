@@ -185,6 +185,8 @@ disagree, §13 R6).
   query examines for the moved player or player summon, from its own position (at most
   `MOVE-RL-09`, 1,024 each), so a summon away from its owner still wakes the creatures it
   reaches.
+  **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §4).** The wake set also
+  includes NPCs among those candidates (at most one pending think each, `RL-11`).
 - A summon is never idle while its owner is on the channel.
 
 ### 4.2 Perception

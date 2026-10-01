@@ -162,6 +162,12 @@ shapes are new?
 - Pending service invocations per conversation: 1. A second command while one is pending is
   refused.
 - Retained conversation state: none after close.
+- **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §7).** GAME-NPC-SERVICE keeps a customer queue per NPC
+  (at most `NPC0-RL-05`); on every committed move or relocation of a customer or the NPC, a customer
+  beyond the talk range `NPC0-RL-07` (4 tiles, Chebyshev, same floor) has its conversation closed;
+  the closing snapshot of domain 7 carries the walk-away line (or the generated farewell) once, then
+  the conversation is empty; a pending service invocation still resolves by replay. CHAT-0's
+  `CHAT0-RL-08` reads `NPC0-RL-07`.
 
 ## 5. Trade (NPC-TRADE-1)
 

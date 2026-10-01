@@ -8,7 +8,8 @@
   and travel but not "NPC movement schedules"; CREATURE-AI-0 left "NPC movement"; the gap register
   §11 keeps "NPC behaviour stays unresolved". No decision says how an NPC exists in a channel, shows
   on the wire, walks, speaks its voices or faces its customer.
-- Builds on: the NPC service boundary (§3: "NPC actor-local behavior -> GAME-AI role"), NPC-0 (§3.2
+- Builds on: SIM-DETERMINISM-01 §10 and §12, ATTACK-0 §3, VSL-MOVE-01 §5 and §10, the NPC service
+  boundary (§3: "NPC actor-local behavior -> GAME-AI role"), NPC-0 (§3.2
   placements, §4 conversation and talk range), the NPC authoring schema (movement, voices,
   placements) and its owner decisions D9 and D11, MOVE-RL-11 D85-D87 (visible actors), CREATURE-AI-0
   §4.1, §5.1 and §7 (perception, step timer, budgets), CONDITIONS-0 §4.2 (step duration), CHAT-0 §3
@@ -20,8 +21,9 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| NPC-ACTOR-1 | impl, determinism review | NPC runtime actors per channel from the bundle placements (§3); the NPC think (§4); walking (§5); focus (§7) | NPC-PLACE-1; CREATURE-MOVE-1; SPEED-1 |
-| NPC-VIS-1 | impl, protocol review | entity kind 5 `Npc` in the `world_spatial_v1` schema of capability 6 before it is offered (§3.2) | VIS-2 |
+| NPC-ACTOR-1 | impl, determinism review | NPC runtime actors per channel from the bundle placements (§3); the NPC think (§4); walking (§5); the turn toward the queue head (§7) | NPC-PLACE-1; CREATURE-MOVE-1; SPEED-1; NPC-WIRE-1 |
+| NPC-TALK-2 | impl | the customer queue, the range check and the walk-away close in GAME-NPC-SERVICE (§7; the NPC-0 §4.1 amendment) | NPC-TALK-1 |
+| NPC-VIS-1 | impl, protocol review | entity kind 5 `Npc` in `world_spatial_v1.proto` `EntityKind` (capability 6) before it is offered; VIS-3 depends on it (§3.2) | VIS-2 |
 | NPC-VOICE-1 | impl | voices as local speech (§6) | CHAT-1; NPC-ACTOR-1 |
 | NPC-CONTENT-2 | content lane | `walk_interval`, `walk_radius`, `floor_change`, base speed, voice cadence, chance and lines on NPC definitions, from the admitted sources (D9) | NPC-CONTENT-1 |
 
@@ -82,10 +84,13 @@ conversations?
 
 - At channel start the channel owner creates one runtime actor for each admitted NPC placement of
   the World Bundle (NPC-0 §3.2), with its own `ExactActorRef` (runtime actor id and generation), on
-  every channel of the World. NPCs are runtime only: nothing durable, recreated at a channel restart
+  every channel of the World. Ids are allocated in canonical order of the placement key (NPC key,
+  then position), never container order (SIM-DETERMINISM-01 §10). NPC-0's `npc_actor` in commands 7
+  and 8 is this D85 identity {16-byte identity, generation} of a visible kind-5 entity; a stale
+  generation fails closed. NPCs are runtime only: nothing durable, recreated at a channel restart
   or planned reset at their placements.
 - An NPC is not a creature for combat: it cannot be targeted (ATTACK-0 refuses it as not a
-  creature), damaged, pushed (WORLD-INTERACTION-0 §7.1, Canary) or blocked by a summon; it blocks
+  creature), damaged or pushed (a WORLD-INTERACTION-0 declared difference, Canary); it blocks
   movement like a creature.
 - `NPCBEH0-RL-01`: at most 2,048 NPC actors per channel (the reference data admits about 1,110
   NPCs in the whole World).
@@ -94,17 +99,22 @@ conversations?
 
 - Entity kind **5 `Npc`** joins `world_spatial_v1` (capability 6) as an actor entry (direction,
   appearance, health percentage 100). It is added before capability 6 is offered (VIS-3), so no
-  released client sees an unknown kind. If capability 6 is already offered when NPC-VIS-1 lands, the
-  kind needs its own capability instead. Amended: MOVE-RL-11 §4.2 (this PR).
-- NPCs count in D87's 256-entity ceiling and order like other actors.
+  released client sees an unknown kind (the decoder rejects an unknown kind). VIS-3 depends on
+  NPC-VIS-1; if capability 6 were already offered, the kind would need its own capability. An NPC
+  with an item look maps it to an `appearance_ref` as items do. Amended: MOVE-RL-11 §4.2 and §4.5.
+- NPCs count in D87's 256-entity ceiling and rank with players and creatures before items (D222).
+  Amended: MOVE-RL-11 §4.3.
 
 ## 4. The NPC think (NPC-ACTOR-1)
 
 - One NPC think per 1,000 ms, in the GAME-AI role of the channel owner, on CREATURE-AI-0's think
   scheduling. It runs only while a player perceives the NPC (CREATURE-AI-0 §4.1 relation, Canary's
-  spectator rule); otherwise the NPC is idle and its walk and voice ticks do not accumulate.
+  spectator rule; NPCs join CREATURE-AI-0 §4.1's wake set); otherwise the NPC is idle, holds no
+  pending think, and its walk and voice ticks do not accumulate.
 - NPC thinks have their own row in CREATURE-AI-0 §7's window budget, `NPCBEH0-RL-02` (256 per window
-  per channel), served after creature thinks in `ExactActorRef` order; over it, a think waits.
+  per channel), served after creature thinks in deadline order, then `ExactActorRef`; over it, a
+  think waits. CREATURE-AI-0's cost measure (`RL-17`) covers NPC thinks; NPCs do not count in its
+  creature population rows.
   Amended: CREATURE-AI-0 §7 (this PR).
 - RNG purposes `NPC_WANDER` and `NPC_VOICE`, seeded by (NPC `ExactActorRef`, think sequence); a retry
   never redraws (SIM-DETERMINISM-01 §12).
@@ -112,37 +122,51 @@ conversations?
 ## 5. Walking (NPC-ACTOR-1)
 
 - Each think adds 1,000 ms to the walk ticks while no conversation is open (an open conversation
-  resets them). At `walk_interval` (content; 0 means the NPC never walks) the think draws a shuffled
+  resets them). At `walk_interval` (content, Canary default 2,000 ms; 0, or a base speed of 0, means
+  the NPC never walks) the think draws a shuffled
   order of north, west, east, south (`NPC_WANDER`) and proposes the first step whose tile:
   - lies within the square of `walk_radius` around the placement (Chebyshev distance);
-  - is not a floor change or teleport tile (unless the content sets `floor_change`; none in the
-    Reference base), not a protection-zone boundary crossing the placement does not already sit in,
-    and not raised;
+  - is not a floor change or teleport tile (content with `floor_change` set is held: none in the
+    Reference base), holds no damaging field (Canary), has no ON_ENTER or ON_LEAVE trigger
+    (WORLD-INTERACTION-0 §4.2, §8.5), does not cross a protection-zone boundary the placement does not
+    already sit in, and is not raised;
   - the Movement owner would accept for the NPC's `ExactActorRef`.
 - The step runs on the CREATURE-AI-0 §5.1 step timer at the NPC's step duration (CONDITIONS-0 §4.2,
-  from its content base speed); a refused step waits for the next interval.
-- **Out of range:** an NPC found outside its walk square (pushed by a script, a map change) is moved
-  back to its placement by one Movement owner relocation, and its conversations end (Canary).
+  from its content base speed, Canary default 55); a refused step waits for the next interval.
+  CREATURE-AI-0 §5.2's creature tile bans do not apply: the Movement owner checks the NPC actor
+  class (shop NPCs stand in protection zones). Movement occurrences (VSL-MOVE-01 §5): a step is
+  (NPC `ExactActorRef`, think sequence, `NPC_STEP`), a relocation (NPC ref, think sequence,
+  `NPC_RELOCATE`), a turn (the opening conversation's CommandRef, `NPC_TURN`).
+- **Out of range:** on every think, perceived or not, an NPC more than 50 tiles from its placement
+  or 2 floors away (Canary `deSpawnRadius`, `deSpawnRange`) is moved back to its placement by one
+  Movement owner relocation, asking GAME-NPC-SERVICE to close its conversations; if the placement
+  cannot admit it, it stays in place (CREATURE-AI-0 §5.5's fallback).
 
 ## 6. Voices (NPC-VOICE-1)
 
 - Each think adds 1,000 ms to the voice ticks. At the content cadence, with the content chance
   (`NPC_VOICE`), one line drawn uniformly is sent as local speech by the NPC's actor: `say` or `yell`
-  per the line, with CHAT-0 §3's ranges and floor rules, to players with `CHAT_V1`. NPC lines are
-  exempt from the player yell cooldown and level rule.
-- Voices are admitted text (D9); a held NPC or a line without admitted text says nothing.
+  per the line, with CHAT-0 §3's ranges and floor rules, to players with `CHAT_V1`, speaker name the
+  NPC's display name, text within `CHAT0-RL-01`. NPC lines are exempt from the player yell cooldown,
+  level rule, upper-casing and spam control (Canary upper-cases player yells only).
+- Voices are admitted text under D9's two-source or single-source rule; a line with an unresolved
+  placeholder, a held NPC or a line without admitted text says nothing.
   Amended: CHAT-0 §3 (NPC speakers, this PR).
 
-## 7. Focus (NPC-ACTOR-1 with NPC-TALK-1)
+## 7. Focus (NPC-TALK-2 and NPC-ACTOR-1)
 
+- **Ownership.** The customer queue and every conversation close belong to GAME-NPC-SERVICE (the NPC
+  service boundary §4 and §11: GAME-AI owns no dialogue state). GAME-AI reads only the queue head to
+  turn the NPC, and asks GAME-NPC-SERVICE to close on a relocation.
 - When a conversation opens (NPC-0 §4, or a CHAT-0 greeting), the character joins the end of the
-  NPC's customer queue and the NPC turns to face it (a Movement owner turn, shown as the actor's
-  direction in domain 1).
-- When the character leaves the NPC's talk range (`CHAT0-RL-08`, 4 tiles, Chebyshev, same floor),
-  NPC-0 closes its conversation and the NPC says its walk-away message to that character only (the
-  NPC-0 reply lines); the NPC turns to the last remaining customer.
+  queue and the NPC turns to face it (a Movement owner turn, shown as the actor's direction).
+- **Range check.** On every committed move or relocation of the customer or the NPC (Canary checks on
+  each move), not on the budgeted think: a customer beyond talk range (4 tiles, Chebyshev, same
+  floor, now NPC-0's own `NPC0-RL-07`) has its conversation closed with the NPC's walk-away line, or
+  the generated farewell when the NPC has no Dialogue (NPC-0 §3.3); the NPC turns to the remaining
+  head. A pending service invocation still resolves by replay (boundary §7).
 - The queue holds at most `NPC0-RL-05` characters; it is runtime only and is cleared on channel
-  restart, transfer and reconnect with the conversations (NPC-0 §4).
+  restart, transfer and reconnect with the conversations (NPC-0 §4). Amended: NPC-0 §4.1.
 
 ## 8. Rejected options
 
@@ -179,8 +203,9 @@ None. Every choice is a Tibia-parity application or a bound.
 
 ## 12. Before-freeze checklist
 
-1. **Contract amendments:** MOVE-RL-11 §4.2 (kind 5); CREATURE-AI-0 §7 (NPC think row); CHAT-0 §3
-   (NPC speakers). Applied in this PR.
+1. **Contract amendments:** MOVE-RL-11 §4.2, §4.3, §4.5 (kind 5, order, VIS-3 sequencing);
+   CREATURE-AI-0 §4.1 and §7 (wake set, NPC think row); CHAT-0 §3 (NPC speakers); NPC-0 §4.1 (queue,
+   range close, talk range). Applied in this PR.
 2. **Serialization:** runtime only, inside the channel owner's tick; steps through the Movement
    owner.
 3. **Restart:** nothing durable; NPCs are recreated at their placements.
