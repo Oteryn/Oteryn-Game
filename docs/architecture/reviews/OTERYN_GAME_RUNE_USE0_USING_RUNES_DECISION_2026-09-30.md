@@ -434,6 +434,13 @@ at allocation.
     `enter` of the new one in the same delta. The identities differ, so an identity still appears
     at most once per delta.
 
+**Amendment (pending on acceptance of WORLD-INTERACTION-0;
+`OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md` §8).**
+Magic Wall, Wild Growth, creature-made fields and the effect of player-made fields on players are
+decided there (FIELD-2): player-made fields pass the PARTY-PVP-0 legality stage, hurt their caster
+only on Hardcore, and are not filtered by secure mode. `RUNEUSE0-C7` holds until the FND-04
+admission rule of WORLDINT-ADMIT-1 is accepted and active; until then fields affect creatures only.
+
 ## 12. Rows (registered by each child before implementation)
 
 | Row | Value |

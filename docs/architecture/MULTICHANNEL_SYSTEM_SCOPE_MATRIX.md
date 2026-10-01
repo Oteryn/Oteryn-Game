@@ -120,6 +120,15 @@ online or offline on this World, from session rows and hints on the CHAT-0 World
 after the watched character accepts the VIP invitation and while it does not hide its status; it
 never shows a channel.
 
+**Amendment (pending on acceptance of WORLD-INTERACTION-0;
+`reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`
+§9 and §11).** The Public map runtime overlay row covers doors, locks, levers, switches, traps,
+transformed and moved map objects, fields and walls: `ChannelRuntime`, Channel scope, volatile,
+never shared, reset at the planned world reset and at a channel restart (owner 6a). A new World
+clock row: owner the World ruleset (`world_clock_epoch_utc_ms`); scope World; a pure function of
+the epoch and each channel's normalized time fact, identical on every channel within 1 s, with no
+cross-channel messages (owner 7a); shared.
+
 ## Required identity envelope
 
 Every runtime command, event and timer that can mutate or address gameplay state must carry enough identity to resolve its owner without process-global lookup.

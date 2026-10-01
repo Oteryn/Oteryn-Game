@@ -119,6 +119,13 @@ How do world objects and NPCs read quest progress and move it, and how does the 
 - Legacy action ids stay source bindings only (ADR-0021 §4.5). A gate never leaves the server
   (MAP-WIRE-1 §3); the client sees a door and its overlay state.
 
+**Amendment (pending on acceptance of WORLD-INTERACTION-0;
+`OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md` §4-§5).**
+`door_key` gates lower to key doors (DOOR-1, KEY-1: a key's immutable `key_number` against the
+binding; the lock is per channel overlay; 101 and 1001 never unlock). The lever `shared_lock` gate
+is a door whose state a lever's `TRANSFORM` children set (LEVER-1). The predicate set gains
+`premium` (the PREMIUM-ACTIVATION §4.5 surface) and `vocation_in {set}`, read-only like the others.
+
 ### 3.2 Evaluation
 
 - The channel runtime that owns the door checks the gate:

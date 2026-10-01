@@ -836,6 +836,14 @@ Content definition or a production quantity ceiling.
 `ItemUseCause::Rune`, and one reagent-unit BURN with one MINT of the conjured units into an
 existing stack or a fresh entry under `ConjureCause`.
 
+**Amendment (pending on acceptance of WORLD-INTERACTION-0;
+`reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`
+§4.4 and §7.2).** A one-item TRANSFER from typed `Ground` custody on one tile to `Ground` on another
+tile of the same channel scope (§32 fence), with the destination tile limit and both tile rows
+locked after the item rows in tile key order; a container tree moves by its root (BAGS-0 §4.3).
+Rows `DUR03-RL-0x-GROUND-MOVE`: 1 touched item, 2 location lines, 1 participant, 3 work units. A
+key's immutable `key_number` is part of the MINT and TRANSFER typed evidence (`DUR03-RL-07-KEY`).
+
 Each aggregate covers the complete applicable §39 semantic evidence. This includes
 typed item identity/lifecycle/type/quantity before and after; location/custody
 before and after; authorized source/occurrence/cause and conservation summary;
