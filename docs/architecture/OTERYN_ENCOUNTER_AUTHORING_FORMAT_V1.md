@@ -239,6 +239,11 @@ rules.
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
 
+**Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md`).** The
+runtime of this vocabulary: one encounter instance per scope owner, a FIFO trigger queue with two
+inline damage hooks, the `ENCOUNTER_DRAW` purpose, outcome delivery to bound consumers, and the
+`BOSS_ENTRY` lever. It meets the §12.7 and §13.7 runtime obligations.
+
 **Amendment (pending on acceptance of BOSS-RAID-0; `reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §6, §8, §9).** The D27 reward
 domain is decided: boss cooldowns, lever admission into an instance per group, the reward chest
 and anti-hopping eligibility. Raids are encounters with `channel_shared` scope plus a schedule,

@@ -337,6 +337,8 @@ quest doors, quest format §3.1) stays sealed.
   (20,000, alarm at 80%); an act whose firing would schedule past it is refused before commit. A
   revert never schedules another (proposal §7).
 - **Boss levers** (room checks, `SCOPE_HANDOFF`) are not in this decision.
+  **Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §7).** The
+  closed child set gains `BOSS_ENTRY {encounter key}`, at most one per firing.
 
 ## 6. Floor changes, tools and teleports (FLOOR-1)
 

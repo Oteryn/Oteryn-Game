@@ -166,6 +166,9 @@ disagree, §13 R6).
 - **Kinds and links.** A spawned creature links to its spawn point (§6); a raid creature to its
   raid run (BOSS-RAID-0 §4.4); an encounter creature to its encounter, whose rules override this
   decision where they say so; a summon to its owner's `ExactActorRef` (§8).
+  **Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §3, §6.2).**
+  The encounter link is to one encounter instance of the same scope owner; its overrides
+  (`attribute`, `move_lock`, encounter-stage modifiers) end with the creature or the instance.
 - **Representation.** A typed state machine in Rust over the creature's content profile (the
   existing `ai_think`), dispatching on data, never on a creature's identity. No scripts. Custom
   behaviour enters only through Ability `native_behavior` keys.

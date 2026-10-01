@@ -645,6 +645,10 @@ Stale former runtime owner cannot commit after authority moved. NodeId alone is 
 
 Future world-shared spatial owner uses separately typed location/authority family, not channel-local disguise.
 
+**Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §8).** Ground custody
+admits an InstanceRuntime scope: the Ground location row carries the `InstanceId` scope ref, fenced by
+the instance's ownership, with the tile limit and a per-instance counter (`ENCRT0-RL-06`).
+
 ## 33. Equipment atomicity
 
 GAME-ITEM owns equip legality. DUR-03 requires all old location/claims, complete new occupancy, legal displacement result and required receipt/audit to commit all-or-none.
@@ -1604,6 +1608,16 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
   event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
   use's effect, with its own suffixed resource rows.
+
+**Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §6.5, §8).** Once
+accepted: in its ENC-OUTCOME-1 child, a one-item MINT into Ground custody of the encounter's scope
+under the closed cause `EncounterDropCause`, keyed by `(encounter instance, occurrence sequence,
+action index)`, in the D3 loot MINT shape with the tile limits and §32; and in its
+INSTANCE-GROUND-1 child, a third retirement cause `InstanceRetire`, each step keyed by
+`(WorldId, InstanceId, ItemInstanceId)`
+on `game_item_decay_retire_reservations` and `game_item_decay_retire_receipts` (discriminator CHECK
+as for `WorldReset`), one-item steps, resumable, for every live Ground root of an ended instance and
+its contents. Supersession, for these shapes only: the §39.1 MINT cause and Ground-scope limits.
 
 **Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
 Once accepted, in its NPC-QUEST-1 child:
