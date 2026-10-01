@@ -44,7 +44,10 @@ or a process list; disabling optional crash diagnostics changes nothing here; a 
 session and challenge end, and a session whose corpus is absent is not challenged and yields no
 observation; a rotation record at or below the floor, or signed by a release key, is rejected; a
 revoked key's manifests stop being accepted; after a database restore to a revision below the trust
-log head, no challenge is sent until the node has re-applied the log up to its head; an answer after
+log head, no challenge is sent until the node has re-applied the log up to an accepted checkpoint; a
+stale, unsigned or regressed checkpoint, or a log prefix without one, leaves the store
+`UNVERIFIED`; a silent session yields one `TELEMETRY_SILENT` entry and one close per silent period;
+an artifact kind not on the §5.1 list is not emitted; an answer after
 the deadline yields `MISSING` and nothing more; a second telemetry summary within
 `SECCLIENT01-RL-13` of the last accepted one is not ingested and is coalesced; every artifact past
 its §5.1 retention is purged; a production scope without the §5.1 gate met does not offer
@@ -105,11 +108,22 @@ automatically?
     database can be restored, so it is not the anchor. The anchor is the release pipeline's
     **trust log**: an append-only publication of every trust record, outside the Game database
     and never restored with it.
-  - *Fail closed:* at start and every `SECCLIENT01-RL-14` (1 hour), a node reads the trust log
-    head and applies any missing records in order. The trust store is `VERIFIED` only while its
-    revision equals the head the node last read within `SECCLIENT01-RL-14`. Otherwise it is
-    `UNVERIFIED`: the log could not be read, the head is ahead, or the database revision is behind
-    the log after a restore. While it is `UNVERIFIED`, the node sends no challenge and records no
+  - *Authenticated checkpoint:* the trust root signs a **checkpoint** `{revision, issued_at}`
+    naming the current head. It is issued with every record and at least every
+    `SECCLIENT01-RL-19` (6 hours) even when nothing changed. A node takes as the head only a
+    checkpoint that meets all of these:
+    - its root signature verifies;
+    - its `issued_at` is at most `SECCLIENT01-RL-20` (24 hours) old by the node's clock;
+    - its revision is not below the highest checkpoint revision the node has seen since start, nor
+      below the build's embedded floor.
+    A log prefix without such a checkpoint is never taken as the head, so an old valid prefix
+    cannot pass as current.
+  - *Fail closed:* at start and every `SECCLIENT01-RL-14` (1 hour), a node fetches the latest
+    checkpoint and applies the log's records in order up to its revision. The trust store is
+    `VERIFIED` only while its revision equals that of a checkpoint that is accepted and still within
+    `SECCLIENT01-RL-20`. Otherwise it is `UNVERIFIED`. That covers a checkpoint that is missing,
+    stale, unverifiable or regressed, records that cannot be fetched, and a database revision that
+    is behind after a restore. While it is `UNVERIFIED`, the node sends no challenge and records no
     challenge outcome. A database restore therefore cannot reinstate a revoked key. Admission is
     unaffected, because the trust store feeds only challenge evidence and build admission belongs
     to PROD-COMPAT-01.
@@ -213,7 +227,12 @@ not challenged.
   stamped with the node's own window bounds; any time the client claims is ignored. Any other
   summary is not ingested. The node counts such summaries and records them as one coalesced
   `TELEMETRY_EXCESS {count}` observation per session per `SECCLIENT01-RL-09` window, plus a final
-  one at session end. A summary is missing when no summary is accepted for twice `RL-04` of play.
+  one at session end.
+- **Silence.** A session enters `SILENT` when no summary has been accepted for twice `RL-04` (120 s)
+  of play, and leaves it at the next accepted summary. The node records one `TELEMETRY_SILENT`
+  observation on each entry into `SILENT`, with its start time, and one closing record with the
+  duration on exit or at session end. Nothing is recorded while the state persists, so each
+  silent period produces exactly one entry and one close.
 - **Closed content**, statistical only, about input inside the game window: counts and fixed-bucket
   histograms of inter-press intervals for game actions (by action class, never by key code), of
   pointer movement speed and path curvature between actions, of the delay between a server event
@@ -232,46 +251,35 @@ not challenged.
 - **Privacy class:** `SECURITY_SENSITIVE` (ANL-03 §14), pseudonymous by AnalyticsActorId. Retention
   follows §5.1.
 
-### 5.1 Retention profiles (ANL-01 §16)
+### 5.1 Retention profiles (ANL-01 §16, ANL-03 §14.6)
 
-These profiles apply to the input summaries, the server-side timing records and the challenge
-outcome events of §4. Each is bound to its events in the ANL retention registry by SEC-TELEM-1, or
-by SEC-CHAL-1 for challenge outcomes.
+**Closed list.** SEC-CLIENT-01's children may emit only the artifact kinds below. Each profile states
+every ANL-01 §16 field in full; no field is inherited. Any other artifact kind, and any kind whose
+profile is not bound, is prohibited and fails closed. That includes case evidence, which stays
+prohibited until a revision of this decision adds the profile that `OPS-GM-01`'s case profile
+supports, so no case is opened before then (§6).
 
-| Element | Raw events (`SECCLIENT01-RAW-1`) | Detector signals (`SECCLIENT01-SIG-1`) |
-|---|---|---|
-| Purpose | Detecting automation, and calibrating those detectors. Not balance analytics, product analytics, marketing or any other model. | The same purpose. |
-| Class | `SECURITY_SENSITIVE`, pseudonymous by AnalyticsActorId | `SECURITY_SENSITIVE`, pseudonymous |
-| Ordinary retention (ceiling) | `SECCLIENT01-RL-06` (90 days) from collection | `SECCLIENT01-RL-10` (180 days) from creation |
-| Allowed roles | The detector service (read, write signals). The security analyst role, reading one actor's rows only when a signal or case names that actor; every read is access-logged. No GM, support, product, Platform or Atlas access. | The detector service; the security analyst role; GMs only through a case (OPS-GM-01). |
-| Aggregation | After retention, only calibration aggregates are kept: bucket counts over at least `SECCLIENT01-RL-11` (50) distinct actors, with no AnalyticsActorId, for at most `SECCLIENT01-RL-12` (2 years). | None. |
-| Deletion and anonymisation | A daily purge deletes rows past retention. Account deletion deletes the actor's rows within 30 days, or unlinks the pseudonym from them within the same 30 days; a legal hold overrides this. | Same as raw events. |
-| Export and redaction | No bulk export. A case may copy only the rows it cites, and the copy then follows the case profile. A data subject request returns the player's own summaries in their closed field form. | A case copies the signals it cites. |
-| Legal hold | Only by an explicit hold record naming who set it, the reason, the scope and an expiry. The record is audited, and the held rows are purged at expiry. | Same as raw events. |
-| Rollout and rollback | Profile revision 1. A revision that adds purpose, a role, a field or retention needs a new revision of this decision. A shorter retention applies at the next purge. A rollback never keeps a row longer than the profile in force when it was collected allows. | Same as raw events. |
-
-**The other artifacts (ANL-03 §14.6).** These have the same purpose, class, legal hold and rollout
-rules as `SECCLIENT01-RAW-1`, and are purged by the same daily purge:
-
-| Artifact | Profile | Ordinary retention (ceiling) | Roles and limits |
-|---|---|---|---|
-| Detector features (per-actor values derived from raw events) | `SECCLIENT01-FEAT-1` | the shorter of the source raw rows' retention and `SECCLIENT01-RL-06` | detector service only; deleted with their source rows on account deletion |
-| Signal dispositions (the team's or a GM's audited verdict on a signal, including alpha review without a case) | `SECCLIENT01-DISP-1` | `SECCLIENT01-RL-15` (1 year) from the disposition | security analyst role writes; detector service reads them for calibration only, without AnalyticsActorId once the signal is purged |
-| Case evidence | `OPS-GM-01`'s case profile | per that profile | **Prohibited until that profile is accepted**: no case is opened and nothing is copied into one |
-| Identity-resolution logs (each mapping of an AnalyticsActorId to an account or character, with who, why and which signal or case) | `SECCLIENT01-IDRES-1` | `SECCLIENT01-RL-16` (2 years) | written by the resolution service; read only by the security audit role; resolution is allowed only for a signal under review or a case |
-| Exports (data subject responses; nothing else) | `SECCLIENT01-EXPORT-1` | the response copy is kept `SECCLIENT01-RL-17` (30 days) after delivery | prepared by the privacy role and delivered to the player only; any other export is prohibited |
+| Kind and profile | Purpose | Class | Ordinary retention (ceiling) | Allowed roles | Aggregation transition | Deletion and anonymisation | Export and redaction | Legal hold | Rollout and rollback |
+|---|---|---|---|---|---|---|---|---|---|
+| `SECCLIENT01-RAW-1` Raw events: input summaries, server timing records, challenge outcomes, and the coalesced `UNSOLICITED_REPLY`, `TELEMETRY_EXCESS` and `TELEMETRY_SILENT` observations | Automation detection and detector calibration only; never balance, product or marketing analytics or any other model | `SECURITY_SENSITIVE`, pseudonymous by AnalyticsActorId | `SECCLIENT01-RL-06` (90 days) from collection | Detector service reads. The security analyst role reads one actor's rows only while a signal naming that actor is under review; each read goes to `ACCESS-1` | May feed `AGG-1` only | A daily purge deletes rows past retention; on account deletion the actor's rows are deleted within `SECCLIENT01-RL-18` (30 days) | No export except inside an `EXPORT-1` response, in the closed field form; never copied into a case | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-FEAT-1` Detector features: per-actor values derived from raw events | Automation detection and detector calibration only; never balance, product or marketing analytics or any other model | `SECURITY_SENSITIVE`, pseudonymous by AnalyticsActorId | The shorter of its source rows' remaining retention and `SECCLIENT01-RL-06` | Detector service only | May feed `AGG-1` only | A daily purge deletes rows past retention; deleted with their source rows; on account deletion deleted within `SECCLIENT01-RL-18` (30 days) | No export except inside an `EXPORT-1` response | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-SIG-1` Detector signals | Automation detection and detector calibration only; never balance, product or marketing analytics or any other model | `SECURITY_SENSITIVE`, pseudonymous by AnalyticsActorId | `SECCLIENT01-RL-10` (180 days) from creation | Detector service writes. The security analyst role reads and triages; each read goes to `ACCESS-1` | Per-detector counts without AnalyticsActorId may feed `AGG-1` | A daily purge deletes rows past retention; on account deletion deleted within `SECCLIENT01-RL-18` (30 days) | No export except inside an `EXPORT-1` response; never copied into a case | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-LIFE-1` Signal lifecycle and reviewer audit records: triage, disposition, close and reopen, with the reviewer and time, including alpha review without a case | Automation detection and detector calibration only; never balance, product or marketing analytics or any other model | `SECURITY_SENSITIVE`, pseudonymous by AnalyticsActorId; reviewer identity is staff data | `SECCLIENT01-RL-15` (1 year) from the record | Append-only, written by the review tool on the security analyst role's actions. The security audit role reads. The detector service reads disposition labels only, without AnalyticsActorId, for calibration | Disposition counts per detector without AnalyticsActorId may feed `AGG-1` | A daily purge deletes rows past retention; on account deletion the AnalyticsActorId is removed within `SECCLIENT01-RL-18` (30 days) and the reviewer audit entry stays until its retention | No export except the player's own dispositions inside an `EXPORT-1` response, with reviewer identities redacted | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-IDRES-1` Identity-resolution logs: each mapping of an AnalyticsActorId to an account or character, with who, why and which signal | Automation detection and detector calibration only; never balance, product or marketing analytics or any other model | `SECURITY_SENSITIVE`, player-linked | `SECCLIENT01-RL-16` (2 years) from the resolution | Written by the resolution service, which resolves only for a signal under review. Read only by the security audit role | None | A daily purge deletes rows past retention; on account deletion the account and character references are replaced by a deletion marker within `SECCLIENT01-RL-18` (30 days) | No export except, inside an `EXPORT-1` response, the fact and time of each resolution, with the resolver redacted | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-ACCESS-1` Access and retention audit: reads of `RAW-1`, `FEAT-1`, `SIG-1` and `LIFE-1`, legal hold records, and purge runs | Accountability for access to the artifacts above | `SECURITY_SENSITIVE`, pseudonymous; reader identity is staff data | `SECCLIENT01-RL-16` (2 years) from the entry | Written by the store. Read only by the security audit role | None | A daily purge deletes rows past retention; on account deletion the AnalyticsActorId is removed within `SECCLIENT01-RL-18` (30 days) | None | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-AGG-1` Calibration aggregates: bucket counts over at least `SECCLIENT01-RL-11` (50) distinct actors | Automation detection and detector calibration only; never balance, product or marketing analytics or any other model | Non-personal: no AnalyticsActorId, and no bucket below the actor minimum | `SECCLIENT01-RL-12` (2 years) from computation | Detector service and the security analyst role | Terminal form; nothing further | A daily purge deletes rows past retention; account deletion needs no action, because nothing links to an actor | None | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-EXPORT-1` Data subject responses, the only export | Answering a player's data subject request | `SECURITY_SENSITIVE`, player-linked | `SECCLIENT01-RL-17` (30 days) after delivery | Prepared by the privacy role and delivered only to the requesting player | None | A daily purge deletes rows past retention; on account deletion deleted within `SECCLIENT01-RL-18` (30 days) | Is the export; reviewer, resolver and other players' data is redacted | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
+| `SECCLIENT01-OPS-1` Operational events: trust records rejected, trust store `UNVERIFIED`, missing corpus | Running the release trust pipeline | Non-personal: node, build and revision only, no actor | `SECCLIENT01-RL-15` (1 year) from the event | Operators and the security audit role | None | A daily purge deletes rows past retention; account deletion needs no action | None | Only by an audited hold record naming who, reason, scope and expiry; held rows are purged at expiry | Revision 1. Adding purpose, a role, a field or retention needs a new revision of this decision; a shorter retention applies at the next purge; a rollback never keeps a row longer than the profile in force at its collection allowed |
 
 **Production collection gate.** A production scope opens the offer gate of `INPUT_TELEMETRY_V1`,
 which also turns on the requirement of §4.1 for that scope, only when both of these hold:
 
-- every profile of §5.1 except the case profile is bound in the ANL retention registry:
-  `RAW-1`, `FEAT-1`, `SIG-1`, `DISP-1`, `IDRES-1` and `EXPORT-1`;
+- all nine profiles of the closed list are bound in the ANL retention registry;
 - `DATA-PRIVACY-01`'s disclosure of this telemetry is published.
 
 Until then the capability is not offered there, nothing is collected, and native clients are not
-refused for lacking it. Challenges have the same kind of gate: until `SECCLIENT01-RAW-1` is bound
-to the challenge outcome events, a production scope does not offer `CLIENT_INTEGRITY_V1` and sends
-no challenge.
+refused for lacking it. Challenges have the same gate: until it is met, a production scope does not
+offer `CLIENT_INTEGRITY_V1` and sends no challenge.
 
 ## 6. Flags (SEC-DETECT-1; layer 3)
 
@@ -284,8 +292,8 @@ no challenge.
   timing or behaviour the server observed. `MISSING` only adds context to a case opened for
   another reason. `VALID` never clears anyone.
 - **Alpha:** detectors run and calibrate; signals are reviewed by the team, no ban waves.
-- **Before open beta:** signals above a detector's threshold open a case in the `OPS-GM-01` queue
-  with its evidence; a GM decides, and sanctions are applied in waves on a schedule
+- **Before open beta:** once a revision of this decision adds the case evidence profile (§5.1),
+  signals above a detector's threshold open a case in the `OPS-GM-01` queue with its evidence; a GM decides, and sanctions are applied in waves on a schedule
   `OPS-GM-01` sets, not at detection time. Player Rule Violation reports (WRITE-0 §6, the GM tools
   decision) feed the same queue.
 - No signal ever disconnects, refuses or penalizes on its own.
@@ -319,10 +327,13 @@ no challenge.
 | `SECCLIENT01-RL-11` minimum distinct actors in a calibration aggregate | 50 |
 | `SECCLIENT01-RL-12` calibration aggregate retention | 2 years |
 | `SECCLIENT01-RL-13` minimum play between accepted telemetry summaries | 45 s |
-| `SECCLIENT01-RL-14` trust log check interval and freshness | 1 hour |
-| `SECCLIENT01-RL-15` signal disposition retention | 1 year |
-| `SECCLIENT01-RL-16` identity-resolution log retention | 2 years |
+| `SECCLIENT01-RL-14` trust log check interval | 1 hour |
+| `SECCLIENT01-RL-15` signal lifecycle, reviewer audit and operational event retention | 1 year |
+| `SECCLIENT01-RL-16` identity-resolution and access audit log retention | 2 years |
 | `SECCLIENT01-RL-17` data subject response copy retention | 30 days |
+| `SECCLIENT01-RL-18` account deletion deadline for these artifacts | 30 days |
+| `SECCLIENT01-RL-19` trust checkpoint issuance interval | 6 hours |
+| `SECCLIENT01-RL-20` trust checkpoint maximum age | 24 hours |
 
 Each with max and max+1 tests.
 

@@ -36,17 +36,17 @@ SEC-CLIENT-01 closes the horizon gate `SEC-CLIENT-01` (`REQUIRED_FOR_ALPHA`) wit
 layered version (#162 5929226991).
 
 - **Layer 1:** a signed release manifest and a Game-side trust store with an ordered, root-signed
-  trust record chain anchored in an append-only trust log outside the Game database (no challenges
-  while unverified), and emergency revocation; `CLIENT_INTEGRITY_V1`
+  trust record chain anchored in an append-only trust log outside the Game database and verified
+  against a fresh root-signed checkpoint (no challenges while unverified), and emergency revocation; `CLIENT_INTEGRITY_V1`
   with a nonce-salted code-region challenge at login (alpha) and in game (before open beta). A
   correct answer proves only access to official release bytes, never integrity; outcomes are never
   sanction evidence on their own; one terminal outcome per challenge, unsolicited replies
   coalesced; retiring builds keep their corpus until their sessions end.
 - **Layer 2:** `INPUT_TELEMETRY_V1` with a closed, statistical summary; server-side timing weighs
-  more; no opt-out, disclosed in the privacy policy; summaries accepted by server-owned windows;
-  ANL-01 §16 and ANL-03 §14.6 profiles for every artifact (case evidence prohibited until
-  OPS-GM-01's profile), and a production collection gate on their binding and the DATA-PRIVACY-01
-  disclosure.
+  more; no opt-out, disclosed in the privacy policy; summaries accepted by server-owned windows,
+  silence recorded once per silent period; a closed list of nine artifact kinds, each with every
+  ANL-01 §16 field stated, anything else prohibited (case evidence until OPS-GM-01's profile), and a
+  production collection gate on their binding and the DATA-PRIVACY-01 disclosure.
 - **Layer 3:** outcomes and telemetry are ANL-01 security events; ANL-03 hypothesis signals; GM
   review and ban waves through OPS-GM-01 before open beta; nothing automatic.
 - **Admission:** native transport profile 1 requires both capabilities through a transport profile
