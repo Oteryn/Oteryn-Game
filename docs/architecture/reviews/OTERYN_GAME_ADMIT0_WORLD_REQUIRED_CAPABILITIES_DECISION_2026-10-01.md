@@ -87,12 +87,18 @@ hurt or block its character, without making those capabilities core protocol for
 - The effective set is fixed for the scope's ownership generation. A changed list takes effect only
   with a new boot, that is a new ownership generation. **Premise:** node-boot D3's stop-then-start
   replacement, under which a session reaches a new channel generation only through fresh admission,
-  reconnect or recovery, each of which checks it (§4). Overlapping replacement, healthy-session
-  migration (FND-04B §10) and the Channel to Instance handoff (FND-03 §3.4, FND-04B §23) are
-  superseding triggers: each must check the destination's set against the session's support before
-  its commit, in its own contract.
+  reconnect or recovery, each of which checks it (§4). Overlapping replacement and healthy-session
+  migration (FND-04B §10) are superseding triggers.
+- **Every transfer into a channel scope** (Channel to Channel, Instance to Channel, a handoff, a
+  migration, any later transfer contract) must, before its commit: check the destination scope's
+  effective set against the session's declared support (refusing with `RECONNECT_CAPABILITY_REQUIRED`
+  semantics, current authority preserved), select every capability of the set, and reconcile by a
+  replacement snapshot (§4). Until the contract of such a transfer adds this check, that transfer
+  into a channel with a non-empty set is refused (fail closed). This holds whatever the source
+  scope's set was, so a session recovered in a scope with an empty set cannot enter a public channel
+  unchecked (WORLD-INTERACTION-0 §9.2).
 - **Instances:** an InstanceRuntime scope has no declared set and applies no player field or wall
-  effects until the handoff contract adds that check.
+  effects until its own contract declares one.
 
 ### 3.3 Selection
 
@@ -113,9 +119,12 @@ It runs after authentication and only against the current scope generation's set
   authenticated, ownership and world are classified safe, and §19 dispatch has chosen the path,
   immediately before that path's commit revalidation, against the current scope generation's set;
   a post-grace recovery that creates a new GameSession selects the set (§3.3).
-- **Reconciliation:** when a resumed session's selected set differs from its predecessor's (a new
-  scope generation added a capability), reconciliation uses a replacement snapshot (FND-02 §16),
-  never replay, so no newly selected domain receives deltas without a baseline.
+- **Reconciliation:** when a resumed or transferred session's selected set differs from its
+  predecessor's (a new scope generation or a transfer added a capability), reconciliation uses a
+  replacement snapshot (FND-02 §16), never replay, so no newly selected domain receives deltas
+  without a baseline.
+- **Transfers into a channel scope:** the same predicate, selection and replacement snapshot before
+  the transfer commits (§3.2).
 - The check reads declared support only. Support is a claim, not trust: the server still sends and
   enforces everything; the rule guarantees only that the client said it can render what can hurt
   or block it.
