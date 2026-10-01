@@ -25,6 +25,7 @@ python build_report.py --check
 python verify_item_assets.py --check
 python verify_item_delivery_reference.py --check
 python client_icons.py --check
+python verify_official_perks.py
 node verify_planner.cjs /path/to/pinned/TibiaPal
 ```
 
@@ -84,8 +85,9 @@ On 2026-10-01, Tavily extracted the live TibiaPal page and official character
 manual. The live-served planner module, string catalogue and renderer are
 byte-identical to the pinned TibiaPal inputs, whose complete replay passes. This
 qualifies `live_website_verified` for planner content only; it does not establish
-interactive browser behavior or current Global parity. The supplied planner code
-renders an invalid-code message. Seven requested Fandom pages, official news 8833/8944, the official character
+interactive browser behavior or current Global parity. The earlier `K0Y2AgDP4jAQA` test against pinned TibiaPal
+renders an invalid-code message. The current official `M0Y2AgDP4jAQA` link is
+accepted and represents Monk with zero allocated points. Seven requested Fandom pages, official news 8833/8944, the official character
 manual and the five original CDN sheets were subsequently read with real Chrome
 through Remote Desktop/CDP after normal HTTP/extraction failed. The browser was
 used only for public internet research, then closed. The audit preserves source
@@ -116,8 +118,8 @@ augment stages and all nine unique perk definitions. Unique conditions, affected
 skills/spells and numbers are encoded separately, including Battle Instinct,
 Positional Tactics, Runic/Focus/Ballistic Mastery, Healing Link, Battle Healing,
 Guiding Presence and Sanctuary. Runic Mastery uses base magic level for the
-single rune effect, as explicitly stated by Fandom r1206174. Official 8833 binds Battle Healing's shield
-multiplier to 3, Focus Mastery to a 2-second focus-spell group reduction, and
+single rune effect, as explicitly stated by Fandom r1206174. Official 8872 supersedes 8833 and binds Battle Healing's shield
+multiplier to 2. Official 8833 binds Focus Mastery to a 2-second focus-spell group reduction, and
 Guiding Presence to 100% shared mantra. Official 8944 adds the raw 33% party-bonus
 increase. That raw percent has unit `source_percent`: its native arithmetic,
 rounding and self-copy semantics remain PARITY_PENDING: the wiki gives no arithmetic
@@ -130,17 +132,17 @@ field has an upstream TODO; a declared number does not establish working combat.
 Revelation has three stages at 250/500/1,000 domain points, typed numeric effects,
 explicit behavior rules and reference areas, with conditions also retained in descriptions and the shared +4/+9/+20 damage/healing
 bonuses. Avatar cooldowns are converted from minutes to seconds; Gift of Life
-cooldowns count battle-sign time. The official 8944 cooldown changes select -4 s for Mystic Repulse I and Thousand
-Fist Blows II instead of the planner's -6 s. Great Fire Wave I preserves both
+cooldowns count battle-sign time. Official 8944 and the current official planner select -4 s for Mystic Repulse I and Thousand
+Fist Blows II; the original TibiaPal -6 s descriptions remain only in the raw capture. Great Fire Wave I preserves both
 effects in the existing project spell evidence: critical extra damage +15% and
-critical chance +10%. Mystic Repulse II selects project damage +40% while retaining
-planner +60% and BR wiki +15%. Flurry I selects its enlarged affected area and
+critical chance +10%. Mystic Repulse II selects official planner damage +60% while retaining
+English wiki +40% and BR wiki +15% as conflicting observations. Flurry I selects its enlarged affected area and
 retains the planner's range +1 as an unselected hypothesis; no independent cast
 range bonus is established. The Special Spells secondary cooldown remains a separately labelled
 Canary-only hypothesis. All selections are recorded with their source.
 Lord of Destruction's stage-2 death critical
-bonus uses the project's corroborated **22.5%** value while preserving the
-planner's **25.5%** description as an explicitly recorded conflict.
+bonus uses **22.5%**, explicitly confirmed by official 8833. Candidate descriptions
+now agree; the planner's **25.5%** typo remains in the raw capture and source audit.
 
 ## Gem semantics
 
@@ -197,7 +199,8 @@ The manifest and snapshot-selection files are digest-bound by exact-file validat
 including a custom candidate's supplied serialized bytes. No PNG or proprietary
 client implementation is included, and public availability does not grant runtime
 redistribution rights. Qualify locally supplied source bytes with
-`python client_icons.py --check --assets-dir /path/to/reference-sheets` and/or
+`python client_icons.py --check
+python verify_official_perks.py --assets-dir /path/to/reference-sheets` and/or
 `--originals-dir /path/to/original-sheets`; each directory uses `dedication.png`,
 `conviction.png`, `revelation.png`, `basic_mod.png` and `supreme_mod.png`.
 
@@ -263,11 +266,11 @@ OTS/PARITY_PENDING classifications for those values remain.
 
 The BR wiki corroborates both selected -4 s cooldowns. Lord of Destruction II
 gets additional derived corroboration: the wiki's combined 52.5% minus Master of
-Decay's base 30% gives the selected 22.5 percentage-point increment. This is
-secondary-source evidence, not a new official confirmation.
+Decay's base 30% gives the selected 22.5 percentage-point increment. Official 8833 now also directly confirms the +22.5% increment; the planner typo
+cannot override the released official value.
 
-Mystic Repulse II has three observations: planner +60%, existing project target
-+40%, and BR wiki r443774 +15%. The Great Fire Wave omission was corrected using
+Mystic Repulse II has three observations: official planner +60%, prior project/English wiki
++40%, and BR wiki r443774 +15%. The owner-directed repair selects the official +60%. The Great Fire Wave omission was corrected using
 both existing project effect rows, also observed in BR wiki r423338. Flurry's
 cast-range interpretation remains unselected. The source audit preserves all
 observations and their revision dates. Neither a
@@ -284,7 +287,8 @@ cooldown selections in original official 8944. It confirms Fandom Conviction
 remain explicit evidence. Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)
 selects wiki values 225/12,500,000 under FORMULA, while current coordinator
 STATE defers changing this candidate until the WHEEL-GEM-0 amendment.
-The selected +40% Mystic row satisfies that hierarchy. Task Shop +50 and the
+The former selected +40% Mystic row is superseded by the owner-directed official-planner repair;
+it did not account for the exposed official +60% value. Task Shop +50 and the
 catalogue-derived 69 Grade-IV maximum remain OUT_OF_SCOPE references only;
 neither is a new accepted runtime grant.
 The Fandom Battle Instinct paragraph incorrectly repeats Battle Healing prose;
@@ -298,3 +302,26 @@ with the recorded Gem Atelier redirect explicitly allowed. Each requested page
 needs a matching observed page, successful Chrome/CDP read, positive content
 length, Fandom revision and SHA-256; foreign-host lookalikes and empty captures
 are refused. Browser audit schema and false admission/parity flags are enforced.
+
+## Official-source numeric repair (2026-10-01)
+
+The fresh five-vocation audit found that text-only comparison did not detect a
+correct +60% description paired with a typed 40% value. It also found Battle
+Healing's obsolete shield multiplier 3: the later official 8872 explicitly
+reduces it to 2. The repaired candidate selects 60 and 2, with source conflicts
+retained rather than overwritten. Cooldown, Guiding Presence, Focus Mastery,
+Flurry area and Lord of Destruction descriptions now match selected semantics.
+
+`samples/official-perk-reference.json` contains bounded extracted official facts,
+source URL/hash identities and dated news quotes; it contains no original module
+or asset bytes. `verify_official_perks.py` checks 180 slots, typed augment/unique
+and Revelation values, and selected descriptions against that independent audit.
+Default evidence qualification invokes it, while custom semantic authoring remains
+tunable and cannot claim this exact official-source qualification. Regressions
+reject the former 40/3 values even with correct descriptions. The current audit
+fully allocates all five wheels to 4000 points; one fill pass was insufficient.
+
+Access: official planner resources via normal HTTPS200; official 8833/8872/8944
+via research-only Chrome/CDP after HTTP403. Browser closed. These source facts
+do not prove native execution, UI integration or full Global parity. The Basic
+slot2 lists and Gem numeric catalogue also match the current official planner.

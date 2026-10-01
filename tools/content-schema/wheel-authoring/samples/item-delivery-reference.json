@@ -2926,7 +2926,7 @@
     }
   },
   "client_icon_coverage": {
-    "manifest_sha256": "77e98ad275fd66a802ce87990663883252223db18d3c4dab318bab8758658c19",
+    "manifest_sha256": "c23ed73c3695251d673519076cc50e58d8c8deb9296ed4e5c024ec0be5b349ed",
     "reference_crops": 205,
     "bindings": 520,
     "pixel_equal_fallback_crops": 189,

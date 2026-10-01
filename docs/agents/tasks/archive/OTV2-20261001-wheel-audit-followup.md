@@ -81,3 +81,18 @@ any programme review dispatch is coordinator-owned. Completed means this worker'
 reviewable deliverable, not protected integration or gameplay completeness.
 Merge commit/result: squash merge of #1474, if admitted through protected lifecycle.
 Exact FREEZE_SHA, validation, recovery and CI readback are external lifecycle evidence.
+
+## Owner-directed official-perk repair
+
+Returned to AUTHORING from6420d554 under the owner's explicit instruction;
+control-plane notice5939890212. Same single-writer task branch and bounded paths.
+Fresh official audit:180slots,100augment-stage occurrences,20Revelation assignments,
+258exposed Revelation numbers,28unique numbers, five4000point wheels. Repair
+BattleHealing shield3→2 (later official8872), MysticRepulseII40→60 (official planner),
+and stale selected descriptions. LordII22.5, Focusgroup−2 and Flurry area are
+retained with direct official evidence. Numeric values are checked independently
+of descriptions during evidence qualification; semantic tuning stays separate.
+All15Gem lists/1580Basic values/376Supreme texts/415Supreme values agreed in the
+fresh audit. Raw observations and historical conflicts remain available. No
+runtime admission, protected integration or complete Global-parity claim.
+Final repair qualification and new FREEZE_SHA are recorded externally in#162.

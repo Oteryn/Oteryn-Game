@@ -87,7 +87,7 @@ Remote Desktop controlled/read only a browser; project work ran in the cloud.
 
 Architect: amendment for reference cap 225 / Supreme III 12.5M; exact positional catalogue
 qualification before GEM-R admission; Guiding+33 arithmetic/rounding/self-copy under
-FORMULA. Candidate 250 / 12M stays until amendment. Mystic II 40 is confirmed by English
+FORMULA. Candidate 250 / 12M stays until amendment. Historical Mystic II40 selection used English
 r1206174; Task Shop 50 / Grade IV 69 remain OUT_OF_SCOPE. No new owner value gate is inferred.
 
 Coordinator/workers: catalogue admission; fenced allocation/reset/reconciliation;
@@ -95,3 +95,14 @@ durable Gem/grade/vessel/initial-grant state and paid-row migration; atomic Atel
 stat/spell effects; Item materialization/crusher/loot; protocol/session; client
 UI/icons; PostgreSQL/reload/replay/race and effect/operation E2E. Recording gaps
 does not implement them or allocate runtime owners.
+
+## Superseding official-perk repair
+
+The owner-directed Oct1 repair selects Battle Healing shield multiplier2 from
+official8872 and Mystic RepulseII60% from the current official Tibia.com planner.
+The former3/40 selections are obsolete. Selected descriptions now use cooldown−4s,
+Guiding party+33%, Focus group cooldown, Flurry affected area and LordII22.5%.
+The original source capture preserves contradictory text. A separate independent
+official-perk reference qualifies typed values for all five vocations; new negative
+regressions cover the prior failures. Runtime delivery and control-plane ownership
+remain separate from this authoring correction.

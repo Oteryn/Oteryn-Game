@@ -80,16 +80,18 @@
       }
     }
   },
-  "selection_policy": "Existing project snapshot: released official news > captured Fandom at target date > Canary hypothesis. BR wiki is separately dated secondary corroboration. This is not an Oct 1 Global parity claim.",
+  "selection_policy": "Released official news, with later changes superseding earlier values; current official Tibia.com planner for directly exposed values not superseded by official news; captured EnglishWiki and Canary only when official evidence is absent. The Oct1 authoring repair preserves raw conflicting observations and does not grant runtime or complete Global parity.",
   "mystic_repulse_ii": {
-    "selected_percent": 40,
-    "primary_revision": 1206174,
-    "primary_timestamp": "2026-09-14T01:41:28Z",
+    "selected_percent": 60,
     "secondary_br_percent": 15,
     "secondary_br_revision": 443774,
     "secondary_br_approved_on": "2026-09-02",
     "planner_percent": 60,
-    "decision": "40 confirmed by explicit English TibiaWiki Conviction r1206174 row under architect FORMULA ruling; BR15/planner60 remain corroboration/conflict evidence only."
+    "decision": "Owner-directed authoring repair: current official Tibia.com planner +60% selected; prior EnglishWiki1206174 +40% and BR443774 +15% are retained as conflicts, not higher-priority authority.",
+    "primary_source": "https://www.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M0Y2AgDP4jAQA",
+    "previous_english_wiki_percent": 40,
+    "previous_english_wiki_revision": 1206174,
+    "previous_english_wiki_timestamp": "2026-09-14T01:41:28Z"
   },
   "great_fire_wave_i": "Both +15 critical extra damage and +10 critical chance selected from the existing project spell capture.",
   "flurry_of_blows_i": "Select AREA_GREATER_FLURRY_OF_BLOWS. Planner range +1 is preserved as an unselected cast-range hypothesis.",
@@ -97,7 +99,7 @@
   "dedication_reconciliation": "Reference capture selects mitigation +0.075 percentage points per point. Older resistance wording belongs to WHEEL-0 owner reconciliation before runtime admission.",
   "browser_research": "samples/browser-source-audit.json",
   "unique_conviction_selections": {
-    "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
+    "battle_healing": "Official8872 (2026-07-07) reduces the shield multiplier from3to2, superseding8833. Selected healing bonus10%, doubled with shield20%; current official planner agrees.",
     "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
     "guiding_presence": "Official8833 full mantra share100%; official8944/EnglishWiki1206174 literal party+33%. EnglishWiki gives no arithmetic; pinnedCanary99902524 party.cpp308-321 implements mantra sharing but combat.cpp824-835/game.cpp210-223 has no Guiding+33 bonus. Arithmetic/rounding/self-copy PARITY_PENDING; runtime unadmitted; no owner gate.",
     "runic_mastery": "Fandom:1206174 explicitly applies the percentage bonus to base magic level, for that specific rune effect only."
@@ -109,7 +111,7 @@
   },
   "architect_ruling": {
     "reference": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015",
-    "formula_precedence": "official > English TibiaWiki > pinned Canary; BR/planner corroboration only",
+    "formula_precedence": "Historical5933264015: official > EnglishWiki > pinnedCanary. Owner-directed Oct1 authoring repair recognizes Tibia.com planner as an official source; no native architecture admission is inferred.",
     "gem_price_cap_application": "DEFERRED_BY_COORDINATOR_STATE_5897165704_PENDING_ARCHITECT_WHEEL_GEM0_AMENDMENT; 225/12.5M are architect reference selections, candidate250/12M unchanged",
     "task_shop_and_grade_iv_maximum": "OUT_OF_SCOPE_REFERENCE_ONLY; no accepted runtime value",
     "deferred_reference_values": {
@@ -159,5 +161,9 @@
       "file": "samples/basic-mod-position-2-conflict.json",
       "sha256": "e570937db95765593e82ec6e6e60a5f8579cbc2d7dd499db24bb6c4364f9ceaa"
     }
+  },
+  "official_perk_audit": {
+    "file": "samples/official-perk-reference.json",
+    "sha256": "26424e2fd7825db78353c78b391a5cd180011ca7c36f87e6619a98e7c8967b6b"
   }
 }

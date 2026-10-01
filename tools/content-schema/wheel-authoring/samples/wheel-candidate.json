@@ -26,7 +26,7 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "713d9495d939ab9d98849e21817c5e5db7032704479fa0621df80e30df0310f9"
+    "source-parameters.json": "0aac1804fdf597ae05faed914dd54edc22f87d7c0bcad60fc43782de92d089f1"
   },
   "progression": {
     "minimum_level": 51,
@@ -2430,12 +2430,12 @@
                 },
                 {
                   "kind": "shield_healing_multiplier",
-                  "value": 3,
+                  "value": 2,
                   "unit": "multiplier"
                 }
               ],
               "behaviors": [
-                "shield_triples_bonus"
+                "shield_doubles_bonus"
               ],
               "targets": [
                 "healing_spells"
@@ -7453,7 +7453,7 @@
             "source_info_id": 23,
             "native_value": 1,
             "unit": "native",
-            "reference_description": "Increases the damage of your next damage spell by 35% within 12 seconds after casting a focus spell. Reduces the primary cooldown by 2 seconds.",
+            "reference_description": "Increases the damage of your next damage spell by 35% within 12 seconds after casting a focus spell. Reduces the group cooldown of focus spells by 2 seconds.",
             "augment_targets": [],
             "reference_hypotheses": [],
             "unique_parameters": {
@@ -7836,12 +7836,12 @@
             "critical_damage_for_mastery_of_decay"
           ],
           "area_reference": null,
-          "stage_zero_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Mastery of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Mastery of Thunder and  15.00% / 25.50% / 30.00%  more critical damage for Mastery of Decay.",
+          "stage_zero_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Master of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Master of Thunder and  15.00% / 22.50% / 30.00%  more critical damage for Master of Decay.",
           "stages": [
             {
               "stage": 1,
               "minimum_domain_points": 250,
-              "reference_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Mastery of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Mastery of Thunder and  15.00% / 25.50% / 30.00%  more critical damage for Mastery of Decay.",
+              "reference_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Master of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Master of Thunder and  15.00% / 22.50% / 30.00%  more critical damage for Master of Decay.",
               "numeric_effects": [
                 {
                   "kind": "mastery_flames_fire_damage_bonus",
@@ -7873,7 +7873,7 @@
             {
               "stage": 2,
               "minimum_domain_points": 500,
-              "reference_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Mastery of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Mastery of Thunder and  15.00% / 25.50% / 30.00%  more critical damage for Mastery of Decay.",
+              "reference_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Master of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Master of Thunder and  15.00% / 22.50% / 30.00%  more critical damage for Master of Decay.",
               "numeric_effects": [
                 {
                   "kind": "mastery_flames_fire_damage_bonus",
@@ -7905,7 +7905,7 @@
             {
               "stage": 3,
               "minimum_domain_points": 1000,
-              "reference_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Mastery of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Mastery of Thunder and  15.00% / 25.50% / 30.00%  more critical damage for Mastery of Decay.",
+              "reference_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Master of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Master of Thunder and  15.00% / 22.50% / 30.00%  more critical damage for Master of Decay.",
               "numeric_effects": [
                 {
                   "kind": "mastery_flames_fire_damage_bonus",
@@ -10669,7 +10669,7 @@
             "source_info_id": 42,
             "native_value": 1,
             "unit": "native",
-            "reference_description": "Gain an aura that shares your mantra with members of your group.",
+            "reference_description": "Gain an aura that shares your mantra with members of your group and increases your passive party bonuses by 33%.",
             "augment_targets": [],
             "reference_hypotheses": [],
             "unique_parameters": {
@@ -11143,7 +11143,7 @@
             "augment_stages": [
               {
                 "stage": 1,
-                "reference_text": "-6s Cooldown",
+                "reference_text": "-4s Cooldown",
                 "numeric_effects": [
                   {
                     "kind": "cooldown_reduction",
@@ -11160,7 +11160,7 @@
                 "numeric_effects": [
                   {
                     "kind": "base_damage_bonus",
-                    "value": 40,
+                    "value": 60,
                     "unit": "percent_points"
                   }
                 ],
@@ -11256,7 +11256,7 @@
             "augment_stages": [
               {
                 "stage": 1,
-                "reference_text": "Range increased by 1",
+                "reference_text": "Affected area enlarged",
                 "numeric_effects": [],
                 "unresolved_parameters": [],
                 "area_reference": "AREA_GREATER_FLURRY_OF_BLOWS"
@@ -11406,7 +11406,7 @@
               },
               {
                 "stage": 2,
-                "reference_text": "-6s Cooldown",
+                "reference_text": "-4s Cooldown",
                 "numeric_effects": [
                   {
                     "kind": "cooldown_reduction",
@@ -11860,7 +11860,7 @@
             "augment_stages": [
               {
                 "stage": 1,
-                "reference_text": "-6s Cooldown",
+                "reference_text": "-4s Cooldown",
                 "numeric_effects": [
                   {
                     "kind": "cooldown_reduction",
@@ -11877,7 +11877,7 @@
                 "numeric_effects": [
                   {
                     "kind": "base_damage_bonus",
-                    "value": 40,
+                    "value": 60,
                     "unit": "percent_points"
                   }
                 ],
@@ -12011,7 +12011,7 @@
             "augment_stages": [
               {
                 "stage": 1,
-                "reference_text": "Range increased by 1",
+                "reference_text": "Affected area enlarged",
                 "numeric_effects": [],
                 "unresolved_parameters": [],
                 "area_reference": "AREA_GREATER_FLURRY_OF_BLOWS"
@@ -12129,7 +12129,7 @@
               },
               {
                 "stage": 2,
-                "reference_text": "-6s Cooldown",
+                "reference_text": "-4s Cooldown",
                 "numeric_effects": [
                   {
                     "kind": "cooldown_reduction",
@@ -23040,7 +23040,7 @@
         "stage": 2,
         "planner_value": 25.5,
         "selected_value": 22.5,
-        "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text. Live BR wiki r436992 plus Master of Decay base 30 corroborates 22.5 pp via total 52.5 minus base 30; see samples/live-source-audit.json.",
+        "evidence": "Official8833 directly states Master of Decay +15/22.5/30% (combined45/52.5/60%). Selected22.5 overrides the public planner typo25.5. Original TibiaPal description remains in source-wheel-reference.json; candidate descriptions use selected22.5.",
         "planner_parameter": "mastery_decay_critical_extra_damage"
       },
       {
@@ -23067,8 +23067,8 @@
         "planner_parameter": "base_damage_bonus",
         "stage": 2,
         "planner_value": 60,
-        "selected_value": 40,
-        "evidence": "FORMULA_SELECTION_CONFIRMED: English TibiaWiki Conviction r1206174 explicitly gives +40% base damage; official > English wiki > Canary per architect ruling #162/5933264015. BR r443774 +15% and planner +60% are retained conflicting corroboration, not selected authority. Runtime and current Global parity remain unadmitted."
+        "selected_value": 60,
+        "evidence": "CURRENT_OFFICIAL_PLANNER_SELECTED: Tibia.com public planner MediumPerkInfos46 Aug2Info +60% Base Damage, independently re-read2026-10-01 through Chrome/CDP and normalHTTPS JSON. Explicit owner-directed authoring repair selects60; prior EnglishWiki1206174 40 and BR443774 15 remain conflicting observations; runtime and broad Global parity remain unadmitted."
       }
     ],
     "initial_gems": {

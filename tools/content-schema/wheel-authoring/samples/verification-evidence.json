@@ -65,7 +65,7 @@
       "stage": 2,
       "planner_value": 25.5,
       "selected_value": 22.5,
-      "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text. Live BR wiki r436992 plus Master of Decay base 30 corroborates 22.5 pp via total 52.5 minus base 30; see samples/live-source-audit.json.",
+      "evidence": "Official8833 directly states Master of Decay +15/22.5/30% (combined45/52.5/60%). Selected22.5 overrides the public planner typo25.5. Original TibiaPal description remains in source-wheel-reference.json; candidate descriptions use selected22.5.",
       "planner_parameter": "mastery_decay_critical_extra_damage"
     },
     {
@@ -92,8 +92,8 @@
       "planner_parameter": "base_damage_bonus",
       "stage": 2,
       "planner_value": 60,
-      "selected_value": 40,
-      "evidence": "FORMULA_SELECTION_CONFIRMED: English TibiaWiki Conviction r1206174 explicitly gives +40% base damage; official > English wiki > Canary per architect ruling #162/5933264015. BR r443774 +15% and planner +60% are retained conflicting corroboration, not selected authority. Runtime and current Global parity remain unadmitted."
+      "selected_value": 60,
+      "evidence": "CURRENT_OFFICIAL_PLANNER_SELECTED: Tibia.com public planner MediumPerkInfos46 Aug2Info +60% Base Damage, independently re-read2026-10-01 through Chrome/CDP and normalHTTPS JSON. Explicit owner-directed authoring repair selects60; prior EnglishWiki1206174 40 and BR443774 15 remain conflicting observations; runtime and broad Global parity remain unadmitted."
     }
   ],
   "classification": {
@@ -137,7 +137,7 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "6871587163ec70b3186ad1581e91961843d448e3f389755311027e6252ac2df7",
+  "candidate_sha256": "47d8af19450c5d45c4363ea4664f6c361b05e80d30dfd86d75446a3131526357",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
     "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
@@ -148,11 +148,11 @@
   },
   "client_icon_manifest": {
     "file": "samples/client-icon-manifest.json",
-    "sha256": "77e98ad275fd66a802ce87990663883252223db18d3c4dab318bab8758658c19"
+    "sha256": "c23ed73c3695251d673519076cc50e58d8c8deb9296ed4e5c024ec0be5b349ed"
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "a5874a77e70d4450878831eabdd9adb6bc3ef49cebcd838a020aa50732e4246f"
+    "sha256": "069bb65eb1fe60e1dcf6a2e201c123698d70fbc7deded89926fd3fc93c275db0"
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",

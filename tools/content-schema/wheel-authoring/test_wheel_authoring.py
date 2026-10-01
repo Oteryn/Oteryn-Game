@@ -90,7 +90,7 @@ class WheelAuthoringTests(unittest.TestCase):
         rev=next(r for r in self.candidate['vocations']['sorcerer']['revelations'] if r['key']=='lord_of_destruction')
         effect=next(e for e in rev['stages'][1]['numeric_effects'] if e['kind']=='mastery_decay_critical_extra_damage')
         self.assertEqual(effect['value'],22.5)
-        self.assertIn('25.50',rev['stages'][1]['reference_description'])
+        self.assertIn('22.50',rev['stages'][1]['reference_description'])
     def test_avatar_cooldown_minutes_converted_to_seconds(self):
         rev=next(r for r in self.candidate['vocations']['monk']['revelations'] if r['key']=='avatar_of_balance')
         values=[next(e['value'] for e in s['numeric_effects'] if e['kind']=='cooldown') for s in rev['stages']]
@@ -139,7 +139,7 @@ class WheelAuthoringTests(unittest.TestCase):
     def test_unique_parameter_omission_rejected(self):
         self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction']['unique_parameters']['numeric_effects'].pop(),'UNIQUE_PARAMETERS')
     def test_unique_behavior_binding_rejected(self):
-        self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction']['unique_parameters'].update(behaviors=['shield_triples_bonus']),'UNIQUE_BEHAVIOR_BINDING')
+        self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction']['unique_parameters'].update(behaviors=['shield_doubles_bonus']),'UNIQUE_BEHAVIOR_BINDING')
     def test_no_unique_payload_on_stat_perk(self):
         def mutate(c):
             data=c['vocations']['knight']['slots']
@@ -161,7 +161,7 @@ class WheelAuthoringTests(unittest.TestCase):
         for key,stage in [('augmented_mystic_repulse',1),('augmented_thousand_fist_blows',2)]:
             effect=next(e for e in aug[key]['augment_stages'][stage-1]['numeric_effects'] if e['kind']=='cooldown_reduction')
             self.assertEqual(effect['value'],4)
-            self.assertIn('-6s',aug[key]['augment_stages'][stage-1]['reference_text'])
+            self.assertIn('-4s',aug[key]['augment_stages'][stage-1]['reference_text'])
     def test_great_fire_wave_conflict_selection(self):
         aug=next(s['conviction'] for s in self.candidate['vocations']['sorcerer']['slots'] if s['conviction']['key']=='augmented_great_fire_wave')
         effects={e['kind']:e['value'] for e in aug['augment_stages'][0]['numeric_effects']}
@@ -173,7 +173,7 @@ class WheelAuthoringTests(unittest.TestCase):
         aug=next(s['conviction'] for s in self.candidate['vocations']['monk']['slots'] if s['conviction']['key']=='augmented_flurry_of_blows')
         self.assertEqual(aug['augment_stages'][0]['area_reference'],'AREA_GREATER_FLURRY_OF_BLOWS')
         self.assertEqual(aug['augment_stages'][0]['numeric_effects'],[])
-        self.assertIn('Range increased by 1',aug['augment_stages'][0]['reference_text'])
+        self.assertIn('Affected area enlarged',aug['augment_stages'][0]['reference_text'])
         self.assertEqual(aug['reference_hypotheses'][0]['kind'],'range_increase')
         rows=read(ROOT.parent/'spell-authoring/wheel-augments.json')['augments']
         self.assertTrue(any(r['spell']=='Flurry of Blows' and r['augment']==1 and r['unit']=='bool_area' for r in rows))

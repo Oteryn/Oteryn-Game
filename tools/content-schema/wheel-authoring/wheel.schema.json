@@ -3422,7 +3422,7 @@
               "reduce_focus_spell_group_cooldown",
               "rune_bonus_uses_vocation_can_create_rule",
               "share_mantra_with_group_members",
-              "shield_triples_bonus"
+              "shield_doubles_bonus"
             ]
           },
           "minItems": 1,
