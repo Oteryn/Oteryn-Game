@@ -42,7 +42,7 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertIn("official_news_8396_fees", self.rules["apply_fee_gold"]["evidence"])
         conflict = next(c for c in self.packet["conflicts"]
                         if c["id"] == "accepted_fee_numbers_pre2025")
-        self.assertNotEqual(conflict["accepted_decision_value"], conflict["global_value"])
+        self.assertNotEqual(conflict["candidate_proposal_value"], conflict["global_value"])
 
     def test_success_and_protection_are_backed_by_retrieved_primary(self):
         self.assertEqual(self.rules["apply_success_percent"]["value"], 100)
@@ -120,6 +120,63 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
                 self.assertFalse(hypothesis["selected_as_global"])
                 self.assertTrue(all(self.sources[s]["role"] == "OTS_HYPOTHESIS_ONLY"
                                     for s in hypothesis["evidence"]))
+
+    def test_same_bonus_limit_does_not_invent_broad_category_exclusions(self):
+        rule = self.rules["same_imbuement_type_maximum_per_item"]
+        self.assertEqual(rule["value"], 1)
+        self.assertEqual(rule["evidence"], ["wiki_br_imbuements"])
+        self.assertTrue(rule["parity_status"].startswith("DERIVED"))
+        self.assertIn("does not prove exclusion", rule["notes"])
+
+    def test_shared_conversion_category_is_not_global_duplicate_bonus_proof(self):
+        rule = self.rules["shared_category_compatibility"]
+        self.assertIsNone(rule["value"])
+        self.assertEqual(rule["parity_status"], "PARITY_PENDING")
+        self.assertIn("shared_category_compatibility",
+                      {r["id"] for r in self.packet["unresolved"]})
+        self.assertEqual(rule["architecture_reference"]["status"], "CANDIDATE_NOT_ACCEPTED")
+        hypothesis = rule["hypotheses"][0]
+        self.assertEqual(hypothesis["status"], "OTS_HYPOTHESIS_ONLY")
+        self.assertFalse(hypothesis["selected_as_global"])
+        self.assertEqual(set(hypothesis["value"]["mutually_exclusive_types"]),
+                         {"Scorch", "Venom", "Frost", "Electrify", "Reap"})
+        self.assertEqual(self.rules["same_imbuement_type_maximum_per_item"]["value"], 1)
+
+    def test_higher_required_level_is_scoped_community_evidence(self):
+        rule = self.rules["equipment_above_character_level_imbuement_behavior"]
+        self.assertEqual(rule["value"], {"effect_active": False,
+                                       "standard_equipped_combat_timer_continues": True})
+        self.assertEqual(rule["evidence"], ["tibiopedia_imbuing_guide"])
+        self.assertTrue(rule["parity_status"].startswith("DERIVED"))
+        for key in ("swiftness_bonus_points_by_tier", "strike_chance_percent",
+                    "strike_extra_damage_percent_by_tier"):
+            self.assertNotIn("tibiopedia_imbuing_guide", self.rules[key]["evidence"])
+
+    def test_complete_transaction_composition_and_transfer_scope_stays_unqualified(self):
+        pending = {r["id"] for r in self.packet["unresolved"]}
+        for key in ("transaction_payment_sources", "failed_transaction_consumption_and_rollback",
+                    "native_effect_composition",
+                    "transfer_preserves_imbuement_state_and_remaining_duration"):
+            self.assertIn(key, pending)
+            self.assertIsNone(self.rules[key]["value"])
+            self.assertEqual(self.rules[key]["parity_status"], "PARITY_PENDING")
+
+    def test_etcher_purchase_gate_is_separate_from_free_application(self):
+        self.assertTrue(self.rules["etcher_usable_by_free_account"]["value"])
+        self.assertTrue(self.rules["etcher_npc_purchase_requires_worthy"]["value"])
+        predicate = self.rules["etcher_npc_purchase_worthy_predicate"]["value"]
+        self.assertEqual(predicate["predicate_ref"], "worthy_character")
+        self.assertEqual(predicate["requirements"], ["completed_world_construction",
+                                                     "completed_five_tome_handovers"])
+        self.assertIsNone(self.rules["etcher_npc_purchase_requires_premium"]["value"])
+        self.assertEqual(self.rules["etcher_npc_purchase_requires_premium"]["parity_status"],
+                         "PARITY_PENDING")
+
+    def test_architecture_conflicts_retain_candidate_proposal_authority(self):
+        for conflict in self.packet["conflicts"]:
+            self.assertNotIn("accepted_decision_value", conflict)
+            if "candidate_proposal_value" in conflict:
+                self.assertEqual(conflict["architecture_status"], "CANDIDATE_NOT_ACCEPTED")
 
     def test_pvp_snippet_qualification_keeps_success_state_gate_unresolved(self):
         rule = self.rules["vibrancy_pvp_gate"]

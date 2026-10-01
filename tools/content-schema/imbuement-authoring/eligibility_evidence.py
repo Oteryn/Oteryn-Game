@@ -39,6 +39,20 @@ ENGINE_CATEGORIES = {
     "skillboost magic level": ["epiphany"], "skillboost fist": ["punch"],
     "paralysis deflection": ["vibrancy"], "paralysis removal": ["vibrancy"],
 }
+NATIVE_TYPES = {
+    "Life Leech": "vampirism", "Mana Leech": "void", "Critical Hit": "strike",
+    "Axe Fighting": "chop", "Club Fighting": "bash", "Sword Fighting": "slash",
+    "Fist Fighting": "punch", "Distance Fighting": "precision", "Magic Level": "epiphany",
+    "Shielding": "blockade", "Capacity": "featherweight", "Walking Speed": "swiftness",
+    "Paralysis Removal": "vibrancy", "Damage Death": "reap", "Damage Earth": "venom",
+    "Damage Energy": "electrify", "Damage Fire": "scorch", "Damage Ice": "frost",
+    "Protection Death": "lich_shroud", "Protection Earth": "snake_skin",
+    "Protection Energy": "cloud_fabric", "Protection Fire": "dragon_hide",
+    "Protection Holy": "demon_presence", "Protection Ice": "quara_scale",
+}
+NATIVE_DIGEST_SCOPE = ("Canonical UTF-8 JSON (sorted keys, compact separators, unescaped Unicode) "
+                       "of selected_facts: complete captured item record excluding html_path, "
+                       "source_sha256 and selected_facts_sha256; source_sha256 separately pins native HTML")
 
 
 def normalize(name: str) -> str:
@@ -95,11 +109,92 @@ def engine_types(categories: dict) -> dict:
     return dict(sorted(result.items()))
 
 
+def validate_native_sources(packet: dict, primary: list[dict]) -> None:
+    """Reconstruct native tables from the captured labels, independently of normalized claims."""
+    clients = {r["id"]: r for r in primary}
+    tables = packet["normalized_sources"]["wiki_tables"]
+    for source_id, meta in packet["source_registry"].items():
+        if not source_id.startswith("tibiopedia_i"):
+            continue
+        facts = meta["selected_facts"]
+        if meta.get("selected_facts_digest_scope") != NATIVE_DIGEST_SCOPE or any(
+                k in facts for k in ("html_path", "source_sha256", "selected_facts_sha256")):
+            raise ValueError("native selected facts digest scope differs")
+        if binding.sha256(binding.canonical_bytes(facts)) != meta.get("selected_facts_sha256"):
+            raise ValueError("native selected facts digest mismatch")
+        item_id = int(source_id.removeprefix("tibiopedia_i"))
+        if facts["client"] != clients.get(item_id) or facts["canonical_key"] != f"oteryn:item.tibia.i{item_id}":
+            raise ValueError("native selected facts conflict with primary named identity")
+        for field in ("source_url", "page_title", "item_name", "status", "introduced_version", "withdrawn_version"):
+            if meta.get(field) != facts.get(field):
+                raise ValueError("native source metadata differs from selected facts")
+        raw = meta["raw_allowed_max_tiers"]
+        if raw != facts.get("allowed_max_tiers", []):
+            raise ValueError("native raw type rows differ from selected facts")
+        allowed = {}
+        for row in raw:
+            label, tier = row["source_type"], row["max_tier"]
+            if label not in NATIVE_TYPES or type(tier) is not int or tier not in (1, 2, 3) or row["source_level"] != f"lvl {tier}:":
+                raise ValueError("invalid native raw type/tier")
+            key = NATIVE_TYPES[label]
+            if key in allowed:
+                raise ValueError("duplicate native raw type")
+            allowed[key] = tier
+        if facts["status"] == "EXPLICIT_ITEM_TABLE":
+            stored = tables.get(source_id, [])
+            if any(row["slots"] != clients[item_id]["slots"] for row in stored):
+                raise ValueError("direct item table slots differ from primary")
+            expected = [{"name": facts["item_name"], "slots": facts["slots"], "allowed_types": allowed}]
+            if not allowed or stored != expected:
+                raise ValueError("normalized native table differs from captured raw type/tier facts")
+        elif raw or source_id in tables:
+            raise ValueError("unqualified native capture cannot supply a type table")
+    if any(source_id.startswith("tibiopedia_i") and source_id not in packet["source_registry"] for source_id in tables):
+        raise ValueError("native table lacks pinned source")
+
+
+def validate_amendment_claims(amendment: dict, registry: dict) -> None:
+    """A source locator alone cannot authorize an arbitrary named type/tier change."""
+    witnessed_tiers, excluded_tiers = set(), set()
+    for source_id in amendment["source_ids"]:
+        source = registry[source_id]
+        matches = [c for c in source.get("item_type_tier_claims", [])
+                   if c.get("client_id") == amendment["client_id"] and
+                   normalize(c.get("item_name", "")) == normalize(amendment["item_name"]) and
+                   c.get("candidate_key") == amendment["candidate_key"]]
+        if len(matches) != 1:
+            raise ValueError("type amendment source lacks a unique matching named type claim")
+        claim = matches[0]
+        allowed, excluded = claim.get("allowed_tiers", []), claim.get("excluded_tiers", [])
+        if (not allowed and not excluded) or any(
+                not isinstance(tiers, list) or len(tiers) != len(set(tiers)) or
+                any(type(t) is not int or t not in (1, 2, 3) for t in tiers)
+                for tiers in (allowed, excluded)):
+            raise ValueError("invalid sourced amendment tier claim")
+        if allowed:
+            change = source.get("item_change", {})
+            if (normalize(change.get("item_name", "")) != normalize(claim["item_name"]) or
+                    change.get(f"allowed_{claim['candidate_key']}_tiers") != allowed):
+                raise ValueError("amendment allowed tiers differ from recorded item change")
+            witnessed_tiers.update(allowed)
+        if excluded:
+            # The indexed note witnesses only this upper-limit exclusion, not a full type profile.
+            expected = f"Can not be imbued with Powerful {claim['candidate_key'].replace('_', ' ').title()}."
+            if excluded != [3] or source.get("exact_constraint") != expected:
+                raise ValueError("amendment exclusions differ from recorded item note")
+            excluded_tiers.update(excluded)
+    selected = amendment["max_tier"]
+    if (not witnessed_tiers or max(witnessed_tiers) != selected or witnessed_tiers & excluded_tiers or
+            not set(range(selected + 1, 4)).issubset(excluded_tiers)):
+        raise ValueError("type amendment maximum differs from concrete selected source claims")
+
+
 def build(packet: dict) -> dict:
     sources = packet["normalized_sources"]
     primary = primary_items()
     if sources["primary_items"] != primary:
         raise ValueError("stored primary facts differ from pinned client asset")
+    validate_native_sources(packet, primary)
     canonical = binding.canonical_items()
     identity_facts = json.loads(binding.ITEM_FACTS.read_bytes())["records"]
     release_dates = sources.get("release_dates", {})
@@ -109,15 +204,30 @@ def build(packet: dict) -> dict:
             raise ValueError("release date lacks its pinned source")
         if release["date"] != packet["source_registry"][release["source_id"]]["release_date"]:
             raise ValueError("release date differs from pinned source metadata")
-    amendments = {}
+    amendments, amendment_keys = {}, set()
+    primary_ids = {r["id"] for r in primary}
     for amendment in sources.get("type_amendments", []):
         if amendment["candidate_key"] not in TYPES or type(amendment["max_tier"]) is not int or amendment["max_tier"] not in (1, 2, 3):
             raise ValueError("invalid sourced type amendment")
-        if any(s not in packet["source_registry"] for s in amendment["source_ids"]):
+        source_ids = amendment["source_ids"]
+        if (not isinstance(source_ids, list) or not source_ids or
+                any(not isinstance(s, str) or s not in packet["source_registry"] for s in source_ids) or
+                len(source_ids) != len(set(source_ids))):
             raise ValueError("type amendment lacks source evidence")
+        item_id = amendment["client_id"]
+        if type(item_id) is not int or item_id not in primary_ids:
+            raise ValueError("type amendment lacks primary item identity")
+        amendment_key = (item_id, amendment["candidate_key"])
+        if amendment_key in amendment_keys:
+            raise ValueError("duplicate item/type amendment")
+        amendment_keys.add(amendment_key)
+        validate_amendment_claims(amendment, packet["source_registry"])
         amendments.setdefault(amendment["client_id"], []).append(amendment)
     wiki_by_name = {}
     for source_id, table in sources["wiki_tables"].items():
+        if source_id not in packet["source_registry"]:
+            raise ValueError("community table lacks pinned source")
+        source_names = set()
         for row in table:
             allowed = row["allowed_types"]
             if not allowed or any(k not in TYPES or type(t) is not int or t not in (1, 2, 3)
@@ -126,6 +236,9 @@ def build(packet: dict) -> dict:
             if type(row["slots"]) is not int or row["slots"] not in (1, 2, 3):
                 raise ValueError("invalid community slot count")
             wiki_name = normalize(row["name"])
+            if wiki_name in source_names:
+                raise ValueError("duplicate named item in community source")
+            source_names.add(wiki_name)
             wiki_by_name.setdefault(WIKI_ALIASES.get(wiki_name, wiki_name), []).append((source_id, row))
     engines = {}
     for source_id, rows in sources["engines"].items():
@@ -225,7 +338,8 @@ def build(packet: dict) -> dict:
                 discrepancies.append({"kind": "WIKI_ENGINE_TYPE_TIER_DISPUTE", "source": source_id,
                                       "wiki_only": {k: t for k, t in allowed.items() if hypothesis.get(k) != t},
                                       "engine_only": {k: t for k, t in hypothesis.items() if allowed.get(k) != t}})
-        status = "COMMUNITY_CORROBORATED" if allowed else (
+        status = ("COMMUNITY_CORROBORATED" if len(set(evidence)) > 1 and len(claims) == 1
+                  else "COMMUNITY_SINGLE_SOURCE") if allowed else (
             "OTS_HYPOTHESIS_ONLY" if any(c["status"] == "OTS_HYPOTHESIS_ONLY" for c in comparisons.values())
             else "MISSING_ELIGIBILITY_EVIDENCE")
         if allowed and not any(row["slots"] == client["slots"] for _, row in wiki_rows):
@@ -312,7 +426,9 @@ def build(packet: dict) -> dict:
                 "client slots over older Imbuement Tool helper tables (21 stale slot counts, pre-Monk missing Punch and "
                 "incorrect built-in-effect exclusions). Both claims and every discrepancy remain preserved. "
                 "DERIVED_SELECTED_OVER_STALE_HELPER is a source candidate choice, never verified Global parity or runtime "
-                "admission. BR-only fallback is COMMUNITY_SINGLE_SOURCE. ItemRefs independently require named identity "
+                "admission. Any profile with only one community table, including native-only tables, is "
+                "COMMUNITY_SINGLE_SOURCE; matching primary slots do not corroborate allowed types. "
+                "COMMUNITY_CORROBORATED requires multiple agreeing type/tier tables. ItemRefs independently require named identity "
                 "and canonical existence. Global server eligibility and target-date continuity remain unverified; "
                 "OTS-only hypotheses fail closed; empty allowed_types means unknown, never forbidden. "
                 "Dated named-item amendments correct only their documented fields, without promoting the remaining "

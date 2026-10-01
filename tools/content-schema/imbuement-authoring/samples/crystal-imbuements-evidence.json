@@ -2112,7 +2112,7 @@
         3
       ],
       "confidence": "OTS_SOURCE_CODE_ONLY",
-      "notes": "Explicit selection routine skips Basic. Conflicts with accepted decision saying any tier; matches selected primary creation text.",
+      "notes": "Explicit selection routine skips Basic. Conflicts with owning architecture candidate saying any tier; matches selected primary creation text.",
       "anchors": [
         {
           "path": "src/creatures/players/imbuements/imbuements.cpp",
@@ -2139,8 +2139,8 @@
         },
         {
           "path": "src/creatures/players/player.cpp",
-          "line": 2666,
-          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2666"
+          "line": 2854,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L2854"
         }
       ]
     },
@@ -2424,7 +2424,7 @@
         "stash"
       ],
       "confidence": "OTS_SOURCE_CODE_ONLY",
-      "notes": "Checks and consumes inventory first, then stash; conflicts with accepted first-slice backpack-only decision.",
+      "notes": "Checks and consumes inventory first, then stash; conflicts with owning architecture candidate first-slice backpack-only decision.",
       "anchors": [
         {
           "path": "src/creatures/players/player.cpp",
@@ -2521,9 +2521,9 @@
     },
     {
       "id": "critical_roll_scope",
-      "value": "one Combat::applyExtensions call before target iteration",
+      "value": "one damaging Combat::applyExtensions call before target iteration",
       "confidence": "OTS_SOURCE_CODE_ONLY",
-      "notes": "uniform_random(1,100)*100 is compared to total critical chance in basis points. This is engine structure rather than verified Global RNG granularity.",
+      "notes": "Damaging applyExtensions excludes healing; Blessing of the Grove has a separate healing critical path. uniform_random(1,100)*100 is compared to total critical chance in basis points. This is engine structure rather than verified Global RNG granularity.",
       "anchors": [
         {
           "path": "src/creatures/combat/combat.cpp",
@@ -2570,6 +2570,129 @@
           "path": "src/creatures/combat/combat.cpp",
           "line": 1005,
           "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/combat/combat.cpp#L1005"
+        }
+      ]
+    },
+    {
+      "id": "equipped_leech_contributions",
+      "value": "additive per equipped source",
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "addItemImbuementStats passes each nonzero skill contribution to setVarSkill; per-player varSkills accumulates equipment effects before total leech amount is fetched. Source evidence only, not official composition proof.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 3278,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3278"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 3284,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3284"
+        },
+        {
+          "path": "src/creatures/players/player.cpp",
+          "line": 293,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L293"
+        }
+      ]
+    },
+    {
+      "id": "healing_critical_separate_path",
+      "value": {
+        "wheel_perk": "Blessing of the Grove",
+        "origin": "ORIGIN_SPELL",
+        "chance_basis": "player total critical chance",
+        "extra_damage_basis": "player total critical extra damage"
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Pinned branch permits critical spell/rune healing only in this wheel-specific path, on already-boosted healing. This is an OTS implementation hypothesis rather than live release proof.",
+      "anchors": [
+        {
+          "path": "src/game/game.cpp",
+          "line": 7642,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L7642"
+        },
+        {
+          "path": "src/game/game.cpp",
+          "line": 7650,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L7650"
+        }
+      ]
+    },
+    {
+      "id": "leech_excluded_damage",
+      "value": {
+        "extension": true,
+        "origin_condition": true
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Both leech routines are skipped when extension is set or damage origin is ORIGIN_CONDITION.",
+      "anchors": [
+        {
+          "path": "src/game/game.cpp",
+          "line": 8337,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8337"
+        }
+      ]
+    },
+    {
+      "id": "leech_chance_comparison",
+      "value": {
+        "rng": "normal_random(0, 100)",
+        "failure_comparison": ">= chance",
+        "xml_chance_unit": "percentage",
+        "configured_chance": 100
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "Endpoint-inclusive RNG and >= comparison are preserved explicitly; do not infer a uniform 100% server guarantee from XML alone.",
+      "anchors": [
+        {
+          "path": "src/game/game.cpp",
+          "line": 8601,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8601"
+        },
+        {
+          "path": "src/game/game.cpp",
+          "line": 8636,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/game/game.cpp#L8636"
+        }
+      ]
+    },
+    {
+      "id": "scroll_inscription_selection_access_filter",
+      "value": {
+        "checks_premium": false,
+        "checks_quest_storage": false,
+        "tiers": [
+          2,
+          3
+        ]
+      },
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "getAllImbuementsIntricateAndPowerful accepts player but does not inspect it. This selection routine lacks these filters; other caller behavior is a separate question.",
+      "anchors": [
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 411,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L411"
+        },
+        {
+          "path": "src/creatures/players/imbuements/imbuements.cpp",
+          "line": 420,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/imbuements/imbuements.cpp#L420"
+        }
+      ]
+    },
+    {
+      "id": "quest_storage_check_configuration_default",
+      "value": false,
+      "confidence": "OTS_SOURCE_CODE_ONLY",
+      "notes": "config.lua.dist disables shrine and per-type storage checks by default; malformed lookup remains a defect when enabled.",
+      "anchors": [
+        {
+          "path": "config.lua.dist",
+          "line": 398,
+          "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/config.lua.dist#L398"
         }
       ]
     }
@@ -5559,7 +5682,7 @@
   "architecture_conflicts": [
     {
       "field": "apply fees",
-      "accepted": [
+      "owning_candidate": [
         5000,
         30000,
         200000
@@ -5573,19 +5696,19 @@
     },
     {
       "field": "scroll inscription Basic",
-      "accepted": "any tier",
+      "owning_candidate": "any tier",
       "branch": "tiers 2/3 only",
       "selection": "Primary official creation text supports Intricate/Powerful; Basic client objects do not prove craft route."
     },
     {
       "field": "material sourcing",
-      "accepted": "backpack-only first slice",
+      "owning_candidate": "backpack-only first slice",
       "branch": "inventory+stash",
       "selection": "Source comparison only; architecture owning amendment required."
     },
     {
       "field": "equipment requirement",
-      "accepted": "unequipped transaction target",
+      "owning_candidate": "unequipped transaction target",
       "branch": "equipped scroll targets accepted",
       "selection": "OTS hypothesis only; primary observation not available."
     }

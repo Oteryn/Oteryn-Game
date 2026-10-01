@@ -11,19 +11,19 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 HERE = Path(__file__).resolve().parent
 FACTS = HERE / "samples/imbuement-sources-2026-10-01.json"
-FACTS_SHA256 = "33f2c1e26beb9fe0e20bd00901023510eca19f6a388a0d5610123cb6a317a9b0"
+FACTS_SHA256 = "7ee2221886abdc80d27ce5cd13e58bdecab8b3c5210a7e0e7a36efc52771070e"
 CATALOGUE = HERE / "samples/imbuements-candidate.json"
 REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-access.json": "8b1162f4732bbe1e9cc7fc1ddec5e9165588b8302e7410629b325abeadbcbd1d",
-    "imbuement-eligibility.json": "9798fec253f95f14171dd3f3021345c076d193b80e0ae1a3b55bada469e8e26a",
-    "global-rules-evidence.json": "3e2675715427827d23822fb5d2151be0175d275a7008b50e446d0d40f722f652",
-    "imbuement-combat.json": "fd2b96e18ab2852c996483a5fd1e3240ac0652c4b0c077dfafd01ef9af93bd70",
-    "crystal-imbuements-evidence.json": "765715f0f7a0b7e8a2b10bbecc065be2bad6695295224dd1e598b95f2accf424",
-    "missing-item-definitions.json": "14c3a5316cf53f89c4d35b5b1e2afb0d6bd09bfadecf2862bf397e4fd967dc02",
-    "missing-item-source-facts.json": "3b85d6dc6a033919f1cda01eff7bbf222e740286fc7ff1d911d5ebf235d0dab4",
+    "imbuement-access.json": "29f43745a3d0ecc74c183f9a031456a3254f7ca9bb29acbe6323dfa7162ab25e",
+    "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
+    "global-rules-evidence.json": "6167ec05f5ee0fc153203fb2372997a0ed9f29a17fae359fe7fccd25a95cc40a",
+    "imbuement-combat.json": "18c5cc3fe0b7087eff23faa393a453a11ae869630109e523dd5c88612824c7f9",
+    "crystal-imbuements-evidence.json": "3bc60e6c95f2e371530f9145d9fd6f382db373b08b80b34590471a2f822d5b4d",
+    "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
+    "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d",
 }
 
 
@@ -200,12 +200,12 @@ def effect(name, numbers):
 
 def build():
     sources = source_facts()
+    wiki = sources["wiki_br"]["records"]
+    if {r["name"] for r in wiki} != set(LAYOUT) or len(wiki) != 24:
+        raise ValueError("wiki type set differs from the specified 24 types")
     packets = supporting()
     bindings = packets["imbuement-bindings.json"]
     rules = {r["id"]: r for r in packets["global-rules-evidence.json"]["rules"]}
-    wiki = sources["wiki_br"]["records"]
-    if {r["name"] for r in wiki} != set(LAYOUT) or len(wiki) != 24:
-        raise ValueError("wiki type set differs from the accepted 24 types")
     fees = rules["apply_fee_gold"]["value"]
     definitions = []
     for record in sorted(wiki, key=lambda r: r["name"]):
@@ -252,7 +252,7 @@ def comparison():
             "engine_comparison_key": ["name", "tier"], "differences": differences,
             "comparison_scope": "Raw XML facts, not final engine outcomes. Crystal imbuements branch includes player baselines; use the qualified effective-strength comparison in its separate packet.",
             "selection": "Wiki BR effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
-            "global_fee_conflict": {"accepted_decision": [5000, 30000, 200000],
+            "global_fee_conflict": {"candidate_architecture": [5000, 30000, 200000],
                                     "global_since_2025": [7500, 60000, 250000]},
             "supporting_catalogues": dict(sorted(EVIDENCE_PINS.items())),
             "completion": {
@@ -271,7 +271,7 @@ def comparison():
                 "gold_token_exchange_bundles": len(packets["imbuement-access.json"]["material_acquisition"]["yana_gold_token_exchange"]["recipes"]),
             },
             "remaining_global_observation_requirements": packets["global-rules-evidence.json"]["unresolved"],
-            "blocked": ["Accepted architecture reconciliation (fees, Basic inscription, Stash, Vibrancy)", "Canonical Quest runtime state",
+            "blocked": ["Candidate architecture reconciliation (fees, Basic inscription, Stash, Vibrancy)", "Canonical Quest runtime state",
                         "Per-field evidence gaps listed in eligibility and Global rules packets",
                         "Runtime, persistence and wire implementation"]}
 
@@ -295,7 +295,7 @@ def validate(candidate):
             if len({m["source_name"] for m in t["materials"]}) != i + 1:
                 raise ValueError("duplicate material")
             if t["access"]["premium_required"] != (i > 0):
-                raise ValueError("premium requirement differs from the accepted decision")
+                raise ValueError("premium requirement differs from the sourced tier predicates")
     if candidate != build():
         raise ValueError("candidate differs from pinned Global evidence and identity bindings")
 

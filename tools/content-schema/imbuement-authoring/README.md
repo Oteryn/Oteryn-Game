@@ -23,9 +23,9 @@ The ruleset destination from the full-game tree remains
 | `samples/imbuement-bindings.json` | All 72 ingredient names and 72 scrolls, blank scroll, etcher, tome, Gold Token and usable shrine variants with canonical Item identities. |
 | `samples/imbuement-access.json` | All 72 direct shrine routes, scroll routes and exact Powerful unlock alternatives, including claim actions after bosses. |
 | `samples/imbuement-eligibility.json` | Exhaustive 663-item client census with primary slots, per-source type/tier claims, discrepancies and explicit missing evidence. |
-| `samples/global-rules-evidence.json` | 48 rules, 26 sources, concrete transaction/timer hypotheses, architecture conflicts and observation requirements. |
+| `samples/global-rules-evidence.json` | Source-qualified rules, concrete transaction/timer hypotheses, architecture conflicts and observation requirements. |
 | `samples/imbuement-combat.json` | Sourced Vibrancy sequence, bounded AoE leech formula, engine hypotheses and rejected test-server generalizations. |
-| `samples/crystal-imbuements-evidence.json` | Additional owner-supplied `imbuements` branch: 72 XML records, 13 pinned source files, 28 execution facts and nine token exchanges. |
+| `samples/crystal-imbuements-evidence.json` | Additional owner-supplied `imbuements` branch: 72 XML records, 13 pinned source files, execution facts and nine token exchanges. |
 | `samples/missing-item-definitions.json`, `samples/missing-item-source-facts.json` | Two concrete Item authoring proposals with primary flags, capacity, weight, slots, acquisition, source revisions and target dates; owning Item validation passes. |
 | `samples/imbuement-source-comparison.json` | Reproducible engine differences plus the Global fee correction. |
 | `binding_evidence.py`, `eligibility_evidence.py` | Rebuild/check identity and eligibility evidence from pinned repository inputs; never manufacture an identity from a number alone. |
@@ -66,14 +66,14 @@ Research used the Tavily search/extract connector, with five independent agent
 lanes for rules, identities, per-item eligibility, quest predicates and the
 additional Crystal branch. After Tavily returned its plan usage limit, native
 public HTTP and existing captures were used; no further metered calls were made.
-No third-party engine code, wiki prose, sprites or asset bytes are copied into
-the new evidence files.
+The evidence records extracted facts and short source excerpts. No third-party
+engine implementation, sprites or client asset bytes are redistributed.
 
 ## Corrections found during Global verification
 
 | Field | Global evidence / selected catalogue | Earlier draft or engine discrepancy |
 | --- | --- | --- |
-| Apply fees | **7,500 / 60,000 / 250,000 gold** | Old XML and accepted Oteryn decision give 5,000 / 30,000 / 200,000. |
+| Apply fees | **7,500 / 60,000 / 250,000 gold** | Old XML and candidate Oteryn proposal give 5,000 / 30,000 / 200,000. |
 | Success / protection | **100%**, no protection add-on | Historical XML fields remain present but do not establish current Global behavior. |
 | Basic Punch | **25 Tarantula Eggs** | Canary Basic recipe uses 20 of item 9690; higher tiers use the wiki ingredients. |
 | Strike | **10% chance**, +15 / 25 / 50% damage | Crystal's raw XML values are deltas: its player baseline yields these final values. Comparing XML alone gives a false disagreement. |
@@ -84,11 +84,11 @@ the new evidence files.
 | Materials source | Global permits **backpack and Stash** | Oteryn's first slice deliberately limits access to direct backpack entries. |
 | Item slots | Official client observations take priority in discrepancies | Community tool tables disagree with the client for some items. |
 
-The accepted
-[IMBUE-FORGE-0 decision](../../../docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md)
+The candidate
+[IMBUE-FORGE-0 proposal](../../../docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md)
 needs reconciliation with these findings before integration. The draft uses the
-evidenced Global fees and records the old decision as a conflict; it does not
-silently rewrite an accepted architecture document.
+evidenced Global fees and records the old proposal as a conflict; it does not
+silently rewrite the owning architecture proposal.
 
 ## Exact access predicates
 
@@ -99,8 +99,8 @@ character progress, not a requirement to keep five tomes in inventory.
 
 Powerful access uses the per-type source predicate:
 
-- Forgotten Knowledge: the applicable boss completion and use of its reward-room
-  Abandoned Imbuing Shrine.
+- Forgotten Knowledge: the applicable boss completion and use of the associated
+  Abandoned Imbuing Shrine, including any report or access step recorded in the packet.
 - Heart of Destruction: World Devourer completion and the `worth` reward claim
   from Yana; an alternative only for the eight sourced families.
 - Vibrancy: The Nightmare Beast completion plus the report to Vanys or Undal.
@@ -109,7 +109,7 @@ Powerful access uses the per-type source predicate:
 Completed-scroll application has separate compatibility predicates and Premium/
 quest exemptions. Basic exemption strength is labelled as derived from primary
 announcements and client evidence; it is not overstated as an observed server
-test. The source predicates are complete; canonical Quest state is still absent
+test. The source predicates cover all 72 routes; canonical Quest state is still absent
 from `content/quests/definitions/`, so no fake runtime Quest reference is minted.
 
 ## Verification limits and admission
@@ -134,6 +134,10 @@ client. All 607 native slot counts match; the older BR helper has 21 slot errors
 and omits Monk-era Punch entries. The 101 disagreements in types or maximum tiers
 retain both source claims and use `DERIVED_SELECTED_OVER_STALE_HELPER`; the 22
 fallback profiles remain single-source; one has a separately corroborated field.
+A further 76 native profiles have only one type/tier source. Across all 629
+current typed profiles, 98 are single-source, 430 have agreeing multiple sources,
+and 101 retain disagreements. Primary client slots do not corroborate the
+community type/tier allow lists.
 This source-selection policy
 fills the candidate without calling community data verified server behavior.
 The packet records zero officially verified per-item allow lists. Exact counts,
@@ -167,8 +171,8 @@ anchors; those anchors remain engine hypotheses.
 Fine-grained timers, leech/critical composition, etcher consumption, equipped
 scroll target acceptance, the exact Vibrancy PvP success gate and target-time
 continuity retain explicit
-observation requirements. Every remaining
-Global gap has actual attempted sources. Public recipe tables cannot prove
+observation requirements. The ledger records attempted sources and distinguishes unresolved observations
+from operational topics that still require further evidence. Public recipe tables cannot prove
 server transactions.
 They are not filled with arbitrary values to make the catalogue appear complete.
 
@@ -176,12 +180,19 @@ They are not filled with arbitrary values to make the catalogue appear complete.
 basis points (`100 = 1%`), skill/speed bonuses use points, and duration is
 `72_000_000` ms. Schema/semantic validation reject changed evidence pins,
 invented Item references, unsupported parity claims, wrong tier/category sets,
-noncumulative recipes and old fee values.
+noncumulative recipes and old fee values. The 20 exclusion categories belong to
+the proposed authoring model. The community same-bonus restriction does not
+independently prove the shared category restriction across different elemental
+conversion types; that compatibility rule remains a named Global evidence gap.
 
-Runtime activation stays `DRAFT_NOT_RUNTIME_READY`. Implementing the accepted
+Runtime activation stays `DRAFT_NOT_RUNTIME_READY`. Implementing the proposed
 persistence table, timers/checkpoints, ability effects, protocol/UI, quest-state
 bindings and qualifying population remains separate implementation work.
 A passing source audit is not a playable Global parity test.
+The repository workflows do not execute this package's semantic tests. Generic
+PR checks therefore do not certify the imbuement catalogue; the commands below
+are explicit manual validation. See [audit-report.md](audit-report.md) for the
+independent full review, repairs and remaining scope.
 
 ## Offline validation
 

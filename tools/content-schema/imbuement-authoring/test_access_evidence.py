@@ -96,6 +96,33 @@ class AccessEvidenceTest(unittest.TestCase):
         self.assertEqual(purchase["npc_source_name"], "Albinius")
         self.assertEqual(purchase["gold"], 25000)
 
+    def test_etcher_purchase_qualification_and_free_application_are_separate(self):
+        purchase = self.packet["utility_acquisition"]["etcher_npc_purchase"]
+        worthy = self.leaves(self.definitions["worthy_character"])
+        self.assertEqual(worthy, self.leaves(self.definitions["shrine_access"]))
+        self.assertTrue(self.granted(purchase, worthy))
+        for event in worthy:
+            self.assertFalse(self.granted(purchase, worthy - {event}))
+        self.assertEqual(purchase["gold"], 30000)
+        self.assertIsNone(purchase["premium_requirement"]["value"])
+        self.assertFalse(worthy & self.leaves(self.definitions["premium"]))
+        application = self.packet["utility_application"]["etcher"]
+        self.assertFalse(application["premium_required"])
+        self.assertEqual(application["item_ref"], purchase["item_ref"])
+
+    def test_frozen_horror_report_opens_a_distinct_shrine_area(self):
+        branch = self.definitions["forgotten_melting_frozen_horror"]
+        kill, report, path_opened, shrine = branch["all_of"]
+        self.assertEqual(kill["boss_source_name"], "Melting Frozen Horror")
+        self.assertEqual(report["npc_source_name"], "A Dragon Mother")
+        self.assertEqual(report["dialogue_keywords"], ["hi"])
+        self.assertEqual(path_opened["type"], "quest_path_opened_after_npc_report")
+        self.assertEqual(shrine["access_portal_source_position"], {"x": 32247, "y": 31030, "z": 12})
+        self.assertNotIn("reward room", shrine["location_source_name"])
+        without_report = self.leaves(kill) | self.leaves(path_opened) | self.leaves(shrine)
+        for name in ("Blockade", "Frost", "Quara Scale"):
+            self.assertFalse(self.granted(self.families[name]["powerful_unlock"], without_report))
+
     def test_premium_does_not_replace_powerful_unlock(self):
         events = self.leaves(self.definitions["shrine_access"]) | self.leaves(self.definitions["compatible_item"]) | self.leaves(self.definitions["premium"])
         for name, family in self.families.items():

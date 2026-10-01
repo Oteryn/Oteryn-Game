@@ -81,6 +81,41 @@ class CrystalBranchEvidenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             branch.parse_xml(raw.replace(b'key="effect"', b'key="description"'))
 
+    def mutation_rejected(self, edit):
+        packet = copy.deepcopy(self.packet)
+        edit(packet)
+        with self.assertRaises(ValueError):
+            branch.validate(packet)
+
+    def test_comparison_requires_exact_unique_keys_and_independent_strengths(self):
+        self.mutation_rejected(lambda p: p["selected_catalogue_comparison"].update(
+            records=[p["selected_catalogue_comparison"]["records"][0]] * 72))
+        self.mutation_rejected(lambda p: next(r for r in p["selected_catalogue_comparison"]["records"]
+            if r["name"] == "Strike")["configured_normalized_effect"].update(extra_damage_bps=9999))
+        self.mutation_rejected(lambda p: p["selected_catalogue_comparison"]["summary"].update(effects_loaded=72))
+
+    def test_duplicate_bundles_and_changed_transactions_are_rejected(self):
+        self.mutation_rejected(lambda p: p.update(gold_token_bundles=[p["gold_token_bundles"][0]] * 9))
+        self.mutation_rejected(lambda p: p["gold_token_bundles"][0].update(gold_tokens=999))
+        self.mutation_rejected(lambda p: p["gold_token_bundles"][0]["materials"][0].update(count=1))
+
+    def test_capture_changes_cannot_preserve_old_source_attribution(self):
+        self.mutation_rejected(lambda p: p["xml"]["records"][0]["effect"].update(bonus="9999"))
+        self.mutation_rejected(lambda p: p["sources"]["data/XML/imbuements.xml"].update(blob_sha="0" * 40))
+        self.mutation_rejected(lambda p: next(r for r in p["engine_facts"]
+            if r["id"] == "strike_xml_delta_and_player_baseline")["value"].update(player_baseline_chance_bps=999))
+
+    def test_new_engine_paths_remain_separate_ots_hypotheses(self):
+        facts = {r["id"]: r for r in self.packet["engine_facts"]}
+        self.assertFalse(facts["quest_storage_check_configuration_default"]["value"])
+        self.assertEqual(facts["leech_excluded_damage"]["value"],
+                         {"extension": True, "origin_condition": True})
+        self.assertEqual(facts["leech_chance_comparison"]["value"]["failure_comparison"], ">= chance")
+        self.assertEqual(facts["healing_critical_separate_path"]["value"]["wheel_perk"], "Blessing of the Grove")
+        self.assertIn("damaging", facts["critical_roll_scope"]["value"])
+        self.assertEqual(facts["scroll_target_equipped_allowed"]["anchors"][-1]["line"], 2854)
+        self.assertTrue(all(r["confidence"] == "OTS_SOURCE_CODE_ONLY" for r in facts.values()))
+
 
 if __name__ == "__main__":
     unittest.main()

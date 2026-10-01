@@ -4571,7 +4571,7 @@
       "used_for_values": false
     },
     "decision": {
-      "role": "OTERYN_ACCEPTED_DECISION",
+      "role": "OTERYN_CANDIDATE_ARCHITECTURE_PROPOSAL",
       "path": "docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
       "sha256": "cdcb8e26050a0afa530ec553f1801021f23bf471e22c1ecac1d820c389ad7064",
       "findings": {

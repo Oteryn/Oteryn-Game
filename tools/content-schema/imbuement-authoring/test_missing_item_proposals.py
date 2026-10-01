@@ -1,5 +1,6 @@
 """Check proposed Items against the owning contract and admission boundary."""
 from copy import deepcopy
+import json
 import unittest
 from unittest.mock import patch
 
@@ -23,6 +24,37 @@ class MissingItemProposalTests(unittest.TestCase):
         self.assertEqual(rows[53192]["target_time_status"], "INTRODUCED_AFTER_TARGET")
         self.assertEqual(rows[53192]["source_facts"]["facts"]["introduced_on"], "2026-08-04")
         self.assertEqual(rows[49160]["authoring_definition"]["container"]["capacity"], 1)
+        self.assertEqual(rows[49160]["source_facts"]["facts"]["introduced_on"], "2024-08-06")
+
+    def test_revision_links_match_named_wiki_identity(self):
+        for source in json.loads(proposals.FACTS.read_bytes())["records"]:
+            proposals.validate_source_provenance(source)
+            wiki = source["sources"]["wiki_br"]
+            self.assertNotIn("](", wiki["revision_url"])
+            self.assertTrue(wiki["revision_url"].endswith("oldid=" + str(wiki["revision_id"])))
+
+    def test_rejects_malformed_or_misbound_provenance_links(self):
+        original = json.loads(proposals.FACTS.read_bytes())["records"][0]
+        mutations = [
+            ("wiki_br", "revision_url", original["sources"]["wiki_br"]["revision_url"] + "](https://example.com)"),
+            ("wiki_br", "revision_url", "https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=442016"),
+            ("wiki_br", "revision_url", "https://www.tibiawiki.com.br/index.php?title=Sailor%27s_Backpack&oldid=427070"),
+            ("wiki_br", "revision_url", "https://example.com/index.php?title=Bursa_Obscura&oldid=427070"),
+            ("wiki_br", "revision_url", "https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=427070&oldid=427070"),
+            ("wiki_br", "url", "https://www.tibiawiki.com.br/wiki/Another_Item"),
+            ("tibiopedia", "url", "https://tibiopedia.pl/items/Bursa_Obscura#fake"),
+            ("tibiopedia", "sha256", "missing"),
+            ("tibiopedia_update", "url", "https://tibiopedia.pl/updates/13.41.a953fd"),
+            ("tibiopedia_update", "observed_item_url", "https://tibiopedia.pl/items/Another_Item"),
+            ("tibiopedia_update", "published_on", "2024-08-07"),
+            ("tibiopedia_update", "observed_publication_date", "07.08.2024"),
+        ]
+        for provider, field, value in mutations:
+            with self.subTest(provider=provider, field=field, value=value):
+                source = deepcopy(original)
+                source["sources"][provider][field] = value
+                with self.assertRaises(ValueError):
+                    proposals.validate_source_provenance(source)
 
     def test_raw_client_slot_count_corroborates_both_authored_items(self):
         for row in self.packet["proposals"]:

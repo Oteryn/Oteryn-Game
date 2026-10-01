@@ -13,7 +13,12 @@
   "sources": {
     "official_manual": {
       "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
-      "role": "PRIMARY_OFFICIAL"
+      "role": "PRIMARY_OFFICIAL",
+      "source_sha256": "0276d5193551ed7614de6f68822c55b72932fb580d289320f7e5cbb7f534bb3f",
+      "digest_scope": "Exact UTF-8 Tavily extracted markdown retained as page-0.md.",
+      "captured_on": "2026-10-01",
+      "revision": null,
+      "target_continuity": "UNVERIFIED"
     },
     "official_tradeable_imbuements": {
       "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8396",
@@ -33,7 +38,13 @@
     },
     "br_forgotten_knowledge": {
       "url": "https://www.tibiawiki.com.br/wiki/Forgotten_Knowledge_Quest",
-      "role": "COMMUNITY_GLOBAL_REFERENCE"
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "revision_id": 445526,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Forgotten_Knowledge_Quest&oldid=445526",
+      "source_sha256": "860c07104e1d01d86226c820ec66e0c823ea7ba7f55f555bbc1cdb1c125bb01d",
+      "digest_scope": "Exact UTF-8 extracted markdown retained from full Forgotten Knowledge page, revision445526.",
+      "captured_on": "2026-10-01",
+      "target_continuity": "UNVERIFIED"
     },
     "br_heart_of_destruction": {
       "url": "https://www.tibiawiki.com.br/wiki/Heart_of_Destruction_Quest",
@@ -83,6 +94,59 @@
       "digest_scope": "Exact public HTML bytes after ordinary locale/layout selection.",
       "verified_page_title": "Przedmioty: Gold Token - Tibia ~ Tibiopedia.pl",
       "scope": "Yana material-exchange family eligibility, token prices and dialogue; this evidence does not replace the separately sourced Powerful crafting reward predicates."
+    },
+    "tibiopedia_heart_of_destruction": {
+      "url": "https://tibiopedia.pl/quests/Heart_of_Destruction_Quest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "5c815416160361dc998ff3a10639e74fe6e6cb16d560820de783a4367ced181e",
+      "digest_scope": "Exact native public HTML bytes after ordinary locale/layout selection.",
+      "verified_page_title": "Questy: Heart of Destruction Quest - Tibia ~ Tibiopedia.pl",
+      "captured_at": "2026-10-01T12:17:34.718068+00:00",
+      "revision": null,
+      "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
+      "target_continuity": "UNVERIFIED"
+    },
+    "tibiopedia_dangerous_depths": {
+      "url": "https://tibiopedia.pl/quests/Dangerous_Depths_Quest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "0f2fbfe75361c0b4b06b743adf9636417d6e4d2ee51cd09576ae06a435b4ecb4",
+      "digest_scope": "Exact native public HTML bytes after ordinary locale/layout selection.",
+      "verified_page_title": "Questy: Dangerous Depths Quest - Tibia ~ Tibiopedia.pl",
+      "captured_at": "2026-10-01T12:17:35.085738+00:00",
+      "revision": null,
+      "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
+      "target_continuity": "UNVERIFIED"
+    },
+    "tibiopedia_dream_courts": {
+      "url": "https://tibiopedia.pl/quests/The_Dream_Courts_Quest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "90d98657cbee4581e3be252f192853731aec9fd73883ed82bf933b8ce9a5239d",
+      "digest_scope": "Exact native public HTML bytes after ordinary locale/layout selection.",
+      "verified_page_title": "Questy: The Dream Courts Quest - Tibia ~ Tibiopedia.pl",
+      "captured_at": "2026-10-01T12:17:36.268827+00:00",
+      "revision": null,
+      "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
+      "target_continuity": "UNVERIFIED"
+    },
+    "tibiopedia_albinius": {
+      "url": "https://tibiopedia.pl/npcs/Albinius",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "ea5063d733bc58b3b1c02c15f0972c123c810370b0ea96acaf6921617d7293a3",
+      "digest_scope": "Exact native public HTML bytes after ordinary locale/layout selection.",
+      "verified_page_title": "NPC: Albinius - Tibia ~ Tibiopedia.pl",
+      "captured_at": "2026-10-01T12:17:36.659641+00:00",
+      "revision": null,
+      "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
+      "target_continuity": "UNVERIFIED"
+    },
+    "tibiopedia_etcher": {
+      "url": "https://tibiopedia.pl/items/Etcher",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "ec035f6c43b88badcc309cdd7f1bacbfb622f9d8562b8549f41910d93789b3bf",
+      "digest_scope": "Exact public HTML bytes retrieved after ordinary locale/layout setup; item page title and facts inspected; no revision identifier supplied",
+      "revision": null,
+      "target_continuity": "UNVERIFIED",
+      "scope": "Explicit Free Account application allowance; this does not prove a Free Account NPC-purchase allowance."
     }
   },
   "predicate_definitions": {
@@ -265,6 +329,28 @@
           "boss_source_name": "Melting Frozen Horror"
         },
         {
+          "type": "npc_task_reward_reported",
+          "quest_source_name": "Forgotten Knowledge",
+          "npc_source_name": "A Dragon Mother",
+          "task_source_name": "Dragon in Distress",
+          "dialogue_keywords": [
+            "hi"
+          ],
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ]
+        },
+        {
+          "type": "quest_path_opened_after_npc_report",
+          "quest_source_name": "Forgotten Knowledge",
+          "npc_source_name": "A Dragon Mother",
+          "object_source_name": "Ice wall beyond portal at 32247,31030,12",
+          "source_action": "NPC melts ice wall",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ]
+        },
+        {
           "type": "quest_object_used_after_boss",
           "quest_source_name": "Forgotten Knowledge",
           "source_refs": [
@@ -272,7 +358,12 @@
           ],
           "object_source_name": "Abandoned Imbuing Shrine",
           "boss_source_name": "Melting Frozen Horror",
-          "location_source_name": "Melting Frozen Horror reward room"
+          "location_source_name": "Formerly inaccessible shrine area beyond the ice wall after the portal at 32247,31030,12",
+          "access_portal_source_position": {
+            "x": 32247,
+            "y": 31030,
+            "z": 12
+          }
         }
       ],
       "quest_line_source_locator": {
@@ -282,7 +373,8 @@
         "name": "Forgotten Knowledge",
         "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775",
         "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
-      }
+      },
+      "source_qualification": "Boss defeat is followed by reporting to A Dragon Mother; she opens the ice-wall route into a separate shrine area. The portal position locates access, not the shrine object itself."
     },
     "forgotten_the_time_guardian": {
       "all_of": [
@@ -351,7 +443,9 @@
           "type": "quest_boss_defeated",
           "quest_source_name": "Heart of Destruction",
           "source_refs": [
-            "br_heart_of_destruction"
+            "br_heart_of_destruction",
+            "tibiopedia_heart_of_destruction",
+            "br_imbuements"
           ],
           "boss_source_name": "World Devourer"
         },
@@ -359,7 +453,9 @@
           "type": "npc_dialogue_reward_claimed",
           "quest_source_name": "Heart of Destruction",
           "source_refs": [
-            "br_heart_of_destruction"
+            "br_heart_of_destruction",
+            "tibiopedia_heart_of_destruction",
+            "br_imbuements"
           ],
           "npc_source_name": "Yana",
           "dialogue_keyword": "worth"
@@ -372,7 +468,8 @@
         "name": "Heart of Destruction",
         "staticdata_sha256": "178642cf4a29a708791cc63924c2bf16dad8301e882b83d333879fb5db578871",
         "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
-      }
+      },
+      "source_qualification": "Native Heart of Destruction guide independently confirms the Yana worth claim route but lists only three older reward families. The eight-family coverage remains sourced from the separate current BR Imbuements/reference claims."
     },
     "dangerous_depths": {
       "all_of": [
@@ -380,7 +477,8 @@
           "type": "quest_boss_defeated",
           "quest_source_name": "Dangerous Depths",
           "source_refs": [
-            "br_dangerous_depths"
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
           ],
           "boss_source_name": "The Baron from Below",
           "warzone": 4
@@ -389,17 +487,20 @@
           "type": "quest_object_destroyed_after_boss",
           "quest_source_name": "Dangerous Depths",
           "source_refs": [
-            "br_dangerous_depths"
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
           ],
           "object_source_name": "Lava Pump",
           "boss_source_name": "The Baron from Below",
-          "warzone": 4
+          "warzone": 4,
+          "interaction_source_action": "use post-boss pump; BR describes destroying it"
         },
         {
           "type": "quest_boss_defeated",
           "quest_source_name": "Dangerous Depths",
           "source_refs": [
-            "br_dangerous_depths"
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
           ],
           "boss_source_name": "The Count of the Core",
           "warzone": 5
@@ -408,17 +509,20 @@
           "type": "quest_object_destroyed_after_boss",
           "quest_source_name": "Dangerous Depths",
           "source_refs": [
-            "br_dangerous_depths"
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
           ],
           "object_source_name": "Lava Pump",
           "boss_source_name": "The Count of the Core",
-          "warzone": 5
+          "warzone": 5,
+          "interaction_source_action": "use post-boss pump; BR describes destroying it"
         },
         {
           "type": "quest_boss_defeated",
           "quest_source_name": "Dangerous Depths",
           "source_refs": [
-            "br_dangerous_depths"
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
           ],
           "boss_source_name": "The Duke of the Depths",
           "warzone": 6
@@ -427,11 +531,13 @@
           "type": "quest_object_destroyed_after_boss",
           "quest_source_name": "Dangerous Depths",
           "source_refs": [
-            "br_dangerous_depths"
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
           ],
           "object_source_name": "Lava Pump",
           "boss_source_name": "The Duke of the Depths",
-          "warzone": 6
+          "warzone": 6,
+          "interaction_source_action": "use post-boss pump; BR describes destroying it"
         }
       ],
       "quest_line_source_locator": {
@@ -441,7 +547,8 @@
         "name": "Dangerous Depths",
         "staticdata_sha256": "6af0b9fc9520179bb3ed44bad99709353680086efd75deea5cf5c0c815c05dde",
         "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
-      }
+      },
+      "source_qualification": "BR supports destruction; the native guide independently supports using each post-boss pump. Native corroboration is not represented as an independent destruction statement."
     },
     "dream_courts": {
       "all_of": [
@@ -449,7 +556,8 @@
           "type": "quest_boss_defeated",
           "quest_source_name": "The Dream Courts",
           "source_refs": [
-            "br_dream_courts"
+            "br_dream_courts",
+            "tibiopedia_dream_courts"
           ],
           "boss_source_name": "The Nightmare Beast"
         },
@@ -459,19 +567,31 @@
               "type": "npc_task_reward_reported",
               "quest_source_name": "The Dream Courts",
               "source_refs": [
-                "br_dream_courts"
+                "br_dream_courts",
+                "tibiopedia_dream_courts"
               ],
               "npc_source_name": "Vanys",
-              "task_source_name": "The Nightmare Beast"
+              "task_source_name": "The Nightmare Beast",
+              "dialogue_keywords": [
+                "hi",
+                "talk",
+                "task"
+              ]
             },
             {
               "type": "npc_task_reward_reported",
               "quest_source_name": "The Dream Courts",
               "source_refs": [
-                "br_dream_courts"
+                "br_dream_courts",
+                "tibiopedia_dream_courts"
               ],
               "npc_source_name": "Undal",
-              "task_source_name": "The Nightmare Beast"
+              "task_source_name": "The Nightmare Beast",
+              "dialogue_keywords": [
+                "hi",
+                "talk",
+                "task"
+              ]
             }
           ]
         }
@@ -484,6 +604,14 @@
         "staticdata_sha256": "ce63974efc1fb6bc83446a8ea22e4f950ed9596f4b2584463e9b82d93abee1d4",
         "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
       }
+    },
+    "worthy_character": {
+      "all_of": [
+        {
+          "predicate_ref": "shrine_access"
+        }
+      ],
+      "notes": "Completed historical qualification: the world temple construction event and character five-tome contribution. No current temple-open interaction or present inventory of tomes is added."
     }
   },
   "scroll_acquisition": {
@@ -4145,7 +4273,7 @@
   "notes": [
     "All 24 Powerful unlock definitions are populated from quest-specific Global reference pages. The summary Imbuements page omits several post-boss reward actions; these are included here.",
     "A Premium or quest requirement applies to shrine crafting/scroll inscription, not wearing an already imbued item or applying a valid scroll.",
-    "No entire quest completion is required for a Forgotten Knowledge branch unlock: its boss defeat plus room shrine use suffices. All previous portals are access prerequisites for the final Lore Keeper boss; they are not duplicated as separate imprint gates.",
+    "No entire quest completion is required for a Forgotten Knowledge branch unlock. Boss defeat and the correct branch shrine activation are required; the ice branch additionally reports to A Dragon Mother and enters the opened shrine area. All previous portals are access prerequisites for the final Lore Keeper boss; they are not duplicated as separate imprint gates.",
     "The world temple construction consists of an earlier collective quest event. The character contributes five Heavy Old Tomes once; world contribution quantities are not charged per imbue.",
     "These records are authoring facts, not a runtime quest implementation or an assertion that source client quest-line IDs are canonical Game quest identities.",
     "The accepted source manifest identifies client version 15.30 but contains no dated snapshot field; this packet does not infer a client capture date from version or file metadata. External access sources were retrieved on captured_on, rather than archived at the client snapshot date.",
@@ -4180,6 +4308,11 @@
       "provider": "Tibiopedia",
       "scope": "NPCYana and GoldToken exact-title pages",
       "result": "Both200; NPC page independently confirms 3families x3tiers,2/4/6GoldToken costs and trade dialogue. Exact outputs joined to accepted cumulative BR recipes and canonical item binding catalogue; all9routes populated."
+    },
+    {
+      "kind": "CROSS_AUDIT_REPAIR_FROM_CACHED_PUBLIC_SOURCES",
+      "scope": "Three native quest guides, Albinius shop and revision445526 Forgotten Knowledge",
+      "result": "Added snapshot hashes and bounded supporting quotes; corrected Frozen Horror shrine location and report/wall-opening predicates; separated Etcher worthy NPC acquisition from Free Account application."
     }
   ],
   "material_acquisition": {
@@ -4626,6 +4759,104 @@
         "br_imbuements"
       ],
       "recipe_binding_catalogue": "imbuement-bindings.json"
+    }
+  },
+  "source_claims": [
+    {
+      "source_refs": [
+        "official_manual"
+      ],
+      "claim": "Albinius sells Etcher to worthy characters; this is NPC acquisition, not a Premium application condition.",
+      "quote": "an etcher, which is also sold by Albinius to worthy characters.",
+      "source_line": 188,
+      "evidence_status": "PRIMARY_OFFICIAL_EXPLICIT"
+    },
+    {
+      "source_refs": [
+        "br_forgotten_knowledge"
+      ],
+      "claim": "Frozen Horror path requires reporting to A Dragon Mother, who melts the wall before the shrine area.",
+      "quote": "I melted the ice for you, you can pass now.",
+      "source_lines": [
+        675,
+        680,
+        682
+      ],
+      "evidence_status": "REVISIONED_COMMUNITY_EXPLICIT"
+    },
+    {
+      "source_refs": [
+        "tibiopedia_heart_of_destruction"
+      ],
+      "claim": "World Devourer and Yana hi > worth; page lists older three reward families only; current BR Imbuements supports eight",
+      "quote": "Należy udać się do NPC Yana i napisać hi > worth.",
+      "evidence_status": "COMMUNITY_EXPLICIT_SNAPSHOT"
+    },
+    {
+      "source_refs": [
+        "tibiopedia_dangerous_depths"
+      ],
+      "claim": "All three Warzone bosses then use each post-boss pump; Powerful Featherweight",
+      "quote": "Po zabiciu bossa i po wejściu w zielony teleport znajdziemy się w pokoju z pompą, której należy użyć.",
+      "evidence_status": "COMMUNITY_EXPLICIT_SNAPSHOT"
+    },
+    {
+      "source_refs": [
+        "tibiopedia_dream_courts"
+      ],
+      "claim": "Nightmare Beast followed by NPC hi/talk/task reward report, either Vanys or Undal; Powerful Vibrancy",
+      "quote": "Undal: The Nightmare Beast is slain. You have done well.",
+      "evidence_status": "COMMUNITY_EXPLICIT_SNAPSHOT"
+    },
+    {
+      "source_refs": [
+        "tibiopedia_albinius"
+      ],
+      "claim": "Albinius sells Blank Imbuement Scroll25000 and Etcher30000",
+      "quote": "Etcher\n(30000gp)",
+      "evidence_status": "COMMUNITY_EXPLICIT_SNAPSHOT"
+    }
+  ],
+  "utility_acquisition": {
+    "etcher_npc_purchase": {
+      "npc_source_name": "Albinius",
+      "item_source_name": "Etcher",
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51443",
+        "revision": "definition-r1"
+      },
+      "gold": 30000,
+      "all_of": [
+        {
+          "predicate_ref": "worthy_character"
+        }
+      ],
+      "premium_requirement": {
+        "value": null,
+        "evidence_status": "PARITY_PENDING_NO_EXPLICIT_PREMIUM_PURCHASE_CONDITION"
+      },
+      "source_refs": [
+        "official_manual",
+        "tibiopedia_albinius"
+      ],
+      "qualification_scope": "NPC purchase requires the completed worthy qualification. Free Account application permission is a separate claim and cannot resolve the NPC purchase Premium question."
+    }
+  },
+  "utility_application": {
+    "etcher": {
+      "item_source_name": "Etcher",
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51443",
+        "revision": "definition-r1"
+      },
+      "premium_required": false,
+      "source_refs": [
+        "tibiopedia_etcher"
+      ],
+      "scope": "ACCOUNT_ACCESS_ONLY; clearing, target validation and consumption evidence belong to global-rules-evidence.json",
+      "qualification_note": "The worthy NPC-purchase predicate is not automatically propagated to using an already acquired Etcher."
     }
   }
 }

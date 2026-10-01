@@ -393,7 +393,7 @@
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
       "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT",
-      "notes": "Global permits Stash materials. Oteryn accepted first slice restricts to main-backpack direct entries."
+      "notes": "Global permits Stash materials. Oteryn candidate proposal limits the first slice to main-backpack direct entries; this is a proposed implementation difference."
     },
     {
       "id": "materials_are_cumulative_by_tier",
@@ -531,7 +531,7 @@
       ],
       "parity_status": "OFFICIAL_PUBLIC_SEARCH_SNIPPET",
       "target_time_status": "DATED_PRE_TARGET_TEASER_AND_15_30_RELEASE_CORROBORATED",
-      "notes": "Official indexed news8834 confirms Echo Wardens drop Basic scrolls. Full news mirror dated11June2026 plus independently dated13July2026 client15.30 release and accepted15.30 assets place their introduction before28July2026. Exact official article full extraction remains unavailable."
+      "notes": "Official indexed news8834 confirms Echo Wardens drop Basic scrolls. Full news mirror dated11June2026 plus independently dated13July2026 client15.30 release and frozen15.30 client assets place their introduction before28July2026. Exact official article full extraction remains unavailable."
     },
     {
       "id": "etcher_npc_price_gold",
@@ -935,63 +935,214 @@
       "target_time_status": "CURRENT_INDEXED_SOURCE_CONFLICT_NO_EXACT_TARGET_PROOF",
       "runtime_semantics_profile": "imbuement-combat.json",
       "notes": "The indexed Vibrancy family page explicitly qualifies additional PvP paralysis deflection with if initially successful. Shorter Basic/Powerful snippets describe always deflecting on additional attacks without that qualification. Whether deflection requires a previous successful recovery and its state lifetime are unqualified; do not select unconditional deflection from truncated item snippets. Repeated-attack recovery remains independently corroborated."
+    },
+    {
+      "id": "same_imbuement_type_maximum_per_item",
+      "value": 1,
+      "evidence": [
+        "wiki_br_imbuements"
+      ],
+      "parity_status": "DERIVED_COMMUNITY_EXPLICIT",
+      "target_time_status": "PUBLISHED_PRE_TARGET_COMMUNITY_REVISION",
+      "notes": "BR equipment tips explicitly prohibit two equal bonuses on one equipment item, exemplified by two death-protection imbuements on a shield. Treat the same bonus across tiers as one type; this does not prove exclusion of all distinct effects sharing a broad OTS category such as Elemental Damage."
+    },
+    {
+      "id": "equipment_above_character_level_imbuement_behavior",
+      "value": {
+        "effect_active": false,
+        "standard_equipped_combat_timer_continues": true
+      },
+      "evidence": [
+        "tibiopedia_imbuing_guide"
+      ],
+      "parity_status": "DERIVED_COMMUNITY_EXPLICIT",
+      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "notes": "Guide explicitly states an imbuement on equipment requiring a higher level than the character does not activate during combat, while its time still decreases. This is a scoped level requirement statement; no extrapolation to wrong vocation, utility/PZ exceptions, native abilities or changed effect strengths."
+    },
+    {
+      "id": "transaction_payment_sources",
+      "value": null,
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_EXPLICIT_GLOBAL_PAYMENT_SOURCE_PROOF",
+      "notes": "Retrieved public sources specify a gold fee but do not settle backpack gold versus equipped purses, bank balance, depot balances, ordering or currency-debit fallback. Engine payment methods do not establish Global transactions."
+    },
+    {
+      "id": "failed_transaction_consumption_and_rollback",
+      "value": null,
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_GLOBAL_FAILURE_TRANSACTION_OBSERVATION",
+      "notes": "Guaranteed imbuement success does not prove error-path atomicity. Public sources do not establish money/material/blank-scroll/Etcher consumption or rollback after incompatible targets, full inventory, stale slots, interruption, insertion failure or concurrent transfer."
+    },
+    {
+      "id": "native_effect_composition",
+      "value": null,
+      "evidence": [
+        "wiki_br_imbuements",
+        "tibiopedia_imbuing_guide"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_COMPLETE_GLOBAL_NATIVE_EFFECT_COMPOSITION_PROOF",
+      "runtime_semantics_profile": "imbuement-combat.json",
+      "notes": "Per-item compatibility restrictions are separate from formulas combining native leech/critical/protection, imbuements, vocation baselines, wheel, proficiency, charms and caps. No complete Global composition or ordering proof is present; explicit OTS additive/reduction paths remain hypotheses."
+    },
+    {
+      "id": "transfer_preserves_imbuement_state_and_remaining_duration",
+      "value": null,
+      "evidence": [
+        "tibiopedia_imbuing_guide",
+        "official_manual"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_GLOBAL_TRANSFER_STATE_OBSERVATION",
+      "notes": "Community guide allows using equipment imbued by another character. That supports transferred-item usability but does not prove exact preservation of slot identity, remaining duration, checkpoint metadata or combat/timer state across trade, market, mail, containers and owner changes."
+    },
+    {
+      "id": "etcher_npc_purchase_requires_worthy",
+      "value": true,
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror"
+      ],
+      "parity_status": "OFFICIAL_PUBLIC_WITH_DERIVED_DETAIL",
+      "target_time_status": "CURRENT_MANUAL_WITH_HISTORICAL_MIRROR_CORROBORATION",
+      "access_profile": "imbuement-access.json#utility_acquisition.etcher_npc_purchase",
+      "notes": "Current manual explicitly restricts Albinius Etcher sales to worthy characters. Historical mirror details completed world construction plus five submitted tomes; access predicate must represent completed handovers, not possession of five tomes or a new current-temple-open requirement. This is independent of Free-account application permission."
+    },
+    {
+      "id": "etcher_npc_purchase_worthy_predicate",
+      "value": {
+        "predicate_ref": "worthy_character",
+        "requirements": [
+          "completed_world_construction",
+          "completed_five_tome_handovers"
+        ]
+      },
+      "evidence": [
+        "news_8396_mirror",
+        "official_manual"
+      ],
+      "parity_status": "DERIVED_OFFICIAL_NEWS_MIRROR_CORROBORATED",
+      "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION",
+      "access_profile": "imbuement-access.json#predicate_definitions.worthy_character",
+      "notes": "The mirror uses the former name cleansing scroll. Current manual independently names the final Etcher and worthy sales gate. No current-temple-open recheck or Premium gate is inferred."
+    },
+    {
+      "id": "etcher_npc_purchase_requires_premium",
+      "value": null,
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror",
+        "wiki_br_etcher",
+        "tibiopedia_etcher"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_EXPLICIT_GLOBAL_ETCHER_PURCHASE_PREMIUM_PROOF",
+      "notes": "Manual explicitly requires Premium for inscription and blank-scroll purchase, but its separate Etcher-sale sentence only says worthy. Free-account Etcher use does not settle acquisition. Keep Etcher purchase Premium requirement unselected."
+    },
+    {
+      "id": "shared_category_compatibility",
+      "value": null,
+      "evidence": [
+        "wiki_br_imbuements",
+        "crystal_imbuements_player_impl"
+      ],
+      "parity_status": "PARITY_PENDING",
+      "target_time_status": "NO_GLOBAL_DISTINCT_CONVERSION_COMPATIBILITY_PROOF",
+      "notes": "BR prohibits two identical bonuses but does not establish mutual exclusion of different elemental conversions. The generated elemental_damage category combines Scorch, Venom, Frost, Electrify and Reap following the architecture candidate and OTS grouping. Neither grouping nor OTS category checks prove Global acceptance or rejection of these distinct conversions together.",
+      "hypotheses": [
+        {
+          "value": {
+            "category": "elemental_damage",
+            "mutually_exclusive_types": [
+              "Scorch",
+              "Venom",
+              "Frost",
+              "Electrify",
+              "Reap"
+            ]
+          },
+          "status": "OTS_HYPOTHESIS_ONLY",
+          "selected_as_global": false,
+          "evidence": [
+            "crystal_imbuements_player_impl"
+          ],
+          "conditions": "Scroll application obtains compatible choices through getImbuements at player.cpp2805; compatibility and category checks are OTS behavior, not Global qualification."
+        }
+      ],
+      "architecture_reference": {
+        "path": "docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+        "status": "CANDIDATE_NOT_ACCEPTED"
+      }
     }
   ],
   "conflicts": [
     {
       "id": "accepted_fee_numbers_pre2025",
       "field": "apply_fee_gold",
-      "accepted_decision_value": [
-        5000,
-        30000,
-        200000
-      ],
       "global_value": [
         7500,
         60000,
         250000
       ],
-      "resolution": "Correct candidate authoring fees; owning accepted decision needs an explicit amendment. Legacy XML base values are not current Global fees."
+      "resolution": "Correct authoring fees; the owning candidate proposal requires reconciliation before acceptance. Legacy XML base values are not current Global fees.",
+      "candidate_proposal_value": [
+        5000,
+        30000,
+        200000
+      ],
+      "architecture_status": "CANDIDATE_NOT_ACCEPTED"
     },
     {
       "id": "accepted_basic_scroll_inscription",
       "field": "scroll_inscription_tiers",
-      "accepted_decision_value": [
+      "global_value": [
+        2,
+        3
+      ],
+      "resolution": "Basic loot scrolls exist, but current primary manual supports only Intricate/Powerful shrine inscription. Do not grant Basic crafting.",
+      "candidate_proposal_value": [
         1,
         2,
         3
       ],
-      "global_value": [
-        2,
-        3
-      ],
-      "resolution": "Basic loot scrolls exist, but current primary manual supports only Intricate/Powerful shrine inscription. Do not grant Basic crafting."
+      "architecture_status": "CANDIDATE_NOT_ACCEPTED"
     },
     {
       "id": "stash_materials_first_slice",
       "field": "materials_sources",
-      "accepted_decision_value": [
-        "main_backpack_direct_entries"
-      ],
       "global_value": [
         "backpack",
         "stash"
       ],
-      "resolution": "Declared first-slice implementation difference; cannot label runtime fully Global-equivalent."
+      "resolution": "Declared first-slice implementation difference; cannot label runtime fully Global-equivalent.",
+      "candidate_proposal_value": [
+        "main_backpack_direct_entries"
+      ],
+      "architecture_status": "CANDIDATE_NOT_ACCEPTED"
     },
     {
       "id": "fine_grained_canary_timers",
       "field": "timer_policy",
-      "accepted_decision_value": "aggressive in fight outsidePZ; nonaggressive while equipped",
       "global_value": "coarse manual equipped+hunting; capacity and swiftness exceptions derived",
-      "resolution": "Preserve pending status for exact fine-grained Global timer behavior rather than treating Canary implementation as official evidence."
+      "resolution": "Preserve pending status for exact fine-grained Global timer behavior rather than treating Canary implementation as official evidence.",
+      "candidate_proposal_value": "aggressive in fight outsidePZ; nonaggressive while equipped",
+      "architecture_status": "CANDIDATE_NOT_ACCEPTED"
     },
     {
       "id": "vibrancy_admission_only_probability",
       "field": "Vibrancy effect semantics",
-      "accepted_decision_value": "Chance at CONDITIONS-0 admission to deflect paralyze",
       "global_value": "Repeated-paralysis sequence, including chance to remove initial effect; see imbuement-combat.json",
-      "resolution": "Owning condition/effect architecture needs explicit reconciliation; probabilities alone cannot implement the sourced sequence."
+      "resolution": "Owning condition/effect architecture needs explicit reconciliation; probabilities alone cannot implement the sourced sequence.",
+      "candidate_proposal_value": "Chance at CONDITIONS-0 admission to deflect paralyze",
+      "architecture_status": "CANDIDATE_NOT_ACCEPTED"
     },
     {
       "id": "vibrancy_pvp_success_state_gate",
@@ -1036,6 +1187,37 @@
         "fandom_powerful_vibrancy_gate"
       ],
       "evidence_catalogue": "imbuement-combat.json"
+    },
+    {
+      "id": "transaction_payment_sources",
+      "reason": "Exact gold sources and debit/fallback order require Global transaction evidence; stated fees do not identify balances."
+    },
+    {
+      "id": "failed_transaction_consumption_and_rollback",
+      "reason": "Guaranteed success does not define failure-path resource consumption, rollback or concurrency semantics."
+    },
+    {
+      "id": "native_effect_composition",
+      "reason": "Native abilities, imbuements and other bonuses need source-qualified composition, caps and order; OTS implementation is a hypothesis."
+    },
+    {
+      "id": "transfer_preserves_imbuement_state_and_remaining_duration",
+      "reason": "Transferred imbued items are usable according to community guide; exact persistent state and duration preservation across transfer routes is unqualified."
+    },
+    {
+      "id": "etcher_npc_purchase_requires_premium",
+      "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved."
+    },
+    {
+      "id": "shared_category_compatibility",
+      "reason": "Observe Global compatibility for distinct elemental conversions sharing the generated elemental_damage category. The sourced identical-bonus maximum is insufficient to certify broader exclusion.",
+      "affected_types": [
+        "Scorch",
+        "Venom",
+        "Frost",
+        "Electrify",
+        "Reap"
+      ]
     }
   ],
   "rejected_sources": [
@@ -1203,6 +1385,17 @@
         "https://tibia.fandom.com/wiki/Powerful_Vibrancy"
       ],
       "outcome": "Retrieved family snippet explicitly contains if initially successful; Basic/Powerful snippets omit conditionality. Exact indexed content digests retained; no full-page or revision proof."
+    },
+    {
+      "id": "cached_duplicate_level_and_transaction_scope_review",
+      "method": "INSPECT_SAVED_FULL_PUBLIC_CAPTURES",
+      "urls": [
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://tibiopedia.pl/articles/3,Imbuing-nasycenia",
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7"
+      ],
+      "outcome": "BR equipment tips explicitly prohibit equal bonuses. Native guide explicitly states above-required-level effects inactive while combat timer decreases; known stale strengths remain excluded. Manual and mirror confirm worthy Etcher purchase and historical construction/tome handovers, but not an Etcher Premium gate. Exact payment, rollback, native composition and transferred-duration claims not found; named requirements remain unqualified."
     }
   ],
   "delegated_profiles": [

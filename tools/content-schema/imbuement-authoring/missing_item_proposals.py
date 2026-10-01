@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
+import re
 import sys
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from binding_evidence import APPEARANCES, APPEARANCES_SHA256, canonical_items, client_objects
 
@@ -21,6 +24,51 @@ TEST_IDS = (28464, 28465, 28478, 28479)
 def digest(value: object) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
                                      separators=(",", ":")).encode()).hexdigest()
+
+
+def validate_source_provenance(source: dict) -> None:
+    """Reject malformed links and evidence attached to a different named item."""
+    title = source["source_name"].replace(" ", "_")
+    for provider, evidence in source["sources"].items():
+        if provider not in {"wiki_br", "tibiopedia", "tibiopedia_update"}:
+            raise ValueError(f"{provider}: unsupported provenance provider")
+        url = evidence["url"]
+        if not isinstance(url, str) or re.search(r"[\s\[\]()<>{}]", url):
+            raise ValueError(f"{provider}: malformed provenance URL")
+        parts = urlsplit(url)
+        if parts.scheme != "https" or parts.fragment or parts.username or parts.password:
+            raise ValueError(f"{provider}: invalid provenance URL")
+        expected_host = "www.tibiawiki.com.br" if provider == "wiki_br" else "tibiopedia.pl"
+        if parts.netloc != expected_host or parts.query:
+            raise ValueError(f"{provider}: unexpected provenance origin/query")
+        expected_path = ("/wiki/" if provider == "wiki_br" else "/items/") + title
+        if provider == "tibiopedia_update":
+            expected_path = "/updates/" + source["facts"]["introduced_version"]
+            observed_date = datetime.strptime(evidence["observed_publication_date"], "%d.%m.%Y").date().isoformat()
+            if (evidence["published_on"] != source["facts"]["introduced_on"]
+                    or observed_date != evidence["published_on"]):
+                raise ValueError("update: introduction date disagrees with source")
+            if unquote(evidence["observed_item_url"]) != "https://tibiopedia.pl/items/" + title:
+                raise ValueError("update: named item row disagrees with proposal")
+        if unquote(parts.path) != expected_path:
+            raise ValueError(f"{provider}: source URL names another item/version")
+        if not re.fullmatch(r"[0-9a-f]{64}", evidence["sha256"]):
+            raise ValueError(f"{provider}: malformed provenance digest")
+        if provider != "wiki_br":
+            continue
+        revision = evidence["revision_id"]
+        revision_url = evidence["revision_url"]
+        if type(revision) is not int or revision <= 0:
+            raise ValueError("wiki_br: invalid revision identity")
+        if not isinstance(revision_url, str) or re.search(r"[\s\[\]()<>{}]", revision_url):
+            raise ValueError("wiki_br: malformed revision URL")
+        revision_parts = urlsplit(revision_url)
+        if (revision_parts.scheme != "https" or revision_parts.netloc != expected_host
+                or revision_parts.path != "/index.php" or revision_parts.fragment
+                or revision_parts.username or revision_parts.password
+                or parse_qs(revision_parts.query, strict_parsing=True)
+                != {"title": [title], "oldid": [str(revision)]}):
+            raise ValueError("wiki_br: revision URL disagrees with named revision")
 
 
 def build() -> dict:
@@ -54,6 +102,7 @@ def build() -> dict:
     dependencies = {"definitions": [], "assets": [], "presentations": [], "proficiency_crosswalks": []}
     proposals = []
     for source in facts["records"]:
+        validate_source_provenance(source)
         item_id, name = source["client_id"], source["source_name"]
         client, appearance = clients[item_id], appearances[item_id]
         if client["name"].casefold() != name.casefold():

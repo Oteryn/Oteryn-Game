@@ -3,7 +3,7 @@
   "inputs": {
     "owning_item_schema_sha256": "b58bba554efd346b9f33103a889acfb571b97861ee06be460a474f0c115b3c1c",
     "primary_appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
-    "source_facts_sha256": "3b85d6dc6a033919f1cda01eff7bbf222e740286fc7ff1d911d5ebf235d0dab4",
+    "source_facts_sha256": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d",
     "test_wiki_facts_sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
   },
   "proposals": [
@@ -154,7 +154,7 @@
           "container_capacity": 1,
           "description": "A mysterious pouch from an extra-dimensional realm.",
           "imbuement_slots": 1,
-          "introduced_on": null,
+          "introduced_on": "2024-08-06",
           "introduced_version": "13.40.e15431",
           "marketable": true,
           "stackable": false,
@@ -175,6 +175,20 @@
             "sha256": "c7968262aa0ddb166b6504af6d09b511e0f4e79998e51d05ae52ba565a8afd57",
             "url": "https://tibiopedia.pl/items/Bursa_Obscura"
           },
+          "tibiopedia_update": {
+            "digest_scope": "Exact public HTML bytes; page title, publication date and named Bursa Obscura item row",
+            "evidence_status": "DATED_COMMUNITY_VERSION_PAGE_WITH_EXPLICIT_NAMED_ITEM_ROW",
+            "observed_fields": [
+              "introduced_version",
+              "introduced_on"
+            ],
+            "observed_item_url": "https://tibiopedia.pl/items/Bursa_Obscura",
+            "observed_publication_date": "06.08.2024",
+            "published_on": "2024-08-06",
+            "sha256": "483d743acd321142598d7eeddebeccf6c71e1a855dcad93b67e557c3b0d83cca",
+            "url": "https://tibiopedia.pl/updates/13.40.e15431",
+            "verified_page_title": "Update: 13.40.e15431 - Tibia ~ Tibiopedia.pl"
+          },
           "wiki_br": {
             "digest_scope": "Tavily search include_raw_content extracted markdown",
             "observed_fields": [
@@ -184,18 +198,17 @@
               "marketable",
               "tradeable",
               "introduced_version",
-              "introduced_on",
               "description"
             ],
             "published_approval_date": "2025-07-06",
             "revision_id": 427070,
-            "revision_url": "https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=427070](https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=427070",
+            "revision_url": "https://www.tibiawiki.com.br/index.php?title=Bursa_Obscura&oldid=427070",
             "sha256": "ef6fde7a5e8ed49da081da588797e2adb9a16a05e1ae9710d67655f7f4847109",
             "url": "https://www.tibiawiki.com.br/wiki/Bursa_Obscura"
           }
         }
       },
-      "source_facts_sha256": "bdfd149440ef685b6afd9b03a6d0514b98c9e352ce53545dc0f2638c8c3bf2b7",
+      "source_facts_sha256": "117bdf8f63f98a84d2430c243d4e67c86e861aebc8fe0583fdc4c223036da901",
       "target_time_status": "PREEXISTING_TARGET_SOURCE_VERSION",
       "validation": {
         "contract": "tools/content-schema/item-authoring/item.schema.json",
@@ -378,13 +391,13 @@
             ],
             "published_approval_date": "2026-08-04",
             "revision_id": 442016,
-            "revision_url": "https://www.tibiawiki.com.br/index.php?title=Sailor%27s_Backpack&oldid=442016](https://www.tibiawiki.com.br/index.php?title=Sailor%27s_Backpack&oldid=442016",
+            "revision_url": "https://www.tibiawiki.com.br/index.php?title=Sailor%27s_Backpack&oldid=442016",
             "sha256": "d791167b0a6e7567c1631d02ec666985f33158347c4622d935b6032a4bf085de",
             "url": "https://www.tibiawiki.com.br/wiki/Sailor%27s_Backpack"
           }
         }
       },
-      "source_facts_sha256": "96c732bb9c86222d213288be701c69fbf7b3318494d50e3983a5b1d664ad9e07",
+      "source_facts_sha256": "5cfa98ccaa09014557cdb6516dc2f1166a8a361975e69fe6fb39869707d40364",
       "target_time_status": "INTRODUCED_AFTER_TARGET",
       "validation": {
         "contract": "tools/content-schema/item-authoring/item.schema.json",

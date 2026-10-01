@@ -466,7 +466,7 @@
     },
     {
       "field": "elemental protection composition",
-      "accepted_architecture": "sum absorbs",
+      "candidate_architecture": "sum absorbs",
       "crystal_imbuements": "sequential per-slot reduction with ceil",
       "resolution": "Explicit source conflict; neither architecture nor engine is official Global observation."
     },

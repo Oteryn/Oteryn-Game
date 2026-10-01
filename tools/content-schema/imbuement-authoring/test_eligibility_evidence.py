@@ -29,6 +29,115 @@ class EligibilityEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "direct item table slots differ from primary"):
             eligibility.build(packet)
 
+    def test_primary_slots_do_not_corroborate_a_single_native_type_profile(self):
+        native_only = [r for r in self.items.values() if r["selected_eligibility_source"] and
+                       r["selected_eligibility_source"].startswith("tibiopedia_i") and
+                       len(r["eligibility_sources"]) == 1]
+        self.assertEqual(len(native_only), 76)
+        self.assertTrue(all(r["evidence_status"] == "COMMUNITY_SINGLE_SOURCE" for r in native_only))
+        counts = self.packet["summary"]["evidence_status_counts"]
+        self.assertEqual(counts["COMMUNITY_CORROBORATED"], 430)
+        self.assertEqual(counts["COMMUNITY_SINGLE_SOURCE"], 97)
+        self.assertEqual(counts["COMMUNITY_SINGLE_SOURCE_WITH_CORROBORATED_FIELD"], 1)
+        self.assertEqual(counts["DERIVED_SELECTED_OVER_STALE_HELPER"], 101)
+        for row in self.items.values():
+            if row["evidence_status"] == "COMMUNITY_CORROBORATED":
+                profiles = [r["allowed_types"] for r in row["community_comparison"].values()]
+                self.assertGreater(len(profiles), 1)
+                self.assertTrue(all(p == profiles[0] for p in profiles))
+
+    def test_normalized_native_cap_must_match_raw_magic_level_observation(self):
+        packet = copy.deepcopy(self.packet)
+        packet["normalized_sources"]["wiki_tables"]["tibiopedia_i51260"][0]["allowed_types"]["epiphany"] = 1
+        with self.assertRaisesRegex(ValueError, "normalized native table differs from captured raw"):
+            eligibility.build(packet)
+
+    def test_raw_native_caps_and_source_levels_must_match_selected_extraction(self):
+        packet = copy.deepcopy(self.packet)
+        meta = packet["source_registry"]["tibiopedia_i51260"]
+        row = next(r for r in meta["raw_allowed_max_tiers"] if r["source_type"] == "Magic Level")
+        row["max_tier"] = 1
+        with self.assertRaisesRegex(ValueError, "native raw type rows differ from selected facts"):
+            eligibility.build(packet)
+        packet = copy.deepcopy(self.packet)
+        meta = packet["source_registry"]["tibiopedia_i51260"]
+        meta["selected_facts"]["allowed_max_tiers"][0]["source_level"] = "lvl 1:"
+        with self.assertRaisesRegex(ValueError, "native selected facts digest mismatch"):
+            eligibility.build(packet)
+
+    def test_selected_fact_digest_has_exact_scope_and_is_replayed(self):
+        meta = self.packet["source_registry"]["tibiopedia_i51260"]
+        self.assertEqual(eligibility.binding.sha256(eligibility.binding.canonical_bytes(meta["selected_facts"])),
+                         meta["selected_facts_sha256"])
+        for mutation in ("digest", "scope", "excluded_field"):
+            with self.subTest(mutation=mutation):
+                packet = copy.deepcopy(self.packet)
+                meta = packet["source_registry"]["tibiopedia_i51260"]
+                if mutation == "digest":
+                    meta["selected_facts_sha256"] = "0" * 64
+                elif mutation == "scope":
+                    meta["selected_facts_digest_scope"] = "only normalized allowed_types"
+                else:
+                    meta["selected_facts"]["html_path"] = "/tmp/not-a-portable-source"
+                    meta["selected_facts_sha256"] = eligibility.binding.sha256(
+                        eligibility.binding.canonical_bytes(meta["selected_facts"]))
+                with self.assertRaisesRegex(ValueError, "native selected facts digest"):
+                    eligibility.build(packet)
+
+    def test_amendments_require_nonempty_unique_existing_sources_and_unique_item_type(self):
+        for source_ids in ([], ["missing_source"], ["fandom_stoic_iks_casque_note"] * 2):
+            with self.subTest(source_ids=source_ids):
+                packet = copy.deepcopy(self.packet)
+                packet["normalized_sources"]["type_amendments"][0]["source_ids"] = source_ids
+                with self.assertRaisesRegex(ValueError, "type amendment lacks source evidence"):
+                    eligibility.build(packet)
+        packet = copy.deepcopy(self.packet)
+        amendments = packet["normalized_sources"]["type_amendments"]
+        amendments.append(copy.deepcopy(amendments[0]))
+        with self.assertRaisesRegex(ValueError, "duplicate item/type amendment"):
+            eligibility.build(packet)
+        packet = copy.deepcopy(self.packet)
+        packet["normalized_sources"]["type_amendments"][0]["client_id"] = 9999999
+        with self.assertRaisesRegex(ValueError, "type amendment lacks primary item identity"):
+            eligibility.build(packet)
+
+    def test_repeated_row_is_not_independent_profile_corroboration(self):
+        packet = copy.deepcopy(self.packet)
+        table = packet["normalized_sources"]["wiki_tables"]["wiki_helmets"]
+        table.append(copy.deepcopy(table[0]))
+        with self.assertRaisesRegex(ValueError, "duplicate named item in community source"):
+            eligibility.build(packet)
+
+    def test_amendment_value_must_follow_concrete_allowed_and_excluded_tier_claims(self):
+        packet = copy.deepcopy(self.packet)
+        packet["normalized_sources"]["type_amendments"][0]["max_tier"] = 1
+        with self.assertRaisesRegex(ValueError, "maximum differs from concrete selected source claims"):
+            eligibility.build(packet)
+        packet = copy.deepcopy(self.packet)
+        packet["normalized_sources"]["type_amendments"][0]["source_ids"] = ["primary_client"]
+        with self.assertRaisesRegex(ValueError, "source lacks a unique matching named type claim"):
+            eligibility.build(packet)
+        for field, value in (("item_name", "stoic iks cuirass"), ("candidate_key", "bash")):
+            with self.subTest(field=field):
+                packet = copy.deepcopy(self.packet)
+                packet["normalized_sources"]["type_amendments"][0][field] = value
+                with self.assertRaisesRegex(ValueError, "source lacks a unique matching named type claim"):
+                    eligibility.build(packet)
+
+    def test_typed_amendment_claims_cannot_drift_from_recorded_patch_or_item_note(self):
+        for source_id, field, value in (("tibiopedia_release_13_32_14544", "allowed_tiers", [1]),
+                                        ("fandom_stoic_iks_casque_note", "excluded_tiers", [2, 3])):
+            with self.subTest(source=source_id):
+                packet = copy.deepcopy(self.packet)
+                packet["source_registry"][source_id]["item_type_tier_claims"][0][field] = value
+                with self.assertRaisesRegex(ValueError, "differ from recorded item"):
+                    eligibility.build(packet)
+        packet = copy.deepcopy(self.packet)
+        claims = packet["source_registry"]["tibiopedia_release_13_32_14544"]["item_type_tier_claims"]
+        claims.append(copy.deepcopy(claims[0]))
+        with self.assertRaisesRegex(ValueError, "source lacks a unique matching named type claim"):
+            eligibility.build(packet)
+
     def test_native_item_restrictions_are_not_overwritten_by_stale_tool(self):
         for item_id, denied, expected in ((49861, "strike", "precision"), (49866, "void", "chop"),
                                          (49869, "void", "chop")):

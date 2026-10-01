@@ -38,6 +38,22 @@ class CombatEvidenceTests(unittest.TestCase):
         self.mutation_rejected(lambda p: next(r for r in p["rules"]
             if r["id"] == "leech_rounding").update(value="ceil"))
 
+    def test_changing_status_cannot_admit_an_unresolved_value(self):
+        for rule in self.packet["rules"]:
+            if rule["status"] == "PUBLIC_EVIDENCE_UNRESOLVED":
+                with self.subTest(rule=rule["id"]):
+                    self.mutation_rejected(lambda p, name=rule["id"]: next(
+                        r for r in p["rules"] if r["id"] == name
+                    ).update(status="GLOBAL_VERIFIED", value="invented"))
+
+    def test_missing_or_invented_rule_cannot_shrink_audit_scope(self):
+        self.mutation_rejected(lambda p: p["rules"].pop())
+        self.mutation_rejected(lambda p: p["rules"][-1].update(id="untracked_rule"))
+
+    def test_selected_sequence_and_calculator_results_cannot_drift(self):
+        self.mutation_rejected(lambda p: p["rules"][0]["value"]["recovery_sources"].append("arbitrary"))
+        self.mutation_rejected(lambda p: p["rules"][1]["value"]["examples"][0].update(unrounded_amount=999999))
+
     def test_equal_hit_examples_cannot_become_full_combat_proof(self):
         self.mutation_rejected(lambda p: next(r for r in p["rules"]
             if r["id"] == "leech_equal_damage_aoe_scaling")["value"].update(scope="ALL_TARGET_DAMAGE"))
