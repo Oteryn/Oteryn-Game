@@ -35,6 +35,48 @@ def manifest(inter):
 
 
 class CompletenessTests(unittest.TestCase):
+    def test_script_presence_keeps_explicit_coverage_hold(self):
+        check = {'quest': 'q', 'source_paths': ['scripts/world_changes/example.lua'],
+                 'coverage_gap': 'non-storage effects not transcribed'}
+        doc = {'source_checks': {'script_coverage_holds': [check]}}
+        self.assertEqual(readiness.quest_coverage_holds(doc, {'q'}), {'q': 1})
+        for keys in [set()]:
+            with self.assertRaises(ValueError):
+                readiness.quest_coverage_holds(doc, keys)
+        doc['source_checks']['script_coverage_holds'].append(copy.deepcopy(check))
+        with self.assertRaises(ValueError):
+            readiness.quest_coverage_holds(doc, {'q'})
+
+    def test_source_conflict_is_a_data_hold_for_every_joined_quest(self):
+        entry = {'destination': 'i', 'status': 'conflict'}
+        doc = {'entries': [entry]}
+        self.assertEqual(readiness.interaction_conflict_holds(doc, {'i': {'a', 'b'}}), {'a': 1, 'b': 1})
+        entry['status'] = 'mapped'
+        self.assertEqual(readiness.interaction_conflict_holds(doc, {'i': {'a'}}), {})
+        entry['status'] = 'conflict'
+        with self.assertRaises(ValueError):
+            readiness.interaction_conflict_holds(doc, {})
+
+    def test_h8_conflict_alternative_quest_owners_all_receive_source_holds(self):
+        qs=[quest('alpha'),quest('beta')]
+        alpha,beta=[q['identity']['key'] for q in qs]
+        progress=[{'key':TRACK,'start_of':[alpha],'auxiliary_of':[]},
+                  {'key':TRACK+'_beta','start_of':[beta],'auxiliary_of':[]}]
+        selected=interaction('unmatched/script',[{'owner':'Quest','request':'set_progress','progress':TRACK,'to':1}])
+        alternative=interaction('unmatched/script',[{'owner':'Quest','request':'set_progress','progress':TRACK+'_beta','to':1}])
+        alternative['identity']['key']='crystalserver:interaction/unmatched/script'
+        key=selected['identity']['key']
+        doc={'entries':[{'destination':key,'status':'conflict','conflict_alternatives':[
+            {'source':'canary','interaction':selected},{'source':'crystalserver','interaction':alternative}]}]}
+        original=copy.deepcopy(doc)
+        joined=readiness.join_interactions(qs,progress,[selected])
+        self.assertEqual(joined[key],{alpha})
+        self.assertEqual(readiness.interaction_conflict_holds(doc,joined,qs,progress),{alpha:1,beta:1})
+        self.assertEqual(joined[key],{alpha})  # accepted effects keep their selected ownership
+        self.assertEqual(doc,original)  # source graphs retain exact identities/ownership
+        doc['entries'][0]['status']='mapped'
+        self.assertEqual(readiness.interaction_conflict_holds(doc,joined,qs,progress),{})
+
     def test_npc_presence_keeps_explicit_coverage_hold(self):
         check = {'quest': 'q', 'npc_source': 'npc/example.lua', 'coverage_gap': 'item effects pending'}
         doc = {'source_checks': {'npc_only_quests': [check]}}

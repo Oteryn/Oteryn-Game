@@ -2,6 +2,7 @@
 import json
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import ots_interactions as converter
@@ -53,7 +54,7 @@ class ConverterEnrichmentTests(unittest.TestCase):
                 self.assertEqual(child['status'], 'blocked')
         s = self.script('local config = { {x=1,y=2,z=7} }')
         self.assertIsNone(s.position('config[index]'))
-        self.assertIsNone(s.position('Position(1 + 2, 3, 7)'))
+        self.assertEqual(s.position('Position(1 + 2, 3, 7)'), (3, 3, 7))
 
     def test_unsupported_table_does_not_erase_sibling(self):
         s = self.script('local broken = { otherCall() }\nlocal good = { stage = 3, storage = Storage.Test.Stage }')
@@ -69,7 +70,7 @@ class ConverterEnrichmentTests(unittest.TestCase):
         self.assertIsNone(s.item_id('"duplicate"'))
         self.assertIsNone(s.item_id('"range"'))
         self.assertIsNone(s.item_id('"missing"'))
-        self.assertIsNone(s.item_id('300 + 1'))
+        self.assertEqual(s.item_id('300 + 1'), 301)
         self.assertEqual(s.item_id('0x12c'), 300)
 
     def test_boolean_precedence_parentheses_and_negation(self):
@@ -147,6 +148,242 @@ class ConverterEnrichmentTests(unittest.TestCase):
                             'for _,p in ' + iterate + '(config) do p.x=9 end',
                             'player:teleportTo(config.pos)')
             self.assertEqual(list(converter.walk(s.interactions()[0]['rules']))[0]['status'], 'blocked')
+
+    def test_branch_local_literals_are_only_visible_inside_their_branch(self):
+        s = self.script('', 'if player:getLevel() >= 1 then\nlocal destination = Position(1,2,7)\n'
+                        'player:teleportTo(destination)\nelse\nplayer:teleportTo(destination)\nend\n'
+                        'player:teleportTo(destination)')
+        children = list(converter.walk(s.interactions()[0]['rules']))
+        self.assertEqual(children[0]['target']['kind'], 'anchor')
+        self.assertEqual([c.get('status') for c in children[1:]], ['blocked', 'blocked'])
+
+    def test_nested_branch_can_read_parent_local_but_not_sibling(self):
+        s = self.script('', 'if player:getLevel() >= 1 then\nlocal COUNT=2\n'
+                        'if item.itemid == 100 then\nplayer:addItem(300,COUNT)\nend\n'
+                        'else\nplayer:addItem(300,COUNT)\nend')
+        children = list(converter.walk(s.interactions()[0]['rules']))
+        self.assertEqual(children[0]['count'], 2)
+        self.assertIn('value_source_line', children[1])
+
+    def test_integer_folding_and_static_index_are_bounded(self):
+        s = self.script('local COUNT=2 * (3 + 1)\nlocal INDEX=2\nlocal config={{x=1,y=2,z=7},{x=3,y=4,z=7}}')
+        self.assertEqual(s.literal('COUNT'), 8)
+        self.assertEqual(s.position('config[INDEX]'), (3,4,7))
+        self.assertEqual(s.literal('-2 * (3-1)'), -4)
+        self.assertEqual(s.literal('3-1'),2)
+        for expr in ['1/2','1.5*2','math.random(2)+1','runtime+2','2**100',
+                     '9007199254740991*2', '(' * 40+'1+2'+')'*40,
+                     '1+'*200+'1', '1+1#not_lua', '-'*40+'1']:
+            with self.subTest(expr=expr):
+                self.assertIsNone(s.literal(expr))
+        self.assertIsNone(s.position('Position(65535+1,2,7)'))
+        self.assertIsNone(s.position('Position(1,2,15+1)'))
+        self.assertIsNone(s.position('Position(fromPosition.x + 1,2,7)'))
+
+    def test_literal_membership_uses_existing_predicates_and_negation(self):
+        s = self.script()
+        condition = s.condition('table.contains({300,301}, item.itemid)', 999)
+        self.assertEqual(len(condition['any']), 2)
+        condition = s.condition('not table.contains({300,301}, item:getId())', 999)
+        self.assertTrue(all(c['negate'] for c in condition['all']))
+        self.assertIn('unresolved', s.condition('table.contains({300,runtime}, item.itemid)', 999))
+        self.assertIn('unresolved', s.condition('table.contains({300,301}, player:getId())', 999))
+        self.assertIn('unresolved', s.condition('table.contains({}, item.itemid)', 999))
+
+    def test_getplayer_and_storage_snapshot_aliases_cannot_leak(self):
+        s = self.script('', 'if item.itemid == 100 then\nlocal stage=player:getStorageValue(Storage.Test.Stage)\n'
+                        'if stage == 1 then\nplayer:addItem(300,1)\nend\n'
+                        'else\nif stage == 1 then\nplayer:addItem(300,1)\nend\nend')
+        result=s.interactions()[0]
+        conditions=list(converter.conditions(result['rules']))
+        self.assertTrue(any('quest_stage' in c for c in conditions))
+        self.assertTrue(any('unresolved' in c for c in conditions))
+        self.assertIn('unresolved', s.condition('later == 1', 1))
+
+    def test_storage_snapshot_is_not_a_live_read_after_mutation(self):
+        s=self.script('', 'local stage=player:getStorageValue(Storage.Test.Stage)\n'
+                      'player:setStorageValue(Storage.Test.Stage,2)\nif stage == 1 then\nplayer:addItem(300,1)\nend')
+        conditions=list(converter.conditions(s.interactions()[0]['rules']))
+        self.assertIn('unresolved',conditions[0])
+
+    def test_callback_player_alias_is_local_and_declared_before_use(self):
+        text=('local move=MoveEvent()\nfunction move.onStepIn(creature,item,position,fromPosition)\n'
+              'if player then\nend\nlocal player=creature:getPlayer()\n'
+              'if player then\nend\nend\n'
+              'local other=MoveEvent()\nfunction other.onStepIn(creature,item,position,fromPosition)\n'
+              'local player=creature:getPlayer()\nif player then\nend\nend\n')
+        (self.repo/'fixture.lua').write_text(text)
+        script=converter.Script('canary',self.repo,'fixture.lua',{},'fixture')
+        results=script.interactions()
+        first=list(converter.conditions(results[0]['rules']))
+        second=list(converter.conditions(results[1]['rules']))
+        self.assertIn('unresolved',first[0])
+        self.assertIn('actor_is_player',first[1])
+        self.assertIn('actor_is_player',second[0])
+
+    def test_copying_engine_calls_admit_position_without_alias_escape(self):
+        s = self.script('local config={position=Position(10,20,7)}',
+                        'local boss=Game.createMonster("fixture boss",config.position)\n'
+                        'Game.createItem(300,1,config.position)\nplayer:teleportTo(config.position)')
+        children=list(converter.walk(s.interactions()[0]['rules']))
+        self.assertEqual(children[0]['owner'],'Ability')
+        self.assertIn('anchor',children[0])
+        self.assertEqual(children[1]['operation'],'CREATE')
+        self.assertIn('anchor',children[1])
+        self.assertEqual(children[2]['target']['kind'],'anchor')
+        for call in ['mutator.createMonster(config.position)', 'createMonster(config.position)',
+                     'Game.customCreate(config.position)']:
+            s = self.script('local config={position=Position(10,20,7)}',call+'\nplayer:teleportTo(config.position)')
+            self.assertEqual(list(converter.walk(s.interactions()[0]['rules']))[-1]['status'],'blocked')
+
+    def test_engine_copy_call_whitelist_rejects_shadowed_game(self):
+        for declaration in ['local Game=custom', 'Game.createMonster=custom',
+                            'function helper(Game)\nend', 'local alternate=Game\nalternate.createMonster=custom', 'mutate(Game)']:
+            s=self.script('local config={position=Position(1,2,7)}\n'+declaration,
+                          'Game.createMonster("fixture boss",config.position)\nplayer:teleportTo(config.position)')
+            self.assertEqual(list(converter.walk(s.interactions()[0]['rules']))[-1]['status'],'blocked')
+
+    def test_summon_does_not_find_literal_inside_computed_argument(self):
+        s=self.script('', 'Game.createMonster("fixture boss", compute(Position(1,2,7)))')
+        child=list(converter.walk(s.interactions()[0]['rules']))[0]
+        self.assertIn('anchor_source_line',child)
+        self.assertNotIn('anchor',child)
+        self.assertEqual(s.interactions()[0]['anchors'],[])
+
+    def test_source_complete_storage_rhs_does_not_clip_nested_expression(self):
+        s=self.script('local STAGE=1+2', 'player:setStorageValue(Storage.Test.Stage, STAGE)\n'
+                      'player:setStorageValue(Storage.Test.Stage, compute(1))')
+        children=list(converter.walk(s.interactions()[0]['rules']))
+        self.assertEqual(children[0]['to'],3)
+        self.assertIn('value_source_line',children[1])
+
+    def test_h1_all_effect_receivers_require_scope_and_declaration_proof(self):
+        calls=['p:addItem(300,1)', 'local reward=p:addItem(300,1)', 'p:removeItem(300,1)',
+               'p:addAchievement("fixture")', 'p:addOutfitAddon(100,1)', 'p:addOutfit(100)',
+               'p:addMount(1)', 'p:addExperience(10)', 'p:setStorageValue(Storage.Test.Stage,1)',
+               'p:remove()', 'p:teleportTo(Position(1,2,7))']
+        for call in calls:
+            with self.subTest(call=call):
+                script=self.script('', 'if item.itemid==100 then\nlocal p=player:getPlayer()\nelse\n'+call+'\nend')
+                result=script.interactions()[0]
+                self.assertEqual(list(converter.walk(result['rules'])),[])
+                self.assertTrue(result['unresolved'])
+                script=self.script('', call+'\nlocal p=player:getPlayer()')
+                self.assertEqual(list(converter.walk(script.interactions()[0]['rules'])),[])
+                self.assertTrue(script.interactions()[0]['unresolved'])
+        script=self.script('', 'local p=player:getPlayer()\np:addItem(300,1)\np:removeItem(300,1)')
+        self.assertEqual([c['request'] for c in converter.walk(script.interactions()[0]['rules'])], ['hand_out','consume'])
+
+    def movement_script(self, rhs):
+        text=('local move=MoveEvent()\nfunction move.onStepIn(creature,item,position,fromPosition)\n'
+              'local p='+rhs+'\nif p:getLevel()>=1 then\np:addItem(300,1)\nend\nend\n')
+        (self.repo/'fixture.lua').write_text(text)
+        return converter.Script('canary',self.repo,'fixture.lua',{},'fixture')
+
+    def test_h2_getplayer_rhs_is_complete_and_comments_are_lexical(self):
+        for rhs in ['creature:getPlayer() or otherPlayer', 'creature:getPlayer().owner']:
+            result=self.movement_script(rhs).interactions()[0]
+            self.assertIn('unresolved',list(converter.conditions(result['rules']))[0])
+            self.assertEqual(list(converter.walk(result['rules'])),[])
+            self.assertTrue(result['unresolved'])
+        result=self.movement_script('creature:getPlayer() -- fixture comment').interactions()[0]
+        self.assertIn('actor_level',list(converter.conditions(result['rules']))[0])
+        self.assertEqual(list(converter.walk(result['rules']))[0]['request'],'hand_out')
+
+    def test_h3_table_membership_requires_pristine_library_binding(self):
+        declarations=['local table={contains=function() return false end}',
+                      'table.contains=function() return false end',
+                      'table.contains, other=custom,nil',
+                      'local other=table\nother.contains=custom', 'mutate(table)',
+                      'table["contains"]=custom', 'function helper(table)\nend']
+        for declaration in declarations:
+            with self.subTest(declaration=declaration):
+                script=self.script(declaration,'if table.contains({100},item.itemid) then\nplayer:addItem(300,1)\nend')
+                self.assertIn('unresolved',list(converter.conditions(script.interactions()[0]['rules']))[0])
+        script=self.script('', 'if table.contains({100},item.itemid) then\nplayer:addItem(300,1)\nend')
+        self.assertIn('object',list(converter.conditions(script.interactions()[0]['rules']))[0])
+
+    def test_h4_tuple_assignment_disables_engine_copy_and_effect_assumptions(self):
+        mutations=['Game.createMonster, extra=custom,nil', 'extra, Game.createMonster=nil,custom',
+                   'Game["createMonster"], extra=custom,nil',
+                   'Game.createItem, extra=custom,nil', 'local other=Game\nother.createMonster=custom']
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                script=self.script('local pos=Position(1,2,7)\n'+mutation,
+                                   'Game.createMonster("fixture boss",pos)\nGame.createItem(300,1,pos)\nplayer:teleportTo(pos)')
+                result=script.interactions()[0]
+                children=list(converter.walk(result['rules']))
+                self.assertFalse(any(c['owner']=='Ability' or c.get('operation')=='CREATE' for c in children))
+                self.assertEqual(children[-1]['status'],'blocked')
+                self.assertEqual(len(result['unresolved']),2)
+
+    def test_h5_call_spans_skip_preceding_short_and_long_quoted_lookalikes(self):
+        for quoted in ["'Game.createMonster(\"ghost\",Position(1,2,7))'",
+                       '[=[Game.createMonster("ghost",Position(1,2,7))]=]']:
+            script=self.script('', 'local monster=select(2,'+quoted+',Game.createMonster("real",Position(3,4,7)))')
+            result=script.interactions()[0]
+            child=list(converter.walk(result['rules']))[0]
+            self.assertEqual(child['creature']['key'],'canary:creature/real')
+            self.assertEqual(result['anchors'][0]['source_position'],{'x':3,'y':4,'z':7})
+        script=self.script('', "local wall=select(2,'Game.createItem(301,1,Position(1,2,7))',Game.createItem(300,1,Position(3,4,7)))")
+        result=script.interactions()[0]
+        self.assertEqual(list(converter.walk(result['rules']))[0]['def']['key'],'canary:item/300')
+        self.assertEqual(result['anchors'][0]['source_position'],{'x':3,'y':4,'z':7})
+        script=self.script('', "local reward=select(2,'player:addItem(301,1)',player:addItem(300,1))")
+        self.assertEqual(list(converter.walk(script.interactions()[0]['rules']))[0]['item']['key'],'canary:item/300')
+
+    def test_h5_multiline_literal_calls_and_headers_are_never_callbacks_or_effects(self):
+        script=self.script('', 'local text=[=[\nfunction fake.onUse(player,item)\n'
+                           'Game.createMonster("ghost",Position(1,2,7))\nend\n]=]\n'
+                           'Game.createMonster("real",Position(3,4,7))')
+        results=script.interactions()
+        self.assertEqual(len(results),1)
+        children=list(converter.walk(results[0]['rules']))
+        self.assertEqual([c['creature']['key'] for c in children if c['owner']=='Ability'],['canary:creature/real'])
+        self.assertEqual(results[0]['anchors'][0]['source_position'],{'x':3,'y':4,'z':7})
+
+    def test_h6_createitem_parameters_stay_in_documented_slots(self):
+        for call in ['Game.createItem(300,POS)', 'Game.createItem(300,1,2,POS)',
+                     'Game.createItem(300,1,2)', 'Game.createItem(300,POS,1)',
+                     'Game.createItem(300,1,POS,1)', 'local x=Game.createItem(300,POS)']:
+            script=self.script('local POS=Position(1,2,7)',call)
+            children=list(converter.walk(script.interactions()[0]['rules']))
+            self.assertEqual(children[0]['status'],'blocked')
+            self.assertNotIn('anchor',children[0])
+        script=self.script('local POS=Position(1,2,7)','Game.createItem(300,1,POS)')
+        self.assertIn('anchor',list(converter.walk(script.interactions()[0]['rules']))[0])
+
+    def test_h7_condition_override_does_not_resolve_reward_conflict(self):
+        repos={}
+        for server,ident in [('canary',300),('crystalserver',301)]:
+            repo=self.repo/server
+            path=repo/converter.SOURCES[server]['datapack']/'scripts/quests/fixture.lua'
+            path.parent.mkdir(parents=True)
+            path.write_text('local action=Action()\nfunction action.onUse(player,item,fromPosition,target)\n'
+                            'if unknownPredicate(player) then\nplayer:addItem('+str(ident)+',1)\nend\nend\naction:id(100)\n')
+            repos[server]=repo
+        questlog=self.repo/'questlog';questlog.mkdir()
+        (questlog/'quests.json').write_text('{"quests":[]}')
+        (questlog/'progress.json').write_text('{"progress":[]}')
+        key='canary:interaction/fixture'
+        overrides={key:{'3':{'condition':{'actor_is_player':True,'negate':False},'basis':'synthetic source proof'}}}
+        with mock.patch.object(converter,'OVERRIDES',overrides), \
+             mock.patch.object(converter,'CONFLICT_DECISIONS',{'interactions':{}}), \
+             mock.patch.object(converter,'unused_decisions'), \
+             mock.patch.object(converter,'git_blob',return_value='a'*40):
+            result=converter.build(repos,'scripts/quests',questlog)
+        entry=result['manifest.json']['entries'][0]
+        self.assertEqual(entry['status'],'conflict')
+        self.assertEqual(len(entry['conflict_alternatives']),2)
+        ids=[list(converter.walk(v['interaction']['rules']))[0]['item']['key'] for v in entry['conflict_alternatives']]
+        self.assertEqual(ids,['canary:item/300','crystalserver:item/301'])
+
+    def test_h9_ast_folding_rejects_python_only_numerals(self):
+        script=self.script('local A_1000=3')
+        for expr in ['0b11+1','0o10+1','1_000+1','0B11-1','0O10*2','0xF_F+1']:
+            self.assertIsNone(script.literal(expr))
+        self.assertEqual(script.literal('0x10+2'),18)
+        self.assertEqual(script.literal('A_1000+1'),4)
 
     def test_enriched_output_matches_existing_schema(self):
         import jsonschema

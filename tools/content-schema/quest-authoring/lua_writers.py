@@ -11,6 +11,7 @@ For every `setStorageValue(<storage>, <value>)` the reader records:
 The guard is a line-level heuristic, not an evaluation: a missing or nested condition leaves `from` unknown.
 """
 import re
+from functools import lru_cache
 
 import lua_tables
 
@@ -44,9 +45,83 @@ OPENER = re.compile(r'\b(if|for|while|function|repeat)\b')
 CLOSER = re.compile(r'\b(end|until)\b')
 
 
+def mask_code(text, literals=True, long_literals=False):
+    """Preserve lexical offsets while blanking comments and optionally Lua strings."""
+    out, pos = [], 0
+    while pos < len(text):
+        match = lua_tables.TOKEN.match(text, pos)
+        if not match:
+            out.append(text[pos])
+            pos += 1
+            continue
+        token = match.group(0)
+        masked = (match.group('comment') is not None or match.group('lcomment') is not None
+                  or literals and match.group('string') is not None
+                  or (literals or long_literals) and match.group('lstring') is not None)
+        out.append(''.join('\n' if c == '\n' else ' ' for c in token) if masked else token)
+        pos = match.end()
+    return ''.join(out)
+
+
 def strip_code(line):
-    line = re.sub(r'--.*$', '', line)
-    return re.sub(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', '""', line)
+    return mask_code(line)
+
+
+def builtin_binding_is_pristine(lines, root):
+    return _builtin_binding_is_pristine(tuple(lines), root)
+
+
+@lru_cache(maxsize=4096)
+def _builtin_binding_is_pristine(lines, root):
+    """Global library assumptions require no shadow, mutation or root-table escape.
+    Detect complete assignment LHS lists, including fields before a comma."""
+    try:
+        tokens = [t for t in lua_tables.tokenize('\n'.join(lines))
+                  if t[0] not in ('comment', 'lcomment')]
+    except lua_tables.LuaError:
+        return False
+
+    def after_path(index):
+        index += 1
+        while index < len(tokens):
+            if tokens[index][1] == '.' and index + 1 < len(tokens) and tokens[index + 1][0] == 'name':
+                index += 2
+            elif tokens[index][1] == '[':
+                depth = 1
+                index += 1
+                while index < len(tokens) and depth:
+                    depth += (tokens[index][1] == '[') - (tokens[index][1] == ']')
+                    index += 1
+            else:
+                break
+        return index
+
+    calls = []
+    for index, (kind, token, _) in enumerate(tokens):
+        if token == '(':
+            k = index - 1
+            while k >= 2 and tokens[k - 1][1] in ('.', ':'):
+                k -= 2
+            calls.append(k >= 0 and (tokens[k][1] == 'function' or k > 0 and tokens[k - 1][1] == 'function'))
+        elif token == ')' and calls:
+            calls.pop()
+        if kind != 'name' or token != root or index and tokens[index - 1][1] in ('.', ':'):
+            continue
+        if calls and calls[-1] or index and tokens[index - 1][1] == 'function':
+            return False  # parameter or method/function declaration
+        following = tokens[index + 1][1] if index + 1 < len(tokens) else None
+        if following not in ('.', '[' , ':'):
+            return False  # declaration, root assignment, alias/argument/return escape
+        end = after_path(index)
+        while end < len(tokens) and tokens[end][1] == ',':
+            end += 1
+            if end >= len(tokens) or tokens[end][0] != 'name':
+                break
+            end = after_path(end)
+        if (end < len(tokens) and tokens[end][1] == '='
+                and not (end + 1 < len(tokens) and tokens[end + 1][1] == '=')):
+            return False
+    return True
 
 
 def guard_at_write(lines, guard_line, write_line, op, value):
@@ -156,7 +231,7 @@ def scalar_leaf_paths(value, root):
     return out
 
 
-def static_name_is_immutable(lines, name, references=False, scalar_paths=()):
+def static_name_is_immutable(lines, name, references=False, scalar_paths=(), copy_calls=()):
     """Reject writes/shadows anywhere, including inline else. For tables/Positions also
     reject alias escape, returned references and arguments to unproven functions.
     This is intentionally stricter than a Lua scope/effect analysis."""
@@ -165,12 +240,18 @@ def static_name_is_immutable(lines, name, references=False, scalar_paths=()):
                   if t[0] not in ('comment', 'lcomment', 'string', 'lstring')]
     except lua_tables.LuaError:
         return False
+    if copy_calls and not builtin_binding_is_pristine(lines, 'Game'):
+        copy_calls = ()
     writes, calls, definitions = 0, [], []
     reads = {'getStorageValue', 'setStorageValue', 'getItemCount', 'teleportTo',
              'Position', 'sendMagicEffect', 'addItem', 'removeItem'}
     for i, (kind, value, number) in enumerate(tokens):
         if value == '(':
             caller = tokens[i - 1][1] if i and tokens[i - 1][0] == 'name' else None
+            if i >= 3 and tokens[i - 2][1] == '.' and tokens[i - 3][1] == 'Game':
+                qualified = 'Game.' + str(caller)
+                if qualified in copy_calls:
+                    caller = qualified
             calls.append(caller)
             k = i - 2
             while k >= 1 and tokens[k][1] in ('.', ':') and tokens[k - 1][0] == 'name':
@@ -207,14 +288,15 @@ def static_name_is_immutable(lines, name, references=False, scalar_paths=()):
         path = ''.join(t[1] for t in tokens[i:j])
         if path in scalar_paths:
             continue  # primitive values cannot carry an alias to their parent table
-        if i and tokens[i - 1][1] in ('=', 'return'):
+        copied = bool(calls and calls[-1] in copy_calls)
+        if not copied and i and tokens[i - 1][1] in ('=', 'return'):
             return False  # multiline alias/return escape
         # A reference used on an assignment RHS may alias a table or a subtable;
         # do not rely on the alias's later mutation being visible through the root.
-        if any(v == '=' and (n == 0 or before[n - 1] not in ('=', '<', '>', '~'))
+        if not copied and any(v == '=' and (n == 0 or before[n - 1] not in ('=', '<', '>', '~'))
                and (n + 1 == len(before) or before[n + 1] != '=') for n, v in enumerate(before)):
             return False
-        if 'return' in before or (calls and calls[-1] not in reads):
+        if 'return' in before or (calls and calls[-1] not in reads and not copied):
             return False
         if following == ':' and (j + 1 == len(tokens) or tokens[j + 1][1] != 'sendMagicEffect'):
             return False

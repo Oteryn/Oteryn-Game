@@ -544,12 +544,12 @@ converter_case(
                  and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
 converter_case(
     'addEvent(Position.revertItem, ...) with a literal position matching the prior anchor attaches',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, 5000, Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 5000, c))
 converter_case(
     'addEvent(Position.revertItem, ...) with a different literal position does not attach',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, 5000, Position(1, 1, 7), 2772)'],
     lambda c, a: (len([x for x in c if x.get('operation') == 'CREATE' and 'revert_after_ms' in x]) == 0
                  and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
@@ -576,7 +576,7 @@ converter_case(
     lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and 'anchor' not in c[0], c))
 converter_case(
     'a literal position on createItem becomes a bound anchor',
-    ['Game.createItem(2793, Position(100, 200, 7))'],
+    ['Game.createItem(2793, 1, Position(100, 200, 7))'],
     lambda c, a: (len(c) == 1 and c[0] == {'owner': 'WorldObject', 'operation': 'CREATE', 'anchor': 'p1',
                                            'def': {'family': 'Item', 'key': 'canary:item/2793',
                                                    'revision': oi.REVISION}}
@@ -604,7 +604,7 @@ converter_case(
                                                         'revision': oi.REVISION}, 'count': 1}], c))
 converter_case(
     'createItem with a literal position is still a world CREATE even though it is assigned to a local',
-    ['local wall = Game.createItem(2793, Position(1, 2, 7))'],
+    ['local wall = Game.createItem(2793, 1, Position(1, 2, 7))'],
     lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1'
                  and '_identity' not in c[0], c))
 
@@ -653,7 +653,7 @@ converter_case(
 # Position.revertItem(...)) may merge without one.
 converter_case(
     'a scheduled revert with a non-literal delay stays blocked with its own explicit reason, not silent',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, someDelay, Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and 'revert_after_ms' not in c[0]
                  and c[1].get('status') == 'blocked' and c[1]['reason'] == BLOCKED_SCHEDULED_REVERT_DELAY, c))
@@ -667,11 +667,11 @@ converter_case(
 # would otherwise see it as a method call with the useless receiver "Position" and never look inside).
 converter_case(
     'the exact Codex example: Position.revertItem(Position(x,y,z), ...) associates by its own literal position',
-    ['Game.createItem(2793, Position(100, 200, 7))', 'Position.revertItem(Position(100, 200, 7), 2772)'],
+    ['Game.createItem(2793, 1, Position(100, 200, 7))', 'Position.revertItem(Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('anchor') == 'p1', c))
 converter_case(
     'Position.revertItem(Position(x,y,z), ...) at a different position does not associate',
-    ['Game.createItem(2793, Position(100, 200, 7))', 'Position.revertItem(Position(1, 1, 7), 2772)'],
+    ['Game.createItem(2793, 1, Position(100, 200, 7))', 'Position.revertItem(Position(1, 1, 7), 2772)'],
     lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and c[1].get('status') == 'blocked', c))
 
 # Round 5, Finding 1 (P2, comment 4119390219): a second addEvent(Position.revertItem, ...) that provably
@@ -679,14 +679,14 @@ converter_case(
 # never overwrites it -- it stays its own blocked WorldObject child instead.
 converter_case(
     'the exact Codex example: a second scheduled revert on the same operation never overwrites the first',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, 5000, Position(100, 200, 7), 2772)',
      'addEvent(Position.revertItem, 10000, Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 5000
                  and c[1].get('status') == 'blocked' and c[1]['reason'] == BLOCKED_DUPLICATE_SCHEDULED_REVERT, c))
 converter_case(
     'negative control: two single scheduled reverts on two different operations both attach, no duplicate',
-    ['Game.createItem(2793, Position(100, 200, 7))', 'Game.createItem(2793, Position(1, 1, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))', 'Game.createItem(2793, 1, Position(1, 1, 7))',
      'addEvent(Position.revertItem, 5000, Position(100, 200, 7), 2772)',
      'addEvent(Position.revertItem, 7000, Position(1, 1, 7), 2772)'],
     lambda c, a: (len(c) == 2 and {x.get('revert_after_ms') for x in c} == {5000, 7000}, c))
@@ -696,13 +696,13 @@ converter_case(
 # >= 1 -- so it stays blocked with the same BLOCKED_SCHEDULED_REVERT_DELAY reason, never revert_after_ms: 0.
 converter_case(
     'the exact Codex example: addEvent(Position.revertItem, 0, ...) stays blocked, never revert_after_ms: 0',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, 0, Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and 'revert_after_ms' not in c[0]
                  and c[1].get('status') == 'blocked' and c[1]['reason'] == BLOCKED_SCHEDULED_REVERT_DELAY, c))
 converter_case(
     'negative control: the minimum valid literal delay (1) still attaches',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, 1, Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 1, c))
 
@@ -742,7 +742,7 @@ converter_case(
                                                         'revision': oi.REVISION}, 'count': 1}], c))
 converter_case(
     'negative control: the same constructor form with a literal position is still a world CREATE',
-    ['local wall = Game.createItem(2793, Position(1, 2, 7))'],
+    ['local wall = Game.createItem(2793, 1, Position(1, 2, 7))'],
     lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1', c))
 
 # Round 6, Finding 4 (P2, comment 4120202022): a REMOVE receiver that is itself a fully-delimited
@@ -915,12 +915,12 @@ converter_case(
                  and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
 converter_case(
     'addEvent(Position.revertItem, ...) with a literal position matching the prior anchor attaches',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, 5000, Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 5000, c))
 converter_case(
     'addEvent(Position.revertItem, ...) with a different literal position does not attach',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, 5000, Position(1, 1, 7), 2772)'],
     lambda c, a: (len([x for x in c if x.get('operation') == 'CREATE' and 'revert_after_ms' in x]) == 0
                  and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
@@ -947,7 +947,7 @@ converter_case(
     lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and 'anchor' not in c[0], c))
 converter_case(
     'a literal position on createItem becomes a bound anchor',
-    ['Game.createItem(2793, Position(100, 200, 7))'],
+    ['Game.createItem(2793, 1, Position(100, 200, 7))'],
     lambda c, a: (len(c) == 1 and c[0] == {'owner': 'WorldObject', 'operation': 'CREATE', 'anchor': 'p1',
                                            'def': {'family': 'Item', 'key': 'canary:item/2793',
                                                    'revision': oi.REVISION}}
@@ -975,7 +975,7 @@ converter_case(
                                                         'revision': oi.REVISION}, 'count': 1}], c))
 converter_case(
     'createItem with a literal position is still a world CREATE even though it is assigned to a local',
-    ['local wall = Game.createItem(2793, Position(1, 2, 7))'],
+    ['local wall = Game.createItem(2793, 1, Position(1, 2, 7))'],
     lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1'
                  and '_identity' not in c[0], c))
 
@@ -1024,7 +1024,7 @@ converter_case(
 # Position.revertItem(...)) may merge without one.
 converter_case(
     'a scheduled revert with a non-literal delay stays blocked with its own explicit reason, not silent',
-    ['Game.createItem(2793, Position(100, 200, 7))',
+    ['Game.createItem(2793, 1, Position(100, 200, 7))',
      'addEvent(Position.revertItem, someDelay, Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and 'revert_after_ms' not in c[0]
                  and c[1].get('status') == 'blocked' and c[1]['reason'] == BLOCKED_SCHEDULED_REVERT_DELAY, c))
@@ -1038,11 +1038,11 @@ converter_case(
 # would otherwise see it as a method call with the useless receiver "Position" and never look inside).
 converter_case(
     'the exact Codex example: Position.revertItem(Position(x,y,z), ...) associates by its own literal position',
-    ['Game.createItem(2793, Position(100, 200, 7))', 'Position.revertItem(Position(100, 200, 7), 2772)'],
+    ['Game.createItem(2793, 1, Position(100, 200, 7))', 'Position.revertItem(Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('anchor') == 'p1', c))
 converter_case(
     'Position.revertItem(Position(x,y,z), ...) at a different position does not associate',
-    ['Game.createItem(2793, Position(100, 200, 7))', 'Position.revertItem(Position(1, 1, 7), 2772)'],
+    ['Game.createItem(2793, 1, Position(100, 200, 7))', 'Position.revertItem(Position(1, 1, 7), 2772)'],
     lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and c[1].get('status') == 'blocked', c))
 
 failed = [r for r in results if not r['passed']]

@@ -27,6 +27,7 @@ the equivalent getter method). Any other line or condition stays unresolved with
 positions become named anchors with the coordinates kept as evidence. Every output is OTS_HYPOTHESIS_ONLY.
 """
 import argparse
+import ast
 import glob
 import hashlib
 import json
@@ -39,7 +40,7 @@ from pathlib import Path
 import lua_blocks
 import lua_tables
 from lua_writers import (REGISTRATION, argument, expand_aliases, storage_aliases,
-                         scalar_leaf_paths, static_name_is_immutable, strip_code, unconditional_prefix)
+                         builtin_binding_is_pristine, mask_code, scalar_leaf_paths, static_name_is_immutable, strip_code, unconditional_prefix)
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
 from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_INCOMPLETE_CALL, BLOCKED_SCHEDULED_REVERT_DELAY
@@ -123,6 +124,20 @@ REVERT_METHOD = re.compile(r'(\w+)[:.](revertItem|decay)\(')
 ADD_STOP_EVENT = re.compile(r'\b(?:add|stop)Event\(')
 
 
+def lexical_finditer(pattern, text):
+    """Select a raw match only when its call head lies outside lexical literals."""
+    compiled = re.compile(pattern) if isinstance(pattern, str) else pattern
+    masked = mask_code(text)
+    for match in compiled.finditer(text):
+        first = next((i for i in range(match.start(), match.end()) if not text[i].isspace()), None)
+        if first is not None and masked[first] == text[first] and not masked[first].isspace():
+            yield match
+
+
+def lexical_search(pattern, text):
+    return next(lexical_finditer(pattern, text), None)
+
+
 def parse_revert(code, raw):
     """Whether `raw` is a revert call, and what it provably reverts: (is_revert, receiver, literal
     position groups, literal delay in ms, scheduled, incomplete). Each form is gated on a match in
@@ -138,7 +153,7 @@ def parse_revert(code, raw):
     one the way an inherently undelayed `:decay()`/`:revertItem(...)` call is allowed to. `incomplete`
     is true only when a form that parses an argument list has one that never closes on this line (a
     multi-line call): its own fields are never read from that partial text."""
-    if POSITION_REVERT_ITEM.search(code) and (m := POSITION_REVERT_ITEM.search(raw)):
+    if POSITION_REVERT_ITEM.search(code) and (m := lexical_search(POSITION_REVERT_ITEM, raw)):
         args_text = call_complete(raw, m.end())
         if args_text is None:
             return True, None, None, None, False, True
@@ -146,9 +161,9 @@ def parse_revert(code, raw):
         target = args[0] if args else None
         pos = POSITION.fullmatch(target) if target else None
         return True, None, (pos.groups() if pos else None), None, False, False
-    if REVERT_METHOD.search(code) and (m := REVERT_METHOD.search(raw)):
+    if REVERT_METHOD.search(code) and (m := lexical_search(REVERT_METHOD, raw)):
         return True, m.group(1), None, None, False, False
-    if ADD_STOP_EVENT.search(code) and (m := ADD_STOP_EVENT.search(raw)):
+    if ADD_STOP_EVENT.search(code) and (m := lexical_search(ADD_STOP_EVENT, raw)):
         args_text = call_complete(raw, m.end())
         if args_text is None:
             return True, None, None, None, True, True
@@ -273,6 +288,9 @@ class Script:
         self.literal_aliases = {}
         self.namespace = 'canary' if server == 'canary' else 'crystalserver'
         self.lines = (Path(repo) / path).read_text(errors='replace').split('\n')
+        self.commentless_lines = mask_code('\n'.join(self.lines), literals=False, long_literals=True).split('\n')
+        self.code_lines = mask_code('\n'.join(self.lines)).split('\n')
+        self.builtin_proofs = {root: builtin_binding_is_pristine(self.lines, root) for root in ('Game', 'table')}
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
         self.roles, self.players, self.declared, self.containers = {}, set(), {}, {}
@@ -308,19 +326,38 @@ class Script:
         # No shadowing or mutation: only one declaration in the file, before this use,
         # either before all functions or in this callback. Branch-selected values stay unknown.
         prefix = unconditional_prefix(self.lines)
-        body_nodes = lua_blocks.parse(self.lines, lua_blocks.function_body(self.lines, number))
-        body_numbers = {node[1] for node in body_nodes if node[0] == 'stmt'}
+        body_nodes = lua_blocks.parse(self.code_lines, lua_blocks.function_body(self.code_lines, number))
+        # A branch local is visible only in its branch and descendants, never siblings.
+        self.line_scopes = {}
+        def index_scope(nodes, scope=()):
+            for index, node in enumerate(nodes):
+                if node[0] == 'stmt':
+                    self.line_scopes[node[1]] = scope
+                elif node[0] in ('block', 'deferred'):
+                    for n in node[1]:
+                        self.line_scopes[n] = (*scope, ('opaque', index))
+                elif node[0] == 'if':
+                    for branch, (_, n, children) in enumerate(node[1]):
+                        self.line_scopes[n] = scope
+                        index_scope(children, (*scope, (index, branch)))
+                    index_scope(node[2], (*scope, (index, 'else')))
+        index_scope(body_nodes)
+        body_numbers = {n for n, scope in self.line_scopes.items()
+                        if not any(part[0] == 'opaque' for part in scope)}
+        self.alias_scopes = {}
         self.literal_aliases = {}
         self.visible_tables = {}
         for n, line in enumerate(self.lines, 1):
             m = re.fullmatch(r'\s*local\s+(\w+)\s*=\s*(.+?)\s*(?:--.*)?', line)
             if m and (n in prefix or n in body_numbers) and self.immutable(m.group(1)):
+                self.alias_scopes[m.group(1)] = None if n in prefix else self.line_scopes[n]
                 if m.group(2).startswith('{'):
                     self.visible_tables[m.group(1)] = n
                 else:
                     expression = m.group(2)
                     if expression.startswith('Position('):
-                        if not static_name_is_immutable(self.lines, m.group(1), references=True):
+                        if not static_name_is_immutable(self.lines, m.group(1), references=True,
+                                                        copy_calls={'Game.createMonster', 'Game.createItem'}):
                             continue
                     elif CHAIN.fullmatch(expression):
                         value = self.literal(expression, before=n)
@@ -331,17 +368,37 @@ class Script:
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
         self.containers = {}
-        body = [self.raw(n) for n in lua_blocks.function_body(self.lines, number)]
-        declared = [m for text in body if (m := VALUE_ALIAS.match(text))]
+        self.container_scopes = {}
         # an alias counts only when declared once and never assigned again in the callback, so every later
         # read sees the storage value it was declared with
-        self.value_aliases = {m.group(1): m.group(2) for m in declared
-                              if sum(1 for d in declared if d.group(1) == m.group(1)) == 1
-                              and not any(re.match(rf'^(local\s+)?{re.escape(m.group(1))}\s*=(?!=)', text)
-                                          for text in body if not VALUE_ALIAS.match(text))}
-        for line in self.lines[number:]:
-            if actor and (m := re.match(rf'\s*local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', line)):
+        callback_lines = [self.lines[n - 1] for n in lua_blocks.function_body(self.code_lines, number)]
+        self.value_aliases = {}
+        for n in sorted(body_numbers):
+            if (m := VALUE_ALIAS.match(self.raw(n))) and static_name_is_immutable(callback_lines, m.group(1)):
+                self.value_aliases[m.group(1)] = (n, m.group(2), self.line_scopes[n])
+        self.player_aliases = {}
+        for n in sorted(body_numbers):
+            if (actor
+                    and (m := re.fullmatch(rf'local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', self.raw(n)))
+                    and static_name_is_immutable(callback_lines, m.group(1))):
+                self.player_aliases[m.group(1)] = (n, self.line_scopes[n])
                 self.players.add(m.group(1))
+
+    def proven_player(self, name, number):
+        if self.callback == 'onUse' and self.roles.get(name) == 'actor':
+            return True
+        if name in self.player_aliases:
+            declaration, scope = self.player_aliases[name]
+            current = self.line_scopes.get(number, ())
+            return declaration < number and current[:len(scope)] == scope
+        return False
+
+    def proven_container(self, name, number):
+        if name not in self.container_scopes:
+            return False
+        declaration, scope = self.container_scopes[name]
+        current = self.line_scopes.get(number, ())
+        return declaration < number and current[:len(scope)] == scope
 
     @staticmethod
     def xyz(match):
@@ -392,11 +449,59 @@ class Script:
                         parser.next()
                         value = lua_tables.as_python(parser.table())
                         if static_name_is_immutable(self.lines, name, references=True,
-                                                    scalar_paths=scalar_leaf_paths(value, name)):
+                                                    scalar_paths=scalar_leaf_paths(value, name),
+                                                    copy_calls={'Game.createMonster', 'Game.createItem'}):
                             out[name] = value
             except (lua_tables.LuaError, IndexError, TypeError, ValueError):
                 pass
         return out
+
+    def visible(self, name, number):
+        scope = self.alias_scopes.get(name)
+        current = self.line_scopes.get(number, ())
+        return scope is None or current[:len(scope)] == scope
+
+    def arithmetic(self, expr, seen, before):
+        """Only exact integer +,-,* over already proven literals; never execute Lua/Python."""
+        if (len(expr) > 1024 or not re.fullmatch(r'[A-Za-z0-9_.\[\]() +*\-\t]+', expr)
+                or any(depth > 32 for _, _, depth in delimiters(expr))):
+            return None
+        # Lua decimal/hex integer tokens only; reject Python 0b/0o/underscores.
+        try:
+            number_tokens = lua_tables.tokenize(expr)
+        except lua_tables.LuaError:
+            return None
+        for index, (kind, token, _) in enumerate(number_tokens):
+            if kind == 'number':
+                if not re.fullmatch(r'0[xX][0-9a-fA-F]+|[0-9]+', token):
+                    return None
+                if index + 1 < len(number_tokens) and number_tokens[index + 1][0] in ('name', 'number'):
+                    return None
+        try:
+            tree = ast.parse(expr, mode='eval').body
+            if sum(1 for _ in ast.walk(tree)) > 128:
+                return None
+            def value(node, depth=0):
+                if depth > 32:
+                    return None
+                if isinstance(node, ast.Constant) and type(node.value) is int:
+                    return node.value if abs(node.value) <= 2**53 - 1 else None
+                if isinstance(node, (ast.Name, ast.Attribute, ast.Subscript)):
+                    result = self.literal(ast.unparse(node).replace(' ', ''), seen, before)
+                    return result if type(result) is int and abs(result) <= 2**53 - 1 else None
+                if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+                    operand = value(node.operand, depth + 1)
+                    return None if operand is None else operand if isinstance(node.op, ast.UAdd) else -operand
+                if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult)):
+                    left, right = value(node.left, depth + 1), value(node.right, depth + 1)
+                    if left is None or right is None:
+                        return None
+                    result = left + right if isinstance(node.op, ast.Add) else left - right if isinstance(node.op, ast.Sub) else left * right
+                    return result if abs(result) <= 2**53 - 1 else None
+                return None
+            return value(tree)
+        except (SyntaxError, ValueError, RecursionError):
+            return None
 
     def literal(self, expr, seen=(), before=None):
         """Resolve the closed immutable subset; runtime calls, indexes and arithmetic stay unknown."""
@@ -412,16 +517,21 @@ class Script:
             return expr[1:-1]
         if expr in self.literal_aliases and expr not in seen:
             line, value = self.literal_aliases[expr]
-            if line < limit:
+            if line < limit and self.visible(expr, limit):
                 return self.literal(value, (*seen, expr), before=line)
+        if re.search(r'[+*\-]', expr) and expr not in seen:
+            return self.arithmetic(expr, (*seen, expr), limit)
         m = CHAIN.fullmatch(expr)
         if (not m or m.group(1) not in self.tables or m.group(1) not in self.visible_tables
-                or self.visible_tables[m.group(1)] >= limit):
+                or self.visible_tables[m.group(1)] >= limit or not self.visible(m.group(1), limit)):
             return None
         value = self.tables[m.group(1)]
         for field, index, runtime in CHAIN_STEP.findall(m.group(2)):
             if runtime:
-                return None
+                index_value = self.literal(runtime, (*seen, expr), before=limit)
+                if type(index_value) is not int:
+                    return None
+                index = str(index_value)
             if field and isinstance(value, dict):
                 value = value.get(field)
             elif index and isinstance(value, list) and 1 <= int(index) <= len(value):
@@ -447,11 +557,17 @@ class Script:
             return self.xyz(m.groups())
         if expr in self.literal_aliases and expr not in seen:
             line, value = self.literal_aliases[expr]
-            if line < limit:
+            if line < limit and self.visible(expr, limit):
                 return self.position(value, (*seen, expr), before=line)
         if expr.startswith('Position(') and (args := call_complete(expr, len('Position('))) is not None:
-            if expr == 'Position(' + args + ')' and len(split_args(args)) == 1:
-                return self.position(args, seen, before=limit)
+            if expr == 'Position(' + args + ')':
+                arguments = split_args(args)
+                if len(arguments) == 1:
+                    return self.position(args, seen, before=limit)
+                if len(arguments) == 3:
+                    values = tuple(self.literal(a, seen, before=limit) for a in arguments)
+                    if all(type(v) is int and 0 <= v <= maximum for v, maximum in zip(values, (65535, 65535, 15))):
+                        return values
         value = self.literal(expr, before=limit)
         if isinstance(value, dict) and set(value) == {'x', 'y', 'z'} and all(type(v) is int for v in value.values()):
             return (value['x'], value['y'], value['z'])
@@ -479,7 +595,7 @@ class Script:
         return None
 
     def raw(self, number):
-        return expand_aliases(re.sub(r'--.*$', '', self.lines[number - 1]).strip(), self.aliases)
+        return expand_aliases(self.commentless_lines[number - 1].strip(), self.aliases)
 
     def read_only(self, code):
         """A local assignment or table-constructor line whose calls only read state."""
@@ -492,7 +608,12 @@ class Script:
     def condition(self, text, number):
         self.current_line = number
         # never inside a string literal (e.g. the `"switchNum"` key of the very call an alias stands for)
-        for alias, expr in self.value_aliases.items():
+        for alias, (declaration, expr, scope) in self.value_aliases.items():
+            current = self.line_scopes.get(number, ())
+            if declaration >= number or current[:len(scope)] != scope:
+                continue
+            if any('setStorageValue(' in strip_code(line) for line in self.lines[declaration:number - 1]):
+                continue  # a snapshot cannot be rewritten as a live read after a state write
             text = re.sub(rf'(?<![\w.:"\']){re.escape(alias)}(?![\w"\'])', expr, text)
         text = text.strip()
         while text.startswith('(') and call_complete(text, 1) == text[1:-1]:
@@ -517,6 +638,28 @@ class Script:
                     value['negate'] = not value['negate']
                 return value
             return invert(self.condition(text[5:-1], number))
+        # Fresh literal lists or immutable literal tables: express exact membership
+        # through existing closed predicates, without runtime-selected indexes.
+        membership = re.fullmatch(r'(not\s+)?table\.contains\((.*)\)', text)
+        if membership and self.builtin_proofs['table']:
+            args = split_args(membership.group(2))
+            if len(args) == 2:
+                values = self.literal(args[0])
+                if args[0].startswith('{'):
+                    try:
+                        parser = LiteralParser(args[0])
+                        values = lua_tables.as_python(parser.table())
+                        if parser.peek()[0] != 'eof':
+                            values = None
+                    except (lua_tables.LuaError, IndexError):
+                        values = None
+                if isinstance(values, list) and values and all(type(v) is int for v in values):
+                    conditions = [self.condition(f'{args[1]} == {v}', number) for v in values]
+                    if not any('unresolved' in c for c in conditions):
+                        if membership.group(1):
+                            for c in conditions:
+                                c['negate'] = not c['negate']
+                        return conditions[0] if len(conditions) == 1 else {('all' if membership.group(1) else 'any'): conditions}
         # Convert only static comparison operands; do not substitute strings as Lua code.
         if m := re.fullmatch(r'(.+?)\s*(==|~=|<=|>=|<|>)\s*(.+)', text):
             value = self.literal(m.group(3))
@@ -551,13 +694,13 @@ class Script:
             elif (m := re.fullmatch(r'(\w+):(getActionId|getUniqueId|getSubType)\(\)\s*(==|~=)\s*(\d+)', body)) and m.group(1) in self.roles:
                 out.append({'object': {'role': self.roles[m.group(1)], 'field': METHOD_FIELDS[m.group(2)],
                                        'op': m.group(3), 'value': int(m.group(4))}, 'negate': negate})
-            elif body in self.players or ((m := re.fullmatch(r'(\w+):isPlayer\(\)', body))
+            elif self.proven_player(body, number) or ((m := re.fullmatch(r'(\w+):isPlayer\(\)', body))
                                           and self.roles.get(m.group(1)) == 'actor'):
                 out.append({'actor_is_player': True, 'negate': negate})
-            elif (m := re.fullmatch(r'(\w+):getLevel\(\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) and m.group(1) in self.players:
+            elif (m := re.fullmatch(r'(\w+):getLevel\(\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) and self.proven_player(m.group(1), number):
                 out.append({'actor_level': {'op': m.group(2), 'value': int(m.group(3))}, 'negate': negate})
             elif (m := re.fullmatch(r'(\w+):getItemCount\(\s*(\d+)\s*\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) \
-                    and m.group(1) in self.players:
+                    and self.proven_player(m.group(1), number):
                 out.append({'actor_item_count': {'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'),
                                                  'op': m.group(3), 'value': int(m.group(4))}, 'negate': negate})
             else:
@@ -568,33 +711,53 @@ class Script:
 
     def children(self, number, in_loop=False):
         self.current_line = number
-        code, raw = strip_code(self.lines[number - 1]).strip(), self.raw(number)
+        raw = self.raw(number)
+        code = mask_code(raw).strip()
         found = []
-        for m in re.finditer(r'(\w+):setStorageValue\(\s*([\w.\[\]]+)\s*,', raw):
+        for call in re.finditer(r'(\w+):\w+\(', mask_code(raw)):
+            if call.group(1) in self.player_aliases and not self.proven_player(call.group(1), number):
+                self.unresolved.append({'line': number, 'reason': 'receiver outside its proven acting-player scope'})
+                return found
+        actor_effect = re.compile(r'(\w+):(addItem|removeItem|addAchievement|addOutfitAddon|addOutfit|addMount|addExperience|setStorageValue)\(')
+        for receiver in actor_effect.finditer(mask_code(raw)):
+            name, method = receiver.groups()
+            if not self.proven_player(name, number) and not (method == 'addItem' and self.proven_container(name, number)):
+                self.unresolved.append({'line': number, 'reason': 'effect receiver not proven to be the acting player in this scope'})
+                return found
+        for m in lexical_finditer(r'(\w+):setStorageValue\(\s*([\w.\[\]]+)\s*,', raw):
             target = self.resolve_storage(m.group(2))
             if target is None:
                 continue
             track = self.track(target)
-            value = raw[m.end():].split(')')[0].strip()
+            value_text = call_complete(raw, m.end())
+            value = self.literal(value_text) if value_text is not None else None
             child = {'owner': 'Quest', 'request': 'set_progress', 'progress': track,
-                     **({'to': int(value)} if re.fullmatch(r'-?\d+', value) else {'value_source_line': number})}
+                     **({'to': value} if type(value) is int else {'value_source_line': number})}
             key = self.transitions.get((norm(track_of(target)), script_of(self.path), number))
             if key:
                 child['transition'] = key
             found.append(child)
-        for m in re.finditer(r'Game\.setStorageValue\(\s*"?([\w.\[\]]+)"?\s*,\s*([^)]*)\)', raw):
+        for m in lexical_finditer(r'Game\.setStorageValue\(\s*"?([\w.\[\]]+)"?\s*,\s*([^)]*)\)', raw):
             key = m.group(1)
             if re.search(r'\[[^\d\]]', key):
                 continue  # a runtime index (a loop counter, a role field): not a fixed world-state name
             value = m.group(2).strip()
             found.append({'owner': 'Quest', 'request': 'set_world_state', 'key': f'{self.namespace}:world-state/{slug(key)}',
                           **({'to': int(value)} if re.fullmatch(r'-?\d+', value) else {'value_source_line': number})})
-        if (m := re.search(r'Game\.createMonster\(\s*"([^"]+)"\s*,\s*(.*)', raw)):
-            pos = POSITION.search(m.group(2))
-            found.append({'owner': 'Ability', 'effect': 'summon',
-                          'creature': ref('Creature', f'{self.namespace}:creature/{slug(m.group(1))}'),
-                          **({'anchor': self.anchor(pos.groups())} if pos else {'anchor_source_line': number})})
-        if 'teleportTo(' in code and (tm := TELEPORT_CALL.search(raw)):
+        if 'Game.createMonster(' in code and (m := lexical_search(r'Game\.createMonster\(', raw)):
+            if not self.builtin_proofs['Game']:
+                self.unresolved.append({'line': number, 'reason': 'engine function binding not proven unchanged'})
+                return found
+            text = call_complete(raw, m.end())
+            args = split_args(text) if text is not None else []
+            name = self.literal(args[0]) if args else None
+            if isinstance(name, str) and name:
+                pos = self.position(args[1]) if len(args) >= 2 else None
+                found.append({'owner': 'Ability', 'effect': 'summon',
+                              'creature': ref('Creature', f'{self.namespace}:creature/{slug(name)}'),
+                              **({'anchor': self.anchor(tuple(str(v) for v in pos) + (None, None, None))}
+                                 if pos and all(v >= 0 for v in pos) else {'anchor_source_line': number})})
+        if 'teleportTo(' in code and (tm := lexical_search(TELEPORT_CALL, raw)):
             target_args = split_args(argument(raw, tm.end()))
             target = target_args[0] if target_args else None
             position = self.position(target)
@@ -623,11 +786,14 @@ class Script:
         # `player:say("Game.createItem(2793)")`) is never mistaken for the real call; `raw` is then
         # searched only to parse the call `code` already confirmed is really there. The argument may
         # hold one nested call (`removeItem(ids[math.random(#ids)], 1)`).
-        removal = REMOVE_METHOD.search(code) and re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(((?:[^()]|\([^()]*\))*)\)', raw)
+        removal = REMOVE_METHOD.search(code) and lexical_search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(((?:[^()]|\([^()]*\))*)\)', raw)
         consumed = removal and self.consumed(removal, number)
         if consumed:
             found.append(consumed)
-        elif removal and self.creature(removal.group(1)):
+        elif removal and removal.group(1) in self.player_aliases and not self.proven_player(removal.group(1), number):
+            self.unresolved.append({'line': number, 'reason': 'removal receiver outside its proven player scope'})
+            return found
+        elif removal and self.creature(removal.group(1), number):
             self.unresolved.append({'line': number, 'reason': 'creature removal without an accepted owner'})
             return found
         elif removal:
@@ -646,50 +812,40 @@ class Script:
                 if literal_pos:
                     child['anchor'] = self.anchor(literal_pos.groups())
                 found.append(child)
-        elif TRANSFORM_CALL.search(code) and (m := TRANSFORM_CALL.search(raw)):
+        elif TRANSFORM_CALL.search(code) and (m := lexical_search(TRANSFORM_CALL, raw)):
             # from/to are rarely both literal in one call (the current id is usually implicit, read from
             # the object the script already holds), so this stays with its source line rather than guessed.
             found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number,
                          '_identity': m.group(1)})
-        elif CREATE_CALL.search(code) and (m := CREATE_CALL.search(raw)):
+        elif CREATE_CALL.search(code) and (m := lexical_search(CREATE_CALL, raw)):
+            if m.group(1) == 'Game' and not self.builtin_proofs['Game']:
+                self.unresolved.append({'line': number, 'reason': 'engine function binding not proven unchanged'})
+                return found
             constructor = CREATE_ITEM.match(code)
             args_text = call_complete(raw, m.end())
-            if constructor and constructor.group(1) in self.created_items:
-                # a reward-container constructor (this local is a hand-out/contents item, DUR-03), never
-                # a world placement, even though the call itself is `Game.createItem(...)`.
-                pass
-            elif args_text is None:
-                # the call's argument list never closes on this line (a multi-line call): never typed
-                # from partial args (invariant: not recognized exactly stays blocked, never guessed).
+            args = split_args(args_text) if args_text is not None else []
+            item_id = self.item_id(args[0]) if args else None
+            count = self.literal(args[1]) if len(args) >= 2 else 1
+            position = self.position(args[2]) if len(args) == 3 else None
+            valid = (m.group(1) == 'Game' and 1 <= len(args) <= 3
+                     and type(count) is int and count >= 0
+                     and (len(args) < 3 or position is not None))
+            if args_text is None:
                 found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_INCOMPLETE_CALL, 'source_line': number})
+            elif not valid:
+                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+            elif constructor and constructor.group(1) in self.created_items and len(args) <= 2:
+                pass  # proven positionless container contents constructor, not a map placement
             else:
-                args = split_args(args_text)
-                item_id = args[0] if args and re.fullmatch(r'\d+', args[0]) else None
-                extra = args[1:]
-                # engine signature `createItem(itemId, count/subtype, position)`: a bare integer among
-                # the extra arguments is the count/subtype, never a placement; a literal Position is the
-                # anchor; anything else could be a placement expression (C3: no dynamic geometry), so it
-                # stays blocked.
-                literal_pos = next((a for a in extra if POSITION.fullmatch(a)), None)
-                ambiguous = any(not re.fullmatch(r'\d+', a) and not POSITION.fullmatch(a) for a in extra)
                 literal = {'def': ref('Item', f'{self.namespace}:item/{item_id}')} if item_id else {'value_source_line': number}
                 identity = (assigned := ASSIGNED_LOCAL.match(code)) and assigned.group(1)
-                if ambiguous:
-                    found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
-                elif literal_pos:
-                    # C3: CREATE only binds a pre-authored anchor with a fixed footprint; a literal
-                    # position argument names one.
-                    child = {'owner': 'WorldObject', 'operation': 'CREATE',
-                             'anchor': self.anchor(POSITION.fullmatch(literal_pos).groups()), **literal}
-                    if identity:
-                        child['_identity'] = identity
-                    found.append(child)
-                else:
-                    child = {'owner': 'WorldObject', 'operation': 'CREATE', **literal}
-                    if identity:
-                        child['_identity'] = identity
-                    found.append(child)
-        elif RETAG_CALL.search(code) and (m := RETAG_CALL.search(raw)):
+                child = {'owner': 'WorldObject', 'operation': 'CREATE', **literal}
+                if position:
+                    child['anchor'] = self.anchor(tuple(str(v) for v in position) + (None, None, None))
+                if identity:
+                    child['_identity'] = identity
+                found.append(child)
+        elif RETAG_CALL.search(code) and (m := lexical_search(RETAG_CALL, raw)):
             # D38/coordinator decision 1c: a transition between two states of the same collision class;
             # the action id itself is not modeled as data.
             found.append({'owner': 'WorldObject', 'operation': 'RETAG', 'value_source_line': number,
@@ -710,12 +866,12 @@ class Script:
                 found.append({'owner': 'WorldObject', '_revert': True, '_revert_receiver': receiver,
                               '_revert_position': pos, '_revert_delay_ms': delay, '_revert_scheduled': scheduled,
                               '_source_line': number})
-        if (m := CONTAINER_FILL.match(raw)) and m.group(1) in self.containers:
+        if (m := CONTAINER_FILL.match(raw)) and self.proven_container(m.group(1), number):
             # a plain item added to a reward container built earlier in this same callback (DUR-03): its contents
             self.containers[m.group(1)].setdefault('contents', []).append(
                 {'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)})
             return found
-        if (m := CONTAINER_FILL_EX.match(raw)) and m.group(1) in self.containers:
+        if (m := CONTAINER_FILL_EX.match(raw)) and self.proven_container(m.group(1), number):
             # membership alone only proves this local is a positionless reward constructor (never a
             # world CREATE, see self.created_items above); its item id is resolvable here only when
             # that constructor's own id argument was itself a literal.
@@ -726,7 +882,7 @@ class Script:
             else:
                 self.unresolved.append({'line': number, 'reason': 'container reward item is not a plain literal item type'})
             return found
-        if re.search(r':addItem\(', code) and (m := re.search(r'(\w+):addItem\(', raw)) and m.group(1) in self.players | {'player'}:
+        if re.search(r':addItem\(', code) and (m := lexical_search(r'(\w+):addItem\(', raw)) and self.proven_player(m.group(1), number):
             args_text = call_complete(raw, m.end())
             args = split_args(args_text) if args_text is not None else []
             ident = self.item_id(args[0]) if args else None
@@ -737,25 +893,26 @@ class Script:
             found.append(child)
             if 'item' in child and (alias := re.match(r'local\s+(\w+)\s*=', raw)):
                 self.containers[alias.group(1)] = child
-        if re.search(r':addAchievement\(', raw):
-            if (m := re.search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
+                self.container_scopes[alias.group(1)] = (number, self.line_scopes.get(number, ()))
+        if lexical_search(r':addAchievement\(', raw):
+            if (m := lexical_search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
                 found.append({'owner': 'Achievement', 'request': 'grant',
                               'achievement': ref('Achievement', f'{self.namespace}:achievement/{slug(m.group(1))}')})
             else:
                 # a table-driven achievement id (e.g. `reward.achievement[1]`): the achievement itself is not literal
                 found.append({'owner': 'Achievement', 'request': 'grant', 'value_source_line': number})
-        if (m := re.search(r'(\w+):addOutfitAddon\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+        if (m := lexical_search(r'(\w+):addOutfitAddon\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and self.proven_player(m.group(1), number):
             found.append({'owner': 'Outfit', 'request': 'grant',
                           **({'looktype': int(m.group(2)), **({'addon': int(m.group(3))} if m.group(3) else {})}
                              if m.group(2) else {'value_source_line': number})})
-        if (m := re.search(r'(\w+):addOutfit\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+        if (m := lexical_search(r'(\w+):addOutfit\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and self.proven_player(m.group(1), number):
             found.append({'owner': 'Outfit', 'request': 'grant',
                           **({'looktype': int(m.group(2)), **({'addon': int(m.group(3))} if m.group(3) else {})}
                              if m.group(2) else {'value_source_line': number})})
-        if (m := re.search(r'(\w+):addMount\(\s*"?(\d+)"?\s*\)?', raw)) and m.group(1) in self.players | {'player'}:
+        if (m := lexical_search(r'(\w+):addMount\(\s*"?(\d+)"?\s*\)?', raw)) and self.proven_player(m.group(1), number):
             found.append({'owner': 'Mount', 'request': 'grant',
                           **({'mount': int(m.group(2))} if m.group(2) else {'value_source_line': number})})
-        if (m := re.search(r'(\w+):addExperience\(\s*(\d+)?', raw)) and m.group(1) in self.players | {'player'}:
+        if (m := lexical_search(r'(\w+):addExperience\(\s*(\d+)?', raw)) and self.proven_player(m.group(1), number):
             found.append({'owner': 'Experience', 'request': 'grant',
                           **({'amount': int(m.group(2))} if m.group(2) else {'value_source_line': number})})
         if re.search(r':addMapMark\(', code):
@@ -789,7 +946,7 @@ class Script:
         """A removal that takes an item from its holder is DUR-03 consumption, never map state (D38): the player's
         `removeItem`, or `remove` on the item used (`onUse`) or dropped onto the edge (`onAddItem`)."""
         receiver, method, args = removal.groups()
-        if method == 'removeItem' and receiver in self.players | {'player'}:
+        if method == 'removeItem' and self.proven_player(receiver, number):
             parts = split_args(args)
             ident = self.item_id(parts[0]) if parts else None
             count = self.literal(parts[1]) if len(parts) == 2 else 1 if len(parts) == 1 else None
@@ -801,9 +958,9 @@ class Script:
             return {'owner': 'Item', 'request': 'consume', 'object': 'used_item' if role == 'source' else 'contact'}
         return None
 
-    def creature(self, receiver):
+    def creature(self, receiver, number):
         """A receiver that holds a creature, not an item."""
-        return (self.roles.get(receiver) == 'actor' or receiver in self.players
+        return (self.roles.get(receiver) == 'actor' or self.proven_player(receiver, number)
                 or re.search(r'(?i)creature|monster|boss|npc|summon|spectator', receiver) is not None)
 
     def revert(self, out, child):
@@ -875,8 +1032,8 @@ class Script:
     def interactions(self):
         """One definition per callback; a file may redefine the same script object several times, so each
         callback takes the registrations that follow it up to the next object definition."""
-        starts = [n for n, line in enumerate(self.lines, 1) if CALLBACK.match(line)]
-        objects = [n for n, line in enumerate(self.lines, 1) if OBJECT_LINE.match(line)]
+        starts = [n for n, line in enumerate(self.code_lines, 1) if CALLBACK.match(line)]
+        objects = [n for n, line in enumerate(self.code_lines, 1) if OBJECT_LINE.match(line)]
         out, stem = [], self.name
         for index, number in enumerate(starts):
             m = CALLBACK.match(self.lines[number - 1])
@@ -885,7 +1042,7 @@ class Script:
                                     if (r := REGISTRATION.match(line)) and r.group(1) == m.group(1)})
             self.anchors, self.unresolved = [], []
             self.bind(number, m.group(2))
-            nodes = lua_blocks.parse(self.lines, lua_blocks.function_body(self.lines, number))
+            nodes = lua_blocks.parse(self.code_lines, lua_blocks.function_body(self.code_lines, number))
             rules = self.convert(nodes)
             strip_internal(rules)
             # several callbacks in one file are told apart by their script object, which both servers share even when
@@ -1046,13 +1203,22 @@ def build(repos, scripts, questlog_dir):
         if primary['identity']['key'] in OVERRIDES:
             primary = dict(primary, rules=json.loads(json.dumps(primary['rules'])))
             apply_overrides(primary['rules'], primary['identity']['key'], used_overrides)
-            status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
+            if status != 'conflict':
+                status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
         interactions.append({k: v for k, v in primary.items() if k not in ('script', 'callback_line')})
-        manifest_entries.append({'destination': primary['identity']['key'], 'status': status, 'resolution': resolution,
+        entry = {'destination': primary['identity']['key'], 'status': status, 'resolution': resolution,
                                  'sources': [{'source': n, 'path': SOURCES[n]['datapack'] + '/' + i['script'],
                                               'callback_line': i['callback_line'],
                                               'blob_sha1': git_blob(repos[n], SOURCES[n]['datapack'] + '/' + i['script'])}
-                                             for n, i in pair.items()]})
+                                             for n, i in pair.items()]}
+        if status == 'conflict':
+            # Retain both typed source graphs. The selected graph is evidence,
+            # never a resolution or a readiness promotion for this conflict.
+            entry['conflict_alternatives'] = [
+                {'source': name, 'interaction': {k: v for k, v in graph.items()
+                                               if k not in ('script', 'callback_line')}}
+                for name, graph in sorted(pair.items())]
+        manifest_entries.append(entry)
     unused_decisions('interactions', used)
     unused_overrides(used_overrides)
     children = [c for i in interactions for c in walk(i['rules'])]

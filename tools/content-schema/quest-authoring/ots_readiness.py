@@ -190,6 +190,36 @@ def quest_coverage_holds(manifest, quest_keys):
             raise ValueError('stale, duplicate or unexplained NPC quest coverage hold')
         seen.add(identity)
         holds[check['quest']] += 1
+    for check in manifest.get('source_checks', {}).get('script_coverage_holds', []):
+        paths = check.get('source_paths')
+        if not isinstance(paths, list) or not paths or any(not isinstance(p, str) or not p for p in paths):
+            raise ValueError('script quest coverage hold needs exact source paths')
+        identity = (check['quest'], tuple(paths))
+        if check['quest'] not in quest_keys or identity in seen or not check.get('coverage_gap'):
+            raise ValueError('stale, duplicate or unexplained script quest coverage hold')
+        seen.add(identity)
+        holds[check['quest']] += 1
+    return holds
+
+
+def interaction_conflict_holds(manifest, joined, quests=None, progress=None):
+    holds, seen = collections.Counter(), set()
+    for entry in manifest['entries']:
+        if entry['status'] != 'conflict':
+            continue
+        key = entry['destination']
+        if key not in joined or key in seen:
+            raise ValueError('stale or duplicate interaction source conflict')
+        seen.add(key)
+        owners = set(joined[key])
+        if quests is not None and progress is not None:
+            for alternative in entry.get('conflict_alternatives', []):
+                graph = alternative['interaction']
+                # Source-only alternatives add coverage holds, not accepted effects.
+                # Canonicalize only the join key; keep the original graph intact.
+                projected = dict(graph, identity=dict(graph['identity'], key=key))
+                owners.update(join_interactions(quests, progress, [projected])[key])
+        holds.update(owners)
     return holds
 
 
@@ -235,6 +265,9 @@ def main():
             info[gate['quest']['key']]['features'].add(DOOR_FEATURE[gate['condition']['kind']])
 
     joined = join_interactions(quests, progress, interactions)
+    for key, count in interaction_conflict_holds(
+            json.loads((SAMPLES / 'interactions/manifest.json').read_text()), joined, quests, progress).items():
+        info[key]['unresolved'] += count
     declared_tracks = {track['key'] for track in progress}
     unlinked = []
     for inter in interactions:

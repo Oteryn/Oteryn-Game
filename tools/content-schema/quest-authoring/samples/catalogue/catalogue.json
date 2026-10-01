@@ -13,7 +13,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "2c8c88c1387586fa46d5180d3397581f52352caae63ce1d2b36baee1bef2a73f"
+      "sha256": "972cca55608ce2a4a9667b0f4cb73f3b165fed1caaca0c8f34158886d7f247a5"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -1993,11 +1993,7 @@
           "readiness_data": {
             "classification": "DERIVED",
             "features": [
-              "achievement",
               "item_consume",
-              "mount",
-              "outfit",
-              "quest_state",
               "teleport",
               "trigger_kill",
               "trigger_step",
@@ -2006,7 +2002,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 26,
-              "unresolved_items": 137
+              "unresolved_items": 148
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -5974,8 +5970,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 3,
-              "unresolved_items": 23
+              "interactions_with_gaps": 4,
+              "unresolved_items": 29
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -6766,7 +6762,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 2,
-              "unresolved_items": 7
+              "unresolved_items": 8
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -9197,7 +9193,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 27,
-              "unresolved_items": 89
+              "unresolved_items": 90
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -9723,7 +9719,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 10,
-              "unresolved_items": 54
+              "unresolved_items": 52
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -14462,7 +14458,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 32,
-              "unresolved_items": 215
+              "unresolved_items": 216
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -15471,7 +15467,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 5,
-              "unresolved_items": 18
+              "unresolved_items": 19
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -16724,8 +16720,8 @@
               "trigger_use"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 4,
-              "unresolved_items": 5
+              "interactions_with_gaps": 2,
+              "unresolved_items": 3
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -16859,7 +16855,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 3,
-              "unresolved_items": 13
+              "unresolved_items": 14
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -21483,7 +21479,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 11,
-              "unresolved_items": 57
+              "unresolved_items": 54
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -23246,9 +23242,7 @@
           "readiness_data": {
             "classification": "DERIVED",
             "features": [
-              "achievement",
               "boss_cooldown",
-              "quest_state",
               "teleport",
               "trigger_kill",
               "trigger_step",
@@ -23257,7 +23251,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 10,
-              "unresolved_items": 44
+              "unresolved_items": 46
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -23779,7 +23773,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 55,
-              "unresolved_items": 206
+              "unresolved_items": 209
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -25224,7 +25218,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 34,
-              "unresolved_items": 147
+              "unresolved_items": 150
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -25804,7 +25798,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 1,
-              "unresolved_items": 4
+              "unresolved_items": 3
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -27799,7 +27793,6 @@
           "readiness_data": {
             "classification": "DERIVED",
             "features": [
-              "achievement",
               "condition",
               "door_progress",
               "item_consume",
@@ -27816,7 +27809,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 29,
-              "unresolved_items": 94
+              "unresolved_items": 103
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -29094,7 +29087,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 20,
-              "unresolved_items": 173
+              "unresolved_items": 179
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -31765,8 +31758,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 16,
-              "unresolved_items": 43
+              "interactions_with_gaps": 14,
+              "unresolved_items": 41
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -34615,8 +34608,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 36,
-              "unresolved_items": 119
+              "interactions_with_gaps": 38,
+              "unresolved_items": 113
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -41866,7 +41859,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 3,
-              "unresolved_items": 8
+              "unresolved_items": 9
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -44762,7 +44755,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 7,
-              "unresolved_items": 19
+              "unresolved_items": 20
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -48396,14 +48389,10 @@
           "ots_shown_in_quest_log": false,
           "readiness_data": {
             "classification": "DERIVED",
-            "features": [
-              "achievement",
-              "quest_state",
-              "trigger_kill"
-            ],
+            "features": [],
             "data_gaps": {
-              "interactions_with_gaps": 1,
-              "unresolved_items": 3
+              "interactions_with_gaps": 0,
+              "unresolved_items": 0
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -49336,8 +49325,6 @@
             "classification": "DERIVED",
             "features": [
               "item_consume",
-              "outfit",
-              "quest_state",
               "teleport",
               "trigger_kill",
               "trigger_step",
@@ -49345,8 +49332,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 9,
-              "unresolved_items": 27
+              "interactions_with_gaps": 7,
+              "unresolved_items": 24
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -52489,7 +52476,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 22,
-              "unresolved_items": 77
+              "unresolved_items": 78
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -54439,7 +54426,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 5,
-              "unresolved_items": 16
+              "unresolved_items": 15
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -55073,7 +55060,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 13,
-              "unresolved_items": 42
+              "unresolved_items": 43
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -59185,7 +59172,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 1,
-              "unresolved_items": 5
+              "unresolved_items": 10
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -61581,7 +61568,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 12,
-              "unresolved_items": 38
+              "unresolved_items": 39
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -62143,8 +62130,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 22,
-              "unresolved_items": 64
+              "interactions_with_gaps": 12,
+              "unresolved_items": 53
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -63765,7 +63752,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 4,
-              "unresolved_items": 10
+              "unresolved_items": 11
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -64061,7 +64048,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 5,
-              "unresolved_items": 23
+              "unresolved_items": 22
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -65607,7 +65594,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 53,
-              "unresolved_items": 170
+              "unresolved_items": 166
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -66834,7 +66821,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 16,
-              "unresolved_items": 47
+              "unresolved_items": 49
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -67881,7 +67868,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 8,
-              "unresolved_items": 61
+              "unresolved_items": 62
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -68987,7 +68974,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 8,
-              "unresolved_items": 22
+              "unresolved_items": 23
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -69583,7 +69570,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 8,
-              "unresolved_items": 36
+              "unresolved_items": 39
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -71202,7 +71189,6 @@
           "readiness_data": {
             "classification": "DERIVED",
             "features": [
-              "achievement",
               "door_progress",
               "item_consume",
               "item_hand_out",
@@ -71219,8 +71205,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 12,
-              "unresolved_items": 33
+              "interactions_with_gaps": 11,
+              "unresolved_items": 35
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -71581,8 +71567,8 @@
               "trigger_use"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 14,
-              "unresolved_items": 63
+              "interactions_with_gaps": 16,
+              "unresolved_items": 65
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -72207,7 +72193,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 5,
-              "unresolved_items": 17
+              "unresolved_items": 16
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -72454,7 +72440,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 11,
-              "unresolved_items": 44
+              "unresolved_items": 41
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -74390,7 +74376,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 38,
-              "unresolved_items": 103
+              "unresolved_items": 105
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -75589,7 +75575,6 @@
           "readiness_data": {
             "classification": "DERIVED",
             "features": [
-              "achievement",
               "condition",
               "item_consume",
               "item_hand_out",
@@ -75606,7 +75591,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 33,
-              "unresolved_items": 137
+              "unresolved_items": 167
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -76018,7 +76003,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 5,
-              "unresolved_items": 26
+              "unresolved_items": 23
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -79392,7 +79377,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 23,
-              "unresolved_items": 121
+              "unresolved_items": 122
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -83585,12 +83570,11 @@
           "readiness_data": {
             "classification": "DERIVED",
             "features": [
-              "quest_state",
               "trigger_step"
             ],
             "data_gaps": {
               "interactions_with_gaps": 1,
-              "unresolved_items": 5
+              "unresolved_items": 6
             },
             "runtime_readiness": "UNKNOWN"
           }

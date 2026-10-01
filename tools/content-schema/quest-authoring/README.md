@@ -86,3 +86,10 @@ candidate: inspect `authored_candidates` and `family_representation` separately.
 Reward/requirement entity lists are partial source facts, not full prerequisite
 expressions or admitted canonical Item references. Tibiopedia was unavailable
 (browser redirected to an empty setup page); three requested spoilers did not exist.
+
+Source interaction conversion also resolves branch-local immutable constants,
+bounded exact arithmetic and static membership lists. Engine value-copy calls
+are admitted only with an unshadowed Game binding. An unresolved source conflict
+retains both full typed graphs in `manifest.json` under `conflict_alternatives`;
+readiness counts that conflict as a data gap for every linked quest. Explicit
+NPC/script coverage holds likewise prevent presence from implying completeness.
