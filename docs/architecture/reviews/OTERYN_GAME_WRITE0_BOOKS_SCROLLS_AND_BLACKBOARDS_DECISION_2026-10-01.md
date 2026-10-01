@@ -30,7 +30,10 @@
 Tests: a write over `max_characters`, with a control character other than line feed, beyond reach,
 or on an item in another character's possession is refused; a write-once item transforms once and
 keeps its identity; a retry of the same write returns the first result; reported text survives the
-writer's later rewrite in the report snapshot only; no text reaches a log, audit event or analytics.
+writer's later rewrite in the report snapshot only; a report carrying an older revision than the
+current one is `REPORT_STALE`; a repeated report is deduplicated; reports over `WRITE0-RL-04`,
+`-RL-05` or `-RL-06` store nothing; an empty write followed by a new write never reuses a revision,
+so a stale clear cannot delete newer text; no text reaches a log, audit event or analytics.
 
 Later, each with its own decision: house door lists (HOUSE-ACL owns them), the GM tools that call
 the moderation clear (owner answer 6a), character and guild names (Platform), Store-bound items.
@@ -127,10 +130,16 @@ The write is refused unless all hold (Canary `playerWriteItem`):
   item), and **in addition** the fence of the item's location when it is not the writer's own: the
   §32 scope fence and the tile row `FOR SHARE` for a Ground item, HOUSE-CUSTODY-0's house fence for
   a house item. Keyed by the command's CommandRef; a retry returns the first result.
-- **`text_revision`** (MAIL-0 §4) increases by one with every committed write that changes the text
-  (a clear included) and never otherwise; an unchanged text writes nothing and keeps it (Canary).
+- **`text_revision` is never reused.** It lives in its own row,
+  `game_item_text_revisions (item_instance_id PK, last_revision)`, which an empty write or a
+  moderation clear never deletes (only the text row goes); it is deleted only with the item's
+  retirement, together with MAIL-0's daily cleanup of retired items' text. Every committed write
+  that changes the text (an empty write or a clear included) sets `last_revision + 1` on both rows
+  in the same transaction; nothing else changes it. An unchanged text writes nothing (Canary).
+  Amended: MAIL-0 §4 (`text_revision` is read from this row).
 - Map object: in the channel owner's turn, no transaction. Its volatile text carries a volatile
-  `text_revision` with the same rule, scoped to the channel scope ownership generation.
+  `text_revision` with the same rule, monotonic within the channel scope ownership generation and
+  kept when the text is cleared.
 - Rate: `MAIL0-RL-06` (2 writes per character per second) for both.
 
 ### 5.3 Write-once
@@ -145,10 +154,20 @@ DUR-03 §39.3.
 ## 6. Reports and removal (WRITE-MOD-1; owner answer 6a)
 
 - **Report.** A player who reads a text can report it (the Rule Violation flow of the GM tools
-  decision). The report captures, server-side, a **snapshot**: the item or map object, its
-  `text_revision`, the text, the writer CharacterId and time. The snapshot lives in a restricted
-  moderation store, readable only by the moderation role, kept for `WRITE0-RL-03`, never logged.
-  A later rewrite does not change it.
+  decision). The `ITEM_TEXT` view shows the `text_revision` the reader saw (§7), and the report
+  intent carries it as the expected revision. The server takes the snapshot only if the current
+  revision (and, for a map object, the channel scope ownership generation) still equals it, so
+  what is stored is what the reporter read; otherwise the report is refused `REPORT_STALE` and the
+  reporter sees the newer text. A writer cannot dodge a report already taken: the snapshot (the
+  item or map object, revision, text, writer CharacterId and time) lives in a restricted moderation
+  store, readable only by the moderation role, kept for `WRITE0-RL-03`, never logged, and later
+  rewrites do not change it.
+- **Report bounds** (fixed here; results returned by the GM tools command, each storing nothing):
+  - deduplication by (reporter CharacterId, target, revision): a repeat returns the first result;
+  - at most `WRITE0-RL-04` reports per reporting character per hour (`REPORT_RATE_LIMITED`) and
+    `WRITE0-RL-05` open reports per reporting account (`REPORT_QUOTA`);
+  - at most `WRITE0-RL-06` open snapshots in the World; a report beyond it is refused
+    `REPORT_CAPACITY` and the alarm fires at 80%.
 - **Removal.** A moderation **clear** deletes the text row if its `text_revision` still equals the
   reported one, under the item row lock of §5.2, else refuses with `STALE` (the moderator sees the
   newer text through a new report). For a map object the snapshot also records the channel scope
@@ -166,6 +185,7 @@ DUR-03 §39.3.
 - USE on any `readable` or `writable` item or map object the session reaches opens the view; a map
   object is addressed by its map item handle.
 - `ITEM_TEXT_WRITE` gains the result `NOT_REACHABLE` (§5.1) beside MAIL-0's results.
+- The `ITEM_TEXT` view gains `text_revision` (an unsigned integer), which a report carries back.
 - A report is a GM tools command, not part of this capability.
 
 ## 8. Rows
@@ -175,6 +195,9 @@ DUR-03 §39.3.
 | `WRITE0-RL-01` `max_characters` of a definition | 4,000 scalar values (16,000 bytes) | content validation; Canary's largest is 3,997 |
 | `WRITE0-RL-02` volatile map texts per channel | 4,096 | above it, `EXHAUSTED` |
 | `WRITE0-RL-03` report snapshot retention | 180 days | then deleted |
+| `WRITE0-RL-04` text reports per reporting character per hour | 10 | above it, `REPORT_RATE_LIMITED` |
+| `WRITE0-RL-05` open text reports per reporting account | 20 | above it, `REPORT_QUOTA` |
+| `WRITE0-RL-06` open report snapshots per World | 100,000 (at most 1.6 GB of text) | above it, `REPORT_CAPACITY`; alarm at 80% |
 
 Each with max and max+1 tests.
 

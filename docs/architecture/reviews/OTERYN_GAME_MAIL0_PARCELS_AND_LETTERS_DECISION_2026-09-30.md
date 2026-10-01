@@ -139,7 +139,8 @@ MAIL-0 is the named owner of durable writable text for the letter and label defi
 Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker.
 **Amendment (pending on acceptance of WRITE-0; `reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md` §4-§6).** This store
 and write transaction serve every writable ItemInstance, on every reachable location with that
-location's fence; writable map objects keep volatile per-channel text; reports and moderation
+location's fence; `text_revision` comes from a separate never-deleted revision row, so a deleted
+text never lets a revision be reused; writable map objects keep volatile per-channel text; reports and moderation
 clears are WRITE-0 §6.
 
 - **Store.** `game_item_texts`: `item_instance_id` (PK, FK to item instances with RESTRICT), text,
