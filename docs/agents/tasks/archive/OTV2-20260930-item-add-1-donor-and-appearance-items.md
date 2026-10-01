@@ -49,6 +49,7 @@ owned_paths:
   - tools/content-schema/item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json   # regenerated
   - tools/content-schema/item-authoring/{lower_wiki_stats_packet.py,test_lower_wiki_stats_packet.py}   # bound Items only
   - imports/tibiawiki/{facts/items-stats.json,sources.json,batches.json}   # #1325 key rule re-applied (--rekey)
+  - content/proficiencies/bindings.json and tools/content-schema/proficiency-authoring/{test_proficiency_authoring.py,README.md}   # 664 bindings
 public_contracts: []
 depends_on:
   - "docs/architecture/reviews/OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md"
@@ -85,7 +86,8 @@ new Items:
   semantics stay UNKNOWN (owner 2a; Codex review P1 on #1383, which found 17 of them promoted).
 - The weapon proficiency sample (`item-weapon-proficiency-15-30-7fea90ec.json`) finds an Item
   definition for 22 more bindings (`bindings_without_item_definition` 23 → 1). No binding
-  changed.
+  changed. After #1341 (PROF-CONTENT-1c) merged, `content/proficiencies/bindings.json` is
+  regenerated from it: 664 bound weapons, up from 642.
 - The TibiaWiki stat snapshot is re-keyed offline (`item_wiki_stats_capture.py --rekey`, #1325
   key rule): records of ids that are now Items take their Item key. Observations are unchanged;
   `snapshot_sha256` becomes `5fc20ff7…a2d6` in `sources.json` and `batches.json`.
