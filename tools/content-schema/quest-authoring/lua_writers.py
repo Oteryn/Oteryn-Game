@@ -12,6 +12,8 @@ The guard is a line-level heuristic, not an evaluation: a missing or nested cond
 """
 import re
 
+import lua_tables
+
 WRITE = re.compile(r'setStorageValue\(\s*(Storage\.[A-Za-z0-9_.]+(?:\[\d+\])?|\d+)\s*,')
 FUNCTION = re.compile(r'^\s*(?:local\s+)?function\s+([A-Za-z_]\w*)(?:[.:]([A-Za-z_]\w*))?\s*\(')
 OBJECT = re.compile(r'^\s*local\s+(\w+)\s*=\s*(MoveEvent|Action|CreatureEvent|GlobalEvent|TalkAction|EventCallback)\s*\(')
@@ -114,9 +116,157 @@ def dialogue_at_write(lines, start, write_line):
 ALIAS = re.compile(r'\s*local\s+(\w+)\s*=\s*((?:Global)?Storage\.[\w.\[\]]+)\s*(--.*)?$')
 
 
+def unconditional_prefix(lines):
+    """Unconditional file declarations before any function/control flow; lexical tokens
+    exclude quoted/commented keywords and table entries are not declarations."""
+    allowed, depth = set(), 0
+    try:
+        tokens = lua_tables.tokenize('\n'.join(lines))
+    except lua_tables.LuaError:
+        return allowed
+    for kind, value, number in tokens:
+        if kind in ('comment', 'lcomment', 'string', 'lstring'):
+            continue
+        if kind == 'name' and value in ('function', 'if', 'for', 'while', 'repeat', 'do'):
+            break
+        if depth == 0:
+            allowed.add(number)
+        if value in ('{', '[', '('):
+            depth += 1
+        elif value in ('}', ']', ')'):
+            depth -= 1
+    return allowed
+
+
+def scalar_leaf_paths(value, root):
+    """Only primitive literal leaves (plus named integer Storage constants) can
+    escape by value; a table/Position/subtable reference is never one."""
+    if type(value) in (int, float, str, bool):
+        return {root}
+    if isinstance(value, dict) and set(value) == {'expr'}:
+        return {root} if re.fullmatch(r'(?:Global)?Storage\.[\w.\[\]]+', value['expr']) else set()
+    out = set()
+    if isinstance(value, dict):
+        for key, leaf in value.items():
+            suffix = f'[{key}]' if type(key) is int else f'.{key}'
+            out.update(scalar_leaf_paths(leaf, root + suffix))
+    elif isinstance(value, list):
+        for index, leaf in enumerate(value, 1):
+            out.update(scalar_leaf_paths(leaf, root + f'[{index}]'))
+    return out
+
+
+def static_name_is_immutable(lines, name, references=False, scalar_paths=()):
+    """Reject writes/shadows anywhere, including inline else. For tables/Positions also
+    reject alias escape, returned references and arguments to unproven functions.
+    This is intentionally stricter than a Lua scope/effect analysis."""
+    try:
+        tokens = [t for t in lua_tables.tokenize('\n'.join(lines))
+                  if t[0] not in ('comment', 'lcomment', 'string', 'lstring')]
+    except lua_tables.LuaError:
+        return False
+    writes, calls, definitions = 0, [], []
+    reads = {'getStorageValue', 'setStorageValue', 'getItemCount', 'teleportTo',
+             'Position', 'sendMagicEffect', 'addItem', 'removeItem'}
+    for i, (kind, value, number) in enumerate(tokens):
+        if value == '(':
+            caller = tokens[i - 1][1] if i and tokens[i - 1][0] == 'name' else None
+            calls.append(caller)
+            k = i - 2
+            while k >= 1 and tokens[k][1] in ('.', ':') and tokens[k - 1][0] == 'name':
+                k -= 2
+            definitions.append(caller == 'function' or (k >= 0 and tokens[k][1] == 'function'))
+        elif value == ')' and calls:
+            calls.pop()
+            definitions.pop()
+        if kind != 'name' or value != name or (i and tokens[i - 1][1] == '.'):
+            continue
+        if definitions and definitions[-1]:
+            return False  # a function parameter shadows the supposedly static local
+        before = [t[1] for t in tokens[:i] if t[2] == number]
+        if 'for' in before and 'in' not in before and '=' not in before:
+            return False  # generic-for variable shadows a scalar prefix local
+        j = i + 1
+        while j < len(tokens):
+            if tokens[j][1] == '.' and j + 1 < len(tokens) and tokens[j + 1][0] == 'name':
+                j += 2
+            elif tokens[j][1] == '[':
+                depth = 1
+                j += 1
+                while j < len(tokens) and depth:
+                    depth += (tokens[j][1] == '[') - (tokens[j][1] == ']')
+                    j += 1
+            else:
+                break
+        following = tokens[j][1] if j < len(tokens) else None
+        assignment = following == '=' and (j + 1 == len(tokens) or tokens[j + 1][1] != '=')
+        if assignment:
+            writes += 1
+        if not references or assignment:
+            continue
+        path = ''.join(t[1] for t in tokens[i:j])
+        if path in scalar_paths:
+            continue  # primitive values cannot carry an alias to their parent table
+        if i and tokens[i - 1][1] in ('=', 'return'):
+            return False  # multiline alias/return escape
+        # A reference used on an assignment RHS may alias a table or a subtable;
+        # do not rely on the alias's later mutation being visible through the root.
+        if any(v == '=' and (n == 0 or before[n - 1] not in ('=', '<', '>', '~'))
+               and (n + 1 == len(before) or before[n + 1] != '=') for n, v in enumerate(before)):
+            return False
+        if 'return' in before or (calls and calls[-1] not in reads):
+            return False
+        if following == ':' and (j + 1 == len(tokens) or tokens[j + 1][1] != 'sendMagicEffect'):
+            return False
+        if following == '(':
+            return False
+    return writes == 1
+
+
 def storage_aliases(lines):
-    """`local ThreatenedDreams = Storage.Quest.U11_40.ThreatenedDreams` and the like, by alias name."""
-    return {m.group(1): m.group(2) for line in lines if (m := ALIAS.match(line))}
+    """Only immutable unconditional prefix locals; callback/branch/sibling aliases
+    cannot leak into the file-wide substitution used by scan()."""
+    prefix = unconditional_prefix(lines)
+    aliases, declarations = {}, {}
+    code = [strip_code(line) for line in lines]
+    for number, line in enumerate(lines, 1):
+        if number not in prefix:
+            continue
+        m = ALIAS.match(line)
+        numeric = re.fullmatch(r'\s*local\s+(\w+)\s*=\s*(\d+)\s*(?:--.*)?', line)
+        if m and static_name_is_immutable(lines, m.group(1), references=True):
+            aliases[m.group(1)] = m.group(2)
+        elif numeric and static_name_is_immutable(lines, numeric.group(1)):
+            name, value = numeric.groups()
+            reads = re.compile(rf'(?:get|set)StorageValue\(\s*{re.escape(name)}\s*[,)]')
+            uses = [n for n, text in enumerate(code, 1) if reads.search(text)]
+            if uses and min(uses) > number:
+                aliases[name] = value
+        table = re.match(r'\s*local\s+(\w+)\s*=\s*\{', line)
+        if table:
+            declarations[table.group(1)] = number
+    text = '\n'.join(lines)
+    paths = re.findall(r'(?:get|set)StorageValue\(\s*(\w+(?:\.\w+|\[\d+\])+)\s*[,)]', '\n'.join(code))
+    for path in sorted(set(paths)):
+        root = re.match(r'\w+', path).group()
+        if root not in declarations:
+            continue
+        uses = [n for n, line in enumerate(code, 1) if path in line and re.search(r'(?:get|set)StorageValue\(', line)]
+        if min(uses) <= declarations[root]:
+            continue
+        try:
+            value = lua_tables.as_python(lua_tables.assignments(text, {root})[root])
+            if not static_name_is_immutable(lines, root, references=True, scalar_paths=scalar_leaf_paths(value, root)):
+                continue
+            for field, index in re.findall(r'\.(\w+)|\[(\d+)\]', path[len(root):]):
+                value = value[field] if field else value[int(index) - 1] if isinstance(value, list) else value[int(index)]
+            if isinstance(value, dict) and set(value) == {'expr'} and re.fullmatch(r'(?:Global)?Storage\.[\w.\[\]]+', value['expr']):
+                aliases[path] = value['expr']
+            elif type(value) is int and value >= 0:
+                aliases[path] = str(value)
+        except (lua_tables.LuaError, KeyError, IndexError, TypeError, ValueError):
+            continue
+    return aliases
 
 
 def expand_aliases(line, aliases):
@@ -124,10 +274,17 @@ def expand_aliases(line, aliases):
     where it stands alone, so the full `Storage.…` paths of the same file stay as they are."""
     if ALIAS.match(line):
         return line
+    declaration = re.match(r'\s*local\s+\w+\s*=', line)
+    prefix, line = (line[:declaration.end()], line[declaration.end():]) if declaration else ('', line)
     for alias, path in aliases.items():
         follow = r'(?![\w.\[])' if alias in ('Storage', 'GlobalStorage') else r'(?=[.\[\s,)])'
-        line = re.sub(rf'(?<![\w.]){alias}{follow}', path, line)
-    return line
+        # Strings carry evidence/text, never identifier references. Do not expand their
+        # contents even when an alias is followed by spaces or punctuation there.
+        pieces = re.split(r'("(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\')', line)
+        for index in range(0, len(pieces), 2):
+            pieces[index] = re.sub(rf'(?<![\w.]){re.escape(alias)}{follow}', lambda _: path, pieces[index])
+        line = ''.join(pieces)
+    return prefix + line
 
 
 def guard_pattern(target):

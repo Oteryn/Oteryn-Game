@@ -55,7 +55,7 @@
    "trigger_use": 189,
    "world_object": 81
   },
-  "quests_without_data_gaps": 94,
+  "quests_without_data_gaps": 95,
   "interactions_joined": 1192,
   "interactions_unlinked": 29
  },
@@ -94,97 +94,97 @@
    "feature": "item_consume",
    "owner": "DUR-03 consumption",
    "quests_complete_on_engine_side": 101,
-   "of_which_without_data_gaps": 86
+   "of_which_without_data_gaps": 87
   },
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
    "quests_complete_on_engine_side": 104,
-   "of_which_without_data_gaps": 87
+   "of_which_without_data_gaps": 88
   },
   {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
    "quests_complete_on_engine_side": 105,
-   "of_which_without_data_gaps": 87
+   "of_which_without_data_gaps": 88
   },
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
    "quests_complete_on_engine_side": 116,
-   "of_which_without_data_gaps": 93
+   "of_which_without_data_gaps": 94
   },
   {
    "feature": "door_progress",
    "owner": "door gate: quest progress",
    "quests_complete_on_engine_side": 129,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
    "quests_complete_on_engine_side": 135,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "item_hand_out",
    "owner": "DUR-03 inventory mint",
    "quests_complete_on_engine_side": 144,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "summon",
    "owner": "GAME-AI-01 spawn",
    "quests_complete_on_engine_side": 154,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "achievement",
    "owner": "Achievement owner",
    "quests_complete_on_engine_side": 160,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "condition",
    "owner": "owner for player conditions (none yet)",
    "quests_complete_on_engine_side": 171,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "creature_removal",
    "owner": "owner for creature removal (none yet)",
    "quests_complete_on_engine_side": 177,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "boss_cooldown",
    "owner": "boss cooldown owner (none yet)",
    "quests_complete_on_engine_side": 187,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "kv_state",
    "owner": "owner for key-value writes (none yet)",
    "quests_complete_on_engine_side": 194,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "outfit",
    "owner": "Outfit grant owner",
    "quests_complete_on_engine_side": 198,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "mount",
    "owner": "Mount grant owner",
    "quests_complete_on_engine_side": 202,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   },
   {
    "feature": "experience",
    "owner": "Character XP award from an interaction",
    "quests_complete_on_engine_side": 204,
-   "of_which_without_data_gaps": 94
+   "of_which_without_data_gaps": 95
   }
  ],
  "quests": [
@@ -321,7 +321,7 @@
    "interactions": 2,
    "data_gaps": {
     "interactions_with_gaps": 2,
-    "unresolved_items": 3
+    "unresolved_items": 5
    }
   },
   {
@@ -633,7 +633,7 @@
    "interactions": 38,
    "data_gaps": {
     "interactions_with_gaps": 32,
-    "unresolved_items": 226
+    "unresolved_items": 223
    }
   },
   {
@@ -658,7 +658,7 @@
    "interactions": 25,
    "data_gaps": {
     "interactions_with_gaps": 21,
-    "unresolved_items": 104
+    "unresolved_items": 103
    }
   },
   {
@@ -771,7 +771,7 @@
    "interactions": 8,
    "data_gaps": {
     "interactions_with_gaps": 4,
-    "unresolved_items": 6
+    "unresolved_items": 5
    }
   },
   {
@@ -1097,7 +1097,7 @@
    "interactions": 61,
    "data_gaps": {
     "interactions_with_gaps": 55,
-    "unresolved_items": 209
+    "unresolved_items": 207
    }
   },
   {
@@ -1148,7 +1148,7 @@
    "interactions": 39,
    "data_gaps": {
     "interactions_with_gaps": 34,
-    "unresolved_items": 149
+    "unresolved_items": 147
    }
   },
   {
@@ -1251,7 +1251,7 @@
    "interactions": 46,
    "data_gaps": {
     "interactions_with_gaps": 29,
-    "unresolved_items": 99
+    "unresolved_items": 95
    }
   },
   {
@@ -1414,7 +1414,7 @@
    "interactions": 2,
    "data_gaps": {
     "interactions_with_gaps": 2,
-    "unresolved_items": 8
+    "unresolved_items": 7
    }
   },
   {
@@ -1554,8 +1554,8 @@
    ],
    "interactions": 69,
    "data_gaps": {
-    "interactions_with_gaps": 40,
-    "unresolved_items": 146
+    "interactions_with_gaps": 36,
+    "unresolved_items": 124
    }
   },
   {
@@ -1646,8 +1646,8 @@
    ],
    "interactions": 7,
    "data_gaps": {
-    "interactions_with_gaps": 5,
-    "unresolved_items": 9
+    "interactions_with_gaps": 2,
+    "unresolved_items": 6
    }
   },
   {
@@ -2074,8 +2074,8 @@
    ],
    "interactions": 10,
    "data_gaps": {
-    "interactions_with_gaps": 10,
-    "unresolved_items": 31
+    "interactions_with_gaps": 9,
+    "unresolved_items": 30
    }
   },
   {
@@ -2096,7 +2096,7 @@
    "interactions": 23,
    "data_gaps": {
     "interactions_with_gaps": 22,
-    "unresolved_items": 78
+    "unresolved_items": 77
    }
   },
   {
@@ -2117,8 +2117,8 @@
    ],
    "interactions": 4,
    "data_gaps": {
-    "interactions_with_gaps": 4,
-    "unresolved_items": 10
+    "interactions_with_gaps": 3,
+    "unresolved_items": 11
    }
   },
   {
@@ -2224,7 +2224,7 @@
    "interactions": 14,
    "data_gaps": {
     "interactions_with_gaps": 13,
-    "unresolved_items": 49
+    "unresolved_items": 52
    }
   },
   {
@@ -2312,7 +2312,7 @@
    "interactions": 36,
    "data_gaps": {
     "interactions_with_gaps": 36,
-    "unresolved_items": 114
+    "unresolved_items": 113
    }
   },
   {
@@ -2361,7 +2361,7 @@
    "interactions": 1,
    "data_gaps": {
     "interactions_with_gaps": 1,
-    "unresolved_items": 7
+    "unresolved_items": 5
    }
   },
   {
@@ -2449,7 +2449,7 @@
    "interactions": 24,
    "data_gaps": {
     "interactions_with_gaps": 22,
-    "unresolved_items": 61
+    "unresolved_items": 64
    }
   },
   {
@@ -2488,7 +2488,7 @@
    "interactions": 5,
    "data_gaps": {
     "interactions_with_gaps": 3,
-    "unresolved_items": 17
+    "unresolved_items": 18
    }
   },
   {
@@ -2568,7 +2568,7 @@
    "interactions": 57,
    "data_gaps": {
     "interactions_with_gaps": 53,
-    "unresolved_items": 181
+    "unresolved_items": 175
    }
   },
   {
@@ -2634,7 +2634,7 @@
    "interactions": 29,
    "data_gaps": {
     "interactions_with_gaps": 23,
-    "unresolved_items": 43
+    "unresolved_items": 41
    }
   },
   {
@@ -2656,7 +2656,7 @@
    "interactions": 13,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 60
+    "unresolved_items": 64
    }
   },
   {
@@ -2681,7 +2681,7 @@
    "interactions": 10,
    "data_gaps": {
     "interactions_with_gaps": 9,
-    "unresolved_items": 26
+    "unresolved_items": 25
    }
   },
   {
@@ -2753,8 +2753,8 @@
    ],
    "interactions": 16,
    "data_gaps": {
-    "interactions_with_gaps": 14,
-    "unresolved_items": 40
+    "interactions_with_gaps": 12,
+    "unresolved_items": 36
    }
   },
   {
@@ -2873,8 +2873,8 @@
    ],
    "interactions": 20,
    "data_gaps": {
-    "interactions_with_gaps": 10,
-    "unresolved_items": 31
+    "interactions_with_gaps": 11,
+    "unresolved_items": 34
    }
   },
   {
@@ -2924,7 +2924,7 @@
    "interactions": 37,
    "data_gaps": {
     "interactions_with_gaps": 33,
-    "unresolved_items": 140
+    "unresolved_items": 137
    }
   },
   {
@@ -2960,8 +2960,8 @@
    ],
    "interactions": 1,
    "data_gaps": {
-    "interactions_with_gaps": 1,
-    "unresolved_items": 1
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
    }
   },
   {
@@ -3038,7 +3038,7 @@
    "interactions": 6,
    "data_gaps": {
     "interactions_with_gaps": 6,
-    "unresolved_items": 27
+    "unresolved_items": 28
    }
   },
   {
@@ -3091,7 +3091,7 @@
    "interactions": 29,
    "data_gaps": {
     "interactions_with_gaps": 23,
-    "unresolved_items": 97
+    "unresolved_items": 121
    }
   },
   {
@@ -3125,10 +3125,10 @@
     "trigger_use",
     "world_object"
    ],
-   "interactions": 21,
+   "interactions": 20,
    "data_gaps": {
-    "interactions_with_gaps": 14,
-    "unresolved_items": 71
+    "interactions_with_gaps": 13,
+    "unresolved_items": 65
    }
   },
   {
@@ -3160,8 +3160,8 @@
    ],
    "interactions": 4,
    "data_gaps": {
-    "interactions_with_gaps": 4,
-    "unresolved_items": 12
+    "interactions_with_gaps": 3,
+    "unresolved_items": 7
    }
   },
   {
@@ -3322,7 +3322,7 @@
    "interactions": 1,
    "data_gaps": {
     "interactions_with_gaps": 1,
-    "unresolved_items": 9
+    "unresolved_items": 6
    }
   },
   {
@@ -3385,7 +3385,7 @@
    "interactions": 22,
    "data_gaps": {
     "interactions_with_gaps": 16,
-    "unresolved_items": 72
+    "unresolved_items": 71
    }
   },
   {
@@ -3399,7 +3399,7 @@
    "interactions": 3,
    "data_gaps": {
     "interactions_with_gaps": 3,
-    "unresolved_items": 9
+    "unresolved_items": 7
    }
   },
   {
@@ -3482,8 +3482,8 @@
    ],
    "interactions": 5,
    "data_gaps": {
-    "interactions_with_gaps": 4,
-    "unresolved_items": 9
+    "interactions_with_gaps": 3,
+    "unresolved_items": 8
    }
   },
   {
@@ -3530,8 +3530,8 @@
    ],
    "interactions": 17,
    "data_gaps": {
-    "interactions_with_gaps": 17,
-    "unresolved_items": 39
+    "interactions_with_gaps": 12,
+    "unresolved_items": 38
    }
   }
  ],

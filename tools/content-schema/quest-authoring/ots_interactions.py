@@ -32,11 +32,14 @@ import hashlib
 import json
 import re
 from collections import Counter
+from functools import lru_cache
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import lua_blocks
 import lua_tables
-from lua_writers import REGISTRATION, argument, expand_aliases, storage_aliases, strip_code
+from lua_writers import (REGISTRATION, argument, expand_aliases, storage_aliases,
+                         scalar_leaf_paths, static_name_is_immutable, strip_code, unconditional_prefix)
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
 from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_INCOMPLETE_CALL, BLOCKED_SCHEDULED_REVERT_DELAY
@@ -165,44 +168,76 @@ def parse_revert(code, raw):
     return False, None, None, None, False, False
 
 
-def call_complete(text, start):
-    """The rest of a call's argument list from `start`, up to its own closing parenthesis -- or `None`
-    when that closing parenthesis is not on this line at all (a multi-line call): `lua_writers.argument`
-    is read one physical line at a time, so a call whose argument list is still open at end of line would
-    otherwise be handed to `split_args` as if it were complete, silently dropping or misreading whatever
-    the next line(s) actually contribute. A D38 operation is typed only from a call this confirms closed;
-    otherwise its child stays blocked with `BLOCKED_INCOMPLETE_CALL`, never guessed from partial text."""
-    depth, i = 0, start
-    while i < len(text):
-        c = text[i]
+def delimiters(text):
+    """Bracket/boolean separators outside quoted strings; never interpret Lua."""
+    depth, quote, escaped = 0, None, False
+    for i, c in enumerate(text):
+        if quote:
+            if escaped:
+                escaped = False
+            elif c == "\\":
+                escaped = True
+            elif c == quote:
+                quote = None
+            continue
+        if c in "\"'":
+            quote = c
+            continue
+        yield i, c, depth
         if c in '({[':
             depth += 1
         elif c in ')}]':
-            if depth == 0:
-                return text[start:i]
             depth -= 1
-        i += 1
+
+
+def call_complete(text, start):
+    """A complete call's own arguments, respecting quoted punctuation and nesting."""
+    for i, c, depth in delimiters(text[start:]):
+        if c == ')' and depth == 0:
+            return text[start:start + i]
     return None
 
 
 def split_args(text):
-    """The top-level, comma-separated arguments of a call's argument-list text (bracket-nesting aware,
-    so a literal `Position(x, y, z)` argument is not itself split on its own commas)."""
-    if not text.strip():
-        return []
-    parts, depth, current = [], 0, ''
-    for c in text:
-        if c in '({[':
-            depth += 1
-        elif c in ')}]':
-            depth -= 1
-        if c == ',' and depth == 0:
-            parts.append(current)
-            current = ''
-        else:
-            current += c
-    parts.append(current)
-    return [p.strip() for p in parts]
+    cuts = [i for i, c, depth in delimiters(text) if c == ',' and depth == 0]
+    bounds = [-1, *cuts, len(text)]
+    return [text[a + 1:b].strip() for a, b in zip(bounds, bounds[1:])] if text.strip() else []
+
+
+class LiteralParser(lua_tables.Parser):
+    """Only Position's literal constructor is added to the existing table subset."""
+    def value(self):
+        if self.peek()[1] == 'Position' and self.peek(1)[1] == '(':
+            self.next()
+            self.expect('(')
+            value = super().value()
+            if self.peek()[1] == ',':
+                self.expect(',')
+                y = super().value()
+                self.expect(',')
+                z = super().value()
+                if not all(type(v) is int for v in (value, y, z)):
+                    raise lua_tables.LuaError('Position coordinates are not literal integers')
+                value = {'x': value, 'y': y, 'z': z}
+            self.expect(')')
+            return value
+        return super().value()
+
+
+@lru_cache(maxsize=4)
+def item_names(repo):
+    """Exact XML names only: duplicate names/ranges never choose an arbitrary ID."""
+    path = Path(repo) / 'data/items/items.xml'
+    if not path.exists():
+        return {}
+    names = {}
+    for item in ET.parse(path).getroot().findall('item'):
+        name = item.get('name', '').lower()
+        if not name:
+            continue
+        ident = int(item.get('id')) if item.get('id', '').isdigit() else None
+        names[name] = ident if name not in names else None
+    return {name: ident for name, ident in names.items() if ident is not None}
 
 
 def strip_internal(rules):
@@ -233,6 +268,9 @@ VALUE_ALIAS = re.compile(r'^local\s+(\w+)\s*=\s*((?:\w+:getStorageValue|Game\.ge
 class Script:
     def __init__(self, server, repo, path, transitions, name):
         self.server, self.path, self.name = server, path, name
+        self.repo = str(repo)
+        self.current_line = 0
+        self.literal_aliases = {}
         self.namespace = 'canary' if server == 'canary' else 'crystalserver'
         self.lines = (Path(repo) / path).read_text(errors='replace').split('\n')
         self.transitions = transitions
@@ -267,6 +305,29 @@ class Script:
         names = [n.strip() for n in params.split(',')]
         self.roles = {n: r for n, r in zip(names, ROLES.get(callback, ())) if r}
         self.callback = callback
+        # No shadowing or mutation: only one declaration in the file, before this use,
+        # either before all functions or in this callback. Branch-selected values stay unknown.
+        prefix = unconditional_prefix(self.lines)
+        body_nodes = lua_blocks.parse(self.lines, lua_blocks.function_body(self.lines, number))
+        body_numbers = {node[1] for node in body_nodes if node[0] == 'stmt'}
+        self.literal_aliases = {}
+        self.visible_tables = {}
+        for n, line in enumerate(self.lines, 1):
+            m = re.fullmatch(r'\s*local\s+(\w+)\s*=\s*(.+?)\s*(?:--.*)?', line)
+            if m and (n in prefix or n in body_numbers) and self.immutable(m.group(1)):
+                if m.group(2).startswith('{'):
+                    self.visible_tables[m.group(1)] = n
+                else:
+                    expression = m.group(2)
+                    if expression.startswith('Position('):
+                        if not static_name_is_immutable(self.lines, m.group(1), references=True):
+                            continue
+                    elif CHAIN.fullmatch(expression):
+                        value = self.literal(expression, before=n)
+                        storage = isinstance(value, dict) and set(value) == {'expr'} and LITERAL_STORAGE.fullmatch(value['expr'])
+                        if type(value) not in (int, float, str, bool) and not storage:
+                            continue
+                    self.literal_aliases[m.group(1)] = (n, expression)
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
         self.containers = {}
@@ -314,42 +375,93 @@ class Script:
         path = track_of(storage)
         return self.declared.get(norm(path), f'{self.namespace}:quest-progress/{path}')
 
-    def discover_tables(self):
-        """Every `Name = { … }` table literal in this file, read once with lua_tables so a storage key that is a
-        path into one of them (`config.storage`, `rewards[3148].storage`) can be resolved without evaluating Lua.
-        Any parse trouble (a table holding something lua_tables cannot read) just leaves this file's tables empty:
-        the keys stay unresolved rather than guessed."""
-        text = '\n'.join(self.lines)
-        names = {m.group(1) for m in NAME_TABLE.finditer(text)}
-        try:
-            parsed = lua_tables.assignments(text, names)
-            return {name: lua_tables.as_python(table) for name, table in parsed.items()}
-        except Exception:
-            return {}
+    def immutable(self, name):
+        return static_name_is_immutable(self.lines, name)
 
-    def resolve_chain(self, expr):
-        """A dotted/bracket-indexed path rooted at one of this file's table literals, resolved to its leaf value
-        (never a runtime-selected entry: a `[name]` step, indexing by a variable or loop counter, stops it)."""
+    def discover_tables(self):
+        # Parse each independently: an unsupported constructor must not erase a sibling literal.
+        text, out = '\n'.join(self.lines), {}
+        for name in sorted({m.group(1) for m in NAME_TABLE.finditer(text)}):
+            if not self.immutable(name):
+                continue
+            try:
+                parser = LiteralParser(text)
+                while parser.peek()[0] != 'eof':
+                    kind, token, _ = parser.next()
+                    if kind == 'name' and token == name and parser.peek()[1] == '=' and parser.peek(1)[1] == '{':
+                        parser.next()
+                        value = lua_tables.as_python(parser.table())
+                        if static_name_is_immutable(self.lines, name, references=True,
+                                                    scalar_paths=scalar_leaf_paths(value, name)):
+                            out[name] = value
+            except (lua_tables.LuaError, IndexError, TypeError, ValueError):
+                pass
+        return out
+
+    def literal(self, expr, seen=(), before=None):
+        """Resolve the closed immutable subset; runtime calls, indexes and arithmetic stay unknown."""
+        limit = self.current_line if before is None else before
+        expr = expr.strip()
+        if expr in seen or len(seen) > 32:
+            return None
+        if re.fullmatch(r'-?\d+', expr):
+            return int(expr)
+        if re.fullmatch(r'0[xX][0-9a-fA-F]+', expr):
+            return int(expr, 16)
+        if re.fullmatch(r'"[^"\\]*"|\'[^\'\\]*\'', expr):
+            return expr[1:-1]
+        if expr in self.literal_aliases and expr not in seen:
+            line, value = self.literal_aliases[expr]
+            if line < limit:
+                return self.literal(value, (*seen, expr), before=line)
         m = CHAIN.fullmatch(expr)
-        if not m or m.group(1) not in self.tables:
+        if (not m or m.group(1) not in self.tables or m.group(1) not in self.visible_tables
+                or self.visible_tables[m.group(1)] >= limit):
             return None
         value = self.tables[m.group(1)]
         for field, index, runtime in CHAIN_STEP.findall(m.group(2)):
             if runtime:
                 return None
-            if field:
-                if not isinstance(value, dict) or field not in value:
-                    return None
-                value = value[field]
+            if field and isinstance(value, dict):
+                value = value.get(field)
+            elif index and isinstance(value, list) and 1 <= int(index) <= len(value):
+                value = value[int(index) - 1]
+            elif index and isinstance(value, dict):
+                value = value.get(int(index))
             else:
-                index = int(index)
-                if isinstance(value, list) and 1 <= index <= len(value):
-                    value = value[index - 1]
-                elif isinstance(value, dict) and index in value:
-                    value = value[index]
-                else:
-                    return None
+                return None
+        if isinstance(value, dict) and set(value) == {'expr'}:
+            resolved = self.literal(value['expr'], (*seen, expr), before=self.visible_tables[m.group(1)]) if value['expr'] != expr else None
+            return resolved if resolved is not None else value
         return value
+
+    def resolve_chain(self, expr):
+        return self.literal(expr)
+
+    def position(self, expr, seen=(), before=None):
+        if not expr:
+            return None
+        limit = self.current_line if before is None else before
+        expr = expr.strip()
+        if m := POSITION.fullmatch(expr):
+            return self.xyz(m.groups())
+        if expr in self.literal_aliases and expr not in seen:
+            line, value = self.literal_aliases[expr]
+            if line < limit:
+                return self.position(value, (*seen, expr), before=line)
+        if expr.startswith('Position(') and (args := call_complete(expr, len('Position('))) is not None:
+            if expr == 'Position(' + args + ')' and len(split_args(args)) == 1:
+                return self.position(args, seen, before=limit)
+        value = self.literal(expr, before=limit)
+        if isinstance(value, dict) and set(value) == {'x', 'y', 'z'} and all(type(v) is int for v in value.values()):
+            return (value['x'], value['y'], value['z'])
+        return None
+
+    def item_id(self, expr):
+        value = self.literal(expr)
+        if type(value) is int and value > 0:
+            return value
+        return item_names(self.repo).get(value.lower()) if isinstance(value, str) else None
 
     def resolve_storage(self, expr):
         """A storage-key expression as a literal `Storage.…` path or integer: already literal, or a path into a
@@ -378,9 +490,43 @@ class Script:
         return all(READ_ONLY.match(name) for name in re.findall(r'(\w+)\s*\(', code))
 
     def condition(self, text, number):
+        self.current_line = number
         # never inside a string literal (e.g. the `"switchNum"` key of the very call an alias stands for)
         for alias, expr in self.value_aliases.items():
             text = re.sub(rf'(?<![\w.:"\']){re.escape(alias)}(?![\w"\'])', expr, text)
+        text = text.strip()
+        while text.startswith('(') and call_complete(text, 1) == text[1:-1]:
+            text = text[1:-1].strip()
+        # Lua's precedence is `not`, then `and`, then `or`; split only outside brackets/strings.
+        for join in ('or', 'and'):
+            cuts = [i for i, _, depth in delimiters(text) if depth == 0
+                    and re.match(rf'\b{join}\b', text[i:]) and (i == 0 or not text[i - 1].isalnum() and text[i - 1] != '_')]
+            if cuts:
+                bounds = [-len(join), *cuts, len(text)]
+                terms = [text[a + len(join):b].strip() for a, b in zip(bounds, bounds[1:])]
+                parsed = [self.condition(t, number) for t in terms]
+                if any('unresolved' in p for p in parsed):
+                    return {'unresolved': {'line': number}}
+                return {('any' if join == 'or' else 'all'): parsed}
+        if text.startswith('not (') and call_complete(text, 5) == text[5:-1]:
+            def invert(value):
+                if 'all' in value or 'any' in value:
+                    key = 'all' if 'all' in value else 'any'
+                    return {('any' if key == 'all' else 'all'): [invert(v) for v in value[key]]}
+                if 'negate' in value:
+                    value['negate'] = not value['negate']
+                return value
+            return invert(self.condition(text[5:-1], number))
+        # Convert only static comparison operands; do not substitute strings as Lua code.
+        if m := re.fullmatch(r'(.+?)\s*(==|~=|<=|>=|<|>)\s*(.+)', text):
+            value = self.literal(m.group(3))
+            if type(value) is int:
+                text = f'{m.group(1)} {m.group(2)} {value}'
+        text = re.sub(r':getItemCount\(([^()]*)\)',
+                      lambda m: f':getItemCount({ident})' if (ident := self.item_id(m.group(1))) else m.group(0), text)
+        text = re.sub(r'\b(\w+):getId\(\)',
+                      lambda m: f'{m.group(1)}.itemid' if self.roles.get(m.group(1)) in ('source', 'contact')
+                      else m.group(0), text)
         parts = re.split(r'\s+(and|or)\s+', text)
         terms, joins = parts[0::2], set(parts[1::2])
         if len(joins) > 1:
@@ -421,6 +567,7 @@ class Script:
         return {('any' if 'or' in joins else 'all'): out}
 
     def children(self, number, in_loop=False):
+        self.current_line = number
         code, raw = strip_code(self.lines[number - 1]).strip(), self.raw(number)
         found = []
         for m in re.finditer(r'(\w+):setStorageValue\(\s*([\w.\[\]]+)\s*,', raw):
@@ -450,13 +597,14 @@ class Script:
         if 'teleportTo(' in code and (tm := TELEPORT_CALL.search(raw)):
             target_args = split_args(argument(raw, tm.end()))
             target = target_args[0] if target_args else None
-            pos = POSITION.fullmatch(target) if target else None
-            if pos:
+            position = self.position(target)
+            if position and all(v >= 0 for v in position):
+                pos_groups = tuple(str(v) for v in position) + (None, None, None)
                 # D37: a relocation to a named anchor, in the current scope (VSL-MOVE-01/ChannelRuntime);
                 # cross-Channel/Instance relocation (SCOPE_HANDOFF) has no source signal here and stays
                 # out of scope until that contract exists (proposal §3).
                 found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
-                              'target': {'kind': 'anchor', 'anchor': self.anchor(pos.groups())}})
+                              'target': {'kind': 'anchor', 'anchor': self.anchor(pos_groups)}})
             elif target == 'fromPosition':
                 found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
                               'target': {'kind': 'previous_position'}})
@@ -578,14 +726,16 @@ class Script:
             else:
                 self.unresolved.append({'line': number, 'reason': 'container reward item is not a plain literal item type'})
             return found
-        if (m := re.search(r'(\w+):addItem\(\s*(\d+)?\s*(?:,\s*(\d+)\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+        if re.search(r':addItem\(', code) and (m := re.search(r'(\w+):addItem\(', raw)) and m.group(1) in self.players | {'player'}:
+            args_text = call_complete(raw, m.end())
+            args = split_args(args_text) if args_text is not None else []
+            ident = self.item_id(args[0]) if args else None
+            count = self.literal(args[1]) if len(args) == 2 else 1 if len(args) == 1 else None
             child = {'owner': 'Item', 'request': 'hand_out',
-                     **({'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)}
-                        if m.group(2) and raw[m.end():m.end() + 1] == ')' else {'value_source_line': number})}
+                     **({'item': ref('Item', f'{self.namespace}:item/{ident}'), 'count': count}
+                        if ident and type(count) is int and count > 0 else {'value_source_line': number})}
             found.append(child)
             if 'item' in child and (alias := re.match(r'local\s+(\w+)\s*=', raw)):
-                # this local now names the container, so a later plain `NAME:addItem(...)`/`:addItemEx(...)` in the
-                # same callback is that reward's contents, not a separate unowned effect
                 self.containers[alias.group(1)] = child
         if re.search(r':addAchievement\(', raw):
             if (m := re.search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
@@ -640,10 +790,12 @@ class Script:
         `removeItem`, or `remove` on the item used (`onUse`) or dropped onto the edge (`onAddItem`)."""
         receiver, method, args = removal.groups()
         if method == 'removeItem' and receiver in self.players | {'player'}:
-            m = re.fullmatch(r'\s*(\d+)\s*(?:,\s*(\d+)\s*)?', args)
+            parts = split_args(args)
+            ident = self.item_id(parts[0]) if parts else None
+            count = self.literal(parts[1]) if len(parts) == 2 else 1 if len(parts) == 1 else None
             return {'owner': 'Item', 'request': 'consume',
-                    **({'item': ref('Item', f'{self.namespace}:item/{m.group(1)}'), 'count': int(m.group(2) or 1)}
-                       if m else {'value_source_line': number})}
+                    **({'item': ref('Item', f'{self.namespace}:item/{ident}'), 'count': count}
+                       if ident and type(count) is int and count > 0 else {'value_source_line': number})}
         role = self.roles.get(receiver)
         if method == 'remove' and ((role == 'source' and self.callback == 'onUse') or role == 'contact'):
             return {'owner': 'Item', 'request': 'consume', 'object': 'used_item' if role == 'source' else 'contact'}

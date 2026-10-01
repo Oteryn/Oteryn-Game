@@ -19,15 +19,15 @@
       "Movement": 800,
       "Outfit": 14,
       "Presentation": 2679,
-      "Quest": 947,
+      "Quest": 920,
       "WorldObject": 844
     },
     "blocked_children": {
-      "Movement": 380,
+      "Movement": 331,
       "WorldObject": 166
     },
     "relocation_children": {
-      "anchor": 217,
+      "anchor": 266,
       "previous_position": 203
     },
     "overlay_operations": {
@@ -37,16 +37,17 @@
       "TRANSFORM": 479
     },
     "overlay_operations_with_revert_after": 0,
-    "quest_children_naming_a_transition": 215,
-    "unresolved_lines": 1902,
-    "unresolved_conditions": 1786,
+    "quest_children_naming_a_transition": 212,
+    "unresolved_lines": 1929,
+    "unresolved_conditions": 1775,
     "by_status": {
-      "mapped": 184,
-      "unresolved_semantics": 1037
+      "mapped": 202,
+      "unresolved_semantics": 1019
     }
   },
   "undeclared_progress_tracks": [
-    "canary:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience"
+    "canary:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
+    "canary:quest-progress/storage/775558"
   ],
   "entries": [
     {
@@ -8407,7 +8408,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_left_mirror",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8446,7 +8447,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_right_mirror",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8862,7 +8863,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_left_mirror",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -8901,7 +8902,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_right_mirror",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -9467,7 +9468,7 @@
     },
     {
       "destination": "canary:interaction/liquid_black/actions_chairteleport",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -9562,7 +9563,7 @@
     },
     {
       "destination": "canary:interaction/liquid_black/movements_quick_access",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -9581,7 +9582,7 @@
     },
     {
       "destination": "canary:interaction/liquid_black/movements_shortcut",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -9785,7 +9786,7 @@
     },
     {
       "destination": "crystalserver:interaction/newhaven/on_use_newhaven",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -10617,7 +10618,7 @@
     },
     {
       "destination": "canary:interaction/roshamuul_quest/movements_lower_roshamuul_lower_roshamuul20122",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -10953,7 +10954,7 @@
     },
     {
       "destination": "canary:interaction/rottin_wood_and_married_men/actions_broken_wall",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -12532,7 +12533,7 @@
     },
     {
       "destination": "crystalserver:interaction/targuna/movements_aragonia_matilda_travel",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -12545,7 +12546,7 @@
     },
     {
       "destination": "crystalserver:interaction/targuna/movements_crimson_court_boss_room_exit",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -12558,7 +12559,7 @@
     },
     {
       "destination": "crystalserver:interaction/targuna/movements_crimson_court_energy_portal",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -12571,7 +12572,7 @@
     },
     {
       "destination": "crystalserver:interaction/targuna/movements_crimson_court_inner_tp",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -12636,7 +12637,7 @@
     },
     {
       "destination": "crystalserver:interaction/targuna/movements_temple_teleport",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -16211,7 +16212,7 @@
     },
     {
       "destination": "canary:interaction/the_new_frontier/movement_jail_exit",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -16249,7 +16250,7 @@
     },
     {
       "destination": "canary:interaction/the_new_frontier/movement_prision_trap",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -17809,7 +17810,7 @@
     },
     {
       "destination": "canary:interaction/the_queen_of_the_banshees/movement_5_fifth_seal_path",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -19589,7 +19590,7 @@
     },
     {
       "destination": "canary:interaction/the_tainted_soul/actions_star_herb",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -20317,7 +20318,7 @@
     },
     {
       "destination": "canary:interaction/tinder_box_quest_chyllfroest/actions_tinder_box",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -21284,18 +21285,6 @@
     },
     {
       "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_50/hidden_threats/rewards/key_fragment01",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/hidden_threats/movement_chests_check"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_50/hidden_threats/rewards/key_fragment02",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/hidden_threats/movement_chests_check"
-    },
-    {
-      "field": "condition.quest_stage.progress",
       "key": "canary:quest-progress/quest/u11_80/the_secret_library/asuras/flamming_orchid",
       "reason": "progress track not declared",
       "record": "canary:interaction/the_secret_library_quest/the_lament_asuras/actions_mirror"
@@ -21341,12 +21330,6 @@
       "key": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/permission",
       "reason": "progress track not declared",
       "record": "canary:interaction/the_dream_courts_quest/movements_acess_teleports"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/got_axe",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_dream_courts_quest/actions_golden_axe"
     },
     {
       "field": "condition.quest_stage.progress",
@@ -21653,12 +21636,6 @@
       "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
       "reason": "progress track not declared",
       "record": "crystalserver:interaction/the_dream_courts/actions_portal_nightmare_beast"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/got_axe",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/the_dream_courts/actions_golden_axe"
     },
     {
       "field": "condition.quest_stage.progress",

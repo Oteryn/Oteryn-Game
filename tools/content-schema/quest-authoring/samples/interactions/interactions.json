@@ -17,9 +17,17 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 18
-                }
+                "object": {
+                  "role": "source",
+                  "field": "item_type",
+                  "op": "~=",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/34015",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  }
+                },
+                "negate": false
               },
               "then": []
             }
@@ -29,9 +37,16 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 22
-                    }
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/34008",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      },
+                      "op": "<",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -3621,12 +3636,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "canary:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
-                      "op": "==",
-                      "value": 3
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 15
+                    }
                   },
                   "then": [
                     {
@@ -3639,12 +3651,6 @@
                       "owner": "Presentation",
                       "effect": "magic_effect",
                       "authoritative": false
-                    },
-                    {
-                      "owner": "Quest",
-                      "request": "set_progress",
-                      "progress": "canary:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
-                      "to": 4
                     }
                   ]
                 }
@@ -3658,6 +3664,10 @@
         {
           "line": 18,
           "reason": "delayed callback (addEvent) without a scheduler owner"
+        },
+        {
+          "line": 19,
+          "reason": "statement outside the transcribed vocabulary"
         }
       ]
     },
@@ -4180,9 +4190,36 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 28
-                }
+                "all": [
+                  {
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u8_0/barbarian_test/questline",
+                          "op": "==",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u8_0/barbarian_test/questline",
+                          "op": "==",
+                          "value": 2
+                        },
+                        "negate": false
+                      }
+                    ]
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u8_0/barbarian_test/mead_total_sips",
+                      "op": ">=",
+                      "value": 20
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -10660,9 +10697,30 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 151
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 5501
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/8912",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -10743,9 +10801,30 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 198
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 5502
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/8912",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -12023,9 +12102,12 @@
                                   "then": [
                                     {
                                       "owner": "Movement",
-                                      "status": "blocked",
-                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                                      "to_source_line": 32
+                                      "request": "relocate",
+                                      "scope": "in_scope",
+                                      "target": {
+                                        "kind": "anchor",
+                                        "anchor": "p1"
+                                      }
                                     },
                                     {
                                       "owner": "Quest",
@@ -12067,7 +12149,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33487,
+            "y": 32230,
+            "z": 10
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -17107,9 +17198,17 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 133
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/2772",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -20626,9 +20725,12 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 11
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p1"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -20642,7 +20744,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33640,
+            "y": 31379,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -35284,9 +35395,17 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 18
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/22157",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -35326,9 +35445,17 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 34
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/22156",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -36591,9 +36718,17 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 16
-                        }
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/23734",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -38021,9 +38156,12 @@
                             },
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 61,
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              },
                               "repeated": true
                             },
                             {
@@ -38078,7 +38216,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32977,
+            "y": 31667,
+            "z": 14
+          }
+        }
+      ],
       "unresolved": [
         {
           "line": 29,
@@ -40664,9 +40811,17 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 80
-                }
+                "object": {
+                  "role": "source",
+                  "field": "item_type",
+                  "op": "==",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/31482",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  }
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -40689,9 +40844,17 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 90
-                }
+                "object": {
+                  "role": "source",
+                  "field": "item_type",
+                  "op": "==",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/31449",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  }
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -41421,9 +41584,17 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 87
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/31482",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -41446,9 +41617,17 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 97
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/31449",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -49144,42 +49323,11 @@
               "branch": [
                 {
                   "when": {
-                    "all": [
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u11_50/hidden_threats/rewards/key_fragment01",
-                          "op": "==",
-                          "value": 1
-                        },
-                        "negate": false
-                      },
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u11_50/hidden_threats/rewards/key_fragment02",
-                          "op": "==",
-                          "value": 1
-                        },
-                        "negate": false
-                      },
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u11_50/hidden_threats/quest_line",
-                          "op": "==",
-                          "value": 2
-                        },
-                        "negate": false
-                      }
-                    ]
-                  },
-                  "then": [
-                    {
-                      "owner": "Quest",
-                      "request": "set_progress",
-                      "progress": "canary:quest-progress/quest/u11_50/hidden_threats/quest_line",
-                      "to": 3,
-                      "transition": "canary:quest/tibia_tales#hidden_threats:movement_1"
+                    "unresolved": {
+                      "line": 9
                     }
-                  ]
+                  },
+                  "then": []
                 }
               ]
             }
@@ -49187,7 +49335,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 10,
+          "reason": "statement outside the transcribed vocabulary"
+        }
+      ]
     },
     {
       "identity": {
@@ -49294,9 +49447,12 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 6
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -49326,7 +49482,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32402,
+            "y": 32794,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -51757,9 +51922,12 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 48
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -51777,7 +51945,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33936,
+            "y": 31648,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -51936,9 +52113,12 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 64
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -51956,7 +52136,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33899,
+            "y": 31644,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -53405,9 +53594,12 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 54
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              }
                             },
                             {
                               "owner": "Presentation",
@@ -53420,9 +53612,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 57
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p2"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -53455,9 +53650,12 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 67
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              }
                             },
                             {
                               "owner": "Presentation",
@@ -53470,9 +53668,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 70
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p2"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -53505,9 +53706,12 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 80
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              }
                             },
                             {
                               "owner": "Presentation",
@@ -53520,9 +53724,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 83
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p2"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -53555,9 +53762,12 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 93
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              }
                             },
                             {
                               "owner": "Presentation",
@@ -53570,9 +53780,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 96
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p2"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -53588,7 +53801,24 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33826,
+            "y": 31620,
+            "z": 9
+          }
+        },
+        {
+          "key": "p2",
+          "source_position": {
+            "x": 33822,
+            "y": 31645,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -53637,16 +53867,28 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 24
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 }
               ]
             }
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33826,
+            "y": 31611,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -54026,9 +54268,12 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 48
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -54046,7 +54291,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33936,
+            "y": 31648,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -54205,9 +54459,12 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 64
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -54225,7 +54482,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33899,
+            "y": 31644,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -55626,9 +55892,12 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 54
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              }
                             },
                             {
                               "owner": "Presentation",
@@ -55641,9 +55910,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 57
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p2"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -55676,9 +55948,12 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 67
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              }
                             },
                             {
                               "owner": "Presentation",
@@ -55691,9 +55966,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 70
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p2"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -55726,9 +56004,12 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 80
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              }
                             },
                             {
                               "owner": "Presentation",
@@ -55741,9 +56022,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 83
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p2"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -55776,9 +56060,12 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "status": "blocked",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                              "to_source_line": 93
+                              "request": "relocate",
+                              "scope": "in_scope",
+                              "target": {
+                                "kind": "anchor",
+                                "anchor": "p1"
+                              }
                             },
                             {
                               "owner": "Presentation",
@@ -55791,9 +56078,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 96
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p2"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -55809,7 +56099,24 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33826,
+            "y": 31620,
+            "z": 9
+          }
+        },
+        {
+          "key": "p2",
+          "source_position": {
+            "x": 33822,
+            "y": 31645,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -55858,16 +56165,28 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 24
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 }
               ]
             }
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33826,
+            "y": 31611,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -56395,9 +56714,17 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 116
-                }
+                "object": {
+                  "role": "source",
+                  "field": "item_type",
+                  "op": "~=",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/6389",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  }
+                },
+                "negate": false
               },
               "then": []
             }
@@ -56945,9 +57272,12 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 7
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -56974,7 +57304,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33269,
+            "y": 31832,
+            "z": 1
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -57298,9 +57637,12 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 12
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p1"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -57329,7 +57671,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33446,
+            "y": 31288,
+            "z": 14
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -57376,9 +57727,12 @@
                     },
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 13
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p1"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -57407,7 +57761,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33478,
+            "y": 31314,
+            "z": 7
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -58288,9 +58651,11 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 6
-                }
+                "actor_level": {
+                  "op": "<",
+                  "value": 8
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -62054,6 +62419,12 @@
                   "anchor": "p1"
                 },
                 {
+                  "owner": "Quest",
+                  "request": "set_progress",
+                  "progress": "canary:quest-progress/storage/775558",
+                  "value_source_line": 10
+                },
+                {
                   "owner": "Achievement",
                   "request": "grant",
                   "achievement": {
@@ -62190,10 +62561,6 @@
         }
       ],
       "unresolved": [
-        {
-          "line": 10,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 22,
           "reason": "loop with its own control flow"
@@ -63128,9 +63495,17 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 9
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/20122",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -64558,9 +64933,12 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 33
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p1"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -64587,7 +64965,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 34122,
+            "y": 31879,
+            "z": 14
+          }
+        }
+      ],
       "unresolved": [
         {
           "line": 22,
@@ -64816,9 +65203,12 @@
                 },
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 6
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -64844,7 +65234,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32655,
+            "y": 32205,
+            "z": 7
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -64884,12 +65283,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u8_7/rottin_wood_and_the_married_men/mission03",
-                      "op": "~=",
-                      "value": 1
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 16
+                    }
                   },
                   "then": []
                 }
@@ -64999,12 +65395,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u8_7/rottin_wood_and_the_married_men/mission03",
-                      "op": "~=",
-                      "value": 1
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 76
+                    }
                   },
                   "then": []
                 }
@@ -66123,12 +66516,9 @@
           "branch": [
             {
               "when": {
-                "quest_stage": {
-                  "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/questline",
-                  "op": "~=",
-                  "value": 3
-                },
-                "negate": false
+                "unresolved": {
+                  "line": 119
+                }
               },
               "then": []
             }
@@ -66215,12 +66605,9 @@
           "branch": [
             {
               "when": {
-                "quest_stage": {
-                  "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/questline",
-                  "op": "~=",
-                  "value": 3
-                },
-                "negate": false
+                "unresolved": {
+                  "line": 64
+                }
               },
               "then": []
             }
@@ -67161,12 +67548,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/mission12",
-                      "op": "~=",
-                      "value": 1
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 23
+                    }
                   },
                   "then": [
                     {
@@ -68432,9 +68816,17 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 264
-                        }
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/33791",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -71295,9 +71687,17 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 4
-                }
+                "object": {
+                  "role": "source",
+                  "field": "item_type",
+                  "op": "==",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/4049",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  }
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -71388,9 +71788,17 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 18
-                }
+                "object": {
+                  "role": "source",
+                  "field": "item_type",
+                  "op": "==",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/4050",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  }
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -72530,9 +72938,17 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 59
-                }
+                "object": {
+                  "role": "source",
+                  "field": "item_type",
+                  "op": "~=",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/5678",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  }
+                },
+                "negate": false
               },
               "then": []
             }
@@ -72580,12 +72996,6 @@
                   ],
                   "otherwise": [
                     {
-                      "owner": "Quest",
-                      "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u15_24/targuna/long_lost_treasure/tortoise_egg_count",
-                      "value_source_line": 75
-                    },
-                    {
                       "owner": "Item",
                       "request": "consume",
                       "object": "used_item"
@@ -72609,7 +73019,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 75,
+          "reason": "statement outside the transcribed vocabulary"
+        }
+      ]
     },
     {
       "identity": {
@@ -72671,7 +73086,12 @@
                 {
                   "owner": "Item",
                   "request": "hand_out",
-                  "value_source_line": 23
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/53074",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  },
+                  "count": 1
                 },
                 {
                   "branch": [
@@ -72928,9 +73348,12 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 22
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -72971,7 +73394,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33479,
+            "y": 32734,
+            "z": 7
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -73013,9 +73445,12 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 98
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p1"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -73028,9 +73463,12 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 101
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p2"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -73042,7 +73480,24 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32426,
+            "y": 32652,
+            "z": 14
+          }
+        },
+        {
+          "key": "p2",
+          "source_position": {
+            "x": 32435,
+            "y": 32655,
+            "z": 15
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -73102,9 +73557,12 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 57
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -73116,7 +73574,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32414,
+            "y": 32690,
+            "z": 12
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -73176,9 +73643,12 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "status": "blocked",
-                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                  "to_source_line": 79
+                  "request": "relocate",
+                  "scope": "in_scope",
+                  "target": {
+                    "kind": "anchor",
+                    "anchor": "p1"
+                  }
                 },
                 {
                   "owner": "Presentation",
@@ -73190,7 +73660,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32432,
+            "y": 32656,
+            "z": 15
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -73353,21 +73832,11 @@
                   "branch": [
                     {
                       "when": {
-                        "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u15_24/targuna/questline",
-                          "op": "<",
-                          "value": 1
-                        },
-                        "negate": false
-                      },
-                      "then": [
-                        {
-                          "owner": "Quest",
-                          "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u15_24/targuna/questline",
-                          "to": 1
+                        "unresolved": {
+                          "line": 34
                         }
-                      ]
+                      },
+                      "then": []
                     }
                   ]
                 },
@@ -73375,22 +73844,11 @@
                   "branch": [
                     {
                       "when": {
-                        "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u15_24/targuna/ancient_enemy/mission",
-                          "op": "<",
-                          "value": 1
-                        },
-                        "negate": false
-                      },
-                      "then": [
-                        {
-                          "owner": "Quest",
-                          "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u15_24/targuna/ancient_enemy/mission",
-                          "to": 1,
-                          "transition": "crystalserver:quest/targuna_quest#an_ancient_enemy:movement_1"
+                        "unresolved": {
+                          "line": 45
                         }
-                      ]
+                      },
+                      "then": []
                     }
                   ]
                 }
@@ -73410,12 +73868,20 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
+          "line": 35,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
           "line": 40,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 38,
           "reason": "loop with its own control flow"
+        },
+        {
+          "line": 46,
+          "reason": "statement outside the transcribed vocabulary"
         }
       ]
     },
@@ -73481,12 +73947,6 @@
                       ],
                       "otherwise": [
                         {
-                          "owner": "Quest",
-                          "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u15_24/targuna/long_lost_treasure/sandcastle_count",
-                          "value_source_line": 64
-                        },
-                        {
                           "owner": "Presentation",
                           "effect": "magic_effect",
                           "authoritative": false
@@ -73527,6 +73987,10 @@
         {
           "line": 43,
           "reason": "loop with its own control flow"
+        },
+        {
+          "line": 64,
+          "reason": "statement outside the transcribed vocabulary"
         }
       ]
     },
@@ -73557,9 +74021,12 @@
           "otherwise": [
             {
               "owner": "Movement",
-              "status": "blocked",
-              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-              "to_source_line": 13
+              "request": "relocate",
+              "scope": "in_scope",
+              "target": {
+                "kind": "anchor",
+                "anchor": "p1"
+              }
             },
             {
               "owner": "Presentation",
@@ -73574,7 +74041,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 31935,
+            "y": 31861,
+            "z": 7
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -74383,12 +74859,6 @@
               },
               "then": [
                 {
-                  "owner": "Quest",
-                  "request": "set_progress",
-                  "progress": "canary:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
-                  "to": 0
-                },
-                {
                   "owner": "Presentation",
                   "effect": "message",
                   "authoritative": false,
@@ -74419,12 +74889,6 @@
                     }
                   },
                   "then": [
-                    {
-                      "owner": "Quest",
-                      "request": "set_progress",
-                      "progress": "canary:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
-                      "value_source_line": 27
-                    },
                     {
                       "owner": "Presentation",
                       "effect": "magic_effect",
@@ -74483,12 +74947,6 @@
               ],
               "otherwise": [
                 {
-                  "owner": "Quest",
-                  "request": "set_progress",
-                  "progress": "canary:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
-                  "to": 0
-                },
-                {
                   "owner": "Presentation",
                   "effect": "message",
                   "authoritative": false,
@@ -74502,7 +74960,19 @@
       "anchors": [],
       "unresolved": [
         {
+          "line": 15,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
           "line": 17,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 27,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 37,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -76922,14 +77392,7 @@
                               "line": 25
                             }
                           },
-                          "then": [
-                            {
-                              "owner": "Quest",
-                              "request": "set_progress",
-                              "progress": "canary:quest-progress/quest/u7_6/the_ape_city/the_large_amphoras_cooldown",
-                              "to": 0
-                            }
-                          ]
+                          "then": []
                         }
                       ]
                     },
@@ -77033,6 +77496,10 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
+          "line": 29,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
           "line": 33,
           "reason": "loop with its own control flow"
         }
@@ -77055,9 +77522,34 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 12
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/21506",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/10420",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -77347,9 +77839,60 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 38
-                        }
+                        "any": [
+                          {
+                            "object": {
+                              "role": "use_target",
+                              "field": "item_type",
+                              "op": "==",
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/2535",
+                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                              }
+                            },
+                            "negate": false
+                          },
+                          {
+                            "object": {
+                              "role": "use_target",
+                              "field": "item_type",
+                              "op": "==",
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/2537",
+                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                              }
+                            },
+                            "negate": false
+                          },
+                          {
+                            "object": {
+                              "role": "use_target",
+                              "field": "item_type",
+                              "op": "==",
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/2539",
+                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                              }
+                            },
+                            "negate": false
+                          },
+                          {
+                            "object": {
+                              "role": "use_target",
+                              "field": "item_type",
+                              "op": "==",
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/2541",
+                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                              }
+                            },
+                            "negate": false
+                          }
+                        ]
                       },
                       "then": [
                         {
@@ -77765,9 +78308,34 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 3
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/21506",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/10420",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -78703,9 +79271,16 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 11
-                        }
+                        "actor_item_count": {
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/23738",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -79088,12 +79663,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/got_axe",
-                      "op": ">=",
-                      "value": 1
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 65
+                    }
                   },
                   "then": [
                     {
@@ -79236,13 +79808,6 @@
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/idol_count",
-              "value_source_line": 44,
-              "repeated": true
-            },
-            {
-              "owner": "Quest",
-              "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
               "to": 1,
               "repeated": true
@@ -79274,6 +79839,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 44,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 54,
           "reason": "delayed callback (addEvent) without a scheduler owner"
@@ -79525,9 +80094,34 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 11
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/30004",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/30003",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -79543,15 +80137,45 @@
                 {
                   "owner": "Item",
                   "request": "hand_out",
-                  "value_source_line": 14
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/30006",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  },
+                  "count": 1
                 }
               ]
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 16
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/30005",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/30006",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -79567,15 +80191,41 @@
                 {
                   "owner": "Item",
                   "request": "hand_out",
-                  "value_source_line": 19
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/29994",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  },
+                  "count": 1
                 }
               ]
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 21
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/29994",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 23109
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -79621,9 +80271,47 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 28
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 23109
+                    },
+                    "negate": false
+                  },
+                  {
+                    "any": [
+                      {
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/29997",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      },
+                      {
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/29996",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      }
+                    ]
+                  }
+                ]
               },
               "then": [
                 {
@@ -80190,24 +80878,9 @@
               "branch": [
                 {
                   "when": {
-                    "all": [
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
-                          "op": "==",
-                          "value": 1
-                        },
-                        "negate": false
-                      },
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
-                          "op": "<",
-                          "value": 1
-                        },
-                        "negate": false
-                      }
-                    ]
+                    "unresolved": {
+                      "line": 67
+                    }
                   },
                   "then": []
                 }
@@ -80424,9 +81097,28 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 40
-                    }
+                    "all": [
+                      {
+                        "actor_item_count": {
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/29991",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
+                          "op": "<",
+                          "value": 3
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -81279,7 +81971,7 @@
                 {
                   "when": {
                     "world_state": {
-                      "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "crystalserver:world-state/storage",
                       "op": "==",
                       "value": 5
                     },
@@ -81289,7 +81981,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_world_state",
-                      "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "crystalserver:world-state/storage",
                       "to": 0
                     },
                     {
@@ -81302,7 +81994,7 @@
                 {
                   "when": {
                     "world_state": {
-                      "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "crystalserver:world-state/storage",
                       "op": "<",
                       "value": 0
                     },
@@ -81312,7 +82004,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_world_state",
-                      "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "crystalserver:world-state/storage",
                       "to": 0
                     }
                   ]
@@ -81322,7 +82014,7 @@
                     "all": [
                       {
                         "world_state": {
-                          "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                          "key": "crystalserver:world-state/storage",
                           "op": ">=",
                           "value": 0
                         },
@@ -81330,7 +82022,7 @@
                       },
                       {
                         "world_state": {
-                          "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                          "key": "crystalserver:world-state/storage",
                           "op": "<",
                           "value": 5
                         },
@@ -81342,7 +82034,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_world_state",
-                      "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "crystalserver:world-state/storage",
                       "value_source_line": 41
                     },
                     {
@@ -82087,29 +82779,27 @@
           "branch": [
             {
               "when": {
-                "quest_stage": {
-                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
-                  "op": "<",
-                  "value": 1
-                },
-                "negate": false
+                "unresolved": {
+                  "line": 10
+                }
               },
               "then": [
                 {
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 11
-                        }
+                        "actor_item_count": {
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/23738",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "negate": false
                       },
                       "then": [
-                        {
-                          "owner": "Quest",
-                          "request": "set_progress",
-                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
-                          "to": 1
-                        },
                         {
                           "owner": "Quest",
                           "request": "set_progress",
@@ -82166,7 +82856,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 12,
+          "reason": "statement outside the transcribed vocabulary"
+        }
+      ]
     },
     {
       "identity": {
@@ -82484,12 +83179,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/got_axe",
-                      "op": ">=",
-                      "value": 1
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 65
+                    }
                   },
                   "then": [
                     {
@@ -82632,13 +83324,6 @@
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/idol_count",
-              "value_source_line": 44,
-              "repeated": true
-            },
-            {
-              "owner": "Quest",
-              "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
               "to": 1,
               "repeated": true
@@ -82670,6 +83355,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 44,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 54,
           "reason": "delayed callback (addEvent) without a scheduler owner"
@@ -82921,9 +83610,34 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 11
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/30004",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/30003",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -82939,15 +83653,45 @@
                 {
                   "owner": "Item",
                   "request": "hand_out",
-                  "value_source_line": 14
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/30006",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  },
+                  "count": 1
                 }
               ]
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 16
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/30005",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/30006",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -82963,15 +83707,41 @@
                 {
                   "owner": "Item",
                   "request": "hand_out",
-                  "value_source_line": 19
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/29994",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  },
+                  "count": 1
                 }
               ]
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 21
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/29994",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 23109
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -83017,9 +83787,47 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 28
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 23109
+                    },
+                    "negate": false
+                  },
+                  {
+                    "any": [
+                      {
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/29997",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      },
+                      {
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/29996",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      }
+                    ]
+                  }
+                ]
               },
               "then": [
                 {
@@ -83484,24 +84292,9 @@
               "branch": [
                 {
                   "when": {
-                    "all": [
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
-                          "op": "==",
-                          "value": 1
-                        },
-                        "negate": false
-                      },
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
-                          "op": "<",
-                          "value": 1
-                        },
-                        "negate": false
-                      }
-                    ]
+                    "unresolved": {
+                      "line": 67
+                    }
                   },
                   "then": []
                 }
@@ -83718,9 +84511,28 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 40
-                    }
+                    "all": [
+                      {
+                        "actor_item_count": {
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/29991",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
+                          "op": "<",
+                          "value": 3
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -84627,7 +85439,7 @@
                 {
                   "when": {
                     "world_state": {
-                      "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "canary:world-state/storage",
                       "op": "==",
                       "value": 5
                     },
@@ -84637,7 +85449,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_world_state",
-                      "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "canary:world-state/storage",
                       "to": 0
                     },
                     {
@@ -84650,7 +85462,7 @@
                 {
                   "when": {
                     "world_state": {
-                      "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "canary:world-state/storage",
                       "op": "<",
                       "value": 0
                     },
@@ -84660,7 +85472,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_world_state",
-                      "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "canary:world-state/storage",
                       "to": 0
                     }
                   ]
@@ -84670,7 +85482,7 @@
                     "all": [
                       {
                         "world_state": {
-                          "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                          "key": "canary:world-state/storage",
                           "op": ">=",
                           "value": 0
                         },
@@ -84678,7 +85490,7 @@
                       },
                       {
                         "world_state": {
-                          "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                          "key": "canary:world-state/storage",
                           "op": "<",
                           "value": 5
                         },
@@ -84690,7 +85502,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_world_state",
-                      "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "key": "canary:world-state/storage",
                       "value_source_line": 41
                     },
                     {
@@ -89151,9 +89963,12 @@
                     },
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 10
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p1"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -89186,9 +90001,12 @@
                     },
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 15
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p2"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -89202,7 +90020,24 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33011,
+            "y": 32392,
+            "z": 10
+          }
+        },
+        {
+          "key": "p2",
+          "source_position": {
+            "x": 33008,
+            "y": 32392,
+            "z": 10
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -90655,13 +91490,6 @@
           "repeated": true
         },
         {
-          "owner": "Quest",
-          "request": "set_progress",
-          "progress": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
-          "to": 2,
-          "repeated": true
-        },
-        {
           "owner": "Movement",
           "status": "blocked",
           "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
@@ -90700,13 +91528,6 @@
           "status": "blocked",
           "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
           "source_line": 122,
-          "repeated": true
-        },
-        {
-          "owner": "Quest",
-          "request": "set_progress",
-          "progress": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
-          "to": 3,
           "repeated": true
         },
         {
@@ -90785,13 +91606,6 @@
           "repeated": true
         },
         {
-          "owner": "Quest",
-          "request": "set_progress",
-          "progress": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
-          "to": 4,
-          "repeated": true
-        },
-        {
           "owner": "Movement",
           "status": "blocked",
           "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
@@ -90802,13 +91616,6 @@
           "owner": "Presentation",
           "effect": "magic_effect",
           "authoritative": false,
-          "repeated": true
-        },
-        {
-          "owner": "Quest",
-          "request": "set_progress",
-          "progress": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
-          "to": 5,
           "repeated": true
         },
         {
@@ -90978,6 +91785,22 @@
         },
         {
           "line": 89,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 116,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 126,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 150,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 157,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -95364,9 +96187,12 @@
       "rules": [
         {
           "owner": "Movement",
-          "status": "blocked",
-          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-          "to_source_line": 23,
+          "request": "relocate",
+          "scope": "in_scope",
+          "target": {
+            "kind": "anchor",
+            "anchor": "p1"
+          },
           "repeated": true
         },
         {
@@ -95414,7 +96240,16 @@
           "to": -1
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33062,
+            "y": 31029,
+            "z": 7
+          }
+        }
+      ],
       "unresolved": [
         {
           "line": 21,
@@ -95524,9 +96359,12 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 13
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p1"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -95571,7 +96409,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33145,
+            "y": 31247,
+            "z": 6
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -95741,9 +96588,12 @@
             },
             {
               "owner": "Movement",
-              "status": "blocked",
-              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-              "to_source_line": 19
+              "request": "relocate",
+              "scope": "in_scope",
+              "target": {
+                "kind": "anchor",
+                "anchor": "p1"
+              }
             },
             {
               "owner": "Presentation",
@@ -95753,7 +96603,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33170,
+            "y": 31253,
+            "z": 11
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -95860,9 +96719,12 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 16
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p1"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -95891,7 +96753,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 33197,
+            "y": 31347,
+            "z": 6
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -97918,7 +98789,12 @@
         {
           "owner": "Item",
           "request": "hand_out",
-          "value_source_line": 18
+          "item": {
+            "family": "Item",
+            "key": "canary:item/2853",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "count": 1
         },
         {
           "branch": [
@@ -103168,33 +104044,11 @@
                       "branch": [
                         {
                           "when": {
-                            "all": [
-                              {
-                                "quest_stage": {
-                                  "progress": "canary:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
-                                  "op": ">=",
-                                  "value": 1
-                                },
-                                "negate": false
-                              },
-                              {
-                                "quest_stage": {
-                                  "progress": "canary:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
-                                  "op": "<=",
-                                  "value": 8
-                                },
-                                "negate": false
-                              }
-                            ]
-                          },
-                          "then": [
-                            {
-                              "owner": "Quest",
-                              "request": "set_progress",
-                              "progress": "canary:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
-                              "value_source_line": 13
+                            "unresolved": {
+                              "line": 12
                             }
-                          ]
+                          },
+                          "then": []
                         }
                       ]
                     },
@@ -103220,12 +104074,6 @@
                       "owner": "Presentation",
                       "effect": "magic_effect",
                       "authoritative": false
-                    },
-                    {
-                      "owner": "Quest",
-                      "request": "set_progress",
-                      "progress": "canary:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
-                      "to": 1
                     }
                   ]
                 }
@@ -103235,7 +104083,16 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 13,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 18,
+          "reason": "statement outside the transcribed vocabulary"
+        }
+      ]
     },
     {
       "identity": {
@@ -108153,9 +109010,17 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 14
-                        }
+                        "object": {
+                          "role": "use_target",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/2113",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -109642,15 +110507,27 @@
             },
             {
               "owner": "Movement",
-              "status": "blocked",
-              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-              "to_source_line": 27,
+              "request": "relocate",
+              "scope": "in_scope",
+              "target": {
+                "kind": "anchor",
+                "anchor": "p1"
+              },
               "repeated": true
             }
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32687,
+            "y": 32719,
+            "z": 10
+          }
+        }
+      ],
       "unresolved": [
         {
           "line": 23,
@@ -110602,9 +111479,12 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "status": "blocked",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                          "to_source_line": 8
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "anchor",
+                            "anchor": "p1"
+                          }
                         },
                         {
                           "owner": "Presentation",
@@ -110636,7 +111516,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32814,
+            "y": 32754,
+            "z": 9
+          }
+        }
+      ],
       "unresolved": []
     },
     {
@@ -110699,9 +111588,12 @@
                                   "then": [
                                     {
                                       "owner": "Movement",
-                                      "status": "blocked",
-                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                                      "to_source_line": 109
+                                      "request": "relocate",
+                                      "scope": "in_scope",
+                                      "target": {
+                                        "kind": "anchor",
+                                        "anchor": "p1"
+                                      }
                                     }
                                   ]
                                 }
@@ -110848,7 +111740,16 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32881,
+            "y": 32828,
+            "z": 11
+          }
+        }
+      ],
       "unresolved": [
         {
           "line": 122,
@@ -111696,13 +112597,6 @@
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "canary:quest-progress/quest/u11_80/the_secret_library/darashia/eaten_food",
-              "value_source_line": 218,
-              "repeated": true
-            },
-            {
-              "owner": "Quest",
-              "request": "set_progress",
               "progress": "canary:quest-progress/quest/u11_80/the_secret_library/darashia/questline",
               "to": 6,
               "transition": "canary:quest/the_secret_library_quest#the_path_of_defiances:movement_1",
@@ -111720,6 +112614,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 218,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 184,
           "reason": "loop with its own control flow"
@@ -112589,9 +113487,17 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 9
-                }
+                "object": {
+                  "role": "use_target",
+                  "field": "item_type",
+                  "op": "==",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/10297",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  }
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -113504,13 +114410,6 @@
           "repeated": true
         },
         {
-          "owner": "Quest",
-          "request": "set_progress",
-          "progress": "canary:quest-progress/quest/u14_15/the_way_of_the_monk/shrines_count",
-          "value_source_line": 54,
-          "repeated": true
-        },
-        {
           "owner": "Presentation",
           "effect": "message",
           "authoritative": false,
@@ -113522,6 +114421,10 @@
       "unresolved": [
         {
           "line": 48,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 54,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -113710,24 +114613,9 @@
               "branch": [
                 {
                   "when": {
-                    "all": [
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                          "op": "==",
-                          "value": 3
-                        },
-                        "negate": false
-                      },
-                      {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
-                          "op": "<",
-                          "value": 5
-                        },
-                        "negate": false
-                      }
-                    ]
+                    "unresolved": {
+                      "line": 45
+                    }
                   },
                   "then": [
                     {
@@ -113764,29 +114652,11 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
-                                      "op": "==",
-                                      "value": -1
-                                    },
-                                    "negate": false
-                                  },
-                                  "then": [
-                                    {
-                                      "owner": "Quest",
-                                      "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
-                                      "to": 1
+                                    "unresolved": {
+                                      "line": 53
                                     }
-                                  ]
-                                }
-                              ],
-                              "otherwise": [
-                                {
-                                  "owner": "Quest",
-                                  "request": "set_progress",
-                                  "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
-                                  "value_source_line": 56
+                                  },
+                                  "then": []
                                 }
                               ]
                             }
@@ -113822,6 +114692,14 @@
         },
         {
           "line": 52,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 54,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 56,
           "reason": "statement outside the transcribed vocabulary"
         }
       ]
@@ -113898,24 +114776,9 @@
                           "branch": [
                             {
                               "when": {
-                                "all": [
-                                  {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "~=",
-                                      "value": 6
-                                    },
-                                    "negate": false
-                                  },
-                                  {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "~=",
-                                      "value": 8
-                                    },
-                                    "negate": false
-                                  }
-                                ]
+                                "unresolved": {
+                                  "line": 51
+                                }
                               },
                               "then": [
                                 {
@@ -113932,35 +114795,23 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "==",
-                                      "value": 6
-                                    },
-                                    "negate": false
+                                    "unresolved": {
+                                      "line": 56
+                                    }
                                   },
                                   "then": [
                                     {
                                       "owner": "WorldObject",
                                       "operation": "TRANSFORM",
                                       "value_source_line": 57
-                                    },
-                                    {
-                                      "owner": "Quest",
-                                      "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
-                                      "to": 5
                                     }
                                   ]
                                 },
                                 {
                                   "when": {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "==",
-                                      "value": 8
-                                    },
-                                    "negate": false
+                                    "unresolved": {
+                                      "line": 59
+                                    }
                                   },
                                   "then": [
                                     {
@@ -114024,12 +114875,9 @@
                       "branch": [
                         {
                           "when": {
-                            "quest_stage": {
-                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                              "op": "==",
-                              "value": 7
-                            },
-                            "negate": false
+                            "unresolved": {
+                              "line": 76
+                            }
                           },
                           "then": [
                             {
@@ -114071,6 +114919,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 58,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 63,
           "reason": "function literal outside the transcribed vocabulary"
@@ -114344,24 +115196,9 @@
                           "branch": [
                             {
                               "when": {
-                                "all": [
-                                  {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "~=",
-                                      "value": 6
-                                    },
-                                    "negate": false
-                                  },
-                                  {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "~=",
-                                      "value": 8
-                                    },
-                                    "negate": false
-                                  }
-                                ]
+                                "unresolved": {
+                                  "line": 51
+                                }
                               },
                               "then": [
                                 {
@@ -114378,35 +115215,23 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "==",
-                                      "value": 6
-                                    },
-                                    "negate": false
+                                    "unresolved": {
+                                      "line": 56
+                                    }
                                   },
                                   "then": [
                                     {
                                       "owner": "WorldObject",
                                       "operation": "TRANSFORM",
                                       "value_source_line": 57
-                                    },
-                                    {
-                                      "owner": "Quest",
-                                      "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
-                                      "to": 5
                                     }
                                   ]
                                 },
                                 {
                                   "when": {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "==",
-                                      "value": 8
-                                    },
-                                    "negate": false
+                                    "unresolved": {
+                                      "line": 59
+                                    }
                                   },
                                   "then": [
                                     {
@@ -114470,12 +115295,9 @@
                       "branch": [
                         {
                           "when": {
-                            "quest_stage": {
-                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                              "op": "==",
-                              "value": 7
-                            },
-                            "negate": false
+                            "unresolved": {
+                              "line": 76
+                            }
                           },
                           "then": [
                             {
@@ -114517,6 +115339,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 58,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 63,
           "reason": "function literal outside the transcribed vocabulary"
@@ -114607,24 +115433,9 @@
                           "branch": [
                             {
                               "when": {
-                                "all": [
-                                  {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "~=",
-                                      "value": 6
-                                    },
-                                    "negate": false
-                                  },
-                                  {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "~=",
-                                      "value": 8
-                                    },
-                                    "negate": false
-                                  }
-                                ]
+                                "unresolved": {
+                                  "line": 51
+                                }
                               },
                               "then": [
                                 {
@@ -114641,35 +115452,23 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "==",
-                                      "value": 6
-                                    },
-                                    "negate": false
+                                    "unresolved": {
+                                      "line": 56
+                                    }
                                   },
                                   "then": [
                                     {
                                       "owner": "WorldObject",
                                       "operation": "TRANSFORM",
                                       "value_source_line": 57
-                                    },
-                                    {
-                                      "owner": "Quest",
-                                      "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
-                                      "to": 5
                                     }
                                   ]
                                 },
                                 {
                                   "when": {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                                      "op": "==",
-                                      "value": 8
-                                    },
-                                    "negate": false
+                                    "unresolved": {
+                                      "line": 59
+                                    }
                                   },
                                   "then": [
                                     {
@@ -114733,12 +115532,9 @@
                       "branch": [
                         {
                           "when": {
-                            "quest_stage": {
-                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
-                              "op": "==",
-                              "value": 7
-                            },
-                            "negate": false
+                            "unresolved": {
+                              "line": 76
+                            }
                           },
                           "then": [
                             {
@@ -114780,6 +115576,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 58,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 63,
           "reason": "function literal outside the transcribed vocabulary"
@@ -115309,12 +116109,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                      "op": "~=",
-                      "value": 13
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 33
+                    }
                   },
                   "then": []
                 }
@@ -115336,20 +116133,11 @@
                       "branch": [
                         {
                           "when": {
-                            "quest_stage": {
-                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
-                              "op": "<",
-                              "value": 5
-                            },
-                            "negate": false
+                            "unresolved": {
+                              "line": 40
+                            }
                           },
                           "then": [
-                            {
-                              "owner": "Quest",
-                              "request": "set_progress",
-                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
-                              "value_source_line": 41
-                            },
                             {
                               "owner": "Item",
                               "request": "hand_out",
@@ -115375,22 +116163,11 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
-                                      "op": "==",
-                                      "value": 5
-                                    },
-                                    "negate": false
-                                  },
-                                  "then": [
-                                    {
-                                      "owner": "Quest",
-                                      "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                                      "to": 14,
-                                      "transition": "canary:quest/threatened_dreams_quest#troubled_animals:movement_2"
+                                    "unresolved": {
+                                      "line": 46
                                     }
-                                  ]
+                                  },
+                                  "then": []
                                 }
                               ]
                             }
@@ -115408,7 +116185,15 @@
       "anchors": [],
       "unresolved": [
         {
+          "line": 41,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
           "line": 45,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 47,
           "reason": "statement outside the transcribed vocabulary"
         }
       ]
@@ -117165,7 +117950,12 @@
                         {
                           "owner": "Item",
                           "request": "hand_out",
-                          "value_source_line": 51
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/26181",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 5
                         },
                         {
                           "owner": "Presentation",
@@ -117934,9 +118724,34 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 10
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/20357",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/20356",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -117952,7 +118767,12 @@
                 {
                   "owner": "Item",
                   "request": "hand_out",
-                  "value_source_line": 13
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/20355",
+                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                  },
+                  "count": 1
                 }
               ]
             }
@@ -117991,9 +118811,47 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 30
-                    }
+                    "any": [
+                      {
+                        "object": {
+                          "role": "use_target",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/20358",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      },
+                      {
+                        "object": {
+                          "role": "use_target",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/20359",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      },
+                      {
+                        "object": {
+                          "role": "use_target",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/20360",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -118051,9 +118909,17 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 42
-                                    }
+                                    "object": {
+                                      "role": "use_target",
+                                      "field": "item_type",
+                                      "op": "==",
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "canary:item/20358",
+                                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                      }
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -118071,9 +118937,17 @@
                                 },
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 45
-                                    }
+                                    "object": {
+                                      "role": "use_target",
+                                      "field": "item_type",
+                                      "op": "==",
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "canary:item/20359",
+                                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                      }
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -118091,9 +118965,17 @@
                                 },
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 48
-                                    }
+                                    "object": {
+                                      "role": "use_target",
+                                      "field": "item_type",
+                                      "op": "==",
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "canary:item/20360",
+                                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                      }
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -118855,9 +119737,12 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 17
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p1"
+                      }
                     },
                     {
                       "owner": "Presentation",
@@ -118889,9 +119774,12 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 24
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p2"
+                      }
                     }
                   ]
                 },
@@ -118904,9 +119792,12 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "status": "blocked",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
-                      "to_source_line": 28
+                      "request": "relocate",
+                      "scope": "in_scope",
+                      "target": {
+                        "kind": "anchor",
+                        "anchor": "p3"
+                      }
                     }
                   ]
                 }
@@ -118915,7 +119806,32 @@
           ]
         }
       ],
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "p1",
+          "source_position": {
+            "x": 32968,
+            "y": 32626,
+            "z": 5
+          }
+        },
+        {
+          "key": "p2",
+          "source_position": {
+            "x": 32968,
+            "y": 32631,
+            "z": 8
+          }
+        },
+        {
+          "key": "p3",
+          "source_position": {
+            "x": 32971,
+            "y": 32620,
+            "z": 8
+          }
+        }
+      ],
       "unresolved": [
         {
           "line": 25,
@@ -119973,9 +120889,68 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 20
-                }
+                "any": [
+                  {
+                    "all": [
+                      {
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/11329",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      },
+                      {
+                        "object": {
+                          "role": "use_target",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/11341",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      }
+                    ]
+                  },
+                  {
+                    "all": [
+                      {
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/11341",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      },
+                      {
+                        "object": {
+                          "role": "use_target",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/11329",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      }
+                    ]
+                  }
+                ]
               },
               "then": [
                 {
