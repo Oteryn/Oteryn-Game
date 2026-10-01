@@ -842,8 +842,8 @@ existing stack or a fresh entry under `ConjureCause`.
 
 **Amendment (pending on acceptance of RANGED-0;
 `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
-The weapon use amendment in §39.3 also admits a one-unit BURN, or a one-unit split, merge or
-whole-item TRANSFER to Ground, under `WeaponUseCause`.
+The weapon use amendment in §39.3 also admits a one-unit BURN, or a one-unit split or whole-item
+TRANSFER to Ground, under `WeaponUseCause`.
 
 **Amendment (pending on acceptance of WORLD-INTERACTION-0;
 `reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`
@@ -1667,18 +1667,18 @@ swing's effect:
   equipped quiver, which keeps its identity (§11.1) or retires at zero (§11.5).
 - **Throwing burn.** The same one-unit BURN from the right-hand stack when the frozen break draw
   breaks it or the drop was refused at PREPARE.
-- **Throwing drop.** One unit of the right-hand stack to the landing tile's Ground: a §13 merge into
-  a dropped stack of the same definition on top of that tile, else a §12 split into a planned
-  identity (§11.3), or the whole item when it is the last unit; under the ITEM-MOVE-WIRE-1 §5 Ground
-  rules (tile and channel limits, house tiles refused, the tile row lock and counter) and D191 reset
-  retirement. A database refusal is a refused commit under the same TransactionId (§23).
-- **Supersession.** For these shapes only, the §39.1 exclusions of burn, multiple touched items (at
-  most 2), quantity redistribution (the split or merge), nested containers (an entry of the equipped
-  quiver, depth 1) and Ground insertion other than MINT and TRANSFER (insertion by split or merge).
-  Every other §39 obligation is unchanged. One audit event per swing consequence (a
-  `OneItemTransactionV1` operation assigned by RANGED-1); rows `DUR03-RL-01-WEAPON` (burn 1, split 2,
-  merge 2, whole drop 1), `DUR03-RL-02-WEAPON` (burn 1, split 2, merge 2, whole drop 2) and
-  `DUR03-RL-06-WEAPON` (1 participant; 2 work units for a burn, 4 for a drop).
+- **Throwing drop.** One unit of the right-hand stack to the landing tile's Ground as a new item: a §12
+  split into a planned identity (§11.3), or a whole TRANSFER from the right-hand slot when it is the
+  last unit; under the ITEM-MOVE-WIRE-1 §5 Ground rules (tile and channel limits, house tiles refused,
+  the tile row lock and counter), its §6.2 scope fence, and D191 reset retirement. A database refusal
+  is a refused commit under the same TransactionId (§23).
+- **Supersession.** For these shapes only, as ITEM-MOVE-WIRE-1 §6.1 did for its own: the §39.1
+  exclusions of burn, multiple touched items (at most 2), quantity redistribution (the split), nested
+  containers (an entry of the equipped quiver, depth 1), the source custodies (the right-hand slot and
+  quiver entries as BURN or split sources), Ground insertion by split, and a whole TRANSFER from a slot
+  to Ground under `WeaponUseCause`. Every other §39 obligation is unchanged. One audit event per swing
+  consequence (a `OneItemTransactionV1` operation assigned by RANGED-1); rows `DUR03-RL-0x-WEAPON` as
+  RANGED-0 §6.3 (one participant per touched item).
 
 ## 40. Durable acknowledgement
 

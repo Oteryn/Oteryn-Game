@@ -12,7 +12,7 @@
   the one-item shapes), the composition decision (rules 2-4 and the STARTER-BACKPACK-0
   server-originated variant), RUNE-USE-0 §5-§8 (burn before effect, PREPARE and PRIMARY COMMIT,
   one slot, ambiguous commits), ITEM-MOVE-WIRE-1 §4-§6 and BAGS-0 §3-§6 (equipment, Ground drops,
-  containers), SKILLS-0 §3 (distance tries), A13 §4.5 (magic-level training), CONDITIONS-0 §4
+  containers), SKILLS-0 §2 and §3.4 (distance tries), A13 §4.5 (magic-level training), CONDITIONS-0 §4
   (pacing), CREATURE-AI-0 §5 (paths and steps), VSL-MOVE-01 §3, §5, §8 (movement authority),
   SPELL-PRESENT-0 §5 (projectiles), PARTY-PVP-0 §7 (PvP legality and damage), owner rule
   5905825574 (Tibia parity).
@@ -65,13 +65,13 @@ sorcerers and druids attack with wands and rods, and how does chase mode move a 
   pending CommandRef; the STARTER-BACKPACK-0 amendment admits a server-originated variant fenced by
   the admitted session's `CurrentCharacterItemFence` without a CommandRef.
 - ITEM-MOVE-WIRE-1 §5: Ground drops (10 items per tile `ITEMMOVE1-RL-01`, 20,000 per channel
-  `ITEMMOVE1-RL-02`, house tiles `BLOCKED`, the §32 scope fence, the per-tile row lock); §6.1
-  supersessions; §4 refuses containers and unknown equipment semantics in the nine slots. BAGS-0
+  `ITEMMOVE1-RL-02`, house tiles `BLOCKED`, the per-tile row lock and counter); §6.2 the §32 scope
+  fence on every Ground write; §6.1 supersessions; §7.2 the extended lock order; §4 refuses containers and unknown equipment semantics in the nine slots. BAGS-0
   §3: trees of depth 8 and 500 items, `GAMEITEM01-REACHABLE-ITEMS` 509; §4.1 entries keyed by
   parent item; §6 "the quiver waits"; capability `CONTAINER_TREE_V1`.
-- SKILLS-0 §3: distance 2 tries per unblocked hit, 1 per blocked, a miss repeats the previous block
-  state (Canary). A13 §4.5: wand and spell mana count as `mana_spent` in the live session,
-  committed as build receipts.
+- SKILLS-0 §2 and §3.4: distance 2 tries per unblocked hit, 1 per blocked, a miss repeats the
+  previous block state (Canary). A13 §4.5: "each cast's mana cost" accumulates as `mana_spent` in the
+  live session, committed as build receipts (that wand mana counts the same is `DERIVED`).
 - CONDITIONS-0 §4.3: a player has one pacing clock with a one-step buffer. VSL-MOVE-01 §3: only the
   Movement owner commits a step; §5: a movement occurrence is a source occurrence plus a semantic
   kind; §8: a path needs "its own accepted implementation profile". CREATURE-AI-0 §5: the creature
@@ -100,7 +100,7 @@ sorcerers and druids attack with wands and rods, and how does chase mode move a 
   shield.
 - Use (`weapons.cpp:335-390`): `break_chance` first (`uniform(1,100) <= break_chance` removes one
   unit); else `removecount` removes one unit and `move` moves one unit to the landing tile, merging
-  into a matching stack there.
+  into a matching stack there. Throwing weapons are distance weapons without an `ammoType`.
 - Wands and rods: `normal_random(min, max)` of their element, no hit roll, not blocked by armor or
   shield, mana per shot (`weapons.cpp:344-351, 968-983`).
 - Chase follows the attacked creature, re-paths when it moves, waits 2,000 ms after a failed path,
@@ -117,6 +117,9 @@ sorcerers and druids attack with wands and rods, and how does chase mode move a 
   (`QUIVER_ONLY_AMMUNITION`, refused as `SLOT_MISMATCH` under `CONTAINER_TREE_V1`). Entries are
   keyed to the quiver as their parent item (BAGS-0 §4.1). It is one of the character's own trees
   (BAGS-0 §6): reach, views, invalidation and moves are those of the main backpack tree.
+- Equipping or unequipping a non-empty quiver is a BAGS-0 tree move (`DUR03-*-TREE-MOVE` rows); a
+  swap where either side is a non-empty tree is refused (`SLOT_MISMATCH`); an empty quiver uses
+  ITEM-MOVE-WIRE-1's one-item and swap shapes.
 - `GAMEITEM01-REACHABLE-ITEMS` becomes 529 (the main backpack tree, the nine slots and at most 20
   quiver entries).
 - **Capability.** Only a session that negotiated `CONTAINER_TREE_V1` may equip a quiver, move it or
@@ -127,8 +130,8 @@ sorcerers and druids attack with wands and rods, and how does chase mode move a 
 ### 3.2 Where ammunition comes from
 
 A weapon with an `ammo_type` shoots the **first direct quiver entry**, in display order, whose
-`ammo_type` matches, whose level requirement the character meets, and that is not reserved or
-unspendable (§6). No such entry: no attack.
+`ammo_type` matches, whose level and vocation requirements the character meets, and that is not
+reserved or unspendable (§6). No such entry: no attack.
 
 ### 3.3 The Extra slot
 
@@ -159,12 +162,13 @@ the one exception, light) and is never shot. Amended: ITEM-MOVE-WIRE-1 §4.
 ### 4.1 PREPARE (channel owner, at the due deadline)
 
 1. Validity and requirements; select the shot entry (§3.2) or the hand stack.
-2. **Draws**, bound to the swing occurrence (§6.2) and frozen: `hit_chance` (distance and throwing),
-   then `damage_draw`, then for a miss beyond adjacent range `miss_landing`, then for throwing
-   `break`. Wands draw only `damage_draw`. Amended: ATTACK-0 §4's closed purposes gain
-   `miss_landing` and `break`.
-3. **Freeze**: target identity, landing tile, damage magnitudes, and the consequence (§6.1: burn,
-   or for throwing burn or drop). A tile that cannot take the drop at PREPARE (not walkable, house,
+2. **Draws**, on ATTACK-0 §4's swing occurrence stream (which charms also use) and frozen:
+   `hit_chance` (distance and throwing), then `damage_draw`, then `armor_draw` (distance damage is
+   blocked by armor; `defence_draw` is unused), then for a miss beyond adjacent range
+   `miss_landing`, then for `on_use = DROP` `break`. Wands draw only `damage_draw`. Amended:
+   ATTACK-0 §4's closed purposes gain `miss_landing` and `break`.
+3. **Freeze**: target identity, landing tile, damage magnitudes, and the consequence by `on_use`
+   (§6.1). A tile that cannot take the drop at PREPARE (not walkable, house,
    tile or channel limit reached, as the database would refuse) fixes a burn now.
 4. Wands: take a mana hold of `mana_per_shot` (RUNE-USE-0 §7 hold rules).
 5. Reserve the shot unit under DUR-03 §7.1 and send the transaction. Wands send none.
@@ -178,7 +182,7 @@ A refusal in step 1 makes no attack and spends nothing.
   legal. Then the frozen effect runs through GAME-ABILITY-01 with origin `WeaponSwing`: damage on a
   hit, none on a miss. A target that fails the recheck is not hit; the unit is spent.
 - **Known abort.** DUR-03 §25 retries the same transaction while it can; a terminal refusal
-  releases the reservation and holds, and the swing has no effect (nothing spent).
+  releases the reservation (and a wand's mana hold), and the swing has no effect (nothing spent).
 - **Ambiguous commit.** After `RANGED0-RL-02` (2,000 ms, as `ITEMUSE0-RL-04`) the slot is freed; the
   shot unit stays reserved and unspendable until reconciliation reads the receipt; a commit known
   only then applies no late effect.
@@ -209,29 +213,43 @@ A refusal in step 1 makes no attack and spends nothing.
 
 ### 6.1 Shapes
 
-- **Ammunition burn** (`on_use = CONSUME`): one BURN of one unit of the shot quiver entry (keeps
-  identity or retires at zero, §11.1, §11.5), hit or miss.
-- **Throwing:** the frozen break draw decides. Broken, or a drop refused at PREPARE: one BURN of one
-  unit of the right-hand stack. Not broken: one unit to the landing tile's Ground. If a dropped item
-  of the same definition lies on top of that tile it merges into it (Canary, §13 quantity
-  transfer); else it is a §12 split into a planned identity (§11.3), or the whole item when it is
-  the last unit. The drop follows ITEM-MOVE-WIRE-1 §5's Ground rules (tile and channel limits with
-  the tile row lock and counter, house tiles refused, the §32 scope fence, D191 reset retirement);
-  reach and line of sight do not apply. A database refusal of the drop is a refused commit under the
-  same TransactionId (§23): the swing has no effect and the unit stays.
-- **Wands** consume nothing durable.
+The content `on_use` decides:
+
+- **`CONSUME`** (ammunition, and throwing items that always vanish): one BURN of one unit of the shot
+  quiver entry or the right-hand stack, which keeps its identity or retires at zero (§11.1, §11.5),
+  hit or miss.
+- **`DROP`** (spears and other recoverable thrown weapons): the frozen break draw decides. Broken,
+  or a drop refused at PREPARE: the same one-unit BURN. Not broken: one unit to the landing tile's
+  Ground, always as a new item: a §12 split into a planned identity (§11.3), or the whole item when it
+  is the last unit. Canary merges it into a matching stack on the tile; Oteryn does not (no Ground
+  stacking order exists yet; `PARITY_PENDING`). The drop follows ITEM-MOVE-WIRE-1 §5's Ground rules
+  (tile and channel limits with the tile row lock and counter, house tiles refused) and §6.2's §32
+  scope fence, and D191 reset retirement; reach and line of sight do not apply. A database refusal of
+  the drop is a refused commit under the same TransactionId (§23): the swing has no effect and the
+  unit stays.
+- **`NONE`** and wands: no transaction.
+
+### 6.1.1 Database deltas (RANGED-1)
+
+- deletion of a quiver entry or the right-hand slot row by a BURN at zero;
+- Ground insertion by split with a planned identity, and by whole TRANSFER from the right-hand slot
+  under `WeaponUseCause`;
+- the weapon receipt keyed by the swing key (§6.2), with the frozen consequence;
+- reservation of the shot entry or hand stack under §7.1.
 
 ### 6.2 Cause, key and fence
 
 - **Cause:** the closed `WeaponUseCause {Ammunition, Throwing}`.
 - **Key** (fully typed, unique across restarts): `(WorldId, ChannelId, scope ownership generation,
   runtime actor id, actor generation, swing sequence, CharacterId)`. The swing sequence is
-  monotonic within the actor generation. TransactionId and the RNG stream derive from it.
+  monotonic within the actor generation. The TransactionId derives from it; the RNG stays on ATTACK-0
+  §4's swing occurrence.
 - **Fence:** the composition decision's server-originated variant (as STARTER-BACKPACK-0): the
   actor's current admitted session's `CurrentCharacterItemFence` (GameSession, lease and scope
   generations), its CharacterId and WorldId equal to the key's, no CommandRef; plus the §32 scope
-  fence for a Ground drop. Lock order rule 4: `character_root`, item rows in ItemInstanceId order,
-  the slot row, then the Ground tile row and the channel counter. A replay of the key returns the
+  fence for a Ground drop. Lock order: rule 4 as extended by ITEM-MOVE-WIRE-1 §7.2 and BAGS-0 §4.2
+  (`character_root`, item rows in ItemInstanceId order, the container-slot row, then the Ground tile
+  row and the channel counter). A replay of the key returns the
   first outcome. Amended: composition decision (this PR).
 - **Audit:** one `OneItemTransactionV1` event per consequence.
 
@@ -239,11 +257,13 @@ A refusal in step 1 makes no attack and spends nothing.
 
 | Row | Value |
 |---|---|
-| `DUR03-RL-01-WEAPON` touched items | burn 1; drop by split 2 (source and new item); drop by merge 2; whole drop 1 |
-| `DUR03-RL-02-WEAPON` location/quantity lines | burn 1; split 2; merge 2; whole drop 2 |
-| `DUR03-RL-06-WEAPON` participants / effect work units | 1 / burn 2, drop 4 |
+| `DUR03-RL-01-WEAPON` touched items | burn 1; split drop 2 (source and new item); whole drop 1 |
+| `DUR03-RL-02-WEAPON` location/quantity lines | burn 1; split 2; whole drop 2 |
+| `DUR03-RL-06-WEAPON` participants / effect work units | one participant per touched item: burn 1 / 3 (participant, removal, retirement at zero); split 2 / 4; whole drop 1 / 3; with max and max+1 boundary tests |
+| `DUR03-RL-07-WEAPON` envelope and payload | the one-item caps; RANGED-1 proves the split within them |
 | `RANGED0-RL-01` weapon transactions in flight per channel | 256; above it a due swing makes no attack (a stall) |
 | `RANGED0-RL-02` ambiguous commit bound | 2,000 ms |
+| `RANGED0-RL-03` player chase searches per owner window per channel | 64 (§8) |
 
 ## 7. Content (RANGED-CONTENT-1)
 
@@ -264,16 +284,17 @@ A refusal in step 1 makes no attack and spends nothing.
   never moves on its own. Amended: ATTACK-0 §3.
 - **Path profile** (the profile VSL-MOVE-01 §8 asks for): CREATURE-AI-0 §5.3's costs, tie order,
   `AI01-PATH-SEARCH-WORK` and `AI01-ROUTE-STEPS`, a 12-tile search (Canary searches fully,
-  `PARITY_PENDING`), with these player differences: no harmful-field cost (Canary applies it to
-  monsters only), and none of CREATURE-AI-0 §5.2's creature bans: a chasing player may path through
-  protection-zone, floor-change and teleport tiles exactly as its own steps may, and the Movement
-  owner's step rules decide each step. At most one search per player per 1,000 ms; a failed search
+  `PARITY_PENDING`). Floor-change and teleport tiles are never path tiles (Canary refuses them to
+  every creature when pathing), nor are protection-zone tiles while the player holds a target
+  (entering one ends the attack, ATTACK-0 §4). The one player difference: no harmful-field cost
+  (Canary applies it to monsters only). The Movement owner's step rules decide each step. At most one search per player per 1,000 ms; a failed search
   waits 2,000 ms (Canary). Player searches have their own row in the writer's window budget,
   `RANGED0-RL-03` (64 searches per window per channel), served in actor-id order after creature
-  searches; over it, the search waits for the next window.
+  searches; over it, the search waits for the next window. Amended: CREATURE-AI-0 §7.
 - **Steps.** A chase step is one Movement owner step of the player's `ExactActorRef`, revalidated
   like a client step. It uses the player's single pacing clock and one-step buffer (CONDITIONS-0
-  §4.3): a chase step is a step request from a server source. Its movement occurrence (VSL-MOVE-01
+  §4.3): a chase step is a step request from a server source. The chase step timer is due when the
+  pacing clock frees, with at most one pending. Its movement occurrence (VSL-MOVE-01
   §5) is `(chase step timer, actor, chase step sequence)`, kind `CHASE`. A refused step drops the
   path. Amended: CONDITIONS-0 §4.3.
 - **Client intent wins.** A client step request cancels the pending chase step and the path; chase
@@ -288,8 +309,8 @@ A refusal in step 1 makes no attack and spends nothing.
 - **A runtime ammunition counter flushed later.** A crash would duplicate arrows (DUR-03 §4).
 - **Burning a batch of shots ahead.** Unused units would need a refund MINT; one unit per swing is
   the accepted rune shape.
-- **Always burning thrown weapons.** Spears that land on the ground are Tibia; the split, merge and
-  Ground shapes already exist.
+- **Always burning thrown weapons.** Spears that land on the ground are Tibia; the split and Ground
+  shapes already exist.
 - **Client-driven chase.** VSL-MOVE-01 forbids a client route as authority; Tibia chases on the
   server.
 - **A separate ranged timer.** It would allow two swings per interval.
@@ -328,9 +349,9 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 1. **Contract amendments**, all applied in this PR: DUR-03 §15, §39.1 and §39.3 (`WeaponUseCause`
    shapes and supersessions); the composition decision (server-originated swing variant);
-   ITEM-MOVE-WIRE-1 §4 (quiver, Extra slot); BAGS-0 §3 and §6 (quiver tree, reachable items);
+   ITEM-MOVE-WIRE-1 §4 (quiver, Extra slot); BAGS-0 §3, §6 and §10 (quiver tree, reachable items);
    ATTACK-0 §3 (chase) and §4 (variants, RNG purposes); CONDITIONS-0 §4.3 (chase steps);
-   SPELL-PRESENT-0 §5 (weapon projectiles).
+   CREATURE-AI-0 §7 (player chase searches); SPELL-PRESENT-0 §5 (weapon projectiles).
 2. **Serialization:** one weapon-use slot per actor; the shot unit is reserved under DUR-03 §7.1, so a
    concurrent move of that entry is refused; rule 4's lock order; the Ground tile row lock and
    counter for drops; a known abort releases, an ambiguous commit keeps the unit unspendable.

@@ -202,7 +202,8 @@ also covers a weapon swing's DUR-03 transaction (`WeaponUseCause`): it advances 
 swing key `(WorldId, ChannelId, scope ownership generation, runtime actor id, actor generation, swing
 sequence, CharacterId)`, and the fence is the actor's current admitted session's
 `CurrentCharacterItemFence` without a CommandRef, whose Character and World equal the key's; a Ground
-drop adds the DUR-03 §32 scope fence. Rule 4's lock order applies unchanged.
+drop adds the DUR-03 §32 scope fence. Rule 4's lock order applies as extended by ITEM-MOVE-WIRE-1 §7.2
+and BAGS-0 §4.2.
 
 **Amendment (pending on acceptance of BOSS-RAID-0; `OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §12).** Rule 1 also
 covers boss cooldown and boss eligibility rows and the `CharacterRewardChest` location: they

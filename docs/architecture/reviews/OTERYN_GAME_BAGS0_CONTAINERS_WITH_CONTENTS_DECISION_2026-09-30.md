@@ -356,8 +356,8 @@ Each item names the decision, its refusal today, the result and the child that b
 | `BAGS0-RL-05` items in one traded tree | 100 |
 | `BAGS0-RL-06` tree move commit p99 at 500 items, depth 8 | at most 100 ms, measured by BAGS-1 |
 | `BAGS0-RL-06-TRADE` two-tree swap commit p99 with two 100-item trees and two full 500-item destination backpacks (1004 work units) | at most 100 ms, measured by BAGS-TRADE-1; above it the shape returns for a new decision |
-| `BAGS0-RL-07` items read by one hotkey search | 509 (runtime only) |
-| `GAMEITEM01-REACHABLE-ITEMS` | 509 per character |
+| `BAGS0-RL-07` items read by one hotkey search | 509 (runtime only); 529 with the quiver once RANGED-0 is accepted |
+| `GAMEITEM01-REACHABLE-ITEMS` | 509 per character; 529 once RANGED-0 is accepted (quiver entries) |
 | `DUR03-RL-01-TREE-MOVE` touched items | 500 (1 moved, up to 499 locked and checked) |
 | `DUR03-RL-02-TREE-MOVE` location lines | 2 |
 | `DUR03-RL-05-TREE` container levels expanded | 8 |
