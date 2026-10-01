@@ -133,8 +133,10 @@ statue?
   its own transaction before the terminal release (the H-1 actor-end pattern), not inside it.
   Amended: CHAR-POSITION-0 §3.2 (this PR).
 - It carries the final tries and stamina flush, the statue activation if one is pending (§6), and
-  the online pool restore: `pool + floor((as_of − lease acquisition time) / 1 s)`, capped at
-  43,200, only when this lease committed its settlement. Checkpoints never restore the pool. Online
+  the online pool restore: `pool + floor((as_of − current GameSession creation time) / 1 s)`,
+  capped at 43,200, only when this lease committed its settlement. The anchor is the database
+  creation time of the GameSession that ends (FND-04A §7.2; a FND-04B §21 recovery creates a new
+  one), so time before a crash replacement and the uncontrolled interval restore nothing (R2). Checkpoints never restore the pool. Online
   time of a lease that ends without a logout marker (a crash, a recovery into a new GameSession under
   FND-04B §21, a later channel transfer that changes the lease) restores nothing (`PARITY_PENDING`,
   in the player's disfavour, bounded by one session).

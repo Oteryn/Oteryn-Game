@@ -162,7 +162,8 @@ The owner confirmed these directly in this session on 2026-09-29.
       its strict-OR and no-op rule count stamina. Two marker causes, exempt from the no-op rule and
       keyed `UNIQUE (character_id, lease_generation)`: `logout` (once per lease, before the terminal
       release) and `offline_settlement` (once per lease, at admission), with OFFLINE-0 §3's
-      directions and an `as_of` database time bound in the binding;
+      directions; the marker reads `as_of` from the database inside its transaction and stores it,
+      and `as_of` is not part of the binding computed before the transaction (OFFLINE-0 §3);
   - There is no death cause: the loss is carried by the death receipt itself (§4.6);
   - `command_binding` (1..1,024 B), `policy_digest` (32 B), the revision fields of an XP receipt and
     `committed_at`.
