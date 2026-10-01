@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        397,
-        "16d4d6096b8b6046f2be6be7ce993166b7df437c66eafe45aefcab266765e514",
+        406,
+        "7c4d36fe622e7dc29cd2af842e8532414168e65435e71c2d6ce7c9769a07832b",
     ),
     (
         "definitions/declarations.json",
-        17_029_087,
-        "0959a4dddcb92714d1902cc1e9faa9d3a4ce5d835a37a97955d925b3052d2433",
+        17_030_652,
+        "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17",
     ),
     (
         "definitions/reference.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_948,
-        "1eb53040ff3b8ad2c68da46c260f030e0011c8a7024233d17bf6bab64fedb1eb",
+        1_951,
+        "55c151655258f89f0b06476a45c01b75de9e964533ab0b229467bdc016419974",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        401,
-        "580f0b71fb7e19da115db9f01235f8f8e9235411a27de28ab24000ca638f5e29",
+        404,
+        "6992f7e9273274d9812bd70d8c172e6a422a8e9ca365b8312a6ba6691f36b708",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "bb21fcf2cf4a4526544a231a72612fa82e789abfefaae2780698d639fd9ac0ec";
+const TREE_SHA256: &str = "0529443263e930fc2c655470058b94a94a9cecad42ba10fb269fc75e68f42264";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -127,8 +127,8 @@ const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1110;
 const NPC_RECORDS: usize = 2220;
-const NPC_DECLARATIONS: usize = 2184;
-const NPC_DIALOGUES: usize = 694;
+const NPC_DECLARATIONS: usize = 2186;
+const NPC_DIALOGUES: usize = 696;
 const NPC_BINDINGS: usize = 2376;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
@@ -321,7 +321,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-qualified-source-r11");
+    assert_eq!(project.project_revision(), "g4-npc-d10-fandom-variants-r12");
     assert_eq!(project.imports().len(), 12);
     let provenance = &project.imports()[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");

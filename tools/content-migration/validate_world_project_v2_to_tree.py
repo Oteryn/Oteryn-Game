@@ -28,7 +28,7 @@ NPC_COUNT = 1110
 NPC_BINDING_COUNT = 2376
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 61
-DIALOGUE_COUNT = 694
+DIALOGUE_COUNT = 696
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).

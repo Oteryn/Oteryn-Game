@@ -24,7 +24,7 @@
     },
     "Dialogue": {
       "index": "content/dialogues/definitions/index.json",
-      "records": 694
+      "records": 696
     },
     "Effect": {
       "index": "content/abilities/effects/index.json",
@@ -237,7 +237,7 @@
       "path": "content/dialogues/definitions/dialogues-00000-00499.json"
     },
     {
-      "path": "content/dialogues/definitions/dialogues-00500-00693.json"
+      "path": "content/dialogues/definitions/dialogues-00500-00695.json"
     },
     {
       "path": "content/dialogues/definitions/index.json"

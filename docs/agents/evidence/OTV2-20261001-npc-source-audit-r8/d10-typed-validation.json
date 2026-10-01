@@ -1,0 +1,22 @@
+{
+  "schema": "npc-d10-native-typed-verification/v1",
+  "source_head": "e9e69656dbe33ca2666248e23f7638be880f6bc9",
+  "source_workspace": "/workspace/npc-r8-research/rust-verification",
+  "toolchain": "Rust 1.94",
+  "command": "cargo test --locked --offline -p oteryn-game-server --example materialize_content_world_project_v2 npc_d10_variant_proposed -- --nocapture",
+  "typed_tests": 3,
+  "typed_result": "PASS",
+  "rustfmt": "PASS",
+  "python_byte_hash_boundary_tests": 5,
+  "python_result": "PASS",
+  "rust_source_sha256": "f606085ebea61ef837931430aad20c33e4bfac1a7f279eae073f500e9be53ab6",
+  "native_packet_sha256": "325e4c959ecd897f0f304f762327d6c8da8adb995cb3dd67c8655ef7c7cfb1cd",
+  "rust_test_log": "/workspace/npc-r8-research/d10-rust-verification.log",
+  "native_service_or_quest_DTO_extensions": false,
+  "repository_source_edits_by_subagent": false,
+  "compiled_only_source_proposal_no_native_tree_published": true,
+  "clippy_command": "cargo clippy --locked --offline -p oteryn-game-server --example materialize_content_world_project_v2 -- -D warnings",
+  "clippy": "PASS",
+  "clippy_log": "/workspace/npc-r8-research/d10-clippy-verification.log",
+  "clippy_log_sha256": "23f89596bb40dbf0ab055406b8cf0a4aeb604d83aac333597ef62852e3b0c224"
+}
