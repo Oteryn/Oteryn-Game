@@ -1297,6 +1297,51 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
         drop(restart_authority);
         drop(restart_seal);
         drop(restarted);
+        // Retained kills from an older five-kill definition remain valid when the current
+        // Content projection uses a three-kill completion threshold. Use real durable commits.
+        for (tag, current_revision) in [(85, 8), (86, 9)] {
+            let outcome = harness
+                .root
+                .commit_bestiary_kill(
+                    &authority,
+                    &harness.node,
+                    fence(current_revision)?,
+                    BestiaryKillRequest {
+                        occurrence: BestiaryKillOccurrence::from_bytes(id(tag)).map_err(debug)?,
+                        race: crate::domain::bestiary::BestiaryRace::new(
+                            "oteryn:creature.rat",
+                            "definition-before-threshold-reduction",
+                            vec![1, 2, 5],
+                        )
+                        .map_err(debug)?,
+                        context: context.clone(),
+                        policy_revision: "policy-1".into(),
+                        reward_revision: "reward-1".into(),
+                    },
+                )
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(outcome, BestiaryKillOutcome::Committed(_)),
+                "{outcome:?}"
+            );
+        }
+        let bounded = port.views().await.map_err(debug)?;
+        assert_eq!(bounded.revision.get(), 10);
+        assert_eq!(bounded.bestiary[0].kill_count, 3);
+        let retained = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(10)?,
+                read_request(),
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(retained.bestiary_counts[&race("rat")], 5);
+        assert_eq!(retained.balance, view.balance);
         // Independently replace the live connection generation. The already-bound port must
         // reject its old evidence rather than reconstructing current authority from storage.
         let replaced = sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation = 2 WHERE game_session_id = encode($1,'hex')::uuid")

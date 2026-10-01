@@ -45,21 +45,29 @@ underlying locked snapshot independently rechecks live authority. An old receipt
 current authority. Content revision compares expected binding only; no qualified generation
 provenance, capability activation or live effects are claimed. All advertised effect flags are false.
 
-Root inspected the entire delta. The module and library projection tests total489 lines; shared
-actual PostgreSQL negatives/linkage bring the coherent read-port batch to603 changed Rust lines.
-The slight budget excess retains essential real-consumer authority evidence instead of deleting
-negatives or splitting a projection-only result from its actual consumer. No resource, schema,
-protocol identifiers or production owner was added.
+Root inspected the entire delta. The implementation is318 lines; library projection tests189,
+shared actual PostgreSQL oracles144, and linkage/documentation15 changed Rust lines:666 total.
+The baseline603-line reader and its63-line P2 repair remain one coherent owner/consumer batch;
+the exception to the approximate500-line budget preserves required actual PostgreSQL evidence
+and the regression instead of deleting negatives. No resource, schema, protocol identifiers
+or production owner was added.
 
 ## Validation and remaining work
 
-Actual PostgreSQL17.6 suite791PASS includes the shared native bind/views case at revision8,
+Actual PostgreSQL17.6 suite792PASS includes the shared native bind/views case at revision8,
 wrong session and stale revision isolated negatives, restart of durable state, and rejection by
 the already-bound reader after independently changing live connection generation. The same
-case is loaded by both focused Charm and protected Character-authority wrappers. Four projection
+case is loaded by both focused Charm and protected Character-authority wrappers. Five projection
 unit tests PASS; workspace fmt, diff check, strict workspace all-target Clippy and governance/
-lifecycle13PASS. Four narrow test-only dead-code allowances cover native reader items actually
+lifecycle13PASS on the repaired source. Four narrow test-only dead-code allowances cover native reader items actually
 executed in standalone PostgreSQL suites, not in library-only projection tests. No E2E claim.
+
+Independent review P2 at the first frozen d79e3c01: a valid preserved kill counter above a
+lowered current threshold made both views unavailable. Accepted and repaired after explicit
+return to AUTHORING: focused regression RED1 (expected view failure), then GREEN5. Only wire
+progress is capped to current completion; durable history is preserved. The actual PostgreSQL
+case performs two real older-definition kill commits, then proves wire count3, retained count5,
+revision10 and unchanged Charm balance. No direct counter rewrite or constraint weakening.
 
 Write-port unlock/assign dispatch, retained command retries, qualified Content loading, real
 commercial/promotion inputs, paid unassign and CHARM-6 activation remain unfinished. Full parent

@@ -140,7 +140,9 @@ impl CharmConnectionContent {
             {
                 bestiary.push(BestiaryRaceProgress {
                     race: wire_index(index)?,
-                    kill_count: count,
+                    // Durable history survives a later threshold reduction. The current wire
+                    // projects complete progress within its bound without rewriting history.
+                    kill_count: count.min(race.final_kill_threshold()),
                     kill_thresholds: race
                         .kill_thresholds()
                         .try_into()

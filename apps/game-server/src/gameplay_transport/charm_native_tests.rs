@@ -141,6 +141,22 @@ fn historical_counters_are_ignored_but_an_obsolete_assignment_is_a_fault() {
 }
 
 #[test]
+fn lowered_thresholds_project_complete_progress_without_rewriting_history() {
+    let content = content();
+    let mut retained = snapshot();
+    let wolf = BestiaryRaceKey::new("oteryn:creature.wolf").expect("wolf");
+    retained.bestiary_counts.insert(wolf.clone(), 5);
+    let views = content.project(retained.clone()).expect("complete view");
+    assert_eq!(views.bestiary[0].kill_count, 3);
+    assert_eq!(views.bestiary[0].kill_thresholds, [1, 2, 3]);
+    assert_eq!(retained.bestiary_counts[&wolf], 5);
+    assert_eq!(
+        views.charms,
+        content.project(snapshot()).expect("view").charms
+    );
+}
+
+#[test]
 fn generation_binding_rejects_missing_effects_duplicate_races_and_wire_limits() {
     let valid = effects();
     let empty = Effects(BTreeMap::new());
