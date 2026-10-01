@@ -73,6 +73,10 @@
     "Service.Travel": {
       "index": "content/services/travel/index.json",
       "records": 56
+    },
+    "StarterKit": {
+      "index": "content/starter/index.json",
+      "records": 1
     }
   },
   "managed_files": [
@@ -540,6 +544,12 @@
     },
     {
       "path": "content/services/travel/travel-00000-00055.json"
+    },
+    {
+      "path": "content/starter/index.json"
+    },
+    {
+      "path": "content/starter/starter-kits-00000-00000.json"
     },
     {
       "path": "imports/canary/batches.json"

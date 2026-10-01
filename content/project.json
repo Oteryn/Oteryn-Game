@@ -18,7 +18,8 @@
     "Service",
     "Charm",
     "Proficiency",
-    "RewardClaim"
+    "RewardClaim",
+    "StarterKit"
   ],
   "next_population_families": [
     "Quest",

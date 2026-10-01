@@ -20,7 +20,7 @@ assert lock["family_counts"] == {
     "Item": 34031, "Mount": 252,
     "Creature": 1479, "Presentation": 2581, "Behavior": 2581, "Loot": 1032, "Ability": 5902, "Effect": 4502, "Formula": 4820,
     "NPC": 1102, "Dialogue": 715, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
-    "Proficiency": 443, "RewardClaim": 231,
+    "Proficiency": 443, "RewardClaim": 231, "StarterKit": 1,
 }
 assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1479, "Encounter": 61, "NPC": 2352}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
@@ -59,6 +59,9 @@ assert manifest["families"]["RewardClaim"] == {"records": 231, "index": "content
 assert "RewardClaim" in project["migrated_families"]
 assert sum(path.startswith("content/interactions/reward_claims/reward-claims-") for path in paths) == 3
 assert "content/interactions/reward_claims/index.json" in paths
+assert manifest["families"]["StarterKit"] == {"records": 1, "index": "content/starter/index.json"}
+assert "StarterKit" in project["migrated_families"]
+assert "content/starter/starter-kits-00000-00000.json" in paths and "content/starter/index.json" in paths
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 
@@ -66,5 +69,8 @@ assert "NPC" not in project["next_population_families"] and "Dialogue" not in pr
 reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
 for script in ("test_reward_claim_authoring.py",):
     subprocess.run([sys.executable, script], cwd=reward_claim_tool, check=True)
+# StarterKit likewise.
+starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"
+subprocess.run([sys.executable, "test_starter_kit_authoring.py"], cwd=starter_kit_tool, check=True)
 
 print(f"PASS managed_files={len(paths)} item_shards=69")
