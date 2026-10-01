@@ -207,6 +207,34 @@ def test_registration_is_idempotent() -> None:
     assert lock["family_counts"]["Proficiency"] == pa.EXPECTED_COUNT
 
 
+def test_item_bindings() -> None:
+    bindings = pa.item_bindings(committed())
+    rows = bindings["records"]
+    assert bindings["record_count"] == len(rows) == 642
+    assert bindings["excluded"] == {
+        "item_not_defined": 23,
+        "unknown_threshold_class": 1,
+    }
+    items = pa.content_item_revisions()
+    definitions = {d["identity"]["key"] for d in committed()["proficiencies"]}
+    keys = [row["item"]["key"] for row in rows]
+    assert keys == sorted(set(keys))
+    for row in rows:
+        assert items[row["item"]["key"]] == row["item"]["revision"]
+        assert row["profile_binding"]["key"] in definitions
+        assert row["threshold_class"] in pa.THRESHOLD_CLASSES
+    source = json.loads((pa.ROOT / pa.BINDING_SOURCE_REL).read_text(encoding="utf-8"))
+    by_item = {row["item"]["key"]: row for row in rows}
+    for row in source["bindings"]:
+        bound = by_item.get(row["item_key"])
+        if bound is None:
+            continue
+        assert bound["threshold_class"] == row["threshold_class"]
+        assert bound["profile_binding"]["key"] == (
+            f"oteryn:proficiency.tibia.p{row['proficiency_id']}"
+        )
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

@@ -202,7 +202,8 @@ implementation it applies to.
   world's achievement catalogue defines an entry compatible with the recorded provenance. Elsewhere the achievement
   is not shown and is never reinterpreted; the fact is unchanged. This is a declared difference
   from the Reference target, which counts achievements per character.
-- Pending amendment (owner direction 2026-09-30, #162 comment 5911933242): on acceptance of
+- Pending amendment (owner direction 2026-09-30, #162 comment 5911933242; D226, the world-scope decision,
+  display-4): on acceptance of
   `OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md`, its §2.1 supersedes "Elsewhere the achievement is not shown" above
   and the point value "from the compatible catalogue entry of the world evaluating it": every fact is shown and
   counted from the Oteryn catalogue record of its key. Nothing else in this section changes.

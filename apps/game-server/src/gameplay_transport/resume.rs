@@ -321,6 +321,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             account_id: controller.account_id,
         });
         resumed.continuity.connection_generation = successor;
+        // C2: the lost connection's item fence names its own generation; it is refreshed below
+        // from the committed resume, never carried over.
+        resumed.item_fence = None;
         let prepared = match self
             .decide(&store, prepare, source.clone(), flow.operation())
             .await
@@ -386,12 +389,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The durable session is ACTIVE on the candidate connection: the still-present actor
         // is controlled again, from the lost connection's FND-02 continuity. The durable
         // switch stands even if the runtime mark could not be cleared.
-        let _ = self
-            .runtime
-            .lock()
-            .await
-            .restore_control(actor, session_id, epoch.get());
+        {
+            let mut runtime = self.runtime.lock().await;
+            let _ = runtime.restore_control(actor, session_id, epoch.get());
+            // SPELL-D8 §8.2: the Serene initialization evaluation runs in this owner step,
+            // before the resumed actor's first command. An actor without spell state has none.
+            let _ = self.spell_states.lock().await.resume(
+                &runtime,
+                actor,
+                session_id,
+                self.owner_now(),
+            );
+        }
         self.forget_lost(session_id, lost.continuity.connection_generation);
+        // C2: the resumed session's item fence, from a current durable read of the session the
+        // COMMIT made ACTIVE on this candidate connection. An unreadable or already moved
+        // session leaves it `None`: the resume stands, and a chest `USE` is refused.
+        if let Ok((current, _)) = store.current_session_at(session_id).await
+            && current.session_state() == GameSessionState::Active
+            && current.current_connection_generation().get() == successor
+            && current.current_transport() == Some(attempt.transport)
+        {
+            resumed.item_fence = super::item_fence_of(current);
+        }
         Ok(resumed)
     }
 

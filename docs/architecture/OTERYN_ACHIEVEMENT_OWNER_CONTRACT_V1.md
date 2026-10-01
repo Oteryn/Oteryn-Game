@@ -130,7 +130,8 @@ account's facts, each read from the catalogue record of its key; a retired recor
 
 - Physical schema and migration (step 3).
 - Progress counters: each stays with the domain that counts (D48) and needs its own owner.
-- Protocol and client display are in `OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md`; the website and ranking export
-  stay undecided.
+- Protocol and client display are covered by the display contract candidate
+  (`OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md`); it applies on its acceptance. The website and ranking export stay
+  undecided.
 - Declared differences in the Reference parity manifest (account scope, D48) (follow-up of the account-progress
   decision).

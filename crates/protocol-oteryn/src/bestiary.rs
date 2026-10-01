@@ -1,11 +1,11 @@
-//! Bestiary view typed payload (CHARM-5; **proposed**, not registered).
+//! Bestiary view typed payload (CHARM-5).
 //!
-//! Wire proposal: `docs/contracts/protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md` §3.1,
-//! following CHARM-0 §4.1 (`docs/architecture/reviews/
+//! Schema: `docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto`, from
+//! `docs/contracts/protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md` §3.1, following
+//! CHARM-0 §4.1 (`docs/architecture/reviews/
 //! OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md`). The state
-//! domain and payload-type IDs below are proposals for the protocol owner. They are not in
-//! `PROTOCOL_OTERYN_V1_REGISTRY.json`, and no session or server sends or accepts them until that
-//! owner registers them.
+//! domain and resource limits below are registered under capability 1 `BESTIARY_CHARMS_V1` (Sol
+//! ruling, #162 comment 5907282001), which the server does not offer before CHARM-6 (D170).
 //!
 //! One `BestiaryViewV1` serves the snapshot (the full set of the character's counted races) and
 //! the delta (an upsert of the listed races only), as `actor_spell` serves both with
@@ -25,17 +25,17 @@ use crate::charm_wire::{
     WireResult, push_message_field, push_varint_field, read_bytes, read_uint32_fields, read_varint,
 };
 
-/// Proposed state domain `CHARACTER_BESTIARY` (proposal §2).
+/// Registered state domain `CHARACTER_BESTIARY` (capability 1).
 pub const STATE_DOMAIN_CHARACTER_BESTIARY: u32 = 4;
 pub const DELTA_TYPE_CHARACTER_BESTIARY_V1: u32 = 1;
 pub const SNAPSHOT_TYPE_CHARACTER_BESTIARY_V1: u32 = 1;
 
-/// Proposed `CHARM5-RL-01`: Bestiary races in one view. The captured client staticdata lists 833
+/// `CHARM5-RL-01`: Bestiary races in one view. The captured client staticdata lists 833
 /// Bestiary races (CHARM-0 §2); 1024 leaves room without making the bound open-ended.
 pub const MAX_BESTIARY_VIEW_ENTRIES: usize = 1024;
 /// A race index is 1-based into a race list of at most [`MAX_BESTIARY_VIEW_ENTRIES`] races.
 pub const MAX_BESTIARY_RACE: u32 = 1024;
-/// Proposed `CHARM5-RL-02`: the largest kill threshold (the captured definitions top out at 5000).
+/// `CHARM5-RL-02`: the largest kill threshold (the captured definitions top out at 5000).
 pub const MAX_BESTIARY_KILL_THRESHOLD: u32 = 100_000;
 /// Stages are the thresholds reached: 0 (none) to 3 (entry complete).
 pub const BESTIARY_COMPLETE_STAGE: u8 = 3;

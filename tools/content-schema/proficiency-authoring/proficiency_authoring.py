@@ -50,6 +50,13 @@ CATALOGUE_REL = (
 CATALOGUE_SCHEMA = "OTERYN_PROFICIENCY_AUTHORING_CATALOGUE/v1"
 INDEX_SCHEMA = "OTERYN_FAMILY_INDEX/v1"
 SHARD_SCHEMA = "OTERYN_PROFICIENCY_SHARD/v1"
+BINDINGS_PATH = CONTENT_DIR + "bindings.json"
+BINDINGS_SCHEMA = "OTERYN_PROFICIENCY_ITEM_BINDINGS/v1"
+BINDING_SOURCE_REL = (
+    "tools/content-schema/item-authoring/samples/"
+    "item-weapon-proficiency-15-30-7fea90ec.json"
+)
+THRESHOLD_CLASSES = ("standard", "knight", "crossbow")
 
 # D199 (owner-accepted): source enum codes -> Oteryn enum names.
 SKILLS = {
@@ -413,7 +420,66 @@ def content_files(catalogue: dict) -> dict[str, str]:
             "shards": shards,
         }
     )
+    files[BINDINGS_PATH] = compact(item_bindings(catalogue))
     return files
+
+
+def content_item_revisions() -> dict[str, str]:
+    """Item key -> revision for every Item definition in content/items."""
+    revisions = {}
+    for path in sorted((ROOT / "content/items/definitions").glob("items-*.json")):
+        for row in load_json(path)["records"]:
+            identity = row["definition"]["identity"]
+            revisions[identity["key"]] = identity["revision"]
+    return revisions
+
+
+def item_bindings(catalogue: dict) -> dict:
+    """Weapon -> Proficiency definition and threshold class (PROF-CONTENT-1c).
+
+    The class comes from ITEM-PROF-1 (`item_weapon_proficiency.py`), which applies D197,
+    D198 and D200 to each binding and is drift-checked in CI. A binding whose class is
+    `unknown`, or whose Item has no definition, gets no proficiency and is only counted.
+    """
+    source_bytes = (ROOT / BINDING_SOURCE_REL).read_bytes()
+    source = json.loads(source_bytes)
+    definitions = {
+        d["source"]["proficiency_id"]: d["identity"] for d in catalogue["proficiencies"]
+    }
+    items = content_item_revisions()
+    records, excluded = {}, {"item_not_defined": 0, "unknown_threshold_class": 0}
+    for row in source["bindings"]:
+        if row["item_key"] not in items:
+            excluded["item_not_defined"] += 1
+            continue
+        if row["threshold_class"] not in THRESHOLD_CLASSES:
+            excluded["unknown_threshold_class"] += 1
+            continue
+        identity = definitions.get(row["proficiency_id"])
+        if identity is None:
+            raise ValueError(f"binding to unknown proficiency {row['proficiency_id']}")
+        if row["item_key"] in records:
+            raise ValueError(f"duplicate binding for {row['item_key']}")
+        records[row["item_key"]] = {
+            "item": {
+                "family": "Item",
+                "key": row["item_key"],
+                "revision": items[row["item_key"]],
+            },
+            "profile_binding": {
+                "family": FAMILY,
+                "key": identity["key"],
+                "revision": identity["revision"],
+            },
+            "threshold_class": row["threshold_class"],
+        }
+    return {
+        "excluded": excluded,
+        "record_count": len(records),
+        "records": [records[key] for key in sorted(records)],
+        "schema": BINDINGS_SCHEMA,
+        "source": {"path": BINDING_SOURCE_REL, "sha256": sha256(source_bytes)},
+    }
 
 
 def registered(
