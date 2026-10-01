@@ -221,9 +221,11 @@ The content `on_use` decides:
 - **`DROP`** (spears and other recoverable thrown weapons): the frozen break draw decides. Broken,
   or a drop refused at PREPARE: the same one-unit BURN. Not broken: one unit goes to the landing
   tile's Ground, as in Canary:
-  - **Merge** when the tile's **top dropped item** (the highest Ground ordinal, §6.1.2) is a
-    compatible stack with room: same definition key and revision, both stackable, equal state apart
-    from quantity (B3 §4.4), quantity below the stack maximum (D82). The unit moves into it by a
+  - **Merge** when the tile's **top Ground item** (the highest Ground ordinal, §6.1.2) is a
+    compatible stack with room and not reserved by another transaction: a stackable non-corpse item,
+    same definition key and revision, equal state apart from quantity (B3 §4.4), quantity below the
+    stack maximum (D82). A corpse, a container or anything else on top means no merge (Canary merges
+    only into the top item). The unit moves into it by a
     DUR-03 §13 quantity transfer: the receiver keeps its identity and grows by one; the hand stack
     shrinks by one, or retires at zero (§11.5). No new Ground item, so the tile and channel limits are
     not consumed.
@@ -231,9 +233,12 @@ The content `on_use` decides:
     the last unit, at the top of the tile (the next Ground ordinal), under ITEM-MOVE-WIRE-1 §5's Ground
     rules (tile and channel limits with the tile row lock and counter, house tiles refused).
   - Merge or new item is chosen at PREPARE and frozen; a merge receiver is reserved under DUR-03 §7.1
-    at PREPARE, so no pickup or move can take it meanwhile. At commit the receiver must still be live
-    on that tile, compatible and with room; otherwise the commit is refused under the same
-    TransactionId (§23) and the swing has no effect (the unit stays).
+    at PREPARE, so no pickup, move or second throw can take it meanwhile: a second thrower that finds
+    the top stack reserved takes the new-item path (a spear is never burnt for it). At commit, after
+    the item rows in ItemInstanceId order, the tile row is locked `FOR SHARE` (rule 4's order) and the
+    receiver must still be live, on that tile, the top Ground item, compatible and with room;
+    otherwise the commit is refused under the same TransactionId (§23) and the swing has no effect
+    (the unit stays). A merge takes no tile-limit or channel-counter row.
   - Every Ground write takes ITEM-MOVE-WIRE-1 §6.2's §32 scope fence; D191 reset retirement applies;
     reach and line of sight do not apply.
 - **`NONE`** and wands: no transaction.
@@ -251,13 +256,19 @@ The content `on_use` decides:
 
 ### 6.1.2 Ground stacking order (amends ITEM-MOVE-WIRE-1 §5 and §6.2)
 
-- Every live Ground item of a tile carries a `ground_ordinal`, assigned at its Ground insertion as
-  the tile's highest plus one, under the tile row lock every Ground insertion already takes
-  (ITEM-MOVE-WIRE-1 §5); ordinals are never reused or renumbered while the item lies there. Every
-  Ground insertion (a drop, a split, a Ground move, a reset rebuild) assigns it; a merge does not.
-- The **top dropped item** of a tile is its live dropped item with the highest ordinal, the item
-  Tibia shows on top. Map-authored items are not dropped items. The ordinal never orders by
+- Every Ground location row (`game_item_ground_locations`) gets a `ground_ordinal`, `NOT NULL`,
+  assigned by the database from one sequence at insert (a column default), so every Ground writer
+  (drops, splits, Ground moves, corpse and loot MINTs, map-item materialization, death drops, tree
+  drops) assigns it without code changes; a later insert always has a higher ordinal; it is never
+  reused or changed (the rows are immutable). Only a tree's root has a Ground location row, so only
+  roots carry it. A merge inserts no row. A channel restart projects the stored ordinals.
+- **Migration** (RANGED-1): the column is added with existing rows (corpses and loot) at ordinal 0,
+  below every new row; on a tile whose highest ordinal is 0 the top is ambiguous and no merge happens.
+- The **top Ground item** of a tile is its live Ground root with the highest ordinal, the item Tibia
+  shows on top. Map-authored LocalObjects are below every Ground root. The ordinal never orders by
   ItemInstanceId (DUR-03 §13: "UUID/client list ordering never selects survivor/receiver").
+- The client shows the items of one tile in `ground_ordinal` order, top last. Amended: MOVE-RL-11
+  §4.3.
 - This is the Ground stacking order later Ground decisions reuse (for example a top-item pickup).
 
 ### 6.2 Cause, key and fence
@@ -281,9 +292,9 @@ The content `on_use` decides:
 | Row | Value |
 |---|---|
 | `DUR03-RL-01-WEAPON` touched items | burn 1; split drop 2 (source and new item); whole drop 1; merge 2 (source and receiver) |
-| `DUR03-RL-02-WEAPON` location/quantity lines | burn 1; split 2; whole drop 2; merge 2 quantity changes and, when the source retires, 1 removal |
+| `DUR03-RL-02-WEAPON` location lines; quantity changes | burn 1 removal at zero, else 0 location and 1 quantity change; split 1 location, 2 quantity changes; whole drop 2 location; merge 0 location (1 removal when the source retires), 2 quantity changes |
 | `DUR03-RL-06-WEAPON` participants / effect work units | one participant per touched item: burn 1 / 3 (participant, removal, retirement at zero); split 2 / 4; whole drop 1 / 3; merge 2 / 5 (source participant, decrement, retirement at zero; receiver participant, increment); with max and max+1 boundary tests |
-| `DUR03-RL-07-WEAPON` envelope and payload | the one-item caps; RANGED-1 proves the split within them |
+| `DUR03-RL-07-WEAPON` envelope and payload | the one-item caps; RANGED-1 proves the split and the merge receiver (up to 256 B, as B3 §4.5) within them |
 | `RANGED0-RL-01` weapon transactions in flight per channel | 256; above it a due swing makes no attack (a stall) |
 | `RANGED0-RL-02` ambiguous commit bound | 2,000 ms |
 | `RANGED0-RL-03` player chase searches per owner window per channel | 64 (§8) |
@@ -375,7 +386,8 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 1. **Contract amendments**, all applied in this PR: DUR-03 §15, §39.1 and §39.3 (`WeaponUseCause`
    shapes and supersessions); the composition decision (server-originated swing variant);
-   ITEM-MOVE-WIRE-1 §4 (quiver, Extra slot), §5 and §6.2 (Ground ordinal); BAGS-0 §3, §6 and §10 (quiver tree, reachable items);
+   ITEM-MOVE-WIRE-1 §4 (quiver, Extra slot), §5 and §6.2 (Ground ordinal); MOVE-RL-11 §4.3 (in-tile
+   order); BAGS-0 §3, §6 and §10 (quiver tree, reachable items);
    ATTACK-0 §3 (chase) and §4 (variants, RNG purposes); CONDITIONS-0 §4.3 (chase steps);
    CREATURE-AI-0 §7 (player chase searches); SPELL-PRESENT-0 §5 (weapon projectiles).
 2. **Serialization:** one weapon-use slot per actor; the shot unit is reserved under DUR-03 §7.1, so a

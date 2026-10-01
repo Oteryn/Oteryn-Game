@@ -112,6 +112,8 @@ creatures) before items; within each group it is floor distance, Chebyshev dista
 identity, as above. So dropped items can never push an actor out of a snapshot. The ceiling and the
 degrade and resync dispositions are unchanged
 (`OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §7.3).
+**Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Items of one
+tile are ordered by their `ground_ordinal`, top last, so the client's top item is the server's.
 
 ### 4.4 Resource rows
 

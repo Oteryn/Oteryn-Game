@@ -1668,8 +1668,9 @@ swing's effect:
 - **Throwing burn.** The same one-unit BURN from the right-hand stack when the frozen break draw
   breaks it or the drop was refused at PREPARE.
 - **Throwing drop.** One unit of the right-hand stack to the landing tile's Ground: a §13 quantity
-  transfer into the tile's top dropped item (highest Ground ordinal, RANGED-0 §6.1.2) when it is a
-  compatible stack with room, reserved under §7.1 at PREPARE and rechecked at commit (the hand stack
+  transfer into the tile's top Ground item (highest database-assigned Ground ordinal, RANGED-0
+  §6.1.2) when it is an unreserved compatible stack with room, reserved under §7.1 at PREPARE and
+  rechecked at commit under the tile row `FOR SHARE` (the hand stack
   shrinks or retires at zero, the receiver grows and keeps its identity); otherwise a new item at the
   top of the tile, by a §12 split into a planned identity (§11.3), or a whole TRANSFER from the
   right-hand slot when it is the last unit, under the ITEM-MOVE-WIRE-1 §5 Ground rules (tile and
