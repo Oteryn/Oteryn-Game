@@ -143,6 +143,11 @@ statue?
 - It is skipped (no marker, no activation) when a respawn is pending, when the character has no
   progression row yet, or outside a Channel scope (the build writer serves Channel scopes only); the
   next admission then settles as after a crash (§5).
+  **Amendment (pending on acceptance of BED-0; `reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md` §5.1).** A house scope (kind 2,
+  HOUSE-RUNTIME-0) also commits both markers: HOUSE-RUNTIME-1 runs the build writer's marker path
+  for a character in its scope, with the same keys, receipts, `character_root` lock and session
+  fence as on a Channel scope. "Outside a Channel scope" above therefore means outside a Channel or
+  house scope.
 - A logout-blocked actor (ATTACK-0 §4, PARTY-PVP-0 §8.1) commits it when its deadline ends it.
 
 ### 4.2 Stamina use
@@ -161,8 +166,8 @@ statue?
 ## 5. Admission settlement (OFFLINE-1)
 
 - After admission commits and before the actor becomes playable, the build writer commits the
-  `offline_settlement` marker for the new lease, on a Channel scope (on another scope it waits until
-  the character is on one), after any pending respawn resolves. When the character has no progression
+  `offline_settlement` marker for the new lease, on a Channel scope or a house scope (BED-0 §5.1;
+  on another scope it waits until the character is on one), after any pending respawn resolves. When the character has no progression
   row yet (D88 creates it at the first XP award), the settlement first runs D88's initializer in the
   same transaction. A same-GameSession reconnect keeps its lease and settles nothing.
 - **Offline time.** `d > 0` only when the latest build-carrying receipt is a `logout` marker of the
@@ -185,6 +190,9 @@ statue?
     - applied through SKILLS-0 §3's arithmetic, advances included.
   - The skill is cleared.
 - Without a skill: the pool becomes `offline_pool_s + d`, capped at 43,200.
+- **Amendment (pending on acceptance of BED-0; `reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md` §7).** The same marker transaction reads
+  the character's bed sleeper row, deletes it, and (once DUR-02 durable vitals exist) applies the
+  bed's vitals and food step; training is unchanged.
 - Every coefficient is `PARITY_PENDING` (decision 8, point 3).
 
 ## 6. Training statues (STATUE-1)
@@ -198,6 +206,9 @@ statue?
   §10.1 (this PR).
 - The activation commits only with the `logout` marker; a session that ends without one trains
   nothing.
+- **Amendment (pending on acceptance of BED-0; `reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md` §4-§5).** A house bed is a second
+  activation source: the skill comes from `BED_SLEEP_INTENT`, and the `logout` marker also inserts
+  the bed sleeper row; if that insert conflicts, the marker commits without the activation.
 
 ## 7. Rejected options
 
