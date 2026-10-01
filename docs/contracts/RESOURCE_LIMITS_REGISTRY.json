@@ -6993,6 +6993,51 @@
         "crates/protocol-oteryn/src/charm.rs MAX_CHARM_BALANCE"
       ],
       "notes": "Earned Charm Points are at most 1024 x 100. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHAT0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "Text of one chat intent or line, and the name of a chat speaker or recipient",
+      "unit": "bytes of UTF-8 text",
+      "hard_maximum": 1020,
+      "configurable_range": {
+        "minimum": 1020,
+        "maximum": 1020
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses text above 1,020 bytes or a name above 120 bytes before copying it; an intent is at most 1,148 bytes (command type 13) and a line at most 1,194 bytes (domain 12 delta type 1). The server also limits trimmed text to 255 Unicode scalar values (CHAT-0 \u00a74).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1020: a say intent and a local line with 1,020 bytes of text and a 120-byte name round-trip at their byte bounds",
+        "max+1=1021: 1,021 bytes of text or a 121-byte name are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/chat.rs MAX_CHAT_TEXT_BYTES, MAX_CHAT_NAME_BYTES",
+        "apps/game-server/src/chat/mod.rs TEXT_MAX_BYTES, TEXT_MAX_CHARS"
+      ],
+      "notes": "CHAT-0 \u00a74 and \u00a78. Registered by OTV2-20261001-chat-1b-1."
+    },
+    {
+      "id": "CHAT0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "Chat rooms one session can have open",
+      "unit": "rooms per session",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The open-room set is a 4-bit mask in one varint (domain 12 snapshot type 1 and delta type 2, at most 4 bytes); any other bit is refused.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=4: the set of all four rooms round-trips",
+        "max+1: bit 4 (a fifth room) is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/chat.rs MAX_CHAT_OPEN_ROOMS, ChatRoomSet"
+      ],
+      "notes": "World, English, Help and Advertising (CHAT-0 \u00a75 and \u00a78). Registered by OTV2-20261001-chat-1b-1."
     }
   ]
 }

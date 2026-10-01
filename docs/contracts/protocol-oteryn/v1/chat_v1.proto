@@ -1,0 +1,112 @@
+// CHAT-0 §7 (CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1, docs/architecture/reviews/
+// OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md): typed payloads of capability 7 CHAT_V1,
+// command type 13 CHAT_INTENT and state domain 12 CHAT (snapshot type 1, delta types 1 and 2).
+// Numbers leased to CHAT-1 by the #162 control plane. FND-02 envelopes own CommandRef, server
+// sequence, domain ID and revisions; these payloads never duplicate them. Clients see a local
+// speaker as its spatial identity and name, and a room or private speaker by name, never its
+// CharacterId (FND-02 §10). Unknown fields, repeated singular fields, more than one intent, zero
+// and unknown enum values, fields that do not belong to a line's kind, and values outside the
+// declared bounds all fail closed. A string is UTF-8; text is 1..=1020 bytes (CHAT0-RL-01) and a
+// name 1..=120 bytes. The server also trims text and refuses control characters (CHAT-0 §4).
+syntax = "proto3";
+
+package oteryn.protocol.v1.chat;
+
+enum ChatSpeechMode {
+  CHAT_SPEECH_MODE_UNSPECIFIED = 0;
+  CHAT_SPEECH_MODE_SAY = 1;
+  CHAT_SPEECH_MODE_WHISPER = 2;
+  CHAT_SPEECH_MODE_YELL = 3;
+}
+
+enum ChatRoom {
+  CHAT_ROOM_UNSPECIFIED = 0;
+  CHAT_ROOM_WORLD = 1;
+  CHAT_ROOM_ENGLISH = 2;
+  CHAT_ROOM_HELP = 3;
+  CHAT_ROOM_ADVERTISING = 4;
+}
+
+message ChatSayV1 {
+  ChatSpeechMode mode = 1;
+  string text = 2;
+}
+
+message ChatPrivateV1 {
+  string recipient_name = 1;
+  string text = 2;
+}
+
+message ChatRoomLineV1 {
+  ChatRoom room = 1;
+  string text = 2;
+}
+
+message ChatRoomRefV1 {
+  ChatRoom room = 1;
+}
+
+// ClientCommand.payload of command type 13: exactly one intent; an empty one is refused.
+// At most 1148 bytes (a private message: 120-byte name and 1020-byte text).
+message ChatIntentV1 {
+  oneof intent {
+    ChatSayV1 say = 1;
+    ChatPrivateV1 private_message = 2;
+    ChatRoomLineV1 room = 3;
+    ChatRoomRefV1 open_room = 4;
+    ChatRoomRefV1 close_room = 5;
+  }
+}
+
+enum ChatDisposition {
+  CHAT_DISPOSITION_UNSPECIFIED = 0;
+  CHAT_DISPOSITION_OK = 1;               // sent; for a private or room line: the relay accepted it
+  CHAT_DISPOSITION_MUTED = 2;            // wait_seconds until the mute ends
+  CHAT_DISPOSITION_EXHAUSTED = 3;        // wait_seconds until the yell or Advertising cooldown ends
+  CHAT_DISPOSITION_LEVEL_TOO_LOW = 4;
+  CHAT_DISPOSITION_NOT_ONLINE = 5;
+  CHAT_DISPOSITION_NO_VOCATION = 6;
+  CHAT_DISPOSITION_ROOM_NOT_OPEN = 7;
+  CHAT_DISPOSITION_CHAT_UNAVAILABLE = 8; // the World relay is not ready
+  CHAT_DISPOSITION_REJECTED = 9;         // malformed intent or text, ineligible actor
+}
+
+// CommandResult.payload of command type 13: outcome only. At most 8 bytes.
+message ChatIntentResultV1 {
+  ChatDisposition disposition = 1;
+  uint32 wait_seconds = 2; // 1..=1280 with MUTED and EXHAUSTED only (5 s x 16^2, CHAT0-RL-04)
+}
+
+// StateDomainSnapshot.payload of snapshot type 1 and StateDelta.payload of delta type 2: the
+// whole set of rooms the session has open; a delta replaces it. At most 4 bytes.
+message ChatRoomsV1 {
+  uint32 open_rooms = 1; // bit (room - 1) per open ChatRoom; bits 4 and up are refused
+}
+
+enum ChatLineKind {
+  CHAT_LINE_KIND_UNSPECIFIED = 0;
+  CHAT_LINE_KIND_LOCAL = 1;   // fields 2, 3, 4, 5, 7, 8
+  CHAT_LINE_KIND_PRIVATE = 2; // fields 4, 7
+  CHAT_LINE_KIND_ROOM = 3;    // fields 4, 6, 7
+  CHAT_LINE_KIND_DROPPED = 4; // no other field: lines were dropped by the egress bound (CHAT0-RL-11)
+}
+
+// Same encoding as world_spatial ActorPositionV1; floor 0..=15.
+message ChatPositionV1 {
+  sint32 x = 1;
+  sint32 y = 2;
+  sint32 floor = 3;
+}
+
+// StateDelta.payload of delta type 1: one line. A whisper heard from beyond an adjacent tile
+// carries the text "pspsps". At most 1194 bytes (a local line).
+message ChatLineV1 {
+  ChatLineKind kind = 1;
+  bytes speaker_identity = 2;    // the 16-byte spatial identity (world_spatial EntityRefV1)
+  uint64 speaker_generation = 3; // the speaker's actor generation
+  string speaker_name = 4;
+  ChatSpeechMode mode = 5;
+  ChatRoom room = 6;
+  string text = 7;
+  ChatPositionV1 position = 8;   // where the line was spoken; always present on a local line
+}
