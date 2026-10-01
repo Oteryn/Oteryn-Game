@@ -4,12 +4,12 @@
 task_id: OTV2-20260930-prof-content-1
 title: PROF-CONTENT-1 Proficiency definitions in content/ and Item profile_binding
 mode: IMPLEMENT
-status: implementing
+status: completed   # final PR of the task (1d)
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/prof-content-1d-item-schema   # the record names the last open PR of the stack so merging #1341 keeps governance green
 issue: 162
-pr: 1342
+pr: 1342   # 1a #1328, 1b #1339, 1c #1341, 1d #1342
 base_sha: 1852a69   # #1327 and #1328 merged; 1b-1d stacked
 head_sha: null
 final_head_sha: null
@@ -27,7 +27,7 @@ owned_paths:
   - tools/content-migration/world_project_v2_to_tree.py
   - tools/content-migration/validate_world_project_v2_to_tree.py
   - tools/content-migration/test_world_project_v2_to_tree.py
-  - docs/agents/tasks/active/OTV2-20260930-prof-content-1.md
+  - docs/agents/tasks/active/OTV2-20260930-prof-content-1.md   # moved to tasks/archive/ in 1d
   # 1b: apps/game-server/src/content/project/v2.rs, apps/game-server/src/content/project/v2/proficiency.rs,
   # apps/game-server/tests/content_world_project_v2.rs
   # 1c: content/proficiencies/bindings.json (under content/proficiencies/**)
@@ -64,6 +64,13 @@ jira: null   # sync pending (coordinator batch)
   re-key the Magic Sword example to `oteryn:proficiency.tibia.p238`, and amend the crosswalk rule (the
   15.30 client source alone admits a definition; Canary/Crystal corroboration becomes optional).
 
+- **1d (branch `claude/prof-content-1d-item-schema`, stacked on 1c):** `item.schema.json` drops the inline
+  `levels`/`shaping` (`build_formal_schema.py`); the crosswalk rule is amended (15.30 client crosswalk
+  required and sufficient, admitted targets = committed `content/proficiencies/`; Canary/Crystal optional);
+  Magic Sword re-keyed to `oteryn:proficiency.tibia.p238`; wiki `perk1..7` dispose to `profile_binding`.
+  Architecture docs describing the inline profile (`OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md`,
+  `OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md`) are left to their owners.
+
 ## Decisions carried
 
 Owner, 2026-09-30 (recorded in `docs/agents/tasks/archive/OTV2-20260930-proficiency-authoring-schema.md`):
@@ -94,3 +101,20 @@ Threshold tables and the point table are progression rules, so they are not writ
 - Generator byte-identical; `validate_world_project_v2_to_tree.py` PASS (`proficiency_bindings=642`);
   `test_world_project_v2_to_tree.py` PASS (161 managed files); `validate_materialized_game_tree.py` 97/97;
   `item_key_references.py` PASS.
+
+## Validation (1d, local)
+
+- `build_formal_schema.py` regenerates byte-identically; `verify_formal_schema.py`: 247/247.
+- `test_engine_items.py` 594, `test_item_weapon_proficiency.py` OK, `item_weapon_proficiency.py --check` up to date,
+  `test_lower_promotion_packet.py` 55, `test_donor_census.py` 47, `test_client_appearance_census.py` 29,
+  `test_world_objects.py` 141, `validate_item_master_schema.py` PASS, ruff clean.
+
+## Closeout
+
+- 1a #1328 merged (`1852a69`); 1b #1339, 1c #1341 and 1d #1342 are squash merges recorded on #162.
+- This record moves to `tasks/archive/` in 1d, the task's last PR. While the stack was open, each branch named
+  a still-open PR so that `main` never carried a record naming a merged PR (see #1350).
+- Left to their owners: `OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md` and
+  `OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md` still describe the inline Item profile; the PROFICIENCY-0
+  document still carries the §4.5 point-table gate the owner lifted (decision 3).
+- Next: PROF-2 (ruleset thresholds and point table in `rulesets/progression/weapon-proficiency/`, accrual).
