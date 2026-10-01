@@ -162,7 +162,11 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         # ITEM-SEM-2b promotes it from TibiaWiki.
         for blocked in ("stack.stack_max",):
             require(blocked not in known, f"BLOCKED_FIELD_PROMOTED:{blocked}")
-        require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
+        equipment = superseding.get((key, "equipment.patterns"))
+        if equipment is None:
+            require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
+        else:
+            require(known.get("equipment.patterns") == equipment, "EQUIPMENT_WITHOUT_QUALIFIED_WIKI_PATTERN")
     require(fact_count == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"], "PROVENANCE_FACT_COUNT")
     return len(legacy_authoring), len(taxonomy["records"]), relation_count, fact_count
 

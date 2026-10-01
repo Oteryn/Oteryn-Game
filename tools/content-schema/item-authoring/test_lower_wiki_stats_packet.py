@@ -123,9 +123,66 @@ def test_committed_packet_rebuilds():
     return packet["counts"]
 
 
+def test_equipment_requirements_and_holds():
+    fields = {
+        "slot": "Both Hands",
+        "hands": "Two",
+        "levelrequired": "400",
+        "vocrequired": "knights and paladins",
+    }
+    rows, report, _ = lower.build(snapshot({1: [(1, fields)]}), {1})
+    pattern = rows_by(rows)[("oteryn:item.tibia.i1", "equipment.patterns")]["value"][0]
+    assert pattern["primary_slot"] == lower.known("WEAPON")
+    assert pattern["additional_reserved_slots"] == lower.known(["SHIELD"])
+    assert pattern["level"] == lower.known(400)
+    assert pattern["vocations"] == lower.known(["KNIGHT", "PALADIN"])
+    assert pattern["mutually_exclusive_groups"] == {"state": "UNKNOWN"}
+    assert not report["malformed"]
+    _, missing = lower.equipment({"slot": "Head"})
+    assert missing["value"][0]["vocations"] == {"state": "UNKNOWN"}
+    assert missing["value"][0]["level"] == {"state": "UNKNOWN"}
+    assert lower.equipment({"primarytype": "Attack Runes", "levelrequired": "27"}) == (
+        None,
+        None,
+    )
+    assert lower.equipment({"primarytype": "Ammunition", "slot": "Extra Slot"}) == (
+        None,
+        None,
+    )
+    for override in (
+        {"hands": "One"},
+        {"vocrequired": "without"},
+        {"vocrequired": "knights and without"},
+        {"levelrequired": "65536"},
+    ):
+        assert lower.equipment(fields | override)[1] == "MALFORMED"
+    rows, report, _ = lower.build(
+        snapshot(
+            {
+                1: [(1, fields), (2, fields | {"levelrequired": "300"})],
+                2854: [(3, {"slot": "Container"})],
+            }
+        ),
+        {1, 2854},
+    )
+    assert not rows and report["conflict"]["equipment.patterns"] == 1
+    for primary in ("Attack Runes", "Ammunition"):
+        excluded = {"primarytype": primary, "slot": "Extra Slot", "levelrequired": "27"}
+        for pages in ([(1, fields), (2, excluded)], [(2, excluded), (1, fields)]):
+            rows, report, _ = lower.build(snapshot({1: pages}), {1})
+            assert not any(row["field_path"] == "equipment.patterns" for row in rows)
+            assert report["equipment_holds"][0]["classification"] == "CONFLICT"
+            assert {
+                row["page_id"] for row in report["equipment_holds"][0]["sources"]
+            } == {1, 2}
+        _, report, _ = lower.build(snapshot({1: [(2, excluded)]}), {1})
+        assert not report["equipment_holds"]
+
+
 def main():
     test_lowering_types_values()
     test_disagreement_malformed_and_non_items()
+    test_equipment_requirements_and_holds()
     counts = test_committed_packet_rebuilds()
     print(
         f"lower_wiki_stats_packet tests: PASS fields={counts['fields']} items={counts['items']}"

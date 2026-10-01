@@ -12,7 +12,9 @@ value; disagreement and unparseable values go to the report, never into a row. O
 ids that are Items in content (`content/items/index.json`) get rows.
 
 Fields (2b-1): attack, defense, defense modifier, armor, range, weapon type, elemental
-attacks, imbuement slots and weight. Weight is in hundredths of an ounce, as in Tibia
+attacks, imbuement slots, equipment patterns and weight. Equipment requires an explicit
+wiki slot; absent requirements remain UNKNOWN and unsupported vocations/hand claims
+hold the complete pattern. Weight is in hundredths of an ounce, as in Tibia
 (owner decision 2026-09-30: 41.00 oz = 4100).
 
 `--check` rebuilds the packet in memory and fails on any byte difference.
@@ -72,6 +74,91 @@ ELEMENT_PARAMS = {
     "ice_attack": "ICE",
 }
 UNSUPPORTED_PARAMS = ("holy_attack",)
+EQUIPMENT_SLOTS = {
+    "Head": "HEAD",
+    "Body": "TORSO",
+    "Torso": "TORSO",
+    "Legs": "LEGS",
+    "Feet": "FEET",
+    "Weapon Hand": "WEAPON",
+    "Both Hands": "WEAPON",
+    "Shield Hand": "SHIELD",
+    "Shield": "SHIELD",
+    "Neck": "AMULET",
+    "Finger": "RING",
+    "Container": "CONTAINER",
+    "Extra Slot": "EXTRA",
+}
+VOCATIONS = {
+    "druid": "DRUID",
+    "knight": "KNIGHT",
+    "monk": "MONK",
+    "paladin": "PALADIN",
+    "sorcerer": "SORCERER",
+}
+VOCATION_ORDER = tuple(VOCATIONS.values())
+
+
+def known(value):
+    return {"state": "KNOWN", "value": value}
+
+
+def equipment(fields):
+    """Equip-only requirements: explicit slot, closed vocations, complete hand claims.
+
+    Rune use levels and ammunition have no accepted equipment lowering here. Missing
+    requirements remain UNKNOWN; a vague vocation or contradictory hand claim holds
+    the pattern rather than silently removing that restriction.
+    """
+    slot = fields.get("slot")
+    if (
+        slot is None
+        or "Rune" in fields.get("primarytype", "")
+        or fields.get("primarytype") == "Ammunition"
+    ):
+        return None, None
+    raw = {
+        name: fields[name]
+        for name in ("primarytype", "slot", "hands", "levelrequired", "vocrequired")
+        if name in fields
+    }
+    if slot not in EQUIPMENT_SLOTS:
+        return raw, "MALFORMED"
+    unknown = {"state": "UNKNOWN"}
+    pattern = {
+        "pattern_id": 1,
+        "primary_slot": known(EQUIPMENT_SLOTS[slot]),
+        "additional_reserved_slots": unknown,
+        "mutually_exclusive_groups": unknown,
+        "vocations": unknown,
+        "level": unknown,
+        "compatibility_rule": unknown,
+    }
+    hands = fields.get("hands")
+    if hands is not None and (
+        hands not in ("One", "Two") or slot not in ("Weapon Hand", "Both Hands")
+    ):
+        return raw, "MALFORMED"
+    if slot == "Both Hands":
+        if hands == "One":
+            return raw, "MALFORMED"
+        pattern["additional_reserved_slots"] = known(["SHIELD"])
+    elif slot == "Weapon Hand" and hands is not None:
+        if hands == "Two":
+            return raw, "MALFORMED"
+        pattern["additional_reserved_slots"] = known([])
+    if "levelrequired" in fields:
+        level = unsigned(fields["levelrequired"], 65535)
+        if level is None:
+            return raw, "MALFORMED"
+        pattern["level"] = known(level)
+    if "vocrequired" in fields:
+        parts = re.split(r",\s*|\s+and\s+", fields["vocrequired"].strip().lower())
+        values = [VOCATIONS.get(part.rstrip("s")) for part in parts]
+        if None in values or len(set(values)) != len(values):
+            return raw, "MALFORMED"
+        pattern["vocations"] = known(sorted(values, key=VOCATION_ORDER.index))
+    return raw, {"kind": "EQUIPMENT_PATTERNS", "value": [pattern]}
 
 
 def signed(raw):
@@ -134,6 +221,7 @@ def elemental(fields):
 
 
 FIELDS = {
+    "equipment.patterns": equipment,
     "weapon.attack": scalar("attack", "SIGNED_POINTS", signed),
     "weapon.defense": scalar("defense", "SIGNED_POINTS", signed),
     "weapon.extra_defense": scalar("defensemod", "SIGNED_POINTS", signed),
@@ -174,6 +262,7 @@ def build(snapshot, item_ids):
         "malformed": Counter(),
         "unsupported": Counter(),
         "examples": defaultdict(list),
+        "equipment_holds": [],
     }
     # Records are keyed by Item key or, without an Item record, by the bare Tibia id (#1325).
     for record in sorted(
@@ -183,6 +272,9 @@ def build(snapshot, item_ids):
             continue
         observations = record["observations"]
         for field_path, lower in FIELDS.items():
+            # STARTER-BACKPACK-0 supplies a separately qualified complete pattern.
+            if field_path == "equipment.patterns" and record["item_id"] == 2854:
+                continue
             results = [lower(row["fields"]) for row in observations]
             present = [
                 (obs, res)
@@ -191,9 +283,56 @@ def build(snapshot, item_ids):
             ]
             if not present:
                 continue
+            if field_path == "equipment.patterns" and any(
+                "Rune" in obs["fields"].get("primarytype", "")
+                or obs["fields"].get("primarytype") == "Ammunition"
+                for obs in observations
+            ):
+                report["conflict"][field_path] += 1
+                report["equipment_holds"].append(
+                    {
+                        "item_key": ITEM_KEY.format(record["item_id"]),
+                        "classification": "CONFLICT",
+                        "reason": "GEAR_AND_EXCLUDED_USE_CATEGORY_DISAGREE",
+                        "sources": [
+                            {
+                                "page_id": obs["page_id"],
+                                "revision_id": obs["revision_id"],
+                                "values": obs["fields"],
+                            }
+                            for obs in observations
+                        ],
+                    }
+                )
+                continue
             typed = [res[1] for _obs, res in present]
             if any(value == "MALFORMED" for value in typed):
                 report["malformed"][field_path] += 1
+                if field_path == "equipment.patterns":
+                    conflict = any(
+                        res[0].get("hands") == "Two"
+                        and res[0]["slot"] != "Both Hands"
+                        or res[0].get("hands") == "One"
+                        and res[0]["slot"] == "Both Hands"
+                        for _obs, res in present
+                    )
+                    report["equipment_holds"].append(
+                        {
+                            "item_key": ITEM_KEY.format(record["item_id"]),
+                            "classification": "CONFLICT" if conflict else "UNKNOWN",
+                            "reason": "SLOT_HANDS_DISAGREE"
+                            if conflict
+                            else "UNSUPPORTED_OR_MALFORMED_EQUIPMENT_FACTS",
+                            "sources": [
+                                {
+                                    "page_id": obs["page_id"],
+                                    "revision_id": obs["revision_id"],
+                                    "values": res[0],
+                                }
+                                for obs, res in present
+                            ],
+                        }
+                    )
                 if len(report["examples"][f"malformed:{field_path}"]) < 5:
                     report["examples"][f"malformed:{field_path}"].append(
                         [record["item_id"], present[0][1][0]]
@@ -201,6 +340,22 @@ def build(snapshot, item_ids):
                 continue
             if any(value != typed[0] for value in typed):
                 report["conflict"][field_path] += 1
+                if field_path == "equipment.patterns":
+                    report["equipment_holds"].append(
+                        {
+                            "item_key": ITEM_KEY.format(record["item_id"]),
+                            "classification": "CONFLICT",
+                            "reason": "WIKI_EQUIPMENT_OBSERVATIONS_DISAGREE",
+                            "sources": [
+                                {
+                                    "page_id": obs["page_id"],
+                                    "revision_id": obs["revision_id"],
+                                    "values": res[0],
+                                }
+                                for obs, res in present
+                            ],
+                        }
+                    )
                 if len(report["examples"][f"conflict:{field_path}"]) < 5:
                     report["examples"][f"conflict:{field_path}"].append(
                         record["item_id"]
@@ -244,6 +399,7 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
         },
         "promotions": rows,
         "report": {
+            "equipment_holds": report["equipment_holds"],
             "conflict": dict(sorted(report["conflict"].items())),
             "malformed": dict(sorted(report["malformed"].items())),
             "unsupported": dict(sorted(report["unsupported"].items())),
