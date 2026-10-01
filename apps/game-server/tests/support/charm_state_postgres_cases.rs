@@ -20,7 +20,8 @@ use crate::durability::character_progression::{
 };
 use crate::durability::charm_state::{
     BestiaryCharmEntry, BestiaryCharmFacts, CharmCommand, CharmCommandEffect,
-    CharmCommandOccurrence, CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError,
+    CharmCommandOccurrence, CharmCommandOutcome, CharmCommandRequest, CharmFacts,
+    CharmProgressionReadRequest, CharmStateError,
 };
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
@@ -1014,6 +1015,159 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
         assert!(matches!(assigned, CharmCommandOutcome::Committed(_)));
         assert_eq!(revision(&harness.pool).await?, "8");
 
+        let read_request = || CharmProgressionReadRequest {
+            catalogue_revision: "content-1".into(),
+            catalogue: catalogue(),
+            races: vec![race("rat"), race("wolf")],
+        };
+        let view = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(8)?,
+                read_request(),
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(view.character_revision.get(), 8);
+        assert_eq!(
+            view.bestiary_counts,
+            BTreeMap::from([(race("rat"), 3), (race("wolf"), 2)])
+        );
+        assert_eq!(view.balance.available(CharmCurrency::CharmPoints), 60);
+        assert_eq!(view.balance.available(CharmCurrency::MinorCharmEchoes), 50);
+        assert_eq!(view.slot_entitlement, CharmSlotEntitlement::Free);
+        let mut maximal = read_request();
+        maximal
+            .races
+            .extend((0..1022).map(|i| race(&format!("race{i}"))));
+        let maximum = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(8)?,
+                maximal,
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(maximum, view);
+
+        // Each negative changes one binding fact; every other live fact remains valid.
+        let mut wrong_character = fence(8)?;
+        wrong_character.character_id = CharacterId::from_bytes(id(99)).map_err(debug)?;
+        let mut wrong_session = fence(8)?;
+        wrong_session.game_session_id =
+            crate::foundation::GameSessionId::decode(&id(99)).map_err(debug)?;
+        let mut replaced_connection = fence(8)?;
+        replaced_connection.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        let mut wrong_lease = fence(8)?;
+        wrong_lease.character_lease_generation = 2;
+        let mut wrong_scope = fence(8)?;
+        wrong_scope.runtime_scope = RuntimeScopeRefV1::channel(
+            crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+            crate::foundation::ChannelId::decode(&id(99)).map_err(debug)?,
+        );
+        let mut wrong_scope_generation = fence(8)?;
+        wrong_scope_generation.scope_ownership_generation =
+            ScopeOwnershipGeneration::new(2).map_err(debug)?;
+        for invalid in [
+            wrong_character,
+            wrong_session,
+            replaced_connection,
+            wrong_lease,
+            wrong_scope,
+            wrong_scope_generation,
+        ] {
+            let refused = harness
+                .root
+                .read_character_charm_progression(
+                    &authority,
+                    &harness.node,
+                    invalid,
+                    read_request(),
+                    facts.clone(),
+                )
+                .await;
+            assert!(
+                matches!(refused, Err(CharmStateError::AuthorityRejected)),
+                "{refused:?}"
+            );
+        }
+        let stale = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(7)?,
+                read_request(),
+                facts.clone(),
+            )
+            .await;
+        assert!(matches!(
+            stale,
+            Err(CharmStateError::CharacterRevisionMismatch)
+        ));
+        let mut other_content = read_request();
+        other_content.catalogue_revision = "other-content".into();
+        let refused = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(8)?,
+                other_content,
+                facts.clone(),
+            )
+            .await;
+        assert!(matches!(
+            refused,
+            Err(CharmStateError::CharmContextMismatch)
+        ));
+        for races in [
+            vec![race("rat"), race("rat")],
+            (0..1025).map(|i| race(&format!("race{i}"))).collect(),
+        ] {
+            let mut oversized = read_request();
+            oversized.races = races;
+            let refused = harness
+                .root
+                .read_character_charm_progression(
+                    &authority,
+                    &harness.node,
+                    fence(8)?,
+                    oversized,
+                    facts.clone(),
+                )
+                .await;
+            assert!(matches!(refused, Err(CharmStateError::InvalidInput)));
+        }
+        // A current-generation read omits historical keys, without deleting their counters.
+        let mut current_only = read_request();
+        current_only.races = vec![race("rat")];
+        let filtered = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(8)?,
+                current_only,
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(filtered.bestiary_counts, BTreeMap::from([(race("rat"), 3)]));
+        let historical = harness
+            .root
+            .read_bestiary_progress(&authority, fence(8)?.character_id, race("wolf").as_str())
+            .await
+            .map_err(debug)?
+            .ok_or("historical wolf counter disappeared")?;
+        assert_eq!(historical.kill_count, 2);
+
         let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
         assert!(restarted.maintain_ready_once().await?);
         let restart_seal = harness.recovery.seal_current().map_err(debug)?;
@@ -1036,6 +1190,18 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
             state.assignments,
             BTreeMap::from([(charm("wound"), race("rat"))])
         );
+        let reloaded = restarted
+            .read_character_charm_progression(
+                &restart_authority,
+                &harness.node,
+                fence(8)?,
+                read_request(),
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(reloaded, view);
+        assert_eq!(revision(&harness.pool).await?, "8");
         drop(restart_authority);
         drop(restart_seal);
         drop(restarted);
