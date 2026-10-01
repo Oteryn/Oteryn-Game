@@ -55,6 +55,55 @@ class CharmMechanicsTests(unittest.TestCase):
                 )
             )
 
+    def test_global_profile_coverage_and_numbers_cannot_drift(self):
+        catalogue = cm.load(cm.ROOT / "samples/charms-candidate.json")
+        packet = cm.load(cm.GLOBAL)
+        self.assertEqual(cm.validate_global(packet, catalogue), [])
+        packet["profiles"].pop()
+        packet["profiles"][0]["community_costs"][0] += 1
+        errors = cm.validate_global(packet, catalogue)
+        self.assertIn("global research requires all25 unique profiles", errors)
+        self.assertIn("global profile numeric drift", errors)
+
+    def test_global_community_sources_cannot_become_official(self):
+        packet = cm.load(cm.GLOBAL)
+        packet["sources"]["catalogue:br_charms"]["authority"] = "OFFICIAL_PUBLISHER"
+        errors = cm.validate_global(
+            packet, cm.load(cm.ROOT / "samples/charms-candidate.json")
+        )
+        self.assertIn("global unofficial source promoted", errors)
+
+    def test_global_resource_resistance_scope_is_preserved(self):
+        packet = cm.load(cm.GLOBAL)
+        claim = next(c for c in packet["claims"] if c["field"] == "mitigation")
+        claim["value"]["elemental_resistances_apply"] = True
+        errors = cm.validate_global(
+            packet, cm.load(cm.ROOT / "samples/charms-candidate.json")
+        )
+        self.assertIn(
+            "global resource damage cannot inherit elemental resistance", errors
+        )
+
+    def test_global_missing_evidence_and_retractions_rejected(self):
+        packet = cm.load(cm.GLOBAL)
+        packet["claims"][0]["evidence_ids"] = ["missing"]
+        packet["supersedes_global_recommendations"].pop()
+        errors = cm.validate_global(
+            packet, cm.load(cm.ROOT / "samples/charms-candidate.json")
+        )
+        self.assertIn("global claim has unresolved evidence", errors)
+        self.assertIn("global supersession coverage drift", errors)
+
+    def test_global_reference_cannot_activate_or_invent_asset_proof(self):
+        packet = cm.load(cm.GLOBAL)
+        packet["profiles"][0]["official_runtime_parity_proven"] = True
+        packet["client_assets"]["charms"][0]["bestiary_charm_record_present"] = True
+        errors = cm.validate_global(
+            packet, cm.load(cm.ROOT / "samples/charms-candidate.json")
+        )
+        self.assertIn("global profile cannot activate or claim server parity", errors)
+        self.assertIn("global asset corpus cannot supply absent charm proof", errors)
+
     def test_resolution_missing_and_duplicate_original_entries_rejected(self):
         for duplicate in [False, True]:
             packet = cm.load(cm.RESOLUTION)

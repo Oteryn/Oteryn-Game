@@ -170,9 +170,9 @@ Use these concrete outcomes during integration:
 | Carnage | Source offsets are four cardinal tiles, selecting the first creature per tile, and the local type check includes summons. Preserve Oteryn's each-eligible-monster contract, summon exclusion, and accepted physical damage with armor/resistances. Reject the shared mutable cap. |
 | Conditions | The full speed formula, input offset, truncation and reapplication paths are documented. The paralysis floor is a delta against base speed, not an absolute final speed. Direct charm application bypasses ordinary monster paralysis immunity. Proposed consumer profiles include calibrated chance rolls and reliable effect removal. |
 | Cleanse | Both forks select status instances and grant 11000 ms immunity; selecting a type removes its active instances. Agony eligibility differs. The packet proposes an explicit conservative eligibility profile; it does not silently accept a new immunity policy. |
-| Critical/leech | Reject Canary's second full critical roll and Crystal's fractional/relative leech units. Proposed arithmetic uses additive fixed-point bonuses, explicit equipment provenance, a shared uniform critical roll (`U <= threshold`, `U` in 1..10000), and actual HP-loss leech inputs. D186 governs all four families' secondary auto targets. |
+| Critical/leech | Reject Canary's second full critical roll and Crystal's fractional/relative leech units. Proposed arithmetic uses additive fixed-point bonuses, explicit equipment provenance and a shared uniform critical roll (`U <= threshold`, `U` in 1..10000). The Global supplement below withdraws the actual-HP-loss leech recommendation. D186 governs all four families' secondary auto targets. |
 | Defensive | Parry block and health paths are sequential; the wrong signed input can heal the attacker. Use one nonnegative reflection opportunity and the already accepted armor behavior. Dodge status/DoT handling, minor ordering and mixed-resource inversion are explicit proposed consumer policies, not inferred official rules. |
-| Passives | Gut changes product probability, not stack count; its logging is defective. Reject Scavenge's inverted division and preserve positive, capped relative scaling. Bless must use the existing death-loss units; Crystal's configured-loss path mixes fraction and percent. |
+| Passives | Fork Gut changes product probability, not stack count; its logging is defective. This is historical fork behavior: the Global supplement below reopens the consumer algorithm. Reject Scavenge's inverted division and preserve positive, capped relative scaling. Bless must use the existing death-loss units; Crystal's configured-loss path mixes fraction and percent. |
 | Fatal Hold | Crystal filters even spells to the locked main target; use accepted per-target spell/rune coverage. Generated charm damage reaches `CombatHealthFunc` in both forks, whose Fatal callback lacks an extension guard. The consumer must enforce the owner-wide no-charm-chain rule. |
 
 The remaining original caveats describe official parity or consumer choices; they are not
@@ -180,3 +180,47 @@ missing source investigations. Recommendations do not activate runtime or amend 
 The coordinator reviews proposed policies while allocating the corresponding consumer work.
 `charm_mechanics.py check` also verifies complete original-entry coverage, exact source bindings,
 the inactive boundary and rejection of OTS evidence promotion for this supplement.
+
+## Public Global Tibia evidence and recommendation corrections
+
+`samples/charm-global-parity-2026-10-01.json` adds 73 version-scoped source records and
+83 claims from current public official documentation, community references and historical
+player observations. All 25 descriptions and all 75 costs plus 75 stage bonuses match the
+fully extracted Brazilian Charms revision 432141 (23 January 2026). Agreement of copied
+wiki pages is not independent server proof. Indexed snippets, full extracted content,
+official CM statements and players writing on the official forum stay separately classified.
+
+This supplement supersedes the named earlier **consumer recommendations** below, without
+rewriting historical fork observations or accepted CHARM-0/D186 contracts. It changes no
+runtime loader, switch, persistence or combat consumer. Its validator runs in the existing
+offline authoring entry and rejects missing profiles, numeric/evidence drift, promotion of
+community sources, invented client proof and runtime-parity claims.
+
+| Subject | Best available Global evidence and resulting preparation |
+|---|---|
+| Cleanse | Full community documentation explicitly says 11 seconds, so the earlier “OTS only” provenance is corrected. Official indexed 2026 updates and a dated patch mirror add Hex removal on 25 August and Hex immunity on 8 September. Hex is a distinct condition; this does not prove Agony eligibility. Include Hex in the documented Global candidate profile; exact type selection, refresh and boundary ordering remain unproven. |
+| Gut | Current indexed wiki says an extra product-loot roll with 6/9/12% chance. Withdraw the probability-only Global recommendation. Keep an extra-roll candidate with a test against guaranteed products and duplicate drops; do not implement it as settled official arithmetic. |
+| Leech | A historical player test reports 227 HP and 73 mana from a 30-HP Cave Rat, contradicting an actual-HP-loss cap. Withdraw that cap as a Global recommendation. The same answer's AoE formula conflicts with other references, so its arithmetic is not adopted. Compare potential damage, actual damage, target count and rounding separately. |
+| Parry | A historical wiki quotation says the base is before player resistances, while a later player guide disagrees. Withdraw the earlier mitigated-incoming-component base (before mana-shield conversion) as a Global recommendation. Accepted monster armor behavior remains; varying player resistance under equal attacks is the distinguishing test. |
+| Dodge | Historical player claims include fewer paralysis and skill-reduction effects. Withdraw independently delivered attached conditions as a Global recommendation. Condition-only, DoT and mixed attacks need direct current-version tests. |
+| Area attacks | A fully extracted official CM reply explicitly confirms Low Blow on all Diamond Arrow targets. The general auto-main/spell-each rule has official corroboration. Savage Blow and both leech exceptions have conflicting player claims, so the Low Blow reply cannot establish all four D186 exceptions as Global behavior. |
+| Carnage | Official indexed prose confirms physical 15% damage in a small radius. Community wiki plus a dated range demonstration support four cardinal tiles, a 6× level cap and no Carnage chaining. The linked video was not independently viewed; summons, armor ordering and rounding remain separate cases. |
+| Bless/Scavenge | Current community documentation supports Bless after ordinary blessings and Scavenge's positive 60/90/120% relative modifier. Bless's 86% protection example becomes 87.68% at stage 3. Exact per-domain rounding, skinning success caps and special corpses remain unproven. |
+
+The official manual's generic complete-Bestiary-entry wording conflicts with specific minor
+charm documentation that says stage 2. Keep the accepted stage-2 rule and label this a
+documentation conflict, not a proven owner departure. Preserve existing floor arithmetic;
+available round-number damage examples cannot distinguish floor, ceil and nearest rounding.
+Reset/potion/Store references remain excluded consumer work, even when newly researched.
+
+The owner's `content/assets/files` source was independently decoded and checked against the
+15.30 admission manifest. Its six semantic files contain creature/bestiary, achievement,
+house, boss and quest tables, appearances, proficiencies and map data. They contain no payload
+for the 25 Bestiary Charms, no charm IDs/costs/formulas, and only a generic Charm Upgrade item
+description (appearance 36726). All six file hashes/sizes match admission; main's staticdata
+and catalogue bytes also match. This scoped negative result cannot establish what other
+client resources or live server messages contain.
+
+The five lanes retain exact quotations, capture hashes, version limits, contradictory models
+and concrete distinguishing cases. **Complete official runtime parity remains unproven.**
+No controlled current-server experiment or integrated Oteryn gameplay execution is claimed.

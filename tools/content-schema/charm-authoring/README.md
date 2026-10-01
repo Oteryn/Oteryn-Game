@@ -106,6 +106,15 @@ python tools/content-schema/charm-authoring/charm_mechanics.py verify-sources \
 
 `check` and `validate` verify the same committed package: schema, catalogue binding, complete key/effect/hook coverage, source classes, immutable captured facts, 75 numeric comparisons, current index and deterministic derivation. `verify-sources` additionally hashes files in supplied checkout roots and independently parses their catalogue numbers. It states the verified repository count; omitted external checkout roots remain unverified. It performs no network access. The existing authoring test entry invokes the new suite so its current CI entry also covers this package.
 
+`samples/charm-global-parity-2026-10-01.json` supplements the pinned fork capture with public
+official documentation, current community references and historical player tests. All 25
+profiles bind the catalogue and distinguish full content from indexed snippets. It corrects
+Cleanse immunity provenance, documents the 2026 Hex changes, and withdraws four earlier
+Global recommendations that new evidence contradicts. It also records the scoped absence of
+Charm payloads in the supplied 15.30 client assets. The existing offline checks validate this
+packet and its evidence boundary; they do not execute Global Tibia. See `INTEGRATION.md` for
+the corrected consumer choices and remaining distinguishing tests.
+
 ## Executed TibiaPal evidence
 
 `samples/tibiapal-*-2026-10-01.json` retain the independently observed planner, description and

@@ -9,6 +9,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 from jsonschema import Draft202012Validator
 
@@ -20,9 +21,11 @@ MECHANICS = REPO / "rulesets/progression/charms/mechanics.json"
 PROGRESSION = REPO / "rulesets/progression/charms/progression.json"
 CATALOGUE = REPO / "content/charms/charms-00000-00024.json"
 INDEX = REPO / "rulesets/progression/charms/index.json"
-SOURCE_SHA256 = "4d92d03878554a57aea04d5af3c1a93cc47cfffcba72e9bede4c5eacec7b7421"
+SOURCE_SHA256 = "ee168313cd61d6fea4d91e5de434116006a239bf05425f6e646a2ebf34c31405"
 RESOLUTION = ROOT / "samples/charm-source-resolution-2026-10-01.json"
 RESOLUTION_SHA256 = "dd4e4d3689b42d6395ca7e017ac772e28c2c4179b9ed6069d59d3e6485cf9955"
+GLOBAL = ROOT / "samples/charm-global-parity-2026-10-01.json"
+GLOBAL_SHA256 = "20bbdb465e573133324ba9756da628b0ccb5948864655b36a8d5872cb076b66f"
 ORIGINAL_UNKNOWN_SHA256 = (
     "d1fc314b809eae4678b6fedcd0161985932e4fc75649d032dfe9adf83c21b994"
 )
@@ -164,6 +167,107 @@ def validate_resolution(package: dict, sample: dict) -> list[str]:
     return errors
 
 
+def validate_global(package: dict, catalogue: dict) -> list[str]:
+    """Bind public evidence without claiming connected or official server proof."""
+    errors = []
+    if (
+        package.get("schema") != "OTERYN_CHARM_GLOBAL_PARITY_RESEARCH/v1"
+        or package.get("repository") != "Oteryn/Oteryn-Game"
+        or package.get("pr_number") != 1434
+        or package.get("as_of") != "2026-10-01"
+        or package.get("predecessor_sha") != "b588cd46413c18837643a593002609b02a03fd11"
+    ):
+        errors.append("global research target drift")
+    for field in ["activation", "runtime_connected", "official_runtime_parity_proven"]:
+        if package.get(field) is not False:
+            errors.append("global research cannot activate or claim server parity")
+    if package.get("catalogue_sha256") != digest(
+        (ROOT / "samples/charms-candidate.json").read_bytes()
+    ):
+        errors.append("global research catalogue binding drift")
+    expected = {row["key"]: row for row in catalogue["charms"]}
+    profiles = package.get("profiles", [])
+    if len(profiles) != 25 or {p.get("key") for p in profiles} != set(expected):
+        errors.append("global research requires all25 unique profiles")
+    sources = package.get("sources", {})
+    for sid, source in sources.items():
+        if source.get("id") != sid or not source.get("version_scope"):
+            errors.append("global source identity or version scope missing")
+        if source.get("authority") not in {
+            "OFFICIAL_PUBLISHER",
+            "COMMUNITY",
+            "OTS_REFERENCE",
+        }:
+            errors.append("global source authority missing")
+        if source.get("authority") == "OFFICIAL_PUBLISHER" and urlparse(
+            source.get("url", "")
+        ).hostname not in {"tibia.com", "www.tibia.com"}:
+            errors.append("global unofficial source promoted")
+        if source.get("access_kind") not in {"INDEXED_SNIPPET", "CAPTURED_CONTENT"}:
+            errors.append("global source access kind missing")
+        if not re.fullmatch(r"[a-f0-9]{64}", source.get("raw_artifact_sha256", "")):
+            errors.append("global raw capture hash missing")
+    claims = package.get("claims", [])
+    ids = {c.get("id") for c in claims}
+    if len(ids) != len(claims):
+        errors.append("global duplicate claim")
+    for claim in claims:
+        refs = claim.get("evidence_ids", [])
+        if not refs or not set(refs) <= set(sources):
+            errors.append("global claim has unresolved evidence")
+        if not claim.get("limitations"):
+            errors.append("global claim limitations missing")
+        if (
+            claim.get("field") == "mitigation"
+            and claim.get("value", {}).get("elemental_resistances_apply") is True
+            and set(claim.get("applies_to", []))
+            & {"oteryn:charm.overpower", "oteryn:charm.overflux"}
+        ):
+            errors.append("global resource damage cannot inherit elemental resistance")
+        if (
+            claim.get("activation") is not False
+            or claim.get("official_runtime_parity_proven") is not False
+        ):
+            errors.append("global claim cannot activate or claim server parity")
+    for profile in profiles:
+        row = expected.get(profile.get("key"))
+        if row and (
+            profile.get("catalogue_stages") != row["stages"]
+            or profile.get("community_costs") != [s["cost"] for s in row["stages"]]
+            or profile.get("community_stage_values")
+            != [s["value"] for s in row["stages"]]
+        ):
+            errors.append("global profile numeric drift")
+        if (
+            profile.get("source_id") not in sources
+            or not set(profile.get("claim_ids", [])) <= ids
+        ):
+            errors.append("global profile unresolved evidence")
+        if (
+            profile.get("activation") is not False
+            or profile.get("official_runtime_parity_proven") is not False
+        ):
+            errors.append("global profile cannot activate or claim server parity")
+    if {r.get("id") for r in package.get("supersedes_global_recommendations", [])} != {
+        "gut_probability_only",
+        "leech_overkill_cap",
+        "parry_after_player_resistance",
+        "dodge_independent_status_delivery",
+    }:
+        errors.append("global supersession coverage drift")
+    assets = package.get("client_assets", {})
+    if assets.get("official_mechanics_parity_proven") is not False or any(
+        row.get("bestiary_charm_record_present") is not False
+        for row in assets.get("charms", [])
+    ):
+        errors.append("global asset corpus cannot supply absent charm proof")
+    if not package.get("owner_rule_conflicts") or not package.get("adoption_boundary"):
+        errors.append("global owner boundary missing")
+    if digest(dumps(package).encode()) != GLOBAL_SHA256:
+        errors.append("global research captured packet drift; review before repinning")
+    return errors
+
+
 def validate(
     sample: dict,
     mechanics: dict,
@@ -284,6 +388,9 @@ def validate(
             "captured facts SHA256 drift; review evidence refresh before repinning"
         )
     errors += validate_resolution(load(RESOLUTION), sample)
+    errors += validate_global(
+        load(GLOBAL), load(ROOT / "samples/charms-candidate.json")
+    )
     return errors
 
 

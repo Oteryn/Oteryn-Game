@@ -1603,7 +1603,7 @@
         },
         "immunity_duration_ms": {
           "activation": false,
-          "notes": "Related OTS implementations; official parity UNKNOWN.",
+          "notes": "Pinned OTS value11000ms now corroborated by full BR community documentation; this source record stays OTS_HYPOTHESIS_ONLY. Current global Hex removal/immunity has dated2026 public evidence in the separate parity packet, not a claim that the old fork lists include Hex.",
           "references": [
             {
               "lines": [
@@ -2308,7 +2308,7 @@
       },
       "unknowns": [
         "CONFLICT: Agony eligibility differs between sources",
-        "All sources only describe temporary immunity in available wiki/TibiaPal prose; 11s exact value is OTS only",
+        "11s is explicitly corroborated by community Charms revision432141 and Cyclopedia; exact expiry/reproc semantics remain unverified. See charm-global-parity-2026-10-01.json; current Hex support is distinct from Agony.",
         "Random selection weights duplicate status instances; official random-per-type vs random-per-instance UNKNOWN"
       ]
     },
@@ -3956,7 +3956,7 @@
       "parameters": {
         "candidate_drop_chance_math": {
           "activation": false,
-          "notes": "OTS applies to ITEM_TYPE_CREATUREPRODUCT chances, not stack count; corpse-owner race assignment determines entitlement (ondroploot__base.lua:4,18-21). Additional ±5% random dynamicFactor is OTS-only, do not add to charm spec. Both gutTriggered logging conditions compare rand < chance and rand > originalChance with chance==originalChance, impossible; ignore logging bug.",
+          "notes": "OTS applies to ITEM_TYPE_CREATUREPRODUCT chances, not stack count; corpse-owner race assignment determines entitlement (ondroploot__base.lua:4,18-21). Additional ±5% random dynamicFactor is OTS-only, do not add to charm spec. Both gutTriggered logging conditions compare rand < chance and rand > originalChance with chance==originalChance, impossible; ignore logging bug. Historical OTS behavior only. Current indexed Wiki describes an extra product-loot roll; the probability-only consumer recommendation is withdrawn as Global fidelity in charm-global-parity-2026-10-01.json.",
           "references": [
             {
               "lines": [
@@ -5342,7 +5342,7 @@
         },
         "reflected_input": {
           "activation": false,
-          "notes": "Related OTS implementations; official parity UNKNOWN.",
+          "notes": "Related OTS implementations; official parity UNKNOWN. Historical community documentation says before player resistances; another player guide disagrees. Post-mitigation reflection base is withdrawn as Global fidelity pending controlled current-version tests in the parity packet.",
           "references": [
             {
               "lines": [
@@ -5932,7 +5932,7 @@
         },
         "ots_area_formula_candidate": {
           "activation": false,
-          "notes": "Both OTS engines agree; N=affected targets (must be >=1), with target-local actual-damage input. Shared lineage is not official corroboration. Order relative to cap/overkill, and eligible target count need controlled evidence.",
+          "notes": "Both OTS engines agree; N=affected targets (must be >=1), with target-local actual-damage input. Shared lineage is not official corroboration. Order relative to cap/overkill, and eligible target count need controlled evidence. Historical quantified Global player evidence reports leech exceeding remaining targetHP, and a conflicting AoE formula. Withdraw actual-HP-loss/overkill-cap recommendation as Global fidelity; preserve this OTS observation as UNKNOWN and consult the separate parity packet.",
           "references": [
             {
               "lines": [
@@ -6390,7 +6390,7 @@
         },
         "ots_area_formula_candidate": {
           "activation": false,
-          "notes": "Both OTS engines agree; N=affected targets (must be >=1), with target-local actual-damage input. Shared lineage is not official corroboration. Order relative to cap/overkill, and eligible target count need controlled evidence.",
+          "notes": "Both OTS engines agree; N=affected targets (must be >=1), with target-local actual-damage input. Shared lineage is not official corroboration. Order relative to cap/overkill, and eligible target count need controlled evidence. Historical quantified Global player evidence reports leech exceeding remaining targetHP, and a conflicting AoE formula. Withdraw actual-HP-loss/overkill-cap recommendation as Global fidelity; preserve this OTS observation as UNKNOWN and consult the separate parity packet.",
           "references": [
             {
               "lines": [

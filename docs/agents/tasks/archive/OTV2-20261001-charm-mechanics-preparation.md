@@ -30,6 +30,7 @@ owned_paths:
   - tools/content-schema/charm-authoring/samples/tibiapal-browser-verification-2026-10-01.json
   - tools/content-schema/charm-authoring/samples/charm-mechanics-sources-2026-10-01.json
   - tools/content-schema/charm-authoring/samples/charm-source-resolution-2026-10-01.json
+  - tools/content-schema/charm-authoring/samples/charm-global-parity-2026-10-01.json
   - tools/content-schema/charm-authoring/README.md
   - tools/content-schema/charm-authoring/INTEGRATION.md
   - rulesets/progression/charms/index.json
@@ -160,3 +161,30 @@ atomic expected-head operation is unavailable; the bound META connector-compatib
 uses a fresh predecessor read, one non-force ref update and immediate exact-head readback.
 Local edits select no material Git commit for publication. Candidate freeze and exact-head
 qualification follow the remote readback; a changed head requires reconciliation.
+
+## Owner-requested Global fidelity continuation, 2026-10-01
+
+The owner requested further research toward official Tibia and supplied
+`content/assets/files`. This returns the same preparation branch to AUTHORING from
+`b588cd46413c18837643a593002609b02a03fd11`. Root is freshly allocated as the sole publisher;
+five source workers and one independent asset/review worker write only separate local
+evidence artifacts. There is no runtime, protected integration or provider-trigger allocation.
+
+Public-source research adds 73 source records, 83 qualified claims and all25 profiles,
+with 75 current community cost and 75 bonus comparisons. It corrects Cleanse11s provenance
+and adds dated2026 Hex evidence. Global recommendations for Gut's probability-only model,
+actual-HP-loss leech, post-player-resistance Parry and independent Dodge condition delivery
+are explicitly withdrawn or reopened. Accepted owner rules remain distinct from externally
+documented behavior; ambiguous minor-stage and D186 evidence do not silently amend contracts.
+
+The supplied 15.30 corpus was decoded independently. Six semantic files match their
+admission hashes/sizes; no25 Bestiary Charm payloads or formulas exist in those decoded
+tables. Generic Charm Upgrade appearance36726 is not a combat specification. Exact raw
+research responses remain local; the committed packet retains qualified excerpts and hashes.
+
+Root selects one new API-native candidate on this exclusively allocated canonical branch:
+fresh predecessor read, one complete bounded tree, one sole-parent successor commit,
+one non-force ref update and immediate exact-head readback under bound META policy.
+Existing executable modes must be preserved. Freeze and fresh candidate qualification
+follow publication; prior-head CI/review is not inherited. The task remains a draft
+preparation handoff, with current-server and connected-consumer proof explicitly absent.
