@@ -353,8 +353,8 @@ Every transfer into a channel scope (§23 handoffs, migrations, Channel to Chann
 destination's effective required set and fixes the selection before its commit; after its commit
 only, it sends an acknowledgement that identifies the destination scope (WorldId, ChannelId) and
 carries the selection, before the replacement snapshot and any gated message. No current message
-satisfies this; until this contract defines one, a transfer into a scope whose selection differs
-from the session's, or into a channel with a non-empty set from an unchecked scope, is refused.
+satisfies this; until this contract or the transfer's own contract defines one, every transfer
+into a channel scope is refused, whatever its source or selection.
 
 Platform-security and recovery key/profile trust evidence preserve FND-04A semantics:
 

@@ -106,11 +106,13 @@ hurt or block its character, without making those capabilities core protocol for
      an authoritative acknowledgement that identifies the destination scope (WorldId and
      ChannelId) and carries the selection, before the replacement snapshot and before any message
      of a capability-gated domain; the client interprets no gated domain until it has it.
-  3. No current wire is claimed to satisfy (2). Until the FND-04B transfer contract defines that
-     acknowledgement, a transfer into a scope whose selection differs from the session's current
-     selection, or into a channel with a non-empty set from a scope whose set was not checked, is
-     **refused**. This holds whatever the source scope's set was, so a session recovered in a scope
-     with an empty set cannot enter a public channel unchecked (WORLD-INTERACTION-0 §9.2).
+  3. No current wire is claimed to satisfy (2). Until FND-04B, or the transfer's own contract
+     (SCOPE-HANDOFF-1 included), defines that acknowledgement, **every** transfer into a channel
+     scope is **refused**, whatever its source and whether or not the selection changes: without a
+     scope-identifying acknowledgement the client could apply the destination's snapshot while
+     bound to the source channel. A session recovered in a scope with an empty set therefore cannot
+     enter a public channel unchecked (WORLD-INTERACTION-0 §9.2). Amended: HOUSE-RUNTIME-0 §4 (its
+     exit to the origin channel is such a transfer).
 - **Instances:** an InstanceRuntime scope has no declared set and applies no player field or wall
   effects until its own contract declares one.
 
@@ -139,7 +141,7 @@ It runs after authentication and only against the current scope generation's set
   without a baseline.
 - **Transfers into a channel scope:** only the predicate and the selection are checked before the
   transfer commits; the acknowledgement and the replacement snapshot are emitted after commit, and
-  a selection-changing transfer stays refused until FND-04B defines that acknowledgement (§3.2).
+  every transfer into a channel scope stays refused until its acknowledgement is defined (§3.2).
 - The check reads declared support only. Support is a claim, not trust: the server still sends and
   enforces everything; the rule guarantees only that the client said it can render what can hurt
   or block it.
@@ -205,7 +207,7 @@ None. Owner answer 4a gave consent; every other choice applies FND-02 and FND-04
 
 1. **Contract amendments**, all applied in this PR: FND-02 §9; FND-04A §6, §7 (step 11), §7.1, §11,
    §12; FND-04B §13, §18, §25, §26; FND-04C §2.1, §4.1-§4.3, §7, §9; node-boot D1 and D5;
-   RUNE-USE-0 §11; WORLD-INTERACTION-0 §8.6. The registry `requires` field and the D1 configuration key are built by
+   RUNE-USE-0 §11; WORLD-INTERACTION-0 §8.6; HOUSE-RUNTIME-0 §4 (the exit transfer). The registry `requires` field and the D1 configuration key are built by
    ADMIT-CAP-1.
 2. **Serialization:** the check runs inside each path's existing atomic revalidation; the set is
    fixed per scope ownership generation, so no publication can race an admission.

@@ -95,6 +95,12 @@ and how do house items change?
 
 ## 4. Entry and exit (SCOPE-HANDOFF-1)
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3.2).** The exit
+into the origin channel is a transfer into a channel scope: SCOPE-HANDOFF-1 checks the channel's
+required set and fixes the selection before its commit, and defines the post-commit acknowledgement
+that names the destination scope (WorldId, ChannelId) and carries the selection, before the snapshot
+and any gated message. Without that acknowledgement the transfer is refused.
+
 ### 4.1 Entry
 
 - A character moves onto a house's front door tile from outside (the door position in the
