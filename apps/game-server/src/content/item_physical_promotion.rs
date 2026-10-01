@@ -26,6 +26,7 @@ struct Counts {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 enum Kind {
     PickupableTrue,
+    MovableTrue,
     #[serde(rename = "RUNE_STACK_100")]
     RuneStack100,
 }
@@ -76,9 +77,16 @@ fn validate(
 ) -> Result<usize, String> {
     use ReferenceItemField::{Known, Unknown};
     match kind {
-        Kind::PickupableTrue => match &s.physical {
+        Kind::PickupableTrue | Kind::MovableTrue => match &s.physical {
             Unknown => Ok(1),
-            Known(p) => compatible(&p.pickupable, &true),
+            Known(p) => compatible(
+                if kind == Kind::MovableTrue {
+                    &p.movable
+                } else {
+                    &p.pickupable
+                },
+                &true,
+            ),
             _ => Err("blocked physical group".into()),
         },
         Kind::RuneStack100 => {
@@ -93,7 +101,7 @@ fn validate(
         }
     }
 }
-fn apply_rows<'a>(
+pub(super) fn apply_rows<'a>(
     items: impl Iterator<Item = (&'a str, ItemStackDocument, &'a mut ReferenceItemSemantics)>,
     bytes: &[u8],
     expected: usize,
@@ -117,11 +125,7 @@ fn apply_rows<'a>(
             .get(row.item_key.as_str())
             .ok_or("missing physical Item")?;
         changed += validate(s, *class, row.kind)?;
-        fields += if row.kind == Kind::PickupableTrue {
-            1
-        } else {
-            2
-        };
+        fields += if row.kind == Kind::RuneStack100 { 2 } else { 1 };
     }
     if fields != expected_fields {
         return Err("physical leaf count drift".into());
@@ -132,7 +136,7 @@ fn apply_rows<'a>(
             .get_mut(row.item_key.as_str())
             .ok_or("validated Item missing")?;
         match row.kind {
-            Kind::PickupableTrue => {
+            Kind::PickupableTrue | Kind::MovableTrue => {
                 if matches!(s.physical, ReferenceItemField::Unknown) {
                     s.physical = ReferenceItemField::Known(ReferenceItemPhysical {
                         weight: ReferenceItemField::Unknown,
@@ -141,7 +145,11 @@ fn apply_rows<'a>(
                     });
                 }
                 if let ReferenceItemField::Known(p) = &mut s.physical {
-                    p.pickupable = ReferenceItemField::Known(true);
+                    if row.kind == Kind::MovableTrue {
+                        p.movable = ReferenceItemField::Known(true);
+                    } else {
+                        p.pickupable = ReferenceItemField::Known(true);
+                    }
                 }
             }
             Kind::RuneStack100 => {
@@ -167,6 +175,69 @@ mod tests {
     fn row(key: &str, kind: &str) -> serde_json::Value {
         serde_json::json!({"item_key":key,"kind":kind})
     }
+    #[test]
+    fn movable_true_preserves_siblings_and_rejects_conflicts_atomically() {
+        let bytes = packet(serde_json::json!([row("i", "MOVABLE_TRUE")]), 1);
+        let mut item = ReferenceItemSemantics {
+            physical: Known(ReferenceItemPhysical {
+                weight: Known(17),
+                movable: Unknown,
+                pickupable: Conflict,
+            }),
+            ..ReferenceItemSemantics::default()
+        };
+        for changed in [1, 0] {
+            assert_eq!(
+                apply_rows(
+                    std::iter::once(("i", ItemStackDocument::Unknown, &mut item)),
+                    &bytes,
+                    1,
+                    1
+                ),
+                Ok(PhysicalPromotion { fields: 1, changed })
+            );
+        }
+        assert!(matches!(
+            item.physical,
+            Known(ReferenceItemPhysical {
+                weight: Known(17),
+                movable: Known(true),
+                pickupable: Conflict
+            })
+        ));
+        let bytes = packet(
+            serde_json::json!([row("first", "MOVABLE_TRUE"), row("blocked", "MOVABLE_TRUE")]),
+            2,
+        );
+        for movable in [Conflict, NotApplicable, Known(false)] {
+            let mut first = ReferenceItemSemantics::default();
+            let mut blocked = ReferenceItemSemantics {
+                physical: Known(ReferenceItemPhysical {
+                    weight: Unknown,
+                    movable,
+                    pickupable: Unknown,
+                }),
+                ..ReferenceItemSemantics::default()
+            };
+            let before = blocked.clone();
+            assert!(
+                apply_rows(
+                    [
+                        ("first", ItemStackDocument::Unknown, &mut first),
+                        ("blocked", ItemStackDocument::Unknown, &mut blocked)
+                    ]
+                    .into_iter(),
+                    &bytes,
+                    2,
+                    2
+                )
+                .is_err()
+            );
+            assert!(first.is_all_unknown());
+            assert_eq!(blocked, before);
+        }
+    }
+
     #[test]
     fn preserves_siblings_and_identity_class_with_idempotent_positive_leaves() {
         let mut s = ReferenceItemSemantics {
