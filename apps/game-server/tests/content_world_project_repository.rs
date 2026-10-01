@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "7072fa73ab4b3f027902d0b9ae959da525b1a9141f3e2459ab6d231c93950213",
+        "5ce165fa5da9ae15f652940312bf0624db346159d5278b9e7ede826ad1dcfbff",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        23_128_531,
-        "e1b01f5285a907ae79314a284e0389b617894f4335aab0860351f2892f77d5e4",
+        23_129_342,
+        "eb0dfc3ad420480afa82f97cc9bc0df3ff93b3f428b16ef04316871bc6b7d295",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "69fc744b05b7c34f05d9076670bb6c081fbc64ae5b04230bb25f3247ece07bfa",
+        "28e113a77341352062181625ce52bc384195cd87de8b616c159e80e8704012b6",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "6e00803855c9f15f78bdf7e1a5affcaf04734f23f761277d7f587b330f6aef56",
+        "e49c8945dc0ed59ce9b9ae58e14e2232ba15d22dc2489a536f36f3def55c82ea",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "0c0f95f1105493a06d29971f6e23d1a6b2dad17d99487c7888760d6ab855d39c";
+const TREE_SHA256: &str = "f9123fbb82db1f370af9b36308ea5ef6f078a9946838da34f9ac5d152fcc6377";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -969,9 +969,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(promoted_items, 12_301 - 201 + 23);
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others.
+    // Capacity continuation admits 17 unknown atoms; i53074 replaces an existing atom.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
