@@ -350,8 +350,10 @@ otherwise `RECOVERY_CAPABILITY_REQUIRED` with no authority mutation. A post-grac
 a GameSession selects every capability of the set. When a resumed selection differs from the
 predecessor's, reconciliation uses a replacement snapshot (FND-02 §16), never replay.
 Every transfer into a channel scope (§23 handoffs, migrations, Channel to Channel) checks the
-destination's effective required set before its commit, selects it and reconciles by a replacement
-snapshot; until its contract adds this, such a transfer into a channel with a non-empty set is refused.
+destination's effective required set before its commit, selects it, rebinds the session with
+`ServerResumeAccepted` carrying that selection before the replacement snapshot and any gated message
+(also when the transport is kept), and reconciles by a replacement snapshot; until its contract adds
+this, such a transfer into a channel with a non-empty set is refused.
 
 Platform-security and recovery key/profile trust evidence preserve FND-04A semantics:
 
