@@ -245,6 +245,17 @@ Placement search beyond the declared cells stays unreachable.
 - Registration goes through the `RESOURCE_LIMITS_REGISTRY.json` single-writer lease, with max and
   max+1 tests. A larger value needs a new owner decision.
 
+**Amendment (pending on acceptance of CREATURE-AI-0; `reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md`
+§4, §6, §10 and §13 R4).** Owner decisions 4a, 5a and 6a (2026-10-01, #162) are the new owner
+decision this section asks for. CREATURE-AI-0 replaces the §4.4 limit of one action per think (a
+think may propose up to 24 Ability intents and keeps one movement goal), replaces the 7-tile
+perception of D115 by the MOVE-RL-11 relation, and raises the §4.9 rows for the reference map:
+`AI01-SPAWN-SOURCES-PER-SCOPE` to 65,536, `AI01-SPAWN-POPULATION` and
+`AI01-SPAWN-PLACEMENT-CELLS` to 64, `AI01-ACTIVE-ACTORS` to 262,144 creature actors per channel,
+`AI01-PENDING-TIMERS-PER-ACTOR` to 2 and, for its behaviour, `AI01-EVALUATION-WORK` to 128
+(`CREATUREAI0-RL-02` to `-06` and `-11`). The §4.3 spawn and respawn rules stay and gain player
+blocking and the spawn warning (CREATURE-AI-0 §6.3).
+
 ## 5. Delivery (each child needs its own #162 allocation)
 
 | Child | Scope | Depends on | Serialization |
