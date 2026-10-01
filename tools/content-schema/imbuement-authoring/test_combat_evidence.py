@@ -1,5 +1,6 @@
 import copy
 import hashlib
+from fractions import Fraction
 import json
 import unittest
 
@@ -217,6 +218,101 @@ class CombatEvidenceTests(unittest.TestCase):
                     if r["id"] == name).update(bounded_profiles=[]))
                 self.mutation_rejected(lambda p: next(r for r in p["rules"]
                     if r["id"] == name).update(value="UNIVERSAL_RULE"))
+
+    def test_reported_matching_ammo_split_converts_physical_half_not_whole_attack(self):
+        ranged = next(r for r in self.packet["rules"]
+            if r["id"] == "ranged_elemental_ammo_reported_cases")["value"]
+        flash, shiver = ranged["reported_cases"]
+        self.assertEqual(flash["reported_damage_split_bps"],
+                         {"physical": 5000, "energy": 5000, "ice": 0})
+        physical = shiver["base_physical_attack"]
+        native_ice = shiver["base_elemental_attack"]
+        total = physical + native_ice
+        converted = physical * Fraction(ranged["conversion_bps"], 10000)
+        # Interpret the approximate reported14/14 case, not a damage pipeline.
+        self.assertEqual((physical - converted) / total * 10000, 4500)
+        self.assertEqual((native_ice + converted) / total * 10000, 5500)
+        self.assertEqual(shiver["reported_damage_split_bps"], {"physical": 4500, "ice": 5500})
+        self.assertNotEqual((physical - total * Fraction(1, 10)) / total * 10000, 4500)
+
+    def test_reported_ranged_cases_reject_wrong_element_or_overwritten_native_component(self):
+        def ranged(packet):
+            return next(r for r in packet["rules"]
+                if r["id"] == "ranged_elemental_ammo_reported_cases")["value"]
+        self.mutation_rejected(lambda p: ranged(p)["reported_cases"][0].update(
+            reported_damage_split_bps={"physical": 5000, "energy": 0, "ice": 5000}))
+        self.mutation_rejected(lambda p: ranged(p)["reported_cases"][1].update(
+            reported_damage_split_bps={"physical": 4000, "ice": 6000}))
+        self.mutation_rejected(lambda p: ranged(p)["reported_cases"][1].update(
+            reported_damage_split_bps={"physical": 9000, "ice": 1000}))
+        self.mutation_rejected(lambda p: ranged(p)["reported_cases"][0].update(ammo="Diamond Arrow"))
+        self.mutation_rejected(lambda p: ranged(p).update(conversion_bps=5000))
+
+    def test_historical_ranged_report_cannot_select_general_order_caps_or_trial_breakdown(self):
+        def ranged(packet):
+            return next(r for r in packet["rules"]
+                if r["id"] == "ranged_elemental_ammo_reported_cases")["value"]
+        for key, value in {
+            "scope": "ALL_RANGED_AND_MELEE", "current_target_continuity": True,
+            "universal_conversion_order": "BEFORE_ARMOR", "critical_order": "AFTER_CONVERSION",
+            "armor_order": "BEFORE_CONVERSION", "integer_rounding": "floor",
+            "damage_cap": 1000, "universal_damage_conservation": True,
+            "reported_arrows_total": 400, "arrows_per_ammo": 200,
+            "interpretation": "EXACT_CURRENT_GLOBAL_SPLITS",
+        }.items():
+            with self.subTest(key=key):
+                self.mutation_rejected(lambda p, k=key, v=value: ranged(p).update({k: v}))
+        for rule in self.packet["rules"]:
+            if rule["status"] == "PUBLIC_EVIDENCE_UNRESOLVED":
+                self.assertIsNone(rule["value"])
+
+    def test_ranged_author_dates_comment_trial_count_and_claims_cannot_be_self_certified(self):
+        def source(packet):
+            return next(s for s in packet["sources"]
+                if s["id"] == "tibiaqa_basic_frost_elemental_ammo_2021")
+        self.mutation_rejected(lambda p: source(p).update(trial_count_comment_at="2026-07-28T12:00:00Z"))
+        self.mutation_rejected(lambda p: source(p)["selected_claims"].update(author="CipSoft"))
+        def forge(packet):
+            captured = source(packet)
+            captured["selected_claims"]["reported_arrows_total"] = 400
+            captured["selected_claims_sha256"] = hashlib.sha256(json.dumps(
+                captured["selected_claims"], sort_keys=True, ensure_ascii=False,
+                separators=(",", ":")).encode()).hexdigest()
+        self.mutation_rejected(forge)
+
+    def test_native_ammo_reference_conflict_cannot_be_removed_or_select_a_current_rule(self):
+        def conflict(packet):
+            return next(c for c in packet["source_conflicts"]
+                if c.get("id") == "ranged_native_ammunition_reference_conflict")
+        self.assertIsNone(conflict(self.packet)["current_native_ammo_rule"])
+        self.assertIsNone(conflict(self.packet)["current_timer_rule"])
+        self.mutation_rejected(lambda p: p["source_conflicts"].remove(conflict(p)))
+        self.mutation_rejected(lambda p: p["source_conflicts"].append(copy.deepcopy(conflict(p))))
+        for key, value in {
+            "status": "CURRENT_GLOBAL_VERIFIED", "resolution": "HISTORICAL_REPORT_OVERRIDES_REFERENCE",
+            "current_native_ammo_rule": False, "current_timer_rule": True,
+            "conflicting_historical_case": "NO_CONFLICT",
+            "sources": ["tibiaqa_basic_frost_elemental_ammo_2021"],
+        }.items():
+            with self.subTest(key=key):
+                self.mutation_rejected(lambda p, k=key, v=value: conflict(p).update({k: v}))
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "ranged_elemental_ammo_reported_cases").update(
+                evidence=["tibiaqa_basic_frost_elemental_ammo_2021"]))
+
+    def test_current_fandom_native_ammo_claim_retains_complete_capture_and_confidence(self):
+        def source(packet):
+            return next(s for s in packet["sources"] if s["id"] == "fandom_imbuing_full")
+        self.mutation_rejected(lambda p: source(p).update(revision=1197205))
+        self.mutation_rejected(lambda p: source(p).update(revision_access="READ_ARCHIVE"))
+        self.mutation_rejected(lambda p: source(p).update(role="PRIMARY_OFFICIAL"))
+        def forge(packet):
+            captured = source(packet)
+            captured["selected_claims"]["verbatim"] = "Only different-element ammo is excluded."
+            captured["selected_claims_sha256"] = hashlib.sha256(json.dumps(
+                captured["selected_claims"], sort_keys=True, ensure_ascii=False,
+                separators=(",", ":")).encode()).hexdigest()
+        self.mutation_rejected(forge)
 
 
 if __name__ == "__main__":

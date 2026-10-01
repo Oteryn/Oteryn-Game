@@ -5,11 +5,11 @@
   "source_facts_sha256": "7ee2221886abdc80d27ce5cd13e58bdecab8b3c5210a7e0e7a36efc52771070e",
   "supporting_catalogues": {
     "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
-    "global-observation-plan.json": "c53588ee8eb229bf5197408eb51e241c7ceaeab5f4d26c17eec24e712d370ff4",
-    "global-rules-evidence.json": "99efe3f02a593a90594dc5d1d09c0687243fcd4d50b14846e96d60f8d9858056",
-    "imbuement-access.json": "6b07b10880e5458c6387b899f63a8e44a8c4f8418087e33052028237b19e76d9",
+    "global-observation-plan.json": "7b9060e1b401ff36dd29f0ef7002551be58fe74644d33f109edccd66122965b4",
+    "global-rules-evidence.json": "2986858f47c814dc72f6437391d2197bfd12ddf5ecaa4b2073168ba08ddb0cbb",
+    "imbuement-access.json": "f56f29d4be08c9047eb999a59bf3f7852bf40be4b0d712d774c7b21291883741",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-combat.json": "4e708050191560c42f825174d293dc8f24a4ac34f0b894047b3dee2a083bcbc2",
+    "imbuement-combat.json": "13fc33f7e10ab6b7a6a72a46e6738ab03e8d3e9a3611d54cc1709dedf00d2fdf",
     "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
     "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
     "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d"

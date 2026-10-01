@@ -30,7 +30,13 @@
     "official_echo_wardens": {
       "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8834",
       "role": "PRIMARY_OFFICIAL",
-      "scope": "Basic imbuement scrolls as Echo Wardens loot; application alongside higher-tier scrolls."
+      "scope": "Full primary teaser announces Basic scrolls for all families; live EchoRaids confirmed by primary8845, qualitative release only.",
+      "published_on": "2026-06-11",
+      "method": "Remote Desktop + Chrome/CDP",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "source_sha256": "71e4a5d45aa5de27f9a9e8238dbeff8dde415fffd1e0b1290904d99054cdd11f",
+      "digest_scope": "Exact complete UTF-8 browser document.body.innerText, including page chrome; full official teaser read",
+      "selected_quote": "In addition, Echo Wardens will always drop one of the new basic imbuement scrolls. These scrolls work similarly to intricate and powerful imbuement scrolls and will be available for all imbuements."
     },
     "br_imbuements": {
       "url": "https://www.tibiawiki.com.br/wiki/Imbuements",
@@ -175,6 +181,17 @@
       "path": "imbuement-eligibility.json",
       "role": "DERIVED_CLIENT_IDENTITY_AND_COMMUNITY_ELIGIBILITY",
       "scope": "Primary client establishes item identity and static slot count. Selected per-family maximum tiers are source-qualified community observations and amendments in the eligibility catalogue; neither this reference nor the guard certifies full target-date Global server parity."
+    },
+    "official_echo_raids_live_release": {
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8845",
+      "role": "PRIMARY_OFFICIAL",
+      "published_on": "2026-07-13",
+      "method": "Remote Desktop + Chrome/CDP",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "source_sha256": "a3746466045af1fa9e86a70805675debe7d13f645bb0d54422f7db5185a214ca",
+      "digest_scope": "Exact complete UTF-8 browser document.body.innerText, including page chrome",
+      "selected_quote": "With Echo Raids, creatures may turn into echoes and trigger optional encounters. Rare Echo Wardens empower nearby enemies and offer new challenges and rewards during your hunts.",
+      "scope": "Actual SummerUpdate2026 liveEchoRaids; does not explicitly quantify Basic scroll drop count."
     }
   },
   "predicate_definitions": {
@@ -718,7 +735,8 @@
         "official_echo_wardens",
         "tibiopedia_completed_scroll_loot",
         "echo_wardens_dated_mirror",
-        "br_blank_scroll"
+        "br_blank_scroll",
+        "official_echo_raids_live_release"
       ],
       "evidence_status_by_item": {
         "blank_scroll": "PRIMARY_OFFICIAL_EXPLICIT",
@@ -1360,7 +1378,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -1486,7 +1505,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -1612,7 +1632,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -1738,7 +1759,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -1864,7 +1886,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -1993,7 +2016,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -2119,7 +2143,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -2248,7 +2273,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -2374,7 +2400,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -2500,7 +2527,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -2629,7 +2657,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -2755,7 +2784,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -2881,7 +2911,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -3007,7 +3038,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -3136,7 +3168,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -3265,7 +3298,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -3391,7 +3425,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -3517,7 +3552,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -3646,7 +3682,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -3772,7 +3809,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -3901,7 +3939,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -4027,7 +4066,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -4153,7 +4193,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {
@@ -4282,7 +4323,8 @@
           "official_manual",
           "official_echo_wardens",
           "tibiopedia_completed_scroll_loot",
-          "echo_wardens_dated_mirror"
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
         ],
         "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
         "evidence_strength_by_tier": {

@@ -18,6 +18,7 @@ RULE_STATUSES = {
     "life_leech_reported_equal_hit_ceiling": "DATED_COMMUNITY_GAMEPLAY_REPORTED_EXAMPLES",
     "mana_leech_wheel_equipment_example": "DATED_COMMUNITY_EXPLICIT_WHEEL_MANA_EXAMPLE",
     "leech_elemental_parry_wound_reported_exclusions": "DATED_COMMUNITY_REPORTED_CHARM_TEST",
+    "ranged_elemental_ammo_reported_cases": "DATED_COMMUNITY_REPORTED_RANGED_AMMO_FIELD_STUDY",
     **{name: "PUBLIC_EVIDENCE_UNRESOLVED" for name in (
         "leech_rounding", "leech_unequal_damage_and_overkill_order",
         "vibrancy_reflection_current", "critical_healing_scope",
@@ -71,6 +72,35 @@ CHARM_VALUE = {
         "elemental_charms": False, "parry": False, "wound": False},
     "other_charms": None, "current_target_continuity": None, "gameplay_calendar_date": None,
 }
+RANGED_AMMO_VALUE = {
+    "scope": "ONLY_REPORTED_BASIC_FROST_ELVISH_BOW_FLASH_AND_SHIVER_CASES",
+    "interpretation": "HISTORICAL_REPORTED_APPROXIMATE_SPLITS",
+    "bow": "Elvish Bow", "imbuement": "Basic Frost", "conversion_bps": 1000,
+    "reported_cases": [
+        {"ammo": "Flash Arrow", "ammo_element": "energy",
+         "base_physical_attack": 14, "base_elemental_attack": 14,
+         "reported_damage_split_bps": {"physical": 5000, "energy": 5000, "ice": 0}},
+        {"ammo": "Shiver Arrow", "ammo_element": "ice",
+         "base_physical_attack": 14, "base_elemental_attack": 14,
+         "reported_damage_split_bps": {"physical": 4500, "ice": 5500}},
+    ],
+    "reported_arrows_total": 200, "arrows_per_ammo": None,
+    "universal_conversion_order": None, "critical_order": None, "armor_order": None,
+    "integer_rounding": None, "damage_cap": None,
+    "universal_damage_conservation": None, "current_target_continuity": None,
+    "source_conflict_profile": "ranged_native_ammunition_reference_conflict",
+}
+RANGED_REFERENCE_CONFLICT = {
+    "id": "ranged_native_ammunition_reference_conflict",
+    "rule": "ranged_elemental_ammo_reported_cases",
+    "sources": ["tibiaqa_basic_frost_elemental_ammo_2021", "fandom_imbuing_full"],
+    "status": "PUBLIC_REFERENCE_CONFLICT_UNRESOLVED",
+    "current_reference_claim": "NO_EFFECT_WITH_AREA_OR_NATIVE_ELEMENTAL_AMMUNITION",
+    "corroborated_historical_case": "Flash Arrow: no ice component",
+    "conflicting_historical_case": "Shiver Arrow: reported45/55 physical/ice versus reference blanket native-ammo exclusion",
+    "resolution": "KEEP_HISTORICAL_EXAMPLES_ONLY_NO_CURRENT_ALGORITHM_SELECTED",
+    "current_native_ammo_rule": None, "current_timer_rule": None,
+}
 NEW_RULES = {
     "vibrancy_reflection_removed_at_release": (
         {"reflect_to_attacker": False, "scope": "LIVE_RELEASE_2018_12_03_ONLY"},
@@ -90,6 +120,9 @@ NEW_RULES = {
     "leech_elemental_parry_wound_reported_exclusions": (
         CHARM_VALUE, "HISTORICAL_2020_2021_REPORT_NOT_EXACT_TARGET_OBSERVATION",
         {"tibiaqa_charm_leech_test_2020"}),
+    "ranged_elemental_ammo_reported_cases": (
+        RANGED_AMMO_VALUE, "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_EXACT_TARGET_OBSERVATION",
+        {"tibiaqa_basic_frost_elemental_ammo_2021", "fandom_imbuing_full"}),
 }
 SOURCE_PROFILES = {
     "official_vibrancy_release_4828": (
@@ -124,6 +157,14 @@ SOURCE_PROFILES = {
         "https://www.tibiaqa.com/16927/does-damage-dealt-when-charm-activated-triggers-your-leech-imbuements?show=16927#q16927",
         "e996cd92175cc41528a6d95ef9b0dcd94bf30eb3432e2f7525e8909a5b8947d1",
         "FULL_PUBLIC_HTML_OR_SCRIPT", "COMMUNITY_GLOBAL_REFERENCE"),
+    "tibiaqa_basic_frost_elemental_ammo_2021": (
+        "https://www.tibiaqa.com/23754/what-happens-you-attempt-use-elemental-arrows-with-elemental-imbued-bow",
+        "8d18d563a7a40539080de54bedc1cd9c4f05ea4fabca85dec2bb3556caf686dd",
+        "FULL_PUBLIC_HTML_OR_SCRIPT", "COMMUNITY_GLOBAL_REFERENCE"),
+    "fandom_imbuing_full": (
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "e07d4be8d37844eeaf4f078ad7de1242047e18466cc999a6686c22c05657c82b",
+        "FULL_REVISIONED_COMMUNITY_BROWSER_TEXT", "COMMUNITY_GLOBAL_REFERENCE"),
 }
 # Pin full normalized source records, not only their self-reported digests.
 # These offline checks protect captured bytes, claims, revision links and dates;
@@ -133,6 +174,8 @@ BOUNDED_SOURCE_RECORD_SHA256 = {
     "tibiaqa_life_answer_revisions_14497": "4693b05ac634043ecd67fb0bf428c40bfc2ea18596c82fa055e8fe8042e51d16",
     "tibiaqa_wheel_void_example_2022": "7c8871b4dc4435324b9848b7887ff0345506e03d882f3bbc595067fece6a5a0c",
     "tibiaqa_charm_leech_test_2020": "68182e8300f29d3c7a8f30156ca41a552f2e83276ec00661bb25b7d8b907be00",
+    "tibiaqa_basic_frost_elemental_ammo_2021": "70863489377139ec9c4b04be527b31c01ce4db8ff38bbe04c1774719e77b459e",
+    "fandom_imbuing_full": "24a02f33245590d7f7abce0f86ac211d42b9586af90ff53cb9a59b23d2523ead",
 }
 BOUNDED_LINKS = {
     "leech_rounding": ["mana_leech_current_reference_formula", "life_leech_reported_equal_hit_ceiling"],
@@ -223,6 +266,11 @@ def validate(packet):
     for name, profiles in BOUNDED_LINKS.items():
         if rules[name].get("bounded_profiles") != profiles:
             raise ValueError("unresolved rules must preserve qualified bounded profile links")
+    ranged_conflicts = [c for c in packet["source_conflicts"]
+                       if c.get("id") == RANGED_REFERENCE_CONFLICT["id"]]
+    if (len(ranged_conflicts) != 1 or json.dumps(ranged_conflicts[0], sort_keys=True)
+            != json.dumps(RANGED_REFERENCE_CONFLICT, sort_keys=True)):
+        raise ValueError("historical Shiver report must retain unresolved current-reference conflict")
     for example in rules["life_leech_reported_equal_hit_ceiling"]["value"]["reported_examples"]:
         derived = life_reported_example(example["damage_per_target"], example["hit_targets"])
         if (derived["ceil_each"] != example["healed_each_target"]

@@ -331,6 +331,85 @@
         "gameplay_calendar_date": null
       },
       "selected_claims_sha256": "320b8d6f8e13dba9a04eaa153a66b0bb78669024b0355b2a57bebf6beb519f5e"
+    },
+    {
+      "id": "tibiaqa_basic_frost_elemental_ammo_2021",
+      "url": "https://www.tibiaqa.com/23754/what-happens-you-attempt-use-elemental-arrows-with-elemental-imbued-bow",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "8d18d563a7a40539080de54bedc1cd9c4f05ea4fabca85dec2bb3556caf686dd",
+      "digest_scope": "Exact retrieved full public HTTP response bytes; public native HTTP200",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "published_on": "2021-01-27",
+      "answer_created_at": "2021-01-27T20:17:56Z",
+      "trial_count_comment_at": "2021-01-27T21:02:45Z",
+      "target_time_status": "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_EXACT_TARGET_OBSERVATION",
+      "selected_claims": {
+        "answer_id": 23756,
+        "author": "YakiHon",
+        "trial_count_comment_id": 23759,
+        "quotes": [
+          "I just tested this myself since I could not find any information online, using my Basic Frost imbued (ice damage) Elvish Bow.",
+          "the damage is split 50-50 between physical and energy damage, with no ice component.",
+          "it seems to correspond with the 45-55 split physical-elemental damage.",
+          "This was my takeaway after 200 arrows."
+        ],
+        "reported_cases": [
+          {
+            "ammo": "Flash Arrow",
+            "ammo_element": "energy",
+            "base_physical_attack": 14,
+            "base_elemental_attack": 14,
+            "reported_damage_split_bps": {
+              "physical": 5000,
+              "energy": 5000,
+              "ice": 0
+            }
+          },
+          {
+            "ammo": "Shiver Arrow",
+            "ammo_element": "ice",
+            "base_physical_attack": 14,
+            "base_elemental_attack": 14,
+            "reported_damage_split_bps": {
+              "physical": 4500,
+              "ice": 5500
+            }
+          }
+        ],
+        "reported_arrows_total": 200,
+        "raw_damage_logs": null,
+        "current_continuity": null
+      },
+      "selected_claims_sha256": "e129dc6c5f23f4439c0db70956001b71ed779a88643577f6e3a82254de6bdbe5"
+    },
+    {
+      "id": "fandom_imbuing_full",
+      "url": "https://tibia.fandom.com/wiki/Imbuing",
+      "revision": 1194750,
+      "published_on": "2026-07-07",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_REVISIONED_COMMUNITY_BROWSER_TEXT",
+      "sha256": "e07d4be8d37844eeaf4f078ad7de1242047e18466cc999a6686c22c05657c82b",
+      "digest_scope": "Complete UTF-8 public current-page parser text, captured by parent-owned Chrome/CDP; hash recomputed from saved text",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "method": "Remote Desktop + Chrome/CDP",
+      "revision_access": "CURRENT_PUBLIC_PAGE_ONLY_ARCHIVE_REQUIRES_LOGIN",
+      "target_time_status": "PRE_TARGET_COMMUNITY_REVISION_CURRENT_CAPTURE_NOT_FULL_TARGET_SNAPSHOT",
+      "selected_claims": {
+        "verbatim": "Finally, the elemental damage imbuement will not work with area ammunition such as Diamond and Burst Arrows nor native-elemental ammunition, such as Envenomed and Flash Arrows. Still, the imbuement's time will be consumed.",
+        "reference_claim": "NO_EFFECT_WITH_AREA_OR_NATIVE_ELEMENTAL_AMMUNITION",
+        "examples_named": [
+          "Diamond Arrow",
+          "Burst Arrow",
+          "Envenomed Arrow",
+          "Flash Arrow"
+        ],
+        "time_consumption_claim_is_reference_wording_not_selected_rule": true,
+        "current_native_ammo_rule": null,
+        "current_timer_rule": null
+      },
+      "selected_claims_sha256": "eb18714f12d85ee34b5dc9c19ee776cd3758c0773aa62250bc7e78b227024f4a"
     }
   ],
   "rules": [
@@ -667,6 +746,56 @@
       ],
       "notes": "Answer createdJune1,2020 and editedMay14,2021 reports personally testing elemental charms/parry/wound without imbuement leech. Exact gameplay date is unknown. Other charms, later charm changes and current target continuity remain unqualified.",
       "target_time_status": "HISTORICAL_2020_2021_REPORT_NOT_EXACT_TARGET_OBSERVATION"
+    },
+    {
+      "id": "ranged_elemental_ammo_reported_cases",
+      "value": {
+        "scope": "ONLY_REPORTED_BASIC_FROST_ELVISH_BOW_FLASH_AND_SHIVER_CASES",
+        "interpretation": "HISTORICAL_REPORTED_APPROXIMATE_SPLITS",
+        "bow": "Elvish Bow",
+        "imbuement": "Basic Frost",
+        "conversion_bps": 1000,
+        "reported_cases": [
+          {
+            "ammo": "Flash Arrow",
+            "ammo_element": "energy",
+            "base_physical_attack": 14,
+            "base_elemental_attack": 14,
+            "reported_damage_split_bps": {
+              "physical": 5000,
+              "energy": 5000,
+              "ice": 0
+            }
+          },
+          {
+            "ammo": "Shiver Arrow",
+            "ammo_element": "ice",
+            "base_physical_attack": 14,
+            "base_elemental_attack": 14,
+            "reported_damage_split_bps": {
+              "physical": 4500,
+              "ice": 5500
+            }
+          }
+        ],
+        "reported_arrows_total": 200,
+        "arrows_per_ammo": null,
+        "universal_conversion_order": null,
+        "critical_order": null,
+        "armor_order": null,
+        "integer_rounding": null,
+        "damage_cap": null,
+        "universal_damage_conservation": null,
+        "current_target_continuity": null,
+        "source_conflict_profile": "ranged_native_ammunition_reference_conflict"
+      },
+      "status": "DATED_COMMUNITY_REPORTED_RANGED_AMMO_FIELD_STUDY",
+      "evidence": [
+        "tibiaqa_basic_frost_elemental_ammo_2021",
+        "fandom_imbuing_full"
+      ],
+      "notes": "YakiHon reports Jan27,2021 testing Basic Frost Elvish Bow with Flash and Shiver Arrows; same-day comment23759 says200arrows total. Flash50/50 physical/energy with noice; Shiver approximately45/55 physical/ice fits10% of physical half converted. No raw logs, targets/resistances, critical setup or per-ammo trial counts. These are narrowly reported historical cases, not universal/current ranged or melee conversion, damage conservation/caps, integer rounding or armor/critical processing order. Current Fandom Imbuing revision1194750 broadly excludes native-elemental and area ammunition; this corroborates the reported Flash case but conflicts with historical Shiver55%. Conflict is retained explicitly. Do not select historical Shiver as current parity, blanket native-ammo exclusion, timer consumption or universal ordering from either source.",
+      "target_time_status": "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_EXACT_TARGET_OBSERVATION"
     }
   ],
   "excluded_test_server_changes": [
@@ -912,6 +1041,21 @@
       "engine_hypothesis": "leech_aoe_and_rounding",
       "scope": "HISTORICAL_REPORTED_CASES_ONLY",
       "disagreement": "N2 damage387: reported54 per target versus lround53; N3 damage383: reported39 versus lround38. Neither engine nor this report establishes current universal Life rounding."
+    },
+    {
+      "id": "ranged_native_ammunition_reference_conflict",
+      "rule": "ranged_elemental_ammo_reported_cases",
+      "sources": [
+        "tibiaqa_basic_frost_elemental_ammo_2021",
+        "fandom_imbuing_full"
+      ],
+      "status": "PUBLIC_REFERENCE_CONFLICT_UNRESOLVED",
+      "current_reference_claim": "NO_EFFECT_WITH_AREA_OR_NATIVE_ELEMENTAL_AMMUNITION",
+      "corroborated_historical_case": "Flash Arrow: no ice component",
+      "conflicting_historical_case": "Shiver Arrow: reported45/55 physical/ice versus reference blanket native-ammo exclusion",
+      "resolution": "KEEP_HISTORICAL_EXAMPLES_ONLY_NO_CURRENT_ALGORITHM_SELECTED",
+      "current_native_ammo_rule": null,
+      "current_timer_rule": null
     }
   ]
 }

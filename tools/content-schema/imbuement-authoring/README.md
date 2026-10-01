@@ -239,6 +239,15 @@ PR checks therefore do not certify the imbuement catalogue; the commands below
 are explicit manual validation. See [audit-report.md](audit-report.md) for the
 independent full review, repairs and remaining scope.
 
+The further source pass now includes full official news8834 and actual release8845
+for Basic scroll chronology; their quantitative teaser guarantee is separate from
+live feature release. A pre-target archived BR Etcher page corroborates existing
+facts without filling consumption/Premium unknowns. Historical Market equipment
+restrictions and official Forge fusion/tier-transfer restrictions are scoped to
+those operations, never generalized to player ownership transfer or scroll trade.
+The historical Basic Frost/elemental-arrow experiment remains bounded and its
+Shiver case explicitly conflicts with the current wiki's blanket ammunition claim.
+
 ## Offline validation
 
 ```sh

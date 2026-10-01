@@ -138,10 +138,44 @@ integration remain outside this source draft. Repository workflows do not run
 the package's semantic tests: generic PR checks are not imbuement parity checks.
 Validation uses the explicit offline commands in [README.md](README.md).
 
+## Further primary and archived evidence
+
+The continuation adds full primary browser captures of news8834 (11June2026)
+and the actual Summer Update2026 release, news8845 (13July2026). The teaser
+announces one Basic scroll from every Echo Warden and all24 families; the live
+release confirms Echo Raids but does not repeat the quantitative guarantee.
+The guaranteed count remains an announcement fact, not an observed live drop rate.
+Both were read through Remote Desktop + Chrome/CDP after ordinary HTTP403.
+
+Two independently dated TibiaQA answers support a historical Market restriction
+for equipment carrying active imbuements. They do not restrict completed-scroll
+Market trade, establish a0:00 expiration boundary or certify present continuity.
+Skerio's official29November2021 forum post39252841 requires unimbued inputs for
+Forge fusion and Forge tier transfer. The reply is explicitly a teaser summary
+on the release thread; it does not prohibit player ownership transfers. Root
+verified the public thread in Chrome after403; the worker also recorded normal
+public HTTP access. A prior adjacent intro anchor39252840 is retained only as
+capture provenance, not the quoted post's identity.
+
+An ordinary-HTTP Internet Archive body capture from30January2026, BR revision
+428283, supplies genuine pre-target community corroboration of the Etcher price,
+worthy acquisition, all-slot clearing and Free-account use. Its30July2025 date
+is the archived footer's last-modified date, not initial publication. No consumed
+units or Premium-purchase requirement is stated.
+
+A new personally reported2021 Basic Frost Elvish Bow experiment distinguishes
+Flash and Shiver Arrows, with approximately50/50 and45/55 damage proportions.
+It remains a historical field-study report with no raw logs. The Shiver result
+conflicts with the current Fandom1194750 blanket native-ammunition exclusion;
+that conflict is mandatory and no universal/current conversion policy is selected.
+The public current Fandom page was browser-read with the same reviewed hash;
+the explicit historical-oldid route required login and was not accessed.
+All twelve broad unresolved scopes remain pending.
+
 ## Validation
 
-All 148 offline tests pass. The seven replay/schema commands in README pass,
+All 159 offline tests pass. The seven replay/schema commands in README pass,
 including both missing Items through the owning Item validator with zero errors
-and warnings, and an additional reparse of the pinned Crystal XML. All 66 rule
+and warnings, and an additional reparse of the pinned Crystal XML. All 69 rule
 records retain qualified source references. The catalogue preserves 12 named
 Global observation requirements rather than declaring complete server parity.

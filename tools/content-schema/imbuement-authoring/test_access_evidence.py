@@ -20,6 +20,21 @@ def unique_keys(pairs):
 
 
 class AccessEvidenceTest(unittest.TestCase):
+    def test_basic_scroll_announcement_has_full_primary_capture_and_separate_live_release(self):
+        teaser = self.packet["sources"]["official_echo_wardens"]
+        live = self.packet["sources"]["official_echo_raids_live_release"]
+        self.assertEqual(teaser["published_on"], "2026-06-11")
+        self.assertEqual(teaser["access_status"], "FULL_BROWSER_TEXT_EXTRACTED")
+        self.assertEqual(live["published_on"], "2026-07-13")
+        self.assertIn("always drop one", teaser["selected_quote"])
+        self.assertNotIn("always drop one", live["selected_quote"])
+        self.assertIn("official_echo_raids_live_release",
+                      self.packet["scroll_acquisition"]["loot"]["source_refs"])
+        for family in self.families.values():
+            self.assertIn("official_echo_raids_live_release", family["scroll_apply"]["source_refs"])
+            self.assertEqual(family["scroll_apply"]["evidence_strength_by_tier"]["basic"],
+                             "DERIVED_FROM_PRIMARY_AND_CLIENT")
+
     @classmethod
     def setUpClass(cls):
         cls.packet = json.loads(PACKET.read_text(), object_pairs_hook=unique_keys)

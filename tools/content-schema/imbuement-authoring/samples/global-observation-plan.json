@@ -1585,6 +1585,14 @@
         {
           "catalogue": "global-rules-evidence.json",
           "id": "duration_ms"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "market_listing_with_active_imbuement_allowed"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "exaltation_forge_requires_unimbued_inputs"
         }
       ],
       "source_refs": [
@@ -1595,11 +1603,26 @@
         {
           "catalogue": "global-rules-evidence.json",
           "id": "official_manual"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "official_forge_nonimbued_inputs_2021"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "tibiaqa_market_imbued_2020_lillyfoxx"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "tibiaqa_market_imbued_2020_shawtay"
         }
       ],
       "source_and_capture_limitations": [
         "Public statements that transferred imbued items are usable do not prove precise duration/state persistence for every route.",
-        "Display quantization and unrecorded equipped-online time can hide decrement differences; distinguish item copies by visible attributes."
+        "Display quantization and unrecorded equipped-online time can hide decrement differences; distinguish item copies by visible attributes.",
+        "Historical community Market evidence concerns listing classic equipment with active imbuements; it does not establish a ban on player trade, mail, container movement or every ownership-transfer route. Completed-scroll Market behavior is a separate scope.",
+        "The historical official Exaltation Forge restriction concerns unimbued input items for fusion and tier transfer. Forge tier transfer is distinct from transferring item ownership between players; this scoped prerequisite does not establish a blanket transfer ban.",
+        "These historical Market and Forge prerequisites provide route context, not before/after proof of preserved imbuement state or precise remaining duration, nor certification of the exact 2026-07-28 target snapshot."
       ],
       "scenarios": [
         {

@@ -147,11 +147,19 @@
       "role": "OFFICIAL_PUBLIC",
       "url": "https://www.tibia.com/news?subtopic=newsarchive&id=8834",
       "revision": "newsarchive:8834",
-      "published_date": null,
+      "published_date": "2026-06-11",
       "accessed_date": "2026-10-01",
-      "sha256": "99e2d3b84ba639b32b2173a347870f0ce43eecf645bdf3f9d3e224a50ce208b7",
-      "digest_scope": "Exact UTF-8 indexed search snippet; primary full extraction failed",
-      "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+      "sha256": "71e4a5d45aa5de27f9a9e8238dbeff8dde415fffd1e0b1290904d99054cdd11f",
+      "digest_scope": "Exact complete UTF-8 browser document.body.innerText, including page chrome; full official teaser read",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "previous_capture": {
+        "sha256": "99e2d3b84ba639b32b2173a347870f0ce43eecf645bdf3f9d3e224a50ce208b7",
+        "digest_scope": "Exact UTF-8 indexed search snippet; primary full extraction failed",
+        "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+      },
+      "selected_quote": "In addition, Echo Wardens will always drop one of the new basic imbuement scrolls. These scrolls work similarly to intricate and powerful imbuement scrolls and will be available for all imbuements.",
+      "scope": "Feature teaser, not a measured live-server drop rate."
     },
     "fandom_imbuing_fees": {
       "role": "DERIVED",
@@ -472,6 +480,115 @@
       "limitations": [
         "No post body, demonstration or exact publication date verified from this search/index response."
       ]
+    },
+    "official_news_8845_release": {
+      "role": "OFFICIAL_PUBLIC",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8845",
+      "revision": "newsarchive:8845",
+      "published_date": "2026-07-13",
+      "accessed_date": "2026-10-01",
+      "sha256": "a3746466045af1fa9e86a70805675debe7d13f645bb0d54422f7db5185a214ca",
+      "digest_scope": "Exact complete UTF-8 browser document.body.innerText, including page chrome",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "selected_quote": "With Echo Raids, creatures may turn into echoes and trigger optional encounters. Rare Echo Wardens empower nearby enemies and offer new challenges and rewards during your hunts.",
+      "scope": "Actual Summer Update2026 announcement corroborates live Echo Raids; it does not explicitly quantify Basic scroll drop count."
+    },
+    "tibiaqa_market_imbued_2020_lillyfoxx": {
+      "role": "COMMUNITY_DATED_ANSWER",
+      "url": "https://www.tibiaqa.com/10527/why-cant-you-sell-some-items-on-the-market?show=10527#q10527",
+      "revision": null,
+      "published_date": "2020-01-22",
+      "accessed_date": "2026-10-01",
+      "sha256": "46f931ce973f7b8cdb69088b1ddd03be46240eec7ad527d013ad6521dd11f53a",
+      "digest_scope": "Exact public HTTP response bytes",
+      "access_status": "FULL_PUBLIC_HTML_EXTRACTED",
+      "method": "Ordinary public HTTP GET",
+      "author": "LillyFoxx",
+      "question_date": "2020-01-07",
+      "selected_quotes": [
+        "Some other items that cannot be sold on the market are the imbued items.",
+        "(After the imbuement is finished or you remove it manually, it can be sold again)."
+      ],
+      "scope": "Historical community statement that equipment carrying an active imbuement cannot be listed on the Market.",
+      "limitations": [
+        "Not a before/after transfer observation; no exact zero-display expiration boundary.",
+        "No claim about tradeable completed scrolls, Etcher, direct player trade, or frozen July2026 server continuity."
+      ]
+    },
+    "tibiaqa_market_imbued_2020_shawtay": {
+      "role": "COMMUNITY_DATED_ANSWER",
+      "url": "https://www.tibiaqa.com/7552/which-kind-of-items-i-cannot-sell-on-market?show=7552#q7552",
+      "revision": null,
+      "published_date": "2020-04-04",
+      "accessed_date": "2026-10-01",
+      "sha256": "6830aed14a1d0304c1035e1f5eb1da18c5fd48d6016f9b9971c4380c5c252c09",
+      "digest_scope": "Exact public HTTP response bytes",
+      "access_status": "FULL_PUBLIC_HTML_EXTRACTED",
+      "method": "Ordinary public HTTP GET",
+      "author": "★♦shawtay",
+      "question_date": "2019-10-29",
+      "selected_quotes": [
+        "here's a list of items that aren't sellable via the market, please note there are exceptions to this list:",
+        "items with imbuements",
+        "rod of destruction with imbuement attached for example ..."
+      ],
+      "scope": "Independent dated community answer with a named imbued-equipment example excluded from Market.",
+      "limitations": [
+        "General list explicitly admits exceptions; example supports narrow active-imbued-equipment rule, not all item attributes.",
+        "No duration preservation or exact expiration/scroll restriction evidence."
+      ],
+      "last_edit_date": "2020-12-28"
+    },
+    "official_forge_nonimbued_inputs_2021": {
+      "role": "OFFICIAL_PUBLIC",
+      "url": "https://www.tibia.com/forum/?action=thread&postid=39252841#post39252841",
+      "capture_url": "https://www.tibia.com/forum/?action=thread&postid=39252840#post39252840",
+      "revision": "forum-post:39252841",
+      "published_date": "2021-11-29",
+      "published_display_time": "10:42:15",
+      "accessed_date": "2026-10-01",
+      "sha256": "e93beb56f81c4d3b0ec3b061b6c438524329d1fd31858b93282263565b317bd7",
+      "digest_scope": "Exact complete UTF-8 browser document.body.innerText of the public thread page, including the following quoted post39252841 and page chrome",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "author": "Skerio",
+      "author_role": "Community Manager",
+      "selected_quote": "Items involved in a fusion or transfer must not be imbued (but can be imbued after the fusion).",
+      "scope": "TL;DR Teaser in a Nutshell summary posted in Winter Update2021 release thread; Exaltation Forge fusion and tier-transfer input restriction, not player ownership transfer."
+    },
+    "wiki_br_etcher_archived_2026_01_30": {
+      "role": "COMMUNITY_ARCHIVED_PRE_TARGET",
+      "url": "https://web.archive.org/web/20260130101728/https://www.tibiawiki.com.br/wiki/Etcher",
+      "revision": "428283",
+      "published_date": "2025-07-30",
+      "archive_snapshot_at": "2026-01-30T10:17:28Z",
+      "accessed_date": "2026-10-01",
+      "sha256": "0acf6570f1d3b27d18ab5253ffdeae3062d1a47c993e4bd04d73ce3658140588",
+      "digest_scope": "Exact public HTTP response bytes",
+      "access_status": "FULL_PUBLIC_ARCHIVE_HTML_EXTRACTED",
+      "method": "Ordinary public HTTP GET via Internet Archive",
+      "selected_quotes": [
+        "Pode ser utilizado por jogadores free account.",
+        "Remove todos os Imbuements do equipamento selecionado.",
+        "Pode ser adquirido com o NPC Albinius por 30.000 GP, desde que o templo da Forgotten Knowledge Quest tenha sido construído no servidor e o jogador tenha entregue os cinco tomos."
+      ],
+      "explicit_facts": {
+        "npc_price_gold": 30000,
+        "npc_worthy_requirements": [
+          "completed_world_construction",
+          "completed_five_tome_handovers"
+        ],
+        "clears_all_imbuements": true,
+        "usable_by_free_account": true
+      },
+      "unconfirmed_facts": [
+        "consumed_units_success",
+        "consumed_units_invalid_target",
+        "npc_purchase_requires_premium"
+      ],
+      "scope": "Pre-target archived community page corroborates price, worthy access, clear-all and Free use; no exact consumption, purchase-Premium or continuity at July28server timestamp.",
+      "published_date_scope": "Last modified date displayed in archived community page footer; not initial publication."
     }
   },
   "rules": [
@@ -714,11 +831,12 @@
         "official_news_8834_basic_scrolls",
         "news_8834_mirror",
         "tibiopedia_release_15_30",
-        "tibiopedia_echo_raids"
+        "tibiopedia_echo_raids",
+        "official_news_8845_release"
       ],
-      "parity_status": "OFFICIAL_PUBLIC_SEARCH_SNIPPET",
-      "target_time_status": "DATED_PRE_TARGET_TEASER_AND_15_30_RELEASE_CORROBORATED",
-      "notes": "Official indexed news8834 confirms Echo Wardens drop Basic scrolls. Full news mirror dated11June2026 plus independently dated13July2026 client15.30 release and frozen15.30 client assets place their introduction before28July2026. Exact official article full extraction remains unavailable."
+      "parity_status": "OFFICIAL_PUBLIC_ANNOUNCEMENT_WITH_LIVE_RELEASE_CORROBORATION",
+      "target_time_status": "DATED_PRIMARY_TEASER_AND_PRIMARY_LIVE_FEATURE_RELEASE_PRE_TARGET",
+      "notes": "Full official11June2026 teaser explicitly announces Basic scrolls for all imbuements. Full official13July2026 release confirms live Echo Raids; frozen15.30 client and community archives corroborate Basic identities. Teaser drop-count guarantee is separately scoped, not a measured live-server outcome."
     },
     {
       "id": "etcher_npc_price_gold",
@@ -727,7 +845,8 @@
         "official_news_8396_scrolls",
         "news_8396_mirror",
         "wiki_br_etcher",
-        "tibiopedia_etcher"
+        "tibiopedia_etcher",
+        "wiki_br_etcher_archived_2026_01_30"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION",
@@ -740,7 +859,8 @@
         "news_8396_mirror",
         "wiki_br_etcher",
         "tibiopedia_etcher",
-        "official_news_8396_scrolls"
+        "official_news_8396_scrolls",
+        "wiki_br_etcher_archived_2026_01_30"
       ],
       "parity_status": "DERIVED_CORROBORATED",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION"
@@ -750,7 +870,8 @@
       "value": true,
       "evidence": [
         "wiki_br_etcher",
-        "tibiopedia_etcher"
+        "tibiopedia_etcher",
+        "wiki_br_etcher_archived_2026_01_30"
       ],
       "parity_status": "DERIVED_CORROBORATED",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION"
@@ -1017,11 +1138,13 @@
       "evidence": [
         "news_8834_mirror",
         "tibiopedia_release_15_30",
-        "tibiopedia_echo_raids"
+        "tibiopedia_echo_raids",
+        "official_news_8834_basic_scrolls",
+        "official_news_8845_release"
       ],
-      "parity_status": "DERIVED_DATED_RELEASE_CORROBORATED",
+      "parity_status": "DERIVED_FROM_DATED_PRIMARY_RELEASE_AND_CLIENT_VERSION",
       "target_time_status": "RELEASE_PRECEDES_FROZEN_TARGET",
-      "notes": "Dates are independently retrieved mirror/community archive facts; do not relabel them as a retrieved full official article."
+      "notes": "Primary full pages now establish11June2026 teaser and13July2026 live feature release; community archive separately names client15.30. Neither page proves every drop or all target-server behavior."
     },
     {
       "id": "etcher_invalid_target_consumed_units",
@@ -1249,7 +1372,8 @@
       "evidence": [
         "news_8396_mirror",
         "official_manual",
-        "official_news_8396_scrolls"
+        "official_news_8396_scrolls",
+        "wiki_br_etcher_archived_2026_01_30"
       ],
       "parity_status": "OFFICIAL_PUBLIC_WITH_CURRENT_MANUAL_CORROBORATION",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION",
@@ -1456,6 +1580,48 @@
         }
       ],
       "notes": "Completed-scroll units consumed on success or an invalid target are not explicitly established by the retrieved Global public sources. The official blank-scroll inscription requirement is a different transaction. Do not select the pinned OTS hypothesis as a Global rule."
+    },
+    {
+      "id": "echo_warden_basic_scroll_drop_announcement",
+      "value": {
+        "basic_scroll_units": 1,
+        "all_24_families_announced": true,
+        "guaranteed_drop_announced": true
+      },
+      "evidence": [
+        "official_news_8834_basic_scrolls"
+      ],
+      "parity_status": "OFFICIAL_PUBLIC_TEASER_STATEMENT_ONLY",
+      "target_time_status": "DATED_PRE_TARGET_ANNOUNCEMENT_NOT_LIVE_DROP_MEASUREMENT",
+      "notes": "Exactly the official teaser wording. July13 live feature release does not repeat the quantitative drop guarantee; no observed server drop distribution or implementation probability is inferred."
+    },
+    {
+      "id": "market_listing_with_active_imbuement_allowed",
+      "value": false,
+      "evidence": [
+        "tibiaqa_market_imbued_2020_lillyfoxx",
+        "tibiaqa_market_imbued_2020_shawtay"
+      ],
+      "parity_status": "DERIVED_COMMUNITY_HISTORICAL_CORROBORATED",
+      "target_time_status": "HISTORICAL_2020_CONTINUITY_UNVERIFIED",
+      "notes": "Equipment with active imbuements only, classic Market listing. Does not prohibit completed scroll Market trading, direct player trade, mail or depot transfer, and does not define exact0:00 expiration eligibility."
+    },
+    {
+      "id": "exaltation_forge_requires_unimbued_inputs",
+      "value": {
+        "operations": [
+          "fusion",
+          "forge_tier_transfer"
+        ],
+        "requires_unimbued_items": true,
+        "imbuing_after_fusion_allowed": true
+      },
+      "evidence": [
+        "official_forge_nonimbued_inputs_2021"
+      ],
+      "parity_status": "OFFICIAL_PUBLIC_HISTORICAL_CM_STATEMENT",
+      "target_time_status": "HISTORICAL_PRIMARY_2021_CONTINUITY_UNVERIFIED",
+      "notes": "Statement on the actual Winter Update2021 release thread is explicitly labelled a teaser summary. Scope is Forge fusion and Forge tier transfer. No prohibition on transferring ownership, and no current2026 server certification."
     }
   ],
   "conflicts": [
@@ -1795,13 +1961,17 @@
       "evidence": [
         "news_8834_mirror",
         "tibiopedia_release_15_30",
-        "tibiopedia_echo_raids"
+        "tibiopedia_echo_raids",
+        "official_news_8834_basic_scrolls",
+        "official_news_8845_release"
       ],
-      "resolution": "11June2026 teaser and13July2026 client15.30 release precede frozen target; dated mirror/community confidence retained.",
+      "resolution": "Full dated primary11June2026 teaser and13July2026 live release now corroborate introduction before frozen target; client15.30 identity/version evidence remains separate.",
       "source_urls": [
         "https://tibiaroute.com/news/Echo-Raids-and-Discovery-System-8834-aS71",
         "https://tibiopedia.pl/news/archives/2452",
-        "https://tibiopedia.pl/articles/32,Echo-Raids"
+        "https://tibiopedia.pl/articles/32,Echo-Raids",
+        "https://www.tibia.com/news?subtopic=newsarchive&id=8834",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8845"
       ],
       "source_url_scope": "Only the bounded resolution and confidence stated in this row."
     },
@@ -2133,6 +2303,32 @@
           "result": "Two slots; no item notes or explicit imbuement type/tier list. Proficiency bonuses do not prove type exclusions."
         }
       ]
+    },
+    {
+      "id": "continuation_primary_archive_market_ammunition",
+      "date": "2026-10-01",
+      "methods": [
+        "Ordinary public HTTP GET",
+        "Remote Desktop + Chrome/CDP after403/402",
+        "Public Internet Archive snapshot body GET"
+      ],
+      "admitted_evidence": [
+        "official_news_8834_basic_scrolls",
+        "official_news_8845_release",
+        "official_forge_nonimbued_inputs_2021",
+        "tibiaqa_market_imbued_2020_lillyfoxx",
+        "tibiaqa_market_imbued_2020_shawtay",
+        "wiki_br_etcher_archived_2026_01_30"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/news?subtopic=newsarchive&id=8834",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8845",
+        "https://www.tibia.com/forum/?action=thread&postid=39252841#post39252841",
+        "https://www.tibiaqa.com/10527/why-cant-you-sell-some-items-on-the-market?show=10527#q10527",
+        "https://www.tibiaqa.com/7552/which-kind-of-items-i-cannot-sell-on-market?show=7552#q7552",
+        "https://web.archive.org/web/20260130101728/https://www.tibiawiki.com.br/wiki/Etcher"
+      ],
+      "limits": "Transaction search19attempts and state research23attempts supplied no exact consumedunits, invalid-target rollback, equipped-scroll, purchasePremium or transfer-duration proof. Fandom historicaloldid page requiredlogin and was not read; public currentpage readable at same1194750 and same SHAe07d4be8..., no Market statement. No login or account actions. Remote tab closed and browser controller exit requested."
     }
   ],
   "delegated_profiles": [

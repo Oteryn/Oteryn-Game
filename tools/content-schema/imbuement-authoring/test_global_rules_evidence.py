@@ -13,6 +13,57 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         cls.rules = {r["id"]: r for r in cls.packet["rules"]}
         cls.sources = cls.packet["sources"]
 
+    def test_echo_scroll_primary_teaser_and_live_release_remain_distinct(self):
+        teaser = self.sources["official_news_8834_basic_scrolls"]
+        live = self.sources["official_news_8845_release"]
+        self.assertEqual(teaser["published_date"], "2026-06-11")
+        self.assertEqual(live["published_date"], "2026-07-13")
+        self.assertEqual(teaser["access_status"], "FULL_BROWSER_TEXT_EXTRACTED")
+        self.assertEqual(teaser["previous_capture"]["access_status"], "INDEXED_SEARCH_SNIPPET_ONLY")
+        self.assertIn("always drop one", teaser["selected_quote"])
+        self.assertNotIn("always drop one", live["selected_quote"])
+        rule = self.rules["echo_warden_basic_scroll_drop_announcement"]
+        self.assertEqual(rule["evidence"], ["official_news_8834_basic_scrolls"])
+        self.assertEqual(rule["parity_status"], "OFFICIAL_PUBLIC_TEASER_STATEMENT_ONLY")
+        self.assertIn("NOT_LIVE_DROP_MEASUREMENT", rule["target_time_status"])
+        self.assertIn("official_news_8845_release", self.rules["basic_scrolls_exist"]["evidence"])
+
+    def test_market_constraint_does_not_become_scroll_or_transfer_prohibition(self):
+        rule = self.rules["market_listing_with_active_imbuement_allowed"]
+        self.assertFalse(rule["value"])
+        self.assertEqual(rule["parity_status"], "DERIVED_COMMUNITY_HISTORICAL_CORROBORATED")
+        self.assertIn("CONTINUITY_UNVERIFIED", rule["target_time_status"])
+        dates = {self.sources[s]["published_date"] for s in rule["evidence"]}
+        self.assertEqual(dates, {"2020-01-22", "2020-04-04"})
+        self.assertIn("completed scroll", rule["notes"])
+        self.assertIn("direct player trade", rule["notes"])
+        self.assertIsNone(self.rules["transfer_preserves_imbuement_state_and_remaining_duration"]["value"])
+
+    def test_forge_tier_transfer_is_not_player_ownership_transfer(self):
+        rule = self.rules["exaltation_forge_requires_unimbued_inputs"]
+        self.assertEqual(rule["value"]["operations"], ["fusion", "forge_tier_transfer"])
+        self.assertTrue(rule["value"]["requires_unimbued_items"])
+        self.assertTrue(rule["value"]["imbuing_after_fusion_allowed"])
+        source = self.sources["official_forge_nonimbued_inputs_2021"]
+        self.assertEqual(source["revision"], "forum-post:39252841")
+        self.assertIn("postid=39252841", source["url"])
+        self.assertEqual(source["author_role"], "Community Manager")
+        self.assertIn("teaser summary", rule["notes"])
+        self.assertIn("CONTINUITY_UNVERIFIED", rule["target_time_status"])
+
+    def test_pre_target_etcher_archive_does_not_fill_transaction_unknowns(self):
+        source = self.sources["wiki_br_etcher_archived_2026_01_30"]
+        self.assertEqual(source["revision"], "428283")
+        self.assertLess(source["archive_snapshot_at"][:10], "2026-07-28")
+        self.assertEqual(source["access_status"], "FULL_PUBLIC_ARCHIVE_HTML_EXTRACTED")
+        self.assertEqual(source["explicit_facts"]["npc_price_gold"], 30000)
+        self.assertTrue(source["explicit_facts"]["usable_by_free_account"])
+        for key in ("etcher_consumed_units", "etcher_invalid_target_consumed_units",
+                    "etcher_npc_purchase_requires_premium"):
+            self.assertIsNone(self.rules[key]["value"])
+        self.assertIn("wiki_br_etcher_archived_2026_01_30",
+                      self.rules["etcher_npc_purchase_worthy_predicate"]["evidence"])
+
     def test_source_references_are_unique_and_complete(self):
         self.assertEqual(len(self.rules), len(self.packet["rules"]))
         for rule in self.rules.values():
