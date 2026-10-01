@@ -937,8 +937,8 @@ fn change(
 }
 
 /// A test formula table: skills base 50 with multiplier 2.0 without a vocation and 1.1 with one;
-/// magic level 100 x L. `.0` is the table digest.
-struct Table([u8; 32]);
+/// magic level 100 x L. `.0` is the table digest and `.1` its content revision.
+struct Table([u8; 32], &'static str);
 
 impl BuildFormula for Table {
     fn required(&self, vocation: &str, family: usize, level: u16) -> Option<u64> {
@@ -952,9 +952,13 @@ impl BuildFormula for Table {
     fn digest(&self) -> [u8; 32] {
         self.0
     }
+
+    fn content_revision(&self) -> &str {
+        self.1
+    }
 }
 
-const TABLE: Table = Table([1; 32]);
+const TABLE: Table = Table([1; 32], "content-1");
 
 #[test]
 fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
@@ -1065,7 +1069,13 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
             BuildCommitOutcome::AlreadyCommitted(committed.clone())
         );
         let conflict = root
-            .commit_character_build(&authority, node, fence(3)?, choice.clone(), &Table([9; 32]))
+            .commit_character_build(
+                &authority,
+                node,
+                fence(3)?,
+                choice.clone(),
+                &Table([9; 32], "content-1"),
+            )
             .await;
         assert!(
             matches!(
@@ -1157,9 +1167,27 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
             matches!(outcome, Err(CharacterProgressionError::BuildStateMismatch)),
             "{outcome:?}"
         );
+        // A table from another content revision decides nothing.
+        let next = state("knight", (1, 30), (12, 7))?;
+        let request = change(64, BuildCause::Training, &trained, &next, None)?;
+        let outcome = root
+            .commit_character_build(
+                &authority,
+                node,
+                fence(4)?,
+                request,
+                &Table([1; 32], "content-2"),
+            )
+            .await;
+        assert!(
+            matches!(
+                outcome,
+                Err(CharacterProgressionError::ProgressionContextMismatch)
+            ),
+            "{outcome:?}"
+        );
 
         // A stale fence writes nothing: each case changes exactly one fact.
-        let next = state("knight", (1, 30), (12, 7))?;
         let mut other_connection = fence(4)?;
         other_connection.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
         let mut other_lease = fence(4)?;

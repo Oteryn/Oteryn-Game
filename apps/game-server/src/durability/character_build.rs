@@ -286,6 +286,9 @@ pub trait BuildFormula {
     /// skills in the order of [`SKILLS`]) under `vocation`. `None` means unreachable.
     fn required(&self, vocation: &str, family: usize, level: u16) -> Option<u64>;
     fn digest(&self) -> [u8; 32];
+    /// The content revision this table belongs to. The writer refuses a table whose revision is
+    /// not the Character's stored content revision.
+    fn content_revision(&self) -> &str;
 }
 
 /// SKILLS-0 §3.3: keep each family's cumulative progress under the old vocation and re-level it
@@ -375,6 +378,7 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let policy_digest = formula.digest();
+        let content_revision = formula.content_revision().to_owned();
         let binding = command_binding(&fence, &request, &policy_digest);
         let recovery = authority
             .record_for(self)
@@ -426,7 +430,9 @@ impl DurabilityRoot {
                     if numeric_u64(&state, "character_revision")? != root.revision {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    if !state_matches_root(&state, &root) {
+                    if !state_matches_root(&state, &root)
+                        || state.try_get::<String, _>("content_revision")? != content_revision
+                    {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
                     let pending: bool = sqlx::query_scalar(
@@ -810,6 +816,10 @@ mod tests {
 
         fn digest(&self) -> [u8; 32] {
             [1; 32]
+        }
+
+        fn content_revision(&self) -> &str {
+            "content-1"
         }
     }
 

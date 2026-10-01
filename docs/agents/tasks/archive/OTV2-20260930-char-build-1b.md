@@ -46,8 +46,9 @@ The writer half of CHAR-BUILD-1 (A13 §4.1, §4.2, §4.6; SKILLS-0 §3.1-§3.3).
     training prune, a `before` that is not the stored build or a pruned stance that is not the
     stored key (`BuildStateMismatch`, a new `CharacterProgressionError` variant), and a pending
     respawn.
-  - The caller passes the content formula table as a `BuildFormula` (per-vocation `req(L)` and the
-    table digest), as the XP writer takes its policy. The writer computes a `vocation_choice`
+  - The caller passes the content formula table as a `BuildFormula` (per-vocation `req(L)`, the
+    table digest and its content revision), as the XP writer takes its policy. A table from
+    another content revision than the stored one is refused. The writer computes a `vocation_choice`
     itself (`convert_vocation`: cumulative progress kept and re-levelled under the new vocation,
     SKILLS-0 §3.3) and rejects any other `after`. It rejects an `after` in which a family's
     progress already pays for its next level (SKILLS-0 §3.1).
@@ -100,6 +101,14 @@ accepted: training from sword 12 to (1000, 0) committed. The check now also requ
 from the family floor through the current level to be reachable under the formula. The unit test
 and the writer test each have a red run with the check removed.
 
+## Repair (Codex P1 on `c4b33c5e`)
+
+`BuildFormula` carried only a self-reported digest, so nothing tied the table to the Character's
+stored content revision, which the receipt records. Codex P1 (#1411, `character_build.rs:378`) is
+accepted. `BuildFormula` now names its content revision, and the writer refuses a table whose
+revision differs from the locked progression row's (`ProgressionContextMismatch`) before any
+write. The writer test has a red run with the check removed: a `content-2` table commits.
+
 ## Acceptance criteria
 
 - [ ] Exact frozen head with passing CI.
@@ -119,7 +128,8 @@ and the writer test each have a red run with the check removed.
   `--lib` 1196 passed; the full crate run is in the PR body.
 - Mutations (each restored): `verify_character_build_chain` death arm set to `WHERE false` turns
   `build_grants_and_admission_verifier` red; removing the conversion check, the normalized
-  check or its reachability part turns `build_writer_is_fenced_replayed_and_reconciled` red.
+  check, its reachability part or the content revision check turns
+  `build_writer_is_fenced_replayed_and_reconciled` red.
 - `python3 tools/agents/validate_governance.py`; `python3 tools/repository/validate_repository_policy.py`;
   `git diff --check`.
 
