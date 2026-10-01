@@ -280,6 +280,13 @@ outcome; the move follows the known commit, fenced on the scope ownership genera
 fenced follow-up transaction keyed by the occurrence consumes the pending arrival. A death cancels
 the pending travel invocation, so a late commit never moves a dead actor. Travel never changes channel. The §6.1 fallback stays (no stacking); summons are removed.
 
+### 6.2 Repair
+
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7).** A repair offer `{npc, keyword "repair", from_item, to_item,
+price}` is confirmed like travel and runs as an item-only transaction with
+`FeeBurnCause::NpcRepair` and one item transform. v1 content: worn soft boots to soft boots for
+10,000 gold (owner answer 1a); any other repair offer needs an owner answer (D178).
+
 ## 7. Price evidence (boundary §15 and §19)
 
 The boundary requires exact target evidence for prices before `NPC_SINGLE_TRADE_COMMIT_V1`.

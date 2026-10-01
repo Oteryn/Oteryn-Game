@@ -128,6 +128,10 @@ exists per conflict key.
   instance with the named conflict key and removes an existing one. Skill boosts from equipment are
   derived reads (EQUIP-0 §3), not a condition family.
 
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §8).** An active timed item with `REGENERATION` or `MANA_SHIELD` holds
+one instance of that family whose provenance has the new source kind `item` and the ItemInstanceId
+(§3.2); the instance ends when the item stops being active.
+
 ### 3.1 Damage over time
 
 - A new application replaces the current instance of the element only when its remaining total

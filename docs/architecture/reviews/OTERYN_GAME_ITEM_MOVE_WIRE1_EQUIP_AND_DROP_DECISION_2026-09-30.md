@@ -178,6 +178,10 @@ exactly the change, under the tile and counter row lock.
 
 ## 6. Persistence and DUR-03
 
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §6).** An equip or unequip of an item with an equip or unequip
+transform performs the `PRESERVE_INSTANCE` transform and the clock start or stop in the same move
+transaction (DUR-03 §33 as amended).
+
 ### 6.1 Supersessions (as B3 §4.6)
 
 For the shapes of §4 and §5 only, this decision supersedes:

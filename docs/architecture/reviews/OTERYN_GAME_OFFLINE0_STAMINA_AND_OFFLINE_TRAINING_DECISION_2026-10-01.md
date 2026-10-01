@@ -12,7 +12,8 @@
   same thing, the time between a logout and the next admission, so one decision owns them.
 - Scope: stamina, the offline-training pool and training statues. **Beds** (house sleeping, the
   sleeper on the bed, soul and vitals while asleep) are BED-0, a house-lane decision that reuses this
-  activation; **exercise weapons** have charges and are TIMED-ITEM-0. Both stay in owner answer 2a's
+  activation; **exercise weapons** have charges and are TIMED-ITEM-0 (amended: TIMED-ITEM-0 R4 moves
+  them to EXERCISE-0, which uses its charges). Both stay in owner answer 2a's
   scope, sequenced after this one.
 - Builds on: GAME-CHAR-01 Stage B decision 8, D118 (owner decision batch D118-D128 §2.4), A13 §4
   (build state, receipt chain, checkpoints), SKILLS-0 §3 (skills in build state), PREY-0 §6.3 (the

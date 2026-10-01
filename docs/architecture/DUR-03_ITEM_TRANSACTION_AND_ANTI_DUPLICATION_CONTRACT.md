@@ -409,6 +409,9 @@ Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
 `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
 The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition, Throwing}`.
 
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §4, §10).** The closed `TimedItemCause` (`Expire` without a
+`decay_target` is a BURN sink) and `FeeBurnCause::NpcRepair` are admitted.
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy
@@ -666,6 +669,10 @@ between the main backpack and the nine non-container `CharacterEquipment` slots,
 with the target slot's occupant (two items, four location lines, with its own resource rows); and
 TRANSFER of a whole item from a backpack entry or a slot to `Ground`, and from Ground back to the
 main backpack, under §32. No new burn sink: dropped items are retired by `WorldReset` (D191).
+
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §6).** An equip or unequip of an item whose definition has a
+`transform {trigger: equip | unequip}` transforms it (`PRESERVE_INSTANCE`) in the same move
+transaction and writes its timed row (clock start or stop) there.
 
 ## 34. Multi-transaction typed custody
 
@@ -1386,7 +1393,11 @@ authority, conservation) is unchanged.
   `character_root` lock and no expected revision (gold fee decision §4.3 as amended).
 - **Cause (D178).** Closed `FeeBurnCause`. Variants: `CharmUnassign { charm, occurrence }`, and,
   with the NPC service amendment below, `NpcTrade(NpcTradeCause)` and `NpcTravel { npc, route,
-  occurrence }`.
+  occurrence }`. **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7).** Plus `NpcRepair { npc, offer, occurrence }`
+  (owner answer 1a), whose transaction also transforms one item (`PRESERVE_INSTANCE`) and resets
+  its timed row; transfers that cross between live, deadline and frozen locations write the item's
+  timed row in the same transaction (TIMED-ITEM-0 §4); every MINT of a timed definition creates the
+  row and every retirement deletes it, in the same transaction (TIMED-ITEM-0 §3).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
 - **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends
