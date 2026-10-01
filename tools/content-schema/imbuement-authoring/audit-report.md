@@ -285,7 +285,7 @@ packet additionally pins67 full source files, with224 exact line-range quotes
 replayed from those bytes. Published-candidate validation and independent review
 are recorded against the frozen PR head through#162.
 
-Source counts are72 Global rules/51sources and18combat profiles/24sources. Seven
+Source counts are72 Global rules/51sources and19combat profiles/26sources. Six
 fine-grained combat profiles retain null values for unsourced proprietary details;
 concrete implementation answers remain available in the separate12-question matrix.
 
@@ -294,13 +294,13 @@ concrete implementation answers remain available in the separate12-question matr
 The prior plan required gameplay recordings across every unresolved group, even
 where explicit public statements already covered the authored facts.
 [global-research-closure.md](global-research-closure.md) corrects that scope and
-adds a validated23-fact packet with18 source identities, complete or explicitly
+adds a validated31-fact packet with25 source identities, complete or explicitly
 selected captured text and literal quote checks. It includes newly retrieved
 2026 Powerful Vibrancy recovery wording, official60-second logout context,
 protection composition references and retained current PZ/armor conflicts.
 
 The change does not close unknown fields by relabelling groups, choosing OTS
-answers or assigning a runtime owner. Consumption/equipped-target/Premium/transfer
-counter questions remain explicit; full Global parity remains unproven.
+answers or assigning a runtime owner. Consumption/Premium/transfer
+counter questions remain explicit; the dated named equipped-scroll case is qualified; full Global parity remains unproven.
 
-Final source review repairs bind the explicit Mana/health Prey quote, remove an already-selected recipient-usability residual, and put the sourced unequipped-target prerequisite in all72 direct shrine routes. Completed-scroll equipped permission remains separately null.
+Final source review repairs bind the explicit Mana/health Prey quote, remove an already-selected recipient-usability residual, and put the sourced unequipped-target prerequisite in all72 direct shrine routes. Family-wide completed-scroll permission remains null, while the separate public-fact packet qualifies namedPowerful Vampirism use on an equipped Ghost Chestplate.

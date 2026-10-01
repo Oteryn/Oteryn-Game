@@ -307,6 +307,159 @@
       "limits": [
         "Legacy 2022 formula conflicts with the current Mana reference and is not admitted."
       ]
+    },
+    "wiki_br_etcher_raw_current": {
+      "url": "https://www.tibiawiki.com.br/api.php?action=query&prop=revisions&titles=Etcher&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&format=json",
+      "method": "REMOTE_DESKTOP_CHROME_CDP",
+      "source_role": "CURRENT_COMMUNITY_RAW_REFERENCE",
+      "capture_date": "2026-10-01",
+      "publication_dates": {
+        "revision_published_at": "2025-07-30T06:45:04Z"
+      },
+      "revision": 428283,
+      "captured_text_scope": "Complete main-slot raw wikitext from specified public revision",
+      "original_digest": "09f94e5d2031a4a86e603274ea91511b7d6c975ccabed5f43910c5343b63cbdd",
+      "original_digest_scope": "Complete UTF8 public MediaWiki API JSON read through browser",
+      "captured_text": "{{Infobox_Item|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Etcher\n| flavortext     = \n| itemclass      = Outros Itens\n| primarytype    = Valiosos\n| secondarytype  = \n| attrib         = Pode ser usado para remover todos os imbuements de um equipamento.\n| weight         = 1.50\n| stackable      = sim\n| value          = \n| npcvalue       = \n| npcprice       = 30.000\n| mercado        = sim\n| droppedby      = [[Blight Mariner]], [[Bluebeak]], [[Hawk Hopper]], [[Sir Leopold]], [[Tropical Desolator]].\n| buyfrom        = Albinius\n| sellto         = Jogadores.\n| implemented    = 15.10.46b862\n| notes          = <span>\n* De acordo com o Teaser 2 do [[Update de Verão 2025]], este item foi introduzido como parte do sistema de imbuements negociáveis.\n* Pode ser adquirido com o NPC [[Albinius]] por 30.000 [[Gold Coin|GP]], desde que o templo da [[Forgotten Knowledge Quest]] tenha sido construído no servidor e o jogador tenha entregue os cinco tomos.\n* Remove '''todos''' os [[Imbuements]] do equipamento selecionado.\n* Pode ser utilizado por jogadores free account.\n</span>\n\n<gallery>\nArquivo:Summer Update 2025 - Teaser 2 01.png|Nova tela de Imbuement\nArquivo:Summer Update 2025 - Teaser 2 02.png|Criando scroll\n</gallery> \n}}",
+      "captured_text_sha256": "33b7ff19a25eb2f9c1084d7a4a312e158a7d44522661538db5d00b7d8a0563c9",
+      "limits": []
+    },
+    "wiki_br_albinius_raw_current": {
+      "url": "https://www.tibiawiki.com.br/api.php?action=query&prop=revisions&titles=Powerful_Vampiric_Scroll%7CIntricate_Vampiric_Scroll%7CAlbinius&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&format=json",
+      "method": "REMOTE_DESKTOP_CHROME_CDP",
+      "source_role": "CURRENT_COMMUNITY_RAW_REFERENCE",
+      "capture_date": "2026-10-01",
+      "publication_dates": {
+        "revision_published_at": "2026-01-24T12:16:52Z"
+      },
+      "revision": 432162,
+      "captured_text_scope": "Complete main-slot raw wikitext from specified public revision",
+      "original_digest": "3f18eddaa637083f215202794aafc5231ab8b677ab7ab86950600ded132bad6d",
+      "original_digest_scope": "Complete UTF8 public MediaWiki API JSON read through browser",
+      "captured_text": "{{Infobox_NPC|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name        = Albinius\n| job         = Astrólogo\n| npcclass    = Humanos\n| npcsprite   = Conjurer\n| city        = Thais\n| subarea     = Halls of Hope\n| location    = [[Halls of Hope]] ({{mapa|32336,32092,7:2|aqui}}).\n| implemented = 11.02\n| notes       = \n<noinclude><p><spoiler>\n* Faz parte da [[Forgotten Knowledge Quest]].\n* Troca as 6 [[Part of a Rune]]s por uma [[Astral Shaper Rune]] basta falar: '''Hi''' - '''Astral Shaper Rune''' - '''Yes'''\n</spoiler></p></noinclude>\n| buysell     = sim\n| sells       = {{Trades/Sell\n| Blank Imbuement Scroll\n| Etcher\n}}<noinclude>[[Categoria:NPC em Revisão]]</noinclude>\n| buys        = </br>\n''Depois que os Halls of Hope foram reconstruídos:''\n{{Trades/Buy\n| Heavy Old Tome}}\n| falas       = __NOTOC__\n== Frases Espontâneas ==\n'''Albinius''': Welcome, my child.</br>\n'''Albinius''': Walk in the light of Shaper wisdom!</br>\n'''Albinius''': Our ways are the ways of the Shapers.\n\n== Palavras-Chave ==\n''Jogador'': '''hi'''</br>\n'''Albinius''': Greetings, pilgrim. Welcome to the halls of hope. We are the keepers of this temple and welcome everyone willing to contribute.\n\n''Jogador'': '''job'''</br>\n'''Albinius''': I find ways to unveil the secrets of the stars. Judging by this question, I doubt you follow my weekly publications concerning this research.\n\n''Jogador'': '''name'''</br>\n'''Albinius''':  I am Albinius, a worshipper of the Astral Shapers.\n\n''Jogador'': '''heavy old tome'''</br>\n'''Albinius''': If you have some old shaper tomes I would '''buy''' them.\n\n''Jogador'': '''shapers'''</br>\n'''Albinius''': The Shapers were an advanced civilisation, well versed in art, construction, language and exploration of our world in their time. ...</br>\n'''Albinius''': The foundations of this temple are testament to their genius and advanced understanding of complex problems. They were master craftsmen and excelled in magic.\n\n''Jogador'': '''tome'''</br>\n'''Albinius''': The Shapers have been eager to share and document their wisdom in any way possible. They knew many ways of preserving information, some of them probably not yet known to or even understandable by us ...</br>\n'''Albinius''': Right now the most helpful records of the Shapers are the various tomes they wrote. You may still find some of them in the vicinity of Thais, some locked away in old chests, others robbed by feral creatures. ...</br>\n'''Albinius''': They surely use them for terrible profane purposes so getting them back would be a service to the Shapers. Furthermore these tomes might contain everything we need to finish the temple.\n\n''Jogador'': '''time'''</br>\n'''Albinius''': Precisely ''horas''.\n\n''Jogador'': '''god'''</br>\n'''Albinius''': Fear not. The gods are with us. In these days this is even recognisable by the most ignorant.\n\n''Jogador'': '''uman'''</br>\n'''Albinius''': There is no Uman but Uman-Zathroth. They are the unfathomable god of knowledge and magic.\n\n''Jogador'': '''zathroth'''</br>\n'''Albinius''': There is no Zathroth but Uman-Zathroth. They are the unfathomable god of knowledge and magic.\n\n''Jogador'': '''fardos'''</br>\n'''Albinius''': Fardos the Creator is one of the elder gods, together with Uman Zathroth. Fardos always was driven by the need to create and give life, overflowing with creative power.\n\n''Jogador'': '''kirok'''</br>\n'''Albinius''': Kirok was created in a attempt to separate Uman and Zathroth.\n\n''Jogador'': '''earth'''</br>\n'''Albinius''': You may pass this portal if you have 50 acorns as offering. Do you have the acorns with you?\n\n''Jogador'': '''banor'''</br>\n'''Albinius''': Banor will recruit our forces against the fiends of beyond and you will be his vanguard!\n\n''Jogador'': '''elane'''</br>\n'''Albinius''': The first paladin has visited us many time. Her insights have proven as very useful.\n\n''Jogador'': '''tibiasula'''</br>\n'''Albinius''': Fardos and Uman either created or awakened a new godess from her sleep: Tibiasula. She helped Fardos, Uman and Zathroth create the mighty column of Time. ...</br>\n'''Albinius''': But then Zathroth killed Tibiasula and Fardos and Uman bonded her body to the column of Time, creating the elements: earth, water, fire and air.\n\n''Jogador'': '''urgith'''</br>\n'''Albinius''': Even his endless legions will not be enough to stop the threat. But they might turn the tides of battle.\n\n''Jogador'': '''bastesh'''</br>\n'''Albinius''': Even the sea will rise to defend the land and the land will shield the sea.\n\n''Jogador'': '''fafnar'''</br>\n'''Albinius''': The suns will always shine on Tibia.\n\n''Jogador'': '''suon'''</br>\n'''Albinius''': The suns will always shine on Tibia.\n\n''Jogador'': '''nornur'''</br>\n'''Albinius''': Nornur is the god of fate. He is a child of Fardos and the element Air.\n\n''Jogador'': '''crunor'''</br>\n'''Albinius''': Be it man or be it beast, nature must rise to face the coming onslaught.\n\n''Jogador'': '''toth'''</br>\n'''Albinius''': He's the guardian of the dead. He was created by Fardos when it when he saw that Urgith wouldn't keep the dead at their rest but using them as an army of undeath. Therefore Toth is called the Warden of Souls.\n\n''Jogador'': '''brog'''</br>\n'''Albinius''': Brog is the son of Zathroth and Fafnar is a malovent god. He tried to conquer the realms long ago.\n\n''Jogador'': '''variphor'''</br>\n'''Albinius''': The fiend from beyond. Do not speak or think its name as it might draw its attention on you. \n\n''Jogador'': '''temple''' ''(a conversa é encerrada)''</br>\n'''Albinius''': You already offered enough tomes for us to study and rebuild this temple. Thank you, my child.\n\n''Jogador'': '''bye'''</br>\n'''Albinius''': Farewell, my child.\n}}",
+      "captured_text_sha256": "2931c086a2a75d44d8b910b44b0aba723adcafc5b2787d3916847c2f87ba6e26",
+      "limits": []
+    },
+    "additional_qa16927": {
+      "url": "https://www.tibiaqa.com/16927/does-damage-dealt-when-charm-activated-triggers-your-leech-imbuements",
+      "method": "NORMAL_PUBLIC_HTTP_OR_RETAINED_EXTRACT",
+      "source_role": "DATED_COMMUNITY_PUBLIC_REFERENCE",
+      "capture_date": "2026-10-01",
+      "publication_dates": {
+        "answers_published_on": "2020-06-01",
+        "answers_edited_on": "2021-05-14"
+      },
+      "revision": null,
+      "captured_text_scope": "Complete public HTML tag-stripped and whitespace-collapsed; original digest covers complete HTML bytes",
+      "original_digest": "7546d60e81e82d8341148550767dd1f0ed9a2292d8bfac2cd3a7fc15a4861d5f",
+      "original_digest_scope": "Exact complete HTTP response bytes",
+      "captured_text": "Does the damage dealt when a charm is activated triggers your mana/life leech imbuements? - TibiaQA .sidebar-ad{position:fixed; left:0; vertical-align: top; height: 400px; width:150px;} .adcode{margin:0px;}@media only screen and (max-width: 1499px) {.sidebar-ad{display:none;} } @font-face { font-family: 'Ubuntu'; font-weight: normal; font-style: normal; src: local('Ubuntu'), url('../qa-theme/SnowFlat/fonts/ubuntu-regular.woff2') format('woff2'), url('../qa-theme/SnowFlat/fonts/ubuntu-regular.woff') format('woff'); } @font-face { font-family: 'Ubuntu'; font-weight: bold; font-style: normal; src: local('Ubuntu Bold'), local('Ubuntu-Bold'), url('../qa-theme/SnowFlat/fonts/ubuntu-bold.woff2') format('woff2'), url('../qa-theme/SnowFlat/fonts/ubuntu-bold.woff') format('woff'); } @font-face { font-family: 'Ubuntu'; font-weight: normal; font-style: italic; src: local('Ubuntu Italic'), local('Ubuntu-Italic'), url('../qa-theme/SnowFlat/fonts/ubuntu-italic.woff2') format('woff2'), url('../qa-theme/SnowFlat/fonts/ubuntu-italic.woff') format('woff'); } @font-face { font-family: 'Ubuntu'; font-weight: bold; font-style: italic; src: local('Ubuntu Bold Italic'), local('Ubuntu-BoldItalic'), url('../qa-theme/SnowFlat/fonts/ubuntu-bold-italic.woff2') format('woff2'), url('../qa-theme/SnowFlat/fonts/ubuntu-bold-italic.woff') format('woff'); } .qa-nav-user { margin: 0 !important; } @media (max-width: 979px) { body.qa-template-user.fixed, body[class*=\"qa-template-user-\"].fixed { padding-top: 118px !important; } body.qa-template-users.fixed { padding-top: 95px !important; } } @media (min-width: 980px) { body.qa-template-users.fixed { padding-top: 105px !important;} } window.addEventListener(\"load\", function(){ window.cookieconsent.initialise({ \"palette\": { \"popup\": { \"background\": \"#2c3e50\", \"text\": \"#ffffff\" }, \"button\": { \"background\": \"#4aa3df\", \"text\": \"#ffffff\" } }, \"theme\": \"classic\", \"position\": \"bottom-right\", \"content\": { \"message\": \"This website uses cookies to ensure you get the best browsing experience. \", \"href\": \"http://www.tibiaqa.com/cookies-policy\" } })}); --> var qa_root = '..\\/'; var qa_request = '16927\\/does-damage-dealt-when-charm-activated-triggers-your-leech-imbuements'; var qa_captcha_in = 'qa_captcha_div_1'; var qa_wysiwyg_editor_config = { filebrowserImageUploadUrl: '..\\/wysiwyg-editor-upload?qa_only_image=1', defaultLanguage: 'en', language: '' }; var qa_optids_1 = [\"a_notify\"]; function qa_display_rule_1(first) { var opts = {}; for (var i = 0; i $(window).on('load', function() { for (var i = 0; i window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'UA-111698510-1'); function dhp_ask_user_confirmation(event){ if(!confirm(\"This will delete the post permanently. Are you sure?\")) { event.preventDefault(); return false ; } else { return true ; } } $(document).ready(function(){ $('.qa-user-link').not($('.qa-logged-in-data').children()).mouseover(function() { // .nickname, .bestusers .qa-user-link var recentItem = $(this); var username = recentItem.text(); if(typeof recentItem.attr('data-test') == 'undefined') { $.ajax({ type: 'POST', url: '../userinfo-ajax', data: {ajax:username}, success: function(data) { recentItem.attr('title', data); recentItem.tipsy( {gravity:'s', fade:true, html:true, offset:0 } ); // check if mouse has already left username field if (recentItem.is(':hover')) { recentItem.tipsy('show'); } else { recentItem.tipsy('hide'); } // mark element as loaded recentItem.attr('data-test', 'loaded'); } }); } }); // user info (i) $('.qa-logged-in-points').mouseover(function() { var recentItem = $(this); var username = recentItem.attr('title'); if(typeof recentItem.attr('data-test') == 'undefined') { $.ajax({ type: 'POST', url: '../userinfo-ajax', data: {ajax:username}, success: function(data) { recentItem.attr('title', data); recentItem.tipsy( {gravity: 'n', offset:5, html:true, fade:true }); // check if mouse has already left username field if(recentItem.is(':hover')) { recentItem.tipsy('show'); } else { recentItem.tipsy('hide'); } // mark element as loaded recentItem.attr('data-test', 'loaded'); } }); } }); }); // end ready (adsbygoogle = window.adsbygoogle || []).push({ google_ad_client: \"ca-pub-6822297037425194\", enable_page_level_ads: true }); .qa-q-item-avatar,.qa-q-view-avatar,.qa-a-item-avatar,.qa-c-item-avatar { position:relative; } .qa-who-marker { cursor: pointer; font-size: 200%; margin-right: 1px; vertical-align: sub; line-height: 50%; } .qa-who-marker-expert { color: #4D90FE; } .qa-who-marker-editor { color: #CB9114; } .qa-who-marker-moderator { color: #CDCDCD; } .qa-who-marker-admin { color: #EEDD0F; } .qa-who-marker-supporter{ color: #f39c12; font-size: 170%; margin-right: 0px; } .qa-avatar-marker { right:0; bottom:0; position:absolute; } var b = document.getElementsByTagName('body')[0]; b.className = b.className.replace('qa-body-js-off', 'qa-body-js-on'); Login Remember Register All Activity Questions Hot! Unanswered Tags Users Ask a Question Help Center Ask a Question Does the damage dealt when a charm is activated triggers your mana/life leech imbuements? +1 vote 3,050 views asked May 13, 2020 by spaldix ( 479 points) view edits | edited May 14, 2021 by Xarkost I have always wondered if the damage done to a creature because of a charm count towards the mana leech or life leech that I get from the imbuements that I might have on my set. Lets say for example that I have the Zap charm (which deals 5% of the initial hp of the monster as energy damage) on a Juggernaut (which has 20k hp and is 10% weak to energy) and I have Powerful void on my helmet. Every time the charm is activated it deals a 1100 damage on the Juggernaut, and the T3 mana leech gives you back 8% of the damage you dealt as mana. Will I be receiving 88 mana every time my charm gets activated on the Juggernaut? imbuement (function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML=\"window.__CF$cv$params={r:'a43e1a751abbcdc7',t:'MTc5MDg4NTM0OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);\";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})(); charm Your comment on this question: Your name to display (optional): Email me at this address if a comment is added after mine: Email me if a comment is added after mine Privacy: Your email address will only be used for sending these notifications. Anti-spam verification: To avoid this verification in future, please log in or register . Your answer You are about to post a new answer on TibiaQA ! Make sure that it complies with our Code of Conduct ! You can also check out our guide on providing good answers . Here are a few tips that can help make your answer better. do not post comments as an answer make sure your answer is complete - even if other posts already contain partial answers when possible, confirm your answer with other trusted sources, like the official website if you use any materials from other websites, always provide the source take your time to research the problem or question and feel free to ask for clarification in a comment when needed once your answer is posted, you can still edit it later if you learn more on the topic Thank you for making the TibiaQA knowledge base better! Your name to display (optional): Email me at this address if my answer is selected or commented on: Email me if my answer is selected or commented on Privacy: Your email address will only be used for sending these notifications. Anti-spam verification: To avoid this verification in future, please log in or register . 2 Answers +1 vote answered Jun 1, 2020 by Pepiny Ragoniell ( 1,553 points) view edits | edited May 14, 2021 by Xarkost No they do no count. The the damage dealt by charms on the monsters doesn't trigger the imbuements. Imbuements are only activated by the hits from the character itself. commented Jun 3, 2020 by spaldix ( 479 points) Even with low blow? Your comment on this answer: Your name to display (optional): Email me at this address if a comment is added after mine: Email me if a comment is added after mine Privacy: Your email address will only be used for sending these notifications. Anti-spam verification: To avoid this verification in future, please log in or register . 0 votes answered Jun 1, 2020 by Longshoot ( 1,181 points) view edits | edited May 14, 2021 by Xarkost I had the same doubt my self, and tried the elemental charms/parry/wound don't trigger the imbuements, the only charm that can affect the life and mana leach is low blow. Your comment on this answer: Your name to display (optional): Email me at this address if a comment is added after mine: Email me if a comment is added after mine Privacy: Your email address will only be used for sending these notifications. Anti-spam verification: To avoid this verification in future, please log in or register . (adsbygoogle = window.adsbygoogle || []).push({}); »TibiaQA« | Meta Contribute and receive the Omniscient Owl! ❤ Support TibiaQA together with ★Libi , ★Kikaro and ★shawtay Featured on Meta TibiaQA The Vocation Vanguard contest - winners July 30, 2026 Who should TibiaQA interview next? September 4, 2025 Related questions Does the life leech and mana leech stack in the wheel of destiny? Which main charms have synergy with life and mana drain? About the imbuements of vampirism and mana leech: Is it better single target or AoE to recover the most? Do the damage converter imbuements apply on damage from charms? A knight should use two mana or life leech? Can you imbue mana or life leech on the sword Soulcutter? Most popular tags item quest boss hunting creature game-mechanics event achievement bestiary decoration knight history paladin equipment lore npc house rare spell mount TibiaQA.com is a fansite. The only official website is Tibia.com . The game Tibia and the website Tibia.com are copyrighted by CipSoft GmbH. Find us at Partners Contact us about possible partnership! Send feedback Contact Privacy Policy Partner with TibiaQA Join the TibiaQA team Badges Meta Snow Theme by Q2A Market Powered by Question2Answer ...",
+      "captured_text_sha256": "86883e280f0ee40797a367e2b2fff43c0539cd3b75a0fc02c520bff73cefc89e",
+      "limits": []
+    },
+    "additional_qa24854": {
+      "url": "https://www.tibiaqa.com/24854/how-does-armor-of-creatures-affect-damage-taken-by-players",
+      "method": "NORMAL_PUBLIC_HTTP_OR_RETAINED_EXTRACT",
+      "source_role": "DATED_COMMUNITY_PUBLIC_REFERENCE",
+      "capture_date": "2026-10-01",
+      "publication_dates": {
+        "answer_published_on": "2023-12-04",
+        "answer_edited_on": "2024-10-27"
+      },
+      "revision": null,
+      "captured_text_scope": "Complete public HTML tag-stripped and whitespace-collapsed; original digest covers complete HTML bytes",
+      "original_digest": "2418eefcf94dc1fdd76184c8fcb3fd34dccf399993ffa121b1e12912b6ee5e5e",
+      "original_digest_scope": "Exact complete HTTP response bytes",
+      "captured_text": "How does armor of creatures affect damage taken by players? - TibiaQA .sidebar-ad{position:fixed; left:0; vertical-align: top; height: 400px; width:150px;} .adcode{margin:0px;}@media only screen and (max-width: 1499px) {.sidebar-ad{display:none;} } @font-face { font-family: 'Ubuntu'; font-weight: normal; font-style: normal; src: local('Ubuntu'), url('../qa-theme/SnowFlat/fonts/ubuntu-regular.woff2') format('woff2'), url('../qa-theme/SnowFlat/fonts/ubuntu-regular.woff') format('woff'); } @font-face { font-family: 'Ubuntu'; font-weight: bold; font-style: normal; src: local('Ubuntu Bold'), local('Ubuntu-Bold'), url('../qa-theme/SnowFlat/fonts/ubuntu-bold.woff2') format('woff2'), url('../qa-theme/SnowFlat/fonts/ubuntu-bold.woff') format('woff'); } @font-face { font-family: 'Ubuntu'; font-weight: normal; font-style: italic; src: local('Ubuntu Italic'), local('Ubuntu-Italic'), url('../qa-theme/SnowFlat/fonts/ubuntu-italic.woff2') format('woff2'), url('../qa-theme/SnowFlat/fonts/ubuntu-italic.woff') format('woff'); } @font-face { font-family: 'Ubuntu'; font-weight: bold; font-style: italic; src: local('Ubuntu Bold Italic'), local('Ubuntu-BoldItalic'), url('../qa-theme/SnowFlat/fonts/ubuntu-bold-italic.woff2') format('woff2'), url('../qa-theme/SnowFlat/fonts/ubuntu-bold-italic.woff') format('woff'); } .qa-nav-user { margin: 0 !important; } @media (max-width: 979px) { body.qa-template-user.fixed, body[class*=\"qa-template-user-\"].fixed { padding-top: 118px !important; } body.qa-template-users.fixed { padding-top: 95px !important; } } @media (min-width: 980px) { body.qa-template-users.fixed { padding-top: 105px !important;} } window.addEventListener(\"load\", function(){ window.cookieconsent.initialise({ \"palette\": { \"popup\": { \"background\": \"#2c3e50\", \"text\": \"#ffffff\" }, \"button\": { \"background\": \"#4aa3df\", \"text\": \"#ffffff\" } }, \"theme\": \"classic\", \"position\": \"bottom-right\", \"content\": { \"message\": \"This website uses cookies to ensure you get the best browsing experience. \", \"href\": \"http://www.tibiaqa.com/cookies-policy\" } })}); --> var qa_root = '..\\/'; var qa_request = '24854\\/how-does-armor-of-creatures-affect-damage-taken-by-players'; var qa_captcha_in = 'qa_captcha_div_1'; var qa_wysiwyg_editor_config = { filebrowserImageUploadUrl: '..\\/wysiwyg-editor-upload?qa_only_image=1', defaultLanguage: 'en', language: '' }; var qa_optids_1 = [\"a_notify\"]; function qa_display_rule_1(first) { var opts = {}; for (var i = 0; i $(window).on('load', function() { for (var i = 0; i window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'UA-111698510-1'); function dhp_ask_user_confirmation(event){ if(!confirm(\"This will delete the post permanently. Are you sure?\")) { event.preventDefault(); return false ; } else { return true ; } } $(document).ready(function(){ $('.qa-user-link').not($('.qa-logged-in-data').children()).mouseover(function() { // .nickname, .bestusers .qa-user-link var recentItem = $(this); var username = recentItem.text(); if(typeof recentItem.attr('data-test') == 'undefined') { $.ajax({ type: 'POST', url: '../userinfo-ajax', data: {ajax:username}, success: function(data) { recentItem.attr('title', data); recentItem.tipsy( {gravity:'s', fade:true, html:true, offset:0 } ); // check if mouse has already left username field if (recentItem.is(':hover')) { recentItem.tipsy('show'); } else { recentItem.tipsy('hide'); } // mark element as loaded recentItem.attr('data-test', 'loaded'); } }); } }); // user info (i) $('.qa-logged-in-points').mouseover(function() { var recentItem = $(this); var username = recentItem.attr('title'); if(typeof recentItem.attr('data-test') == 'undefined') { $.ajax({ type: 'POST', url: '../userinfo-ajax', data: {ajax:username}, success: function(data) { recentItem.attr('title', data); recentItem.tipsy( {gravity: 'n', offset:5, html:true, fade:true }); // check if mouse has already left username field if(recentItem.is(':hover')) { recentItem.tipsy('show'); } else { recentItem.tipsy('hide'); } // mark element as loaded recentItem.attr('data-test', 'loaded'); } }); } }); }); // end ready (adsbygoogle = window.adsbygoogle || []).push({ google_ad_client: \"ca-pub-6822297037425194\", enable_page_level_ads: true }); .qa-q-item-avatar,.qa-q-view-avatar,.qa-a-item-avatar,.qa-c-item-avatar { position:relative; } .qa-who-marker { cursor: pointer; font-size: 200%; margin-right: 1px; vertical-align: sub; line-height: 50%; } .qa-who-marker-expert { color: #4D90FE; } .qa-who-marker-editor { color: #CB9114; } .qa-who-marker-moderator { color: #CDCDCD; } .qa-who-marker-admin { color: #EEDD0F; } .qa-who-marker-supporter{ color: #f39c12; font-size: 170%; margin-right: 0px; } .qa-avatar-marker { right:0; bottom:0; position:absolute; } var b = document.getElementsByTagName('body')[0]; b.className = b.className.replace('qa-body-js-off', 'qa-body-js-on'); Login Remember Register All Activity Questions Hot! Unanswered Tags Users Ask a Question Help Center Ask a Question How does armor of creatures affect damage taken by players? +1 vote 2,395 views asked May 3, 2021 by Trululu Gumdrops ( 7,502 points) view edits | bumped Jun 22, 2021 by ♦ Community Every creature on game an armour value, how affect it the damage by player to this creature? creature (function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML=\"window.__CF$cv$params={r:'a43e1a751905f15d',t:'MTc5MDg4NTM0OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);\";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})(); damage commented May 29, 2021 by Violetissime ( 1,324 points) +1 Could you make some improvements to the description and the question in general? Maybe elaborate a little bit more on what you are trying to ask. I don't really understand it. commented May 29, 2021 by Violetissime ( 1,324 points) +1 @Xarkost: armour is the British spelling of armor, I have reverted the edition. Your comment on this question: Your name to display (optional): Email me at this address if a comment is added after mine: Email me if a comment is added after mine Privacy: Your email address will only be used for sending these notifications. Anti-spam verification: To avoid this verification in future, please log in or register . Your answer You are about to post a new answer on TibiaQA ! Make sure that it complies with our Code of Conduct ! You can also check out our guide on providing good answers . Here are a few tips that can help make your answer better. do not post comments as an answer make sure your answer is complete - even if other posts already contain partial answers when possible, confirm your answer with other trusted sources, like the official website if you use any materials from other websites, always provide the source take your time to research the problem or question and feel free to ask for clarification in a comment when needed once your answer is posted, you can still edit it later if you learn more on the topic Thank you for making the TibiaQA knowledge base better! Your name to display (optional): Email me at this address if my answer is selected or commented on: Email me if my answer is selected or commented on Privacy: Your email address will only be used for sending these notifications. Anti-spam verification: To avoid this verification in future, please log in or register . 1 Answer +2 votes answered Dec 4, 2023 by Alip Aldo ( 565 points) selected Oct 27, 2024 by Trululu Gumdrops Best answer My answer contains information valid in the ancient times, but most likely it hasn't changed at all. This info is from a multi-headed friend of a friend, which corrupted my soul with the knowledge brought by the prometheus from the gods. And it certifies that TibiaWiki Formulae article was correct. Basically, it works exactly the same as for regular players. The armor reduces damage taken by melee and distance weapon up to its value. If you hit with a melee weapon, a shield is considered first. (Fun fact: distance weapon counted towards shield block limit and used consumable shields). Then, percentage reductions are processed one by one. Finally, an armor value A is the sum of creature's base armor and equipment (what worked for mobs at that time). The prevented damage is: A if A is 0 or 1 ⌊A/2⌋ + random_uniform mod ⌊A/2⌋ otherwise. That is, if A is odd, then subtract 1 (call it A' ) . The prevented damage is chosen uniformly in the range between A'/2 and A'-1. Thus, an armor value o 1, 2, or 3 will make it always reduce the damage by 1. Your comment on this answer: Your name to display (optional): Email me at this address if a comment is added after mine: Email me if a comment is added after mine Privacy: Your email address will only be used for sending these notifications. Anti-spam verification: To avoid this verification in future, please log in or register . (adsbygoogle = window.adsbygoogle || []).push({}); »TibiaQA« | Meta Contribute and receive the Omniscient Owl! ❤ Support TibiaQA together with ★Libi , ★Kikaro and ★shawtay Featured on Meta TibiaQA The Vocation Vanguard contest - winners July 30, 2026 Who should TibiaQA interview next? September 4, 2025 Related questions How impact the new mitigation from rebalancing to the damage deal from players? What kind of damage is dealed by Evil Prospector? By how much percent has the holy damage of Warzone 9 creatures been reduced? Which creatures reflects any kind of damage and which % of the damage taken do they reflect? Is there any way to see/know the elemental damage of monsters? How do fighting stances affect hit chance and damage? Most popular tags item quest boss hunting creature game-mechanics event achievement bestiary decoration knight history paladin equipment lore npc house rare spell mount TibiaQA.com is a fansite. The only official website is Tibia.com . The game Tibia and the website Tibia.com are copyrighted by CipSoft GmbH. Find us at Partners Contact us about possible partnership! Send feedback Contact Privacy Policy Partner with TibiaQA Join the TibiaQA team Badges Meta Snow Theme by Q2A Market Powered by Question2Answer ...",
+      "captured_text_sha256": "669d6827c6b18b94433efc87af1552b4ac54fe2c39832836fa1866ad69449915",
+      "limits": []
+    },
+    "minerva_public_scroll_use_2025": {
+      "url": "https://www.youtube.com/watch?v=z5feBZoj2lc",
+      "method": "REMOTE_DESKTOP_CHROME_CDP",
+      "source_role": "DATED_PUBLIC_GAMEPLAY_RECORDING",
+      "capture_date": "2026-10-01",
+      "publication_dates": {
+        "published_at": "2025-07-24T11:12:07-07:00"
+      },
+      "revision": null,
+      "captured_text_scope": "Literal visible overlay and look/success text transcribed from named dated public video frames; visual equipment-slot sequence is described separately",
+      "original_digest": "cc88bfdbe37c0724784a07742f4126b89387f065aa89f1b3d3d25c93d730a14e",
+      "original_digest_scope": "Canonical compact sorted public recording transcription receipt with browser-frame SHA256identities",
+      "captured_text": "Carry the imbuement scroll with you and when your imbuement runs out you can use the scroll on your equipment and imbue it that way.\nYou see 2powerful vampirism scrolls.\nThey weigh 5.00 oz.\nYou see a ghost chestplate (Arm:17, distance fighting +2, protection physical +3%).\nImbuements: (Powerful vampirism 20:00h, Empty Slot).\nYou have successfully imbued the object.",
+      "captured_text_sha256": "ef3a0167b28526073cdedad8ffeb8f8264bd142aaf50704e1403a690fee44465",
+      "limits": [
+        "Public tutorial dated2025-07-24, read2026-10-01; character/account/server properties not independently measured. No controlled gameplay by this task.",
+        "Named success and equipped placement only; no explicit final scroll-stack count, rejection, Free purchase or all-tier proof."
+      ],
+      "frames": [
+        {
+          "timestamp_seconds": 118.796991,
+          "capture_filename": "minerva-118-gear.jpg",
+          "sha256": "05d9895164883d4f994953a1e44260b35f82ebba8bacb96a10410b6379a801a3",
+          "visible_scope": "Equipped armor slot and backpack before application"
+        },
+        {
+          "timestamp_seconds": 122.570053,
+          "capture_filename": "minerva-122-text.jpg",
+          "sha256": "65d746acc81288ae148e47fd7779517c04093bc313b7f04aa9036531136786c4",
+          "visible_scope": "Literal look text shows2powerful vampirism scrolls"
+        },
+        {
+          "timestamp_seconds": 132.710495,
+          "capture_filename": "minerva-132-text.jpg",
+          "sha256": "d7d05d983a76113e9d51d8b820d32c78487b91c7a917e6dfc7c0e2b38fa77296",
+          "visible_scope": "Literal look text namesGhostChestplate withPowerfulvampirism20:00h plus success"
+        },
+        {
+          "timestamp_seconds": 132.710495,
+          "capture_filename": "minerva-132-gear.jpg",
+          "sha256": "dddc59b12b75dda8f82b3b7379f9f6033a17b35e478d6964297de1b2c4386155",
+          "visible_scope": "GhostChestplate still in equipped armor slot after success"
+        },
+        {
+          "timestamp_seconds": 121.0,
+          "capture_filename": "minerva-sequence.jpg",
+          "sha256": "8cadeabc75beab08bd57978d2659240854341b1dc63104f87009f0399d36a500",
+          "visible_scope": "First7panels sample public playback at121.000,122.350,123.364,124.359,125.351,126.350,127.360seconds. GhostChestplate remains in torso slot throughout these panels, including disappearance of the lower scroll icon betweenfirsttwo. Remainingpanels are laterplayback/adandexcluded from evidence."
+        }
+      ]
+    },
+    "official_vocation_release_8833": {
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8833#druid",
+      "method": "REMOTE_DESKTOP_CHROME_CDP",
+      "source_role": "OFFICIAL_PUBLIC_RELEASE_REFERENCE",
+      "capture_date": "2026-10-01",
+      "publication_dates": {
+        "published_on": "2026-06-02"
+      },
+      "revision": null,
+      "captured_text_scope": "Complete public article/body innerText; browser after normalHTTP403",
+      "original_digest": "dafbb14827689c54768baea055855edaf122e20606ad35b67c3385ea45ffa2ba",
+      "original_digest_scope": "Exact UTF8 retained public browser text, including dynamic header",
+      "captured_text": "Latest News\nNews Archive\nEvent Schedule\n1971348740205Fankit\n17,111 Players Online\n\n\nJun 02 2026 -\n\nVocation Adjustments Release State\n\near Tibians,\n\nThe recent intense test of the vocation adjustments provided us with a lot of valuable input and feedback. You shared your thoughts, concerns, and suggestions with us, and based on that, we were able to improve and fine-tune numerous aspects of the vocation adjustments throughout the test.\n\nChanges and further fine-tuning after release may therefore happen at any time if we consider them necessary or useful. \nPlease note that the release of the vocation adjustments is still a few weeks away, as we are currently wrapping up their development.\n\nThe following list reflects the state of the vocation adjustments on their release date.\n\nJump to: General | Knight | Paladin | Sorcerer | Druid | Monk\nGeneral\n\nAoE Rune Adjustments\n\nAvalanche, Great Fireball, Thunderstorm and Stone Shower now all have the same base power of 50. \nTheir area of effect in the game remains unchanged.\nExplosion rune area has been increased from affecting 5 to 9 squares.\nCharm Double Proc Adjustment\nAuto-attacks now only trigger charms on their main target. This currently only affects AoE ammunition.\n\nGift of Life Improvement\n\nNow additionally recovers 20/25/30% of your maximum mana.\n\nGroup XP Bonus\n\nThe XP bonus for groups consisting of two and three different vocations has been increased:\nTwo different vocations: 30% -> 35%\nThree different vocations: 60% -> 70%\nCombat Mode Removal\nCombat modes are no longer available.\nTo compensate for the bonuses they offered:\nThe attack value of all characters has been increased by 20%.\nThe defense value of all shields has been increased by 30%.\nThe defense value of all spellbooks has been increased by 60%.\nMitigation Adjustments\nThe mitigation formula has been adjusted to reflect the removal of combat modes.\nThe type of weapon you wear now has a much larger impact on your mitigation.\nDedication perks now grant 0.075% mitigation multiplier per promotion point instead of 0.03%.\nGems now provide 20/22/24/30% mitigation multiplier instead of 5/5.5/6/7.5%.\nMonster mitigation has been increased.\nPotion Management Improvements\nA new mana potion has been added: The superior mana potion. It costs 254 gold, grants 240 to 360 mana, requires level 100 and can be used by paladins, monks, sorcerers and druids.\nTwo new distilled mana potions have been added: The distilled superior mana potion and the distilled ultimate mana potion.\nDistilled potions have the same effect as their non-distilled versions and can be used by all vocations. However, they cost 50% more gold.\nGreat mana potions, including corresponding kegs and casks, can now be used by all vocations.\nEnergy Ring Adjustment\nEnergy ring now consumes 2 mana per point of damage instead of 1.\nUltimate and Intense Healing Rune Adjustment\nUltimate Healing runes and Intense Healing runes can no longer be used on other characters.\n\nStance Quality-of-Life Changes\nActive stances now persist between sessions instead of resetting to the default stance. After logging in, characters will return with the same stance they had when logging out.\nIt is now possible to have no stance active.\nOnly one stance can be active at a time. Sorcerers are an exception, they can have one elemental stance and one crippling stance active at the same time.\nJump to: General | Knight | Paladin | Sorcerer | Druid | Monk\nKnight\n\nStances\n\nStarting with the promotion, a knight can now switch between two stances:\nBloodrage: Grants 30% sword/axe/club fighting and increases damage taken by 15%.\nProtector: Grants 30% shielding, and reduces damage taken as well as damage done by 15%.\nThe skill bonus of both stances impacts your total skill (including bonuses from gear and other buffs like potions).\nThese stances replace the spells Bloodrage and Protector which are no longer available.\nMana Cost Adjustments\nBerserk: Mana cost increased from 115 to 125.\nFierce Berserk: Mana cost increased from 340 to 360.\nGroundshaker: Mana cost increased from 160 to 200.\nNew Spells\nShield Bash:\nHits your target, dealing damage based on the defense value of your shield and reducing the damage of the target's next auto-attack within 10 seconds by 50%.\n55 base power, 4 seconds cooldown, 30 mana and learned at level 18.\nCan only be used while wielding a shield.\nShield Slam:\nHits all adjacent enemies, dealing damage based on the defense value of your shield and reducing the damage of the targets' next auto-attack within 10 seconds by 50%.\n52 base power, 6 seconds cooldown, 110 mana and learned at level 30.\nCan only be used while wielding a shield.\nHealing Adjustments\nHealing spells of knights now scale better with magic level and shielding.\nConsequently, the base power of all knight healing spells has been reduced and the values of proficiency perks have been doubled.\nBruise Bane: Base power is now 15.\nWound Cleansing: Base power is now 70.\nFair Wound Cleansing: Base power is now 225.\nIntense Wound Cleansing: Base power is now 500. Cooldown reduced from 10 to 2 minutes. All augments that reduced its cooldown were adjusted accordingly by 80%.\nAll knight healing spells now have a group cooldown of 2 seconds instead of 1.\nExisting Spell Improvements\nChivalrous Challenge: Jump range has been increased to 7 and now hits an additional target.\nFront Sweep: Base power has been increased from 72 to 80.\n\nWheel of Destiny Adjustments\n\nFront Sweep augments:\nI: Now grants +40% base power.\nII: Now increases shape to hit two additional squares to the sides of your character, for a total of 5 affected squares.\nShield Slam augments:\nI: +15% life leech.\nII: +25% damage reduction, for a total of 75%.\nReplace Chivalrous Challenge I/II.\nGroundshaker: Augment I and augment II have been switched. The positions of Groundshaker and Shield Slam augments have been switched in the wheel.\nBattle Healing has been reworked:\nNow increases the effect of your healing spells by 10%.\nThis bonus is tripled while wearing a shield.\nNo longer grants healing when challenging.\nCombat Mastery has been reworked:\nTake less damage the lower your life is (1% reduced damage taken per 12/10/8% missing hp). This bonus is doubled while wielding a shield.\nDeal more damage the lower your targets life is (1% increased damage per 12/10/8% missing hp). This bonus is doubled while wielding a two-handed weapon.\nJump to: General | Knight | Paladin | Sorcerer | Druid | Monk\nPaladin\n\nStances\n\nStarting with the promotion, a paladin can now switch between two stances:\nSharpshooter: Grants 40% distance fighting. The skill bonus impacts your total skill (including bonuses from gear and other buffs like potions). Replaces the spell Sharpshooter which is no longer available.\nDivine Defiance: Grants 7.5% of distance fighting as holy and healing magic level as well as 15% dodge against non adjacent enemies.\nNew Spells\nDivine Barrage:\nHits your target and the area around it with holy damage.\n140 base power, 4 seconds cooldown, 175 mana and learned at level 70. Same size as diamond arrows.\nThis spell scales with your magic level (like Divine Caldera).\nEthereal Barrage:\nHits your target and the area around it with physical damage.\n40 base power, 4 seconds cooldown, 135 mana and learned at level 60. Same size as diamond arrows.\nThis spell scales with your distance fighting (like Strong Ethereal Spear).\nBoth spells allow three targeting modes:\nWith crosshair.\nWith cursor position.\nBelow your target, or if you have no target below your character.\nNew AoE Ammunition\nNew AoE arrows that hit a total of 13 squares:\nShatterstorm arrow: Deals physical damage with 27 attack. Requires level 50. Costs 45 gold per arrow.\nFirestorm arrow: Deals fire damage with 21 attack. Requires level 125 and costs 75 gold per arrow.\nTerrastorm arrow: Deals earth damage with 21 attack. Requires level 125 and costs 75 gold per arrow.\nFroststorm arrow: Deals ice damage with 21 attack. Requires level 125 and costs 75 gold per arrow.\nThunderstorm arrow: Deals energy damage with 21 attack. Requires level 125 and costs 75 gold per arrow.\nExisting Spell Adjustments\nSwift Foot: Now allows attacking and casting while being active, but damage dealt is reduced by 30%. Individual cooldown has been reduced from 10 to 4 seconds, and secondary group cooldown from 10 to 2 seconds.\nDivine Caldera: Base power has been increased from 140 to 160\nSalvation: Base healing has been increased from 400 to 500.\nDivine Dazzle: Jump range has been increased to 7.\nDivine Grenade: Now allows three targeting modes.\nWith crosshair.\nWith cursor position.\nBelow your target, or if you have no target below your character.\n\nWheel of Destiny Adjustments\n\nDivine Barrage augments:\nI: +10% base damage.\nII: +15% base damage.\nReplace Swift Foot I/II.\nEthereal Barrage augments:\nI: +10% life leech.\nII: +10% crit chance.\nReplace Sharpshooter I/II.\nDivine Dazzle augments:\nI: Now adds +2 targets instead of +1.\nII: Now reduces cooldown by 8 seconds instead of 4 seconds.\nJump to: General | Knight | Paladin | Sorcerer | Druid | Monk\nSorcerer\n\nElemental Stances\n\nStarting with the promotion, a sorcerer can now switch between three elemental stances:\nMaster of Flames: Fire spells have 4% increased base power. Additionally, casting a fire spell converts the next non-fire spell into fire damage.\nMaster of Thunder: Energy spells have 4% increased critical hit chance. Additionally, casting an energy spell converts the next non-energy spell into energy damage.\nMaster of Decay: Death spells have 30% increased critical extra damage. Additionally, casting a death spell converts the next non-death spell into death damage.\nCrippling Stances\nThe two existing crippling spells Sap Strength and Expose Weakness are turned into passive stances that sorcerers can switch between. They are unlocked with level 175:\nSap Strength: Your spells, runes and auto attacks apply Sap Strength to their targets, reducing the damage they deal by 10%.\nExpose Weakness: Your spells, runes and auto attacks apply Expose Weakness to their targets, granting 8% elemental pierce to attackers.\nThese stances replace the Sap Strength and Expose Weakness which are no longer available.\nSorcerers can have one elemental stance and one crippling stance active at the same time.\nNew Spell\nDeath Echo:\nHits a 5x5 area and after a 1 second delay the same area is hit again for 50% of the initial damage.\n85 base power, 6 seconds cooldown, 155 mana and learned at level 120.\nHas three targeting modes:\nWith crosshair.\nWith cursor position.\nBelow your target, or if you have no target below your character.\nExisting Spell Improvements\nGreat Death Beam: Becomes a regular spell that can be learnt from level 66.\nLightning: Now chains to 2 additional targets. Base power has been increased from 70 to 110, range increased from 5 to 7.\nStrong Energy Strike: Base power has been increased from 90 to 125, range from 3 to 7.\nStrong Flame Strike: Base power has been increased from 90 to 125, range from 3 to 7.\nUltimate Energy Strike: Base power has been increased from 150 to 210, range from 3 to 7.\nUltimate Flame Strike: Base power has been increased from 150 to 210, range from 3 to 7.\nNew Survivability Mechanic\nMana Buffer:\nIf incoming damage would exceed current hit points, the overkill amount is multiplied by 8 and subtracted from mana.\nAdditionally, 25% of the character's maximum mana is consumed, but this additional mana consumption can only trigger once every 2 seconds.\nIf mana runs out, the character dies.\nMana Buffer is available for sorcerers and druids.\nWand Improvements\nNumerous Strike imbuement limitations have been removed.\nAttacks now generate mana instead of consuming mana.\nRange has been increased.\n\nWheel of Destiny Adjustments\n\nSpecial Spells augments:\nI: –4 seconds cooldown.\nII: +50% base damage.\nReplace Magic Shield I/II.\nDeath Echo augments:\nI: –2 seconds cooldown.\nII: +8% base damage.\nReplace Sap Strength I/II\nBeam Mastery has been reworked:\nBeam now hits adjacent squares for 40/60/80% of the initial damage.\nStill increases damage and reduces cooldown based on the amount of targets hit by the central beam.\nLord of Destruction replaces Drain Body:\nImproves the buffs provided by the elemental stances.\nMaster of Flames gains +2/3/4% base power for fire spells (for a total of +6/7/8% base power).\nMaster of Thunder gains +2/3/4% critical hit chance for energy spells (for a total of +6/7/8% critical hit change).\nMaster of Decay gains +15/22.5/30% critical extra damage for death spells (for a total of 45/52.5/60% critical extra damage).\nFocus Mastery now additionally reduces the group cooldown of focus spells by 2 seconds.\nEnergy Wave augments I and II have been switched:\nI: Affected area enlarged.\nII: Now increases base damage by +10% instead of 5%.\nJump to: General | Knight | Paladin | Sorcerer | Druid | Monk\nDruid\n\nStances\n\nStarting with the promotion, a druid can now switch between two stances:\nShared Conservation: Heal Friend and Nature's Embrace heal a secondary party target in the game window for 30% of their healing. Cannot be the same target as your original target. Additionally, your self-healing is increased by 10%.\nElemental Synthesis: Grants 10% of your magic level as additional ice and earth magic level.\nHealing Adjustments\nHeal Friend and Nature's Embrace now heal more consistently (lower highs and higher lows).\nNature’s Embrace: Base power healing has been increased from 650 to 2000.\nNew Spells\nForked Glacier:\nHits your target and up to 6 additional targets nearby, dealing ice damage.\n97 base power, 6 seconds cooldown, 180 mana and learned at level 90.\nForked Thorns:\nHits your target and up to 5 additional targets nearby, dealing earth damage.\n105 base power, 6 seconds cooldown, 180 mana and learned at level 80.\nExisting Spell Improvements\nStrong Terra Strike: Base power has been increased from 90 to 115, range from 3 to 7.\nStrong Ice Strike: Base power has been increased from 90 to 115, range from 3 to 7.\nUltimate Terra Strike: Base power has been increased from 150 to 195, range from 3 to 7.\nUltimate Ice Strike: Base power has been increased from 150 to 195, range from 3 to 7.\nStrong Ice Wave: Cooldown has been reduced to 4 seconds and size has been increased.\nWrath of Nature's base damage has been increased from 150 to 175 and is now more consistent.\nNew Survivability Mechanic\nMana Buffer:\nIf incoming damage would exceed current hit points, the overkill amount is multiplied by 8 and subtracted from mana.\nAdditionaly, 25% of the character's maximum mana is consumed, but this additional mana consumption can only trigger once every 2 seconds.\nIf mana runs out, the character dies.\nMana Buffer is available for sorcerers and druids.\nRod Improvements\nNumerous Strike imbuement limitations have been removed.\nAttacks now generate mana instead of consuming mana.\nRange has been increased.\n\nWheel of Destiny Adjustments\n\nForked Spells augments:\nI: –2s cooldown.\nII: +1 target.\nImprove both Forked Glacier and Forked Thorns.\nHeal Friend augments:\nI: +4% base heal.\nII: +6% base heal.\nTerra Wave augment II now grants 10% life leech instead of 5.\nStrong Ice Wave augments:\nI: +6% base damage.\nII: Affected area enlarged.\nHealing Link now heals yourself for 25% of the healing of Nature's Embrace or Heal Friend instead of 10.\nBlessing of the Grove has been adjusted:\nHealing spells can now critically heal, using critical hit chance and critical extra damage.\nExtra healing has been adjusted to 5% / 7.5% / 10% against targets below 60% of their hit points.This effect is doubled against targets below 30% of their hit points. \nJump to: General | Knight | Paladin | Sorcerer | Druid | Monk\nMonk\nVirtues\nVirtues now additionally grant bonuses to nearby party members:\nKnight: –3% damage received.\nPaladin: +6% auto attack damage.\nSorcerer: +6% spell and rune damage.\nDruid: +12% healing done.\nMentor Other has been removed to compensate for this change.\nMonks benefit from the same bonuses while serene, as long as the respective vocation is present.\nNew Spell\nThousand Fist Blows:\nBuilder spell that hits your target and the area around it.\n62 base power, 12 seconds cooldown, 145 mana and learned at level 120.\nAllows three targeting modes:\nWith crosshair.\nWith cursor position.\nBelow your target, or if you have no target below your character.\nOther Improvements\nThe Way of the Monk quest bonuses have been expanded. In addition to granting up to 100% increased damage for auto-attacks, each shrine now grants 2% damage reduction against melee auto attacks, up to a total of 20%.\nMass Spirit Mend is no longer a spender spell. Its cooldown, base power and icon have been adjusted accordingly. The caster only receives a lesser effect, similar in power to a regular Spirit Mend.\nMystic Repulse: Base power has been increased from 72 to 85 and cooldown has been reduced from 20 to 12 seconds.\nChained Penance and Spiritual Outburst: Jump range has been increased by 1. Additionally, they now chain to the closest target instead of the target with the highest health percentage.\nThe monk's familiar is now better at hitting enemies with its spells.\n\nWheel of Destiny Adjustments\n\nThousand Fist Blows augments:\nI: +40% critical extra damage.\nII: –6 seconds cooldown.\nReplace Sweeping Takedown I/II.\nFlurry of Blows augment I enlarges the affected area instead of granting 5% life leech\nGuiding Presence now shares 100% of the mantra effect instead of 50%.\nSanctuary: In addition to its current effect, it now increases the damage you deal to adjacent enemies by 10% and the healing you do to adjacent allies by 10%.\nMystic Repulse augment I now reduces the cooldown by –6 seconds instead of –4.\nMass Spirit Mend augment II now reduces the cooldown by –4 seconds instead of enlarging the affected area.\nJump back to: General | Knight | Paladin | Sorcerer | Druid | Monk\n\nWe hope that you will approach the upcoming release with curiosity and an open mind to find out how these adjustments, the new spells and features fit best into your gameplay and how they can spice it up. Naturally, adapting or even innovating your hunting style takes time. We also know from the past that the full impact and power of such changes only unfold gradually after release. We will, of course, observe this closely. \n\nStay tuned,\nYour Community Managers\n\n\n\n» Comment on this news\n\n\n\n\nCopyright by CipSoft GmbH. All rights reserved.\nAbout CipSoft | Service Agreement | Privacy Policy\n\nBuy Epic Decoration!\n\nView all Fansites\nOur website makes use of cookies (sadly not the delicious, crumbly ones) and similar technologies. If you accept them, we share information with our partners for social media, advertising and analysis.\n\nPlease let us know which cookies we can use.",
+      "captured_text_sha256": "dafbb14827689c54768baea055855edaf122e20606ad35b67c3385ea45ffa2ba",
+      "limits": [
+        "Release-state8833June2was prospective on publication; primary8849June16explicitly announces live release and links that state. Current research records the released named rules, not universal combat implementation."
+      ]
+    },
+    "official_vocation_release_8849": {
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8849",
+      "method": "REMOTE_DESKTOP_CHROME_CDP",
+      "source_role": "OFFICIAL_PUBLIC_RELEASE_REFERENCE",
+      "capture_date": "2026-10-01",
+      "publication_dates": {
+        "published_on": "2026-06-16"
+      },
+      "revision": null,
+      "captured_text_scope": "Complete public article/body innerText; browser after normalHTTP403",
+      "original_digest": "12b6053217bc635927417f1aa0381042b862699d3383ce1896d84bcebea1cb29",
+      "original_digest_scope": "Exact UTF8 retained public browser text, including dynamic header",
+      "captured_text": "Latest News\nNews Archive\nEvent Schedule\n1971348740205Fankit\n17,011 Players Online\n\n\nJun 16 2026 -\n\nVocation Adjustments Release \n\near Tibians,\n\nThe wait is finally over: the Vocation Adjustments are now available to all players.\n\nThis update is the result of a tremendous amount of work, countless iterations, and a significant volume of player feedback. Throughout the process, we reviewed your suggestions and concerns, making further adjustments where necessary. Our goal has always been to find the right balance for every vocation, and we hope that these changes will make playing your favorite vocation even more enjoyable and rewarding.\n\nNow it's time to put the adjustments to the test. Hunt monsters, challenge bosses, battle other players, and let us know how the changes feel in practice. Your feedback remains invaluable and will help us continue refining the game experience.\n\nFor a detailed overview of the changes made to each vocation, please refer to the Vocation Adjustments Release State article.\n\nMay the enemies tremble!\n\nYour Community Managers\n\n\n\n» Comment on this news\n\n\n\n\nCopyright by CipSoft GmbH. All rights reserved.\nAbout CipSoft | Service Agreement | Privacy Policy\n\nGet Supplies Anywhere!\n\nView all Fansites\nOur website makes use of cookies (sadly not the delicious, crumbly ones) and similar technologies. If you accept them, we share information with our partners for social media, advertising and analysis.\n\nPlease let us know which cookies we can use.",
+      "captured_text_sha256": "12b6053217bc635927417f1aa0381042b862699d3383ce1896d84bcebea1cb29",
+      "limits": [
+        "Release-state8833June2was prospective on publication; primary8849June16explicitly announces live release and links that state. Current research records the released named rules, not universal combat implementation."
+      ]
     }
   },
   "facts": [
@@ -875,6 +1028,211 @@
         "Explicit named Powerful recovery gate/chance in a current knightPvP answer; not controlled gameplay logs, immunity-duration evidence or a blanket PvE/PvP lock model.",
         "No persistent immunity flag/lifetime/reset is asserted by this sentence."
       ]
+    },
+    {
+      "id": "etcher_raw_documented_purchase_conditions",
+      "group": "etcher_npc_purchase_requires_premium",
+      "value": {
+        "price_gold": 30000,
+        "temple_constructed_required": true,
+        "five_tomes_required": true
+      },
+      "qualification": "CURRENT_REVISIONED_COMMUNITY_STATEMENT",
+      "quote_refs": [
+        {
+          "source_id": "wiki_br_etcher_raw_current",
+          "text": "* Pode ser adquirido com o NPC [[Albinius]] por 30.000 [[Gold Coin|GP]], desde que o templo da [[Forgotten Knowledge Quest]] tenha sido construído no servidor e o jogador tenha entregue os cinco tomos."
+        }
+      ],
+      "limits": [
+        "The acquisition sentence does not explicitly answer Premium. BR blank-scroll notes also omit Premium despite the official requirement; omission is not proof of an exemption."
+      ]
+    },
+    {
+      "id": "albinius_current_scroll_etcher_offer",
+      "group": "etcher_npc_purchase_requires_premium",
+      "value": {
+        "sells": [
+          "Blank Imbuement Scroll",
+          "Etcher"
+        ]
+      },
+      "qualification": "CURRENT_REVISIONED_COMMUNITY_NPC_TABLE",
+      "quote_refs": [
+        {
+          "source_id": "wiki_br_albinius_raw_current",
+          "text": "| Blank Imbuement Scroll"
+        },
+        {
+          "source_id": "wiki_br_albinius_raw_current",
+          "text": "| Etcher"
+        }
+      ],
+      "limits": [
+        "Revision432162 published2026-01-24 supersedes the obsolete2024NPC mirror. Listing does not independently establish account eligibility."
+      ]
+    },
+    {
+      "id": "historical_named_charm_damage_leech_exclusion",
+      "group": "combat_pipeline",
+      "value": {
+        "named_damage_contexts": [
+          "elemental charms",
+          "Parry",
+          "Wound"
+        ],
+        "leech_trigger": false,
+        "Low_Blow_can_affect_leech": true
+      },
+      "qualification": "DATED_COMMUNITY_2020_EDITED_2021",
+      "quote_refs": [
+        {
+          "source_id": "additional_qa16927",
+          "text": "I had the same doubt my self, and tried the elemental charms/parry/wound don't trigger the imbuements, the only charm that can affect the life and mana leach is low blow."
+        }
+      ],
+      "limits": [
+        "Historical named contexts only; does not certify current2025/2026charm additions or universal damage-source composition."
+      ]
+    },
+    {
+      "id": "historical_armor_order_additional_statement",
+      "group": "native_effect_composition",
+      "value": [
+        "shield for melee",
+        "percentage reductions individually",
+        "armor"
+      ],
+      "qualification": "OLD_KNOWLEDGE_REPORTED_2023_EDITED_2024_CONTINUITY_ASSUMED",
+      "quote_refs": [
+        {
+          "source_id": "additional_qa24854",
+          "text": "My answer contains information valid in the ancient times, but most likely it hasn't changed at all."
+        },
+        {
+          "source_id": "additional_qa24854",
+          "text": "If you hit with a melee weapon, a shield is considered first."
+        },
+        {
+          "source_id": "additional_qa24854",
+          "text": "Then, percentage reductions are processed one by one."
+        },
+        {
+          "source_id": "additional_qa24854",
+          "text": "Finally, an armor value A is the sum of creature's base armor and equipment (what worked for mobs at that time)."
+        }
+      ],
+      "limits": [
+        "Author explicitly labels ancient knowledge and assumes continuity. Current armor-order source conflict remains unresolved."
+      ]
+    },
+    {
+      "id": "powerful_vampirism_scroll_equipped_ghost_chestplate",
+      "group": "scroll_application_equipped_target",
+      "value": {
+        "accepted": true,
+        "family": "Vampirism",
+        "tier": "Powerful",
+        "target": "Ghost Chestplate",
+        "target_remained_equipped": true,
+        "result_display": "20:00h"
+      },
+      "qualification": "DATED_PUBLIC_RECORDING_NAMED_SUCCESS_2025_07_24",
+      "quote_refs": [
+        {
+          "source_id": "minerva_public_scroll_use_2025",
+          "text": "Imbuements: (Powerful vampirism 20:00h, Empty Slot)."
+        },
+        {
+          "source_id": "minerva_public_scroll_use_2025",
+          "text": "You have successfully imbued the object."
+        }
+      ],
+      "limits": [
+        "Observed video frames118.797–132.710show the same armor in the equipped slot before/after application. Named case, corroborated by all3engine paths; no blanket certification of every tier or failure case.",
+        "2025publication is historical source provenance, not a new2026controlled server observation.",
+        "Sampled playback121.000–127.360keeps the torso item equipped through the observed scroll-icon change interval121.000–122.350. No unseen frames, hidden cuts or arbitrary scroll tiers are certified."
+      ]
+    },
+    {
+      "id": "grove_released_critical_healing",
+      "group": "combat_pipeline",
+      "value": {
+        "scope": "DRUID_BLESSING_OF_THE_GROVE_HEALING_SPELLS",
+        "critical_healing_permitted": true,
+        "uses_critical_hit_chance": true,
+        "uses_critical_extra_damage": true,
+        "all_vocations_unconditional": false,
+        "independent_critical_roll_order": null,
+        "native_and_imbuement_source_composition": null
+      },
+      "qualification": "PRIMARY_OFFICIAL_LIVE_RELEASE_2026_06_16_LINKED_TO_RELEASE_STATE",
+      "quote_refs": [
+        {
+          "source_id": "official_vocation_release_8833",
+          "text": "Healing spells can now critically heal, using critical hit chance and critical extra damage."
+        },
+        {
+          "source_id": "official_vocation_release_8849",
+          "text": "The wait is finally over: the Vocation Adjustments are now available to all players."
+        }
+      ],
+      "limits": [
+        "Primary release8849links release-state8833; this supersedes test-only exclusion for the named released rule.",
+        "No universal Life rounding, critical RNG ordering or unrestricted wand/rod per-item compatibility is inferred."
+      ]
+    },
+    {
+      "id": "terra_wave_ii_released_life_leech",
+      "group": "combat_pipeline",
+      "value": {
+        "vocation": "Druid",
+        "augment": "Terra Wave II",
+        "life_leech_bps": 1000,
+        "previous_bps": 500
+      },
+      "qualification": "PRIMARY_OFFICIAL_LIVE_RELEASE_2026_06_16_LINKED_TO_RELEASE_STATE",
+      "quote_refs": [
+        {
+          "source_id": "official_vocation_release_8833",
+          "text": "Terra Wave augment II now grants 10% life leech instead of 5."
+        },
+        {
+          "source_id": "official_vocation_release_8849",
+          "text": "The wait is finally over: the Vocation Adjustments are now available to all players."
+        }
+      ],
+      "limits": [
+        "Primary release8849links release-state8833; this supersedes test-only exclusion for the named released rule.",
+        "No universal Life rounding, critical RNG ordering or unrestricted wand/rod per-item compatibility is inferred."
+      ]
+    },
+    {
+      "id": "released_wand_rod_strike_limits_removed",
+      "group": "combat_pipeline",
+      "value": {
+        "equipment_groups": [
+          "wand",
+          "rod"
+        ],
+        "numerous_limits_removed": true,
+        "unrestricted_all_weapon_allowlist_proven": false
+      },
+      "qualification": "PRIMARY_OFFICIAL_LIVE_RELEASE_2026_06_16_LINKED_TO_RELEASE_STATE",
+      "quote_refs": [
+        {
+          "source_id": "official_vocation_release_8833",
+          "text": "Numerous Strike imbuement limitations have been removed."
+        },
+        {
+          "source_id": "official_vocation_release_8849",
+          "text": "The wait is finally over: the Vocation Adjustments are now available to all players."
+        }
+      ],
+      "limits": [
+        "Primary release8849links release-state8833; this supersedes test-only exclusion for the named released rule.",
+        "No universal Life rounding, critical RNG ordering or unrestricted wand/rod per-item compatibility is inferred."
+      ]
     }
   ],
   "groups": [
@@ -925,7 +1283,9 @@
     {
       "id": "scroll_application_equipped_target",
       "status": "BOUNDED_PUBLIC_FACTS_AND_EXPLICIT_RESIDUALS",
-      "qualified_fact_refs": [],
+      "qualified_fact_refs": [
+        "powerful_vampirism_scroll_equipped_ghost_chestplate"
+      ],
       "existing_public_source_refs": [
         {
           "catalogue": "global-rules-evidence.json",
@@ -938,15 +1298,10 @@
       ],
       "known_scope": [
         "Scroll account/quest exemptions, compatibility, empty-slot requirement and Powerful location-anywhere statement are sourced.",
-        "All3 references explicitly update stats for target parent==player, showing equipped acceptance in inspected paths; action-ID coverage is separately48/48/72."
+        "All3 references explicitly update stats for target parent==player, showing equipped acceptance in inspected paths; action-ID coverage is separately48/48/72.",
+        "Public Minerva tutorial shows successfulPowerfulVampirism20:00h onGhostChestplate while the armor remains equipped, dated2025-07-24. The named-case evidence criterion is satisfied."
       ],
-      "remaining_public_fields": [
-        {
-          "description": "Global acceptance of a still-equipped target, scoped to a named completed-scroll tier or an explicit general completed-scroll rule.",
-          "value": null,
-          "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
-        }
-      ],
+      "remaining_public_fields": [],
       "runtime_contract": {
         "owner": "ARCHITECT_COORDINATOR_162",
         "assignment": "IMBUE-SCROLL-1 and Item/equipment owners implement target admission and effect refresh; exceptional races belong to IMBUE-1.",
@@ -1022,7 +1377,11 @@
       "qualified_fact_refs": [
         "current_mana_formula",
         "current_life_critical_damage_increases_leech",
-        "current_life_and_mana_prey_exclusion"
+        "current_life_and_mana_prey_exclusion",
+        "historical_named_charm_damage_leech_exclusion",
+        "grove_released_critical_healing",
+        "terra_wave_ii_released_life_leech",
+        "released_wand_rod_strike_limits_removed"
       ],
       "existing_public_source_refs": [
         {
@@ -1037,21 +1396,14 @@
       "known_scope": [
         "Strike additive modifiers and intrinsic baseline are sourced.",
         "Current Mana formula, per-target ceiling, critical inclusion, Prey exclusion and overkill are explicitly community-qualified; current Life independently excludes Prey.",
-        "Historical Life equal-hit, named charm and ammo cases are bounded; all3 reference combat pipelines and differences are traced."
+        "Historical Life equal-hit, named charm and ammo cases are bounded; all3 reference combat pipelines and differences are traced.",
+        "Critical healing is source-selected forDruid/BlessingOfTheGrove healing spells, released16June2026; critical chance and extra damage are used.",
+        "TerraWaveII grants1000bpsLifeLeech, previously500bps. Numerouswand/rodStrike restrictions were removed; exact unrestricted allowlists are not asserted.",
+        "Fine formula questions are optional operational profiles, not absent24-family effect amounts or72recipes."
       ],
       "remaining_public_fields": [
         {
           "description": "Current universal Life unequal-target/zero-damage/overkill/rounding formula is not stated in retrieved public references.",
-          "value": null,
-          "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
-        },
-        {
-          "description": "Critical-healing permission for named current spell/vocation/augment contexts remains unqualified.",
-          "value": null,
-          "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
-        },
-        {
-          "description": "These are optional operational formula/profile facts, not absent 24-family effect amounts or72 recipes.",
           "value": null,
           "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
         }
@@ -1208,7 +1560,8 @@
         "protection_unrounded_equipment_composition",
         "mixed_native_and_imbued_earth_protection_reported_example",
         "same_item_matching_innate_effect_exclusion",
-        "same_imbuement_on_distinct_allowed_equipment"
+        "same_imbuement_on_distinct_allowed_equipment",
+        "historical_armor_order_additional_statement"
       ],
       "existing_public_source_refs": [
         {
@@ -1286,7 +1639,10 @@
     {
       "id": "etcher_npc_purchase_requires_premium",
       "status": "BOUNDED_PUBLIC_FACTS_AND_EXPLICIT_RESIDUALS",
-      "qualified_fact_refs": [],
+      "qualified_fact_refs": [
+        "etcher_raw_documented_purchase_conditions",
+        "albinius_current_scroll_etcher_offer"
+      ],
       "existing_public_source_refs": [
         {
           "catalogue": "global-rules-evidence.json",
@@ -1338,7 +1694,8 @@
       ],
       "known_scope": [
         "Blank inscription1 is an independently sourced operation; completed-scroll account/quest exemptions and compatibility are filled.",
-        "All3 executable references request1 filled scroll on successful normal application and0 before named ordinary validation rejections; actual-pointer versus matching-type removal and48/48/72 action coverage are recorded."
+        "All3 executable references request1 filled scroll on successful normal application and0 before named ordinary validation rejections; actual-pointer versus matching-type removal and48/48/72 action coverage are recorded.",
+        "The public video visibly reports2powerful vampirism scrolls before successful application; a scroll icon disappears, but no explicit final stack quantity is shown. Exact success units remain unselected."
       ],
       "remaining_public_fields": [
         {
@@ -1430,14 +1787,80 @@
       "url": "https://www.youtube.com/watch?v=z5feBZoj2lc",
       "method": "REMOTE_DESKTOP_CHROME_CDP_AFTER_ORDINARY_HTTP403",
       "metadata_read": true,
-      "gameplay_observed": false,
-      "limitation": "YouTube player readyState0; public media returned403 in Chrome. Description alone does not establish units/equipped target."
+      "gameplay_observed": true,
+      "limitation": "Fresh browser profile loaded public media at4K. Named equippedGhostChestplate/PowerfulVampirism success observed; no explicit final scroll-stack counter. No player-controlled gameplay performed.",
+      "frame_refs": [
+        {
+          "timestamp_seconds": 118.796991,
+          "capture_filename": "minerva-118-gear.jpg",
+          "sha256": "05d9895164883d4f994953a1e44260b35f82ebba8bacb96a10410b6379a801a3",
+          "visible_scope": "Equipped armor slot and backpack before application"
+        },
+        {
+          "timestamp_seconds": 122.570053,
+          "capture_filename": "minerva-122-text.jpg",
+          "sha256": "65d746acc81288ae148e47fd7779517c04093bc313b7f04aa9036531136786c4",
+          "visible_scope": "Literal look text shows2powerful vampirism scrolls"
+        },
+        {
+          "timestamp_seconds": 132.710495,
+          "capture_filename": "minerva-132-text.jpg",
+          "sha256": "d7d05d983a76113e9d51d8b820d32c78487b91c7a917e6dfc7c0e2b38fa77296",
+          "visible_scope": "Literal look text namesGhostChestplate withPowerfulvampirism20:00h plus success"
+        },
+        {
+          "timestamp_seconds": 132.710495,
+          "capture_filename": "minerva-132-gear.jpg",
+          "sha256": "dddc59b12b75dda8f82b3b7379f9f6033a17b35e478d6964297de1b2c4386155",
+          "visible_scope": "GhostChestplate still in equipped armor slot after success"
+        },
+        {
+          "timestamp_seconds": 121.0,
+          "capture_filename": "minerva-sequence.jpg",
+          "sha256": "8cadeabc75beab08bd57978d2659240854341b1dc63104f87009f0399d36a500",
+          "visible_scope": "First7panels sample public playback at121.000,122.350,123.364,124.359,125.351,126.350,127.360seconds. GhostChestplate remains in torso slot throughout these panels, including disappearance of the lower scroll icon betweenfirsttwo. Remainingpanels are laterplayback/adandexcluded from evidence."
+        }
+      ]
     },
-    "observations_performed": 0
+    "observations_performed": 0,
+    "public_gameplay_recordings_read": 1,
+    "final_targeted_research": {
+      "normal_http_fetches": 20,
+      "combat_report_sha256": "20607b96ec72063c970ff061aa4c97b247bbeeeec2ea314846838ff5a2ca5dfb",
+      "consumables_report_sha256": "abaf4c60f5b7a72e4ac124a0382b040c1b528f40ec5fd4c5490f75c29aa72625",
+      "outcome": "Named2026critical-healing lead was resolved against both primary release articles throughChrome. No new exact consumption/Premium-purchase/numeric-transfer/universalLife/Vibrancy-state facts found. Finite dispositions complete, retained uncertainty is explicit."
+    }
   },
   "counts": {
     "groups": 11,
-    "facts": 23,
-    "sources": 18
+    "facts": 31,
+    "sources": 25
+  },
+  "equipment_source_disposition": {
+    "status": "ALL_DISPUTED_PROFILES_SELECTED_AND_POPULATED",
+    "counts": {
+      "historical_helper_direct_table_disagreements": 101,
+      "disputed_items_with_populated_selected_profiles": 101,
+      "disputed_items_with_no_selected_profile": 0,
+      "disputed_items_canonical_bound": 101,
+      "current_typed_candidates": 629,
+      "current_typed_canonical_bound": 627,
+      "ordinary_current_missing_type_profiles": 0,
+      "retired_items_explicitly_excluded": 30,
+      "test_objects_without_public_eligibility": 4,
+      "current_named_missing_canonical_definitions": 2,
+      "exact_difference_patterns": 30,
+      "helper_raw_rows_independently_rechecked": 553,
+      "native_disputed_rows_independently_reparsed": 101,
+      "new_proven_data_value_repairs": 0,
+      "pure_punch_omissions": 34,
+      "umbral_basic_only_caps": 10,
+      "elemental_conversion_additions": 9,
+      "critical_life_mana_exclusions": 15,
+      "other_mixed_differences": 33
+    },
+    "conclusion": "101 counts retained disagreements against ImbuementTool helper JSON, not unfinished profiles. Every disputed authoring profile has an explicit selected direct item table, populated types/max tiers and existing canonical identity. Current source choice is already resolved; source confidence and audit history remain qualified without declaring official server allowlists.",
+    "source_report_sha256": "a910dcd798f7de2f5aff613d8dfc55b0ebab65347e5fe580edfd82dfb46ba6ac",
+    "scope": "Read-only replay of all101selected direct-table profiles,553helper rows and canonical slots; no missing-profile or numeric data repair found."
   }
 }

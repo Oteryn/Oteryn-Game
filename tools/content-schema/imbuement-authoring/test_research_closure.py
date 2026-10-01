@@ -28,9 +28,19 @@ class ResearchClosureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "OTS code"):
             research_closure.validate(self.packet)
 
-    def test_unobserved_video_is_not_gameplay_evidence(self):
+    def test_public_recording_cannot_claim_controlled_gameplay(self):
         self.packet["research_limits"]["observations_performed"] = 1
         with self.assertRaisesRegex(ValueError, "no gameplay"):
+            research_closure.validate(self.packet)
+
+    def test_public_recording_requires_frame_receipts(self):
+        self.packet["sources"]["minerva_public_scroll_use_2025"]["frames"] = []
+        with self.assertRaisesRegex(ValueError, "frame receipts"):
+            research_closure.validate(self.packet)
+
+    def test_equipment_disagreements_cannot_be_missing_profiles(self):
+        self.packet["equipment_source_disposition"]["counts"]["disputed_items_with_no_selected_profile"] = 101
+        with self.assertRaisesRegex(ValueError, "missing selected profiles"):
             research_closure.validate(self.packet)
 
     def test_fabricated_quote_is_rejected(self):

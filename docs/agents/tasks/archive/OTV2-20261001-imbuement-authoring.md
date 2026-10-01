@@ -31,7 +31,7 @@ Delivered an authoring-only catalogue and schema with 24 families, 72 tier recip
 72 material bindings, 72 scroll bindings, 629 current typed equipment profiles,
 627 canonical bindings and two validated, unregistered Item proposals. The engine
 matrix answers all 11 behavioral groups for Canary and both Crystal branches.
-The public research addendum separates 23 bounded facts from genuine unknown
+The public research addendum separates 31 bounded facts from genuine unknown
 fields and runtime contracts. Full Global parity remains unproven.
 
 ## Architecture and source of truth
@@ -50,8 +50,8 @@ fields and runtime contracts. Full Global parity remains unproven.
   `00ce02a57ca5a12e48f32a3476e37471167e4c3f`.
 - PROVEN: delivered identities, parsed source facts and offline validation results.
   DERIVED: explicitly bounded public-source interpretations. UNKNOWN: unresolved
-  consumption, equipped-target, Premium-purchase, numeric transfer and fine Life
-  fields. CONFLICT: qualified PZ/armor behavior and 101 equipment-source disputes.
+  consumption, Premium-purchase, numeric transfer and fine Life
+  fields. CONFLICT: qualified PZ/armor behavior. The101equipment-source disagreements are historical alternatives with completed selected profiles, not missing data.
 
 ## High-risk authority/recovery qualification
 
@@ -77,13 +77,13 @@ Remote Desktop was used exclusively to read public pages through Chrome/CDP.
 The original blanket requirement for gameplay recordings was too restrictive for
 data research. Literal official/community statements now qualify their stated
 fields. The 27 unperformed capture scenarios remain supplemental alternatives.
-No consumed units or equipped-target permission were fabricated from OTS code.
+No consumed units were fabricated fromOTS code. A dated public tutorial now qualifiesPowerfulVampirism on equippedGhostChestplate; all101historically disputed equipment profiles were independently rechecked as selected and populated. RawEtcher/Albinius revisions and additional historical combat statements retain exact public provenance.
 See the authoring package's `global-research-closure.md` and `completion-handoff.md`.
 
 ## Validation
 
-Before this single-record successor, head `1bef0e1b28566d9b4c1569a979ee69bae902c5f2`
-passed 211 offline tests, nine replay/schema commands and all three XML reparses.
+Before this owner-requested successor, head `592fa309ace96dde8cd835ee7062211e3e33fd99`
+passed 213 offline tests, nine replay/schema commands and all three XML reparses.
 Both Item proposals had zero errors and warnings. Final successor validation,
 source review and CI are rebound to its exact FREEZE_SHA in #162 and PR evidence;
 this record does not inherit candidate-specific readiness from its predecessor.

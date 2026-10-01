@@ -63,6 +63,18 @@ class CombatEvidenceTests(unittest.TestCase):
             if r["id"] == "leech_equal_damage_aoe_scaling")["value"]["examples"]
         self.assertEqual([r["unrounded_amount"] for r in examples], [250, 375])
 
+    def test_released_grove_cannot_become_unconditional_healing(self):
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "critical_healing_scope")["value"].update(all_vocations_unconditional=True))
+
+    def test_release_state_requires_separate_live_release(self):
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "critical_healing_scope").update(evidence=["official_vocation_release_8833"]))
+
+    def test_numerous_strike_changes_cannot_become_unrestricted_items(self):
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "wand_rod_strike_limitations_removed_at_release")["value"].update(all_items_unrestricted=True))
+
     def test_test_server_news_is_not_live_release_evidence(self):
         self.mutation_rejected(lambda p: p["excluded_test_server_changes"][0].update(admission="LIVE"))
 
@@ -193,7 +205,8 @@ class CombatEvidenceTests(unittest.TestCase):
                     return next(s for s in packet["sources"] if s["id"] == source_id)
                 self.mutation_rejected(lambda p: source(p).update(sha256="0" * 64))
                 self.mutation_rejected(lambda p: source(p).update(published_on="2026-10-01"))
-                self.mutation_rejected(lambda p: source(p).update(role="PRIMARY_OFFICIAL"))
+                changed_role = "COMMUNITY_GLOBAL_REFERENCE" if source(self.packet)["role"] == "PRIMARY_OFFICIAL" else "PRIMARY_OFFICIAL"
+                self.mutation_rejected(lambda p: source(p).update(role=changed_role))
                 self.mutation_rejected(lambda p: source(p).update(target_time_status="TARGET_CERTIFIED"))
         self.mutation_rejected(lambda p: next(s for s in p["sources"]
             if s["id"] == "tibiaqa_life_equal_hit_2020").update(report_body_edited_on="2022-06-21"))
@@ -368,12 +381,12 @@ class CombatEvidenceTests(unittest.TestCase):
                     "fandom_vibrancy_archive_2025")
             self.mutation_rejected(remove_archive)
 
-    def test_new_life_reference_preserves_all_seven_unresolved_profiles(self):
-        self.assertEqual(len(self.packet["rules"]), 18)
+    def test_live_grove_preserves_six_other_unresolved_profiles(self):
+        self.assertEqual(len(self.packet["rules"]), 19)
         unresolved = {r["id"] for r in self.packet["rules"] if r["value"] is None}
         self.assertEqual(unresolved, {
             "leech_rounding", "leech_unequal_damage_and_overkill_order",
-            "vibrancy_reflection_current", "critical_healing_scope",
+            "vibrancy_reflection_current",
             "leech_equipment_composition", "protection_equipment_composition",
             "vibrancy_pvp_gate"})
         self.mutation_rejected(lambda p: next(r for r in p["rules"]

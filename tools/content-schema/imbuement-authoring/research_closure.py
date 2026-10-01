@@ -40,6 +40,29 @@ def validate(packet: dict) -> None:
                 "malformed original source digest")
         require(source["capture_date"] == "2026-10-01" and isinstance(source["publication_dates"], dict),
                 "capture date must remain separate from publication dates")
+    public_video = packet["research_limits"]["public_video"]
+    recordings = packet["research_limits"].get("public_gameplay_recordings_read", 0)
+    require(type(recordings) is int and recordings in {0, 1}, "unqualified public recording count")
+    require(public_video["gameplay_observed"] is (recordings == 1), "public video observation mismatch")
+    if recordings:
+        video = sources.get("minerva_public_scroll_use_2025", {})
+        require(video.get("source_role") == "DATED_PUBLIC_GAMEPLAY_RECORDING",
+                "public gameplay needs a dated recording identity")
+        frames = video.get("frames", [])
+        require(len(frames) >= 4 and frames == public_video.get("frame_refs"),
+                "public gameplay requires matching before/after frame receipts")
+        require(all(type(f["timestamp_seconds"]) in {int, float}
+                    and f["timestamp_seconds"] >= 0
+                    and re.fullmatch(r"[0-9a-f]{64}", f["sha256"])
+                    and f["visible_scope"] for f in frames), "malformed public frame identity")
+    disposition = packet.get("equipment_source_disposition")
+    if disposition:
+        counts = disposition["counts"]
+        require(disposition["status"] == "ALL_DISPUTED_PROFILES_SELECTED_AND_POPULATED"
+                and counts["historical_helper_direct_table_disagreements"] == 101
+                and counts["disputed_items_with_populated_selected_profiles"] == 101
+                and counts["disputed_items_with_no_selected_profile"] == 0,
+                "equipment history cannot become missing selected profiles")
     for conflict in packet["source_conflicts"]:
         require(all(sid in sources for sid in conflict["source_refs"]), "conflict references a missing source")
         for field in ("quote", "literal_quote"):

@@ -25,11 +25,11 @@ target **`global-tibia-current-2026-10-01`**. A July snapshot is no longer requi
   all 32 factual fields. Bursa Obscura 49160 and Sailor's Backpack 53192 are both
   current candidates; Sailor's 4 August 2026 release is included in the target.
   Both remain `PROPOSED_NOT_REGISTERED`; owning Item validation is not registration.
-- 72 Global rule records with 51 sources and 18 combat profiles with 24 sources.
+- 72 Global rule records with 51 sources and 19 combat profiles with 26 sources.
   New public pre-target archives qualify Vibrancy wording, Swiftness timers,
   Life-only Damage Prey exclusion and normal-shrine payment preference.
   CM Liamas's 12 June 2025 answer allows Powerful scroll application anywhere;
-  equipped-target acceptance and consumed units are separate unknowns.
+  namedPowerful Vampirism equipped Ghost Chestplate acceptance is now observed in a dated public tutorial; exact consumed units remain separate unknowns.
 
 Source descriptions record exact URLs, access methods, revision/archive dates
 and digest scopes in the evidence catalogues. Ordinary public HTTP read the
@@ -50,13 +50,13 @@ research provenance, with no invented gameplay observations or expected results.
 
 The authoritative per-group scope correction is in
 [global-research-closure.md](global-research-closure.md) and its validated
-[public-fact packet](samples/global-research-closure.json):23 bounded facts with
-literal source text, source identities and date/method qualifications. Public
+[public-fact packet](samples/global-research-closure.json):31 bounded facts with
+literal source text, source identities and date/method qualifications. Both primary June release articles now qualify Druid/Grove critical healing, Terra Wave II 10% Life Leech and the bounded wand/rod Strike limitation removal. Public
 statements can qualify their described fields without gameplay recordings.
 The27 prospective recordings remain supplemental alternatives.
 
 Actual unconfirmed public fields are successful/rejected Etcher and filled-scroll
-units, filled-scroll use on a still-equipped target, Etcher NPC Premium acquisition,
+units, Etcher NPC Premium acquisition,
 numerical remaining time across ownership change, and narrowly scoped Life
 calculation details. Timer PZ and physical armor ordering carry explicit public
 source conflicts. Normal-shrine source priority, coarse timers, Powerful Vibrancy
@@ -65,7 +65,7 @@ recovery trigger and unrounded protection composition have qualified references.
 Internal locks, debit chronology, persistence format/checkpoints, scheduler cadence,
 RNG call graphs and compensation are architecture contracts assigned below. They
 are not proprietary data required to finish recipe/effect-value research.
-No gameplay observation or full Global parity is claimed.
+One dated public gameplay recording was read; no controlled gameplay or full Global parity is claimed.
 
 ## Owning implementation handoff
 

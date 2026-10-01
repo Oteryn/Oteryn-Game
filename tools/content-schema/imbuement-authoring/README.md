@@ -32,7 +32,7 @@ The ruleset destination from the full-game tree remains
 | `current-behavior-answers.md` | Readable current answer table and implementation disagreements. |
 | `samples/global-research-closure.json` | Validated literal public facts, per-group residual fields and separate runtime contracts; accepts public references without mandatory gameplay recordings. |
 | `global-research-closure.md` | Scope correction, actual remaining Global facts and source-access report. |
-| `samples/global-observation-plan.json` | Supplemental prospective behavioral capture procedures; the date-snapshot question is resolved by the owner's current-data scope. Current engine-answer references are delivered in `current-behavior-answers.json`; no gameplay observations are claimed. |
+| `samples/global-observation-plan.json` | Supplemental prospective behavioral capture procedures; the date-snapshot question is resolved by the owner's current-data scope. Current engine-answer references are delivered in `current-behavior-answers.json`; no controlled gameplay observations are claimed by this prospective plan. |
 | `samples/imbuement-combat.json` | Sourced Vibrancy sequence, bounded AoE leech formula, engine hypotheses and rejected test-server generalizations. |
 | `samples/crystal-imbuements-evidence.json` | Additional owner-supplied `imbuements` branch: 72 XML records, 13 pinned source files, execution facts and nine token exchanges. |
 | `samples/missing-item-definitions.json`, `samples/missing-item-source-facts.json` | Two concrete Item authoring proposals with primary flags, capacity, weight, slots, acquisition, source revisions and target dates; owning Item validation passes. |
@@ -230,12 +230,12 @@ revision 428617 and public revision timestamp 2025-08-23, replacing hashless
 snippet attribution. A historical `0:00h` Void report records a still occupied
 slot: a rounded display alone does not prove expiration or exact internal seconds.
 
-The [research closure addendum](global-research-closure.md) separates23 literal public
+The [research closure addendum](global-research-closure.md) separates31 literal public
 facts from narrower unconfirmed fields and runtime contracts across the11 original
 behavior groups. This corrects the previous blanket capture requirement. Explicit
 scoped official/community sentences qualify data; gameplay recordings are an
 alternative. The27 scenarios remain supplemental and `PLANNED_NOT_OBSERVED`.
-Remaining consumption, equipped-target, purchase and transfer-counter fields stay
+Remaining consumption, Premium-purchase and transfer-counter fields stay
 unknown; PZ/armor source conflicts and precise Life formulas remain qualified.
 The engine matrix remains a separate implementation reference. The selected
 catalogue covers all24 families and72 tiers, with disputed equipment profiles

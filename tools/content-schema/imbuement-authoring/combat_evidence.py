@@ -11,6 +11,8 @@ HERE = Path(__file__).resolve().parent
 PACKET = HERE / "samples/imbuement-combat.json"
 TARGET = "global-tibia-current-2026-10-01"
 RULE_STATUSES = {
+    "wand_rod_strike_limitations_removed_at_release": "PRIMARY_OFFICIAL_RELEASED_BOUNDED_CHANGE",
+    "critical_healing_scope": "PRIMARY_OFFICIAL_NAMED_LIVE_RELEASE",
     "native_equipment_percentage_reduction_example": "CURRENT_DATED_COMMUNITY_EXPLICIT_BOUNDED_NATIVE_EXAMPLE",
     "vibrancy_sequence": "PRIMARY_INDEXED_WITH_COMMUNITY_CORROBORATION",
     "leech_equal_damage_aoe_scaling": "COMMUNITY_EXPLICIT",
@@ -24,7 +26,7 @@ RULE_STATUSES = {
     "life_leech_damage_prey_exclusion": "CURRENT_COMMUNITY_EXPLICIT_LIFE_PREY_ONLY",
     **{name: "PUBLIC_EVIDENCE_UNRESOLVED" for name in (
         "leech_rounding", "leech_unequal_damage_and_overkill_order",
-        "vibrancy_reflection_current", "critical_healing_scope",
+        "vibrancy_reflection_current",
         "leech_equipment_composition", "protection_equipment_composition",
         "vibrancy_pvp_gate")},
 }
@@ -124,6 +126,8 @@ RANGED_REFERENCE_CONFLICT = {
     "current_native_ammo_rule": None, "current_timer_rule": None,
 }
 NEW_RULES = {
+    "wand_rod_strike_limitations_removed_at_release": ({'scope': 'WANDS_AND_RODS_NAMED_OFFICIAL_RELEASE_CHANGE', 'numerous_strike_limitations_removed': True, 'all_items_unrestricted': False, 'specific_removed_item_allowlist': None, 'innate_critical_and_imbuement_composition': None}, "LIVE_RELEASE_2026_06_16_LINKED_PRIMARY_RELEASE_STATE", {'official_vocation_release_8849', 'official_vocation_release_8833'}),
+    "critical_healing_scope": ({'scope': 'DRUID_BLESSING_OF_THE_GROVE_HEALING_SPELLS', 'critical_healing_permitted': True, 'uses_critical_hit_chance': True, 'uses_critical_extra_damage': True, 'all_vocations_unconditional': False, 'independent_critical_roll_order': None, 'native_and_imbuement_source_composition': None}, "LIVE_RELEASE_2026_06_16_LINKED_PRIMARY_RELEASE_STATE", {'official_vocation_release_8833', 'official_vocation_release_8849'}),
     "native_equipment_percentage_reduction_example": (
         NATIVE_PERCENTAGE_EXAMPLE, "CURRENT_DATED_COMMUNITY_EXAMPLE_NOT_GLOBAL_RUNTIME_OBSERVATION",
         {"fandom_formulae_1205374"}),
@@ -153,6 +157,8 @@ NEW_RULES = {
         {"tibiaqa_basic_frost_elemental_ammo_2021", "fandom_imbuing_full"}),
 }
 SOURCE_PROFILES = {
+    'official_vocation_release_8833': ('https://www.tibia.com/news/?subtopic=newsarchive&id=8833#druid', 'dafbb14827689c54768baea055855edaf122e20606ad35b67c3385ea45ffa2ba', 'FULL_PRIMARY_BROWSER_TEXT', 'PRIMARY_OFFICIAL'),
+    'official_vocation_release_8849': ('https://www.tibia.com/news/?subtopic=newsarchive&id=8849', '12b6053217bc635927417f1aa0381042b862699d3383ce1896d84bcebea1cb29', 'FULL_PRIMARY_BROWSER_TEXT', 'PRIMARY_OFFICIAL'),
     "fandom_vibrancy_current_1194726": (
         "https://tibia.fandom.com/wiki/Vibrancy",
         "a8a2f0587dd651848c74f4e50400a50467dc7b92aea50b8ed8f248614a504315",
@@ -214,6 +220,8 @@ SOURCE_PROFILES = {
 # These offline checks protect captured bytes, claims, revision links and dates;
 # they do not fetch the source or turn a community report into Global telemetry.
 BOUNDED_SOURCE_RECORD_SHA256 = {
+    'official_vocation_release_8833': '3057e637a3ba6f9de06473ecb5fdd63a0b6ea46529d3374ddd4c56c0f305fafc',
+    'official_vocation_release_8849': '6bce5880c955e580c70a98945e4bbb63887561cb9b622ea76d42c346ec2a1088',
     "fandom_vibrancy_current_1194726": "61b5f6a74f687c6d89f1e2ccaff33098ba37026db7a4709e2e228fbb449c58a4",
     "fandom_life_current_1101811": "fed3fd2df619f5e95f458e7efddfd2e2959741c189955874732959f9a2b8adbb",
     "fandom_formulae_1205374": "30e4bc1ba9bd86b4ff26716c21bd50010624e1b637a39d4108f33750680a9ecb",
