@@ -5,8 +5,14 @@
 //! canonical document set. Filesystem containment, no-follow admission, alias detection, staging,
 //! journalling and atomic publication belong to a later boundary.
 
+mod bestiary;
 mod native_entry;
 mod v2;
+#[allow(
+    unused_imports,
+    reason = "native Charm generation binding consumes this next"
+)]
+pub(crate) use bestiary::canonical_bestiary_rows;
 pub use native_entry::*;
 pub use v2::*;
 
