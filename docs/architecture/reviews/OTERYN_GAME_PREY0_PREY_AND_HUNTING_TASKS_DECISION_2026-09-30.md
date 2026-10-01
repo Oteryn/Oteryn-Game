@@ -351,13 +351,26 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
   that obligation as its cause, on CHAR-REV-SEQ-1 under the session fence; the committing award
   deletes the row in its own transaction, and a guard allows that delete only together with the
   XP receipt that names the obligation. A replay of the award returns that receipt and awards
-  nothing twice. A validation refusal sets the row to `REFUSED` (terminal, with its result code,
-  kept for audit); a transient failure (revision mismatch, fence loss, crash) leaves it `PENDING`.
-  Pending obligations are requested again at every admission and after a failed attempt within
-  the session (backoff, at most once a minute), until each is terminal. A claim that would make
-  more than `PREY0-RL-17` pending obligations is refused `OBLIGATIONS_FULL` and writes nothing; a
-  settlement waits, unwritten, until one drains. No XP is ever awarded without its obligation
-  row, and no committed claim can lose its XP to a crash.
+  nothing twice.
+- **Validation and terminal states.** Before it commits, the claim or settlement validates the
+  frozen award against the current progression policy (`progression::project_level`). A failure
+  of the award's own shape (`InvalidAward`: zero or not representable) refuses the claim before
+  anything is written; a policy or oracle failure does not block the claim, which commits with its
+  obligation `PENDING`. After commit, every failure that depends on policy, oracle or state is
+  recoverable and leaves the row `PENDING`: `MissingThresholdOracle`, `InvalidPolicy`, revision or
+  progression-context mismatch, the experience bound (`Numeric`), fence loss, an unavailable
+  store and a crash. Pending obligations are requested again at every admission, after each
+  progression-policy revision, and after a failed attempt within the session (backoff, at most
+  once a minute). **`REFUSED` (terminal, with its result code, kept for audit and alerted) is
+  reserved for an obligation that can never become valid**, exactly two cases: its frozen award
+  fails `InvalidAward`, or its obligation occurrence is already bound to a different award
+  (`ConflictingOccurrence`). Pre-validation refuses both before commit, so for a committed claim
+  they arise only from a defect. Fail-closed means the XP is not applied yet, never that it is
+  discarded.
+- A `PENDING` obligation counts toward `PREY0-RL-17` until it is awarded or refused. A claim that
+  would make more than `PREY0-RL-17` pending obligations is refused `OBLIGATIONS_FULL` and writes
+  nothing; a settlement waits, unwritten, until one drains. No XP is ever awarded without its
+  obligation row, and no committed claim can lose its XP to a crash or to a policy gap.
 
 ### 8.2 Weekly kill tasks
 
