@@ -369,3 +369,375 @@ mod tests {
         }
     }
 }
+
+// Preparatory writer intent only: no persistence, content resolver or authority capability.
+use crate::domain::{CharacterId, CharacterRevision};
+use sha2::{Digest, Sha256};
+
+/// Stable UUIDv7 identity retained until a future commit's outcome is known (§4.3).
+/// CommandId derivation belongs to the owning command path, not this constructor.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ProficiencyOccurrence(super::character_progression::ExperienceRewardOccurrence);
+
+impl ProficiencyOccurrence {
+    pub fn from_bytes(bytes: [u8; 16]) -> Result<Self> {
+        super::character_progression::ExperienceRewardOccurrence::from_bytes(bytes).map(Self)
+    }
+
+    pub const fn as_bytes(&self) -> &[u8; 16] {
+        self.0.as_bytes()
+    }
+}
+
+/// Complete pending track intent, without current authority or content admission.
+/// The future writer still checks canonical Item resolution, actual shapes, active-content N,
+/// committed before values and, for migration, the declared mapping from retained revisions.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProficiencyChangeRequest {
+    occurrence: ProficiencyOccurrence,
+    cause: ProficiencyCause,
+    lines: Vec<ProficiencyLineCandidate>,
+    expected_track_revision: Option<CharacterRevision>,
+    policy_digest: [u8; 32],
+}
+
+impl ProficiencyChangeRequest {
+    /// Normalize line order for stable retries; duplicate tracks and mixed causes are refused.
+    /// PROF-WIRE-0 §2 requires the last changed track revision for selection, independently of
+    /// the global CharacterRevision consumed by every writer. Other causes have no such input.
+    /// A declared digest binds intent; it proves neither the supplied content nor its mapping.
+    pub fn new(
+        occurrence: ProficiencyOccurrence,
+        cause: ProficiencyCause,
+        mut lines: Vec<ProficiencyLineCandidate>,
+        expected_track_revision: Option<CharacterRevision>,
+        policy_digest: [u8; 32],
+    ) -> Result<Self> {
+        if lines.is_empty()
+            || lines.iter().any(|line| line.cause() != cause)
+            || (cause == ProficiencyCause::PerkSelection
+                && (lines.len() != 1 || expected_track_revision.is_none()))
+            || (cause != ProficiencyCause::PerkSelection && expected_track_revision.is_some())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        lines.sort_unstable_by(|left, right| {
+            left.before().item_key().cmp(right.before().item_key())
+        });
+        if lines
+            .windows(2)
+            .any(|pair| pair[0].before().item_key() == pair[1].before().item_key())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        Ok(Self {
+            occurrence,
+            cause,
+            lines,
+            expected_track_revision,
+            policy_digest,
+        })
+    }
+
+    pub const fn occurrence(&self) -> ProficiencyOccurrence {
+        self.occurrence
+    }
+
+    pub const fn cause(&self) -> ProficiencyCause {
+        self.cause
+    }
+
+    pub fn lines(&self) -> &[ProficiencyLineCandidate] {
+        &self.lines
+    }
+
+    pub const fn expected_track_revision(&self) -> Option<CharacterRevision> {
+        self.expected_track_revision
+    }
+
+    pub const fn policy_digest(&self) -> &[u8; 32] {
+        &self.policy_digest
+    }
+
+    /// Versioned intent binding, as in `commit_character_build`, for replay-or-conflict.
+    /// Session, connection, lease and scope generations are intentionally not inputs. Replacing
+    /// a global revision after losing a write requires a new occurrence (§4.3 Losing writer).
+    /// This digest does not authorize a commit or verify a receipt's provenance.
+    pub fn command_binding(
+        &self,
+        character_id: CharacterId,
+        expected_character_revision: CharacterRevision,
+    ) -> [u8; 33] {
+        const VERSION: u8 = 1;
+        let mut semantic = b"oteryn:character-proficiency:command-binding\0".to_vec();
+        semantic.push(VERSION);
+        semantic.extend_from_slice(self.occurrence.as_bytes());
+        semantic.extend_from_slice(character_id.as_bytes());
+        semantic.extend_from_slice(&expected_character_revision.get().to_be_bytes());
+        semantic.extend_from_slice(self.cause.key().as_bytes());
+        semantic.push(0);
+        match self.expected_track_revision {
+            None => semantic.push(0),
+            Some(revision) => {
+                semantic.push(1);
+                semantic.extend_from_slice(&revision.get().to_be_bytes());
+            }
+        }
+        semantic.extend_from_slice(
+            &u64::try_from(self.lines.len())
+                .unwrap_or(u64::MAX)
+                .to_be_bytes(),
+        );
+        for line in &self.lines {
+            encode_proficiency_intent_state(line.before(), &mut semantic);
+            encode_proficiency_intent_state(line.after(), &mut semantic);
+        }
+        semantic.extend_from_slice(&self.policy_digest);
+        let mut binding = [VERSION; 33];
+        binding[1..].copy_from_slice(&Sha256::digest(&semantic));
+        binding
+    }
+}
+
+fn encode_proficiency_intent_state(state: &DurableProficiencyState, semantic: &mut Vec<u8>) {
+    // Checked reference spellings cannot contain NUL; delimiters frame all three strings.
+    for text in [
+        state.item_key(),
+        state.definition_key(),
+        state.definition_revision(),
+    ] {
+        semantic.extend_from_slice(text.as_bytes());
+        semantic.push(0);
+    }
+    semantic.extend_from_slice(&state.progress().to_be_bytes());
+    semantic.push(u8::try_from(state.selections().len()).unwrap_or(u8::MAX));
+    for choice in state.selections() {
+        match choice {
+            None => semantic.push(0),
+            Some(index) => {
+                semantic.push(1);
+                semantic.push(*index);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod request_tests {
+    use super::*;
+    use ProficiencyCause::{Migration, PerkSelection, Training};
+
+    fn id(tag: u8) -> [u8; 16] {
+        [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
+    }
+
+    fn revision(value: u64) -> CharacterRevision {
+        CharacterRevision::new(value).expect("nonzero revision")
+    }
+
+    fn occurrence(tag: u8) -> ProficiencyOccurrence {
+        ProficiencyOccurrence::from_bytes(id(tag)).expect("UUIDv7")
+    }
+
+    fn state(
+        item: u8,
+        revision: &str,
+        progress: u64,
+        choices: &[Option<u8>],
+    ) -> DurableProficiencyState {
+        DurableProficiencyState::new(
+            format!("oteryn:item.tibia.i{item}"),
+            "oteryn:proficiency.tibia.p1",
+            revision,
+            progress,
+            choices.to_vec(),
+        )
+        .expect("bounded state")
+    }
+
+    fn line(item: u8, cause: ProficiencyCause) -> ProficiencyLineCandidate {
+        let before = state(item, "r1", 10, &[None, Some(0)]);
+        let after = match cause {
+            Training => state(item, "r1", 20, &[None, Some(0)]),
+            PerkSelection => state(item, "r1", 10, &[Some(0), Some(0)]),
+            Migration => state(item, "r2", 10, &[None, Some(1)]),
+        };
+        ProficiencyLineCandidate::new(cause, before, after).expect("candidate direction")
+    }
+
+    fn request(
+        cause: ProficiencyCause,
+        lines: Vec<ProficiencyLineCandidate>,
+    ) -> ProficiencyChangeRequest {
+        ProficiencyChangeRequest::new(
+            occurrence(1),
+            cause,
+            lines,
+            (cause == PerkSelection).then(|| revision(4)),
+            [2; 32],
+        )
+        .expect("inert intent")
+    }
+
+    fn binding(request: &ProficiencyChangeRequest) -> [u8; 33] {
+        request.command_binding(
+            CharacterId::from_bytes(id(2)).expect("character"),
+            revision(9),
+        )
+    }
+
+    #[test]
+    fn occurrence_reuses_uuidv7_validation() {
+        assert_eq!(occurrence(1).as_bytes(), &id(1));
+        for bytes in [
+            [0; 16],
+            [1; 16],
+            {
+                let mut bytes = id(1);
+                bytes[6] = 0x40;
+                bytes
+            },
+            {
+                let mut bytes = id(1);
+                bytes[8] = 0x40;
+                bytes
+            },
+        ] {
+            assert!(ProficiencyOccurrence::from_bytes(bytes).is_err());
+        }
+    }
+
+    #[test]
+    fn request_rejects_empty_duplicate_mixed_and_wrong_selection_cardinality() {
+        for (cause, lines, expected) in [
+            (Training, vec![], None),
+            (Training, vec![line(1, Training), line(1, Training)], None),
+            (Training, vec![line(1, Training), line(2, Migration)], None),
+            (Training, vec![line(1, Training)], Some(revision(4))),
+            (Migration, vec![line(1, Migration)], Some(revision(4))),
+            (PerkSelection, vec![line(1, PerkSelection)], None),
+            (
+                PerkSelection,
+                vec![line(1, PerkSelection), line(2, PerkSelection)],
+                Some(revision(4)),
+            ),
+        ] {
+            assert!(matches!(
+                ProficiencyChangeRequest::new(occurrence(1), cause, lines, expected, [2; 32]),
+                Err(CharacterProgressionError::InvalidInput)
+            ));
+        }
+    }
+
+    #[test]
+    fn retries_normalize_track_order_and_retain_exact_intent() {
+        for cause in [Training, Migration] {
+            let forward = request(cause, vec![line(1, cause), line(2, cause)]);
+            let reverse = request(cause, vec![line(2, cause), line(1, cause)]);
+            assert_eq!(forward, reverse);
+            assert_eq!(binding(&forward), binding(&reverse));
+            assert_eq!(forward.occurrence(), occurrence(1));
+            assert_eq!(forward.cause(), cause);
+            assert_eq!(forward.expected_track_revision(), None);
+            assert_eq!(forward.policy_digest(), &[2; 32]);
+            assert_eq!(
+                forward.lines()[0].before().item_key(),
+                "oteryn:item.tibia.i1"
+            );
+        }
+        assert_eq!(
+            request(PerkSelection, vec![line(1, PerkSelection)]).expected_track_revision(),
+            Some(revision(4))
+        );
+    }
+
+    #[test]
+    fn binding_covers_header_and_independent_track_revision() {
+        let original = request(PerkSelection, vec![line(1, PerkSelection)]);
+        let expected = binding(&original);
+        assert_eq!(expected[0], 1);
+        // Independent SHA-256 vector pins v1 framing, widths, NULL tags and field order.
+        assert_eq!(
+            expected,
+            [
+                0x01, 0x16, 0x44, 0xde, 0xef, 0xe4, 0x7d, 0x11, 0xd5, 0x22, 0x74, 0xeb, 0xf2, 0xd9,
+                0x1d, 0x11, 0x61, 0x87, 0xc3, 0xaa, 0xb0, 0xc9, 0x7e, 0xe3, 0x77, 0x25, 0xa0, 0x09,
+                0x45, 0x33, 0x82, 0xfb, 0x27,
+            ]
+        );
+        for mutate in [
+            |r: &mut ProficiencyChangeRequest| r.occurrence = occurrence(3),
+            |r: &mut ProficiencyChangeRequest| r.expected_track_revision = Some(revision(5)),
+            |r: &mut ProficiencyChangeRequest| r.policy_digest[0] ^= 1,
+        ] {
+            let mut changed = original.clone();
+            mutate(&mut changed);
+            assert_ne!(binding(&changed), expected);
+        }
+        assert_ne!(
+            original.command_binding(
+                CharacterId::from_bytes(id(3)).expect("character"),
+                revision(9)
+            ),
+            expected
+        );
+        assert_ne!(
+            original.command_binding(
+                CharacterId::from_bytes(id(2)).expect("character"),
+                revision(10)
+            ),
+            expected
+        );
+        let mut framed = Vec::new();
+        encode_proficiency_intent_state(original.lines()[0].before(), &mut framed);
+        assert!(framed.starts_with(b"oteryn:item.tibia.i1\0oteryn:proficiency.tibia.p1\0r1\0"));
+    }
+
+    #[test]
+    fn binding_covers_every_exact_line_field_without_narrowing_progress() {
+        let original = request(Migration, vec![line(1, Migration), line(2, Migration)]);
+        let expected = binding(&original);
+        // Field sensitivity of the codec is independent of cause/admission validation.
+        for mutate in [
+            |r: &mut ProficiencyChangeRequest| r.cause = Training,
+            |r: &mut ProficiencyChangeRequest| {
+                r.lines.pop();
+            },
+            |r: &mut ProficiencyChangeRequest| r.lines[0].before.item_key.push('1'),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].after.item_key.push('1'),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].before.definition_key.push('1'),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].after.definition_key.push('1'),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].before.definition_revision.push('1'),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].after.definition_revision.push('1'),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].before.progress += 1,
+            |r: &mut ProficiencyChangeRequest| r.lines[0].after.progress += 1,
+            |r: &mut ProficiencyChangeRequest| r.lines[0].before.selections[0] = Some(0),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].after.selections[0] = Some(0),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].before.selections[1] = Some(1),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].after.selections[1] = Some(2),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].before.selections.push(None),
+            |r: &mut ProficiencyChangeRequest| r.lines[0].after.selections.push(None),
+            |r: &mut ProficiencyChangeRequest| r.lines[1].after.progress += 1,
+        ] {
+            let mut changed = original.clone();
+            mutate(&mut changed);
+            assert_ne!(binding(&changed), expected);
+        }
+        let mut digests = std::collections::BTreeSet::new();
+        for progress in [
+            0,
+            u64::from(u32::MAX),
+            u64::from(u32::MAX) + 1,
+            MAX_PROFICIENCY_PROGRESS,
+        ] {
+            let candidate = ProficiencyLineCandidate::new(
+                Migration,
+                state(1, "r1", progress, &[None]),
+                state(1, "r2", progress, &[None]),
+            )
+            .expect("full-width migration candidate");
+            assert!(digests.insert(binding(&request(Migration, vec![candidate]))));
+        }
+    }
+}
