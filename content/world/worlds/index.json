@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/world/worlds/",
-  "kind": "static_content",
-  "owner": "World",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "LEGACY_COMPAT_PRESENT",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "World definitions and coordinate-frame metadata. The legacy WorldProject locator worlds/world.json stays canonical (currently zero worlds and zero placements); this marker is successor authoring metadata, not a WorldProject manifest locator."
-}
+{"coordinate_frame":"global-target-2026-09-27","family":"World","generator":"tools/content-schema/world-authoring/convert_world_record.py","population_state":"POPULATED","record_count":1,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/world/worlds/worlds-00000-00000.json"],"source":{"evidence":"OtsHypothesisOnly","files":[{"path":"data-global/world/world.otbm","sha256":"dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7"}],"ref":"summer-update","repository":"zimbadev/crystalserver","revision":"00ce02a57ca5a12e48f32a3476e37471167e4c3f","source_key":"oteryn:source.crystalserver"}}

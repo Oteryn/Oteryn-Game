@@ -54,6 +54,11 @@ FAMILIES = {
         "stem": "hunting-places",
         "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
     },
+    "Area.Island": {
+        "dir": "content/world/areas/islands",
+        "stem": "islands",
+        "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
+    },
     "Transition.Teleport": {
         "dir": "content/world/transitions",
         "stem": "teleports",

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import json
+import re
 import sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
@@ -9,9 +10,17 @@ EVIDENCE=ROOT/"docs/agents/evidence/OTV2-20260925-full-game-tree-materialization
 CLOSURE=ROOT/"docs/agents/evidence/OTV2-20260925-world-successor-tree-closure-v1.json"
 LEGACY_ROOT="content/world/"
 WORLD_STATES={"READY_UNPOPULATED","LEGACY_COMPAT_PRESENT"}
+# The one successor directory that shares space with a legacy locator (worlds/world.json).
+# Legacy lookups scan it, so it may hold a family index plus at most this many shards.
+SHARED_WITH_LOCATOR="content/world/worlds/"
+SHARED_MAX_SHARDS=1
 FAMILY_INDEX="OTERYN_FAMILY_INDEX/v1"
-# WO-2: the Terrain and WorldObject catalogues are populated beside the legacy package.
-POPULATED_WORLD_CATALOGUES={"content/world/terrain/","content/world/objects/","content/world/areas/cities/","content/world/areas/regions/"}
+# WO-2 and AREAS-1: the Terrain, WorldObject and Area (city, region) catalogues are populated
+# beside the legacy package. They keep the plain directory marker (population_state POPULATED);
+# their shards are pinned by world-object-authoring/build_catalogue.py --check and
+# area-authoring/build_areas.py build --check.
+POPULATED_WORLD_CATALOGUES={"content/world/terrain/":"terrain-","content/world/objects/":"objects-","content/world/areas/cities/":"areas-","content/world/areas/regions/":"areas-"}
+CATALOGUE_SHARD=re.compile(r"^(terrain|objects|areas)-\d{5}-\d{5}\.json$")
 class ValidationError(RuntimeError): pass
 def req(ok: bool, code: str)->None:
     if not ok: raise ValidationError(code)
@@ -31,9 +40,20 @@ def world_successor_files(dirs: list[dict])->list[str]:
         if payload.get("schema")==FAMILY_INDEX:
             files|={shard[len(LEGACY_ROOT):] for shard in payload["shards"]}
     return sorted(files)
+def catalogue_shards(path: str)->list[str]:
+    return sorted(path+f.name for f in (ROOT/path).iterdir() if CATALOGUE_SHARD.match(f.name))
 def legacy_locators()->set[str]:
     manifest=json.loads((ROOT/LEGACY_ROOT/"manifest.json").read_text(encoding="utf-8"))
     return {"project.json","manifest.json","content.lock.json"}|{row["locator"] for row in manifest["documents"]}
+def check_family_index(path: str, payload: dict, local: set[str], locators: set[str])->None:
+    """A populated family index below the legacy root: shards stay in its directory."""
+    shared=path==SHARED_WITH_LOCATOR
+    req(shared or not locators,f"WORLD_FAMILY_BESIDE_LOCATOR:{path}")
+    req(payload.get("population_state")=="POPULATED",f"WORLD_FAMILY_STATE:{path}")
+    shards=payload.get("shards",[])
+    req(not shared or len(shards)==SHARED_MAX_SHARDS,f"WORLD_SHARED_SHARD_COUNT:{path}")
+    req(all(s.startswith(path) and "/" not in s[len(path):] for s in shards),f"WORLD_SHARD_OUTSIDE:{path}")
+    req(local=={"index.json",*locators,*(s[len(path):] for s in shards)},f"WORLD_STRAY_FILE:{path}")
 def main()->int:
     dirs=directory_nodes()
     if sys.argv[1:]==["--print-world-markers"]:
@@ -63,23 +83,25 @@ def main()->int:
         payload=json.loads(marker.read_text(encoding="utf-8"))
         if path.startswith(LEGACY_ROOT):
             # A successor directory holds either its marker or a populated family index
-            # whose shards stay inside it; the one sharing a directory with a legacy
-            # locator (worlds/) stays a marker so legacy lookups scan no new entries.
+            # whose shards stay inside it. The one directory sharing space with a legacy
+            # locator (worlds/) may hold a family index with exactly one shard: legacy
+            # lookups scan it, so its entry count is bounded and accounted for in the
+            # repository test's scan budget.
             local={f.name for f in (ROOT/path).iterdir()}
             rel=path[len(LEGACY_ROOT):]
             locators={loc[len(rel):] for loc in legacy_locators() if loc.startswith(rel) and "/" not in loc[len(rel):]}
             if payload.get("schema")==FAMILY_INDEX:
-                req(not locators,f"WORLD_FAMILY_BESIDE_LOCATOR:{path}")
-                req(payload.get("population_state")=="POPULATED",f"WORLD_FAMILY_STATE:{path}")
-                shards=payload.get("shards",[])
-                req(all(s.startswith(path) and "/" not in s[len(path):] for s in shards),f"WORLD_SHARD_OUTSIDE:{path}")
-                req(local=={"index.json",*(s[len(path):] for s in shards)},f"WORLD_STRAY_FILE:{path}")
+                check_family_index(path,payload,local,locators)
             else:
                 req(payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1",f"WORLD_MARKER_SCHEMA:{path}")
                 req(payload.get("kind")==node["kind"],f"KIND_MISMATCH:{path}")
-                req(payload.get("population_state") in WORLD_STATES|({"POPULATED"} if path in POPULATED_WORLD_CATALOGUES else set()),f"WORLD_MARKER_STATE:{path}")
-                catalogue={n for n in local if path in POPULATED_WORLD_CATALOGUES and n.startswith("areas-" if rel.startswith("areas/") else rel.rstrip("/")+"-") and n.endswith(".json")}
-                req(local=={"index.json"}|locators|catalogue,f"WORLD_STRAY_FILE:{path}")
+                catalogue=path in POPULATED_WORLD_CATALOGUES
+                req(payload.get("population_state") in WORLD_STATES|({"POPULATED"} if catalogue else set()),f"WORLD_MARKER_STATE:{path}")
+                if catalogue:
+                    req(not locators and catalogue_shards(path),f"WORLD_CATALOGUE_EMPTY:{path}")
+                    req(all(CATALOGUE_SHARD.match(n) and n.startswith(POPULATED_WORLD_CATALOGUES[path]) for n in local-{"index.json"}),f"WORLD_STRAY_FILE:{path}")
+                else:
+                    req(local=={"index.json"}|locators,f"WORLD_STRAY_FILE:{path}")
         if payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1":
             req(payload.get("path")==path,f"PATH_MISMATCH:{path}")
             req(payload.get("owner")==node["owner"],f"OWNER_MISMATCH:{path}")
