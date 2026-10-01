@@ -96,6 +96,8 @@ replay-safe?
   (`config.lua.dist:263-269`).
 - Grade costs (gold, fragments): basic 2 M/5, 5 M/15, 30 M/30; supreme 5 M/5, 12 M/15, 75 M/30;
   a mod reaching the top grade adds one point (`player_wheel.cpp:1448-1531`).
+  **Amendment (pending on acceptance of WHEEL-GEM-0A; `reviews/OTERYN_GAME_WHEEL_GEM0A_REFERENCE_VALUES_AMENDMENT_DECISION_2026-10-01.md` §3).** Supreme Grade III costs 12.5 M (TibiaWiki); the basic slot-2
+  list includes ID2 Death Resistance and excludes ID30 Mitigation Multiplier (TibiaPal).
 - Destroy yields 1-5, 2-10, 1-5 fragments and skips the vessel and last-gem checks (`:1212-1285`).
   Switch skips the vessel check (`:1287-1306`). Lock toggles (`:1308-1315`).
 - Vessels are set in the same save packet as the slots, anywhere (`:1707-1716`, `:2064-2081`).
@@ -122,7 +124,8 @@ gem item keys per family and quality; family to vocation; the basic mod catalogu
 and slot-2 lists and the compatibility rule; the supreme catalogue per vocation; each mod's value
 per grade and vocation; the resonance slots (three per domain) as a slot flag; the clockwise domain
 order; fees (§6); fragment yields; grade costs; the preceding-mod chain. Source order: official
-statements win, then Canary. Unsourced values are marked `PARITY_PENDING` in the data. A new
+statements win, then Canary. **Amendment (pending on acceptance of WHEEL-GEM-0A; `reviews/OTERYN_GAME_WHEEL_GEM0A_REFERENCE_VALUES_AMENDMENT_DECISION_2026-10-01.md` §2).** The order is official, then owner-verified
+TibiaPal/tibiatools.io, then the English TibiaWiki, then the pinned Canary. Unsourced values are marked `PARITY_PENDING` in the data. A new
 revision carries the migration obligation of §5.3.
 
 ## 5. Revealed gem state (GEM-1)
@@ -144,7 +147,7 @@ Wheel.
   before and after, the RNG outputs, the TransactionId of the item lines, the fee binding and
   the Wheel ruleset revision the outcome was committed under.
 - **Cap** `WHEELGEM0-RL-02`: 250 revealed gems per character (`PARITY_PENDING`). A reveal over it
-  is `ATELIER_FULL`, nothing written.
+  is `ATELIER_FULL`, nothing written. **Amendment (pending on acceptance of WHEEL-GEM-0A; `reviews/OTERYN_GAME_WHEEL_GEM0A_REFERENCE_VALUES_AMENDMENT_DECISION_2026-10-01.md` §3).** The cap is 225 (TibiaWiki).
 - **Guards** (deferred): `gem_count` equals the rows; quality matches the non-null mods; the
   latest receipt's after state equals the stored row. A new CharacterRevision receipt kind joins
   the consistency guard (the #162 guard serialization rule).
@@ -346,7 +349,7 @@ pointers once WHEEL-0 is on `main`. This PR edits none of them.
 | Row | Value |
 |---|---|
 | `WHEELGEM0-RL-01` gem qualities, mods | 3; 1, 2, 3 mods |
-| `WHEELGEM0-RL-02` revealed gems per character | 250 (`PARITY_PENDING`) |
+| `WHEELGEM0-RL-02` revealed gems per character | 250 (`PARITY_PENDING`); 225 under WHEEL-GEM-0A §3 |
 | `WHEELGEM0-RL-03` vessels | 4, one per domain |
 | `WHEELGEM0-RL-04` resonance slots per domain | 3 |
 | `WHEELGEM0-RL-05` grades | I to IV, stored 0 to 3 |
@@ -405,7 +408,7 @@ initial gems.
   vessel; refusing keeps the vessel check true without a silent unplace.
 
 **Declared differences (`PARITY_PENDING`):** gems and fragments are found in main backpack direct
-entries only; the 250 gem cap; any catalogue mod can be graded; no favourite flag; the initial
+entries only; the 250 gem cap (225 under WHEEL-GEM-0A, no longer a difference); any catalogue mod can be graded; no favourite flag; the initial
 gems' timing and mod draw (Canary).
 
 ## 16. Decision test
