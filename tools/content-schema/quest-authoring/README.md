@@ -144,3 +144,14 @@ Original donor-file membership remains captured acquisition provenance rather
 than a claim of independently verified remote contents during offline checks.
 Missing literal evidence is UNKNOWN and contributes an owned source gap; a
 known text body does not resolve reward-carrier or quest-identity conflicts.
+
+The pinned wiki SOURCE inventory includes all105 titles that lacked authored
+bindings at the503bba9e snapshot, including80 historical donor-PRESENT titles
+previously omitted by an ABSENT filter. Seven later partial bindings do not
+remove their specifications. Original25 facts and UNKNOWN holds are preserved.
+The SOURCE schema does not establish native quest completeness.
+
+```sh
+python build_wiki_source_schema.py --check
+python wiki_source_inventory.py --check
+```
