@@ -2,7 +2,7 @@
 import json
 import sys
 from pathlib import Path
-from wheel_authoring import read
+from wheel_authoring import read, parameter_value_schema, COUNT_UNITS, BOUNDED_PERCENT_KINDS
 ROOT = Path(__file__).resolve().parent
 VOCATIONS = ['knight', 'paladin', 'sorcerer', 'druid', 'monk']
 DOMAINS = ['green', 'red', 'blue', 'purple']
@@ -26,6 +26,8 @@ slot_id=integer(1,36)
 key={'type':'string','pattern':'^[a-z][a-z0-9_]*$','maxLength':128}
 icon=obj({'sprite':enum(['dedication','conviction','revelation','basic_mod','supreme_mod']),'source_index':integer(0,255),'verification':{'const':'SOURCE_MAPPING_ONLY'},'layout':{'const':'horizontal_square_cells'},'asset_url':{'type':'string','pattern':'^https://static\\.tibia\\.com/images/'}})
 effect=obj({'kind':enum(['base_damage_bonus','base_healing_bonus','cooldown_reduction','secondary_cooldown_reduction','mana_cost_reduction','life_leech','critical_hit_chance','critical_extra_damage','additional_targets','range_increase','next_attack_damage_reduction','duration_increase']),'value':number,'unit':enum(['percent_points','seconds','mana','targets','tiles'])})
+effect['allOf']=[{'if':{'properties':{'unit':enum(list(COUNT_UNITS))}},'then':{'properties':{'value':{'type':'integer'}}}},
+    {'if':{'properties':{'kind':enum(list(BOUNDED_PERCENT_KINDS))}},'then':{'properties':{'value':{'maximum':100}}}}]
 stage=obj({'stage':integer(1,2),'reference_text':text,'numeric_effects':arr(ref('augment_effect')),'unresolved_parameters':arr(text,0,0,True),'area_reference':{'type':['string','null'],'enum':[None,'five_squares_front_row','AREA_WAVE7','radius_4','AREA_GREATER_FLURRY_OF_BLOWS']}})
 conviction=obj({'key':key,'name':text,'category':enum(['unique','skill_bonus','leech','augmentation','vessel_resonance','other']),'source_info_id':integer(0,255),'native_value':number,'unit':enum(['flat','percent_points','native','stages']),'reference_description':{'type':'string','maxLength':20000},'augment_targets':arr(text,0,None,True),'reference_hypotheses':arr(ref('augment_hypothesis')),'unique_parameters':{'oneOf':[{'type':'null'},ref('unique_parameters')]},'augment_stages':arr(ref('augment_stage'),0,2),'icon':ref('icon')})
 dedication=obj({'stat':enum(['max_health','max_mana','capacity','mitigation_multiplier']),'value_per_point':number,'unit':enum(['flat','percent_points']),'stacking':enum(['add_to_maximum','increase_base_mitigation_multiplicatively'])})
@@ -42,17 +44,21 @@ gem_quality=obj({'quality':enum(['lesser','regular','greater']),'basic_mod_count
 cost=obj({'gold':integer(0),'fragments':integer(0)})
 grade_cost=obj({'target_grade':integer(1,3),'basic':ref('cost'),'supreme':ref('cost')})
 source=obj({'id':key,'repository':{'type':'string','pattern':'^https://github.com/'},'commit':{'type':'string','pattern':'^[a-f0-9]{40}$'}})
-release={'oneOf':[obj({'kind':{'const':'initial'},'predecessor':{'type':'null'}}),obj({'kind':enum(['value_only','wheel_reset']),'predecessor':text})]}
+gem_revision=obj({'kind':enum(['declared_compatible','staged_migration']),
+    'reference':{'type':'string','pattern':r'^samples/gem-revisions/[a-z0-9][a-z0-9_-]*\.json$'},
+    'sha256':{'type':'string','pattern':'^[a-f0-9]{64}$'}})
+release={'oneOf':[obj({'kind':{'const':'initial'},'predecessor':{'type':'null'}}),
+    obj({'kind':enum(['value_only','wheel_reset']),'predecessor':text,'gem_revision':gem_revision},['kind','predecessor'])]}
 parameter_units={e['kind']:e['unit'] for effects in parameters['revelations'].values() for e in effects}
-revelation_effect={'oneOf':[obj({'kind':{'const':k},'value':number,'unit':{'const':u}}) for k,u in parameter_units.items()]}
+revelation_effect={'oneOf':[obj({'kind':{'const':k},'value':parameter_value_schema(k,u),'unit':{'const':u}}) for k,u in parameter_units.items()]}
 supreme_units={'dodge':'percent_points','critical_extra_damage':'percent_points','life_leech':'percent_points','mana_leech':'percent_points','base_damage_bonus':'percent_points','base_healing_bonus':'percent_points','cooldown_reduction':'seconds','momentum_chance':'percent_points','revelation_mastery_points':'points'}
-supreme_effect={'oneOf':[obj({'kind':{'const':k},'value':number,'unit':{'const':u},'target':text}) for k,u in supreme_units.items()]}
+supreme_effect={'oneOf':[obj({'kind':{'const':k},'value':parameter_value_schema(k,u),'unit':{'const':u},'target':text}) for k,u in supreme_units.items()]}
 # Candidate Atelier policy: source values remain labelled hypotheses or official facts.
 atelier=obj({'clockwise_domains':arr(enum(DOMAINS),4,4,True),'basic_pair_compatibility':{'const':'different_source_mod_ids'},'effective_grade_order':{'const':['basic_1','basic_2','supreme']},'effective_grade_rule':{'const':'minimum_of_self_and_present_preceding_mod_grades'},'grade_iv_promotion_points_per_mod_type':integer(0),'fees':obj({action:obj({q:integer(0) for q in ['lesser','regular','greater']}) for action in ['reveal','switch_domain']}),'fragment_items':obj({k:{'type':'string','pattern':'^oteryn:item.tibia.i[0-9]+$'} for k in ['basic','supreme']}),'fragment_yields':obj({q:obj({'fragment':enum(['basic','supreme']),'unrevealed':arr(integer(0),2,2),'revealed':arr(integer(0),2,2)}) for q in ['lesser','regular','greater']}),'operation_policy':ref('operation_policy'),'yield_evidence':text,'fee_evidence':text,'grade_scope':{'const':'character_mod_type'},'resonance_activation_order':{'const':['basic_1','basic_2','supreme']}})
 correction=obj({'key':key,'parameter':key,'planner_parameter':key,'stage':integer(1,3),'planner_value':number,'selected_value':number,'evidence':text})
 augment_hypothesis={'oneOf':[obj({'stage':integer(1,2),'kind':{'const':k},'value':number,'unit':{'const':u},'evidence':text}) for k,u in [('secondary_cooldown_reduction','seconds'),('range_increase','tiles')]]}
 unique_units={e['kind']:e['unit'] for p in parameters['unique_conviction'].values() for e in p['numeric_effects']}
-unique_effect={'oneOf':[obj({'kind':{'const':k},'value':number,'unit':{'const':u}}) for k,u in unique_units.items()]}
+unique_effect={'oneOf':[obj({'kind':{'const':k},'value':parameter_value_schema(k,u),'unit':{'const':u}}) for k,u in unique_units.items()]}
 unique_parameters=obj({'numeric_effects':arr(ref('unique_effect')),'behaviors':arr(enum(sorted({b for p in parameters['unique_conviction'].values() for b in p['behaviors']})),1,None,True),'targets':arr(text,0,None,True)})
 def literal_shape(value):
     if isinstance(value,dict):return obj({k:literal_shape(v) for k,v in value.items()})

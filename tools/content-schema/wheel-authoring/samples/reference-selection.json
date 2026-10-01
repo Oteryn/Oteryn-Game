@@ -89,10 +89,21 @@
     "secondary_br_revision": 443774,
     "secondary_br_approved_on": "2026-09-02",
     "planner_percent": 60,
-    "decision": "Retain 40 for the existing Sept 27 project snapshot; Sept 2 secondary observation does not supersede Sept 14 primary capture. Current live Global value remains unconfirmed."
+    "decision": "40 retained for Sept 27 snapshot, now directly corroborated by read Fandom r1206174; BR +15 remains conflicting. Live Global value not established."
   },
   "great_fire_wave_i": "Both +15 critical extra damage and +10 critical chance selected from the existing project spell capture.",
   "flurry_of_blows_i": "Select AREA_GREATER_FLURRY_OF_BLOWS. Planner range +1 is preserved as an unselected cast-range hypothesis.",
   "accepted_atelier_parameters": "WHEEL-GEM-0 already selects candidate fees/grades and a PARITY_PENDING 250 cap. No new owner decision is needed to populate authoring.",
-  "dedication_reconciliation": "Reference capture selects mitigation +0.075 percentage points per point. Older resistance wording belongs to WHEEL-0 owner reconciliation before runtime admission."
+  "dedication_reconciliation": "Reference capture selects mitigation +0.075 percentage points per point. Older resistance wording belongs to WHEEL-0 owner reconciliation before runtime admission.",
+  "browser_research": "samples/browser-source-audit.json",
+  "unique_conviction_selections": {
+    "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
+    "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
+    "guiding_presence": "official:8833 selects sharing 100% of mantra; official:8944 and Fandom:1206174 add party bonuses +33%. source_percent preserves wording; relative/points, rounding and own-Serene-copy semantics remain Q5 with the runtime owner."
+  },
+  "atelier_conflicts": {
+    "selected_project": 12000000,
+    "fandom_1151969": 12500000,
+    "state": "KEEP_ACCEPTED_PROJECT_GRADE_TABLE; GLOBAL_PRICE_UNCONFIRMED"
+  }
 }

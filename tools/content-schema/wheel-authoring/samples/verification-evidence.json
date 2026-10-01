@@ -28,7 +28,7 @@
     "capture": "2026-09-28 owner capture",
     "reference": "docs/reference/tibia-manual/characters.md#517-wheel-of-destiny",
     "notes_sha256": "e01d04c6d8933a829e9c8e6dad08dd50a0e7a8308361e74948284794bbf11df8",
-    "result": "REVIEWED_OWNER_CAPTURE_AND_LIVE_TAVILY_EXTRACT_FOR_LISTED_FACTS"
+    "result": "REVIEWED_OWNER_CAPTURE_AND_REMOTE_CHROME_FOR_LISTED_FACTS"
   },
   "icon_evidence": {
     "renderer_repository": "https://github.com/PawelKusnierek/TibiaPal",
@@ -53,10 +53,10 @@
     },
     "unavailable_sprite_categories": [],
     "client_asset_crosswalk": "REFERENCE_MANIFEST_COMPLETE; RUNTIME_ASSET_ADMISSION_PENDING",
-    "live_asset_fetch": "HTTP_403_ON_ORIGINAL_CDN_2026_10_01",
+    "live_asset_fetch": "ORIGINAL_CDN_200_VIA_REMOTE_CHROME_CDP_2026_10_01; CLOUD_HTTP_403",
     "reference_sheet_observations": "samples/source-icon-reference.json",
-    "reference_sheet_sha256": "4a49c4b3e2ab60531e4e5677c0b81600ac21014a9a77e02d27b6af451d1f1a4e",
-    "appearance_scope": "ALL_FIVE_REFERENCE_STRIPS_VISUALLY_INSPECTED; CURRENT_GLOBAL_APPEARANCE_NOT_CONFIRMED"
+    "reference_sheet_sha256": "f49f4c0cea261e2a43db0164bd5bbadd07bce61bc542c6d50a4e9b86029c63de",
+    "appearance_scope": "ALL_FIVE_ORIGINAL_SHEETS_VISUALLY_INSPECTED; ALTERNATIVE_FALLBACK_ONLY_FOR_IDENTICAL_CELLS"
   },
   "source_conflicts": [
     {
@@ -75,7 +75,7 @@
       "stage": 1,
       "planner_value": 6,
       "selected_value": 4,
-      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 fetch still failed."
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 now read via Chrome/CDP."
     },
     {
       "key": "augmented_thousand_fist_blows",
@@ -84,7 +84,7 @@
       "stage": 2,
       "planner_value": 6,
       "selected_value": 4,
-      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 fetch still failed."
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 now read via Chrome/CDP."
     },
     {
       "key": "augmented_mystic_repulse",
@@ -93,27 +93,27 @@
       "stage": 2,
       "planner_value": 60,
       "selected_value": 40,
-      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
+      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, Fandom 1206174 now read via Chrome/CDP; Global target-version conflict remains Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
     }
   ],
   "classification": {
     "numerical_planner_reference": "CONFIRMED_PINNED_SOURCE",
-    "unique_conviction_reference": "CONFIRMED_PINNED_SOURCE",
+    "unique_conviction_reference": "OFFICIAL_8833_AND_8944_CORRECTIONS_BOUND_TO_BROWSER_AUDIT",
     "official_atelier_behavior": "LIVE_OFFICIAL_MANUAL_CONFIRMED_WITHIN_AUDIT_FACTS",
-    "fees_and_extra_points": "OTS_HYPOTHESIS_ONLY_WITH_PROJECT_CANDIDATE_DECISION",
+    "fees_and_extra_points": "PROJECT_DECISIONS_RETAINED; WIKI_CORROBORATION_AND_CAP_GRADE_PRICE_CONFLICTS_IN_BROWSER_AUDIT",
     "loot_probabilities": "OTS_HYPOTHESIS_ONLY",
     "revealed_gem_limit": "PARITY_PENDING",
-    "live_website_and_wiki": "LIVE_TIBIAPAL_INPUTS_CONFIRMED_BR_WIKI_PARTIAL_REQUESTED_FANDOM_FETCH_FAILED",
+    "live_website_and_wiki": "LIVE_TIBIAPAL_INPUTS_AND_SEVEN_REQUESTED_FANDOM_PAGES_READ",
     "runtime_client_binding": "REFERENCE_CROP_CROSSWALK_COMPLETE; RUNTIME_ADMISSION_SEPARATE",
-    "official_cooldown_corrections": "CONFIRMED_PROJECT_OFFICIAL_8944_CAPTURE",
+    "official_cooldown_corrections": "OFFICIAL_8944_READ_VIA_CHROME_CDP",
     "great_fire_wave_and_mystic_repulse_damage": "PROJECT_SNAPSHOT_2026_09_27_SELECTED; CURRENT_GLOBAL_DAMAGE_PARITY_UNCONFIRMED",
     "special_spell_secondary_cooldown": "OTS_HYPOTHESIS_ONLY_NOT_SELECTED",
     "flurry_cast_range": "CONFLICT_NOT_SELECTED; AFFECTED_AREA_REFERENCE_SELECTED"
   },
   "live_verification": {
     "tibiapal": true,
-    "fandom": false,
-    "static_sprite_sheets": false,
+    "fandom": true,
+    "static_sprite_sheets": true,
     "live_global_parity_confirmed": false,
     "network_mode": "unrestricted",
     "policy_state": "unknown",
@@ -134,7 +134,7 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "b52ba29ed0cdb10aa23fee8bcf76e39d06a0afc8ab420c897807248187ade24b",
+  "candidate_sha256": "5d5f77f9c33f744f9bcdfc14d0abf42e6f4e094e614c3d0472010b46311eead5",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
     "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
@@ -145,10 +145,14 @@
   },
   "client_icon_manifest": {
     "file": "samples/client-icon-manifest.json",
-    "sha256": "5ffbce951408a171a83f6694f30beb1c1ef318e50c60d5b69ea4c3e02b284057"
+    "sha256": "3b317d5f0b5bbd875de2df42271186445475ac6d7ecbc8386dd321af9787e5aa"
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "1c0186d1194fd617b8f923b9b4418c8001125cbe38efbb7257e3a3288bd14988"
+    "sha256": "95919f1ee82b300f9e09c52bf623061edaf2c2ede04416c60d95eeb246b4a9d6"
+  },
+  "browser_source_audit": {
+    "file": "samples/browser-source-audit.json",
+    "sha256": "a3b5ce1521980877571d24c4957241f43ca59ea2ce70dac78a39474a601aeaee"
   }
 }

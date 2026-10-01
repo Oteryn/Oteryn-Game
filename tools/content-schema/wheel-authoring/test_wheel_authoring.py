@@ -137,7 +137,7 @@ class WheelAuthoringTests(unittest.TestCase):
     def test_unique_parameter_omission_rejected(self):
         self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction']['unique_parameters']['numeric_effects'].pop(),'UNIQUE_PARAMETERS')
     def test_unique_behavior_binding_rejected(self):
-        self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction']['unique_parameters'].update(behaviors=['shield_doubles_bonus']),'UNIQUE_BEHAVIOR_BINDING')
+        self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction']['unique_parameters'].update(behaviors=['shield_triples_bonus']),'UNIQUE_BEHAVIOR_BINDING')
     def test_no_unique_payload_on_stat_perk(self):
         def mutate(c):
             data=c['vocations']['knight']['slots']

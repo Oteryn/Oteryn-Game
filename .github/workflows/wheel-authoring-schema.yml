@@ -8,6 +8,7 @@ on:
       - tools/content-schema/item-authoring/**
       - content/assets/files/**
       - imports/official/client-assets/15.30/manifest.json
+      - docs/reference/tibia-manual/characters.md
       - .github/workflows/wheel-authoring-schema.yml
   workflow_dispatch:
 

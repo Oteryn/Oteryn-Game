@@ -26,7 +26,7 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "4122eb64b546264bfd8dcb8999cae0ee9441be36876fc9dba742127476f20a84"
+    "source-parameters.json": "c38f724006b5905ac0b790adb52e51203ed6b66e1e14b5d40c968ecc06bc1384"
   },
   "progression": {
     "minimum_level": 51,
@@ -74,7 +74,15 @@
     },
     "extra_points_evidence": "OTS_HYPOTHESIS_ONLY: Canary player_wheel.cpp:357-363 and config.lua.dist:260; Grade IV from official manual notes",
     "game_premium_activation": "WHEEL-0 owner W1a: apply only after PREM-1 activation",
-    "game_extra_points_activation": "WHEEL-0 section 6.3: zero until each owning feature exists"
+    "game_extra_points_activation": "WHEEL-0 section 6.3: zero until each owning feature exists",
+    "additional_unadmitted_reference_sources": [
+      {
+        "key": "hunting_task_shop",
+        "maximum_points": 50,
+        "source": "FANDOM_1151969",
+        "runtime_admitted": false
+      }
+    ]
   },
   "icon_evidence": {
     "renderer_repository": "https://github.com/PawelKusnierek/TibiaPal",
@@ -99,10 +107,10 @@
     },
     "unavailable_sprite_categories": [],
     "client_asset_crosswalk": "REFERENCE_MANIFEST_COMPLETE; RUNTIME_ASSET_ADMISSION_PENDING",
-    "live_asset_fetch": "HTTP_403_ON_ORIGINAL_CDN_2026_10_01",
+    "live_asset_fetch": "ORIGINAL_CDN_200_VIA_REMOTE_CHROME_CDP_2026_10_01; CLOUD_HTTP_403",
     "reference_sheet_observations": "samples/source-icon-reference.json",
-    "reference_sheet_sha256": "4a49c4b3e2ab60531e4e5677c0b81600ac21014a9a77e02d27b6af451d1f1a4e",
-    "appearance_scope": "ALL_FIVE_REFERENCE_STRIPS_VISUALLY_INSPECTED; CURRENT_GLOBAL_APPEARANCE_NOT_CONFIRMED"
+    "reference_sheet_sha256": "f49f4c0cea261e2a43db0164bd5bbadd07bce61bc542c6d50a4e9b86029c63de",
+    "appearance_scope": "ALL_FIVE_ORIGINAL_SHEETS_VISUALLY_INSPECTED; ALTERNATIVE_FALLBACK_ONLY_FOR_IDENTICAL_CELLS"
   },
   "topology": [
     {
@@ -2422,12 +2430,12 @@
                 },
                 {
                   "kind": "shield_healing_multiplier",
-                  "value": 2,
+                  "value": 3,
                   "unit": "multiplier"
                 }
               ],
               "behaviors": [
-                "shield_doubles_bonus"
+                "shield_triples_bonus"
               ],
               "targets": [
                 "healing_spells"
@@ -7460,19 +7468,18 @@
                   "unit": "seconds"
                 },
                 {
-                  "kind": "next_damage_spell_primary_cooldown_reduction",
+                  "kind": "focus_spell_group_cooldown_reduction",
                   "value": 2,
                   "unit": "seconds"
                 }
               ],
               "behaviors": [
-                "consume_bonus_on_next_damage_spell_after_focus"
+                "consume_bonus_on_next_damage_spell_after_focus",
+                "reduce_focus_spell_group_cooldown"
               ],
               "targets": [
-                "Eternal Winter",
                 "Hell's Core",
-                "Rage of the Skies",
-                "Wrath of Nature"
+                "Rage of the Skies"
               ]
             },
             "augment_stages": [],
@@ -10664,11 +10671,26 @@
             "augment_targets": [],
             "reference_hypotheses": [],
             "unique_parameters": {
-              "numeric_effects": [],
-              "behaviors": [
-                "share_mantra_with_group_members"
+              "numeric_effects": [
+                {
+                  "kind": "shared_mantra_percent",
+                  "value": 100,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "party_bonus_increase_source_percent",
+                  "value": 33,
+                  "unit": "source_percent"
+                }
               ],
-              "targets": []
+              "behaviors": [
+                "share_mantra_with_group_members",
+                "party_bonus_increase_interpretation_requires_runtime_owner"
+              ],
+              "targets": [
+                "group_members",
+                "passive_party_bonuses"
+              ]
             },
             "augment_stages": [],
             "icon": {
@@ -22992,7 +23014,7 @@
         "stage": 1,
         "planner_value": 6,
         "selected_value": 4,
-        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 fetch still failed."
+        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 now read via Chrome/CDP."
       },
       {
         "key": "augmented_thousand_fist_blows",
@@ -23001,7 +23023,7 @@
         "stage": 2,
         "planner_value": 6,
         "selected_value": 4,
-        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 fetch still failed."
+        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 now read via Chrome/CDP."
       },
       {
         "key": "augmented_mystic_repulse",
@@ -23010,7 +23032,7 @@
         "stage": 2,
         "planner_value": 60,
         "selected_value": 40,
-        "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
+        "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, Fandom 1206174 now read via Chrome/CDP; Global target-version conflict remains Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
       }
     ],
     "initial_gems": {
@@ -23024,13 +23046,13 @@
     "planner_unlock_mismatches": 0,
     "legal_allocation_snapshots": 180,
     "live_website_verified": true,
-    "wiki_verified": false,
+    "wiki_verified": true,
     "blockers": [
       "Formal admission requires the content owner review; this candidate changes no runtime ruleset.",
       "Resolve dedication mitigation versus resistance wording in the owning decision.",
       "Bind reference parameters and area names to admitted runtime effect and Spell owners.",
       "Reference icon crosswalk is complete; runtime asset admission remains with the client owner.",
-      "Reference selection follows the Sept 27 project snapshot; current Global parity and failed requested Fandom fetches remain unconfirmed."
+      "Reference selection follows the Sept 27 project snapshot; requested Fandom pages and original sprites were read via Chrome/CDP; Global conflicts are preserved in browser-source-audit.json."
     ]
   }
 }
