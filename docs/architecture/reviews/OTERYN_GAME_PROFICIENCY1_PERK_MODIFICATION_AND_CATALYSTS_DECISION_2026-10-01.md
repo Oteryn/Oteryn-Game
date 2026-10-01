@@ -99,6 +99,16 @@ Table `game_character_proficiency_modifications`, at most 2 rows per track:
   track's modification rows before and after for both slots (absent, unchanged or cleared), and the
   migration CHECKs and the reconcile of PROFICIENCY-0 §4.1 cover them: reconcile recomputes, from
   the two definition revisions, which slots must be cleared and compares them with the line.
+- **Shaping revisions.** `modified_perk` and `pending_offer` name entries of the shaping revision
+  they were drawn from. That revision is **retained while any row references it**: content
+  validation refuses a build that drops or changes a referenced shaping revision, so a stored row
+  always resolves to the same perk. A row is evaluated (its active perk, a `RESHAPE_CHOOSE` of its
+  offer, a `CLEAR`) against its own stored revision, never the current one. An operation that would
+  draw or rank under a newer revision (`RANK_UP`, `ORB_RANK`, `RESHAPE_OFFER`) on a row from an older
+  revision is refused `SHAPING_REVISION_OLD` until the value-shape amendment (§4) defines that row's
+  migration; `CLEAR` stays allowed, after which `MODIFY` starts under the current revision. While
+  those operations are `NOT_ADMITTED`, no row exists, so this rule binds the amendment that admits
+  them.
 
 ## 4. Operations (PROF-SHAPE-1)
 
@@ -132,7 +142,8 @@ is the `character_root`, the track row and its modification rows, the forge dust
   Every later replay of that occurrence, under any CommandId, returns the same rejection, even if the
   active set later equals the bound set again. If the terminal write's outcome is unknown, the
   occurrence stays refused until reconciliation reads the receipt; it is never evaluated meanwhile.
-  The receipt counts against `PROF1-RL-04`.
+  `PROF1-RL-04` is charged when the occurrence is reserved, before evaluation, so the terminal
+  receipt uses the slot its own reservation already took and is never refused by the cap.
 - **Value: not admitted here.** The value-spending operations (`MODIFY`, `RANK_UP`, `ORB_RANK`,
   `RESHAPE_OFFER`) need composed DUR-03 §39.3 shapes: the proficiency receipt together with a forge
   dust burn or a one-unit orb burn, with resource, evidence and audit bounds. This decision does not
@@ -145,7 +156,7 @@ is the `character_root`, the track row and its modification rows, the forge dust
   an owner answer before the operation is admitted. This decision admits no gold cost.
 - **Refusals** (nothing written): `NOT_IN_PROTECTION_ZONE`, `SLOT_LOCKED`, `SLOT_OCCUPIED`,
   `NO_SELECTION`, `NO_MODIFICATION`, `RANK_MAX`, `NO_PENDING_OFFER`, `OFFER_PENDING`,
-  `INSUFFICIENT_DUST`, `NO_ORB`, `POOL_TOO_SMALL` (no other entry to offer), `MODIFIED_LEVEL` (a
+  `INSUFFICIENT_DUST`, `SHAPING_REVISION_OLD` (§3), `NO_ORB`, `POOL_TOO_SMALL` (no other entry to offer), `MODIFIED_LEVEL` (a
   selection change at a modified level, §3), `STALE_REVISION` (the client's expected track revision differs),
   `NOT_ADMITTED` (§5). `REVISION_CHANGED` is the one refusal that writes its terminal receipt
   (above).
@@ -187,7 +198,7 @@ their state.
 | `PROF1-RL-01` modification slots per track | 2 |
 | `PROF1-RL-02` rank | 1..10 |
 | `PROF1-RL-03` reshape options | 3 |
-| `PROF1-RL-04` modification receipts per character per minute | 30 (anti-spam; a refusal other than `REVISION_CHANGED` writes nothing) |
+| `PROF1-RL-04` modification receipts per character per minute | 30, charged at reservation (anti-spam; a refusal other than `REVISION_CHANGED` writes nothing, and the `REVISION_CHANGED` terminal receipt is never refused by this cap) |
 
 Each with max and max+1 tests.
 
