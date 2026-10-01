@@ -141,7 +141,12 @@ def stack_problem(definition: dict | None, count: int) -> str | None:
             return unsupported
         maximum = {"state": "UNKNOWN"}
         if stack["state"] == "KNOWN":
-            if not isinstance(stack["value"], dict) or "stack_max" not in stack["value"]:
+            if not isinstance(stack["value"], dict) or set(stack["value"]) != {"stackable", "stack_max"}:
+                return unsupported
+            stackable = stack["value"]["stackable"]
+            if not valid_field(stackable):
+                return unsupported
+            if stackable["state"] == "KNOWN" and (type(stackable["value"]) is not bool or not stackable["value"]):
                 return unsupported
             maximum = stack["value"]["stack_max"]
         if not valid_field(maximum):

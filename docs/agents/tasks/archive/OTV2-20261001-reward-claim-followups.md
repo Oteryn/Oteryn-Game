@@ -40,7 +40,9 @@ to keep its exact RewardClaim provenance hash current.
 
 Independent review also exposed malformed KNOWN/UNKNOWN stack envelopes; the helper
 now rejects these explicitly instead of crashing or silently selecting default100.
-Local checks PASS: 11 RewardClaim tests, 83 Quest regressions, 262 schema cases,
+The full KNOWN stack payload is closed and its typed stackable flag is checked
+against StackCapable; missing/extra fields or a contradictory false never become ready.
+Local checks PASS: 12 RewardClaim tests, 83 Quest regressions, 262 schema cases,
 all semantic/deterministic content checks, Ruff 0.13.3 EXE, governance and
 repository policy (59 workflows). Final PR/SHA and frozen-head CI evidence are
 recorded on GitHub after guarded publication. Coordinator owns review dispatch,

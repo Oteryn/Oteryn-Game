@@ -171,6 +171,7 @@ def test_duplicate_key_and_shared_chest_fail() -> None:
 def test_stack_count_at_proven_maximum_and_above() -> None:
     known = items()
     known[COIN]["semantics"] = {"stack": {"state": "KNOWN", "value": {
+        "stackable": {"state": "KNOWN", "value": True},
         "stack_max": {"state": "KNOWN", "value": 5}}}}
     for count, ready in [(5, True), (6, False)]:
         claim = pilot_claim("stack", "canary:item/3031", count)
@@ -189,6 +190,7 @@ def test_stack_default_maximum_and_invalid_proven_maximum() -> None:
     for maximum in [0, 101, True]:
         coin = copy.deepcopy(items()[COIN])
         coin["semantics"] = {"stack": {"state": "KNOWN", "value": {
+            "stackable": {"state": "KNOWN", "value": True},
             "stack_max": {"state": "KNOWN", "value": maximum}}}}
         assert "unsupported stack maximum" in rca.stack_problem(coin, 1)
 
@@ -230,6 +232,18 @@ def test_malformed_stack_fields_never_default_or_crash() -> None:
         assert records[0]["definition"]["readiness"] == "waiting_item_semantics"
         records[0]["definition"]["readiness"] = "ready"
         assert any("marked ready" in e for e in rca.validate(records, known, checks))
+
+
+def test_known_stack_payload_is_closed_and_class_consistent() -> None:
+    maximum = {"state": "KNOWN", "value": 5}
+    invalid = [{"stack_max": maximum},
+               {"stack_max": maximum, "stackable": None},
+               {"stack_max": maximum, "stackable": {"state": "KNOWN", "value": False}},
+               {"stack_max": maximum, "stackable": {"state": "KNOWN", "value": True}, "extra": 1}]
+    for payload in invalid:
+        coin = copy.deepcopy(items()[COIN])
+        coin["semantics"] = {"stack": {"state": "KNOWN", "value": payload}}
+        assert "unsupported" in rca.stack_problem(coin, 1)
 
 
 def test_committed_content_is_valid() -> None:
