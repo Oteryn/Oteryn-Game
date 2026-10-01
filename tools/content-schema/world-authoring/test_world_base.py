@@ -1101,20 +1101,33 @@ class ConvertAndValidateTest(unittest.TestCase):
             path = self.root / where
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(out[where])
-            self.assertEqual(appearance_only.verify(self.root), [])
+            verify = appearance_only.verify
+            self.assertEqual(verify(self.root, declared=frozenset()), [])
             sample = json.loads(out[where])
             sample["rows"][0]["occurrences_on_base_map"] += 1
             path.write_bytes(validate.canonical(sample))
-            self.assertIn("differs from", " ".join(appearance_only.verify(self.root)))
-            # a provisional client id may be left out only as one items.xml declares
+            self.assertIn(
+                "differs from", " ".join(verify(self.root, declared=frozenset()))
+            )
+            # an id moved between appearance-only and items.xml-declared is caught: the
+            # declared ids are pinned, not derived from the sample
             sample["rows"] = []
             path.write_bytes(validate.canonical(sample))
-            self.assertIn("left out", " ".join(appearance_only.verify(self.root)))
-            sample["rows"] = [{**json.loads(out[where])["rows"][0], "id": 100}]
-            path.write_bytes(validate.canonical(sample))
             self.assertIn(
-                "no provisional client id", " ".join(appearance_only.verify(self.root))
+                "differs from", " ".join(verify(self.root, declared=frozenset()))
             )
+            path.write_bytes(out[where])
+            self.assertIn(
+                "in_items_xml", " ".join(verify(self.root, declared=frozenset({1949})))
+            )
+
+    def test_ground_classes_are_pinned(self):
+        import convert_islands as islands
+
+        committed = (islands.ROOT / islands.GROUND_CLASSES).read_bytes()
+        islands.check_ground_classes_pin(committed)
+        with self.assertRaises(islands.ConvertError):
+            islands.check_ground_classes_pin(committed + b" ")
 
     def test_floor_change_summary_counts_kinds_present_on_the_map(self):
         kinds = {100: "down", 101: "down", 102: "up_north", 103: "rope"}

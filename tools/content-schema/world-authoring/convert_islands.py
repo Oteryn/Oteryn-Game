@@ -136,6 +136,21 @@ def palette_ids(root: Path) -> set[int]:
     return {row["source_item_id"] for row in index["palette"]}
 
 
+# sha256 of the committed ground class file, re-derived from the pinned items.xml with
+# --crystal-root; checked without the checkout so its id sets cannot drift.
+GROUND_CLASSES_SHA256 = (
+    "280e6d26ceda61530c112b46f4e6e2547641ee5cb67fa3aa196cb6c7b3b5b43c"
+)
+
+
+def check_ground_classes_pin(data: bytes) -> None:
+    if hashlib.sha256(data).hexdigest() != GROUND_CLASSES_SHA256:
+        raise ConvertError(
+            f"{GROUND_CLASSES} differs from GROUND_CLASSES_SHA256; re-derive it with "
+            "--crystal-root and update the pin"
+        )
+
+
 def ground_source() -> dict:
     """The pinned `items.xml` the ground classes must be derived from."""
     row = next(
@@ -934,9 +949,12 @@ def main() -> int:
     args = parser.parse_args()
     try:
         extra: dict[str, bytes] = {}
+        if not args.crystal_root:
+            check_ground_classes_pin((ROOT / GROUND_CLASSES).read_bytes())
         if args.crystal_root:
             verify_spawns(args.crystal_root, (ROOT / EVIDENCE).read_bytes())
             derived, stale = verify_ground_classes(args.crystal_root, ROOT)
+            check_ground_classes_pin(derived)
             if stale:
                 extra[GROUND_CLASSES] = derived
             if stale and not args.check:

@@ -46,6 +46,13 @@ SAMPLE = HERE / "samples/appearance-only-ids-v1.json"
 PLACEMENTS_INDEX = f"{world_base.DIRECTORY}/index.json"
 APPEARANCES_NAME = re.compile(r"^appearances-([0-9a-f]{64})\.dat$")
 CLASSES = ("ground", "border", "blocking", "decoration")
+# The provisional palette ids the pinned items.xml declares (the capture's `in_items_xml`
+# entries). Pinned here so the sample can be rebuilt without the source checkout.
+PINNED_DECLARED_PROVISIONAL = frozenset(
+    {2141, 34338, 35500, 44118, 44120, 45326, 51636, 53380, 53430, 53431, 53514, 53532}
+    | {53542, *range(53823, 53832), 53841, *range(53873, 53885), 53897, 54261}
+    | {*range(54390, 54395), 54515, 54613, 54614}
+)
 CLASS_RULE = [
     "bank flag: ground; the bank waypoints value is `speed`",
     "else clip flag: border",
@@ -191,42 +198,38 @@ def build(declared: set[int], root: Path = ROOT, workers: int = 1) -> dict[str, 
     return {str(SAMPLE.relative_to(ROOT)): canonical(document)}
 
 
-def verify(root: Path = ROOT, workers: int = 1) -> list[str]:
+def verify(
+    root: Path = ROOT,
+    workers: int = 1,
+    declared: frozenset[int] = PINNED_DECLARED_PROVISIONAL,
+) -> list[str]:
     """Check the committed sample against the committed placements and client asset alone.
 
-    Which provisional ids the pinned `items.xml` declares is not in the repository, so the
-    sample's own id list stands in for it, bounded by the base map capture: every listed id
-    must be a provisional palette id the client knows, and at most the capture's
-    `in_items_xml` entries of those may be left out. Everything else (classes, names,
-    speeds, occurrences, totals and pins) is rebuilt and compared byte for byte."""
+    `declared` (default: the pinned provisional ids of the pinned `items.xml`) stands in for
+    the source checkout: it must be exactly the capture's `in_items_xml` entries of
+    provisional palette ids, and the sample is rebuilt from it and compared byte for byte
+    (ids, classes, names, speeds, occurrences, totals and pins)."""
     path = root / SAMPLE.relative_to(ROOT)
     where = str(SAMPLE.relative_to(ROOT))
-    sample = json.loads(path.read_text(encoding="utf-8"))
     palette = json.loads((root / PLACEMENTS_INDEX).read_text(encoding="utf-8"))[
         "palette"
     ]
     capture = json.loads(
         (root / world_base.SUMMARY.relative_to(ROOT)).read_text(encoding="utf-8")
     )
-    client, _source = load_client(root)
     provisional = {row["source_item_id"] for row in palette if row["provisional"]}
-    candidates = provisional & set(client)
-    listed = {row["id"] for row in sample["rows"]}
     errors = []
-    if listed - candidates:
+    if (
+        declared - provisional
+        or len(declared)
+        != (capture["palette"]["provisional"]["in_items_xml"]["entries"])
+    ):
         errors.append(
-            f"{where}: ids that are no provisional client id: "
-            f"{sorted(listed - candidates)[:10]}"
+            f"{where}: the pinned declared ids are not the capture's in_items_xml "
+            "provisional palette ids"
         )
-    declared_limit = capture["palette"]["provisional"]["in_items_xml"]["entries"]
-    if len(candidates - listed) > declared_limit:
-        errors.append(
-            f"{where}: {len(candidates - listed)} provisional client ids are left out, "
-            f"more than the {declared_limit} the pinned items.xml declares"
-        )
-    if errors:
         return errors
-    out = build(provisional - listed, root, workers)
+    out = build(set(declared), root, workers)
     if out[where] != path.read_bytes():
         errors.append(f"{where}: differs from the committed placements and appearances")
     return errors
@@ -240,7 +243,17 @@ def main() -> int:
     args = parser.parse_args()
     try:
         raw = read_items_xml(args.crystal_root)
-        out = build(world_base.items_xml_ids(raw), workers=args.workers)
+        declared = world_base.items_xml_ids(raw)
+        palette = json.loads((ROOT / PLACEMENTS_INDEX).read_text(encoding="utf-8"))[
+            "palette"
+        ]
+        provisional = {row["source_item_id"] for row in palette if row["provisional"]}
+        if provisional & declared != PINNED_DECLARED_PROVISIONAL:
+            raise ConvertError(
+                "the provisional ids items.xml declares differ from "
+                "PINNED_DECLARED_PROVISIONAL"
+            )
+        out = build(declared, workers=args.workers)
     except (ConvertError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)
         return 1
