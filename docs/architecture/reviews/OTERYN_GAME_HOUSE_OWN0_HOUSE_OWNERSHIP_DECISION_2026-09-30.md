@@ -204,6 +204,9 @@ This is the EXP-HOUSES-01 §12.3 and §14.7 ordering.
    disposition functions: the fence does not rely on a runtime remembering to check it. The same
    transaction records the fenced full content set: its count and a SHA-256 over the sorted
    ItemInstanceIds.
+   **Amendment (pending on acceptance of BED-0; `reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md` §6).** The same transaction frees every
+   open bed sleeper row of the house (`freed_cause` `disposition`); a later transition that changes
+   the owner without a disposition frees them with `owner_change`.
 2. **Steps** (DUR-03 §34): each moves at most 100 items, in ItemInstanceId order, from
    `HouseInterior` to the `CharacterInbox` of each item's reclaim subject (never the owner by
    default), retiring the provenance. A step is keyed by (operation, step) and replays. Inbox
