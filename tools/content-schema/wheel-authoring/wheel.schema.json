@@ -1515,8 +1515,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0,
-              "maximum": 100
+              "maximum": 100,
+              "exclusiveMinimum": 0
             },
             "unit": {
               "const": "percent_points"

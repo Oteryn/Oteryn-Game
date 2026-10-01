@@ -24,6 +24,9 @@ BOUNDED_PERCENT_KINDS = ('critical_hit_chance', 'momentum_chance', 'rune_trigger
 def parameter_value_schema(kind, unit):
     result={'type':'integer' if unit in COUNT_UNITS else 'number','minimum':0}
     if kind in BOUNDED_PERCENT_KINDS:result['maximum']=100
+    if kind=='missing_health_step':
+        result.pop('minimum')
+        result['exclusiveMinimum']=0
     return result
 def finite_json(value):
     if isinstance(value,float) and not math.isfinite(value):raise ValueError('NON_FINITE_NUMBER')
