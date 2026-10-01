@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "3ed3c1887a3a47b538fff3d858fe4fef622d614fe15f1c839671dca68bc9199f",
+        "3b9628ff7f1275fde189952ea8226f9bd674e5598698a6c40ac7aa3851b1ea07",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        22_217_404,
-        "37ccf416c98eef85db0974f1a2177b18d4f0249204d062c92c473702b3272c27",
+        22_217_806,
+        "61aa7a57f7f4ea8778c6a909f9f7d51a20e4292886987b8ad1dedf2e137dbc01",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "98a25b3cb2dfc9b27bc15b6ff4b40088266d5b4a9fe3349176fcd1c339ce38c2",
+        "3d85a3e618003192f150700e8924b7816a3b20a60b1ce9578b6fb8ac84d58218",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "9b542bd5d79d6ef2fc23f2616672c265f80f23b79c548b81d25c2f4b8cebcbfe",
+        "b669fab0989e15c2aecd41983293d1ca12ee4c1dfedb7079a11d1eec17f6258e",
     ),
     (
         "provenance/imports.json",
@@ -107,7 +107,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "ca123f67de9d9b8d7abd6c05f710c97951f24bb937a01523763d2239a21bfea3";
+const TREE_SHA256: &str = "19c642e2b1a375df44b4d1558533a13fa956c3a10085405ec96f734a79a4d46c";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
 const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
@@ -960,8 +960,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         });
     // Wave 1 promoted 290 atoms on 164 items; ITEM-SEM-2b adds TibiaWiki weapon types and
     // imbuement slot counts on the same paths for 1,269 more atoms (995 more items).
+    // STARTER-CONTENT-1 adds `stackable: false` on the backpack, which already has a slot count.
     assert_eq!(wave1_items, 164 + 995);
-    assert_eq!(wave1_fields, 290 + 1_269);
+    assert_eq!(wave1_fields, 290 + 1_269 + 1);
 }
 
 #[test]
