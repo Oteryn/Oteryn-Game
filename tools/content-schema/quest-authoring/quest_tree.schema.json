@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/quest-tree/v1",
+  "title": "First reward_only Quest data-only tree batch",
+  "description": "Canonical definitions resolve existing RewardClaim data. Source refs are aliases/evidence, not admitted production references. Populated is scoped, not full catalogue or runtime readiness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "family", "shard", "records"],
+  "properties": {
+    "schema": {"const": "OTERYN_QUEST_TREE_SHARD/v1"},
+    "family": {"const": "Quest"},
+    "shard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "start", "end", "count"],
+      "properties": {
+        "index": {"type": "integer", "minimum": 0},
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 0},
+        "count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["definition"],
+        "properties": {"definition": {"$ref": "#/$defs/quest"}}
+      },
+      "minItems": 1,
+      "maxItems": 100
+    }
+  },
+  "$defs": {
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "key", "revision"],
+      "properties": {
+        "family": {"enum": ["Quest", "RewardClaim", "Gate"]},
+        "key": {
+          "type": "string",
+          "pattern": "^(canary|crystalserver):[a-z0-9_./-]+$"
+        },
+        "revision": {"type": "string", "minLength": 1}
+      }
+    },
+    "canonicalClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "key", "revision"],
+      "properties": {
+        "family": {"const": "RewardClaim"},
+        "key": {
+          "type": "string",
+          "pattern": "^oteryn:reward-claim\\.[a-z0-9_.-]+$"
+        },
+        "revision": {"type": "string", "minLength": 1}
+      }
+    },
+    "missingData": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "source_key"],
+          "properties": {
+            "code": {
+              "enum": [
+                "claim_content_missing",
+                "claim_item_semantics_missing"
+              ]
+            },
+            "source_key": {"type": "string", "minLength": 1}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "field"],
+          "properties": {
+            "code": {"const": "requirement_unknown"},
+            "field": {"enum": ["premium", "min_level"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code"],
+          "properties": {
+            "code": {
+              "enum": [
+                "source_kind_log_flag_conflict",
+                "source_readiness_missing"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "field", "count"],
+          "properties": {
+            "code": {"const": "reported_source_gap"},
+            "field": {"type": "string", "minLength": 1},
+            "count": {"type": "integer", "minimum": 1}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "source_key"],
+          "properties": {
+            "code": {"const": "gate_source_gap"},
+            "source_key": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "quest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "display_name",
+        "kind",
+        "shown_in_quest_log",
+        "requirements",
+        "requirements_from_wiki",
+        "requirements_unparsed",
+        "claims",
+        "unresolved_claims",
+        "readiness",
+        "missing_data",
+        "classification",
+        "source_refs",
+        "completeness",
+        "reported_source_readiness"
+      ],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["key", "revision"],
+          "properties": {
+            "key": {
+              "type": "string",
+              "pattern": "^oteryn:quest\\.[a-z0-9_.-]+$"
+            },
+            "revision": {"const": "quest-r1"}
+          }
+        },
+        "display_name": {"type": "string", "minLength": 1},
+        "kind": {"const": "reward_only"},
+        "shown_in_quest_log": {"type": "boolean"},
+        "requirements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "premium": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "min_level": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "requirements_from_wiki": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "premium": {
+              "type": "string"
+            },
+            "lvl": {"type": "string"}
+          }
+        },
+        "requirements_unparsed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "premium": {
+              "enum": [
+                "partial",
+                "uncertain",
+                "unrecognized"
+              ]
+            },
+            "min_level": {
+              "enum": [
+                "range",
+                "note",
+                "uncertain",
+                "none",
+                "varies",
+                "unrecognized"
+              ]
+            }
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/canonicalClaim"}
+        },
+        "unresolved_claims": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/sourceRef"}
+        },
+        "readiness": {"enum": ["definition_ready", "waiting_data"]},
+        "missing_data": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/missingData"}
+        },
+        "classification": {"const": "OTS_HYPOTHESIS_ONLY"},
+        "source_refs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["quest", "claims", "gates"],
+          "properties": {
+            "quest": {
+              "$ref": "#/$defs/sourceRef"
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/sourceRef"
+              },
+              "minItems": 1
+            },
+            "gates": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/sourceRef"
+              }
+            }
+          }
+        },
+        "wiki": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "pageid", "revid"],
+          "properties": {
+            "title": {"type": "string", "minLength": 1},
+            "pageid": {"type": "integer", "minimum": 0},
+            "revid": {"type": "integer", "minimum": 0}
+          }
+        },
+        "completeness": {"const": "NOT_ASSESSED"},
+        "reported_source_readiness": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "quest",
+                "kind",
+                "features",
+                "interactions",
+                "data_gaps"
+              ],
+              "properties": {
+                "quest": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "const": "reward_only"
+                },
+                "features": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "interactions": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "data_gaps": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "interactions_with_gaps",
+                    "unresolved_items"
+                  ],
+                  "properties": {
+                    "interactions_with_gaps": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "unresolved_items": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"readiness": {"const": "definition_ready"}}},
+          "then": {
+            "properties": {
+              "claims": {"minItems": 1},
+              "unresolved_claims": {"maxItems": 0},
+              "missing_data": {"maxItems": 0},
+              "requirements": {
+                "required": [
+                  "premium",
+                  "min_level"
+                ],
+                "properties": {
+                  "premium": {
+                    "type": "boolean"
+                  },
+                  "min_level": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "else": {"properties": {"missing_data": {"minItems": 1}}}
+        }
+      ]
+    }
+  }
+}

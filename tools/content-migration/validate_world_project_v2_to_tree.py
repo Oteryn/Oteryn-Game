@@ -354,10 +354,16 @@ def main() -> int:
         "legacy_mutated": False,
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
+    from world_project_v2_to_tree import retained_quest_registration
+    quest_families, quest_paths = retained_quest_registration(ROOT)
+    if quest_families:
+        require("Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"], "QUEST_PROJECT_REGISTRATION")
+        require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
     require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
-                                       "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT},
+                                       "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,
+                                       **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 34031 and len(item_index["shards"]) == 69, "ITEM_INDEX")

@@ -16,11 +16,18 @@ assert manifest["compatibility"] == {
     "legacy_root": "content/world",
     "runtime_switch_authorized": False,
 }
+from world_project_v2_to_tree import retained_quest_registration
+quest_families, quest_paths = retained_quest_registration(ROOT)
+if quest_families:
+    assert "Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"]
+    assert set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]})
+
 assert lock["family_counts"] == {
     "Item": 34031, "Mount": 252,
     "Creature": 1503, "Presentation": 2613, "Behavior": 2613, "Loot": 1056, "Ability": 6000, "Effect": 4599, "Formula": 4905,
     "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
     "Proficiency": 443, "RewardClaim": 231, "StarterKit": 1,
+    **{family: value["records"] for family, value in quest_families.items()},
 }
 assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1503, "Encounter": 61, "NPC": 2376}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
@@ -64,6 +71,9 @@ assert "StarterKit" in project["migrated_families"]
 assert "content/starter/starter-kits-00000-00000.json" in paths and "content/starter/index.json" in paths
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
+
+# Keep the standalone Quest preservation guards on the migration workflow's test path.
+subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_registration_preservation.py")], check=True)
 
 # The RewardClaim family has no legacy source: its own authoring tool must reproduce it exactly.
 reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
