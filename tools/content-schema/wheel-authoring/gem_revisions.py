@@ -60,4 +60,3 @@ def validate_gem_revision(candidate, previous):
         require(declaration['kind'] == 'staged_migration', 'GEM_REVISION_KIND')
         require(isinstance(record.get('native_migration_reference'), str) and
                 bool(record['native_migration_reference'].strip()), 'GEM_NATIVE_MIGRATION_REFERENCE')
-
