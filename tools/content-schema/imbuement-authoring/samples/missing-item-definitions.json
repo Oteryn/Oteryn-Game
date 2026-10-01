@@ -3,7 +3,7 @@
   "inputs": {
     "owning_item_schema_sha256": "b58bba554efd346b9f33103a889acfb571b97861ee06be460a474f0c115b3c1c",
     "primary_appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
-    "source_facts_sha256": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d",
+    "source_facts_sha256": "6364ba74b3d3c63e161042a4df782faa7bfcd76c36004e89428b7da69ca77086",
     "test_wiki_facts_sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
   },
   "proposals": [
@@ -11,7 +11,8 @@
       "admission_requirements": [
         "Owning Item population must admit the proposed exact identity before any ItemRef is activated.",
         "Owning Presentation population must admit the primary-client appearance and sprite dependencies.",
-        "delivery_task_eligible=false is a conservative draft authoring default, not an observed global rule."
+        "delivery_task_eligible=false is a conservative draft authoring default, not an observed global rule.",
+        "Source facts and excerpts qualify the proposed data; they do not prove an immutable server snapshot on the target date."
       ],
       "authoring_definition": {
         "container": {
@@ -141,12 +142,21 @@
           "count": 55,
           "exchange_source_name": "Tentacle Piece",
           "notes": "Dread Guardian exchange is during Devovorga Essence mini world change.",
+          "npc_location_labels": {
+            "Dread Guardian": "Vengoth",
+            "Malunga": "Liberty Bay"
+          },
           "npc_names": [
             "Malunga",
             "Dread Guardian"
           ]
         },
         "client_id": 49160,
+        "evidence_limits": [
+          "Published item-page approval dates are not introduction dates; dated update-page publication and the named item version establish the introduction date used here.",
+          "Acquisition and lifecycle observations describe these public sources; no NPCRef or runtime transaction is admitted by this proposal.",
+          "Community location labels may describe a wider area than the client NPC location; retain provider-specific precision rather than silently equating them."
+        ],
         "facts": {
           "allowed_imbuement_max_tiers": {
             "featherweight": 3
@@ -161,26 +171,153 @@
           "tradeable": true,
           "weight_oz": "1.50"
         },
+        "field_evidence": {
+          "acquisition_facts.count": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "Pode ser obtida ao trocar 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") com o NPC [Dread Guardian](https://www.tibiawiki.com.br/wiki/Dread_Guardian \"Dread Guardian\") durante a Mini World Change [Devovorga's Essence]",
+            "observed_value": 55,
+            "source": "wiki_br"
+          },
+          "acquisition_facts.exchange_source_name": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "Pode ser obtida ao trocar 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") com o NPC [Dread Guardian](https://www.tibiawiki.com.br/wiki/Dread_Guardian \"Dread Guardian\") durante a Mini World Change [Devovorga's Essence]",
+            "observed_value": "Tentacle Piece",
+            "source": "wiki_br"
+          },
+          "acquisition_facts.notes": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "Pode ser obtida ao trocar 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") com o NPC [Dread Guardian](https://www.tibiawiki.com.br/wiki/Dread_Guardian \"Dread Guardian\") durante a Mini World Change [Devovorga's Essence]",
+            "observed_value": "Dread Guardian exchange is during Devovorga Essence mini world change.",
+            "source": "wiki_br"
+          },
+          "acquisition_facts.npc_location_labels": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "| [Malunga](https://www.tibiawiki.com.br/wiki/Malunga)![Image 8: Malunga.gif](https://www.tibiawiki.com.br/images/9/98/Malunga.gif) | [Liberty Bay](https://www.tibiawiki.com.br/wiki/Liberty_Bay \"Liberty Bay\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") | | [Dread Guardian](https://www.tibiawiki.com.br/wiki/Dread_Guardian)![Image 9: Dread Guardian.gif](https://www.tibiawiki.com.br/images/a/a9/Dread_Guardian.gif) | [Vengoth](https://www.tibiawiki.com.br/wiki/Vengoth \"Vengoth\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") ",
+            "observed_value": {
+              "Dread Guardian": "Vengoth",
+              "Malunga": "Liberty Bay"
+            },
+            "source": "wiki_br"
+          },
+          "acquisition_facts.npc_names": {
+            "excerpt_scope": "EXACT_CAPTURED_HTML",
+            "literal_excerpt": "NPC <a href=\"https://tibiopedia.pl/npcs/Dread_Guardian\"><img src=\"https://tibiopedia.pl/images/static/npcs/dread_guardian.gif\"/></a> i NPC <a href=\"https://tibiopedia.pl/npcs/Malunga\">",
+            "observed_value": [
+              "Malunga",
+              "Dread Guardian"
+            ],
+            "source": "tibiopedia"
+          },
+          "facts.allowed_imbuement_max_tiers": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Możliwe nasycenia: Capacity lvl 3:",
+            "observed_value": {
+              "featherweight": 3
+            },
+            "source": "tibiopedia"
+          },
+          "facts.container_capacity": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "Bursa Obscura (Vol: 1).",
+            "observed_value": 1,
+            "source": "wiki_br"
+          },
+          "facts.description": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Opis: A mysterious pouch from an extra-dimensional realm.",
+            "observed_value": "A mysterious pouch from an extra-dimensional realm.",
+            "source": "tibiopedia"
+          },
+          "facts.imbuement_slots": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Sloty: 1",
+            "observed_value": 1,
+            "source": "tibiopedia"
+          },
+          "facts.introduced_on": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Data publikacji: 06.08.2024",
+            "observed_value": "2024-08-06",
+            "source": "tibiopedia_update"
+          },
+          "facts.introduced_version": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Dodane w wersji: 13.40.e15431",
+            "observed_value": "13.40.e15431",
+            "source": "tibiopedia"
+          },
+          "facts.marketable": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "Este item pode ser comercializado pelo [Mercado]",
+            "observed_value": true,
+            "source": "wiki_br"
+          },
+          "facts.stackable": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Unieść Łączenie Zaczarowanie tak nie nie",
+            "observed_value": false,
+            "source": "tibiopedia"
+          },
+          "facts.tradeable": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "|Jogadores.",
+            "observed_value": true,
+            "source": "wiki_br"
+          },
+          "facts.weight_oz": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Waga: 1.50 oz.",
+            "observed_value": "1.50",
+            "source": "tibiopedia"
+          },
+          "lifecycle_facts.imbuement_slot_added_in_version": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "A partir do update [13.41.a953fd](https://www.tibiawiki.com.br/wiki/Patches/13.41.0000#Patch_13.41.a953fd \"Patches/13.41.0000\") foi adicionado 1 slot de imbuement.",
+            "observed_value": "13.41.a953fd",
+            "source": "wiki_br"
+          },
+          "lifecycle_facts.malunga_exchange_added_in_version": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "A partir do update [14.00.0e4f6f](https://www.tibiawiki.com.br/index.php?title=Patches/14.00.0000&action=edit&redlink=1 \"Patches/14.00.0000 (página inexistente)\") ela também pode ser obtida ao trocar 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") com o NPC [Malunga](https://www.tibiawiki.com.br/wiki/Malunga \"Malunga\") em Liberty Bay.",
+            "observed_value": "14.00.0e4f6f",
+            "source": "wiki_br"
+          }
+        },
+        "field_evidence_sha256": "004841f374f2931f1d91e688b9e0f0fe0c334dde9d2c42fbd1cf6c14b8f6e120",
+        "lifecycle_facts": {
+          "imbuement_slot_added_in_version": "13.41.a953fd",
+          "malunga_exchange_added_in_version": "14.00.0e4f6f"
+        },
         "source_name": "Bursa Obscura",
         "sources": {
           "tibiopedia": {
+            "captured_on": "2026-10-01",
             "digest_scope": "native captured HTML",
             "observed_fields": [
               "allowed_imbuement_max_tiers",
               "stackable",
               "weight_oz",
               "imbuement_slots",
-              "introduced_version"
+              "introduced_version",
+              "facts.weight_oz",
+              "facts.imbuement_slots",
+              "facts.allowed_imbuement_max_tiers",
+              "facts.stackable",
+              "facts.introduced_version",
+              "facts.description",
+              "acquisition_facts.npc_names"
             ],
             "sha256": "c7968262aa0ddb166b6504af6d09b511e0f4e79998e51d05ae52ba565a8afd57",
             "url": "https://tibiopedia.pl/items/Bursa_Obscura"
           },
           "tibiopedia_update": {
+            "captured_on": "2026-10-01",
             "digest_scope": "Exact public HTML bytes; page title, publication date and named Bursa Obscura item row",
             "evidence_status": "DATED_COMMUNITY_VERSION_PAGE_WITH_EXPLICIT_NAMED_ITEM_ROW",
             "observed_fields": [
               "introduced_version",
-              "introduced_on"
+              "introduced_on",
+              "facts.introduced_on"
             ],
             "observed_item_url": "https://tibiopedia.pl/items/Bursa_Obscura",
             "observed_publication_date": "06.08.2024",
@@ -190,6 +327,7 @@
             "verified_page_title": "Update: 13.40.e15431 - Tibia ~ Tibiopedia.pl"
           },
           "wiki_br": {
+            "captured_on": "2026-10-01",
             "digest_scope": "Tavily search include_raw_content extracted markdown",
             "observed_fields": [
               "container_capacity",
@@ -198,7 +336,16 @@
               "marketable",
               "tradeable",
               "introduced_version",
-              "description"
+              "description",
+              "facts.container_capacity",
+              "facts.marketable",
+              "facts.tradeable",
+              "acquisition_facts.exchange_source_name",
+              "acquisition_facts.count",
+              "acquisition_facts.notes",
+              "acquisition_facts.npc_location_labels",
+              "lifecycle_facts.imbuement_slot_added_in_version",
+              "lifecycle_facts.malunga_exchange_added_in_version"
             ],
             "published_approval_date": "2025-07-06",
             "revision_id": 427070,
@@ -208,7 +355,7 @@
           }
         }
       },
-      "source_facts_sha256": "117bdf8f63f98a84d2430c243d4e67c86e861aebc8fe0583fdc4c223036da901",
+      "source_facts_sha256": "fedb6fcfc3c052976f0215a7bd987a80a1efc506020f301a490e447106fe2719",
       "target_time_status": "PREEXISTING_TARGET_SOURCE_VERSION",
       "validation": {
         "contract": "tools/content-schema/item-authoring/item.schema.json",
@@ -221,7 +368,8 @@
       "admission_requirements": [
         "Owning Item population must admit the proposed exact identity before any ItemRef is activated.",
         "Owning Presentation population must admit the primary-client appearance and sprite dependencies.",
-        "delivery_task_eligible=false is a conservative draft authoring default, not an observed global rule."
+        "delivery_task_eligible=false is a conservative draft authoring default, not an observed global rule.",
+        "Source facts and excerpts qualify the proposed data; they do not prove an immutable server snapshot on the target date."
       ],
       "authoring_definition": {
         "container": {
@@ -344,11 +492,19 @@
           "count": 90,
           "event_name": "The Great Expedition",
           "exchange_source_name": "Event Points",
+          "npc_location_labels": {
+            "Proprietor Piers": "Fibula"
+          },
           "npc_names": [
             "Proprietor Piers"
           ]
         },
         "client_id": 53192,
+        "evidence_limits": [
+          "Published item-page approval dates are not introduction dates; dated update-page publication and the named item version establish the introduction date used here.",
+          "Acquisition and lifecycle observations describe these public sources; no NPCRef or runtime transaction is admitted by this proposal.",
+          "Community location labels may describe a wider area than the client NPC location; retain provider-specific precision rather than silently equating them."
+        ],
         "facts": {
           "allowed_imbuement_max_tiers": {
             "featherweight": 3
@@ -363,21 +519,145 @@
           "tradeable": true,
           "weight_oz": "15.00"
         },
+        "field_evidence": {
+          "acquisition_facts.count": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "| [Proprietor Piers](https://www.tibiawiki.com.br/wiki/Proprietor_Piers)![Image 7: Proprietor Piers.gif](https://www.tibiawiki.com.br/images/c/cc/Proprietor_Piers.gif) | [Fibula](https://www.tibiawiki.com.br/wiki/Fibula \"Fibula\") | 90 [Event Points](https://www.tibiawiki.com.br/wiki/Event_Point \"Event Point\") ",
+            "observed_value": 90,
+            "source": "wiki_br"
+          },
+          "acquisition_facts.event_name": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Event Points, które możemy zdobyć podczas wydarzenia The Great Expedition",
+            "observed_value": "The Great Expedition",
+            "source": "tibiopedia"
+          },
+          "acquisition_facts.exchange_source_name": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "| [Proprietor Piers](https://www.tibiawiki.com.br/wiki/Proprietor_Piers)![Image 7: Proprietor Piers.gif](https://www.tibiawiki.com.br/images/c/cc/Proprietor_Piers.gif) | [Fibula](https://www.tibiawiki.com.br/wiki/Fibula \"Fibula\") | 90 [Event Points](https://www.tibiawiki.com.br/wiki/Event_Point \"Event Point\") ",
+            "observed_value": "Event Points",
+            "source": "wiki_br"
+          },
+          "acquisition_facts.npc_location_labels": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "| [Proprietor Piers](https://www.tibiawiki.com.br/wiki/Proprietor_Piers)![Image 7: Proprietor Piers.gif](https://www.tibiawiki.com.br/images/c/cc/Proprietor_Piers.gif) | [Fibula](https://www.tibiawiki.com.br/wiki/Fibula \"Fibula\") | 90 [Event Points](https://www.tibiawiki.com.br/wiki/Event_Point \"Event Point\") ",
+            "observed_value": {
+              "Proprietor Piers": "Fibula"
+            },
+            "source": "wiki_br"
+          },
+          "acquisition_facts.npc_names": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "| [Proprietor Piers](https://www.tibiawiki.com.br/wiki/Proprietor_Piers)![Image 7: Proprietor Piers.gif](https://www.tibiawiki.com.br/images/c/cc/Proprietor_Piers.gif) | [Fibula](https://www.tibiawiki.com.br/wiki/Fibula \"Fibula\") | 90 [Event Points](https://www.tibiawiki.com.br/wiki/Event_Point \"Event Point\") ",
+            "observed_value": [
+              "Proprietor Piers"
+            ],
+            "source": "wiki_br"
+          },
+          "facts.allowed_imbuement_max_tiers": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Możliwe nasycenia: Capacity lvl 3:",
+            "observed_value": {
+              "featherweight": 3
+            },
+            "source": "tibiopedia"
+          },
+          "facts.container_capacity": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "Sailor's Backpack (Vol: 24).",
+            "observed_value": 24,
+            "source": "wiki_br"
+          },
+          "facts.description": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Opis: -",
+            "observed_value": null,
+            "source": "tibiopedia"
+          },
+          "facts.imbuement_slots": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Sloty: 1",
+            "observed_value": 1,
+            "source": "tibiopedia"
+          },
+          "facts.introduced_on": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Data publikacji: 04.08.2026",
+            "observed_value": "2026-08-04",
+            "source": "tibiopedia_update"
+          },
+          "facts.introduced_version": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Dodane w wersji: 15.32.fc9100",
+            "observed_value": "15.32.fc9100",
+            "source": "tibiopedia"
+          },
+          "facts.marketable": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "Este item pode ser comercializado pelo [Mercado]",
+            "observed_value": true,
+            "source": "wiki_br"
+          },
+          "facts.stackable": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Unieść Łączenie Zaczarowanie tak nie nie",
+            "observed_value": false,
+            "source": "tibiopedia"
+          },
+          "facts.tradeable": {
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
+            "literal_excerpt": "|Jogadores.",
+            "observed_value": true,
+            "source": "wiki_br"
+          },
+          "facts.weight_oz": {
+            "excerpt_scope": "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+            "literal_excerpt": "Waga: 15.00 oz.",
+            "observed_value": "15.00",
+            "source": "tibiopedia"
+          }
+        },
+        "field_evidence_sha256": "f249cd7e851e77a86763cfd59dae2945d2e5175e7b4730ef0dda19ac736b0c4e",
         "source_name": "Sailor's Backpack",
         "sources": {
           "tibiopedia": {
+            "captured_on": "2026-10-01",
             "digest_scope": "native captured HTML",
             "observed_fields": [
               "allowed_imbuement_max_tiers",
               "stackable",
               "weight_oz",
               "imbuement_slots",
-              "introduced_version"
+              "introduced_version",
+              "facts.weight_oz",
+              "facts.imbuement_slots",
+              "facts.allowed_imbuement_max_tiers",
+              "facts.stackable",
+              "facts.introduced_version",
+              "facts.description",
+              "acquisition_facts.event_name"
             ],
             "sha256": "2965b8ca85fbb46eb057a3888f98218bfcef36e494cca06648972aaf376e1ff7",
             "url": "https://tibiopedia.pl/items/Sailor%27s_Backpack"
           },
+          "tibiopedia_update": {
+            "captured_on": "2026-10-01",
+            "digest_scope": "Exact public HTML bytes; page title, publication date and named Sailor's Backpack item row",
+            "evidence_status": "DATED_COMMUNITY_VERSION_PAGE_WITH_EXPLICIT_NAMED_ITEM_ROW",
+            "observed_fields": [
+              "introduced_version",
+              "introduced_on",
+              "facts.introduced_on"
+            ],
+            "observed_item_url": "https://tibiopedia.pl/items/Sailor%27s_Backpack",
+            "observed_publication_date": "04.08.2026",
+            "published_on": "2026-08-04",
+            "sha256": "091869a9689ac1cc4c2a3f462c1a131c0e43b39964ca5a9d9b3561e713de017c",
+            "url": "https://tibiopedia.pl/updates/15.32.fc9100",
+            "verified_page_title": "Update: 15.32.fc9100 - Tibia ~ Tibiopedia.pl"
+          },
           "wiki_br": {
+            "captured_on": "2026-10-01",
             "digest_scope": "Tavily search include_raw_content extracted markdown",
             "observed_fields": [
               "container_capacity",
@@ -387,7 +667,14 @@
               "tradeable",
               "introduced_version",
               "introduced_on",
-              "description"
+              "description",
+              "facts.container_capacity",
+              "facts.marketable",
+              "facts.tradeable",
+              "acquisition_facts.npc_names",
+              "acquisition_facts.npc_location_labels",
+              "acquisition_facts.exchange_source_name",
+              "acquisition_facts.count"
             ],
             "published_approval_date": "2026-08-04",
             "revision_id": 442016,
@@ -397,7 +684,7 @@
           }
         }
       },
-      "source_facts_sha256": "5cfa98ccaa09014557cdb6516dc2f1166a8a361975e69fe6fb39869707d40364",
+      "source_facts_sha256": "be642ef8f3638f0277305925cd71c2c9484fc9707d18c6872f17ba086373b0ee",
       "target_time_status": "INTRODUCED_AFTER_TARGET",
       "validation": {
         "contract": "tools/content-schema/item-authoring/item.schema.json",

@@ -225,7 +225,7 @@ were rejected. Crystal `imbuements` lacks an explicit40529 Gold-Brocaded Cloth
 entry in its pinned `items.xml`, although the recipe references it. This is a
 named-XML coverage gap, not proof the item cannot load from client appearances.
 Canary critical execution adds the configured5%/10% character baseline to its
-XML10% chance and15/25/50% modifiers, producing15% and25/35/60% without other
+XML10% chance and 15/25/50% modifiers, producing15% and25/35/60% without other
 bonuses; Oteryn deliberately stores+5%/+5,15,40% modifiers separately. Canary
 also has an active PvP paralysis-reflection branch, which is not selected as
 current Global behavior. Crystal's inspected `getImbuements` uses a boolean as
@@ -245,10 +245,36 @@ system, and generic Item schemas are not a replacement for the dedicated rules,
 active item state, timers, combat effects or protocol/UI. Green authoring checks
 and generic repository CI do not establish gameplay parity.
 
+## Owner-directed completion and handoff
+
+The remaining authoring sweep qualified four named eligibility fields without
+changing complete profiles or hiding 101 helper/native disagreements. Those
+disagreements reduce to 30 exact difference patterns, not 101 missing recipes.
+Both missing Item proposals now bind all 32 factual fields to source/value/excerpt
+evidence; slot, marketability and stackability conflicts with the primary client
+are rejected. Their canonical registration remains with the owning Item lane.
+
+New full pre-target archives supply the Vibrancy “if initially successful”
+wording, equipped+online Swiftness timer wording and Life-only Damage Prey
+exclusion. A 22 May 2026 Imbuing archive corroborates normal-shrine inventory-first
+then Stash/bank preferences. CM Liamas's 12 June 2025 reply permits Powerful-scroll
+application anywhere without proving equipped-target acceptance or consumed
+units. Eight teaser and 15 live-release forum pages were inspected. Old
+probabilistic-failure material loss and uncompleted sale advertisements were
+rejected as proof of current rollback and transfer preservation.
+
+All 12 observation scopes remain explicit. Nearest archive timestamps are not
+the requested 28 July date, and public before/after state cannot certify hidden
+storage or atomicity. [completion-handoff.md](completion-handoff.md) identifies
+the completed data work, exact remaining capture needs and owning implementation
+children. The architecture/coordinator packet is on
+[#162](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5936579730).
+
 ## Validation
 
-All 166 offline tests pass. The seven replay/schema commands in README pass,
+All 179 offline tests pass. The seven replay/schema commands in README pass,
 including both missing Items through the owning Item validator with zero errors
-and warnings, and an additional reparse of all three pinned engine XMLs. All 69 rule
-records retain qualified source references. The catalogue preserves 12 named
+and warnings, and an additional reparse of all three pinned engine XMLs. All 71
+Global rule records and 17 combat profiles retain qualified source references.
+The catalogue preserves 12 named
 Global observation requirements rather than declaring complete server parity.

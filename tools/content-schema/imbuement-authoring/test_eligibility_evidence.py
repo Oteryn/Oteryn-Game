@@ -138,6 +138,42 @@ class EligibilityEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "source lacks a unique matching named type claim"):
             eligibility.build(packet)
 
+    def test_narrow_field_corroboration_does_not_promote_complete_disputed_profiles(self):
+        kinds = {20065: "ALL_TYPES_TIER_CEILING", 34156: "TYPE_MAX_TIER",
+                 28715: "TYPE_TIER_AVAILABLE", 39158: "TYPE_TIER_AVAILABLE"}
+        for item_id, kind in kinds.items():
+            row = self.items[item_id]
+            self.assertEqual(row["evidence_status"], "DERIVED_SELECTED_OVER_STALE_HELPER")
+            self.assertEqual(row["independent_field_corroborations"][0]["field_kind"], kind)
+            self.assertTrue(any(d["kind"] == "COMMUNITY_TYPE_TIER_DISPUTE" for d in row["discrepancies"]))
+            self.assertEqual(row["allowed_types"], row["community_comparison"][row["selected_eligibility_source"]]["allowed_types"])
+        self.assertEqual(self.packet["summary"]["independently_corroborated_field_items"], 4)
+        self.assertEqual(self.packet["summary"]["independently_corroborated_field_claims"], 4)
+        self.assertEqual(self.packet["summary"]["discrepancy_counts"]["COMMUNITY_TYPE_TIER_DISPUTE"], 101)
+        self.assertEqual(self.items[20068]["independent_field_corroborations"], [])
+        self.assertEqual(self.items[34097]["independent_field_corroborations"], [])
+
+    def test_field_corroboration_requires_exact_named_claim_quote_and_tier_token(self):
+        for mutation in ("identity", "quote", "tier", "duplicate", "source", "context"):
+            with self.subTest(mutation=mutation):
+                packet = copy.deepcopy(self.packet)
+                references = packet["normalized_sources"]["field_corroborations"]
+                claim = packet["source_registry"]["fandom_umbral_blade_basic_ceiling"]["corroboration_claims"][0]
+                if mutation == "identity":
+                    claim["item_name"] = "umbral master blade"
+                elif mutation == "quote":
+                    claim["quote"] += " Invented statement."
+                elif mutation == "tier":
+                    claim["value"] = 2
+                elif mutation == "duplicate":
+                    references.append(copy.deepcopy(references[0]))
+                elif mutation == "source":
+                    references[0]["source_id"] = "primary_client"
+                else:
+                    packet["source_registry"]["tibiaqa_frostflower_swiftness_field"]["corroboration_claims"][0]["quote_context"] = "Ordinary boots"
+                with self.assertRaisesRegex(ValueError, "field corroboration|corroboration lacks"):
+                    eligibility.build(packet)
+
     def test_native_item_restrictions_are_not_overwritten_by_stale_tool(self):
         for item_id, denied, expected in ((49861, "strike", "precision"), (49866, "void", "chop"),
                                          (49869, "void", "chop")):

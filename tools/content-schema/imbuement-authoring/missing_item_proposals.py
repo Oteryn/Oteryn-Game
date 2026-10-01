@@ -70,6 +70,36 @@ def validate_source_provenance(source: dict) -> None:
                 != {"title": [title], "oldid": [str(revision)]}):
             raise ValueError("wiki_br: revision URL disagrees with named revision")
 
+    evidence = source["field_evidence"]
+    if digest(evidence) != source["field_evidence_sha256"]:
+        raise ValueError("selected field evidence digest disagrees")
+    expected_fields = {f"{section}.{field}" for section in
+                       ("facts", "acquisition_facts", "lifecycle_facts")
+                       for field in source.get(section, {})}
+    if set(evidence) != expected_fields:
+        raise ValueError("selected evidence does not exactly cover proposal facts")
+    for section in ("facts", "acquisition_facts", "lifecycle_facts"):
+        for field, value in source.get(section, {}).items():
+            path = f"{section}.{field}"
+            claim = evidence.get(path)
+            if claim is None:
+                raise ValueError(f"{path}: missing field evidence")
+            if claim["observed_value"] != value or type(claim["observed_value"]) is not type(value):
+                raise ValueError(f"{path}: selected evidence disagrees with authored fact")
+            provider = claim["source"]
+            if provider not in source["sources"]:
+                raise ValueError(f"{path}: unknown evidence provider")
+            if path not in source["sources"][provider]["observed_fields"]:
+                raise ValueError(f"{path}: provider does not identify this observed field")
+            if not claim["literal_excerpt"].strip() or claim["excerpt_scope"] not in {
+                "EXACT_CAPTURED_MARKDOWN", "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
+                "EXACT_CAPTURED_HTML",
+            }:
+                raise ValueError(f"{path}: missing or unsupported public excerpt")
+    introduced = source["facts"]["introduced_on"]
+    if not isinstance(introduced, str) or datetime.strptime(introduced, "%Y-%m-%d").date().isoformat() != introduced:
+        raise ValueError("introduced_on: missing exact dated introduction evidence")
+
 
 def build() -> dict:
     sys.path.insert(0, str(ITEM_TOOL))
@@ -113,6 +143,12 @@ def build() -> dict:
         flags, observed = appearance["flags"], source["facts"]
         if not flags.get("flags.container") or not flags.get("flags.take") or flags.get("clothes.slot") != 3:
             raise ValueError(f"{item_id}: primary client does not corroborate portable back-slot container")
+        if client["imbuement_slots"] != observed["imbuement_slots"]:
+            raise ValueError(f"{item_id}: source slot count disagrees with primary field 60")
+        if observed["marketable"] is not bool(flags.get("flags.market")):
+            raise ValueError(f"{item_id}: source marketability disagrees with primary market flag")
+        if observed["stackable"] is not bool(flags.get("flags.cumulative")):
+            raise ValueError(f"{item_id}: source stackability disagrees with primary cumulative flag")
         if not source["sources"]["wiki_br"]["revision_id"]:
             raise ValueError(f"{item_id}: missing revisioned public item evidence")
         authoring = {
@@ -157,6 +193,7 @@ def build() -> dict:
                 "Owning Item population must admit the proposed exact identity before any ItemRef is activated.",
                 "Owning Presentation population must admit the primary-client appearance and sprite dependencies.",
                 "delivery_task_eligible=false is a conservative draft authoring default, not an observed global rule.",
+                "Source facts and excerpts qualify the proposed data; they do not prove an immutable server snapshot on the target date.",
             ],
         })
     wiki_path = ROOT / "imports/tibiawiki/facts/items-stats.json"

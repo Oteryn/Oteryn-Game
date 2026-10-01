@@ -81,6 +81,64 @@ class MissingItemProposalTests(unittest.TestCase):
             self.assertTrue(row["wiki_observations"])
             self.assertTrue(row["primary_client"]["flags"]["flags.take"])
 
+    def test_every_authored_and_acquisition_fact_has_qualified_excerpt(self):
+        for row in self.packet["proposals"]:
+            source = row["source_facts"]
+            expected = {f"{section}.{field}" for section in
+                        ("facts", "acquisition_facts", "lifecycle_facts")
+                        for field in source.get(section, {})}
+            self.assertEqual(set(source["field_evidence"]), expected)
+            self.assertEqual(proposals.digest(source["field_evidence"]),
+                             source["field_evidence_sha256"])
+
+    def test_missing_misbound_and_changed_fact_evidence_is_rejected(self):
+        original = json.loads(proposals.FACTS.read_bytes())["records"][0]
+        for mutation in ("missing", "wrong_value", "wrong_provider", "empty_quote", "not_observed"):
+            with self.subTest(mutation=mutation):
+                source = deepcopy(original)
+                claim = source["field_evidence"]["facts.container_capacity"]
+                if mutation == "missing":
+                    del source["field_evidence"]["facts.container_capacity"]
+                elif mutation == "wrong_value":
+                    claim["observed_value"] = 24
+                elif mutation == "wrong_provider":
+                    claim["source"] = "invented_provider"
+                elif mutation == "empty_quote":
+                    claim["literal_excerpt"] = " "
+                else:
+                    source["sources"][claim["source"]]["observed_fields"].remove("facts.container_capacity")
+                source["field_evidence_sha256"] = proposals.digest(source["field_evidence"])
+                with self.assertRaises(ValueError):
+                    proposals.validate_source_provenance(source)
+
+    def test_selected_evidence_digest_detects_unrecorded_changes(self):
+        source = deepcopy(json.loads(proposals.FACTS.read_bytes())["records"][0])
+        source["field_evidence"]["facts.container_capacity"]["literal_excerpt"] += " changed"
+        with self.assertRaisesRegex(ValueError, "evidence digest"):
+            proposals.validate_source_provenance(source)
+
+    def test_primary_slot_and_trade_flags_reject_source_conflicts(self):
+        original = json.loads(proposals.FACTS.read_bytes())
+        for field, value, expected_error in (
+            ("imbuement_slots", 2, "primary field 60"),
+            ("marketable", False, "primary market flag"),
+            ("stackable", True, "primary cumulative flag"),
+        ):
+            with self.subTest(field=field):
+                facts = deepcopy(original)
+                source = facts["records"][0]
+                source["facts"][field] = value
+                source["field_evidence"]["facts." + field]["observed_value"] = value
+                source["field_evidence_sha256"] = proposals.digest(source["field_evidence"])
+                from pathlib import Path
+                import tempfile
+                with tempfile.TemporaryDirectory() as folder:
+                    path = Path(folder) / "facts.json"
+                    path.write_text(json.dumps(facts))
+                    with patch.object(proposals, "FACTS", path):
+                        with self.assertRaisesRegex(ValueError, expected_error):
+                            proposals.build()
+
 
 if __name__ == "__main__":
     unittest.main()

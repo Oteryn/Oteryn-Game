@@ -393,14 +393,14 @@
   },
   "supporting_catalogues": {
     "crystal-imbuements-evidence.json": "b7f6d5ac40111c103c82a9fc02bc4188be733171a01a1665e588fff41bc8e68c",
-    "global-observation-plan.json": "7b9060e1b401ff36dd29f0ef7002551be58fe74644d33f109edccd66122965b4",
-    "global-rules-evidence.json": "b538d52001b26524ba037d9d23fed1944a69d23939edc6b12b04830440c71807",
+    "global-observation-plan.json": "05718ad4d9fe0c9bf23a5724ec864b9ee9512a31ec62792bceba621c766f1e6e",
+    "global-rules-evidence.json": "24ed1eb24b1f4297ba2fa5c214ddd5ef26856ecc8bd248342c8fbd1f25c1c8a7",
     "imbuement-access.json": "f56f29d4be08c9047eb999a59bf3f7852bf40be4b0d712d774c7b21291883741",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-combat.json": "13fc33f7e10ab6b7a6a72a46e6738ab03e8d3e9a3611d54cc1709dedf00d2fdf",
-    "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
-    "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
-    "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d"
+    "imbuement-combat.json": "86251ba9e2f38277f91a76e8584351e06a0646d8c4506577fb365e7176c52aa8",
+    "imbuement-eligibility.json": "ac311c6ff107cced3db7223c9034d5efdbb64134c19ddb282ef3540db53167f7",
+    "missing-item-definitions.json": "d1984e33fbeea4494986f2ef3f7b9188069d145a317ac45765e25e2997ff4b3b",
+    "missing-item-source-facts.json": "6364ba74b3d3c63e161042a4df782faa7bfcd76c36004e89428b7da69ca77086"
   },
   "completion": {
     "definitions": 24,
@@ -414,8 +414,8 @@
     "validated_missing_item_proposals": 2,
     "source_defined_shrine_routes": 72,
     "completed_scroll_loot_records": 48,
-    "global_rules": 69,
-    "combat_rule_profiles": 16,
+    "global_rules": 71,
+    "combat_rule_profiles": 17,
     "planned_not_observed_scenarios": 28,
     "crystal_imbuements_revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
     "gold_token_exchange_bundles": 9
@@ -423,14 +423,16 @@
   "remaining_global_observation_requirements": [
     {
       "id": "exact_target_snapshot",
-      "reason": "Current manual and current wiki are dated retrievals; change continuity is evidence, not an archived full Global configuration for28July2026.",
+      "reason": "Targeted public Wayback availability queries returned nearest Imbuing22May2026 and BRImbuements16February2026; no exact28July snapshot was returned for these queries. Public archives do not certify immutable Global server configuration or hidden mechanics.",
       "evidence": [
         "official_manual",
-        "fandom_imbuing_full"
+        "fandom_imbuing_full",
+        "fandom_imbuing_archive_2026_05_22"
       ],
       "source_urls": [
         "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
-        "https://tibia.fandom.com/wiki/Imbuing"
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "https://web.archive.org/web/20260522172855/https://tibia.fandom.com/wiki/Imbuing"
       ],
       "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
@@ -451,22 +453,24 @@
     },
     {
       "id": "scroll_application_equipped_target",
-      "reason": "Official unequipped restriction is explicit for shrine; inventory-scroll use does not explicitly specify equipped target acceptance. Exact pinnedCanary player.cpp has an equipped-stat-update branch as explicit OTS hypothesis; general inventory-use wording does not certify equippedGlobal acceptance.",
+      "reason": "New official June2025 anywhere location statement does not say target stays equipped. Equipped acceptance remains unqualified.",
       "evidence": [
         "official_manual",
         "canary_scroll_action",
-        "canary_player_impl"
+        "canary_player_impl",
+        "official_cm_scroll_anywhere_2025"
       ],
       "source_urls": [
         "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
         "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/imbuement_scrolls.lua",
-        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp"
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp",
+        "https://www.tibia.com/forum/?action=thread&postid=39527096#post39527096"
       ],
       "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "fine_grained_timers",
-      "reason": "Dated2021 utility profiles and the historical2020 unchanged0:00h Powerful Void display/occupied-slot report bound known community behavior. A minute display does not measure internal seconds or establish expiration. Exact PZ/combat deadlines, tick rounding, offline restore and transfer boundaries remain unqualified; community claims and OTS implementation may conflict.",
+      "reason": "Full pre-target Swiftness equipped+online outside-combat wording is now corroborated by public11December2025 archive. Exact PZ/combat deadlines, tick precision, logout/save/restore and transfer boundaries remain unqualified.",
       "evidence": [
         "official_manual",
         "wiki_br_imbuements",
@@ -475,7 +479,8 @@
         "tibiaqa_zero_minute_display_2020",
         "tibiaqa_utility_timers_2021",
         "tibiaqa_pz_residual_combat_2025",
-        "fandom_imbuing_full"
+        "fandom_imbuing_full",
+        "fandom_swiftness_archive_2025"
       ],
       "source_urls": [
         "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
@@ -485,49 +490,58 @@
         "https://www.tibiaqa.com/15297/why-hasnt-my-imbuement-period-finished?state=showcomments-15297&show=15297#q15297",
         "https://www.tibiaqa.com/23884/do-i-have-to-unequip-imbued-items-not-to-waste-my-imbuements",
         "https://www.tibiaqa.com/36422/what-conditions-are-necessary-to-tick-down-imbuements",
-        "https://tibia.fandom.com/wiki/Imbuing"
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "https://web.archive.org/web/20251211063342/https://tibia.fandom.com/wiki/Swiftness"
       ],
       "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "combat_pipeline",
-      "reason": "AoE leech, overkill rounding, critical-per-cast RNG, spell exclusions, conversion order, resistance multiplication and paralysis replacement cannot be certified from recipe/effect tables.",
+      "reason": "Pre-target archived Life Leech source explicitly excludes Damage Preys, without settling rounding, unequal/zero-target/overkill behavior or universal spell/charm/proficiency order.",
       "evidence": [
         "fandom_formulae_full",
         "official_news_8421_full",
-        "wiki_br_imbuements"
+        "wiki_br_imbuements",
+        "fandom_life_archive_2026"
       ],
       "source_urls": [
         "https://tibia.fandom.com/wiki/Formulae",
         "https://www.tibia.com/news/?subtopic=newsarchive&id=8421",
-        "https://www.tibiawiki.com.br/wiki/Imbuements"
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://web.archive.org/web/20260113015644/https://tibia.fandom.com/wiki/Life_Leech"
       ],
       "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "vibrancy_pvp_gate",
-      "reason": "Current Fandom family page states if initially successful; shorter Basic/Powerful indexed snippets omit the gate. Exact successful-recovery state, lifetime and target-time PvP conditionality remain unqualified.",
+      "reason": "Full pre-target family wording is now supplied by public18May2025 archive; missing successful-state predicate, lifetime/reset and target continuity remain unqualified.",
       "evidence": [
         "fandom_vibrancy_gate",
         "fandom_basic_vibrancy_gate",
-        "fandom_powerful_vibrancy_gate"
+        "fandom_powerful_vibrancy_gate",
+        "fandom_vibrancy_archive_2025"
       ],
       "evidence_catalogue": "imbuement-combat.json",
       "source_urls": [
         "https://tibia.fandom.com/wiki/Vibrancy",
         "https://tibia.fandom.com/wiki/Basic_Vibrancy",
-        "https://tibia.fandom.com/wiki/Powerful_Vibrancy"
+        "https://tibia.fandom.com/wiki/Powerful_Vibrancy",
+        "https://web.archive.org/web/20250518214227/https://tibia.fandom.com/wiki/Vibrancy"
       ],
       "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },
     {
       "id": "transaction_payment_sources",
-      "reason": "Normal-shrine inventory-first then Stash/bank preference is now community-qualified. Exact inventory-container search, inter-resource debit order, other transaction routes and failure behavior remain unqualified.",
+      "reason": "Pre-target archive22May2026 corroborates inventory-first then Stash/bank; edited8January2026 QA corroborates Stash materials. Exact container search, inter-resource debit order, other routes and failure behavior remain unqualified.",
       "evidence": [
-        "fandom_imbuing_full"
+        "fandom_imbuing_full",
+        "fandom_imbuing_archive_2026_05_22",
+        "tibiaqa_stash_materials_1121"
       ],
       "source_urls": [
-        "https://tibia.fandom.com/wiki/Imbuing"
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "https://web.archive.org/web/20260522172855/https://tibia.fandom.com/wiki/Imbuing",
+        "https://www.tibiaqa.com/1120/how-does-supply-stash-work-and-what-is-the-capacity"
       ],
       "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
     },

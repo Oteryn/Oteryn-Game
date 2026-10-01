@@ -251,13 +251,19 @@ Shiver case explicitly conflicts with the current wiki's blanket ammunition clai
 The engine-completeness audit separates authoring from canonical/runtime readiness.
 Oteryn's24/72 draft is populated; the canonical Imbuement and Quest indices are
 still READY_UNPOPULATED. Existing Item slot capabilities have UNKNOWN per-family
-limits, and their static tier codec rejects Basic-only max1 used by12 profiles.
+limits, and their static tier codec rejects Basic-only max1 used by 12 profiles.
 The original XML capture's root-scroll-ID omission is repaired by a separately
 pinned correction, with original facts retained. Crystal summer has72 mappings,
 Crystal imbuements48 and Canary46. See audit-report.md for versioned comparisons,
 actual execution differences and source-name/ID-space qualifications.
 
 ## Offline validation
+
+The owner-directed completion batch and the split between research limits and
+implementation owners are recorded in [completion-handoff.md](completion-handoff.md).
+It includes all 12 remaining evidence scopes and the disposition of all 101
+helper/native eligibility differences. Filled source profiles are not verified
+server allowlists, and the canonical/runtime boundary remains blocked.
 
 ```sh
 python -m pip install -r tools/content-schema/imbuement-authoring/requirements.txt

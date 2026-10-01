@@ -189,12 +189,49 @@ def validate_amendment_claims(amendment: dict, registry: dict) -> None:
         raise ValueError("type amendment maximum differs from concrete selected source claims")
 
 
+def field_corroborations(packet: dict, primary: list[dict]) -> dict:
+    """Keep narrow named observations separate from full eligibility-profile confidence."""
+    clients = {r["id"]: r for r in primary}
+    result, seen = {}, set()
+    for reference in packet["normalized_sources"].get("field_corroborations", []):
+        source_id, claim_key = reference["source_id"], reference["claim_key"]
+        marker = (source_id, claim_key)
+        if marker in seen:
+            raise ValueError("duplicate eligibility field corroboration")
+        seen.add(marker)
+        source = packet["source_registry"].get(source_id)
+        claims = [c for c in source.get("corroboration_claims", []) if c["claim_key"] == claim_key] if source else []
+        if len(claims) != 1:
+            raise ValueError("field corroboration lacks a unique sourced claim")
+        claim = claims[0]
+        client = clients.get(claim["client_id"])
+        if client is None or normalize(client["name"]) != normalize(claim["item_name"]):
+            raise ValueError("field corroboration lacks exact primary named identity")
+        if (type(claim["value"]) is not int or claim["value"] not in (1, 2, 3) or
+                claim["field_kind"] not in ("ALL_TYPES_TIER_CEILING", "TYPE_MAX_TIER", "TYPE_TIER_AVAILABLE") or
+                (claim["field_kind"] != "ALL_TYPES_TIER_CEILING" and claim.get("candidate_key") not in TYPES)):
+            raise ValueError("invalid eligibility field corroboration")
+        if not claim["quote"] or binding.sha256(claim["quote"].encode("utf-8")) != claim["quote_sha256"]:
+            raise ValueError("field corroboration quote digest mismatch")
+        context = claim.get("quote_context", "")
+        if context and binding.sha256(context.encode("utf-8")) != claim.get("quote_context_sha256"):
+            raise ValueError("field corroboration context digest mismatch")
+        source_tier = {"Basic": 1, "Intricate": 2, "Powerful": 3, "T2": 2}.get(claim.get("source_tier_token"))
+        if source_tier != claim["value"] or claim["source_tier_token"] not in claim["quote"] + context:
+            raise ValueError("field corroboration tier differs from source token")
+        if not source.get("source_sha256") or not source.get("digest_scope"):
+            raise ValueError("field corroboration lacks captured source digest")
+        result.setdefault(claim["client_id"], []).append({"source_id": source_id, **claim})
+    return result
+
+
 def build(packet: dict) -> dict:
     sources = packet["normalized_sources"]
     primary = primary_items()
     if sources["primary_items"] != primary:
         raise ValueError("stored primary facts differ from pinned client asset")
     validate_native_sources(packet, primary)
+    corroborations = field_corroborations(packet, primary)
     canonical = binding.canonical_items()
     identity_facts = json.loads(binding.ITEM_FACTS.read_bytes())["records"]
     release_dates = sources.get("release_dates", {})
@@ -312,6 +349,14 @@ def build(packet: dict) -> dict:
             discrepancies.append({"kind": "DATED_ITEM_TYPE_TIER_AMENDMENT", "candidate_key": amendment["candidate_key"],
                                   "helper_max_tier": prior, "selected_max_tier": amendment["max_tier"],
                                   "sources": amendment["source_ids"]})
+        selected_corroborations = corroborations.get(item_id, [])
+        for claim in selected_corroborations:
+            tier, kind = claim["value"], claim["field_kind"]
+            selected_tier = allowed.get(claim.get("candidate_key"))
+            if ((kind == "ALL_TYPES_TIER_CEILING" and (not allowed or max(allowed.values()) > tier)) or
+                    (kind == "TYPE_MAX_TIER" and selected_tier != tier) or
+                    (kind == "TYPE_TIER_AVAILABLE" and (selected_tier is None or selected_tier < tier))):
+                raise ValueError("selected eligibility profile contradicts field corroboration")
         for source_id, rows in engines.items():
             row = rows.get(item_id)
             if row is None:
@@ -393,6 +438,7 @@ def build(packet: dict) -> dict:
                       "allowed_types": allowed, "eligibility_sources": evidence, "status": status,
                       "evidence_status": evidence_status, "selected_eligibility_source": selected_source,
                       "selected_type_amendments": selected_amendments,
+                      "independent_field_corroborations": selected_corroborations,
                       "target_time_status": target_time_status, "target_time_evidence": target_time_evidence,
                       "community_comparison": community_comparison,
                       "engine_comparison": comparisons, "discrepancies": discrepancies})
@@ -419,6 +465,8 @@ def build(packet: dict) -> dict:
                                                   "WITHDRAWN_BEFORE_TARGET_EXCLUDED") and k in r["allowed_types"]
                                                   for r in items) for k in TYPES},
                "global_verified_items": 0}
+    summary["independently_corroborated_field_items"] = sum(bool(r["independent_field_corroborations"]) for r in items)
+    summary["independently_corroborated_field_claims"] = sum(len(r["independent_field_corroborations"]) for r in items)
     return {"schema": "OTERYN_IMBUEMENT_ELIGIBILITY_EVIDENCE/v1", "activation": "DRAFT_NOT_RUNTIME_READY",
             "target": TARGET, "source_registry": packet["source_registry"], "normalized_sources": sources,
             "normalized_sources_sha256": binding.sha256(binding.canonical_bytes(sources)),
@@ -432,7 +480,8 @@ def build(packet: dict) -> dict:
                 "and canonical existence. Global server eligibility and target-date continuity remain unverified; "
                 "OTS-only hypotheses fail closed; empty allowed_types means unknown, never forbidden. "
                 "Dated named-item amendments correct only their documented fields, without promoting the remaining "
-                "profile. Post-target launches and pre-target withdrawals are excluded from target summaries while "
+                "profile. Independent field corroborations retain their exact scope (ceiling, maximum or availability) "
+                "without promoting a full profile or erasing helper disagreements. Post-target launches and pre-target withdrawals are excluded from target summaries while "
                 "current client facts remain retained; a dated named observation establishes chronology, not server "
                 "rule continuity at the target server save.",
             "items": items, "summary": summary,

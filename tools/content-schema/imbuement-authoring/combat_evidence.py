@@ -19,6 +19,7 @@ RULE_STATUSES = {
     "mana_leech_wheel_equipment_example": "DATED_COMMUNITY_EXPLICIT_WHEEL_MANA_EXAMPLE",
     "leech_elemental_parry_wound_reported_exclusions": "DATED_COMMUNITY_REPORTED_CHARM_TEST",
     "ranged_elemental_ammo_reported_cases": "DATED_COMMUNITY_REPORTED_RANGED_AMMO_FIELD_STUDY",
+    "life_leech_damage_prey_exclusion": "ARCHIVED_PRE_TARGET_COMMUNITY_EXPLICIT_LIFE_ONLY",
     **{name: "PUBLIC_EVIDENCE_UNRESOLVED" for name in (
         "leech_rounding", "leech_unequal_damage_and_overkill_order",
         "vibrancy_reflection_current", "critical_healing_scope",
@@ -36,6 +37,11 @@ MANA_VALUE = {
         {"damage_by_target": [101], "leech_share_bps": 800, "total_mana": 9},
         {"damage_by_target": [100, 900], "leech_share_bps": 800, "total_mana": 45},
     ],
+}
+LIFE_PREY_VALUE = {
+    "scope": "LIFE_LEECH_REFERENCE_ONLY", "damage_prey_bonus_included": False,
+    "all_damage_modifier_order": None, "overkill_basis": None,
+    "rounding": None, "current_target_continuity": None,
 }
 PAIR_VALUE = {
     "scope": "ONLY_TWO_POWERFUL_VOID_OR_TWO_POWERFUL_VAMPIRISM_INSTANCES",
@@ -102,6 +108,9 @@ RANGED_REFERENCE_CONFLICT = {
     "current_native_ammo_rule": None, "current_timer_rule": None,
 }
 NEW_RULES = {
+    "life_leech_damage_prey_exclusion": (
+        LIFE_PREY_VALUE, "ARCHIVE_2026_01_13_BEFORE_TARGET_NOT_EXACT_TARGET_OBSERVATION",
+        {"fandom_life_archive_2026"}),
     "vibrancy_reflection_removed_at_release": (
         {"reflect_to_attacker": False, "scope": "LIVE_RELEASE_2018_12_03_ONLY"},
         "HISTORICAL_RELEASE_CONFIRMED_CURRENT_CONTINUITY_UNQUALIFIED",
@@ -125,6 +134,14 @@ NEW_RULES = {
         {"tibiaqa_basic_frost_elemental_ammo_2021", "fandom_imbuing_full"}),
 }
 SOURCE_PROFILES = {
+    'fandom_vibrancy_archive_2025': (
+        'https://web.archive.org/web/20250518214227/https://tibia.fandom.com/wiki/Vibrancy',
+        'a6145d0d62d71867d6793e92efa51898c87cf2459f5e2185b923d186e854d5ba',
+        "FULL_PUBLIC_ARCHIVED_COMMUNITY_HTML", "COMMUNITY_GLOBAL_REFERENCE"),
+    'fandom_life_archive_2026': (
+        'https://web.archive.org/web/20260113015644/https://tibia.fandom.com/wiki/Life_Leech',
+        '87ad436a20cbba484a44d65b39a7518afe65b2cabf1df8c12d99b47556f1020f',
+        "FULL_PUBLIC_ARCHIVED_COMMUNITY_HTML", "COMMUNITY_GLOBAL_REFERENCE"),
     "official_vibrancy_release_4828": (
         "https://www.tibia.com/news/?subtopic=newsarchive&id=4828",
         "65d3a5344a42fd18a319d99a49d3c6ef004e1d42ae8946cf2b5981f071c023ee",
@@ -170,6 +187,8 @@ SOURCE_PROFILES = {
 # These offline checks protect captured bytes, claims, revision links and dates;
 # they do not fetch the source or turn a community report into Global telemetry.
 BOUNDED_SOURCE_RECORD_SHA256 = {
+    'fandom_vibrancy_archive_2025': 'caa29e1f6e6c1c5b1711ed1cbc4c36da56f922d4e68ad70780ca51087f42dac0',
+    'fandom_life_archive_2026': 'ed34805d032fd136f0ea834370aee980f9497c854d22eaf28ced21639247f978',
     "tibiaqa_life_equal_hit_2020": "690881ab2e0897cab0949e43505083d398325dac6da0589dc735dc6045b6f238",
     "tibiaqa_life_answer_revisions_14497": "4693b05ac634043ecd67fb0bf428c40bfc2ea18596c82fa055e8fe8042e51d16",
     "tibiaqa_wheel_void_example_2022": "7c8871b4dc4435324b9848b7887ff0345506e03d882f3bbc595067fece6a5a0c",
@@ -182,12 +201,12 @@ BOUNDED_LINKS = {
     "leech_equipment_composition": ["leech_two_powerful_equipment_pairs", "mana_leech_wheel_equipment_example"],
     "leech_unequal_damage_and_overkill_order": [
         "mana_leech_current_reference_formula", "life_leech_reported_equal_hit_ceiling",
-        "leech_elemental_parry_wound_reported_exclusions"],
+        "leech_elemental_parry_wound_reported_exclusions", "life_leech_damage_prey_exclusion"],
 }
 RULE_TIME_STATUSES = {
     **{name: "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION" for name in RULE_STATUSES},
     "vibrancy_sequence": "PRE_TARGET_INTRODUCTION_WITH_CURRENT_CORROBORATION_NOT_FULL_SNAPSHOT",
-    "vibrancy_pvp_gate": "CURRENT_INDEXED_SOURCE_CONFLICT_NO_EXACT_TARGET_CERTIFICATION",
+    "vibrancy_pvp_gate": "PRE_TARGET_ARCHIVED_QUALIFIED_WORDING_NO_EXACT_GATE_OR_TARGET_CERTIFICATION",
     **{name: profile[1] for name, profile in NEW_RULES.items()},
 }
 
@@ -248,7 +267,8 @@ def validate(packet):
                 or rule["target_time_status"] != time_status
                 or set(rule["evidence"]) != evidence):
             raise ValueError("bounded combat facts cannot become generic or target-certified rules")
-    for source_id in set().union(*(rule[2] for rule in NEW_RULES.values())):
+    for source_id in (set().union(*(rule[2] for rule in NEW_RULES.values()))
+                      | {"fandom_vibrancy_archive_2025"}):
         source = sources[source_id]
         if tuple(source[key] for key in ("url", "sha256", "access_status", "role")) != SOURCE_PROFILES[source_id]:
             raise ValueError("bounded combat sources must retain their exact identity and qualification")
@@ -293,6 +313,9 @@ def validate(packet):
             raise ValueError("bounded equipment observations must retain their captured dates")
     if any(h["status"] != "OTS_HYPOTHESIS_ONLY" for h in packet["engine_combat_hypotheses"]):
         raise ValueError("engine hypotheses cannot be promoted to Global evidence")
+    for name in ("vibrancy_sequence", "vibrancy_pvp_gate"):
+        if "fandom_vibrancy_archive_2025" not in rules[name]["evidence"]:
+            raise ValueError("Vibrancy profiles must retain the complete pre-target conditional reference")
     sequence = rules["vibrancy_sequence"]["value"]
     if sequence["trigger"] != "additional_paralysis_attack_while_paralysed":
         raise ValueError("Vibrancy cannot be modelled as initial paralysis immunity")

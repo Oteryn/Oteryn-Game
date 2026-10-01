@@ -315,5 +315,71 @@ class CombatEvidenceTests(unittest.TestCase):
         self.mutation_rejected(forge)
 
 
+    def test_archived_life_prey_claim_does_not_select_a_generic_leech_pipeline(self):
+        def value(packet):
+            return next(r for r in packet["rules"]
+                if r["id"] == "life_leech_damage_prey_exclusion")["value"]
+        selected = value(self.packet)
+        self.assertEqual(selected["scope"], "LIFE_LEECH_REFERENCE_ONLY")
+        self.assertIs(selected["damage_prey_bonus_included"], False)
+        for key in ("all_damage_modifier_order", "overkill_basis", "rounding",
+                    "current_target_continuity"):
+            self.assertIsNone(selected[key])
+            self.mutation_rejected(lambda p, k=key: value(p).update({k: "invented"}))
+        for change in ({"scope": "ALL_LEECH"}, {"scope": "MANA_LEECH_ONLY"},
+                       {"damage_prey_bonus_included": True},
+                       {"damage_prey_bonus_included": 0}):
+            self.mutation_rejected(lambda p, c=change: value(p).update(c))
+
+    def test_archive_snapshot_cannot_become_a_revision_or_target_observation_date(self):
+        for source_id in ("fandom_life_archive_2026", "fandom_vibrancy_archive_2025"):
+            def source(packet, name=source_id):
+                return next(s for s in packet["sources"] if s["id"] == name)
+            captured = source(self.packet)
+            self.assertIsNone(captured["published_on"])
+            self.assertIsNone(captured["revision_timestamp"])
+            self.assertEqual(captured["access_status"], "FULL_PUBLIC_ARCHIVED_COMMUNITY_HTML")
+            for change in ({"published_on": captured["archive_snapshot_at"][:10]},
+                           {"revision_timestamp": captured["archive_snapshot_at"]},
+                           {"archive_snapshot_at": "2026-07-28T10:00:00Z"},
+                           {"revision": 1197205}, {"sha256": "0" * 64},
+                           {"role": "PRIMARY_OFFICIAL"},
+                           {"digest_scope": "EXACT_TARGET_GAMEPLAY_LOG"}):
+                with self.subTest(source=source_id, change=change):
+                    self.mutation_rejected(lambda p, c=change: source(p).update(c))
+
+    def test_archive_initial_success_qualification_cannot_be_forged_or_disconnected(self):
+        def source(packet):
+            return next(s for s in packet["sources"]
+                if s["id"] == "fandom_vibrancy_archive_2025")
+        self.assertIsNone(source(self.packet)["selected_claims"]["success_state_lifetime"])
+        self.assertIsNone(source(self.packet)["selected_claims"]["success_state_reset"])
+        def forge(packet):
+            selected_source = source(packet)
+            selected_source["selected_claims"].update(
+                qualification="UNCONDITIONAL", success_state_lifetime="UNTIL_UNEQUIPPED")
+            selected_source["selected_claims_sha256"] = hashlib.sha256(json.dumps(
+                selected_source["selected_claims"], sort_keys=True, ensure_ascii=False,
+                separators=(",", ":")).encode()).hexdigest()
+        self.mutation_rejected(forge)
+        for rule_id in ("vibrancy_sequence", "vibrancy_pvp_gate"):
+            def remove_archive(packet, name=rule_id):
+                next(r for r in packet["rules"] if r["id"] == name)["evidence"].remove(
+                    "fandom_vibrancy_archive_2025")
+            self.mutation_rejected(remove_archive)
+
+    def test_new_life_reference_preserves_all_seven_unresolved_profiles(self):
+        self.assertEqual(len(self.packet["rules"]), 17)
+        unresolved = {r["id"] for r in self.packet["rules"] if r["value"] is None}
+        self.assertEqual(unresolved, {
+            "leech_rounding", "leech_unequal_damage_and_overkill_order",
+            "vibrancy_reflection_current", "critical_healing_scope",
+            "leech_equipment_composition", "protection_equipment_composition",
+            "vibrancy_pvp_gate"})
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "life_leech_damage_prey_exclusion").update(
+                target_time_status="EXACT_TARGET_GLOBAL_OBSERVATION"))
+
+
 if __name__ == "__main__":
     unittest.main()

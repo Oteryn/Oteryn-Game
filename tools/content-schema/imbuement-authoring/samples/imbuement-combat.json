@@ -410,6 +410,69 @@
         "current_timer_rule": null
       },
       "selected_claims_sha256": "eb18714f12d85ee34b5dc9c19ee776cd3758c0773aa62250bc7e78b227024f4a"
+    },
+    {
+      "id": "fandom_life_archive_2026",
+      "url": "https://web.archive.org/web/20260113015644/https://tibia.fandom.com/wiki/Life_Leech",
+      "original_public_url": "https://tibia.fandom.com/wiki/Life_Leech",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_ARCHIVED_COMMUNITY_HTML",
+      "sha256": "87ad436a20cbba484a44d65b39a7518afe65b2cabf1df8c12d99b47556f1020f",
+      "digest_scope": "Exact complete HTTP response bytes of named public Wayback HTML, including replay toolbar; not an extracted snippet or an entire-history digest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "method": "ORDINARY_PUBLIC_HTTP_WAYBACK_ARCHIVED_MAIN_PUBLIC_PAGE",
+      "revision": 1101811,
+      "published_on": null,
+      "revision_timestamp": null,
+      "archive_snapshot_at": "2026-01-13T01:56:44Z",
+      "source_stage": "PUBLIC_ARCHIVE_PRE_TARGET",
+      "target_time_status": "PUBLIC_ARCHIVED_TEXT_EXISTED_BEFORE_2026_07_28_TARGET_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
+      "limits": [
+        "Archive snapshot date is not inferred as revision publication date.",
+        "Community text is a reference statement, not recorded Global telemetry or proof of all later continuity."
+      ],
+      "selected_claims": {
+        "reference_scope": "LIFE_LEECH_ONLY",
+        "damage_prey_bonus_included": false,
+        "verbatim": "Damage Preys do not affect the leech.",
+        "all_damage_modifier_order": null,
+        "overkill_basis": null,
+        "rounding": null,
+        "current_target_continuity": null
+      },
+      "selected_claims_sha256": "af6ad9df8bb251b639590321de40b7ebe3f8e0857ea106d44a9cde30b4460e10"
+    },
+    {
+      "id": "fandom_vibrancy_archive_2025",
+      "url": "https://web.archive.org/web/20250518214227/https://tibia.fandom.com/wiki/Vibrancy",
+      "original_public_url": "https://tibia.fandom.com/wiki/Vibrancy",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_ARCHIVED_COMMUNITY_HTML",
+      "sha256": "a6145d0d62d71867d6793e92efa51898c87cf2459f5e2185b923d186e854d5ba",
+      "digest_scope": "Exact complete HTTP response bytes of named public Wayback HTML, including replay toolbar; not an extracted snippet or an entire-history digest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "method": "ORDINARY_PUBLIC_HTTP_WAYBACK_ARCHIVED_MAIN_PUBLIC_PAGE",
+      "revision": 884982,
+      "published_on": null,
+      "revision_timestamp": null,
+      "archive_snapshot_at": "2025-05-18T21:42:27Z",
+      "source_stage": "PUBLIC_ARCHIVE_PRE_TARGET",
+      "target_time_status": "PUBLIC_ARCHIVED_TEXT_EXISTED_BEFORE_2026_07_28_TARGET_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
+      "limits": [
+        "Archive snapshot date is not inferred as revision publication date.",
+        "Community text is a reference statement, not recorded Global telemetry or proof of all later continuity."
+      ],
+      "selected_claims": {
+        "reference_scope": "VIBRANCY_ADDITIONAL_PARALYSIS_PVP",
+        "verbatim": "in PvP fights, it always deflects additional paralysis attacks if initially successful.",
+        "qualification": "if initially successful",
+        "initial_success_definition": null,
+        "success_state_lifetime": null,
+        "success_state_reset": null,
+        "current_target_continuity": null,
+        "generic_50_percent_example_is_not_all_tier_probability": true
+      },
+      "selected_claims_sha256": "e68243283ad0fd78203148f3293fbb5558098594934d6cca9d8760f8b79f685f"
     }
   ],
   "rules": [
@@ -437,9 +500,10 @@
         "wiki_br_vibrancy_detail",
         "fandom_vibrancy",
         "fandom_basic_vibrancy",
-        "fandom_powerful_vibrancy"
+        "fandom_powerful_vibrancy",
+        "fandom_vibrancy_archive_2025"
       ],
-      "notes": "Repeated-attack recovery is corroborated by current BR notes and the historical primary teaser. Current Fandom family wording qualifies PvP additional-attack deflection with if initially successful; shorter tier excerpts omit that qualification. Do not select unconditional PvP protection. Reflection from the historical teaser remains excluded.",
+      "notes": "Repeated-attack recovery is corroborated by current BR notes and the historical primary teaser. Current Fandom family wording qualifies PvP additional-attack deflection with if initially successful; shorter tier excerpts omit that qualification. Do not select unconditional PvP protection. Reflection from the historical teaser remains excluded. Complete public archived family revision884982 (snapshot18May2025) independently supplies the conditional additional-PvP wording. Its generic50% recovery example does not replace the existing tier probabilities; no success-state lifetime/reset is inferred.",
       "target_time_status": "PRE_TARGET_INTRODUCTION_WITH_CURRENT_CORROBORATION_NOT_FULL_SNAPSHOT"
     },
     {
@@ -496,12 +560,13 @@
         "tibiapal_leech_calculator",
         "fandom_formulae_1205374"
       ],
-      "notes": "The post-target Mana reference selects per-target scaling, ceiling and overkill inclusion. Historical equal-hit Life examples and named charm exclusion tests are separately scoped. Unequal-Life, zero-damage counting, overkill order, current charm/proficiency composition and generic pipelines remain unqualified.",
+      "notes": "The post-target Mana reference selects per-target scaling, ceiling and overkill inclusion. Historical equal-hit Life examples and named charm exclusion tests are separately scoped. Unequal-Life, zero-damage counting, overkill order, current charm/proficiency composition and generic pipelines remain unqualified. The separately bounded full pre-target Life reference also excludes DamagePreys, without selecting other modifier order, rounding or overkill basis.",
       "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION",
       "bounded_profiles": [
         "mana_leech_current_reference_formula",
         "life_leech_reported_equal_hit_ceiling",
-        "leech_elemental_parry_wound_reported_exclusions"
+        "leech_elemental_parry_wound_reported_exclusions",
+        "life_leech_damage_prey_exclusion"
       ]
     },
     {
@@ -561,10 +626,11 @@
       "evidence": [
         "fandom_vibrancy",
         "fandom_basic_vibrancy",
-        "fandom_powerful_vibrancy"
+        "fandom_powerful_vibrancy",
+        "fandom_vibrancy_archive_2025"
       ],
-      "notes": "Family excerpt explicitly includes if initially successful; tier excerpts state always deflects PvP paralysis upon additional attacks. The exact success-state predicate and transition are not established by these snippets. Historical teaser cannot resolve a present state gate.",
-      "target_time_status": "CURRENT_INDEXED_SOURCE_CONFLICT_NO_EXACT_TARGET_CERTIFICATION"
+      "notes": "The complete public18May2025 family archive revision884982 explicitly qualifies additional-PvP deflection with if initially successful, independently of current family/tier indexed excerpts. Full pre-target wording is available; the exact initial-success predicate, state lifetime/reset and continuity at28July2026 remain unqualified. No unconditional selected boolean.",
+      "target_time_status": "PRE_TARGET_ARCHIVED_QUALIFIED_WORDING_NO_EXACT_GATE_OR_TARGET_CERTIFICATION"
     },
     {
       "id": "vibrancy_reflection_removed_at_release",
@@ -796,6 +862,23 @@
       ],
       "notes": "YakiHon reports Jan27,2021 testing Basic Frost Elvish Bow with Flash and Shiver Arrows; same-day comment23759 says200arrows total. Flash50/50 physical/energy with noice; Shiver approximately45/55 physical/ice fits10% of physical half converted. No raw logs, targets/resistances, critical setup or per-ammo trial counts. These are narrowly reported historical cases, not universal/current ranged or melee conversion, damage conservation/caps, integer rounding or armor/critical processing order. Current Fandom Imbuing revision1194750 broadly excludes native-elemental and area ammunition; this corroborates the reported Flash case but conflicts with historical Shiver55%. Conflict is retained explicitly. Do not select historical Shiver as current parity, blanket native-ammo exclusion, timer consumption or universal ordering from either source.",
       "target_time_status": "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_EXACT_TARGET_OBSERVATION"
+    },
+    {
+      "id": "life_leech_damage_prey_exclusion",
+      "value": {
+        "scope": "LIFE_LEECH_REFERENCE_ONLY",
+        "damage_prey_bonus_included": false,
+        "all_damage_modifier_order": null,
+        "overkill_basis": null,
+        "rounding": null,
+        "current_target_continuity": null
+      },
+      "status": "ARCHIVED_PRE_TARGET_COMMUNITY_EXPLICIT_LIFE_ONLY",
+      "evidence": [
+        "fandom_life_archive_2026"
+      ],
+      "notes": "New full LifeLeech archive revision1101811 explicitly excludes DamagePreys. This independent Life-specific pre-target reference does not promote the post-target Mana formula to Life or settle broader pipelines.",
+      "target_time_status": "ARCHIVE_2026_01_13_BEFORE_TARGET_NOT_EXACT_TARGET_OBSERVATION"
     }
   ],
   "excluded_test_server_changes": [
@@ -841,6 +924,10 @@
     {
       "url": "https://tibia.fandom.com/wiki/Formulae?oldid=1197205",
       "result": "Public revisionmetadataJuly21,2026 exists but archivedcontentrequireslogin; textnotread, noalternativeaccessattempted."
+    },
+    {
+      "url": "https://web.archive.org/web/20260113015644/https://tibia.fandom.com/wiki/Life_Leech",
+      "result": "New full public archive revision1101811 was read via ordinary HTTP200. Snapshot13January2026 proves pre-target availability of Life-specific prey exclusion text, not publication date, later continuity or gameplay telemetry."
     }
   ],
   "engine_combat_hypotheses": [
@@ -1027,7 +1114,8 @@
       "field": "Vibrancy PvP additional-attack success gate",
       "family_page_claim": "It always deflects additional paralysis attacks if initially successful",
       "tier_page_claim": "Always deflects PvP paralysis upon additional paralyse attacks; qualification omitted from the retrieved excerpts",
-      "resolution": "Preserve both indexed claims; success-state predicate remains unqualified; no unconditional selected boolean."
+      "resolution": "Complete public pre-target family archive corroborates the success qualification; current tier indexed excerpts omit it. Exact success-state predicate/lifetime/reset and target-date continuity remain unqualified; no unconditional selected boolean.",
+      "archived_family_source": "fandom_vibrancy_archive_2025"
     },
     {
       "field": "mana leech per-target integer rounding",

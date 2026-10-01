@@ -122,11 +122,16 @@
         {
           "catalogue": "global-rules-evidence.json",
           "id": "fandom_formulae_full"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "fandom_imbuing_archive_2026_05_22"
         }
       ],
       "source_and_capture_limitations": [
         "Current manual/wiki retrieval dates do not reconstruct an immutable Global configuration on 2026-07-28 post-server-save.",
-        "Formulae 1205374 is dated 2026-09-07; earlier 1197205 metadata exists but its archived content was login-restricted and unread."
+        "Formulae 1205374 is dated 2026-09-07; earlier 1197205 metadata exists but its archived content was login-restricted and unread.",
+        "Targeted public Wayback availability queries returned nearest Imbuing22May2026 and BRImbuements16February2026; no exact28July snapshot was returned for these queries. Public archives do not certify immutable Global server configuration or hidden mechanics."
       ],
       "scenarios": [
         {
@@ -326,6 +331,10 @@
         {
           "catalogue": "global-rules-evidence.json",
           "id": "scroll_application_requires_compatible_type"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "scroll_application_location_anywhere_allowed"
         }
       ],
       "source_refs": [
@@ -340,11 +349,16 @@
         {
           "catalogue": "global-rules-evidence.json",
           "id": "canary_player_impl"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "official_cm_scroll_anywhere_2025"
         }
       ],
       "source_and_capture_limitations": [
         "General inventory multiuse wording does not explicitly establish equipped-target acceptance.",
-        "An OTS equipped-stat-update branch does not prove Global acceptance."
+        "An OTS equipped-stat-update branch does not prove Global acceptance.",
+        "New official June2025 anywhere location statement does not say target stays equipped. Equipped acceptance remains unqualified."
       ],
       "scenarios": [
         {
@@ -501,12 +515,17 @@
         {
           "catalogue": "global-rules-evidence.json",
           "id": "canary_timer_impl"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "fandom_swiftness_archive_2025"
         }
       ],
       "source_and_capture_limitations": [
         "Existing dated community descriptions distinguish utility/equipped-online from combat timers but do not resolve exact boundaries.",
         "PZ can hide Logout Block; icon absence is not proof of an expired combat deadline.",
-        "Minute-only duration displays cannot establish subminute ticks or exact remaining milliseconds."
+        "Minute-only duration displays cannot establish subminute ticks or exact remaining milliseconds.",
+        "Full pre-target Swiftness equipped+online outside-combat wording is now corroborated by public11December2025 archive. Exact PZ/combat deadlines, tick precision, logout/save/restore and transfer boundaries remain unqualified."
       ],
       "scenarios": [
         {
@@ -743,6 +762,10 @@
         {
           "catalogue": "imbuement-combat.json",
           "id": "leech_elemental_parry_wound_reported_exclusions"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "life_leech_damage_prey_exclusion"
         }
       ],
       "source_refs": [
@@ -769,13 +792,18 @@
         {
           "catalogue": "imbuement-combat.json",
           "id": "tibiaqa_charm_leech_test_2020"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "fandom_life_archive_2026"
         }
       ],
       "source_and_capture_limitations": [
         "Post-target mana-only formula does not certify Life Leech rounding or historical continuity.",
         "Historical community equal-hit Life Leech ceiling examples are reported; they do not resolve unequal-hit, zero-damage targets or general current Life Leech behavior.",
         "Critical indicators and damage logs expose outcomes, not the hidden RNG call graph.",
-        "Historical charm examples report bounded exclusions; independently observed current charm/proficiency interactions and general combat ordering remain unresolved."
+        "Historical charm examples report bounded exclusions; independently observed current charm/proficiency interactions and general combat ordering remain unresolved.",
+        "Pre-target archived Life Leech source explicitly excludes Damage Preys, without settling rounding, unequal/zero-target/overkill behavior or universal spell/charm/proficiency order."
       ],
       "scenarios": [
         {
@@ -1022,11 +1050,16 @@
         {
           "catalogue": "global-rules-evidence.json",
           "id": "fandom_powerful_vibrancy_gate"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "fandom_vibrancy_archive_2025"
         }
       ],
       "source_and_capture_limitations": [
         "Family wording includes if initially successful; indexed tier excerpts omit this gate.",
-        "Historical release reflection removal does not define present additional-attack deflection lifetime or resets."
+        "Historical release reflection removal does not define present additional-attack deflection lifetime or resets.",
+        "Full pre-target family wording is now supplied by public18May2025 archive; missing successful-state predicate, lifetime/reset and target continuity remain unqualified."
       ],
       "scenarios": [
         {
@@ -1159,11 +1192,20 @@
         {
           "catalogue": "global-rules-evidence.json",
           "id": "fandom_imbuing_full"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "fandom_imbuing_archive_2026_05_22"
+        },
+        {
+          "catalogue": "global-rules-evidence.json",
+          "id": "tibiaqa_stash_materials_1121"
         }
       ],
       "source_and_capture_limitations": [
         "Current community normal-shrine inventory-first wording does not resolve nested-container scope, inter-resource order or other transaction routes.",
-        "A before/after balance establishes net debit, not its internal chronological order."
+        "A before/after balance establishes net debit, not its internal chronological order.",
+        "Pre-target archive22May2026 corroborates inventory-first then Stash/bank; edited8January2026 QA corroborates Stash materials. Exact container search, inter-resource debit order, other routes and failure behavior remain unqualified."
       ],
       "scenarios": [
         {

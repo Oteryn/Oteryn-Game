@@ -319,12 +319,55 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
                         if r["id"] == "vibrancy_pvp_success_state_gate")
         self.assertEqual(conflict["family_page_qualification"], "if initially successful")
         self.assertEqual(set(conflict["evidence"]), set(rule["evidence"]))
-        for key in rule["evidence"]:
+        for key in set(rule["evidence"]) - {"fandom_vibrancy_archive_2025"}:
             self.assertEqual(self.sources[key]["access_status"], "INDEXED_SEARCH_SNIPPET_ONLY")
             self.assertEqual(self.sources[key]["role"], "DERIVED")
+        archive = self.sources["fandom_vibrancy_archive_2025"]
+        self.assertIn("if initially successful", archive["selected_quotes"][0])
+        self.assertEqual(archive["access_status"], "FULL_PUBLIC_ARCHIVE_HTML_EXTRACTED")
+        self.assertLess(archive["archive_snapshot_at"][:10], "2026-07-28")
         profile = next(r for r in self.packet["delegated_profiles"]
                        if r["id"] == "vibrancy_sequence")
         self.assertEqual(profile["status"], "PARTIALLY_CORROBORATED_NOT_CLOSED")
+
+    def test_scroll_location_permission_does_not_select_equipped_or_consumption_results(self):
+        rule = self.rules["scroll_application_location_anywhere_allowed"]
+        self.assertTrue(rule["value"])
+        self.assertEqual(rule["scope"], "COMPLETED_POWERFUL_SCROLL_APPLICATION_LOCATION_ONLY")
+        source = self.sources["official_cm_scroll_anywhere_2025"]
+        self.assertEqual(source["author_role"], "Community Manager")
+        self.assertIn("postid=39527096", source["url"])
+        self.assertIn("backpack full of powerful", source["question_context"])
+        self.assertIn("anywhere", source["selected_quote"])
+        for key in ("scroll_application_accepts_equipped_target",
+                    "scroll_application_consumed_units",
+                    "scroll_application_invalid_target_consumed_units"):
+            self.assertIsNone(self.rules[key]["value"])
+            self.assertEqual(self.rules[key]["parity_status"], "PARITY_PENDING")
+
+    def test_archived_life_prey_claim_cannot_promote_the_mana_formula_or_pipeline(self):
+        value = self.rules["life_leech_damage_prey_exclusion"]["value"]
+        self.assertEqual(value["scope"], "LIFE_LEECH_REFERENCE_ONLY")
+        self.assertFalse(value["damage_prey_bonus_included"])
+        for key in ("rounding", "overkill_basis", "all_damage_modifier_order",
+                    "current_target_continuity"):
+            self.assertIsNone(value[key])
+        self.assertGreater(self.sources["fandom_formulae_full"]["published_date"], "2026-07-28")
+        self.assertIn("combat_pipeline", {r["id"] for r in self.packet["unresolved"]})
+
+    def test_nearest_public_archive_is_not_the_requested_target_snapshot(self):
+        source = self.sources["fandom_imbuing_archive_2026_05_22"]
+        self.assertEqual(source["revision"], "1140491")
+        self.assertEqual(source["archive_snapshot_at"], "2026-05-22T17:28:55Z")
+        self.assertIsNone(source["published_date"])
+        self.assertIn("fandom_imbuing_archive_2026_05_22",
+                      self.rules["transaction_payment_sources"]["evidence"])
+        self.assertIn("exact_target_snapshot", {r["id"] for r in self.packet["unresolved"]})
+        attempt = next(r for r in self.packet["research_attempts"]
+                       if r["id"] == "owner_directed_completion_2026_10_01")
+        for row in attempt["target_archive_discovery"]:
+            self.assertFalse(row["selected_as_exact_target"])
+            self.assertFalse((row["actual_nearest_timestamp"] or "").startswith("20260728"))
 
     def test_probability_does_not_encode_vibrancy_as_initial_admission_chance(self):
         self.assertEqual(self.rules["vibrancy_deflection_chance_percent_by_tier"]
