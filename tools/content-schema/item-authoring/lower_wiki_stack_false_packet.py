@@ -12,6 +12,7 @@ COMPILER = "tools/content-schema/item-authoring/lower_wiki_stack_false_packet.py
 SNAPSHOT = "imports/tibiawiki/facts/items-stats.json"
 CLIENT_SHA = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
+MISSING_SEMANTICS_IDS = frozenset((*range(49217, 49226), 49258, 50221))
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json"
 
 
@@ -21,21 +22,33 @@ def sha(data):
 
 def qualify(snapshot, definitions, bound, routed, appearances):
     rows, holds = [], []
+    page_ids = {}
+    for record in snapshot["records"].values():
+        for observation in record["observations"]:
+            page_ids.setdefault(observation["page_id"], set()).add(record["item_id"])
     for record in sorted(snapshot["records"].values(), key=lambda r: r["item_id"]):
         iid = record["item_id"]
         key = f"oteryn:item.tibia.i{iid}"
         definition = definitions.get(key, {})
         observations = [o for o in record["observations"] if "stackable" in o["fields"]]
         values = [o["fields"]["stackable"].casefold() for o in observations]
-        if "no" not in values or "semantics" not in definition:
+        if (
+            "no" not in values
+            or not definition
+            or ("semantics" not in definition and iid not in MISSING_SEMANTICS_IDS)
+        ):
             continue
-        stack = definition["semantics"]["stack"]
+        stack = definition.get("semantics", {}).get("stack", {"state": "UNKNOWN"})
         old = stack.get("value", {}).get("stackable", {})
         reason = None
         if any(v not in {"yes", "no"} for v in values):
             reason = "MALFORMED_WIKI_VALUE"
         elif len(set(values)) != 1:
             reason = "WIKI_PAGE_DISAGREEMENT"
+        elif iid in MISSING_SEMANTICS_IDS and any(
+            page_ids[o["page_id"]] != {iid} for o in observations
+        ):
+            reason = "SHARED_PAGE_VARIANT_UNQUALIFIED"
         elif key not in bound:
             reason = "NO_EXACT_SOURCE_BINDING"
         elif key in routed:
@@ -105,7 +118,7 @@ def build(root=ROOT):
     rows, holds = qualify(
         snapshot, definitions, bound, routed, load_appearance_objects(data)
     )
-    if len(rows) != 2381:
+    if len(rows) != 2392:
         raise ValueError("bounded stack-false scope drift")
     return {
         "schema": "OTERYN_ITEM_STACK_FALSE_PROMOTION/v1",
@@ -136,6 +149,10 @@ def build(root=ROOT):
         "physical_followup": {
             "parent": "5cb90c84013faa4c07fc35e3f660e67db6d691d2",
             "new_explicit_false_ids": [20129],
+        },
+        "modifier_followup": {
+            "parent": "fc3a1af835b17acc0bd6ae0481e5c23471edbe8d",
+            "single_id_explicit_no_ids": sorted(MISSING_SEMANTICS_IDS),
         },
         "counts": {"promotions": len(rows), "holds": len(holds)},
         "promotions": rows,

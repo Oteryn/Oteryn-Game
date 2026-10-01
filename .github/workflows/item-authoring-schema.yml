@@ -20,6 +20,7 @@ on:
       - tools/content-census/item_wiki_family_capture.py
       - tools/content-census/item_wiki_stats_capture.py
       - tools/content-census/item_wiki_stats_capture_self_test.py
+      - docs/agents/evidence/OTV2-20261001-item-modifier-source-hold-v1.json
       - docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json
@@ -90,7 +91,9 @@ jobs:
         run: python item_wiki_stats_capture_self_test.py
 
       - name: TibiaWiki Item stat promotion packet tests and drift
-        run: python test_lower_wiki_stats_packet.py
+        run: |
+          python test_lower_wiki_stats_packet.py
+          python -m unittest test_wiki_modifiers_packet.py
 
       - name: Bounded physical source facts and magic rune limit
         run: |

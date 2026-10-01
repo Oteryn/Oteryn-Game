@@ -45,6 +45,12 @@ SOURCE_HOLD = (
     ROOT / "docs/agents/evidence/OTV2-20261001-item-resistance-source-hold-v1.json"
 )
 SOURCE_HOLD_SHA256 = "ddd48b4381dc4cdac02b56fe124827bc951377e6423bb88c1c2090f46386e134"
+MODIFIER_SOURCE_HOLD = (
+    ROOT / "docs/agents/evidence/OTV2-20261001-item-modifier-source-hold-v1.json"
+)
+MODIFIER_SOURCE_HOLD_SHA256 = (
+    "7d2a7f2d35c6099066677d7c4728d9bb832926b686b19901ff5cce1e55f4ed07"
+)
 SCHEMA = "OTERYN_ITEM_STATS_PROMOTION/v2"
 ITEM_KEY = "oteryn:item.tibia.i{}"
 
@@ -262,7 +268,100 @@ def resistances(fields):
     }
 
 
+# Existing native kind order; context and activation bindings remain UNKNOWN.
+MODIFIER_POINTS = {
+    "magic level": "MAGIC_LEVEL_POINTS",
+    "axe fighting": "SKILL_AXE",
+    "club fighting": "SKILL_CLUB",
+    "distance fighting": "SKILL_DISTANCE",
+    "fist fighting": "SKILL_FIST",
+    "shielding": "SKILL_SHIELD",
+    "sword fighting": "SKILL_SWORD",
+    "speed": "SPEED",
+}
+MODIFIER_PERCENTS = {
+    "crithit_ch": "CRITICAL_HIT_CHANCE",
+    "critextra_dmg": "CRITICAL_HIT_DAMAGE",
+    "hpleech_am": "LIFE_LEECH_AMOUNT",
+    "hpleech_ch": "LIFE_LEECH_CHANCE",
+    "manaleech_am": "MANA_LEECH_AMOUNT",
+    "manaleech_ch": "MANA_LEECH_CHANCE",
+}
+MODIFIER_ORDER = (
+    "CRITICAL_HIT_CHANCE",
+    "CRITICAL_HIT_DAMAGE",
+    "LIFE_LEECH_AMOUNT",
+    "LIFE_LEECH_CHANCE",
+    "MAGIC_LEVEL_POINTS",
+    "MANA_LEECH_AMOUNT",
+    "MANA_LEECH_CHANCE",
+    "SKILL_AXE",
+    "SKILL_CLUB",
+    "SKILL_DISTANCE",
+    "SKILL_FIST",
+    "SKILL_SHIELD",
+    "SKILL_SWORD",
+    "SPEED",
+)
+
+
+def modifiers(fields):
+    # A known list must not drop explicitly observed facts from this same group.
+    unsupported = ("mantra", "elementalbond")
+    raw = {
+        name: fields[name]
+        for name in ("attrib", *MODIFIER_PERCENTS, *unsupported)
+        if name in fields
+    }
+    if not raw:
+        return None, None
+    if any(name in raw for name in unsupported):
+        return raw, "MALFORMED"
+    values = {}
+    if "attrib" in raw:
+        for part in raw["attrib"].lower().split(","):
+            match = re.fullmatch(r"([a-z ]+) ([+-]?[0-9]+)", part.strip())
+            kind = MODIFIER_POINTS.get(match[1]) if match else None
+            if kind is None or kind in values or not -(2**31) <= int(match[2]) < 2**31:
+                return raw, "MALFORMED"
+            values[kind] = {"kind": "SIGNED_POINTS", "value": int(match[2])}
+    for field, kind in MODIFIER_PERCENTS.items():
+        if field not in raw:
+            continue
+        match = re.fullmatch(r"([+]?[0-9]+(?:\.[0-9]+)?)%", raw[field])
+        if not match:
+            return raw, "MALFORMED"
+        value = Fraction(match[1])
+        # Explicit Wiki percentage points, not engine hundredths of a percent.
+        if (
+            not 0 <= value <= 100
+            or value.numerator > 2**63 - 1
+            or value.denominator > 2**64 - 1
+        ):
+            return raw, "MALFORMED"
+        values[kind] = {
+            "kind": "RATIONAL_PERCENT",
+            "value": {"numerator": value.numerator, "denominator": value.denominator},
+        }
+    unknown = {"state": "UNKNOWN"}
+    return raw, {
+        "kind": "MODIFIERS",
+        "value": [
+            {
+                "kind": kind,
+                "target_domain": unknown,
+                "evaluation_phase": unknown,
+                "priority": unknown,
+                "parameter": known(values[kind]),
+            }
+            for kind in MODIFIER_ORDER
+            if kind in values
+        ],
+    }
+
+
 QUALIFIED_PHYSICAL_FIELDS = {
+    "skill_modifiers.modifiers",
     "charges.count",
     "temporal.duration",
     "protection.resistances",
@@ -306,6 +405,12 @@ def field_precondition(definition, field_path, value):
                 {"kind": row["kind"], "percent": row["percent"]["value"]}
                 for row in actual
             ]
+        if field_path == "skill_modifiers.modifiers" and any(
+            entry[name].get("state") in {"CONFLICT", "NOT_APPLICABLE"}
+            for entry in actual
+            for name in ("target_domain", "evaluation_phase", "priority", "parameter")
+        ):
+            return "BLOCKED_EVIDENCE_STATE"
         if actual != value:
             return "KNOWN_FIELD_CONFLICT"
     return None
@@ -355,6 +460,7 @@ def elemental(fields):
 
 
 FIELDS = {
+    "skill_modifiers.modifiers": modifiers,
     "protection.resistances": resistances,
     "charges.count": scalar("charges", "COUNT_U32", positive_count),
     "temporal.duration": scalar("duration", "DURATION_MS", duration),
@@ -392,15 +498,20 @@ def content_item_ids():
     return ids
 
 
-def source_hold():
-    data = SOURCE_HOLD.read_bytes()
-    if hashlib.sha256(data).hexdigest() != SOURCE_HOLD_SHA256:
+def source_hold(path=None, digest=None):
+    path = SOURCE_HOLD if path is None else path
+    digest = SOURCE_HOLD_SHA256 if digest is None else digest
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != digest:
         raise ValueError("resistance qualification manifest digest mismatch")
     return json.loads(data)
 
 
 def build(snapshot, item_ids, definitions=None, routed_keys=()):
-    hold = source_hold()
+    source_holds = (
+        source_hold(),
+        source_hold(MODIFIER_SOURCE_HOLD, MODIFIER_SOURCE_HOLD_SHA256),
+    )
     rows = []
     definitions = definitions or {}
     # Every retained page ID participates, including retired and unbound source IDs.
@@ -423,13 +534,19 @@ def build(snapshot, item_ids, definitions=None, routed_keys=()):
         if record["item_id"] not in item_ids:
             continue
         observations = record["observations"]
-        if ITEM_KEY.format(record["item_id"]) == hold["item_key"]:
+        holds_by_field = {
+            h["field_path"]: h
+            for h in source_holds
+            if ITEM_KEY.format(record["item_id"]) == h["item_key"]
+        }
+        for hold in holds_by_field.values():
+            names = hold["expected_snapshot_sources"][0]["values"]
             actual = [
                 {
                     "page_id": obs["page_id"],
                     "revision_id": obs["revision_id"],
                     "content_sha256": obs.get("content_sha256"),
-                    "values": {"resist": obs["fields"].get("resist")},
+                    "values": {name: obs["fields"].get(name) for name in names},
                 }
                 for obs in observations
             ]
@@ -450,7 +567,8 @@ def build(snapshot, item_ids, definitions=None, routed_keys=()):
             if field_path in QUALIFIED_PHYSICAL_FIELDS:
                 key = ITEM_KEY.format(record["item_id"])
                 typed = [result[1] for _obs, result in present]
-                external = key == hold["item_key"] and field_path == hold["field_path"]
+                hold = holds_by_field.get(field_path)
+                external = hold is not None
                 reason = None
                 if external:
                     reason = hold["reason"]
@@ -642,6 +760,10 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
             "batch_id": snapshot["batch_id"],
             "path": "imports/tibiawiki/facts/items-stats.json",
             "snapshot_sha256": snapshot["snapshot_sha256"],
+            "modifier_external_qualification": {
+                "path": str(MODIFIER_SOURCE_HOLD.relative_to(ROOT)),
+                "sha256": MODIFIER_SOURCE_HOLD_SHA256,
+            },
             "external_qualification": {
                 "path": str(SOURCE_HOLD.relative_to(ROOT)),
                 "sha256": SOURCE_HOLD_SHA256,

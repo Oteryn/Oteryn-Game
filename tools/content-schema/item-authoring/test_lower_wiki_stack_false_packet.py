@@ -69,9 +69,42 @@ class StackFalseQualification(unittest.TestCase):
             rows, holds = self.qualify(**args)
             self.assertEqual((rows, holds[0]["reason"]), ([], reason))
 
+    def test_missing_semantics_scope_and_full_snapshot_variant_guard(self):
+        key = "oteryn:item.tibia.i49217"
+        snapshot = {
+            "records": {key: {"item_id": 49217, "observations": [observation("no")]}}
+        }
+        definitions = {key: {"stack_class": "Unknown"}}
+        args = (snapshot, definitions, {key}, set(), {})
+        rows, holds = lower.qualify(*args)
+        self.assertEqual((len(rows), holds), (1, []))
+        definitions[key] = {"stack_class": "StackCapable"}
+        self.assertEqual(lower.qualify(*args)[1][0]["reason"], "KNOWN_STACK_CONFLICT")
+        definitions[key] = {"stack_class": "Unknown"}
+        snapshot["records"]["unbound"] = {
+            "item_id": 9,
+            "observations": [observation(None)],
+        }
+        self.assertEqual(
+            lower.qualify(*args)[1][0]["reason"], "SHARED_PAGE_VARIANT_UNQUALIFIED"
+        )
+        snapshot["records"] = {
+            "outside": {"item_id": 2, "observations": [observation("no")]}
+        }
+        self.assertEqual(
+            lower.qualify(
+                snapshot,
+                {"oteryn:item.tibia.i2": {"stack_class": "Unknown"}},
+                {"oteryn:item.tibia.i2"},
+                set(),
+                {},
+            ),
+            ([], []),
+        )
+
     def test_packet_reproduces(self):
         packet = lower.build()
-        self.assertEqual(packet["counts"], {"promotions": 2381, "holds": 13})
+        self.assertEqual(packet["counts"], {"promotions": 2392, "holds": 13})
         self.assertEqual(
             (
                 json.dumps(

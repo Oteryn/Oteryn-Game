@@ -38,7 +38,7 @@ def test_lowering_types_values():
     rows, report, _counts = lower.build(
         snapshot(
             {
-                34086: [
+                1234: [
                     (
                         1,
                         {
@@ -55,10 +55,10 @@ def test_lowering_types_values():
                 3074: [(2, {"primarytype": "Wands", "weight": "0.50"})],
             }
         ),
-        {34086, 3074},
+        {1234, 3074},
     )
     got = rows_by(rows)
-    key = "oteryn:item.tibia.i34086"
+    key = "oteryn:item.tibia.i1234"
     assert got[(key, "weapon.attack")] == {"kind": "SIGNED_POINTS", "value": 6}
     assert got[(key, "weapon.extra_defense")] == {"kind": "SIGNED_POINTS", "value": 3}
     assert got[(key, "weapon.elemental")]["value"] == [

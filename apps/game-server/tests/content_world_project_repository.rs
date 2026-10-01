@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "66fffef7be413a91bd32ddc3c1d55eded82066bdd68433d15252d35e8d337585",
+        "ad4ee7cdd798d0af7314bc03cf0af7d517fe63ce6def2a0bcea435124313c42f",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        23_523_800,
-        "3e361d45efecd4c6d23d562f473a7b70daa75e2f10e8da9eacbcf642e5ea2dc4",
+        23_684_900,
+        "79cb032492dcc54df99f4a8ddfa2df5f9a165c5e878c0c425449909af7041150",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "3d670eed97c97ab4b3949b3b8a84177b46fdc72b825f3f06d707d16cda1b1ab8",
+        "b6a5d6c9e07b45df1fa20e7f4a184b0aaa8db766991d36a1d71da21800efe416",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "64b5e2efe08bca94d3424704d4ff11c492c2acd30938de327d9e88e9e65ad3fd",
+        "b0f28915624304243319e5656b8437607558a41cc11a39d124d9cbef450dd9a2",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "eb53cac7e311c45f5d89a9d8d4c102058747a9ee971fceaeb53a8a33e0b00ee6";
+const TREE_SHA256: &str = "a689b933735677d3f2746eda8f64281f75c2def8f9f0b9f7d66c53e9e4ed1285";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -995,8 +995,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // Explicit wiki non-stackability adds 2,345 atoms; 557 Items already had an atom
     // on these paths, so only 1,788 additional Items enter this atom census.
     // Physical fact initialization exposes one additional explicit wiki negative (i20129).
-    assert_eq!(wave1_items, 164 + 995 + 27 + 1_788 + 1);
-    assert_eq!(wave1_fields, 290 + 1_269 + 49 + 1 + 2_345 + 1);
+    assert_eq!(wave1_items, 164 + 995 + 27 + 1_788 + 1 + 11);
+    assert_eq!(wave1_fields, 290 + 1_269 + 49 + 1 + 2_345 + 1 + 11);
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
         .definitions
@@ -1033,6 +1033,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);
     let (mut pickup_fields, mut positive_stacks, mut weight_fields) = (0, 0, 0);
+    let (mut modifier_vectors, mut modifier_atoms) = (0, 0);
     for definition in &linked.definitions {
         let ReferenceDefinitionKind::Item(item) = &definition.kind else {
             continue;
@@ -1086,6 +1087,21 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                     .all(|entry| matches!(entry.percent, ReferenceItemField::Known(_)))
             );
         }
+        if definition.definition.key().as_str() == "oteryn:item.tibia.i34086" {
+            assert_eq!(item.semantics.skill_modifiers, ReferenceItemField::Unknown);
+        }
+        if let ReferenceItemField::Known(group) = &item.semantics.skill_modifiers
+            && let ReferenceItemField::Known(entries) = &group.modifiers
+        {
+            modifier_vectors += 1;
+            modifier_atoms += entries.len();
+            for entry in entries {
+                assert_eq!(entry.target_domain, ReferenceItemField::Unknown);
+                assert_eq!(entry.evaluation_phase, ReferenceItemField::Unknown);
+                assert_eq!(entry.priority, ReferenceItemField::Unknown);
+                assert!(matches!(entry.parameter, ReferenceItemField::Known(_)));
+            }
+        }
         if let ReferenceItemField::Known(equipment) = &item.semantics.equipment
             && let ReferenceItemField::Known(patterns) = &equipment.patterns
         {
@@ -1096,6 +1112,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         (pickup_fields, positive_stacks, weight_fields),
         (6756, 39, 6513 + 3)
     );
+    assert_eq!((modifier_vectors, modifier_atoms), (419, 619));
     assert_eq!(resistance_vectors, 391);
     assert_eq!(resistance_atoms, 625);
     // The independent predecessor census includes the separately admitted starter pattern.
