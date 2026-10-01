@@ -159,8 +159,8 @@
     "progress_gates_linked_to_wiki_quest": 176,
     "by_status": {
       "approved_omission": 1,
-      "mapped": 437,
-      "unresolved_semantics": 15
+      "mapped": 234,
+      "unresolved_semantics": 218
     }
   },
   "entries": [
@@ -2951,7 +2951,7 @@
         31951,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/hero_rathleton/access_door",
       "sources": [
@@ -2977,7 +2977,7 @@
         31951,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/hero_rathleton/access_door",
       "sources": [
@@ -3003,7 +3003,7 @@
         31924,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_50/dark_trails/door_hideout",
       "sources": [
@@ -3029,7 +3029,7 @@
         31953,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_50/dark_trails/door_quandon",
       "sources": [
@@ -3055,7 +3055,7 @@
         31974,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_50/oramond_quest/the_ancient_sewers/door",
       "sources": [
@@ -3081,7 +3081,7 @@
         31982,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_50/oramond_quest/to_take_roots/door",
       "sources": [
@@ -3107,7 +3107,7 @@
         32230,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_80/grimvale_quest/ancient_feud_doors",
       "sources": [
@@ -3133,7 +3133,7 @@
         32261,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_80/grimvale_quest/ancient_feud_doors",
       "sources": [
@@ -3159,7 +3159,7 @@
         32322,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_80/grimvale_quest/ancient_feud_doors",
       "sources": [
@@ -3237,7 +3237,7 @@
         32786,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_90/ferumbras_ascension/tarbaz_door",
       "sources": [
@@ -3263,7 +3263,7 @@
         32791,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u10_90/ferumbras_ascension/tarbaz_door",
       "sources": [
@@ -3445,7 +3445,7 @@
         31543,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/barkless/trial_access_door",
       "sources": [
@@ -3471,7 +3471,7 @@
         32241,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/final_boss/access_door",
       "sources": [
@@ -3497,7 +3497,7 @@
         32271,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/life/access_door",
       "sources": [
@@ -3523,7 +3523,7 @@
         32501,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/minotaurs/access_door",
       "sources": [
@@ -3549,7 +3549,7 @@
         32468,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/minotaurs/boss_access_door",
       "sources": [
@@ -3575,7 +3575,7 @@
         32370,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/misguided/access_door",
       "sources": [
@@ -3601,7 +3601,7 @@
         32149,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/mot_a/access_door_denominator",
       "sources": [
@@ -3653,7 +3653,7 @@
         32172,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/mot_a/access_door_investigation",
       "sources": [
@@ -3679,7 +3679,7 @@
         32008,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door01",
       "sources": [
@@ -3705,7 +3705,7 @@
         32007,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door02",
       "sources": [
@@ -3731,7 +3731,7 @@
         32047,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door03",
       "sources": [
@@ -3757,7 +3757,7 @@
         32066,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_50/hidden_threats/ratter_door",
       "sources": [
@@ -3783,7 +3783,7 @@
         32008,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u11_50/hidden_threats/servant_door",
       "sources": [
@@ -3809,7 +3809,7 @@
         31922,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_20/grave_danger/bosses/king_zelos/room; crystalserver progress/quest/u12_20/grave_danger/bosses/king_zelos_door; D25 decides for canary (implementation detail: Naming only: 'Room' vs 'KingZelosDoor' suffix; same boss-room gate.)",
       "destination": "canary:door-gate/progress/quest/u12_20/grave_danger/bosses/king_zelos/room",
       "sources": [
@@ -4147,7 +4147,7 @@
         31476,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/access_door; crystalserver progress/kilmaresh/access_door; D25 decides for canary (implementation detail: Naming/namespace only difference; same overall Kilmaresh access gate.)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/access_door",
       "sources": [
@@ -4192,7 +4192,7 @@
         31536,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask",
       "sources": [
@@ -4218,7 +4218,7 @@
         31496,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask",
       "sources": [
@@ -4244,7 +4244,7 @@
         31496,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask",
       "sources": [
@@ -4270,7 +4270,7 @@
         31510,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/mirror_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/mirror_mask",
       "sources": [
@@ -4296,7 +4296,7 @@
         31450,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask",
       "sources": [
@@ -4322,7 +4322,7 @@
         31466,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask",
       "sources": [
@@ -4348,7 +4348,7 @@
         32461,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_40/the_order_of_the_lion/access_east_side; crystalserver progress/quest/u12_40/the_order_of_the_lion/access_eastern_side; D25 decides for canary (implementation detail: Naming only: 'east_side' vs 'eastern_side'; same access gate.)",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_east_side",
       "sources": [
@@ -4374,7 +4374,7 @@
         32461,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "servers disagree: canary progress/quest/u12_40/the_order_of_the_lion/access_east_side; crystalserver progress/quest/u12_40/the_order_of_the_lion/access_eastern_side; D25 decides for canary (implementation detail: Naming only: 'east_side' vs 'eastern_side'; same access gate.)",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_east_side",
       "sources": [
@@ -4400,7 +4400,7 @@
         32482,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_southern_side",
       "sources": [
@@ -4419,7 +4419,7 @@
         32457,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_southern_side",
       "sources": [
@@ -4438,7 +4438,7 @@
         32456,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_southern_side",
       "sources": [
@@ -4457,7 +4457,7 @@
         32457,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_southern_side",
       "sources": [
@@ -4476,7 +4476,7 @@
         32499,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_southern_side",
       "sources": [
@@ -4502,7 +4502,7 @@
         32469,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_southern_side",
       "sources": [
@@ -4521,7 +4521,7 @@
         31388,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u12_60/apirates_tail/tentugly_door",
       "sources": [
@@ -4547,7 +4547,7 @@
         32494,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u12_70/adventures_of_galthen/access_door",
       "sources": [
@@ -4573,7 +4573,7 @@
         32561,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
       "sources": [
@@ -4599,7 +4599,7 @@
         32561,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
       "sources": [
@@ -4625,7 +4625,7 @@
         32561,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
       "sources": [
@@ -4651,7 +4651,7 @@
         32561,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
       "sources": [
@@ -4677,7 +4677,7 @@
         32573,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
       "sources": [
@@ -4703,7 +4703,7 @@
         32573,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
       "sources": [
@@ -4729,7 +4729,7 @@
         32573,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
       "sources": [
@@ -4755,7 +4755,7 @@
         32573,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
       "sources": [
@@ -4781,7 +4781,7 @@
         32576,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/monster",
       "sources": [
@@ -4807,7 +4807,7 @@
         32576,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/mutated_abomination",
       "sources": [
@@ -4833,7 +4833,7 @@
         31861,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/banshee_door",
       "sources": [
@@ -4859,7 +4859,7 @@
         31862,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/banshee_door",
       "sources": [
@@ -5067,7 +5067,7 @@
         31671,
         13
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_annihilator/reward",
       "sources": [
@@ -5093,7 +5093,7 @@
         32652,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5119,7 +5119,7 @@
         32863,
         5
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5145,7 +5145,7 @@
         32733,
         13
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5171,7 +5171,7 @@
         31264,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5197,7 +5197,7 @@
         31122,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5223,7 +5223,7 @@
         32951,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5249,7 +5249,7 @@
         32096,
         15
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5275,7 +5275,7 @@
         31965,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5301,7 +5301,7 @@
         31975,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5327,7 +5327,7 @@
         31975,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5353,7 +5353,7 @@
         31965,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5379,7 +5379,7 @@
         32026,
         13
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5405,7 +5405,7 @@
         31970,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5431,7 +5431,7 @@
         31435,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5457,7 +5457,7 @@
         31487,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5483,7 +5483,7 @@
         31778,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5509,7 +5509,7 @@
         32447,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5535,7 +5535,7 @@
         31212,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5561,7 +5561,7 @@
         32185,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5587,7 +5587,7 @@
         31064,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5613,7 +5613,7 @@
         31657,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5639,7 +5639,7 @@
         31791,
         13
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5665,7 +5665,7 @@
         32291,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
       "sources": [
@@ -5769,7 +5769,7 @@
         31933,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_white_raven_monastery/door",
       "sources": [
@@ -5795,7 +5795,7 @@
         31936,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_24/the_white_raven_monastery/door",
       "sources": [
@@ -5821,7 +5821,7 @@
         32531,
         1
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_4/djinn_war/efreet_faction/door_to_lamp",
       "sources": [
@@ -5847,7 +5847,7 @@
         31112,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
       "sources": [
@@ -5873,7 +5873,7 @@
         31112,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
       "sources": [
@@ -5899,7 +5899,7 @@
         32518,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
       "sources": [
@@ -5977,7 +5977,7 @@
         31105,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
       "sources": [
@@ -6003,7 +6003,7 @@
         31106,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
       "sources": [
@@ -6029,7 +6029,7 @@
         32620,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
       "sources": [
@@ -6055,7 +6055,7 @@
         32632,
         1
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_4/djinn_war/marid_faction/door_to_lamp",
       "sources": [
@@ -6107,7 +6107,7 @@
         31967,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_5/sams_old_backpack/sams_old_backpack_door",
       "sources": [
@@ -6133,7 +6133,7 @@
         31948,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/banshee_door",
       "sources": [
@@ -6159,7 +6159,7 @@
         32280,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/bonelords_door",
       "sources": [
@@ -6185,7 +6185,7 @@
         32771,
         13
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/calassa_door",
       "sources": [
@@ -6211,7 +6211,7 @@
         32835,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/chorurn_door",
       "sources": [
@@ -6237,7 +6237,7 @@
         31933,
         15
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/dwacatra_door",
       "sources": [
@@ -6263,7 +6263,7 @@
         31605,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/elven_door",
       "sources": [
@@ -6289,7 +6289,7 @@
         31137,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/ice_music_door",
       "sources": [
@@ -6315,7 +6315,7 @@
         32808,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/ice_music_door",
       "sources": [
@@ -6341,7 +6341,7 @@
         31640,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/memory_stone_door",
       "sources": [
@@ -6367,7 +6367,7 @@
         31720,
         2
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/orc_door",
       "sources": [
@@ -6393,7 +6393,7 @@
         31622,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/spectral_stone_door",
       "sources": [
@@ -6419,7 +6419,7 @@
         32734,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/explorer_society/spectral_stone_door",
       "sources": [
@@ -6445,7 +6445,7 @@
         32495,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door",
       "sources": [
@@ -6471,7 +6471,7 @@
         32497,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door",
       "sources": [
@@ -6497,7 +6497,7 @@
         32499,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door",
       "sources": [
@@ -6523,7 +6523,7 @@
         32501,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door",
       "sources": [
@@ -6549,7 +6549,7 @@
         32503,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door",
       "sources": [
@@ -6575,7 +6575,7 @@
         32505,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door",
       "sources": [
@@ -6601,7 +6601,7 @@
         32507,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door",
       "sources": [
@@ -6627,7 +6627,7 @@
         32886,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/chor_door",
       "sources": [
@@ -6653,7 +6653,7 @@
         32910,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/dworc_door",
       "sources": [
@@ -6679,7 +6679,7 @@
         32468,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_6/the_ape_city/fibula_door",
       "sources": [
@@ -6705,7 +6705,7 @@
         31600,
         15
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
       "sources": [
@@ -6731,7 +6731,7 @@
         31775,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_8/druid_outfits/druid_amulet_door",
       "sources": [
@@ -6783,7 +6783,7 @@
         32517,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_8/knight_outfits/ramsays_helmet_door",
       "sources": [
@@ -6809,7 +6809,7 @@
         32776,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_8/oriental_outfits/oriental_door",
       "sources": [
@@ -6835,7 +6835,7 @@
         32838,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
       "sources": [
@@ -6861,7 +6861,7 @@
         32856,
         3
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_8/the_shattered_isles/yavern_door",
       "sources": [
@@ -6887,7 +6887,7 @@
         32328,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
       "sources": [
@@ -6913,7 +6913,7 @@
         32328,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
       "sources": [
@@ -6965,7 +6965,7 @@
         32331,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_9/the_pits_of_inferno/shortcut_lever_door",
       "sources": [
@@ -6991,7 +6991,7 @@
         32332,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u7_9/the_pits_of_inferno/shortcut_lever_door",
       "sources": [
@@ -7173,7 +7173,7 @@
         31095,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_0/the_ice_islands/formorgar_mines_door",
       "sources": [
@@ -7199,7 +7199,7 @@
         31022,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_0/the_ice_islands/yakchal_door",
       "sources": [
@@ -7225,7 +7225,7 @@
         31022,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_0/the_ice_islands/yakchal_door",
       "sources": [
@@ -7563,7 +7563,7 @@
         32534,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_1/tibia_tales/aritos_task_door",
       "sources": [
@@ -7589,7 +7589,7 @@
         31969,
         5
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_1/to_outfox_afox_quest/questline",
       "sources": [
@@ -7615,7 +7615,7 @@
         31758,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_1/tower_defence_quest/door",
       "sources": [
@@ -7641,7 +7641,7 @@
         31757,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_1/what_afoolish_quest/queen_eloise_cat_door",
       "sources": [
@@ -7667,7 +7667,7 @@
         32116,
         4
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_1/what_afoolish_quest/triangle_tower_door",
       "sources": [
@@ -7719,7 +7719,7 @@
         32258,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_2/the_inquisition_quest/reward_door",
       "sources": [
@@ -7745,7 +7745,7 @@
         32210,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_2/the_thieves_guild_quest/door",
       "sources": [
@@ -7816,7 +7816,7 @@
         31782,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_2/the_thieves_guild_quest/theatre_script",
       "sources": [
@@ -7842,7 +7842,7 @@
         31460,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_2/vampire_hunter_quest/door",
       "sources": [
@@ -7894,7 +7894,7 @@
         31185,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_azerus",
       "sources": [
@@ -7920,7 +7920,7 @@
         31121,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_bog",
       "sources": [
@@ -7946,7 +7946,7 @@
         31123,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_bog",
       "sources": [
@@ -7972,7 +7972,7 @@
         31186,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_bog",
       "sources": [
@@ -7998,7 +7998,7 @@
         31186,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_bog",
       "sources": [
@@ -8024,7 +8024,7 @@
         31193,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_last_fight",
       "sources": [
@@ -8050,7 +8050,7 @@
         31265,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_matrix",
       "sources": [
@@ -8076,7 +8076,7 @@
         31248,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_matrix",
       "sources": [
@@ -8102,7 +8102,7 @@
         31209,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_quara",
       "sources": [
@@ -8128,7 +8128,7 @@
         31205,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_quara",
       "sources": [
@@ -8154,7 +8154,7 @@
         31148,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_quara",
       "sources": [
@@ -8180,7 +8180,7 @@
         31205,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_reward",
       "sources": [
@@ -8206,7 +8206,7 @@
         31208,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_reward",
       "sources": [
@@ -8232,7 +8232,7 @@
         31260,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/matrix_reward",
       "sources": [
@@ -8336,7 +8336,7 @@
         31226,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/notes_palimuth",
       "sources": [
@@ -8362,7 +8362,7 @@
         31222,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/tamerin_status",
       "sources": [
@@ -8388,7 +8388,7 @@
         31489,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_north_mine",
       "sources": [
@@ -8414,7 +8414,7 @@
         31516,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_south_mine",
       "sources": [
@@ -8440,7 +8440,7 @@
         31499,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_west_mine",
       "sources": [
@@ -8466,7 +8466,7 @@
         32529,
         5
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_5/hot_cuisine_quest/cookbook_door",
       "sources": [
@@ -8492,7 +8492,7 @@
         32531,
         5
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_5/hot_cuisine_quest/cookbook_door",
       "sources": [
@@ -9090,7 +9090,7 @@
         31019,
         2
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission09/arena_door",
       "sources": [
@@ -9142,7 +9142,7 @@
         31547,
         4
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission10/magic_carpet_door",
       "sources": [
@@ -9168,7 +9168,7 @@
         31265,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_54/the_new_frontier/zao_palace_doors",
       "sources": [
@@ -9194,7 +9194,7 @@
         31266,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_54/the_new_frontier/zao_palace_doors",
       "sources": [
@@ -9454,7 +9454,7 @@
         31536,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u8_6/an_interest_in_botany/chest_door",
       "sources": [
@@ -9714,7 +9714,7 @@
         32189,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/academy_door",
       "sources": [
@@ -9740,7 +9740,7 @@
         32156,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/library_door",
       "sources": [
@@ -9766,7 +9766,7 @@
         32186,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/unholy_crypt_door",
       "sources": [
@@ -9989,7 +9989,7 @@
         32280,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
       "sources": [
@@ -10008,7 +10008,7 @@
         32264,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
       "sources": [
@@ -10027,7 +10027,7 @@
         32629,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/questline",
       "sources": [
@@ -10046,7 +10046,7 @@
         32652,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/questline",
       "sources": [
@@ -10065,7 +10065,7 @@
         32244,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/questline",
       "sources": [
@@ -10084,7 +10084,7 @@
         32255,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/questline",
       "sources": [
@@ -10103,7 +10103,7 @@
         32275,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/questline",
       "sources": [
@@ -10122,7 +10122,7 @@
         32388,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/questline",
       "sources": [
@@ -10141,7 +10141,7 @@
         32000,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/the_seven_keys/questline",
       "sources": [
@@ -10160,7 +10160,7 @@
         32630,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/unsafe_release/questline",
       "sources": [
@@ -10179,7 +10179,7 @@
         32494,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_eastern_side",
       "sources": [
@@ -10198,7 +10198,7 @@
         32475,
         4
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u12_40/the_order_of_the_lion/augustin_door",
       "sources": [
@@ -10217,7 +10217,7 @@
         31464,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/arthei_marziel_door",
       "sources": [
@@ -10236,7 +10236,7 @@
         31450,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/arthei_marziel_door",
       "sources": [
@@ -10255,7 +10255,7 @@
         31451,
         4
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/arthei_marziel_door",
       "sources": [
@@ -10274,7 +10274,7 @@
         31446,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/arthei_marziel_door",
       "sources": [
@@ -10293,7 +10293,7 @@
         31107,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/blood_crystal_door",
       "sources": [
@@ -10312,7 +10312,7 @@
         31474,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/boreth_door",
       "sources": [
@@ -10331,7 +10331,7 @@
         31465,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/boreth_door",
       "sources": [
@@ -10350,7 +10350,7 @@
         31469,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/castle_hidden_entrance",
       "sources": [
@@ -10369,7 +10369,7 @@
         31460,
         7
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/lersatio_door",
       "sources": [
@@ -10388,7 +10388,7 @@
         31468,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/lersatio_door",
       "sources": [
@@ -10445,7 +10445,7 @@
         31259,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_02",
       "sources": [
@@ -10464,7 +10464,7 @@
         31184,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_05",
       "sources": [
@@ -10483,7 +10483,7 @@
         31292,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_06",
       "sources": [
@@ -10502,7 +10502,7 @@
         31113,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_07",
       "sources": [
@@ -10521,7 +10521,7 @@
         31203,
         13
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_08",
       "sources": [
@@ -10540,7 +10540,7 @@
         31207,
         13
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_08",
       "sources": [
@@ -10559,7 +10559,7 @@
         31195,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_09",
       "sources": [
@@ -10578,7 +10578,7 @@
         32474,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_10",
       "sources": [
@@ -10597,7 +10597,7 @@
         32446,
         10
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_10",
       "sources": [
@@ -10616,7 +10616,7 @@
         31564,
         13
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_10",
       "sources": [
@@ -10635,7 +10635,7 @@
         32405,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_10",
       "sources": [
@@ -10654,7 +10654,7 @@
         32184,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_10",
       "sources": [
@@ -10673,7 +10673,7 @@
         31302,
         9
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_11",
       "sources": [
@@ -10692,7 +10692,7 @@
         31797,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_final",
       "sources": [
@@ -10711,7 +10711,7 @@
         31797,
         11
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_final",
       "sources": [
@@ -10730,7 +10730,7 @@
         31798,
         6
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_lab",
       "sources": [
@@ -10749,7 +10749,7 @@
         31923,
         12
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_04",
       "sources": [
@@ -10768,7 +10768,7 @@
         31628,
         8
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_05",
       "sources": [
@@ -10787,7 +10787,7 @@
         31992,
         14
       ],
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "destination": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_06",
       "sources": [
@@ -11143,6 +11143,758 @@
           ]
         }
       ]
+    }
+  ],
+  "source_checks": [
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/hero_rathleton/access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/hero_rathleton/access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u10_50/dark_trails/door_hideout",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u10_50/dark_trails/door_hideout"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u10_50/dark_trails/door_quandon",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u10_50/dark_trails/door_quandon"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u10_50/oramond_quest/the_ancient_sewers/door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u10_50/oramond_quest/the_ancient_sewers/door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u10_50/oramond_quest/to_take_roots/door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u10_50/oramond_quest/to_take_roots/door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u10_80/grimvale_quest/ancient_feud_doors",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u10_80/grimvale_quest/ancient_feud_doors"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u10_90/ferumbras_ascension/tarbaz_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u10_90/ferumbras_ascension/tarbaz_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/barkless/trial_access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/barkless/trial_access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/final_boss/access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/final_boss/access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/life/access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/life/access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/minotaurs/access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/boss_access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/minotaurs/boss_access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/misguided/access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/misguided/access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/access_door_denominator",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/mot_a/access_door_denominator"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/access_door_investigation",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/mot_a/access_door_investigation"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_50/hidden_threats/corym_works_door01",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door01"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_50/hidden_threats/corym_works_door02",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door02"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_50/hidden_threats/corym_works_door03",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door03"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_50/hidden_threats/ratter_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_50/hidden_threats/ratter_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u11_50/hidden_threats/servant_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u11_50/hidden_threats/servant_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_20/grave_danger/bosses/king_zelos/room",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_20/grave_danger/bosses/king_zelos/room"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/mirror_mask",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/mirror_mask"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_40/the_order_of_the_lion/access_east_side",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_east_side"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_40/the_order_of_the_lion/access_southern_side",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_southern_side"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_60/apirates_tail/tentugly_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_60/apirates_tail/tentugly_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u12_70/adventures_of_galthen/access_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u12_70/adventures_of_galthen/access_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u13_10/cradle_of_monsters/access/monster",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/monster"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u13_10/cradle_of_monsters/access/mutated_abomination",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/mutated_abomination"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_2/the_queen_of_the_banshees/banshee_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/banshee_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_24/the_annihilator/reward",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_24/the_annihilator/reward"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_24/the_postman_missions/door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_24/the_white_raven_monastery/door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_24/the_white_raven_monastery/door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_4/djinn_war/efreet_faction/door_to_lamp",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_4/djinn_war/efreet_faction/door_to_lamp"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_4/djinn_war/marid_faction/door_to_lamp",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_4/djinn_war/marid_faction/door_to_lamp"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_5/sams_old_backpack/sams_old_backpack_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/banshee_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/banshee_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/bonelords_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/bonelords_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/calassa_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/calassa_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/chorurn_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/chorurn_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/dwacatra_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/dwacatra_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/elven_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/elven_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/ice_music_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/ice_music_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/memory_stone_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/memory_stone_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/orc_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/orc_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/explorer_society/spectral_stone_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/explorer_society/spectral_stone_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/the_ape_city/casks_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/the_ape_city/chor_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/the_ape_city/chor_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/the_ape_city/dworc_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/the_ape_city/dworc_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_6/the_ape_city/fibula_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_6/the_ape_city/fibula_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_8/beggar_outfits/beggar_first_addon_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_8/druid_outfits/druid_amulet_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_8/druid_outfits/druid_amulet_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_8/knight_outfits/ramsays_helmet_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_8/knight_outfits/ramsays_helmet_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_8/oriental_outfits/oriental_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_8/oriental_outfits/oriental_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_8/the_shattered_isles/yavern_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_8/the_shattered_isles/yavern_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u7_9/the_pits_of_inferno/shortcut_lever_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u7_9/the_pits_of_inferno/shortcut_lever_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_0/the_ice_islands/formorgar_mines_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_0/the_ice_islands/yakchal_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_0/the_ice_islands/yakchal_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_1/tibia_tales/aritos_task_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_1/tibia_tales/aritos_task_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_1/to_outfox_afox_quest/questline"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_1/tower_defence_quest/door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_1/tower_defence_quest/door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_1/what_afoolish_quest/queen_eloise_cat_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_1/what_afoolish_quest/queen_eloise_cat_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_1/what_afoolish_quest/triangle_tower_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_1/what_afoolish_quest/triangle_tower_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_2/the_inquisition_quest/reward_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_2/the_thieves_guild_quest/door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/theatre_script",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_2/the_thieves_guild_quest/theatre_script"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_2/vampire_hunter_quest/door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_2/vampire_hunter_quest/door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_azerus",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_azerus"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_bog",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_bog"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_last_fight",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_last_fight"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_matrix",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_matrix"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_quara",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_quara"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_reward",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_reward"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/matrix_reward",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/matrix_reward"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/notes_palimuth",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/notes_palimuth"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/tamerin_status",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/tamerin_status"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_north_mine",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_north_mine"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_south_mine",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_south_mine"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_west_mine",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_west_mine"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_5/hot_cuisine_quest/cookbook_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_5/hot_cuisine_quest/cookbook_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_54/the_new_frontier/mission09/arena_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission09/arena_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_54/the_new_frontier/mission10/magic_carpet_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission10/magic_carpet_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_54/the_new_frontier/zao_palace_doors",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_54/the_new_frontier/zao_palace_doors"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u8_6/an_interest_in_botany/chest_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u8_6/an_interest_in_botany/chest_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u9_1/the_rookie_guard/academy_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/academy_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u9_1/the_rookie_guard/library_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/library_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "canary:quest-progress/quest/u9_1/the_rookie_guard/unholy_crypt_door",
+      "reason": "progress track not declared",
+      "record": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/unholy_crypt_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/burried_catedral/word_count"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/cellar"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/questline"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/questline",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/the_seven_keys/questline"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/questline",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/unsafe_release/questline"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u12_40/the_order_of_the_lion/access_eastern_side",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_eastern_side"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u12_40/the_order_of_the_lion/augustin_door",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u12_40/the_order_of_the_lion/augustin_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_4/blood_brothers/arthei_marziel_door",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/arthei_marziel_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_4/blood_brothers/blood_crystal_door",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/blood_crystal_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_4/blood_brothers/boreth_door",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/boreth_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_4/blood_brothers/castle_hidden_entrance",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/castle_hidden_entrance"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_4/blood_brothers/lersatio_door",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/lersatio_door"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_02",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_02"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_05",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_05"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_06",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_06"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_07",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_07"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_08",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_08"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_09",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_09"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_10",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_10"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_11",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_11"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_final",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_final"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/door_lab",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_lab"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/the_isle_of_evil/door_04",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_04"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/the_isle_of_evil/door_05",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_05"
+    },
+    {
+      "field": "condition.progress",
+      "key": "crystalserver:quest-progress/quest/u8_5/the_isle_of_evil/door_06",
+      "reason": "progress track not declared",
+      "record": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_06"
+    },
+    {
+      "field": "quest",
+      "key": "canary:quest/nightmare_outfits_quest",
+      "reason": "quest not declared in catalogue",
+      "record": "canary:door-gate/progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door"
+    },
+    {
+      "field": "quest",
+      "key": "canary:quest/rathleton_quest",
+      "reason": "quest not declared in catalogue",
+      "record": "canary:door-gate/progress/hero_rathleton/access_door"
+    },
+    {
+      "field": "quest",
+      "key": "canary:quest/the_cradle_of_monsters_quest",
+      "reason": "quest not declared in catalogue",
+      "record": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol"
+    },
+    {
+      "field": "quest",
+      "key": "canary:quest/the_cradle_of_monsters_quest",
+      "reason": "quest not declared in catalogue",
+      "record": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/monster"
+    },
+    {
+      "field": "quest",
+      "key": "canary:quest/the_cradle_of_monsters_quest",
+      "reason": "quest not declared in catalogue",
+      "record": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/mutated_abomination"
     }
   ]
 }

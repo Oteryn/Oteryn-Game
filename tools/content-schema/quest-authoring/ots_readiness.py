@@ -10,9 +10,9 @@ A quest needs a feature when any record joined to it uses that feature:
 - doors: gates by kind;
 - interactions: trigger edges and child owners. An interaction joins the quests
   whose progress tracks it reads or writes; an interaction touching no track joins
-  the one quest its script directory already joins, if exactly one, or else the
-  one quest whose key equals the directory name (punctuation and a trailing
-  'quest' ignored).
+  the quest its script directory explicitly names before inferring ownership
+  from cross-quest progress tracks. Explicit directory and track owners are
+  retained together for a script that touches both quests.
 
 `data_gaps` counts what the transcription could not express yet, so a quest can
 be ready on the engine side and still wait for data. An unresolved line that names
@@ -110,32 +110,75 @@ def walk_condition(cond):
         yield 'cond', cond
 
 
-def interaction_facts(inter):
+def interaction_facts(inter, declared_tracks=None):
     tracks, features, unresolved_conditions = set(), set(), 0
+    blocked_children = 0
     features.add(EDGE_FEATURE[inter['source']['edge']])
     for kind, x in walk_rules(inter['rules']):
         if kind == 'cond':
             if 'quest_stage' in x:
                 tracks.add(x['quest_stage']['progress'])
+                if declared_tracks is not None and x['quest_stage']['progress'] not in declared_tracks:
+                    unresolved_conditions += 1
             if 'unresolved' in x:
                 unresolved_conditions += 1
             continue
+        blocked_children += x.get('status') == 'blocked'
         owner = x['owner']
         if owner == 'Quest' and 'progress' in x:
             tracks.add(x['progress'])
+            if declared_tracks is not None and x['progress'] not in declared_tracks:
+                blocked_children += 1
         if owner == 'Quest':
             features.add('quest_state')
         elif owner == 'Item':
             features.add('item_hand_out' if x['request'] == 'hand_out' else 'item_consume')
         elif owner in OWNER_FEATURE:
             features.add(OWNER_FEATURE[owner])
-    gaps = unresolved_conditions
+    gaps = unresolved_conditions + blocked_children
     for item in inter['unresolved']:
         if item['reason'] in REASON_FEATURE:
             features.add(REASON_FEATURE[item['reason']])
         else:
             gaps += 1
     return tracks, features, gaps
+
+
+def join_interactions(quests, progress, interactions):
+    """Explicit directory ownership precedes inferred cross-track ownership.
+
+    Keep direct track owners as well: a boss script may grant another quest's
+    outfit while remaining part of its named quest. Ambiguous inference stays
+    unlinked; it never selects an arbitrary owner.
+    """
+    quest_keys = {q['identity']['key'] for q in quests}
+    track_quests, by_name = collections.defaultdict(set), collections.defaultdict(set)
+    for q in quests:
+        key = q['identity']['key']
+        by_name[normalized(key.split('/', 1)[1])].add(key)
+        if q.get('start'):
+            track_quests[q['start']['progress']].add(key)
+        for mission in q.get('missions') or []:
+            track_quests[mission['progress']].add(key)
+    for track in progress:
+        for key in (track.get('auxiliary_of') or []) + track['start_of']:
+            track_quests[track['key']].add(key)
+    direct, by_directory = {}, collections.defaultdict(set)
+    for inter in interactions:
+        key = inter['identity']['key']
+        tracks, _, _ = interaction_facts(inter)
+        direct[key] = set().union(*(track_quests[t] for t in tracks)) & quest_keys
+        by_directory[key.split('/')[1]].update(direct[key])
+    joined = {}
+    for key, owners in sorted(direct.items()):
+        directory = key.split('/')[1]
+        curated = {DIRECTORY_QUESTS[directory]} & quest_keys if directory in DIRECTORY_QUESTS else set()
+        named = curated or by_name[normalized(directory)]
+        explicit = named if len(named) == 1 else set()
+        candidates = by_directory[directory]
+        inferred = candidates if len(candidates) == 1 and not owners and not explicit else set()
+        joined[key] = owners | explicit | inferred
+    return joined
 
 
 def main():
@@ -176,37 +219,27 @@ def main():
         if gate['quest'] and gate['quest']['key'] in info:
             info[gate['quest']['key']]['features'].add(DOOR_FEATURE[gate['condition']['kind']])
 
-    facts = {}
-    by_directory = collections.defaultdict(set)
+    joined = join_interactions(quests, progress, interactions)
+    declared_tracks = {track['key'] for track in progress}
+    unlinked = []
     for inter in interactions:
         key = inter['identity']['key']
-        tracks, features, gaps = interaction_facts(inter)
-        joined = set().union(*(track_quests.get(t, set()) for t in tracks)) & info.keys()
-        facts[key] = (joined, features, gaps)
-        by_directory[key.split('/')[1]].update(joined)
-    by_name = collections.defaultdict(set)
-    for quest in info:
-        by_name[normalized(quest.split('/', 1)[1])].add(quest)
-    unlinked = []
-    for key, (joined, features, gaps) in sorted(facts.items()):
-        if not joined:
-            directory = key.split('/')[1]
-            candidates = by_directory[directory]
-            joined = candidates if len(candidates) == 1 else set()
-        if not joined:
-            candidates = by_name[normalized(directory)]
-            joined = candidates if len(candidates) == 1 else set()
-        if not joined and directory in DIRECTORY_QUESTS:
-            joined = {DIRECTORY_QUESTS[directory]} & info.keys()
-        if not joined:
+        _, features, gaps = interaction_facts(inter, declared_tracks)
+        if not joined[key]:
             unlinked.append(key)
             continue
-        for quest in joined:
+        for quest in joined[key]:
             entry = info[quest]
             entry['features'] |= features
             entry['interactions'].append(key)
             entry['unresolved'] += gaps
             entry['interactions_with_gaps'] += bool(gaps)
+    # A declared gate still needs transcription when its predicate track is absent.
+    for gate in gates:
+        if (gate.get('quest') and gate['quest']['key'] in info
+                and gate['condition']['kind'] == 'quest_progress'
+                and gate['condition']['progress'] not in declared_tracks):
+            info[gate['quest']['key']]['unresolved'] += 1
 
     rows = []
     for key in sorted(info):
@@ -241,7 +274,7 @@ def main():
             'by_kind': dict(sorted(collections.Counter(r['kind'] for r in rows).items())),
             'quests_needing_feature': dict(sorted(usage.items())),
             'quests_without_data_gaps': sum(1 for r in rows if not r['data_gaps']['unresolved_items']),
-            'interactions_joined': len(facts) - len(unlinked),
+            'interactions_joined': len(joined) - len(unlinked),
             'interactions_unlinked': len(unlinked),
         },
         'unlock_order': order,

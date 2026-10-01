@@ -284,7 +284,7 @@ def interaction_fixture():
                     {'key': 'p2', 'source_position': {'x': 3, 'y': 4, 'z': 7}}],
         'unresolved': []}
     manifest = {'undeclared_progress_tracks': [],
-                'entries': [{'destination': 'oteryn:interaction/first_seal_flame', 'status': 'mapped',
+                'entries': [{'destination': 'oteryn:interaction/first_seal_flame', 'status': 'unresolved_semantics',
                              'sources': [{'source': 'canary'}, {'source': 'crystalserver'}]}]}
     return {'interactions': [interaction]}, manifest
 
@@ -454,9 +454,11 @@ interaction_case('transition exists', lambda i, c, m: c[0].update(transition='ot
 interaction_case('transition moves its own track', lambda i, c, m: c[0].update(transition='oteryn:quest/banshees#the_plague_seal:npc_1'))
 interaction_case('undeclared track is listed', lambda i, c, m: (c[0].pop('transition'), c[0].update(progress=progress('door'))) and None)
 interaction_case('listed tracks are undeclared', lambda i, c, m: m.update(undeclared_progress_tracks=[progress('first_seal')]))
-interaction_case('mapped means resolved', lambda i, c, m: unresolved_line(i, c, m))
+interaction_case('mapped means resolved',
+                 lambda i, c, m: (unresolved_line(i, c, m), m['entries'][0].update(status='mapped')))
 interaction_case('mapped means no unresolved line',
-                 lambda i, c, m: i['unresolved'].append({'line': 3, 'reason': 'statement outside the transcribed vocabulary'}))
+                 lambda i, c, m: (i['unresolved'].append({'line': 3, 'reason': 'statement outside the transcribed vocabulary'}),
+                                  m['entries'][0].update(status='mapped')))
 interaction_case('conflict needs two sources',
                  lambda i, c, m: (m['entries'][0].update(status='conflict'), m['entries'][0]['sources'].pop()) and None)
 interaction_case('every interaction has a manifest entry', lambda i, c, m: m['entries'].clear())

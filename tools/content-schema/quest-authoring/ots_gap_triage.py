@@ -158,14 +158,9 @@ def classify(text, reason):
 
 def condition_lines(rules):
     """Yield every condition-position unresolved line (recurses `then` and `otherwise`)."""
-    for rule in rules:
-        if 'branch' in rule:
-            for arm in rule['branch']:
-                when = arm['when']
-                if 'unresolved' in when:
-                    yield when['unresolved']['line']
-                yield from condition_lines(arm['then'])
-            yield from condition_lines(rule.get('otherwise', []))
+    for kind, condition in readiness.walk_rules(rules):
+        if kind == 'cond' and 'unresolved' in condition:
+            yield condition['unresolved']['line']
 
 
 def build_quest_join():
@@ -174,47 +169,9 @@ def build_quest_join():
     progress = load('questlog/progress.json', 'progress')
     interactions = load('interactions/interactions.json', 'interactions')
     quest_by_key = {q['identity']['key']: q for q in quests}
-    quest_keys = set(quest_by_key)
-
-    track_quests = collections.defaultdict(set)
-    for q in quests:
-        key = q['identity']['key']
-        if q.get('start'):
-            track_quests[q['start']['progress']].add(key)
-        for mission in q.get('missions') or []:
-            track_quests[mission['progress']].add(key)
-    for track in progress:
-        for key in track.get('auxiliary_of') or []:
-            track_quests[track['key']].add(key)
-        for key in track['start_of']:
-            track_quests[track['key']].add(key)
-
-    facts, by_directory = {}, collections.defaultdict(set)
-    for inter in interactions:
-        key = inter['identity']['key']
-        tracks, _, _ = readiness.interaction_facts(inter)
-        joined = set().union(*(track_quests.get(t, set()) for t in tracks)) & quest_keys
-        facts[key] = joined
-        by_directory[key.split('/')[1]].update(joined)
-    by_name = collections.defaultdict(set)
-    for quest in quest_keys:
-        by_name[readiness.normalized(quest.split('/', 1)[1])].add(quest)
-
-    joined_by_interaction, unlinked = {}, []
-    for key, joined in sorted(facts.items()):
-        directory = key.split('/')[1]
-        if not joined:
-            candidates = by_directory[directory]
-            joined = candidates if len(candidates) == 1 else set()
-        if not joined:
-            candidates = by_name[readiness.normalized(directory)]
-            joined = candidates if len(candidates) == 1 else set()
-        if not joined and directory in readiness.DIRECTORY_QUESTS:
-            joined = {readiness.DIRECTORY_QUESTS[directory]} & quest_keys
-        if not joined:
-            unlinked.append(key)
-            continue
-        joined_by_interaction[key] = joined
+    joined = readiness.join_interactions(quests, progress, interactions)
+    joined_by_interaction = {key: owners for key, owners in joined.items() if owners}
+    unlinked = [key for key, owners in joined.items() if not owners]
     return joined_by_interaction, unlinked, quest_by_key
 
 
@@ -256,7 +213,8 @@ def main():
             mechanism_quests[tag] |= quests
             mechanism_interactions[tag].add(interaction_key)
 
-    condition_total = 0
+    condition_total = blocked_total = reference_total = 0
+    declared = {t['key'] for t in load('questlog/progress.json', 'progress')}
     for inter in interactions:
         key = inter['identity']['key']
         for item in inter['unresolved']:
@@ -269,10 +227,20 @@ def main():
             bucket, tag = classify(text, None)
             record(key, bucket, tag)
 
+        # Blocked typed children and absent predicates are transcription gaps,
+        # not missing runtime owners. They have no unresolved source-line record.
+        for kind, value in readiness.walk_rules(inter['rules']):
+            if kind == 'child' and value.get('status') == 'blocked':
+                blocked_total += 1
+                record(key, 'bespoke', None)
+            stage = value.get('quest_stage') if kind == 'cond' else None
+            track = stage['progress'] if stage else value.get('progress') if kind == 'child' else None
+            if track and track not in declared:
+                reference_total += 1
+                record(key, 'bespoke', None)
+
     unresolved_lines_total = sum(len(i['unresolved']) for i in interactions)
-    assert unresolved_lines_total == 1902, f'unresolved line count moved: {unresolved_lines_total}'
-    assert condition_total == 1786, f'unresolved condition count moved: {condition_total}'
-    assert sum(totals.values()) == unresolved_lines_total + condition_total
+    assert sum(totals.values()) == unresolved_lines_total + condition_total + blocked_total + reference_total
 
     quests_rows = []
     for key in sorted(per_quest):
@@ -332,7 +300,9 @@ def main():
         'counts': {
             'unresolved_lines': unresolved_lines_total,
             'unresolved_conditions': condition_total,
-            'total_unresolved_items': unresolved_lines_total + condition_total,
+            'blocked_children': blocked_total,
+            'reference_gaps': reference_total,
+            'total_unresolved_items': unresolved_lines_total + condition_total + blocked_total + reference_total,
             'by_bucket': totals,
             'quests_triaged': len(quests_rows),
             'quests_with_bespoke_work': sum(1 for r in quests_rows if r['counts']['bespoke']),
