@@ -97,17 +97,20 @@ hurt or block its character, without making those capabilities core protocol for
   reconnect or recovery, each of which checks it (§4). Overlapping replacement and healthy-session
   migration (FND-04B §10) are superseding triggers.
 - **Every transfer into a channel scope** (Channel to Channel, Instance to Channel, a handoff, a
-  migration, any later transfer contract) must, before its commit: check the destination scope's
-  effective set against the session's declared support (refusing with `RECONNECT_CAPABILITY_REQUIRED`
-  semantics, current authority preserved), select every capability of the set, and reconcile by a
-  replacement snapshot (§4). **Rebind rule:** a transfer, even one that keeps the same transport,
-  rebinds the session with `ServerResumeAccepted` (FND-02 §11) carrying the destination's selected
-  capabilities and context, sent before the replacement snapshot and before any message of a
-  capability-gated domain; the client interprets no gated domain of the destination until it has
-  it. No new message is needed: the transfer contract reuses the existing one. Until the contract of such a transfer adds this check, that transfer
-  into a channel with a non-empty set is refused (fail closed). This holds whatever the source
-  scope's set was, so a session recovered in a scope with an empty set cannot enter a public channel
-  unchecked (WORLD-INTERACTION-0 §9.2).
+  migration, any later transfer contract). ADMIT-0 states only invariants and a refusal; it does
+  not design the transfer protocol:
+  1. Before its commit, the transfer checks the destination scope's effective set against the
+     session's declared support (refusing with `RECONNECT_CAPABILITY_REQUIRED` semantics, current
+     authority preserved) and fixes the selection.
+  2. After its commit only (FND-04B: success is visible only after commit), the client receives
+     an authoritative acknowledgement that identifies the destination scope (WorldId and
+     ChannelId) and carries the selection, before the replacement snapshot and before any message
+     of a capability-gated domain; the client interprets no gated domain until it has it.
+  3. No current wire is claimed to satisfy (2). Until the FND-04B transfer contract defines that
+     acknowledgement, a transfer into a scope whose selection differs from the session's current
+     selection, or into a channel with a non-empty set from a scope whose set was not checked, is
+     **refused**. This holds whatever the source scope's set was, so a session recovered in a scope
+     with an empty set cannot enter a public channel unchecked (WORLD-INTERACTION-0 §9.2).
 - **Instances:** an InstanceRuntime scope has no declared set and applies no player field or wall
   effects until its own contract declares one.
 
