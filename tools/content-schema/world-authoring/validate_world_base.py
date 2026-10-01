@@ -26,6 +26,7 @@ from convert_world_base import (
     FILL,
     FILL_RULE,
     ITEM_NAMESPACE,
+    PINNED_EXCLUDED_TELEPORTS,
     PINNED_TOTALS,
     REPLACE_RULE,
     TELEPORT_REASONS,
@@ -803,7 +804,14 @@ def unpopulated(root: Path) -> bool:
     )
 
 
-def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[str]:
+def validate(
+    root: Path,
+    pinned: dict | None = None,
+    workers: int = 1,
+    pinned_teleports: dict | None = None,
+) -> list[str]:
+    """`pinned` are the world.otbm totals and `pinned_teleports` the excluded-teleport
+    counts of the pinned sources, both checked only when given."""
     errors: list[str] = []
     if unpopulated(root):
         return errors
@@ -934,6 +942,15 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
         errors.append(
             f"{INDEX}: world.otbm totals differ from the pinned source {pinned}"
         )
+    excluded = summary.get("excluded_teleports")
+    if pinned_teleports is not None and (
+        not isinstance(excluded, dict)
+        or {k: v for k, v in excluded.items() if k != "rule"} != pinned_teleports
+    ):
+        errors.append(
+            f"{SUMMARY}: excluded_teleports differ from the pinned sources "
+            f"{pinned_teleports}"
+        )
     for floor, added in (
         (f, n)
         for s in fill.get("sources", [])
@@ -952,7 +969,9 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=min(4, os.cpu_count() or 1))
     args = parser.parse_args()
     try:
-        errors = validate(args.root.resolve(), PINNED_TOTALS, args.workers)
+        errors = validate(
+            args.root.resolve(), PINNED_TOTALS, args.workers, PINNED_EXCLUDED_TELEPORTS
+        )
     except ValidationError as error:
         errors = [str(error)]
     for error in errors[:50]:

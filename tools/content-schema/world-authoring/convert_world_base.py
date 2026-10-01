@@ -70,6 +70,14 @@ ITEMS_XML = "data/items/items.xml"
 DIRECTORY = "content/world/placements"
 GENERATOR = "tools/content-schema/world-authoring/convert_world_base.py"
 PINNED_TOTALS = {"items": 24925845, "tiles": 19325129}
+# Teleport attributes the pinned sources carry without a Transition record, by reason: the
+# 1,573 unset world.otbm teleports plus 4 of the fill, and the 6 real-destination orphans.
+PINNED_EXCLUDED_TELEPORTS = {
+    "destination_outside_map": 1,
+    "destination_tile_absent": 5,
+    "no_transition": 0,
+    "unset_destination": 1577,
+}
 ITEM_NAMESPACE = "ots/item_server_id"
 DONOR_PREFIX = f"donor:crystalserver@{metadata.SOURCE['revision'][:8]}:item/"
 # A12 section 4.6 catalogues (WO-2): key = family prefix + Tibia id, no number is allocated.
@@ -1203,6 +1211,14 @@ def main() -> int:
         if base != PINNED_TOTALS:
             raise ConvertError(
                 f"world.otbm totals {base} differ from the pinned source {PINNED_TOTALS}"
+            )
+        excluded = {
+            k: v for k, v in summary["excluded_teleports"].items() if k != "rule"
+        }
+        if excluded != PINNED_EXCLUDED_TELEPORTS:
+            raise ConvertError(
+                f"excluded teleports {excluded} differ from the pinned "
+                f"{PINNED_EXCLUDED_TELEPORTS}"
             )
     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)

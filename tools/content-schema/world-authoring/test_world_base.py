@@ -1376,6 +1376,25 @@ class ConvertAndValidateTest(unittest.TestCase):
 
     def test_pinned_totals_and_non_canonical_index(self):
         self.assertTrue(validate.validate(self.root, {"tiles": 1, "items": 1}))
+        # the excluded-teleport counts are checkable against the pinned sources
+        fixture = {
+            "destination_outside_map": 0,
+            "destination_tile_absent": 0,
+            "no_transition": 0,
+            "unset_destination": 1,
+        }
+        self.assertEqual(validate.validate(self.root, pinned_teleports=fixture), [])
+        self.assertEqual(
+            validate.validate(
+                self.root, pinned_teleports=convert.PINNED_EXCLUDED_TELEPORTS
+            ),
+            [
+                (
+                    f"{validate.SUMMARY}: excluded_teleports differ from the pinned "
+                    f"sources {convert.PINNED_EXCLUDED_TELEPORTS}"
+                )
+            ],
+        )
         path = self.root / validate.INDEX
         path.write_text(path.read_text() + " ")
         with self.assertRaises(validate.ValidationError):
