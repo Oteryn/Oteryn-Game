@@ -41,6 +41,10 @@ OUTPUT = (
     ROOT / "docs" / "agents" / "evidence" / "OTV2-20260930-item-stats-promotion-v2.json"
 )
 COMPILER_PATH = "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+SOURCE_HOLD = (
+    ROOT / "docs/agents/evidence/OTV2-20261001-item-resistance-source-hold-v1.json"
+)
+SOURCE_HOLD_SHA256 = "ddd48b4381dc4cdac02b56fe124827bc951377e6423bb88c1c2090f46386e134"
 SCHEMA = "OTERYN_ITEM_STATS_PROMOTION/v2"
 ITEM_KEY = "oteryn:item.tibia.i{}"
 
@@ -139,14 +143,15 @@ def equipment(fields):
     }
     hands = fields.get("hands")
     if hands is not None and (
-        hands not in ("One", "Two") or slot not in ("Weapon Hand", "Both Hands")
+        hands not in ("One", "Two")
+        or slot not in ("Weapon Hand", "Both Hands", "Shield Hand", "Shield")
     ):
         return raw, "MALFORMED"
     if slot == "Both Hands":
         if hands == "One":
             return raw, "MALFORMED"
         pattern["additional_reserved_slots"] = known(["SHIELD"])
-    elif slot == "Weapon Hand" and hands is not None:
+    elif slot in ("Weapon Hand", "Shield Hand", "Shield") and hands is not None:
         if hands == "Two":
             return raw, "MALFORMED"
         pattern["additional_reserved_slots"] = known([])
@@ -196,7 +201,68 @@ def positive_count(raw):
     return value if value is not None and value > 0 else None
 
 
-QUALIFIED_PHYSICAL_FIELDS = {"charges.count", "temporal.duration"}
+# Native discriminant order, not lexical order; percentages are percentage points.
+RESISTANCE_KINDS = (
+    "DEATH",
+    "DROWN",
+    "EARTH",
+    "ENERGY",
+    "FIRE",
+    "HOLY",
+    "ICE",
+    "LIFE_DRAIN",
+    "MANA_DRAIN",
+    "PHYSICAL",
+    "POISON",
+    "FIRE_FIELD",
+)
+RESISTANCE_ALIASES = {kind.lower().replace("_", " "): kind for kind in RESISTANCE_KINDS}
+RESISTANCE_ALIASES["drowning"] = "DROWN"
+
+
+def resistances(fields):
+    raw = fields.get("resist")
+    if raw is None:
+        return None, None
+    evidence = {"resist": raw}
+    values = {}
+    for clause in raw.split(","):
+        match = re.fullmatch(
+            r"([a-z ]+) ([+-]?[0-9]+(?:\.[0-9]+)?)%", clause.strip().lower()
+        )
+        if not match or match[1] not in RESISTANCE_ALIASES:
+            return evidence, "MALFORMED"
+        kind = RESISTANCE_ALIASES[match[1]]
+        try:
+            percent = Fraction(match[2])
+        except ValueError:
+            return evidence, "MALFORMED"
+        if (
+            kind in values
+            or not -100 <= percent <= 100
+            or not -(2**63) <= percent.numerator <= 2**63 - 1
+            or percent.denominator > 2**64 - 1
+        ):
+            return evidence, "MALFORMED"
+        values[kind] = {
+            "numerator": percent.numerator,
+            "denominator": percent.denominator,
+        }
+    return evidence, {
+        "kind": "RESISTANCES",
+        "value": [
+            {"kind": kind, "percent": values[kind]}
+            for kind in RESISTANCE_KINDS
+            if kind in values
+        ],
+    }
+
+
+QUALIFIED_PHYSICAL_FIELDS = {
+    "charges.count",
+    "temporal.duration",
+    "protection.resistances",
+}
 
 
 def physical_field_inputs():
@@ -222,8 +288,22 @@ def field_precondition(definition, field_path, value):
     leaf = source.get("value", {}).get(member, {"state": "UNKNOWN"})
     if leaf.get("state") in {"CONFLICT", "NOT_APPLICABLE"}:
         return "BLOCKED_EVIDENCE_STATE"
-    if leaf.get("state") == "KNOWN" and leaf["value"] != value:
-        return "KNOWN_FIELD_CONFLICT"
+    if leaf.get("state") == "KNOWN":
+        actual = leaf["value"]
+        if field_path == "protection.resistances":
+            if any(
+                row["percent"].get("state") in {"CONFLICT", "NOT_APPLICABLE"}
+                for row in actual
+            ):
+                return "BLOCKED_EVIDENCE_STATE"
+            if any(row["percent"].get("state") != "KNOWN" for row in actual):
+                return "KNOWN_PARTIAL_VECTOR_UNQUALIFIED"
+            actual = [
+                {"kind": row["kind"], "percent": row["percent"]["value"]}
+                for row in actual
+            ]
+        if actual != value:
+            return "KNOWN_FIELD_CONFLICT"
     return None
 
 
@@ -271,6 +351,7 @@ def elemental(fields):
 
 
 FIELDS = {
+    "protection.resistances": resistances,
     "charges.count": scalar("charges", "COUNT_U32", positive_count),
     "temporal.duration": scalar("duration", "DURATION_MS", duration),
     "equipment.patterns": equipment,
@@ -307,7 +388,15 @@ def content_item_ids():
     return ids
 
 
+def source_hold():
+    data = SOURCE_HOLD.read_bytes()
+    if hashlib.sha256(data).hexdigest() != SOURCE_HOLD_SHA256:
+        raise ValueError("resistance qualification manifest digest mismatch")
+    return json.loads(data)
+
+
 def build(snapshot, item_ids, definitions=None, routed_keys=()):
+    hold = source_hold()
     rows = []
     definitions = definitions or {}
     # Every retained page ID participates, including retired and unbound source IDs.
@@ -330,6 +419,18 @@ def build(snapshot, item_ids, definitions=None, routed_keys=()):
         if record["item_id"] not in item_ids:
             continue
         observations = record["observations"]
+        if ITEM_KEY.format(record["item_id"]) == hold["item_key"]:
+            actual = [
+                {
+                    "page_id": obs["page_id"],
+                    "revision_id": obs["revision_id"],
+                    "content_sha256": obs.get("content_sha256"),
+                    "values": {"resist": obs["fields"].get("resist")},
+                }
+                for obs in observations
+            ]
+            if actual != hold["expected_snapshot_sources"]:
+                raise ValueError("resistance qualification snapshot facts drift")
         for field_path, lower in FIELDS.items():
             # STARTER-BACKPACK-0 supplies a separately qualified complete pattern.
             if field_path == "equipment.patterns" and record["item_id"] == 2854:
@@ -345,8 +446,11 @@ def build(snapshot, item_ids, definitions=None, routed_keys=()):
             if field_path in QUALIFIED_PHYSICAL_FIELDS:
                 key = ITEM_KEY.format(record["item_id"])
                 typed = [result[1] for _obs, result in present]
+                external = key == hold["item_key"] and field_path == hold["field_path"]
                 reason = None
-                if key not in definitions or "semantics" not in definitions[key]:
+                if external:
+                    reason = hold["reason"]
+                elif key not in definitions or "semantics" not in definitions[key]:
                     reason = "NO_CANONICAL_ITEM_SEMANTICS"
                 elif key in routed_keys:
                     reason = "EXISTING_MAP_OWNER"
@@ -368,8 +472,13 @@ def build(snapshot, item_ids, definitions=None, routed_keys=()):
                             "reason": reason,
                             "classification": "CONFLICT"
                             if reason
-                            in {"KNOWN_FIELD_CONFLICT", "WIKI_PAGE_DISAGREEMENT"}
+                            in {
+                                "KNOWN_FIELD_CONFLICT",
+                                "WIKI_PAGE_DISAGREEMENT",
+                                "EXTERNAL_SOURCE_DISAGREEMENT",
+                            }
                             else "UNKNOWN",
+                            **({"external_qualification": hold} if external else {}),
                             "sources": [
                                 {
                                     "page_id": obs["page_id"],
@@ -529,6 +638,10 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
             "batch_id": snapshot["batch_id"],
             "path": "imports/tibiawiki/facts/items-stats.json",
             "snapshot_sha256": snapshot["snapshot_sha256"],
+            "external_qualification": {
+                "path": str(SOURCE_HOLD.relative_to(ROOT)),
+                "sha256": SOURCE_HOLD_SHA256,
+            },
             "bindings_path": str(SOURCE_BINDINGS.relative_to(ROOT)),
             "bindings_sha256": hashlib.sha256(SOURCE_BINDINGS.read_bytes()).hexdigest(),
             "map_owner_inputs": {

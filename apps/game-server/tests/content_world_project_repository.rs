@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "f99dff32a31981b9b76689ab43f716e4e48db63e05bec2928e5ae3e6cea690cd",
+        "7a66b5581a96fc6b9f55abb951196ccc8abeeea97c672e90667efef88841bcaf",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        23_348_951,
-        "593fae0cdda30eaff8b6a770bc77d4ffef1fc1fc21e95779e8fe4b201a4c8eb2",
+        23_416_751,
+        "0c4560789dda6c1c03511e0273df80191aa2e07f579103126c6f6e9bcf71d873",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "ac2ed55052fdc1499a5a938cd38df713f5e6280d5e106b30896d1e5f5f1d4e80",
+        "2cd0fedf2127e0c7471fd316972a7e80e259542339cb3bbd8d9bfd55dc257da1",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "f30e5b9882603ac210675fe75f998bc1a4e64042877827691373551bf7beaf31",
+        "562f23eff08fff9a6df36e6ff462a1e4c3f395474bed08568623e48f273e7387",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "33d8a7acef730b99636b5563ce9e44090ceb93927487d9c8aa97032b0f6db662";
+const TREE_SHA256: &str = "8d5c10351be6eb1f75478258ae8ad162443d97eac2990544d7c028208f0cb688";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -1024,6 +1024,43 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         });
     assert_eq!(charge_fields, 125 + 1);
     assert_eq!(duration_fields, 138);
+    // Resistance vectors were entirely unknown in the predecessor. Count their typed
+    // percentages as atoms so a missing list member cannot hide behind the vector count.
+    let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);
+    for definition in &linked.definitions {
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            continue;
+        };
+        if definition.definition.key().as_str() == "oteryn:item.tibia.i50275" {
+            assert!(matches!(
+                &item.semantics.protection,
+                ReferenceItemField::Known(ReferenceItemProtection {
+                    armor: ReferenceItemField::Known(ReferenceSignedPoints(8)),
+                    resistances: ReferenceItemField::Unknown,
+                })
+            ));
+        }
+        if let ReferenceItemField::Known(protection) = &item.semantics.protection
+            && let ReferenceItemField::Known(entries) = &protection.resistances
+        {
+            resistance_vectors += 1;
+            resistance_atoms += entries.len();
+            assert!(
+                entries
+                    .iter()
+                    .all(|entry| matches!(entry.percent, ReferenceItemField::Known(_)))
+            );
+        }
+        if let ReferenceItemField::Known(equipment) = &item.semantics.equipment
+            && let ReferenceItemField::Known(patterns) = &equipment.patterns
+        {
+            equipment_patterns += patterns.len();
+        }
+    }
+    assert_eq!(resistance_vectors, 391);
+    assert_eq!(resistance_atoms, 625);
+    // The independent predecessor census includes the separately admitted starter pattern.
+    assert_eq!(equipment_patterns, 1_785 + 2);
 }
 
 #[test]
