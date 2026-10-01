@@ -19,6 +19,7 @@ updated_at: 2026-10-01
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md
+  - docs/architecture/DUR-02_PROFILE_NEUTRAL_CHARACTER_SCHEMA_DECISION_PACKET.md
   - docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md
   - docs/agents/tasks/archive/OTV2-20261001-gamechar01-prey-d251.md
 public_contracts: []
@@ -37,7 +38,9 @@ baseline listed permanent Prey slots as character-specific.
 
 - Baseline §12: the list entry points to the amendment, and an "Amendment (D251, 2026-10-01)" note
   states the Account-wide scope and cites PREY-0 (PR #1413).
-- Horizon: a one-line pointer on the same list entry.
+- DUR-02 schema packet section 4.6: Amendment moves them to an Account-scoped balance owned by PREY-0/PREY-1.
+- Horizon: permanent Prey slots removed from the character-specific bullet; separate Account-wide bullet added.
+- Depends on #1413 (must merge first): PREY-0 lands with it.
 - Hunting Task Points and permanent Hunting Task slots stay character-specific.
 
 No code, migration or content change is made.
@@ -59,8 +62,7 @@ No code, migration or content change is made.
 ## Excluded scope
 
 - Code, migrations and content; the Store delivery contract; other accepted docs that state the
-  per-character rule (the Stage B minimum-closure packet, reference evidence delta 02 and DUR-02
-  schema packet are evidence or packets and are left as written; the amendment governs).
+  per-character rule (the Stage B minimum-closure packet and reference evidence delta 02 are evidence or packets and are left as written; the amendment governs).
 
 ## Validation
 
