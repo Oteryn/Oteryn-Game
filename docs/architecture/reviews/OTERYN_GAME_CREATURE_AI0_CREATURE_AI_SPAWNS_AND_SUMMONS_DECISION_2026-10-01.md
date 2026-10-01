@@ -220,7 +220,9 @@ disagree, §13 R6).
 - **Overrides** (`monster_ai_override`, S27): an Ability commit may set a forced target until a
   deadline and a forced target distance 1 until a deadline, at most one of each (`RL-18`, the
   newer replaces). While forced, no search or change runs and the creature does not flee.
-  Summons and reward bosses ignore overrides (spell candidate rule).
+  Summons ignore every override. Reward bosses ignore only the forced target distance
+  (`force_melee`, `skip_reward_bosses`); a forced target (`target_caster`, Challenge) applies to
+  them as to any non-summon monster that can target the caster (S27 §D.6.3).
 
 ### 4.4 Attacks and defences
 
@@ -368,10 +370,10 @@ decisions; until then the factor is 1.
 ### 6.5 Restart, reset and durability
 
 - Creature actors, respawn occurrences, summons, targets, paths and overrides are process-local.
-- **Crash restart:** activation realizes every point again (D55, `EphemeralScopeReset`).
+- **Crash restart:** activation realizes every active point (§6.2) again (D55, `EphemeralScopeReset`).
 - **Server save (`WorldReset`):** every creature actor of every channel ends with the overlay (no
   death, no loot); the channel activates again with the bundle of the reset and realizes every
-  point (owner 6a, D191).
+  active point (§6.2; owner 6a, D191).
 - Only these outlive a creature: committed deaths and their descendants (DUR-03 A4, D52), and the
   boss clocks and raid runs of BOSS-RAID-0.
 - **Multiplicity:** ordinary spawns are value-producing with independent copies per channel (the
@@ -601,7 +603,7 @@ to the owner.
    `GAME-AI-01` entry; gap register §11; each pending on acceptance of CREATURE-AI-0.
 2. **Serialization:** one channel owner per creature; steps through Movement, effects through
    Ability; summon creation in the spell's owner mutation; no new durable write.
-3. **Restart:** everything here is runtime; activation and `WorldReset` realize every point again.
+3. **Restart:** everything here is runtime; activation and `WorldReset` realize every active point (§6.2) again.
 4. **Typed references:** `ExactActorRef` for creatures, owners and issuers; occurrence (creature,
    think sequence, list, entry); spawn point (source key, ordinal).
 5. **Wire:** one `summon` field on VIS-2 creature entries (§8.6).
