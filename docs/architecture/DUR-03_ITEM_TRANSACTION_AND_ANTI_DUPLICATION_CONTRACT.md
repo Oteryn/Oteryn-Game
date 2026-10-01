@@ -1401,7 +1401,12 @@ authority, conservation) is unchanged.
   multi-item shape `TimedTreeMove`: the root's TRANSFER plus at most 32 `STATE_MUTATION` lines of
   the tree's `continuous` timed descendants under `TimedItemCause::TreeClock`, no other lines, at
   most 33 touched items and one audit event, superseding the §39.1 one-item limit for this shape
-  only; every MINT of a timed definition creates the
+  only. Its §28 ceilings: 33 touched items, 1 location line, 0 value lines, 0 transform I/O,
+  expansion 8 (`DUR03-RL-05-TREE`), 33 participants / 99 work units, 1 event, `DUR03-RL-08` 3, and
+  descendant lines of at most 64 bytes each (2,048 bytes for 32) within `DUR03-RL-07-PAYLOAD-BYTES`
+  and `DUR03-RL-07-ENVELOPE-BYTES`, registered and measured by TIMED-1. The TIMED-1 backfill uses
+  only one-item transactions (TIMED-ITEM-0 §3); every new timed row starts in its location's clock
+  class in its creating transaction; every MINT of a timed definition creates the
   row and every retirement deletes it, in the same transaction (TIMED-ITEM-0 §3).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.

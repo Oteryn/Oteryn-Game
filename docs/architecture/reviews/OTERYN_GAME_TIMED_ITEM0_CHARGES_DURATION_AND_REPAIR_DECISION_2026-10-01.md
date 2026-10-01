@@ -87,22 +87,39 @@ unlit torch:
   definition's charges), and by a transform into a timed definition. A transform out of a timed
   definition other than its own inactive form, and every retirement of the item (`DECAY_RETIRE`, a
   burn, `Expire`), deletes it in the same transaction.
+- **A new row starts in its current clock class (§4).** The transaction that creates or resets a row
+  (a MINT, a transform into a timed definition, an `Expire` transform into another timed stage, a
+  repair) sets it from the item's location in that same transaction: in a deadline location
+  (Ground, a container on Ground such as a corpse, `HouseInterior`) a `continuous` item gets
+  `deadline_at = database time + remaining_ms`; a held item's clock is started by the hosting runtime
+  from the committed `remaining_ms`; anywhere else the row is frozen. So loot minted into a corpse,
+  and a ground item that expires into another timed stage, always have a deadline.
 - **Paired forms keep the row.** The row belongs to the item, not to the form. A transform into the
   inactive form (an unequip, or a use that puts out a torch) keeps the row frozen with its
   `remaining_ms`; the next transform into the active form (an equip, or a use that lights it)
   restarts the clock from that value. An inactive form minted new has no row, which means the full
   duration of its active form; the first transform into the active form creates the row. Items minted before TIMED-1 lands get their row from a TIMED-1 backfill with the
   definition's values. Amended: DUR-03 §39.3.
-- **Backfill of over-cap trees.** BAGS-0 lets a pre-TIMED-1 tree hold more than
-  `TIMEDITEM0-RL-05` `continuous` timed items. The backfill gives every item its row (the guard
-  holds) and then, in the same migration transaction per tree, puts out every such item beyond the
-  first 32 in ItemInstanceId order: a `TRANSFORM` (`PRESERVE_INSTANCE`) into its inactive form,
-  keeping its full `remaining_ms` frozen in its row, under `TimedItemCause::BackfillCap {tree root}`.
-  Nothing is lost; the player can light it again when the tree has room. A `continuous` item with no
-  inactive form cannot be put out: the migration's preflight counts such trees and, if any tree
-  would stay above 32, stops before writing and reports them; TIMED-1 does not land until an owner
-  answer settles those items. After the backfill every tree meets RL-05, so no tree move ever needs
-  more than 32 descendant lines.
+- **Backfill, sequenced through one-item transactions.** TIMED-1 ships with timed behaviour off and
+  the deferred guard and the RL-05 check not yet enabled. Its migration then runs, resumably, only
+  admitted one-item DUR-03 transactions, each under the item writer's fence and the holder's
+  `character_root` lock:
+  1. **Rows.** One `STATE_MUTATION` per live timed item without a row, under
+     `TimedItemCause::BackfillRow`, creating the row from the definition in the item's current clock
+     class (above). A replay finds the row and writes nothing.
+  2. **Over-cap trees.** BAGS-0 lets a pre-TIMED-1 tree hold more than `TIMEDITEM0-RL-05`
+     `continuous` timed items. For each such tree, every one beyond the first 32 in ItemInstanceId
+     order is put out by its own one-item `TRANSFORM` (`PRESERVE_INSTANCE`) into its inactive form,
+     keeping its full `remaining_ms` frozen, under `TimedItemCause::BackfillCap {item}`; each takes
+     the BAGS-0 tree lock `FOR SHARE` to recount and writes nothing once the tree has 32 or fewer.
+     Nothing is lost; the player can light it again when the tree has room.
+  3. **Enable.** A preflight confirms that every live timed item has its row and every tree meets
+     RL-05. Only then are the deferred guard, the RL-05 check and timed behaviour enabled.
+
+  A `continuous` item with no inactive form cannot be put out: if step 3's preflight finds a tree
+  still above 32, nothing is enabled and the trees are reported; TIMED-1 is not enabled until an
+  owner answer settles those items. After the backfill every tree meets RL-05, so no tree move ever
+  needs more than 32 descendant lines. No multi-item migration shape is admitted.
 - Every write is a DUR-03 `STATE_MUTATION` (§11.1) or part of a `TRANSFORM`, in a one-item
   transaction (or, for a container tree's move, the bounded `TimedTreeMove` of §4) under the item writer's fence and the holder's `character_root` lock when a character
   holds the item, under a closed `TimedItemCause` (§10). The row moves with the item, because it is
@@ -156,7 +173,16 @@ An item's time runs only while it is **live**, as in Canary:
   `TimedTreeMove` that this decision adds to DUR-03 §39.3: the root's own TRANSFER plus at most
   `TIMEDITEM0-RL-05` (32) `STATE_MUTATION` lines of descendant timed rows, no location line and no
   value line for a descendant, at most 33 touched items, and one audit event that carries the
-  root's lines and one before/after line per descendant.
+  root's lines and one before/after line per descendant. Its ceilings (DUR-03 §28), registered by
+  TIMED-1 before implementation with max and max+1 tests: 33 touched items, 1 location line (the
+  root's), 0 value lines, 0 transform I/O, container expansion 8 (`DUR03-RL-05-TREE`), 33
+  participants / 99 work units, 1 audit event, and the existing `DUR03-RL-08` retry and
+  reconciliation work (3; a retry repeats the whole transaction under the same TransactionId). Each
+  descendant line is fixed-size, at most 64 bytes (ItemInstanceId, before and after `deadline_at`,
+  `remaining_ms`, `charges`, `state_revision`), so 32 lines take at most 2,048 bytes next to the
+  root's one-item evidence, within `DUR03-RL-07-PAYLOAD-BYTES` (7,936) and
+  `DUR03-RL-07-ENVELOPE-BYTES` (9,216); TIMED-1 measures the encoded size at 32 lines and fails the
+  build above those ceilings.
 - **The tree bound.** A tree holds at most `TIMEDITEM0-RL-05` (32) `continuous` timed items. Every
   transaction that would add one to a tree checks the tree's count under the BAGS-0 tree locks and
   refuses `NO_ROOM`, writing nothing: a move or a MINT into the tree, a `Toggle` into a lit form, and
@@ -266,7 +292,7 @@ Amended: EQUIP-0 §3.1 and §3.2; CONDITIONS-0 §3 (the `ITEM_REGENERATION` fami
 
 Closed `TimedItemCause`: `Checkpoint {item, state_revision}`, `ClockStart`, `ClockStop`,
 `ChargeSpent`, `EquipForm {direction}`, `Toggle`, `TreeClock {root, move occurrence}`,
-`BackfillCap {tree root}` (the TIMED-1 migration only, §3), `Expire {reason: Deadline {deadline_at} | TimeExhausted {state_revision} |
+`BackfillRow` and `BackfillCap {item}` (the TIMED-1 migration only, one-item transactions, §3), `Expire {reason: Deadline {deadline_at} | TimeExhausted {state_revision} |
 ChargesExhausted {state_revision}}`. Each names its ItemInstanceId and an occurrence issued by the
 runtime. `Expire` of a definition with no decay target is a BURN sink. The repair burn is
 `FeeBurnCause::NpcRepair` (§7). No generic or caller-chosen reason. Amended: DUR-03 §15 and §39.3.
@@ -285,7 +311,9 @@ Each with max and max+1 tests. Also tested: unequip then re-equip keeps the rema
 timer does not reset); putting out a torch and lighting it again keeps its remaining time; a replayed
 or stale `Expire` writes nothing; dropping a held lit torch 59 s after its last checkpoint sets its
 deadline from the live budget, and a pick-up/drop cycle never adds time; a pre-TIMED-1 tree with 33
-lit torches is backfilled with 32 lit and 1 put out, all rows present; a repair paid from 19 coin
+lit torches is backfilled with 32 lit and 1 put out, all rows present, and the guard is enabled only
+after; loot minted lit into a corpse and a ground item that expires into another timed stage get a
+deadline in that transaction; a repair paid from 19 coin
 stacks commits and from 20 is refused; a life ring's regeneration ticks alongside food regeneration; the
 energy ring's shield stays while mana is 0 and ends at unequip; a lit torch inside a dropped bag gets its Ground deadline in the drop
 commit; a charge-only item at 0 charges with a `transform {trigger: decay}` transforms, and is
@@ -331,6 +359,11 @@ None open. Owner answer 1a settled the only fee source.
   nothing (EQUIP-0 R2).
 - **Minimum sufficient:** one side table, runtime clocks committed at existing checkpoints, the D3
   ground-expiry pattern, closed causes, one repair offer.
+- **Harder later:** the per-item timed table and its guard couple every MINT, transform and
+  retirement path to it; the `TimedTreeMove` shape and RL-05 bind container trees, so raising RL-05
+  needs new measured rows; the database-time deadline (R3) means switching to frozen-while-down later
+  would need a migration of every live deadline; `TIMED_ITEMS_V1` fields join the wire compatibility
+  surface.
 - **Superseding evidence:** an official source on where items decay or how charges are spent.
 - **Deliberately not decided:** exercise weapons (EXERCISE-0), invisibility from equipment, imbuement
   durations.
