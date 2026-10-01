@@ -119,3 +119,13 @@ prior cap/cost, and capture-derived self-consistency as a substitute for sources
 Requalified18Item metadata references: no drift. Definition and shard hashes
 are different measures; the audit's stale-evidence inference is withdrawn.
 Updated delivery report and limitations. New freeze/checks supersede priorhead.
+
+## Owner Supreme grade price correction
+
+Return AUTHORING from e1e9bc9f: direct owner corrects Supreme II->III to12M
+gold +15Greater Fragments. Candidate and independent qualifier now use12M/15;
+regression rejects conflicting12.5M. Preserve Wiki/#1472 conflict; cap225 stays.
+Architect/coordinator decision synchronization remains pending, no runtime write.
+
+Owner explicitly confirms12M/15 fromGlobal; provenance OWNER_CONFIRMED_GLOBAL_VALUE.
+Worker has no independent Global transaction observation; full parity stays false.

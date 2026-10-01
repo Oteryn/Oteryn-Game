@@ -138,3 +138,17 @@ Guiding+33 arithmetic remains architect scope. Native reveal main-backpack-direc
 is a declared contract difference; upstream searches nested inventory+StoreInbox
 without stash/depot/postalInbox. No source proves Global's exact search scope.
 AmberCrusher, presets and vocation change are outside the admitted V1 scope.
+
+## Superseding owner cost correction (2026-10-01)
+
+The owner explicitly corrects Supreme Grade II -> III to **12,000,000 gold +
+15 Greater Fragments**. The selected candidate and independent qualification
+now use12M/15, while cap225 is retained. Wiki r1151969 and merged#1472 list12.5M;
+that disagreement is preserved as reference evidence, not selected over the
+owner's instruction. The preceding12.5M selections in this document are historical
+and superseded by this section. Coordinator/architect must synchronize the
+owning decision before native admission; this authoring repair admits no runtime.
+
+The owner additionally confirms this12M/15 value from Global. Classification:
+OWNER_CONFIRMED_GLOBAL_VALUE; no independent worker observation of the transaction
+is claimed. This confirms the one price row, not all Global RNG/runtime behavior.

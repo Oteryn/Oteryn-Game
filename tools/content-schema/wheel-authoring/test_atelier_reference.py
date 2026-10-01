@@ -14,13 +14,13 @@ class AtelierReferenceTests(unittest.TestCase):
     def test_selected_snapshot_passes_independent_check(self):
         validate_atelier_reference(self.candidate)
 
-    def test_old_cap_and_cost_cannot_qualify_even_if_builder_drifts(self):
+    def test_old_cap_and_conflicting_wiki_cost_cannot_qualify_even_if_builder_drifts(self):
         for field in ('cap', 'cost'):
             candidate = copy.deepcopy(self.candidate)
             if field == 'cap':
                 candidate['gems']['atelier']['operation_policy']['revealed_gem_limit'] = 250
             else:
-                candidate['gems']['grade_costs'][1]['supreme']['gold'] = 12000000
+                candidate['gems']['grade_costs'][1]['supreme']['gold'] = 12500000
             with self.subTest(field=field), patch.object(wheel, 'build', return_value=candidate):
                 with self.assertRaisesRegex(ValueError, 'ATELIER_REFERENCE'):
                     validate_atelier_reference(candidate)

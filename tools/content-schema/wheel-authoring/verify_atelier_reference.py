@@ -1,5 +1,7 @@
 """Qualify the selected Atelier snapshot independently of its builder.
 
+Owner confirms from Global: Supreme II -> III12M gold +15Greater Fragments (2026-10-01).
+Wiki r1151969 / WHEEL-GEM-0A 12.5M remains conflict evidence.
 These reference facts do not admit runtime effects or certify Global RNG.
 Semantic authoring can tune values; exact source qualification cannot.
 """
@@ -23,7 +25,7 @@ def validate_atelier_reference(candidate):
         {'target_grade': 1, 'basic': {'gold': 2000000, 'fragments': 5},
          'supreme': {'gold': 5000000, 'fragments': 5}},
         {'target_grade': 2, 'basic': {'gold': 5000000, 'fragments': 15},
-         'supreme': {'gold': 12500000, 'fragments': 15}},
+         'supreme': {'gold': 12000000, 'fragments': 15}},
         {'target_grade': 3, 'basic': {'gold': 30000000, 'fragments': 30},
          'supreme': {'gold': 75000000, 'fragments': 30}},
     ], 'ATELIER_REFERENCE_GRADE_COSTS')

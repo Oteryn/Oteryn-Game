@@ -137,7 +137,7 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "f706605225e1e170cc179c226cadf13ac876ec18f2850d47f9392306efd9afae",
+  "candidate_sha256": "01a8d04a493d50c9de18b3139c5bdf12f95fd685077a7ea83e66e694ca0fe061",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
     "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
@@ -148,11 +148,11 @@
   },
   "client_icon_manifest": {
     "file": "samples/client-icon-manifest.json",
-    "sha256": "79dc73a82b3c05be8143d8c2c1a63a399760a64ce90cc8f04d8cdf9cfd3d15ea"
+    "sha256": "e291d94c3b41a599caafcafa25a526e8c6295ccdd9fab56657b066aae719f3d6"
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "9e2916f4a321bed7a2466570ab60fab6950227b7c4e0b048838a1cf69997e780"
+    "sha256": "c29ecf3f5bc948d5431bd3fc262a97293f438aa72fd84d2467050e3bfd073316"
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",

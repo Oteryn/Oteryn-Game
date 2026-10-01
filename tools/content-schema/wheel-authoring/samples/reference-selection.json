@@ -105,7 +105,7 @@
   },
   "great_fire_wave_i": "Both +15 critical extra damage and +10 critical chance selected from the existing project spell capture.",
   "flurry_of_blows_i": "Select AREA_GREATER_FLURRY_OF_BLOWS. Planner range +1 is preserved as an unselected cast-range hypothesis.",
-  "accepted_atelier_parameters": "Merged #1472 WHEEL-GEM-0A selects cap225 and Supreme Grade III12.5M; applied to reference authoring. No runtime admission.",
+  "accepted_atelier_parameters": "Owner correction2026-10-01: Supreme II->III12M gold +15Greater Fragments; cap225 retained from merged#1472. Reference-only; no runtime admission.",
   "dedication_reconciliation": "Reference capture selects mitigation +0.075 percentage points per point. Older resistance wording belongs to WHEEL-0 owner reconciliation before runtime admission.",
   "browser_research": "samples/browser-source-audit.json",
   "unique_conviction_selections": {
@@ -115,20 +115,20 @@
     "runic_mastery": "Fandom:1206174 explicitly applies the percentage bonus to base magic level, for that specific rune effect only."
   },
   "atelier_conflicts": {
-    "selected_project": 12500000,
+    "selected_project": 12000000,
     "fandom_1151969": 12500000,
-    "superseded_project": 12000000,
-    "state": "MERGED_WHEEL_GEM0A_REFERENCE_APPLIED_RUNTIME_UNADMITTED"
+    "amendment_1472": 12500000,
+    "state": "OWNER_CORRECTION_12M_15_GREATER_FRAGMENTS_SELECTED; ARCHITECT_DECISION_SYNC_PENDING"
   },
   "architect_ruling": {
     "reference": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015",
     "formula_precedence": "Historical5933264015: official > EnglishWiki > pinnedCanary. Owner-directed Oct1 authoring repair recognizes Tibia.com planner as an official source; no native architecture admission is inferred.",
-    "gem_price_cap_application": "MERGED_1472_REFERENCE_APPLIED; runtime admission remains separate",
+    "gem_price_cap_application": "Cap225 applied; SupremeIII12.5M from#1472 superseded in authoring by direct owner12M+15Greater Fragments correction; architect decision sync pending",
     "task_shop_and_grade_iv_maximum": "OUT_OF_SCOPE_REFERENCE_ONLY; no accepted runtime value",
     "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704",
     "applied_reference_values": {
       "revealed_gem_limit": 225,
-      "supreme_grade_iii_gold": 12500000
+      "supreme_grade_iii_gold": 12000000
     }
   },
   "basic_mod_position_2": {
@@ -182,6 +182,15 @@
     "wiki_revision": 1151969,
     "decision_pr": "https://github.com/Oteryn/Oteryn-Game/pull/1472",
     "method": "Normal HTTPS verified upstream blobs; English Wiki read via research-only Chrome/CDP after HTTP402; reference-only selection",
-    "runtime_admitted": false
+    "runtime_admitted": false,
+    "owner_cost_correction": {
+      "date": "2026-10-01",
+      "upgrade": "Supreme Grade II to III",
+      "gold": 12000000,
+      "greater_fragments": 15,
+      "source": "Direct owner correction and explicit confirmation from Global2026-10-01",
+      "classification": "OWNER_CONFIRMED_GLOBAL_VALUE",
+      "independently_observed_by_worker": false
+    }
   }
 }
