@@ -1396,7 +1396,11 @@ authority, conservation) is unchanged.
   occurrence }`. **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7).** Plus `NpcRepair { npc, offer, occurrence }`
   (owner answer 1a), whose transaction also transforms one item (`PRESERVE_INSTANCE`) and resets
   its timed row; transfers that cross between live, deadline and frozen locations write the item's
-  timed row in the same transaction (TIMED-ITEM-0 §4); every MINT of a timed definition creates the
+  timed row in the same transaction (TIMED-ITEM-0 §4). For a container tree it admits the bounded
+  multi-item shape `TimedTreeMove`: the root's TRANSFER plus at most 32 `STATE_MUTATION` lines of
+  the tree's `continuous` timed descendants under `TimedItemCause::TreeClock`, no other lines, at
+  most 33 touched items and one audit event, superseding the §39.1 one-item limit for this shape
+  only; every MINT of a timed definition creates the
   row and every retirement deletes it, in the same transaction (TIMED-ITEM-0 §3).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.

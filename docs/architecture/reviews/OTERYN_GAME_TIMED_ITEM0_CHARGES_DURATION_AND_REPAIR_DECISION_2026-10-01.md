@@ -94,7 +94,7 @@ unlit torch:
   duration of its active form; the first transform into the active form creates the row. Items minted before TIMED-1 lands get their row from a TIMED-1 backfill with the
   definition's values. Amended: DUR-03 §39.3.
 - Every write is a DUR-03 `STATE_MUTATION` (§11.1) or part of a `TRANSFORM`, in a one-item
-  transaction under the item writer's fence and the holder's `character_root` lock when a character
+  transaction (or, for a container tree's move, the bounded `TimedTreeMove` of §4) under the item writer's fence and the holder's `character_root` lock when a character
   holds the item, under a closed `TimedItemCause` (§10). The row moves with the item, because it is
   keyed by ItemInstanceId; no move writes it except where §4 starts or stops a clock.
 - A deferred database guard checks, at commit, that a live timed item has exactly one row and an
@@ -116,10 +116,12 @@ An item's time runs only while it is **live**, as in Canary:
 - **Held items** run in the channel runtime (or house scope) that hosts the actor. The runtime keeps
   the live remaining time and charges and commits them at the A13 checkpoint cadence (at most every
   60 s), at logout (at the actor end, before OFFLINE-0's `logout` marker and the terminal release),
-  before a channel transfer or house handoff, and at expiry. A checkpoint is **its own item-writer
-  transaction**, not part of the A13 build receipt: one transaction per character, under the item
-  writer's fence and the character's `character_root` lock, updating that character's changed rows
-  in ItemInstanceId order under `TimedItemCause::Checkpoint`. A crash loses at most one checkpoint
+  before a channel transfer or house handoff, and at expiry. A checkpoint is **its own one-item
+  item-writer transaction per changed item**, not part of the A13 build receipt: under the item
+  writer's fence and the holder's `character_root` lock, it updates that item's row under
+  `TimedItemCause::Checkpoint {item, state_revision}`. A character's item checkpoints are
+  independent of each other; each is keyed by (item, the `state_revision` it read) and requires the
+  row to still have that revision, so a replay or a superseded checkpoint writes nothing. A crash loses at most one checkpoint
   of elapsed time and charges, in the player's favour (R2).
 - **Deadline items** (Ground, containers on Ground, `HouseInterior`): a move into such a location
   sets `deadline_at = database time + remaining_ms` in the move transaction, including a death that
@@ -133,10 +135,18 @@ An item's time runs only while it is **live**, as in Canary:
 - **Container trees (BAGS-0).** A tree move, a death drop and a pickup change the clock class of
   every `continuous` timed item in the tree, not only of the root. The move transaction locks those
   descendants' timed rows `FOR UPDATE` in ItemInstanceId order, after the BAGS-0 tree locks, and
-  writes each one (deadline set or cleared, clock stopped or started) in the same commit. A tree
-  holds at most `TIMEDITEM0-RL-05` (32) `continuous` timed items; a placement that would exceed it
-  is refused `NO_ROOM` and writes nothing, so the work of any tree move stays bounded. DUR-03 §39.3 transfers that cross between live and
-  frozen classes carry that one-row write. Amended: DUR-03 §39.3.
+  writes each one (deadline set or cleared, clock stopped or started) in the same commit, as
+  `TimedItemCause::TreeClock {root, move occurrence}` lines. This is the bounded multi-item shape
+  `TimedTreeMove` that this decision adds to DUR-03 §39.3: the root's own TRANSFER plus at most
+  `TIMEDITEM0-RL-05` (32) `STATE_MUTATION` lines of descendant timed rows, no location line and no
+  value line for a descendant, at most 33 touched items, and one audit event that carries the
+  root's lines and one before/after line per descendant.
+- **The tree bound.** A tree holds at most `TIMEDITEM0-RL-05` (32) `continuous` timed items. Every
+  transaction that would add one to a tree checks the tree's count under the BAGS-0 tree locks and
+  refuses `NO_ROOM`, writing nothing: a move or a MINT into the tree, a `Toggle` into a lit form, and
+  any transform into a `continuous` form.
+- A single-item transfer that crosses between live, deadline and frozen classes carries its one-row
+  write in the same transaction. Amended: DUR-03 §39.3.
 - **Decay target.** An item's decay target is its definition's `transform {trigger: decay}` if
   present, else `temporal.decay_target`; content validation rejects a definition with both set to
   different targets. The same target applies whether the item runs out of time or of charges.
@@ -171,7 +181,8 @@ An item's time runs only while it is **live**, as in Canary:
   if it is `on_equip`. Amended: DUR-03 §33, ITEM-MOVE-WIRE-1 §6.
 - **Toggles.** A `transform {trigger: use}` between a lit and an unlit form (torch, lamp) is an
   ITEM-USE-0 use on a held item: one `TRANSFORM` (`PRESERVE_INSTANCE`) under
-  `TimedItemCause::Toggle`, carrying `remaining_ms` across. Amended: ITEM-USE-0.
+  `TimedItemCause::Toggle`, carrying `remaining_ms` across. Lighting an item inside a tree that
+  already holds 32 `continuous` timed items is refused `NO_ROOM` (§4). Amended: ITEM-USE-0.
 - A transform never resets the time; only a repair (§7) or a new item does.
 
 ## 7. Repair (TIMED-REPAIR-1; owner answer 1a)
@@ -232,8 +243,8 @@ Amended: EQUIP-0 §3.1 and §3.2; CONDITIONS-0 §3 (the `ITEM_REGENERATION` fami
 
 ## 10. Causes (DUR-03)
 
-Closed `TimedItemCause`: `Checkpoint`, `ClockStart`, `ClockStop`, `ChargeSpent`, `EquipForm
-{direction}`, `Toggle`, `Expire {reason: Deadline {deadline_at} | TimeExhausted {state_revision} |
+Closed `TimedItemCause`: `Checkpoint {item, state_revision}`, `ClockStart`, `ClockStop`,
+`ChargeSpent`, `EquipForm {direction}`, `Toggle`, `TreeClock {root, move occurrence}`, `Expire {reason: Deadline {deadline_at} | TimeExhausted {state_revision} |
 ChargesExhausted {state_revision}}`. Each names its ItemInstanceId and an occurrence issued by the
 runtime. `Expire` of a definition with no decay target is a BURN sink. The repair burn is
 `FeeBurnCause::NpcRepair` (§7). No generic or caller-chosen reason. Amended: DUR-03 §15 and §39.3.
@@ -261,6 +272,13 @@ burned only without any decay target. Content validation refuses a definition ab
 - **Time running for logged-out characters or in the depot.** Canary decays only in the game world;
   players expect a ring to keep its time while they are offline.
 - **Charges as stack quantity.** GAME-ITEM-01 §4.2 forbids it.
+- **Clocks derived from the tree root.** A descendant would store its budget against its root's
+  clock and never be written by a root move. But moving a subtree into another tree changes the
+  root of every item in it, so their anchors would need rewriting anyway, and a held class also
+  changes at login and logout without any move. The bounded `TimedTreeMove` shape is simpler and
+  keeps every clock explicit.
+- **One checkpoint per character.** A multi-item write with no DUR-03 shape; per-item checkpoints
+  are independent and replay-safe.
 - **A generic repair fee.** D178 admits fee sources one by one; the owner admitted this one.
 - **Exercise weapons here.** They are online training with their own rules (dummies, house bonus,
   try rates); they get EXERCISE-0, which reuses §3 and §5.
@@ -297,10 +315,10 @@ None open. Owner answer 1a settled the only fee source.
 1. **Contract amendments:** EQUIP-0 §3.1 and §3.2; DUR-03 §15, §33 and §39.3; ITEM-MOVE-WIRE-1 §6;
    ITEM-USE-0; NPC-0 (repair offer); CONDITIONS-0 §3; OFFLINE-0 (exercise weapons pointer). Applied
    in this PR.
-2. **Serialization:** every timed write is a one-item DUR-03 transaction under the item writer's
+2. **Serialization:** every timed write is a one-item DUR-03 transaction (or a bounded `TimedTreeMove`) under the item writer's
    fence and the holder's `character_root` lock; the runtime is the only live owner of a held item's
-   clock and charges; a checkpoint is one item-writer transaction per character, separate from the
-   A13 build receipt; expiry is keyed by (item, `state_revision`) and replays.
+   clock and charges; a checkpoint is one one-item item-writer transaction per changed item,
+   separate from the A13 build receipt; a tree move is the bounded `TimedTreeMove` shape; expiry is keyed by (item, `state_revision`) and replays.
 3. **Restart:** held items lose at most one checkpoint, in the player's favour; deadline items
    expire from their durable deadline; frozen items do not change; items minted before TIMED-1 get
    rows from its backfill.
