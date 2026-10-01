@@ -50,6 +50,23 @@ class RenderedPriceTests(unittest.TestCase):
         self.assertFalse(page['identity_heading_matches'])
         self.assertEqual(page['rows'], [])
 
+    def test_commoner_rank_section_holds_eligibility_without_losing_prices(self):
+        # Exact qualifier observed in the retained Alaistar BR capture.
+        text = '# Alaistar\n**Itens negociáveis:**Compra: ' + br_item('Rat Cheese', '5')
+        text += 'Compra: Tendo o rank "Commoner" na Rathleton Quest: '
+        text += br_item('Metal Toe', '430') + br_item('Hideous Chunk', '510')
+        rows = br_rows(text)
+        self.assertEqual([(r['item_name'], r['unit_price']) for r in rows],
+                         [('Rat Cheese', 5), ('Metal Toe', 430), ('Hideous Chunk', 510)])
+        self.assertEqual(rows[0]['scope_holds'], [])
+        for row in rows[1:]:
+            self.assertEqual(row['scope_holds'], ['CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT'])
+            context = text.encode()[row['context_byte_start']:row['context_byte_end']].decode()
+            self.assertIn('Tendo o rank "Commoner"', context)
+        # A new shop-direction section has independent context.
+        text += 'Vende: ' + br_item('Apple', '10')
+        self.assertEqual(br_rows(text)[-1]['scope_holds'], [])
+
     def test_fandom_shop_zero_price_and_transcript_contamination(self):
         row = ('| image | [Berry](https://tibia.fandom.com/wiki/Berry "Berry") | '
                '0 ![Image 2: Gold](https://example.com/gold.gif) |\n')

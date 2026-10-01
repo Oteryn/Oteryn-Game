@@ -135,6 +135,8 @@ const NPC_R5_NATIVE_REPAIRS_SHA256: &str =
 const NPC_R5_PROJECT_REVISION: &str = "g4-npc-source-repairs-r10";
 #[path = "npc_materializer/qualified_repairs.rs"]
 mod npc_qualified_repairs;
+#[path = "npc_materializer/service_scope_repairs.rs"]
+mod npc_service_scope_repairs;
 #[path = "npc_materializer/transcript_repairs.rs"]
 mod npc_transcript_repairs;
 const NPC_STAGE_TOOL_SHA256: &str =
@@ -2199,6 +2201,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut draft = snapshot.migrate_to_v2();
     let npc_r8_dialogues = npc_transcript_repairs::apply(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r12_held_offers = npc_service_scope_repairs::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
@@ -2215,6 +2221,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     println!("npc_r7_repairs={npc_r7_repairs}");
     println!("npc_r8_dialogues={npc_r8_dialogues}");
+    println!("npc_r12_held_offers={npc_r12_held_offers}");
     Ok(())
 }
 

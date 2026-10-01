@@ -88,7 +88,8 @@ def br_rows(text):
             row = observed_row(text, left + a, left + d, name, price, direction)
             context = text[left:left + a]
             row['scope_holds'] = (['CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT']
-                                  if re.search(r'\b(?:somente|após|depois|antes|durante)\b', context, re.I) else [])
+                                  if re.search(r'\b(?:somente|após|depois|antes|durante)\b'
+                                               r'|\btendo\s+(?:o\s+)?rank\b', context, re.I) else [])
             row['context_sha256'] = digest(context)
             row['context_byte_start'] = len(text[:left].encode('utf-8'))
             row['context_byte_end'] = row['byte_start']

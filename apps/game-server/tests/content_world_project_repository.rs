@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        406,
-        "7c4d36fe622e7dc29cd2af842e8532414168e65435e71c2d6ce7c9769a07832b",
+        388,
+        "3ef6f318929621c1c26fc8a94052180242a398f7ad0c0e1950728f4d1dec2348",
     ),
     (
         "definitions/declarations.json",
-        17_030_652,
-        "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17",
+        17_026_312,
+        "ece0452da927a4802eec8bd686b72c4782413e9878e57fbf049c4de4c62c271d",
     ),
     (
         "definitions/reference.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_951,
-        "55c151655258f89f0b06476a45c01b75de9e964533ab0b229467bdc016419974",
+        1_945,
+        "7cf502521cdd0e8e7f2e2e10acce0b3a5f119d97b4e66dcc2829492a6237bc4a",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        404,
-        "6992f7e9273274d9812bd70d8c172e6a422a8e9ca365b8312a6ba6691f36b708",
+        398,
+        "d277da1e3d6956de76c9eba6c9a41e36f06893af891409ed88d69db570890f2c",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "0529443263e930fc2c655470058b94a94a9cecad42ba10fb269fc75e68f42264";
+const TREE_SHA256: &str = "7f2faa83d5abb7aa2025a5d511584a9c602b82c65caea9605fb79d54757ec292";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -321,7 +321,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-d10-fandom-variants-r12");
+    assert_eq!(project.project_revision(), "g4-npc-service-scope-r13");
     assert_eq!(project.imports().len(), 12);
     let provenance = &project.imports()[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");

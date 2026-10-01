@@ -38,7 +38,7 @@ FLUID_ENUM = dict(
     chocolate=20,
 )
 # Identified container appearance IDs, not a mapping to native fluid subtypes.
-FLUID_CONTAINERS = {2874, 2875, 2880, 2901, 9232}
+FLUID_CONTAINERS = {2874, 2875, 2877, 2880, 2901, 5552, 9232}
 ACCESS_CALLBACKS = {
     "rashid": (
         "TheTravellingTrader.Mission07",

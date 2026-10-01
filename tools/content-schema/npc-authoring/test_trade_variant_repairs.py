@@ -91,6 +91,16 @@ class TradeVariantRepairs(unittest.TestCase):
         result = repair.repair_trade_services([service(offers=[native(item=2901)])])
         self.assertEqual(result["services"][0]["offers"], [])
 
+    def test_rum_and_green_flask_enums_require_native_fluid_binding(self):
+        for item, name, encoded in [(5552, "flask of rum", 13),
+                                    (2877, "green flask of wine", 2)]:
+            with self.subTest(item=item):
+                rows, left = self.promote("Lyonel", offer(item=item, count=encoded, name=name))
+                self.assertFalse(rows)
+                self.assertEqual(left[0]['source_semantics']['offers']['canary']['count'], encoded)
+                result = repair.repair_trade_services([service(offers=[native(item=item, count=encoded)])])
+                self.assertEqual(result['services'][0]['offers'], [])
+
     def test_explicit_legacy_subtype_is_not_assumed_native(self):
         rows, left = self.promote(
             "Satsu", offer(count=1, subtype=3, name="vial of beer")
