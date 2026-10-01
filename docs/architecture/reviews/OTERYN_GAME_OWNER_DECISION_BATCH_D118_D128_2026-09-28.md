@@ -73,6 +73,14 @@ top-damage character is gone is **UNKNOWN** (keep the 10-second window).
   hours or less XP is 50% and the top-damage character gets no loot. At 0 no XP. Regeneration
   starts after 10 minutes offline: 1 minute per 3 offline up to 39 hours, 1 per 6 from 39 to 42.
 
+**Amendment (architect ruling, 2026-10-01, #162): creature-kill XP is a closed product.** XP gained on a creature kill is the base creature XP multiplied by the product of a closed list of multipliers, each owned by its own decision:
+
+- stamina (D118, this section);
+- the Prey XP bonus (PREY-0, `OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md`);
+- party shared experience (PARTY-PVP-0, `OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md`).
+
+Only a later decision extends the list. Store XP boosts and double-XP events are not in base; they come later with the Store and event decisions. No boost source exists now.
+
 ### 2.5 Mounts (D125)
 
 Mounted characters gain +10 speed (TibiaWiki; the manual gives no number). Per-mount exceptions:

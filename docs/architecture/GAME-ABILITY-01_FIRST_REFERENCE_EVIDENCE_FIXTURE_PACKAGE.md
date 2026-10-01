@@ -27,6 +27,10 @@ The bounded evidence capture is `docs/agents/evidence/OTV2-20260814-ability-comb
 
 Patch-note/search absence is not continuity proof. OTS code is not used as Reference proof.
 
+## Amendment (owner decision 2026-10-01, #162): evidence blocker closed
+
+The archived 2026-07-28 wiki cut is accepted as `OBSERVED` reference evidence for the four cases of this package (Light Healing cast metadata and self-heal semantics; Ice Strike cast metadata and targeted ice-damage semantics). Target continuity is accepted on that cut, which clears the blocker recorded in "Evidence boundary" and "Recommended next paper-only evidence step". A difference later found against tibia.com is recorded as `PARITY_PENDING`, not as a blocker. This text is history and is not rewritten; the manifest cases still read `UNKNOWN` / `PENDING` until a manifest revision records the decision, and no executable fixture, runtime authority or whole-gate acceptance follows from it.
+
 ## Catalogue package — Light Healing
 
 ```yaml
