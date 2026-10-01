@@ -1543,7 +1543,10 @@
         "A current official/community sentence explicitly saying consumed/one Etcher per successful use is sufficient to select success1 with its source role. Alternatively one clear public counted-use recording qualifies that recorded case.",
         "A source explicitly stating that a named rejection leaves the Etcher unchanged, or one clear public before/after example, qualifies that rejection only. No universal all-error inference."
       ],
-      "engine_profile": "current-behavior-answers.json#etcher_consumption"
+      "engine_profile": "current-behavior-answers.json#etcher_consumption",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#etcher_consumption"
+      ]
     },
     {
       "id": "scroll_application_equipped_target",
@@ -1579,7 +1582,10 @@
         "One explicit current community/official statement that equipped equipment can be imbued with a completed scroll qualifies that stated scope. A clear public successful equipped-use capture is an alternative for the named case.",
         "Full-slot/duplicate/wrong-family controls are unnecessary for this one permission when those compatibility restrictions already have their own sources."
       ],
-      "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target"
+      "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#scroll_application_equipped_target"
+      ]
     },
     {
       "id": "fine_grained_timers",
@@ -1635,7 +1641,10 @@
         "Accept the existing explicit manual/community timer statements now for their exact scope. A direct reference describing a named PZ/logout/equipment boundary is sufficient for that additional rule.",
         "If only gameplay evidence exists, require timing precision sufficient for the claimed visible interval, not internal milliseconds or a hidden deadline."
       ],
-      "engine_profile": "current-behavior-answers.json#fine_grained_timers"
+      "engine_profile": "current-behavior-answers.json#fine_grained_timers",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#imbuement_timer_pz_rules"
+      ]
     },
     {
       "id": "combat_pipeline",
@@ -1688,7 +1697,12 @@
         "Use existing explicit current Mana and Life-Prey statements as sufficient public-reference evidence; telemetry is not required.",
         "A current community formula or explicit named interaction statement can qualify Life rounding/healing for that scope. Historical examples stay historical; do not extend the Mana formula by analogy."
       ],
-      "engine_profile": "current-behavior-answers.json#combat_pipeline"
+      "engine_profile": "current-behavior-answers.json#combat_pipeline",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#life_leech_damage_basis",
+        "owner-authoring-policy.json#life_leech_aoe_zero_damage_targets",
+        "owner-authoring-policy.json#life_leech_aoe_formula_and_rounding"
+      ]
     },
     {
       "id": "vibrancy_pvp_gate",
@@ -1815,7 +1829,10 @@
         "One explicit current reference that a named validation failure spends no resources, or a bounded before/after public example, qualifies that failure/route only.",
         "A generic valid-crafting100% guarantee cannot be used as rejected-request or exceptional rollback evidence."
       ],
-      "engine_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback"
+      "engine_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#filled_scroll_consumption"
+      ]
     },
     {
       "id": "native_effect_composition",
@@ -1862,7 +1879,10 @@
         "Accept the existing exact bounded examples and explicit additive critical statement as authored data now.",
         "A current reference explicitly describing a named native+imbuement combination/cap suffices for that bounded rule; no need to prove all combinations."
       ],
-      "engine_profile": "current-behavior-answers.json#native_effect_composition"
+      "engine_profile": "current-behavior-answers.json#native_effect_composition",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#physical_armor_and_percentage_order"
+      ]
     },
     {
       "id": "transfer_preserves_imbuement_state_and_remaining_duration",
@@ -1903,7 +1923,10 @@
         "The existing explicit community guide is sufficient for transferred-item recipient usability now.",
         "For duration preservation, one explicit public route statement or a matching distinguishable item before/after example at stated precision suffices for that route."
       ],
-      "engine_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration"
+      "engine_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#transfer_preserves_imbuement_state_and_remaining_duration"
+      ]
     },
     {
       "id": "etcher_npc_purchase_requires_premium",
@@ -1949,7 +1972,10 @@
         "One current official/community item or NPC statement explicitly allowing Free-account purchase, or stating a Premium purchase requirement, suffices.",
         "A clearly worthy Free-character successful purchase is an alternative; a paired Premium purchase is unnecessary to establish Free permission. A rejection must identify the Premium reason to establish necessity."
       ],
-      "engine_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium"
+      "engine_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#etcher_npc_purchase_requires_premium"
+      ]
     },
     {
       "id": "scroll_consumption",
@@ -1986,7 +2012,10 @@
         "A counted successful public use qualifies the named case; do not require72 repetitions where the source explicitly describes the general filled-scroll operation.",
         "A rejection nonconsumption statement or public counted example qualifies that rejection only."
       ],
-      "engine_profile": "current-behavior-answers.json#scroll_consumption"
+      "engine_profile": "current-behavior-answers.json#scroll_consumption",
+      "owner_selected_policy_refs": [
+        "owner-authoring-policy.json#filled_scroll_consumption"
+      ]
     }
   ],
   "source_conflicts": [

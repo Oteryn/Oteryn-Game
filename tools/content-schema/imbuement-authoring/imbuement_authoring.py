@@ -16,7 +16,8 @@ CATALOGUE = HERE / "samples/imbuements-candidate.json"
 REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
-    "global-research-closure.json": "8735fb085aaaf6ad87f5a457d0edcdbabe002a8cede984cb9320c0ba70378fbb",
+    "owner-authoring-policy.json": "c71b9351980fe70b8a83aafcfcca3e03a1ff9445427fedd842214ee89ae73079",
+    "global-research-closure.json": "48bdda9e20663cbb46c3fdaa631cb9de5807aa1ae1ef8f8f15c8333abe77440f",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
     "imbuement-eligibility.json": "4a9d7b93ea2a704f40e1f3cd35ef6b1686ed917457926ca9d5c359c9cd46586e",
@@ -117,7 +118,7 @@ def supporting():
                 "imbuement-eligibility.json", "global-rules-evidence.json",
                 "imbuement-combat.json", "crystal-imbuements-evidence.json",
                 "missing-item-definitions.json", "missing-item-source-facts.json",
-                "global-observation-plan.json", "current-behavior-answers.json", "global-research-closure.json"}
+                "global-observation-plan.json", "current-behavior-answers.json", "global-research-closure.json", "owner-authoring-policy.json"}
     if set(EVIDENCE_PINS) != expected:
         raise ValueError("supporting evidence pins are incomplete")
     packets = {}
@@ -150,6 +151,8 @@ def supporting():
     newbranch_evidence.validate(packets["crystal-imbuements-evidence.json"])
     import research_closure
     research_closure.validate(packets["global-research-closure.json"])
+    import owner_policy
+    owner_policy.validate(packets["owner-authoring-policy.json"], packets)
     validate_observation_plan(packets["global-observation-plan.json"], packets)
     import behavior_answers
     errors = behavior_answers.validate(packets["current-behavior-answers.json"],
@@ -266,6 +269,7 @@ def schema():
                 "combat_profile": {"const": "imbuement-combat.json"},
                 "current_behavior_profile": {"const": "current-behavior-answers.json"},
                 "global_research_profile": {"const": "global-research-closure.json"},
+                "owner_authoring_policy_profile": {"const": "owner-authoring-policy.json"},
                 "missing_item_proposals": {"const": "missing-item-definitions.json"},
                 "engine_reference_profile": {"const": "crystal-imbuements-evidence.json"},
                 "architecture_reconciliation": {"const": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE"},
@@ -353,6 +357,7 @@ def build():
             "combat_profile": "imbuement-combat.json",
             "current_behavior_profile": "current-behavior-answers.json",
             "global_research_profile": "global-research-closure.json",
+            "owner_authoring_policy_profile": "owner-authoring-policy.json",
             "missing_item_proposals": "missing-item-definitions.json",
             "engine_reference_profile": "crystal-imbuements-evidence.json",
             "architecture_reconciliation": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE", "definitions": definitions}
@@ -392,12 +397,14 @@ def comparison():
                 "global_rules": len(packets["global-rules-evidence.json"]["rules"]),
                 "combat_rule_profiles": len(packets["imbuement-combat.json"]["rules"]),
                 "source_answered_engine_question_groups": packets["current-behavior-answers.json"]["counts"]["engine_answered_questions"],
+                "owner_approved_operational_decisions": packets["owner-authoring-policy.json"]["counts"]["owner_approved_decisions"],
                 "owner_resolved_scope_questions": packets["current-behavior-answers.json"]["counts"]["owner_scope_resolved"],
                 "planned_not_observed_scenarios": packets["global-observation-plan.json"]["counts"]["planned_scenarios"],
                 "crystal_imbuements_revision": packets["crystal-imbuements-evidence.json"]["revision"],
                 "gold_token_exchange_bundles": len(packets["imbuement-access.json"]["material_acquisition"]["yana_gold_token_exchange"]["recipes"]),
             },
             "global_research_profile": "global-research-closure.json",
+            "owner_authoring_policy_profile": "owner-authoring-policy.json",
             "remaining_global_public_fields": {g["id"]: g["remaining_public_fields"] for g in packets["global-research-closure.json"]["groups"] if g["remaining_public_fields"]},
             "observation_requirement_interpretation": "SUPPLEMENTAL_CAPTURE_ALTERNATIVES; LITERAL_PUBLIC_REFERENCES_ACCEPTED; RUNTIME_CONTRACTS_SEPARATE",
             "remaining_global_observation_requirements": packets["global-rules-evidence.json"]["unresolved"],

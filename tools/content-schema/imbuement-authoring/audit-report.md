@@ -278,7 +278,7 @@ children. The architecture/coordinator packet is on
 
 ## Validation
 
-The current package has 223 offline test cases and nine replay/schema commands,
+The current package has 232 offline test cases and eleven replay/schema commands,
 plus a reparse of all three pinned engine XMLs. Both missing Item proposals pass
 the owning Item validator with zero errors and warnings. The current behavior
 packet additionally pins67 full source files, with224 exact line-range quotes
@@ -318,3 +318,22 @@ The packet contains **35 bounded facts and 32 sources**. This batch adds these s
 **Global evidence still insufficient:** exact Etcher success/rejection units; filled-scroll units on success, full slots, incompatible items or duplicate families; the explicit Premium predicate for NPC Etcher purchase; numerical remaining duration across a named ownership transfer; the precise PZ combat boundary; current universal Life rounding, unequal-hit, zero-hit and overkill continuity. Equipped scroll permission remains a dated before/after inference without direct application-instant proof. These values stay null; Crystal/Canary implementation values remain separately available.
 
 Consumption research read four filled-scroll descriptions and 66 full CM posts from a 125-post June–August 2025 index. Fetches stopped at HTTP 429; 58 bodies were not read. Official news 4828 returned Cloudflare verification even in Chrome, so its new discussion link was inaccessible. Both current Life family pages were read in Chrome and contained no precise formula. Remote Desktop was used only for public browser research; the root-owned tab was closed.
+
+## Owner-selected operational policies, 2 October 2026
+
+[owner-authoring-policy.json](samples/owner-authoring-policy.json) contains ten explicit decisions approved in this conversation. The authoring catalogue and schema require this profile; each affected public-research group links its selected policy. Its values are the selected Oteryn behavior for this draft, while source evidence remains independently qualified. Unknown public Global fields no longer mean an undecided Oteryn policy where an owner selection exists. Runtime activation remains blocked.
+
+- Etcher: one unit clears all active imbuements on one item; ordinary pre-debit rejection consumes zero.
+- Filled scroll: success consumes one; full slots, incompatible target or duplicate family consumes zero. Late failure/crash compensation is not generalized from these validation results.
+- Filled scrolls may be used on equipped items, subject to the normal slot/type/family checks.
+- Albinius sells Etchers for 30,000 gold without Premium; other existing offer prerequisites remain.
+- Ownership transfer preserves the imbuement family/tier and exact remaining use budget. Transfer itself does not reset/deduct it; normal eligible-use ticking continues.
+- Life Leech uses attack damage before clipping to target remaining HP, so overkill counts. It is not based on target maximum HP. Healing is capped by the receiver’s missing HP.
+- Life AoE counts positive-damage targets only; zero-damage targets neither heal nor increase N. An empty set yields zero.
+- Life AoE sums per-target ceilings: `sum(ceil(D_i * P * (0.9 + 0.1 * N) / N))`. Unequal targets use their own damage. An exact integer reference is `sum(ceil_div(D_i * share_bps * (N + 9), 100000 * N))`; this is authoring arithmetic, not runtime installation.
+- Combat timers require equipped/online state and active combat. Entering PZ does not immediately pause them or reset the deadline; ordinary combat expires 60 seconds after its last refreshing event. Swiftness, Featherweight and Vibrancy tick while equipped/online, including PZ. Special PvP state is not generalized.
+- Armor follows the inspected Canary/Crystal player blockHit path: defense/flat armor when enabled, then equipped-item absorptions, then Wheel resistance. Each item applies imbuement reduction with `ceil`, followed by applicable native reduction with `round`, using the remaining damage at each stage. Item percentages are not summed across equipment. Unrelated Mantra, proficiency and Wheel formulas are not selected by this approval.
+
+The Life and PZ selections intentionally differ from the inspected OTS paths. The source comparison still records HP clipping/lround and the aggressive-category outside-PZ check. The public scoped resistance-before-armor report remains preserved; the owner selected armor-before-item-percentages for Oteryn. No public-source claim is overwritten, no observation is invented, and full Global parity remains unproved. Coordinator #162 owns adopting these values in runtime contracts and workers.
+
+Owner-policy batch checks before publication: 232 authoring tests, 11 replay/schema/XML checks, governance validator and 36 governance tests passed. Final qualification/review is tied to the returned frozen successor SHA, not the previous v17 candidate.
