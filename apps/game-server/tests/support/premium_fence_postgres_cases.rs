@@ -252,17 +252,44 @@ fn premium_time_derived_state_is_not_a_lifecycle_change() -> TestResult {
     })?;
     run("premium_expiry_rollback", async |harness, root| {
         accept(root, &evidence(5, 1, Active)).await?;
-        // EXPIRED while `effective_until` is still ahead: a producer expiry, not elapsed time.
+        // `effective_until` passed: EXPIRED under the same lifecycle revision.
+        let mut expired = evidence(6, 1, Expired);
+        expired.authority_issued_at_us = T0 + 25 * HOUR;
+        expired.authority_valid_until_us = T0 + 26 * HOUR;
         assert_eq!(
-            accept(root, &evidence(6, 1, Expired)).await?,
+            accept(root, &expired).await?,
             ("accepted", 6, Expired, false)
         );
         // ACTIVE again under the same lifecycle revision is a step back: no re-authorization.
-        assert_eq!(
-            accept(root, &evidence(7, 1, Active)).await?,
-            ("conflict", 6, Expired, true)
-        );
+        let mut active = evidence(7, 1, Active);
+        active.authority_issued_at_us = T0 + 26 * HOUR;
+        active.authority_valid_until_us = T0 + 27 * HOUR;
+        assert_eq!(accept(root, &active).await?, ("conflict", 6, Expired, true));
         assert_eq!(harness.count("game_premium_evidence").await?, 2);
+        Ok(())
+    })?;
+    run("premium_early_expiry", async |_, root| {
+        accept(root, &evidence(5, 1, Active)).await?;
+        // EXPIRED while `effective_until` is still ahead is a producer expiry change, not
+        // elapsed time: it needs a new lifecycle revision.
+        assert_eq!(
+            accept(root, &evidence(6, 1, Expired)).await?,
+            ("conflict", 5, Active, true)
+        );
+        Ok(())
+    })?;
+    run("premium_early_start", async |_, root| {
+        let mut pending = evidence(5, 1, NotYetEffective);
+        pending.effective_from_us = T0 + HOUR;
+        accept(root, &pending).await?;
+        // ACTIVE before `effective_from`, under the same lifecycle revision: not elapsed time.
+        let mut active = pending.clone();
+        active.state = Active;
+        active.authority_revision = 6;
+        assert_eq!(
+            accept(root, &active).await?,
+            ("conflict", 5, NotYetEffective, true)
+        );
         Ok(())
     })?;
     run("premium_start_rollback", async |_, root| {

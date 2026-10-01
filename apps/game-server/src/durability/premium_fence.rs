@@ -13,7 +13,8 @@
 //! - a higher authority revision that lowers an entitlement's `lifecycle_revision`, or repeats
 //!   it with other lifecycle facts (product, entitlement, effective window, revocation), is a
 //!   conflict too. Within one lifecycle revision the state may only move as elapsed time does,
-//!   NOT_YET_EFFECTIVE -> ACTIVE -> EXPIRED; a step back, or reopening an entitlement a later
+//!   NOT_YET_EFFECTIVE -> ACTIVE -> EXPIRED, and only once `authority_issued_at` crossed the
+//!   matching boundary; a step back, an early step forward, or reopening an entitlement a later
 //!   snapshot withdrew (`NONE` or another entitlement), needs a new lifecycle revision.
 //!
 //! Every outcome returns the durable view after the transaction. The caller authorizes benefit
@@ -45,6 +46,16 @@ impl EntitlementState {
             Self::NotYetEffective => 0,
             Self::Active => 1,
             Self::Expired | Self::Revoked | Self::None => 2,
+        }
+    }
+
+    /// Whether `evidence`, issued at `authority_issued_at`, can have reached its state by elapsed
+    /// time alone: ACTIVE once `effective_from` passed, EXPIRED once `effective_until` passed.
+    fn reached_by_time(evidence: &PremiumEvidence) -> bool {
+        match evidence.state {
+            Self::Active => evidence.authority_issued_at_us >= evidence.effective_from_us,
+            Self::Expired => evidence.authority_issued_at_us >= evidence.effective_until_us,
+            Self::NotYetEffective | Self::Revoked | Self::None => true,
         }
     }
 
@@ -272,9 +283,10 @@ enum EntitlementStep {
     Open,
     Advance,
     /// The evidence lowers the entitlement's lifecycle revision, or repeats it with other
-    /// lifecycle facts, with a state that elapsed time cannot reach (EXPIRED -> ACTIVE, ACTIVE
-    /// -> NOT_YET_EFFECTIVE), or after a later snapshot withdrew the entitlement. Each of
-    /// these needs a new lifecycle revision (PREMIUM-DELIVERY-0 §4).
+    /// lifecycle facts, with a state that elapsed time cannot reach (a step back, or a step
+    /// forward before the producer-issued time crossed its boundary), or after a later snapshot
+    /// withdrew the entitlement. Each of these needs a new lifecycle revision
+    /// (PREMIUM-DELIVERY-0 §4).
     Regress,
 }
 
@@ -316,6 +328,8 @@ async fn entitlement_step(
             || (evidence.lifecycle_revision == stored
                 && (withdrawn
                     || evidence.state.time_rank() < latest_state.time_rank()
+                    || (evidence.state.time_rank() > latest_state.time_rank()
+                        && !EntitlementState::reached_by_time(evidence))
                     || stored_fingerprint.as_slice()
                         != evidence.lifecycle_fingerprint().as_slice()))
         {
