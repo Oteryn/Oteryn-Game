@@ -262,8 +262,8 @@ After TLS/ALPN, `ClientBootstrap` carries:
 It does **not** carry a client-created canonical `GameSessionId`.
 
 **Amendment (pending on acceptance of SEC-CLIENT-01; `reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md` §4, §7).** Field 8
-of `ClientBootstrap` is set aside for `bytes client_attestation`, empty in v1 (non-empty is
-`REJECTED`). Native transport profile 1 requires the capabilities `CLIENT_INTEGRITY_V1` and
+of `ClientBootstrap` is set aside for `bytes client_attestation`, without meaning in v1 (a
+non-empty value is ignored, never authority). Native transport profile 1 requires the capabilities `CLIENT_INTEGRITY_V1` and
 `INPUT_TELEMETRY_V1`; `client_build_id` stays diagnostic and selects only the challenge corpus,
 never authority.
 

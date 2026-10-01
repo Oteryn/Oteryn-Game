@@ -35,7 +35,9 @@ Tests: a native bootstrap without either capability is refused `ADMISSION_CAPABI
 wrong, late or missing challenge answer never disconnects, mutates gameplay or sanctions, and
 produces exactly one security observation; a telemetry summary over its byte bound is dropped and
 observed; no telemetry field can carry a key code, text, a screen position outside the game window
-or a process list; disabling optional crash diagnostics changes nothing here.
+or a process list; disabling optional crash diagnostics changes nothing here; a second answer to
+one challenge, or an answer to a never-sent challenge, yields no second observation of `VALID`; a
+non-empty `client_attestation` is ignored; a build leaving the admitted set loses its corpus.
 
 Later, each with its own decision: client attestation (the reserved slot, §7), a third-party
 anti-cheat or kernel component (rejected for now, §9), sanctions and ban waves (OPS-GM-01).
@@ -92,7 +94,21 @@ automatically?
   `INPUT_TELEMETRY_V1` join ADMIT-0's mandatory floor: a native bootstrap that does not declare
   them is refused `ADMISSION_CAPABILITY_REQUIRED` (a protocol requirement, the same refusal an
   outdated client gets, not a sanction). A future browser profile (ADR-0018) requires
-  `INPUT_TELEMETRY_V1` only. Amended: ADMIT-0 §3.1 (pending on its acceptance).
+  `INPUT_TELEMETRY_V1` only. The check is ADMIT-0's predicate at its points, unchanged: fresh
+  admission after authentication, ownership and world eligibility (FND-04A step 14, and the final
+  revalidation), same-session reconnect and recovery, with ADMIT-0's three codes
+  (`ADMISSION_`, `RECONNECT_`, `RECOVERY_CAPABILITY_REQUIRED`). No new FND-04 step or code is
+  added. Amended: ADMIT-0 §3.1 (pending on its acceptance).
+- **Registration.** SEC-CHAL-1 registers the capability, its two message types with their
+  `foundation`-style proto definitions and size limits, and the challenge outcome ANL-01 event in
+  `PROTOCOL_OTERYN_V1_REGISTRY.json` and `GAME_EVENT_FOUNDATION_REGISTRY.json`, numbers reserved on
+  #162 at allocation; SEC-TELEM-1 does the same for its capability, `InputSummaryV1` (an allowlist
+  proto: only the fields of §5, so a forbidden field cannot be encoded) and its event.
+- **Builds.** The corpus exists only for the builds `PROD-COMPAT-01` currently admits (at most
+  `SECCLIENT01-RL-07`), at most `SECCLIENT01-RL-08` per build; a build's corpus is deleted when the
+  build leaves the admitted set. A client declaring an admitted old build is challenged against
+  that build; one declaring a build outside the set is refused by `PROD-COMPAT-01`'s version rule
+  before admission, and a declared build without a corpus is `UNKNOWN_BUILD`.
 
 ### 4.2 At login (alpha)
 
@@ -108,8 +124,10 @@ automatically?
 
 ### 4.3 In game (before open beta, SEC-CHAL-2)
 
-The same exchange at random intervals, at most `SECCLIENT01-RL-03` per session per hour, with the
-interval drawn by the node; same outcomes, same silence.
+The same exchange at random intervals, at most `SECCLIENT01-RL-03` per session in any sliding 60
+minutes (a reconnect keeps the session's count), with the interval drawn by the node; same
+outcomes, same silence. One challenge is outstanding at a time; an answer to an unknown, expired or
+already answered challenge id is ignored and counted in the outcome as `WRONG`.
 
 ## 5. Input telemetry (SEC-TELEM-1; layer 2)
 
@@ -130,7 +148,7 @@ interval drawn by the node; same outcomes, same silence.
   the opt-out crash diagnostics, whose non-adverse rule (ANL-03 §14) is unchanged. A summary that
   is missing or malformed while the capability is selected is itself recorded as an observation
   (it is a protocol fault, not an opted-out diagnostic).
-- **Privacy class:** `SECURITY_SENSITIVE`, pseudonymous by AnalyticsActorId; raw summaries kept
+- **Privacy class:** `SECURITY_SENSITIVE` (ANL-03 §14), pseudonymous by AnalyticsActorId; raw summaries kept
   `SECCLIENT01-RL-06` (90 days), signals and cases by ANL-03's profiles.
 
 ## 6. Flags (SEC-DETECT-1; layer 3)
@@ -148,9 +166,10 @@ interval drawn by the node; same outcomes, same silence.
 
 ## 7. Attestation slot (FND-02, FND-04; reserved now)
 
-- `ClientBootstrap` field 8 (inside today's `reserved 8 to 15`) is set aside for
-  `bytes client_attestation`: SEC-CHAL-1 adds it to `foundation.proto` as an optional field that
-  must be empty in v1 (non-empty is `REJECTED` until a decision admits it). The grant claim name
+- `ClientBootstrap` field 8 (inside today's `reserved 8 to 15`; 9 to 15 stay reserved) is set
+  aside for `bytes client_attestation`: SEC-CHAL-1 adds it to `foundation.proto`. In v1 it has no
+  meaning: a non-empty value is ignored (never authority, never a refusal) and recorded as one
+  observation, so no new error code is needed. The grant claim name
   `client_attestation_ref` is set aside for the same later decision; today it is an unknown claim,
   which the grant profile's exact claim membership already refuses as `ADMISSION_GRANT_MALFORMED`.
   Amended: FND-02 §11.
@@ -167,6 +186,8 @@ interval drawn by the node; same outcomes, same silence.
 | `SECCLIENT01-RL-04` telemetry summary period | 60 s of play |
 | `SECCLIENT01-RL-05` telemetry summary size | 2 KiB; larger is dropped and observed |
 | `SECCLIENT01-RL-06` raw telemetry retention | 90 days |
+| `SECCLIENT01-RL-07` builds with a corpus | 8 (the builds PROD-COMPAT-01 admits) |
+| `SECCLIENT01-RL-08` corpus per build | 64 MiB |
 
 Each with max and max+1 tests.
 
@@ -204,7 +225,8 @@ None. Owner answer 5b set the layers, the timing and the privacy limits.
 ## 13. Before-freeze checklist
 
 1. **Contract amendments:** FND-02 §11 (field 8 set aside); ADMIT-0 §3.1 (floor per transport
-   profile, pending on ADMIT-0). Applied in this PR.
+   profile), applied once #1440 is on main (this branch merges main before its freeze). Registry,
+   proto and event registrations are the children's (§4.1).
 2. **Serialization:** challenges and summaries are session messages; outcomes are events, never
    state changes.
 3. **Restart:** nothing durable but ANL events; a challenge in flight at a restart is `MISSING`
