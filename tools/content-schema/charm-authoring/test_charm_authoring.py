@@ -182,6 +182,12 @@ def test_complete_mechanics_preparation() -> None:
     assert test_charm_mechanics.run_suite() >= 17
 
 
+def test_captured_tibiapal_source_evidence() -> None:
+    import test_tibiapal_evidence
+
+    assert test_tibiapal_evidence.run_suite() >= 9
+
+
 if __name__ == "__main__":
     tests = [
         value for name, value in sorted(globals().items()) if name.startswith("test_")

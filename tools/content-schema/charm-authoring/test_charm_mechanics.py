@@ -9,9 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
-
 import charm_mechanics as cm
+from jsonschema import Draft202012Validator
 
 
 class CharmMechanicsTests(unittest.TestCase):

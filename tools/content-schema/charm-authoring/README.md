@@ -105,3 +105,33 @@ python tools/content-schema/charm-authoring/charm_mechanics.py verify-sources \
 ```
 
 `check` and `validate` verify the same committed package: schema, catalogue binding, complete key/effect/hook coverage, source classes, immutable captured facts, 75 numeric comparisons, current index and deterministic derivation. `verify-sources` additionally hashes files in supplied checkout roots and independently parses their catalogue numbers. It states the verified repository count; omitted external checkout roots remain unverified. It performs no network access. The existing authoring test entry invokes the new suite so its current CI entry also covers this package.
+
+## Executed TibiaPal evidence
+
+`samples/tibiapal-*-2026-10-01.json` retain the independently observed planner, description and
+calculator results. The offline evidence tests bind those captures to source hashes and the
+current catalogue. They validate recorded observations; they do not rerun a browser in CI.
+The manual harnesses execute the original external source without copying it into this repo.
+
+At the pinned TibiaPal revision, native Chromium passed all 25 cards, 150 stage transitions,
+42 major budget boundaries and 66 calculator cases. Node VM execution passed 412 planner
+checks. [INTEGRATION.md](INTEGRATION.md) explains the observed rounding differences, absent
+elemental level cap and limits of these tests. The live domain was blocked by the session
+proxy; no deployed-site or official-game parity is claimed.
+
+Use a clean TibiaPal checkout at `61ffa3e0502879ccec44e59ead859e92b6d88531`. Browser reruns
+require Python Playwright and a working Chromium executable; these are optional manual-test
+dependencies and are not added to the authoring CI requirements.
+
+```sh
+node tools/content-schema/charm-authoring/samples/test-tibiapal-planner.cjs \
+  /path/to/TibiaPal /path/to/Oteryn-Game /tmp/tibiapal-planner-execution.json
+python tools/content-schema/charm-authoring/verify_tibiapal_browser.py \
+  --checkout /path/to/TibiaPal --chromium /usr/bin/chromium \
+  --screenshots /tmp/tibiapal-browser --output /tmp/tibiapal-browser-verification.json
+python tools/content-schema/charm-authoring/test_tibiapal_evidence.py
+```
+
+All 25 descriptions match the catalogue's three costs and bonus values. They leave detailed
+combat behavior untested; for example, Gut's “more products” does not establish probability
+versus quantity, and Cleanse's prose does not establish exact immunity time or removal semantics.

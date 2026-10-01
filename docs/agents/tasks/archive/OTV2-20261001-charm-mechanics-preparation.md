@@ -22,6 +22,12 @@ owned_paths:
   - tools/content-schema/charm-authoring/charm_mechanics.py
   - tools/content-schema/charm-authoring/test_charm_mechanics.py
   - tools/content-schema/charm-authoring/test_charm_authoring.py
+  - tools/content-schema/charm-authoring/test_tibiapal_evidence.py
+  - tools/content-schema/charm-authoring/verify_tibiapal_browser.py
+  - tools/content-schema/charm-authoring/samples/test-tibiapal-planner.cjs
+  - tools/content-schema/charm-authoring/samples/tibiapal-description-calculator-evidence-2026-10-01.json
+  - tools/content-schema/charm-authoring/samples/tibiapal-planner-execution-2026-10-01.json
+  - tools/content-schema/charm-authoring/samples/tibiapal-browser-verification-2026-10-01.json
   - tools/content-schema/charm-authoring/samples/charm-mechanics-sources-2026-10-01.json
   - tools/content-schema/charm-authoring/README.md
   - tools/content-schema/charm-authoring/INTEGRATION.md
@@ -84,17 +90,33 @@ enqueue or owner-funded review trigger belongs to this worker.
 - Supplemental package: schema validation, catalogue/source bindings, complete 25-key coverage,
   independently extracted three-source comparisons and negative cases.
 - Existing Charm workflow test entry includes the supplemental checks; no workflow change.
+- Native Chromium 151.0.7922.173 executed the pristine pinned TibiaPal `_site`: all 25 cards,
+  150 purchase/refund transitions, 42 major budget boundaries, minor budget/refund guards,
+  reset and 66 calculator cases passed. Source/deployed-snapshot JS hashes match.
+- Independent Node VM execution of the pinned planner: 412 checks passed. All 25 descriptions'
+  costs/bonuses match; observed calculator rounding and omitted level cap are retained.
+- Live domain was blocked by the proxy (`ERR_TUNNEL_CONNECTION_FAILED`). Local snapshot
+  browser evidence is not a deployed-site or official battle verification. `cargo` was not
+  available, so Rust runtime tests were not rerun in this session.
 - Python Ruff lint/format, governance validator/tests and changed-file whitespace check.
 - Baseline full-game tree validator: FAIL `SOURCE_ID_BOUNDARY_MISSING` on admission main,
   before this task's changes; already named by programme STATE. Outside this task's owned paths.
-- Focused result: PASS, 8 authoring-entry tests including 18 supplemental tests;
+- First preparation head: PASS, 8 authoring-entry tests including 18 supplemental tests;
   31 source-file hashes across four repositories and 75 independent numeric comparisons;
   Ruff lint/format; governance validator and 36 governance tests; materialized tree 97/97.
+- Successor: PASS, 9 authoring-entry tests including 18 mechanics and 9 TibiaPal evidence
+  tests; opt-in portable Node replay 412/412; native browser run 25/150/42/66; the source,
+  catalogue, Ruff, governance and materialized-tree checks remain required at the frozen head.
 - Independent preparation audit: PASS by `charm_independent_review`; Gut source qualification,
   generated-damage bindings for Carnage/Parry and historical README clarity findings resolved.
   Fatal Hold's targeting binding preserves CHARM-0/D186. This is a preparation review,
   not the programme's protected-integration qualification or an owner-funded review trigger.
 - Hosted exact-head CI and programme review: coordinator qualification after publication.
+
+The owner's subsequent instruction required checking the available references before claiming
+completion. The branch returned to AUTHORING for portable execution harnesses and persisted
+evidence. Successor qualification supersedes the first published preparation head; the current
+PR metadata names the exact frozen candidate. No runtime connection was added.
 
 ## Closeout boundary
 

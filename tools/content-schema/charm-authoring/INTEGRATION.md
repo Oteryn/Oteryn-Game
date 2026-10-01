@@ -24,7 +24,7 @@ and source evidence. Neither an OTS reference variant nor a missing field is a r
 | Source | Pinned revision | Use |
 |---|---|---|
 | TibiaWiki | Per-page revision and raw-wikitext SHA256 in the original source snapshot | Categories, costs, bonuses and captured descriptions |
-| TibiaPal | `61ffa3e0502879ccec44e59ead859e92b6d88531` | `scripts/charm_planner.js`; independent category/cost/bonus comparison |
+| TibiaPal | `61ffa3e0502879ccec44e59ead859e92b6d88531` | Planner descriptions, executed planner/calculator JS and Chromium verification of the pinned `_site` snapshot |
 | Canary | `47dfd51f45280a59a1d3e50ba7edd573d7234446` | OTS behavior, formulas, exclusions and implementation defects |
 | Crystal | `00ce02a57ca5a12e48f32a3476e37471167e4c3f` | OTS behavior and differences from Canary |
 | Official manual | Existing repository capture provenance | Slots, expansion discount and reset descriptions |
@@ -33,6 +33,32 @@ and source evidence. Neither an OTS reference variant nor a missing field is a r
 New wiki reads were unavailable through the proxy during this investigation. The preparation
 reuses the committed per-page capture; it does not claim a newly refreshed wiki or a live-game
 test. Source paths, line locators and hashes are retained in the supplemental evidence.
+
+## Executed TibiaPal verification
+
+Chromium executed the unmodified pinned site's planner and calculator through local HTTP.
+The source and deployed-snapshot JavaScript hashes match. The browser exercised all 25 cards,
+their descriptions, icons and costs, 150 purchase/refund transitions, stage limits, 42 major
+exact/one-short budget boundaries, insufficient minor echoes, refund protection and reset.
+All checks passed. A separate Node VM execution passed 412 planner checks against the original
+JavaScript. Persisted observations and portable harnesses are in this authoring directory.
+
+The calculator passed 66 browser cases for Overpower/Overflux, including the 8% health cap,
+fractional values and 0/50/100/110/150% elemental sensitivity. These prove the pinned calculator's
+output, not official battle behavior. It uses `Math.round`: at maximum health 6813, Overpower
+returns 341 while the existing Oteryn unmitigated floor calculation gives 340; at maximum mana
+6821, Overflux returns 171 versus 170. Official rounding remains unverified. The calculator
+has no player-level input or elemental 2× level cap: at monster health 12613 and 100%
+sensitivity it returns 631, while the accepted level-100 cap is 200 before mitigation.
+Do not remove the accepted cap or change floor arithmetic merely to match this calculator.
+
+The live domain could not be loaded: the session proxy returned
+`ERR_TUNNEL_CONNECTION_FAILED`. This is a real browser test of the pinned local site, not a
+claim that the currently deployed website was verified. External ads/fonts/streams were
+blocked; local charm icons loaded. The planner describes effects but does not execute combat,
+and the calculator explicitly excludes other effect families and general monster mitigation.
+Equipment gates, RNG, AoE, statuses, death loss, loot and skinning still need consumer-level
+integration proof. Rust tests could not be rerun in this session because `cargo` is unavailable.
 
 ## Preserve these rules during connection
 
