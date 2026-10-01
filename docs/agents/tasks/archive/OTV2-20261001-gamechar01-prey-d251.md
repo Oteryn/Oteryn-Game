@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-gamechar01-prey-d251
-pr: "exact PR in the #162 FREEZE_SHA entry"
+pr: "1426"
 base_sha: 2e8d34dc
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
