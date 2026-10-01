@@ -131,6 +131,12 @@ CommandRef. One audit event per use, as a new `OneItemTransactionV1` operation w
 registry entry ITEM-USE-1 assigns. Later variants (rune, ammunition, bait) need an amendment of
 this list.
 
+**Amendment (pending on acceptance of RUNE-USE-0;
+`OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4.2).** RUNE-USE-0 §5 adds a third
+variant, `Rune`: a one-unit burn of the used rune stack with the same audit operation, committed
+before the rune's frozen cast applies. Runes use their own in-flight slot, beside this decision's
+(RUNE-USE-0 §7).
+
 ### 4.3 Supersession
 
 For these shapes only, this decision supersedes the §39.1 exclusions of burn, transform, mint

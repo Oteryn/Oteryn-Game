@@ -400,6 +400,11 @@ amendment in §39.3 admits the closed `ItemUseCause`.
 **Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
 The quest exchange amendment in §39.3 admits the closed `QuestExchangeCause`.
 
+**Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
+§15).** The rune and conjure amendment in §39.3 adds the variant `Rune` to `ItemUseCause` and
+admits the closed `ConjureCause` (a BURN of one reagent unit with a MINT of the conjured units).
+Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy
@@ -815,6 +820,11 @@ a one-unit BURN, or a one-unit TRANSFORM into a flask stack or a fresh flask, un
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
+
+**Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
+§39.1).** The rune and conjure amendment in §39.3 also admits a one-unit BURN under
+`ItemUseCause::Rune`, and one reagent-unit BURN with one MINT of the conjured units into an
+existing stack or a fresh entry under `ConjureCause`.
 
 Each aggregate covers the complete applicable §39 semantic evidence. This includes
 typed item identity/lifecycle/type/quantity before and after; location/custody
@@ -1602,6 +1612,19 @@ Once accepted, in its NPC-QUEST-1 child:
   MINT admission is bounded to the named claim's declared items, and the lines are never
   independent of the BURN lines. Every other §39 obligation is unchanged; its rows are suffixed
   `-QUEST-EXCHANGE`.
+
+**Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
+§39.3).** `reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md` §5 and §10, once
+accepted, admit for these shapes only: (a) **rune use**, the item use burn shape above under a
+third `ItemUseCause` variant `Rune`, keyed by the using command's CommandRef and committed before
+the rune's effect (RUNE-1); (b) **conjure**, in one transaction under the closed `ConjureCause`
+keyed by the cast's CommandRef, one BURN line of one reagent unit (§11.1 or §11.5) and one MINT
+line (§14) of the conjured units into a compatible stack or a fresh entry planned in the
+reservation (§11.3), at most two items (RUNE-CONJ-1); its receipt and audit event record the
+conjure's mana and soul debit as the MINT source, and the runtime settles or releases the
+caster's holds only from that durable outcome (RUNE-USE-0 `RUNEUSE0-C2`). Both supersede the §39.1 exclusions of burn,
+mint into an existing stack and multiple touched items for these shapes only, with one audit
+event each and their own suffixed rows (`DUR03-RL-01-RUNE`, `DUR03-RL-01-CONJURE`).
 
 ## 40. Durable acknowledgement
 
