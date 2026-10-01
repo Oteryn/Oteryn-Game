@@ -77,7 +77,8 @@ destination?
   its number is reserved on #162 at allocation.
 - Command 9 gains `optional uint32 count` (explicit presence, so absent is distinguishable from 0)
   under the capability. Absent means the whole item. A present `count` of 0, above the source's
-  quantity, above the stack maximum 100 (D82), or not 1 on a non-stackable item is `REJECTED`. A
+  quantity, above the source definition's stack maximum (at most 100, D82), or not 1 on a
+  non-stackable item is `REJECTED`. A
   session without the capability that sends the field is `REJECTED`. The frozen intent binds the
   count.
 - New result `PARTIAL` (capability sessions only) beside a new `uint32 moved` (1 to 99, one varint
@@ -110,8 +111,11 @@ Source stack S (quantity q), asked amount `c` (q when absent), destination D.
 
 ### 4.2 Amounts
 
-- `room` = the receiver's free units (100 minus its quantity; 0 without a receiver).
-- `new` = the units D can take as one new item: 100 when one more item passes every check the
+- `max` = the stack maximum of the moved definition, resolved from its definition revision
+  (at most 100, D82; for example 30 where a definition sets 30), the same value the durability
+  guard enforces.
+- `room` = the receiver's free units (`max` minus its quantity; 0 without a receiver).
+- `new` = the units D can take as one new item: `max` when one more item passes every check the
   destination applies to a whole-item move, else 0. Those checks are a free entry (minus entries
   reserved by a PLAYER-TRADE-0 swap), `BAGS0-RL-01` depth and `BAGS0-RL-02` tree size,
   `GAMEITEM01-REACHABLE-ITEMS`, the DEPOT-0 item counts, the Inbox counters, and for a Ground tile
@@ -189,8 +193,10 @@ ITEM-MOVE-WIRE-1 §3, §4 and §5, BAGS-0 §5 and §6, WORLD-INTERACTION-0 §7.2
 ### 5.2 Locks
 
 Rule 4 as extended (ITEM-MOVE-WIRE-1 §7.2, BAGS-0 §4.2): `character_root`; item rows in
-ItemInstanceId order (S, B, T); `FOR UPDATE` on every container whose entries change (the
-destination parent, and S's container when it receives T); then Ground tile rows in tile key order,
+one ascending ItemInstanceId order `FOR UPDATE` over S, B, T **and every container whose entries
+change** (the destination parent, S's container when it receives T or a split entry), because a
+container is an item and BAGS-0 §4.2 locks it in that same global order; then Ground tile rows in
+tile key order,
 then the counters. **Each tile row's lock mode is fixed by the frozen plan and never upgraded:** a
 real lock when the plan inserts on the tile or removes or retires a Ground root from it (the source
 tile when S leaves or retires), `FOR SHARE` only when the tile is touched solely by a merge into
@@ -198,8 +204,13 @@ its top item. The real lock also covers the top check.
 
 ### 5.3 Database deltas (STACK-1)
 
-- a STACK receipt keyed by the CommandRef carrying the frozen plan: S, the receiver B, planned N or
-  T, `count`, `moved`, and the shape (the `0011` receipt admits one source and one receiver);
+- a STACK receipt keyed by the CommandRef carrying the frozen plan with role-specific fields, each
+  bound to its identity and before/after state: `source` S (location, quantity before and after),
+  optional `receiver` B (quantity before and after), optional `new_item` N (planned identity,
+  destination, quantity), optional `displaced` T (from the slot, to its frozen destination entry),
+  `count`, `moved` and the shape. A partial move onto a slot holding a different item fills S, N
+  and T together; a CommandRef retry reconstructs the plan only from this receipt (the `0011`
+  receipt admits one source and one receiver);
 - planned-N reservation columns (DUR-03 §11.3) and receiver reservations (§7.1);
 - the TRANSFER guard admits a Ground source that shrinks without Ground removal evidence (a
   partial pickup or a Ground-to-Ground split);
@@ -224,7 +235,7 @@ N placement). A whole-item exchange (`m = q`) is the existing `EQUIP-SWAP` shape
 | `DUR03-RL-06-STACK` participants / effect work units | 3 / 8 (each item: one participant plus each of its location lines and quantity changes) |
 | `DUR03-RL-07-STACK` envelope and payload | the one-item caps; STACK-1 measures the three-item worst case against them, and if it does not fit, STACK-1 stops and returns for a new decision (no row is raised by the child) |
 
-Tests with max and max+1: a fourth touched item, `count` = q + 1 and 101, a receiver at 99 and 100,
+Tests with max and max+1: a fourth touched item, `count` = q + 1 and 101, a receiver at `max − 1` and `max` (30 and 100 definitions),
 a tree at 500 and an entry count at its limit.
 
 ## 7. Rejected options
