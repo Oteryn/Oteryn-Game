@@ -825,6 +825,8 @@ PRIMARYTYPE_PROFILE = {
     "amulets": "equipment_offhand",
     "amulets and necklaces": "equipment_offhand",
     "rings": "equipment_offhand",
+    # The admitted profile catalog already lists Extra Slot with offhand accessories.
+    "extra slot": "equipment_offhand",
     "quivers": "container_equipment",
     "axe weapons": "weapon_melee",
     "club weapons": "weapon_melee",

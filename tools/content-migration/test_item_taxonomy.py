@@ -1,6 +1,8 @@
 """Source agreement, identity boundaries and post-Wave-1 relation regressions."""
 
+import json
 import unittest
+from pathlib import Path
 
 from item_taxonomy import build_taxonomy, legacy_profile
 from world_project_v2_to_tree import capability_relations
@@ -54,6 +56,25 @@ class TaxonomyTests(unittest.TestCase):
             (["Plants"], True, True),
         ]:
             self.assertEqual(self.rows(categories, bound, routed), [])
+
+    def test_extra_slot_uses_admitted_equipment_family_not_quest_origin(self):
+        root = Path(__file__).resolve().parents[2]
+        profiles = json.loads(
+            (
+                root / "tools/content-schema/item-authoring/profile-catalog.json"
+            ).read_text()
+        )
+        entries = profiles["profiles"]
+        profile = next(
+            row for row in entries if row["profile_id"] == "equipment_offhand"
+        )
+        self.assertIn("Extra Slot", profile["navigation_families"])
+        row = self.rows(["Extra Slot"])[0]
+        self.assertEqual(row["family_profile"], profile["profile_id"])
+        self.assertEqual(
+            row["source_evidence"]["observations"][0]["primarytype"], "Extra Slot"
+        )
+        self.assertEqual(self.rows(["Extra Slot", "Quest Items"]), [])
 
     def test_existing_br_taxonomy_is_not_overwritten(self):
         row = self.rows(["Food"], legacy="Clavas")[0]

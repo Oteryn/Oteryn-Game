@@ -296,7 +296,8 @@ as a separate bounded implementation batch.
 
 The checked 15.30 appearances artifact from the owner's `content/assets/files` link supplies
 two additional categories with matching market category and exact clothing slot; the admitted
-family fallback supplies another 81. Navigation now covers **9,418** Items, leaving **3,283**
+family fallback supplies another 81. The subsequent accepted Extra Slot crosswalk adds 18
+equipment categories. Navigation now covers **9,436** Items, leaving **3,265**
 without taxonomy or an existing map owner. Every supplement preserves source identity,
 digest and per-observation evidence. Explicit newer wiki category conflicts/unadmitted values,
 generic hand slots and appearance-only identity holds remain unresolved. See
@@ -311,5 +312,22 @@ reports volume 22, corroborating retained Fandom rev. 1198148 rather than the en
 20. Its uniquely bound identity is qualified for the separate capacity repair; shared furniture
 variants and i5801 remain held. Fandom Glooth Spear full extraction failed again; the successful
 search (`4eda5fdd-bb99-4641-9b17-32f04efea746`) reports stackable, matching the official
-client flag but supplying no stack maximum. Six taxonomy boundary regressions and the complete
-migration suite pass after this supplement.
+client flag but supplying no stack maximum. Seven taxonomy boundary regressions and the complete
+migration suite pass after the client and quest-category supplements.
+
+### Quest source and equipment-category follow-up
+
+The owner supplied three distinct Fandom source pages: [Quests](https://tibia.fandom.com/wiki/Quests),
+[Quest Items](https://tibia.fandom.com/wiki/Quest_Items) and [Quest Log](https://tibia.fandom.com/wiki/Quest_Log).
+Tavily returned status 432 (usage limit); direct reads and a bounded MediaWiki query returned
+HTTP 402 in this environment. No fresh page contents or revisions were obtained. The
+digest-bound retained snapshot remains the evidence source.
+
+The existing profile catalog already lists Extra Slot under equipment_offhand. Admitting
+that exact value in the shared crosswalk qualifies 18 existing, exact-bound, non-map-owned
+Items, including Bone Fiddle and Conch Shell Horn, while retaining their page/revision/hash
+provenance. Quest reward status does not change an equipment item's family. Quest-item
+taxonomy remains 881; i40522, i44432 and i44433 remain identity holds, and i2984 retains its
+Honey Flower/Honeyflower Patch conflict. The retained quest census has 373 quests, only 93
+in the in-game log. No new Quest identity, progress or runtime relation is introduced. See
+[`OTV2-20261001-quest-item-category-continuation.md`](../evidence/OTV2-20261001-quest-item-category-continuation.md).
