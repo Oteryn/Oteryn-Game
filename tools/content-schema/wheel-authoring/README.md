@@ -15,10 +15,13 @@ python wheel_authoring.py build --check
 python wheel_authoring.py validate
 python -m unittest discover -s . -q
 python build_report.py
+node verify_planner.cjs /path/to/pinned/TibiaPal
 ```
 
 Open `wheel-comparison.html` for a standalone offline comparison by vocation and
-search. It displays the candidate's structured data; it requires no web service.
+search. It displays the candidate's structured data offline. Optional icon previews load
+directly from the original Tibia CDN; blocked or missing images show their IDs.
+The viewer includes perk and gem icons without redistributing source image bytes.
 `build` without `--check` writes `samples/wheel-candidate.json`. Validation never
 writes files. Rebuilding needs only the committed source captures, without the
 original JavaScript/WASM module or network access.
@@ -31,6 +34,12 @@ original JavaScript/WASM module or network access.
 - `samples/source-graph.json`: the pinned Canary topology and mitigation constant.
 - `samples/source-parameters.json`: typed stage values, gem policies and explicit
   corrections, using the pinned sources and the existing project decisions.
+- `verify_planner.cjs`: replays all source observations against the pinned
+  upstream WASM and string library; it checks every slot/perk, complete mod
+  catalogues, vocation availability lists and five fully populated wheels.
+- `verification.schema.json`: the closed shape of the verification record.
+- `samples/verification-evidence.json`: coverage, source classifications, observed
+  icon proof and exact remaining live-verification blocks.
 - `samples/planner-allocation-snapshots.json`: 180 legal allocations.
 - `samples/planner-graph-comparison.json`: 1,080 observed unlock states with no
   differences during the tested fill sequences. This is bounded evidence, not
@@ -65,16 +74,25 @@ WHEEL-0's older dedication-resistance wording remains a source conflict requirin
 reconciliation before admission. Active planner slots contain no legacy elemental
 Conviction resistance IDs; resistance trade-offs occur in the gem catalogue.
 
-Conviction includes source identities, categories, full-slice values and typed
-augment stages. Area references and Divine Dazzle's +4-second duration use the
+Conviction includes source identities, categories, full-slice values, typed
+augment stages and all nine unique perk definitions. Unique conditions, affected
+skills/spells and numbers are encoded separately, including Battle Instinct,
+Positional Tactics, Runic/Focus/Ballistic Mastery, Healing Link, Battle Healing,
+Guiding Presence and Sanctuary. Area references and Divine Dazzle's +4-second duration use the
 existing spell evidence. These names are reference bindings, not newly admitted
 Spell or WorldQuery identities. Crystal's declared Shield Slam damage-reduction
 field has an upstream TODO; a declared number does not establish working combat.
 
 Revelation has three stages at 250/500/1,000 domain points, typed numeric effects,
-conditions retained in descriptions and the shared +4/+9/+20 damage/healing
+explicit behavior rules and reference areas, with conditions also retained in descriptions and the shared +4/+9/+20 damage/healing
 bonuses. Avatar cooldowns are converted from minutes to seconds; Gift of Life
-cooldowns count battle-sign time. Lord of Destruction's stage-2 death critical
+cooldowns count battle-sign time. The official 8944 cooldown changes select -4 s for Mystic Repulse I and Thousand
+Fist Blows II instead of the planner's -6 s. Great Fire Wave I and Mystic Repulse II
+select the existing project target evidence (critical chance +10% and damage +40%)
+while retaining conflicting planner values (critical extra damage +15%, damage
++60%). The Special Spells secondary cooldown remains a separately labelled
+Canary-only hypothesis. All selections are recorded with their source.
+Lord of Destruction's stage-2 death critical
 bonus uses the project's corroborated **22.5%** value while preserving the
 planner's **25.5%** description as an explicitly recorded conflict.
 
@@ -92,15 +110,30 @@ self and preceding present mod grades. Grades belong to a character's mod type;
 a type at Grade IV adds one promotion point. Cooldown supreme mods retain their
 base cooldown reduction across grades and add Momentum chance at higher grades.
 
+Progression includes Global eligibility, the level-minus-50 point formula,
+temple removal, five promotion scrolls, the Monk quest bonus and Grade IV points.
+The reference values do not activate those features in Game: WHEEL-0's Premium
+activation and extra-point dependencies remain explicit.
+
 Atelier data includes clockwise domains (green/red/purple/blue), reveal/switch
 fees, fragments, grade costs, initial eight gems and revealed/unrevealed yields.
 Official manual yields override the conflicting OTS yields. Fees remain labelled
-`OTS_HYPOTHESIS_ONLY` candidate values, as in WHEEL-GEM-0. This tool does not perform
+`OTS_HYPOTHESIS_ONLY` candidate values, as in WHEEL-GEM-0. Operation policy records reveal eligibility, tradeability, locking, last-domain
+and in-vessel refusals, initial-gem lifetime, placement constraints, grade limits,
+crusher charges and existing vendor prices. The 250 revealed-gem limit remains
+`PARITY_PENDING` under the owning decision. Crystal loot probabilities are retained
+as `OTS_HYPOTHESIS_ONLY`, with its exact independent-trial count and category
+precedence; this reference does not allocate Forge/fiendish integration.
+This tool does not perform
 economy transactions, revelation RNG, grade writes, vessel writes or loot changes.
 
 Icons include the sprite URL, horizontal-square-cell layout and source index.
-The index identifies a reference cell; asset availability, appearance and the
-client asset crosswalk require client verification before UI delivery.
+Renderer source confirms horizontal-square cells for all five sprite categories.
+The bundled Revelation sheet was visually inspected: 544×34 pixels, 16 cells,
+SHA-256 recorded in `icon_evidence`, and every Revelation ID fits those cells.
+The other four sheets are absent from the upstream bundle and their server is
+blocked by the current cloud network policy. Their appearance and the live URLs
+remain unconfirmed. No client asset crosswalk is implemented by reference tooling.
 
 ## Revisions and admission
 

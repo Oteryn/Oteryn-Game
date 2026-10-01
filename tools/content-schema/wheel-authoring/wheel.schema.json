@@ -84,6 +84,12 @@
         "source-parameters.json"
       ]
     },
+    "progression": {
+      "$ref": "#/$defs/progression"
+    },
+    "icon_evidence": {
+      "$ref": "#/$defs/icon_evidence"
+    },
     "topology": {
       "type": "array",
       "items": {
@@ -170,6 +176,9 @@
         "atelier": {
           "$ref": "#/$defs/atelier"
         },
+        "loot_reference": {
+          "$ref": "#/$defs/loot_reference"
+        },
         "reference_corrections": {
           "type": "array",
           "items": {
@@ -204,6 +213,7 @@
         "supreme_mods",
         "grade_costs",
         "atelier",
+        "loot_reference",
         "reference_corrections",
         "initial_gems",
         "parameter_state"
@@ -258,6 +268,8 @@
     "runtime_admitted",
     "sources",
     "input_digests",
+    "progression",
+    "icon_evidence",
     "topology",
     "vocations",
     "gems",
@@ -348,6 +360,33 @@
           "type": "string",
           "maxLength": 20000
         },
+        "augment_targets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "reference_hypotheses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/augment_hypothesis"
+          },
+          "minItems": 0
+        },
+        "unique_parameters": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/unique_parameters"
+            }
+          ]
+        },
         "augment_stages": {
           "type": "array",
           "items": {
@@ -368,6 +407,9 @@
         "native_value",
         "unit",
         "reference_description",
+        "augment_targets",
+        "reference_hypotheses",
+        "unique_parameters",
         "augment_stages",
         "icon"
       ]
@@ -500,6 +542,59 @@
           "minimum": 0,
           "maximum": 255
         },
+        "behavior_rules": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "add_mantra_scaled_damage_to_autoattacks",
+              "all_attacks_critical_while_active",
+              "caster_owned_field_only",
+              "chain_to_additional_enemies",
+              "charge_cooldown_at_cast",
+              "consume_harmony",
+              "cooldown_counts_only_battle_sign_time",
+              "critical_chance_for_mastery_of_thunder",
+              "critical_damage_for_mastery_of_decay",
+              "damage_bonus_and_cooldown_reduction_per_central_target",
+              "damage_bonus_applies_while_on_field",
+              "damage_bonus_when_target_health_strictly_above_limit",
+              "damage_bonus_when_target_health_strictly_below_limit",
+              "defense_scales_with_own_missing_health",
+              "double_bonus_below_low_target_health_limit",
+              "exclude_agony_damage",
+              "exclusive_overkill_limit",
+              "fire_bonus_for_mastery_of_flames",
+              "flanking_beam_tiles_use_central_damage_fraction",
+              "healing_bonus_below_target_health_limit",
+              "healing_spells_can_crit",
+              "ice_and_terra_burst_share_cooldown",
+              "increase_harmony_base_bonus",
+              "marker_on_target_tile_then_delayed_holy_explosion",
+              "offense_scales_with_target_missing_health",
+              "only_central_hits_count_toward_target_cap",
+              "repeat_after_one_second",
+              "repeat_only_with_full_harmony",
+              "restore_health_before_applying_fatal_damage",
+              "restore_mana_and_reduce_all_spell_cooldowns",
+              "same_floor_and_standing_on_field",
+              "shield_doubles_defense_bonus",
+              "temporary_avatar_form",
+              "two_handed_weapon_doubles_offense_bonus",
+              "untargeted_cast_places_marker_at_caster"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "area_reference": {
+          "enum": [
+            null,
+            "3x3_field",
+            "AREA_CIRCLE2X2",
+            "AREA_RING1_BURST3",
+            "adjacent_beam_flanks"
+          ]
+        },
         "stage_zero_description": {
           "type": "string",
           "minLength": 1,
@@ -525,6 +620,8 @@
         "key",
         "name",
         "source_info_id",
+        "behavior_rules",
+        "area_reference",
         "stage_zero_description",
         "stages",
         "parameter_state",
@@ -1296,6 +1393,90 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "reference_spell_mana_cost"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "mana"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "reference_base_spell_power"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "native_power"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "reference_cast_range"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "tiles"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "reference_chain_jump_range"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "tiles"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "missing_health_step"
             },
             "value": {
@@ -1527,6 +1708,27 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "reference_explosion_radius"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "tiles"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "damage_bonus"
             },
             "value": {
@@ -1535,6 +1737,27 @@
             },
             "unit": {
               "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "field_side_length"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "tiles"
             }
           },
           "required": [
@@ -1640,6 +1863,48 @@
             },
             "unit": {
               "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "active_energy_beam_length"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "tiles"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "active_great_energy_beam_length"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "tiles"
             }
           },
           "required": [
@@ -2395,6 +2660,9 @@
             "greater"
           ]
         },
+        "operation_policy": {
+          "$ref": "#/$defs/operation_policy"
+        },
         "yield_evidence": {
           "type": "string",
           "minLength": 1,
@@ -2425,6 +2693,7 @@
         "fees",
         "fragment_items",
         "fragment_yields",
+        "operation_policy",
         "yield_evidence",
         "fee_evidence",
         "grade_scope",
@@ -2441,6 +2710,11 @@
           "maxLength": 128
         },
         "parameter": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 128
+        },
+        "planner_parameter": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
           "maxLength": 128
@@ -2467,10 +2741,1105 @@
       "required": [
         "key",
         "parameter",
+        "planner_parameter",
         "stage",
         "planner_value",
         "selected_value",
         "evidence"
+      ]
+    },
+    "augment_hypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "kind": {
+          "enum": [
+            "secondary_cooldown_reduction"
+          ]
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "unit": {
+          "const": "seconds"
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "stage",
+        "kind",
+        "value",
+        "unit",
+        "evidence"
+      ]
+    },
+    "unique_effect": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "adjacent_creature_threshold"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "creatures"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "adjacent_creature_cap"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "creatures"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "shielding_bonus_per_counted_creature"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "flat"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "melee_skill_bonus_per_counted_creature"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "flat"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "healing_spell_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "shield_healing_multiplier"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "multiplier"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "monster_proximity_radius"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "tiles"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "distant_distance_skill_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "flat"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "nearby_holy_magic_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "flat"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "nearby_healing_magic_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "flat"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "crossbow_critical_extra_damage"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "bow_physical_pierce"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "bow_holy_pierce"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "rune_trigger_chance"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "rune_magic_level_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "own_vocation_rune_magic_level_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "next_damage_spell_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "focus_bonus_window"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "next_damage_spell_primary_cooldown_reduction"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "self_healing_from_applied_target_heal"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "adjacent_target_damage_and_healing_bonus"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "harmony_field_duration"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "field_damage_and_healing_per_consumed_harmony"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "percent_points"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ]
+        }
+      ]
+    },
+    "unique_parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numeric_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/unique_effect"
+          },
+          "minItems": 0
+        },
+        "behaviors": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "adjacent_bonus_applies_to_attacks_spells_and_runes",
+              "bow_pierce_applies_to_attacks_and_spells",
+              "consume_bonus_on_next_damage_spell_after_focus",
+              "consuming_harmony_creates_field",
+              "count_threshold_creature_then_each_additional_up_to_cap",
+              "crossbow_bonus_applies_to_attacks",
+              "heal_self_when_healing_someone_else",
+              "no_nearby_monster_grants_distance_otherwise_holy_and_healing_magic",
+              "rune_bonus_uses_vocation_can_create_rule",
+              "share_mantra_with_group_members",
+              "shield_doubles_bonus"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "numeric_effects",
+        "behaviors",
+        "targets"
+      ]
+    },
+    "progression": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minimum_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requires_vocation": {
+          "type": "boolean"
+        },
+        "requires_promotion": {
+          "type": "boolean"
+        },
+        "global_requires_current_premium": {
+          "type": "boolean"
+        },
+        "points_per_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "level_point_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "base_points_formula": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "point_removal_requires_temple": {
+          "type": "boolean"
+        },
+        "allocation_preserved_when_ineligible": {
+          "type": "boolean"
+        },
+        "effects_zero_when_ineligible": {
+          "type": "boolean"
+        },
+        "conviction_requires_full_slot": {
+          "type": "boolean"
+        },
+        "conviction_copies_stack": {
+          "type": "boolean"
+        },
+        "extra_point_sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "promotion_scrolls": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "source_item_id": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20000
+                  },
+                  "points": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "source_item_id",
+                  "name",
+                  "points"
+                ]
+              },
+              "minItems": 5,
+              "maxItems": 5
+            },
+            "monk_quest_points": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "grade_iv_mod_type_points": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "promotion_scrolls",
+            "monk_quest_points",
+            "grade_iv_mod_type_points"
+          ]
+        },
+        "extra_points_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "game_premium_activation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "game_extra_points_activation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "minimum_level",
+        "requires_vocation",
+        "requires_promotion",
+        "global_requires_current_premium",
+        "points_per_level",
+        "level_point_offset",
+        "base_points_formula",
+        "point_removal_requires_temple",
+        "allocation_preserved_when_ineligible",
+        "effects_zero_when_ineligible",
+        "conviction_requires_full_slot",
+        "conviction_copies_stack",
+        "extra_point_sources",
+        "extra_points_evidence",
+        "game_premium_activation",
+        "game_extra_points_activation"
+      ]
+    },
+    "operation_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "revealed_gem_storage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "unrevealed_stack_limit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unrevealed_tradeable": {
+          "type": "boolean"
+        },
+        "unrevealed_droppable": {
+          "type": "boolean"
+        },
+        "revealed_tradeable": {
+          "type": "boolean"
+        },
+        "reveal_requires_matching_vocation": {
+          "type": "boolean"
+        },
+        "reveal_distribution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "reveal_draw_order": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "dismantle_refusals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "switch_domain_refusals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "lock_refusals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "vessel_requires_matching_domain": {
+          "type": "boolean"
+        },
+        "gem_can_occupy_only_one_vessel": {
+          "type": "boolean"
+        },
+        "vessel_without_resonance_allowed": {
+          "type": "boolean"
+        },
+        "initial_gems_once_per_character": {
+          "type": "boolean"
+        },
+        "initial_gems_revealed": {
+          "type": "boolean"
+        },
+        "revealed_gem_limit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revealed_gem_limit_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "grade_min": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "grade_max": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "grade_decrease_allowed": {
+          "type": "boolean"
+        },
+        "crusher_item": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "crusher_charges": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vendor_reference_prices": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "lesser_fragment": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "greater_fragment": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "crusher": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "lesser_fragment",
+            "greater_fragment",
+            "crusher"
+          ]
+        },
+        "vendor_price_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "state_operation_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "vendor_buy_unrevealed_gem_prices": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "lesser": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "regular": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "greater": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "lesser",
+            "regular",
+            "greater"
+          ]
+        }
+      },
+      "required": [
+        "revealed_gem_storage",
+        "unrevealed_stack_limit",
+        "unrevealed_tradeable",
+        "unrevealed_droppable",
+        "revealed_tradeable",
+        "reveal_requires_matching_vocation",
+        "reveal_distribution",
+        "reveal_draw_order",
+        "dismantle_refusals",
+        "switch_domain_refusals",
+        "lock_refusals",
+        "vessel_requires_matching_domain",
+        "gem_can_occupy_only_one_vessel",
+        "vessel_without_resonance_allowed",
+        "initial_gems_once_per_character",
+        "initial_gems_revealed",
+        "revealed_gem_limit",
+        "revealed_gem_limit_evidence",
+        "grade_min",
+        "grade_max",
+        "grade_decrease_allowed",
+        "crusher_item",
+        "crusher_charges",
+        "vendor_reference_prices",
+        "vendor_price_evidence",
+        "state_operation_evidence",
+        "vendor_buy_unrevealed_gem_prices"
+      ]
+    },
+    "icon_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "renderer_repository": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "renderer_commit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "renderer_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "renderer_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "layout_rule": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "layout_verified_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "revelation_asset": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository_path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            },
+            "sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cell_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "visual_inspection": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "repository_path",
+            "sha256",
+            "width",
+            "height",
+            "cell_count",
+            "visual_inspection"
+          ]
+        },
+        "unavailable_sprite_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "client_asset_crosswalk": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "live_asset_fetch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "renderer_repository",
+        "renderer_commit",
+        "renderer_path",
+        "renderer_sha256",
+        "layout_rule",
+        "layout_verified_categories",
+        "revelation_asset",
+        "unavailable_sprite_categories",
+        "client_asset_crosswalk",
+        "live_asset_fetch"
+      ]
+    },
+    "loot_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "roll_denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "category_precedence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "uniform_vocation_selection": {
+          "type": "boolean"
+        },
+        "per_quality": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "quality": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "chance_by_category": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "influenced": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "fiendish": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "archfoe": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "influenced",
+                  "fiendish",
+                  "archfoe"
+                ]
+              },
+              "independent_trials": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "quality",
+              "chance_by_category",
+              "independent_trials"
+            ]
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "evidence",
+        "roll_denominator",
+        "category_precedence",
+        "uniform_vocation_selection",
+        "per_quality"
       ]
     },
     "augment_effect": {
@@ -2554,7 +3923,8 @@
             null,
             "five_squares_front_row",
             "AREA_WAVE7",
-            "radius_4"
+            "radius_4",
+            "AREA_GREATER_FLURRY_OF_BLOWS"
           ]
         }
       },

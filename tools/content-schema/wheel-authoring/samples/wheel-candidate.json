@@ -26,7 +26,85 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "90e5a0d5ec855187308f1ea0ee7fb01875090e79bb2d0ca9587d0184a1084c69"
+    "source-parameters.json": "c7a480ea48d0609983c00b3da865505a5fd8eea457f0118f199983d303dadaa9"
+  },
+  "progression": {
+    "minimum_level": 51,
+    "requires_vocation": true,
+    "requires_promotion": true,
+    "global_requires_current_premium": true,
+    "points_per_level": 1,
+    "level_point_offset": 50,
+    "base_points_formula": "max(0, level - 50)",
+    "point_removal_requires_temple": true,
+    "allocation_preserved_when_ineligible": true,
+    "effects_zero_when_ineligible": true,
+    "conviction_requires_full_slot": true,
+    "conviction_copies_stack": true,
+    "extra_point_sources": {
+      "promotion_scrolls": [
+        {
+          "source_item_id": 43946,
+          "name": "abridged",
+          "points": 3
+        },
+        {
+          "source_item_id": 43947,
+          "name": "basic",
+          "points": 5
+        },
+        {
+          "source_item_id": 43948,
+          "name": "revised",
+          "points": 9
+        },
+        {
+          "source_item_id": 43949,
+          "name": "extended",
+          "points": 13
+        },
+        {
+          "source_item_id": 43950,
+          "name": "advanced",
+          "points": 20
+        }
+      ],
+      "monk_quest_points": 10,
+      "grade_iv_mod_type_points": 1
+    },
+    "extra_points_evidence": "OTS_HYPOTHESIS_ONLY: Canary player_wheel.cpp:357-363 and config.lua.dist:260; Grade IV from official manual notes",
+    "game_premium_activation": "WHEEL-0 owner W1a: apply only after PREM-1 activation",
+    "game_extra_points_activation": "WHEEL-0 section 6.3: zero until each owning feature exists"
+  },
+  "icon_evidence": {
+    "renderer_repository": "https://github.com/PawelKusnierek/TibiaPal",
+    "renderer_commit": "61ffa3e0502879ccec44e59ead859e92b6d88531",
+    "renderer_path": "scripts/wod-assets/wheelofdestinyplanner.min.js",
+    "renderer_sha256": "4320b5e04c051678c160936c50487f15a7d8ac867529970a4b1536da3defa536",
+    "layout_rule": "source_x = source_index * image_height; square cell size = image_height",
+    "layout_verified_categories": [
+      "dedication",
+      "conviction",
+      "revelation",
+      "basic_mod",
+      "supreme_mod"
+    ],
+    "revelation_asset": {
+      "repository_path": "images/wod-planner/icons-skillwheel-largeperks.png",
+      "sha256": "5a36d866b59837fcee9395b88043f83c7fd0b4b8352cb27547aab8d2d1740872",
+      "width": 544,
+      "height": 34,
+      "cell_count": 16,
+      "visual_inspection": true
+    },
+    "unavailable_sprite_categories": [
+      "dedication",
+      "conviction",
+      "basic_mod",
+      "supreme_mod"
+    ],
+    "client_asset_crosswalk": "NOT_IMPLEMENTED",
+    "live_asset_fetch": "BLOCKED_NETWORK_POLICY"
   },
   "topology": [
     {
@@ -677,6 +755,41 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "Gain +6 shielding and +1 sword/axe/club fighting when 5 creatures are on adjacent squares.\nFor each additional creature, up to a maximum of 8, you get +6 shielding and +1 sword/axe/club fighting more.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "adjacent_creature_threshold",
+                  "value": 5,
+                  "unit": "creatures"
+                },
+                {
+                  "kind": "adjacent_creature_cap",
+                  "value": 8,
+                  "unit": "creatures"
+                },
+                {
+                  "kind": "shielding_bonus_per_counted_creature",
+                  "value": 6,
+                  "unit": "flat"
+                },
+                {
+                  "kind": "melee_skill_bonus_per_counted_creature",
+                  "value": 1,
+                  "unit": "flat"
+                }
+              ],
+              "behaviors": [
+                "count_threshold_creature_then_each_additional_up_to_cap"
+              ],
+              "targets": [
+                "shielding",
+                "sword",
+                "axe",
+                "club"
+              ]
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -712,6 +825,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -747,6 +863,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -782,6 +901,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "Applies to sword, axe and club fighting",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -817,6 +939,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -858,6 +983,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Front Sweep"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -914,6 +1044,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -949,6 +1082,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Shield Slam"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -1011,6 +1149,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1046,6 +1187,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1081,6 +1225,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Groundshaker"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -1143,6 +1292,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1178,6 +1330,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Intense Wound Cleansing"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -1240,6 +1397,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "Applies to sword, axe and club fighting",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1275,6 +1435,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1310,6 +1473,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Fierce Berserk"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -1372,6 +1540,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1407,6 +1578,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1442,6 +1616,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1477,6 +1654,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1512,6 +1692,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Front Sweep"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -1568,6 +1753,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1603,6 +1791,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "Applies to sword, axe and club fighting",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1638,6 +1829,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Shield Slam"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -1700,6 +1896,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1735,6 +1934,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Groundshaker"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -1797,6 +2001,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1832,6 +2039,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1867,6 +2077,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Intense Wound Cleansing"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -1929,6 +2144,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -1970,6 +2188,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Fierce Berserk"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -2032,6 +2255,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -2067,6 +2293,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "Applies to sword, axe and club fighting",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -2102,6 +2331,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -2137,6 +2369,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -2178,6 +2413,28 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "Healing Spells have 10% increased healing. This bonus is doubled when wearing a shield.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "healing_spell_bonus",
+                  "value": 10,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "shield_healing_multiplier",
+                  "value": 2,
+                  "unit": "multiplier"
+                }
+              ],
+              "behaviors": [
+                "shield_doubles_bonus"
+              ],
+              "targets": [
+                "healing_spells"
+              ]
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -2195,6 +2452,14 @@
           "key": "gift_of_life",
           "name": "Gift of Life",
           "source_info_id": 0,
+          "behavior_rules": [
+            "exclude_agony_damage",
+            "exclusive_overkill_limit",
+            "restore_health_before_applying_fatal_damage",
+            "restore_mana_and_reduce_all_spell_cooldowns",
+            "cooldown_counts_only_battle_sign_time"
+          ],
+          "area_reference": null,
           "stage_zero_description": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
           "stages": [
             {
@@ -2338,6 +2603,11 @@
           "key": "executioner_s_throw",
           "name": "Executioner's Throw",
           "source_info_id": 1,
+          "behavior_rules": [
+            "chain_to_additional_enemies",
+            "damage_bonus_when_target_health_strictly_below_limit"
+          ],
+          "area_reference": null,
           "stage_zero_description": "This spell throws your weapon on your target and jumps on  2 / 3 / 4  nearby enemies. Deals  100% / 125% / 150%  additional damage to targets with less than 30% of their hit points. \nCooldown:  18 / 14 / 10  seconds",
           "stages": [
             {
@@ -2374,6 +2644,26 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 225,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 60,
+                  "unit": "native_power"
+                },
+                {
+                  "kind": "reference_cast_range",
+                  "value": 5,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "reference_chain_jump_range",
+                  "value": 3,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -2411,6 +2701,26 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 225,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 60,
+                  "unit": "native_power"
+                },
+                {
+                  "kind": "reference_cast_range",
+                  "value": 5,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "reference_chain_jump_range",
+                  "value": 3,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -2448,6 +2758,26 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 225,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 60,
+                  "unit": "native_power"
+                },
+                {
+                  "kind": "reference_cast_range",
+                  "value": 5,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "reference_chain_jump_range",
+                  "value": 3,
+                  "unit": "tiles"
                 }
               ]
             }
@@ -2466,6 +2796,13 @@
           "key": "combat_mastery",
           "name": "Combat Mastery",
           "source_info_id": 2,
+          "behavior_rules": [
+            "defense_scales_with_own_missing_health",
+            "offense_scales_with_target_missing_health",
+            "shield_doubles_defense_bonus",
+            "two_handed_weapon_doubles_offense_bonus"
+          ],
+          "area_reference": null,
           "stage_zero_description": "Take less damage the lower your life is (1% reduced damage taken per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a shield. \nDeal more damage the lower your targets life is (1% increased damage per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a two-handed weapon.",
           "stages": [
             {
@@ -2609,6 +2946,11 @@
           "key": "avatar_of_steel",
           "name": "Avatar of Steel",
           "source_info_id": 3,
+          "behavior_rules": [
+            "temporary_avatar_form",
+            "all_attacks_critical_while_active"
+          ],
+          "area_reference": null,
           "stage_zero_description": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
           "stages": [
             {
@@ -2650,6 +2992,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 800,
+                  "unit": "mana"
                 }
               ]
             },
@@ -2692,6 +3039,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 800,
+                  "unit": "mana"
                 }
               ]
             },
@@ -2734,6 +3086,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 800,
+                  "unit": "mana"
                 }
               ]
             }
@@ -2896,6 +3253,36 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "Gain +3 distance fighting while no monster is within 1 squares. Otherwise gain +3 holy magic level and +3 healing magic level.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "monster_proximity_radius",
+                  "value": 1,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "distant_distance_skill_bonus",
+                  "value": 3,
+                  "unit": "flat"
+                },
+                {
+                  "kind": "nearby_holy_magic_bonus",
+                  "value": 3,
+                  "unit": "flat"
+                },
+                {
+                  "kind": "nearby_healing_magic_bonus",
+                  "value": 3,
+                  "unit": "flat"
+                }
+              ],
+              "behaviors": [
+                "no_nearby_monster_grants_distance_otherwise_holy_and_healing_magic"
+              ],
+              "targets": []
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -2931,6 +3318,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -2966,6 +3356,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3001,6 +3394,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3036,6 +3432,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3077,6 +3476,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Ethereal Barrage"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -3139,6 +3543,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3174,6 +3581,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Strong Ethereal Spear"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -3236,6 +3648,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3271,6 +3686,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3306,6 +3724,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Divine Dazzle"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -3373,6 +3796,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3408,6 +3834,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Divine Barrage"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -3470,6 +3901,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3505,6 +3939,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3540,6 +3977,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Divine Caldera"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -3602,6 +4044,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3637,6 +4082,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3672,6 +4120,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3707,6 +4158,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3742,6 +4196,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Ethereal Barrage"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -3804,6 +4263,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3839,6 +4301,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3874,6 +4339,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Strong Ethereal Spear"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -3936,6 +4406,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -3971,6 +4444,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Divine Dazzle"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -4038,6 +4516,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -4073,6 +4554,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -4108,6 +4592,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Divine Barrage"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -4170,6 +4659,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -4211,6 +4703,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Divine Caldera"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -4273,6 +4770,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -4308,6 +4808,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -4343,6 +4846,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -4378,6 +4884,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -4419,6 +4928,32 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "The critical extra damage for attacks with a crossbow is increased by 10%.\nWhile wielding a bow your attacks and spells have +4% physical and holy pierce.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "crossbow_critical_extra_damage",
+                  "value": 10,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "bow_physical_pierce",
+                  "value": 4,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "bow_holy_pierce",
+                  "value": 4,
+                  "unit": "percent_points"
+                }
+              ],
+              "behaviors": [
+                "crossbow_bonus_applies_to_attacks",
+                "bow_pierce_applies_to_attacks_and_spells"
+              ],
+              "targets": []
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -4436,6 +4971,14 @@
           "key": "gift_of_life",
           "name": "Gift of Life",
           "source_info_id": 0,
+          "behavior_rules": [
+            "exclude_agony_damage",
+            "exclusive_overkill_limit",
+            "restore_health_before_applying_fatal_damage",
+            "restore_mana_and_reduce_all_spell_cooldowns",
+            "cooldown_counts_only_battle_sign_time"
+          ],
+          "area_reference": null,
           "stage_zero_description": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
           "stages": [
             {
@@ -4579,6 +5122,12 @@
           "key": "divine_grenade",
           "name": "Divine Grenade",
           "source_info_id": 4,
+          "behavior_rules": [
+            "marker_on_target_tile_then_delayed_holy_explosion",
+            "charge_cooldown_at_cast",
+            "untargeted_cast_places_marker_at_caster"
+          ],
+          "area_reference": "AREA_CIRCLE2X2",
           "stage_zero_description": "This spell plants a marker at the feet of your target that explodes after 3 seconds, dealing holy damage. +16% base damage per additional stage.  \nCooldown:  26 / 20 / 14  seconds",
           "stages": [
             {
@@ -4610,6 +5159,26 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 160,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 190,
+                  "unit": "native_power"
+                },
+                {
+                  "kind": "reference_cast_range",
+                  "value": 4,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "reference_explosion_radius",
+                  "value": 2,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -4642,6 +5211,26 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 160,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 190,
+                  "unit": "native_power"
+                },
+                {
+                  "kind": "reference_cast_range",
+                  "value": 4,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "reference_explosion_radius",
+                  "value": 2,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -4674,6 +5263,26 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 160,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 190,
+                  "unit": "native_power"
+                },
+                {
+                  "kind": "reference_cast_range",
+                  "value": 4,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "reference_explosion_radius",
+                  "value": 2,
+                  "unit": "tiles"
                 }
               ]
             }
@@ -4692,6 +5301,12 @@
           "key": "divine_empowerment",
           "name": "Divine Empowerment",
           "source_info_id": 5,
+          "behavior_rules": [
+            "caster_owned_field_only",
+            "same_floor_and_standing_on_field",
+            "damage_bonus_applies_while_on_field"
+          ],
+          "area_reference": "3x3_field",
           "stage_zero_description": "This support spell creates a field of holy energy around your feet for 5 seconds. As long as you stand in this field, your dealt damage increases by  8% / 10% / 12% .  \nCooldown:  32 / 28 / 24  seconds",
           "stages": [
             {
@@ -4723,6 +5338,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 500,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "field_side_length",
+                  "value": 3,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -4755,6 +5380,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 500,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "field_side_length",
+                  "value": 3,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -4787,6 +5422,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 500,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "field_side_length",
+                  "value": 3,
+                  "unit": "tiles"
                 }
               ]
             }
@@ -4805,6 +5450,11 @@
           "key": "avatar_of_light",
           "name": "Avatar of Light",
           "source_info_id": 6,
+          "behavior_rules": [
+            "temporary_avatar_form",
+            "all_attacks_critical_while_active"
+          ],
+          "area_reference": null,
           "stage_zero_description": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
           "stages": [
             {
@@ -4846,6 +5496,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 1500,
+                  "unit": "mana"
                 }
               ]
             },
@@ -4888,6 +5543,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 1500,
+                  "unit": "mana"
                 }
               ]
             },
@@ -4930,6 +5590,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 1500,
+                  "unit": "mana"
                 }
               ]
             }
@@ -5092,6 +5757,31 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "If you use a rune, you have a 25% chance of increasing your magic level by 10%, or by 20% if you use a rune that can be created by your vocation.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "rune_trigger_chance",
+                  "value": 25,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "rune_magic_level_bonus",
+                  "value": 10,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "own_vocation_rune_magic_level_bonus",
+                  "value": 20,
+                  "unit": "percent_points"
+                }
+              ],
+              "behaviors": [
+                "rune_bonus_uses_vocation_can_create_rule"
+              ],
+              "targets": []
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5127,6 +5817,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5162,6 +5855,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5197,6 +5893,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5232,6 +5931,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5273,6 +5975,12 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Hell's Core",
+              "Rage of the Skies"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -5340,6 +6048,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5375,6 +6086,21 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Lightning",
+              "Strong Energy Strike",
+              "Strong Flame Strike"
+            ],
+            "reference_hypotheses": [
+              {
+                "stage": 1,
+                "kind": "secondary_cooldown_reduction",
+                "value": 4,
+                "unit": "seconds",
+                "evidence": "OTS_HYPOTHESIS_ONLY: pinned Canary, project wheel-augments.json; absent from official and captured Fandom descriptions, not selected as a confirmed effect"
+              }
+            ],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -5437,6 +6163,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5472,6 +6201,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5507,6 +6239,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Death Echo"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -5569,6 +6306,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5604,6 +6344,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Energy Wave"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -5660,6 +6405,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5695,6 +6443,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5730,14 +6481,19 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Great Fire Wave"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
                 "reference_text": "Adds 15% critical extra damage for this spell.",
                 "numeric_effects": [
                   {
-                    "kind": "critical_extra_damage",
-                    "value": 15.0,
+                    "kind": "critical_hit_chance",
+                    "value": 10,
                     "unit": "percent_points"
                   }
                 ],
@@ -5792,6 +6548,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5827,6 +6586,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5862,6 +6624,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5897,6 +6662,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -5932,6 +6700,12 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Hell's Core",
+              "Rage of the Skies"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -5999,6 +6773,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6034,6 +6811,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6069,6 +6849,21 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Lightning",
+              "Strong Energy Strike",
+              "Strong Flame Strike"
+            ],
+            "reference_hypotheses": [
+              {
+                "stage": 1,
+                "kind": "secondary_cooldown_reduction",
+                "value": 4,
+                "unit": "seconds",
+                "evidence": "OTS_HYPOTHESIS_ONLY: pinned Canary, project wheel-augments.json; absent from official and captured Fandom descriptions, not selected as a confirmed effect"
+              }
+            ],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -6131,6 +6926,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6166,6 +6964,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Death Echo"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -6228,6 +7031,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6263,6 +7069,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6298,6 +7107,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Energy Wave"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -6354,6 +7168,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6395,14 +7212,19 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Great Fire Wave"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
                 "reference_text": "Adds 15% critical extra damage for this spell.",
                 "numeric_effects": [
                   {
-                    "kind": "critical_extra_damage",
-                    "value": 15.0,
+                    "kind": "critical_hit_chance",
+                    "value": 10,
                     "unit": "percent_points"
                   }
                 ],
@@ -6457,6 +7279,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6492,6 +7317,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6527,6 +7355,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6562,6 +7393,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6603,6 +7437,36 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "Increases the damage of your next damage spell by 35% within 12 seconds after casting a focus spell. Reduces the primary cooldown by 2 seconds.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "next_damage_spell_bonus",
+                  "value": 35,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "focus_bonus_window",
+                  "value": 12,
+                  "unit": "seconds"
+                },
+                {
+                  "kind": "next_damage_spell_primary_cooldown_reduction",
+                  "value": 2,
+                  "unit": "seconds"
+                }
+              ],
+              "behaviors": [
+                "consume_bonus_on_next_damage_spell_after_focus"
+              ],
+              "targets": [
+                "Eternal Winter",
+                "Hell's Core",
+                "Rage of the Skies",
+                "Wrath of Nature"
+              ]
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -6620,6 +7484,14 @@
           "key": "gift_of_life",
           "name": "Gift of Life",
           "source_info_id": 0,
+          "behavior_rules": [
+            "exclude_agony_damage",
+            "exclusive_overkill_limit",
+            "restore_health_before_applying_fatal_damage",
+            "restore_mana_and_reduce_all_spell_cooldowns",
+            "cooldown_counts_only_battle_sign_time"
+          ],
+          "area_reference": null,
           "stage_zero_description": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
           "stages": [
             {
@@ -6763,6 +7635,12 @@
           "key": "beam_mastery",
           "name": "Beam Mastery",
           "source_info_id": 7,
+          "behavior_rules": [
+            "flanking_beam_tiles_use_central_damage_fraction",
+            "only_central_hits_count_toward_target_cap",
+            "damage_bonus_and_cooldown_reduction_per_central_target"
+          ],
+          "area_reference": "adjacent_beam_flanks",
           "stage_zero_description": "Your beams now also hit tiles adjacent to the main beam, dealing  25% / 40% / 70%  of the initial damage. \n\nIn addition, for each target hit by a beam spell, the cooldown of all other spells is reduced by 1 sec (up to a maximum of 3 sec) and the damage of beam spells is increased by  10% / 12% / 14%  (up to a maximum of  30% / 36% / 42% ).",
           "stages": [
             {
@@ -6804,6 +7682,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "active_energy_beam_length",
+                  "value": 7,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "active_great_energy_beam_length",
+                  "value": 10,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -6846,6 +7734,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "active_energy_beam_length",
+                  "value": 7,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "active_great_energy_beam_length",
+                  "value": 10,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -6888,6 +7786,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "active_energy_beam_length",
+                  "value": 7,
+                  "unit": "tiles"
+                },
+                {
+                  "kind": "active_great_energy_beam_length",
+                  "value": 10,
+                  "unit": "tiles"
                 }
               ]
             }
@@ -6906,6 +7814,12 @@
           "key": "lord_of_destruction",
           "name": "Lord of Destruction",
           "source_info_id": 8,
+          "behavior_rules": [
+            "fire_bonus_for_mastery_of_flames",
+            "critical_chance_for_mastery_of_thunder",
+            "critical_damage_for_mastery_of_decay"
+          ],
+          "area_reference": null,
           "stage_zero_description": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Mastery of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Mastery of Thunder and  15.00% / 25.50% / 30.00%  more critical damage for Mastery of Decay.",
           "stages": [
             {
@@ -7019,6 +7933,11 @@
           "key": "avatar_of_storm",
           "name": "Avatar of Storm",
           "source_info_id": 9,
+          "behavior_rules": [
+            "temporary_avatar_form",
+            "all_attacks_critical_while_active"
+          ],
+          "area_reference": null,
           "stage_zero_description": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
           "stages": [
             {
@@ -7060,6 +7979,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 2200,
+                  "unit": "mana"
                 }
               ]
             },
@@ -7102,6 +8026,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 2200,
+                  "unit": "mana"
                 }
               ]
             },
@@ -7144,6 +8073,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 2200,
+                  "unit": "mana"
                 }
               ]
             }
@@ -7306,6 +8240,24 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "If you heal someone with Nature's Embrace or Heal Friend, you also heal yourself for 25% of the applied healing.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "self_healing_from_applied_target_heal",
+                  "value": 25,
+                  "unit": "percent_points"
+                }
+              ],
+              "behaviors": [
+                "heal_self_when_healing_someone_else"
+              ],
+              "targets": [
+                "Nature's Embrace",
+                "Heal Friend"
+              ]
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7341,6 +8293,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7376,6 +8331,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7411,6 +8369,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7446,6 +8407,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7487,6 +8451,12 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Forked Thorns",
+              "Forked Glacier"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -7549,6 +8519,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7584,6 +8557,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Mass Healing"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -7640,6 +8618,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7675,6 +8656,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7710,6 +8694,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Heal Friend"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -7772,6 +8761,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7807,6 +8799,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Terra Wave"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -7869,6 +8866,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7904,6 +8904,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -7939,6 +8942,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Strong Ice Wave"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -7995,6 +9003,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8030,6 +9041,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8065,6 +9079,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8100,6 +9117,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8135,6 +9155,12 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Forked Thorns",
+              "Forked Glacier"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -8197,6 +9223,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8232,6 +9261,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8267,6 +9299,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Mass Healing"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -8323,6 +9360,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8358,6 +9398,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Heal Friend"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -8420,6 +9465,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8455,6 +9503,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8490,6 +9541,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Terra Wave"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -8552,6 +9608,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8593,6 +9652,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Strong Ice Wave"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -8649,6 +9713,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8684,6 +9751,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8719,6 +9789,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8754,6 +9827,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8795,6 +9871,31 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "If you use a rune, you have a 25% chance of increasing your magic level by 10%, or by 20% if you use a rune that can be created by your vocation.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "rune_trigger_chance",
+                  "value": 25,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "rune_magic_level_bonus",
+                  "value": 10,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "own_vocation_rune_magic_level_bonus",
+                  "value": 20,
+                  "unit": "percent_points"
+                }
+              ],
+              "behaviors": [
+                "rune_bonus_uses_vocation_can_create_rule"
+              ],
+              "targets": []
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -8812,6 +9913,14 @@
           "key": "gift_of_life",
           "name": "Gift of Life",
           "source_info_id": 0,
+          "behavior_rules": [
+            "exclude_agony_damage",
+            "exclusive_overkill_limit",
+            "restore_health_before_applying_fatal_damage",
+            "restore_mana_and_reduce_all_spell_cooldowns",
+            "cooldown_counts_only_battle_sign_time"
+          ],
+          "area_reference": null,
           "stage_zero_description": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
           "stages": [
             {
@@ -8955,6 +10064,12 @@
           "key": "blessing_of_the_grove",
           "name": "Blessing of the Grove",
           "source_info_id": 11,
+          "behavior_rules": [
+            "healing_spells_can_crit",
+            "healing_bonus_below_target_health_limit",
+            "double_bonus_below_low_target_health_limit"
+          ],
+          "area_reference": null,
           "stage_zero_description": "Your healing spells can achieve critical hits. \nAdditionally, your healing is increased by  5% / 7.5% / 10%  against targets below 60% hit points. This effect is doubled against targets below 30% hit points..",
           "stages": [
             {
@@ -9083,6 +10198,11 @@
           "key": "twin_bursts",
           "name": "Twin Bursts",
           "source_info_id": 10,
+          "behavior_rules": [
+            "ice_and_terra_burst_share_cooldown",
+            "damage_bonus_when_target_health_strictly_above_limit"
+          ],
+          "area_reference": "AREA_RING1_BURST3",
           "stage_zero_description": "Decide wisely whether you want to cast ice or earth damage in a small area around you, as these two ring spells share the same cooldown. Both spells deal  20% / 40% / 60%  additional damage to targets with more than 60% of their hit points. \nCooldown:  22 / 18 / 14  seconds",
           "stages": [
             {
@@ -9114,6 +10234,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 230,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 115,
+                  "unit": "native_power"
                 }
               ]
             },
@@ -9146,6 +10276,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 230,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 115,
+                  "unit": "native_power"
                 }
               ]
             },
@@ -9178,6 +10318,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 230,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_base_spell_power",
+                  "value": 115,
+                  "unit": "native_power"
                 }
               ]
             }
@@ -9196,6 +10346,11 @@
           "key": "avatar_of_nature",
           "name": "Avatar of Nature",
           "source_info_id": 12,
+          "behavior_rules": [
+            "temporary_avatar_form",
+            "all_attacks_critical_while_active"
+          ],
+          "area_reference": null,
           "stage_zero_description": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
           "stages": [
             {
@@ -9237,6 +10392,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 2200,
+                  "unit": "mana"
                 }
               ]
             },
@@ -9279,6 +10439,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 2200,
+                  "unit": "mana"
                 }
               ]
             },
@@ -9321,6 +10486,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 2200,
+                  "unit": "mana"
                 }
               ]
             }
@@ -9483,6 +10653,15 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "Gain an aura that shares your mantra with members of your group.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [],
+              "behaviors": [
+                "share_mantra_with_group_members"
+              ],
+              "targets": []
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9518,6 +10697,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9553,6 +10735,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9588,6 +10773,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9623,6 +10811,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9664,6 +10855,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Chained Penance"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -9726,6 +10922,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9761,6 +10960,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Mass Spirit Mend"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -9823,6 +11027,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9858,6 +11065,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9893,6 +11103,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Mystic Repulse"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -9900,7 +11115,7 @@
                 "numeric_effects": [
                   {
                     "kind": "cooldown_reduction",
-                    "value": 6.0,
+                    "value": 4,
                     "unit": "seconds"
                   }
                 ],
@@ -9913,7 +11128,7 @@
                 "numeric_effects": [
                   {
                     "kind": "base_damage_bonus",
-                    "value": 60.0,
+                    "value": 40,
                     "unit": "percent_points"
                   }
                 ],
@@ -9955,6 +11170,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -9990,6 +11208,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Flurry of Blows"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -10002,7 +11225,7 @@
                   }
                 ],
                 "unresolved_parameters": [],
-                "area_reference": null
+                "area_reference": "AREA_GREATER_FLURRY_OF_BLOWS"
               },
               {
                 "stage": 2,
@@ -10052,6 +11275,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10087,6 +11313,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10122,6 +11351,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Thousand Fist Blows"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -10142,7 +11376,7 @@
                 "numeric_effects": [
                   {
                     "kind": "cooldown_reduction",
-                    "value": 6.0,
+                    "value": 4,
                     "unit": "seconds"
                   }
                 ],
@@ -10184,6 +11418,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10219,6 +11456,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10254,6 +11494,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10289,6 +11532,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10324,6 +11570,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Chained Penance"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -10386,6 +11637,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10421,6 +11675,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10456,6 +11713,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Mass Spirit Mend"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -10518,6 +11780,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10553,6 +11818,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Mystic Repulse"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -10560,7 +11830,7 @@
                 "numeric_effects": [
                   {
                     "kind": "cooldown_reduction",
-                    "value": 6.0,
+                    "value": 4,
                     "unit": "seconds"
                   }
                 ],
@@ -10573,7 +11843,7 @@
                 "numeric_effects": [
                   {
                     "kind": "base_damage_bonus",
-                    "value": 60.0,
+                    "value": 40,
                     "unit": "percent_points"
                   }
                 ],
@@ -10615,6 +11885,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10650,6 +11923,9 @@
             "native_value": 0.25,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10685,6 +11961,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Flurry of Blows"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -10697,7 +11978,7 @@
                   }
                 ],
                 "unresolved_parameters": [],
-                "area_reference": null
+                "area_reference": "AREA_GREATER_FLURRY_OF_BLOWS"
               },
               {
                 "stage": 2,
@@ -10747,6 +12028,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10788,6 +12072,11 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "",
+            "augment_targets": [
+              "Thousand Fist Blows"
+            ],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
@@ -10808,7 +12097,7 @@
                 "numeric_effects": [
                   {
                     "kind": "cooldown_reduction",
-                    "value": 6.0,
+                    "value": 4,
                     "unit": "seconds"
                   }
                 ],
@@ -10850,6 +12139,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10885,6 +12177,9 @@
             "native_value": 1,
             "unit": "flat",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10920,6 +12215,9 @@
             "native_value": 1,
             "unit": "stages",
             "reference_description": "Each level of Vessel Resonance unlocks equivalent Gem Mods in its domain. If the Vessel Resonance matches the gem quality, a damage and healing bonus is granted.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10955,6 +12253,9 @@
             "native_value": 0.75,
             "unit": "percent_points",
             "reference_description": "",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": null,
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -10996,6 +12297,32 @@
             "native_value": 1,
             "unit": "native",
             "reference_description": "Your damage and healing with attacks, spells and runes is increased by 10% when hitting adjacent targets. \nAdditionaly consuming Harmony creates a field lasting 5 seconds, increasing your damage and healing done by 2% for each Harmony consumed.",
+            "augment_targets": [],
+            "reference_hypotheses": [],
+            "unique_parameters": {
+              "numeric_effects": [
+                {
+                  "kind": "adjacent_target_damage_and_healing_bonus",
+                  "value": 10,
+                  "unit": "percent_points"
+                },
+                {
+                  "kind": "harmony_field_duration",
+                  "value": 5,
+                  "unit": "seconds"
+                },
+                {
+                  "kind": "field_damage_and_healing_per_consumed_harmony",
+                  "value": 2,
+                  "unit": "percent_points"
+                }
+              ],
+              "behaviors": [
+                "adjacent_bonus_applies_to_attacks_spells_and_runes",
+                "consuming_harmony_creates_field"
+              ],
+              "targets": []
+            },
             "augment_stages": [],
             "icon": {
               "sprite": "conviction",
@@ -11013,6 +12340,14 @@
           "key": "gift_of_life",
           "name": "Gift of Life",
           "source_info_id": 0,
+          "behavior_rules": [
+            "exclude_agony_damage",
+            "exclusive_overkill_limit",
+            "restore_health_before_applying_fatal_damage",
+            "restore_mana_and_reduce_all_spell_cooldowns",
+            "cooldown_counts_only_battle_sign_time"
+          ],
+          "area_reference": null,
           "stage_zero_description": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
           "stages": [
             {
@@ -11156,6 +12491,12 @@
           "key": "spiritual_outburst",
           "name": "Spiritual Outburst",
           "source_info_id": 13,
+          "behavior_rules": [
+            "consume_harmony",
+            "repeat_only_with_full_harmony",
+            "repeat_after_one_second"
+          ],
+          "area_reference": null,
           "stage_zero_description": "This spell consumes your Harmony. Releases a massive attack chaining to 7 additional enemies. When used with full Harmony, repeats after 1 second for  37.5% / 50% / 62.5%  of its original damage.\nCooldown:  24 / 20 / 16  seconds.",
           "stages": [
             {
@@ -11192,6 +12533,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 425,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_chain_jump_range",
+                  "value": 4,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -11229,6 +12580,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 425,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_chain_jump_range",
+                  "value": 4,
+                  "unit": "tiles"
                 }
               ]
             },
@@ -11266,6 +12627,16 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 425,
+                  "unit": "mana"
+                },
+                {
+                  "kind": "reference_chain_jump_range",
+                  "value": 4,
+                  "unit": "tiles"
                 }
               ]
             }
@@ -11284,6 +12655,11 @@
           "key": "ascetic",
           "name": "Ascetic",
           "source_info_id": 14,
+          "behavior_rules": [
+            "increase_harmony_base_bonus",
+            "add_mantra_scaled_damage_to_autoattacks"
+          ],
+          "area_reference": null,
           "stage_zero_description": "Increases the Harmony base bonus by  1% / 2% / 3%  and your autoattacks deal additional damage equal to  100% / 200% / 300%  of your mantra.",
           "stages": [
             {
@@ -11382,6 +12758,11 @@
           "key": "avatar_of_balance",
           "name": "Avatar of Balance",
           "source_info_id": 15,
+          "behavior_rules": [
+            "temporary_avatar_form",
+            "all_attacks_critical_while_active"
+          ],
+          "area_reference": null,
           "stage_zero_description": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
           "stages": [
             {
@@ -11423,6 +12804,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 4,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 1200,
+                  "unit": "mana"
                 }
               ]
             },
@@ -11465,6 +12851,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 9,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 1200,
+                  "unit": "mana"
                 }
               ]
             },
@@ -11507,6 +12898,11 @@
                   "kind": "flat_healing_bonus",
                   "value": 20,
                   "unit": "flat"
+                },
+                {
+                  "kind": "reference_spell_mana_cost",
+                  "value": 1200,
+                  "unit": "mana"
                 }
               ]
             }
@@ -21473,6 +22869,98 @@
         "basic_1",
         "basic_2",
         "supreme"
+      ],
+      "operation_policy": {
+        "revealed_gem_storage": "character_build_state",
+        "unrevealed_stack_limit": 100,
+        "unrevealed_tradeable": true,
+        "unrevealed_droppable": true,
+        "revealed_tradeable": false,
+        "reveal_requires_matching_vocation": true,
+        "reveal_distribution": "uniform_over_eligible_catalogue_candidates_ots",
+        "reveal_draw_order": [
+          "domain",
+          "basic_1",
+          "basic_2",
+          "supreme"
+        ],
+        "dismantle_refusals": [
+          "locked",
+          "in_vessel",
+          "last_gem_of_domain",
+          "non_current_ruleset"
+        ],
+        "switch_domain_refusals": [
+          "locked",
+          "in_vessel",
+          "non_current_ruleset"
+        ],
+        "lock_refusals": [
+          "non_current_ruleset"
+        ],
+        "vessel_requires_matching_domain": true,
+        "gem_can_occupy_only_one_vessel": true,
+        "vessel_without_resonance_allowed": true,
+        "initial_gems_once_per_character": true,
+        "initial_gems_revealed": true,
+        "revealed_gem_limit": 250,
+        "revealed_gem_limit_evidence": "PARITY_PENDING: WHEEL-GEM-0 WHEELGEM0-RL-02",
+        "grade_min": 0,
+        "grade_max": 3,
+        "grade_decrease_allowed": false,
+        "crusher_item": "oteryn:item.tibia.i46627",
+        "crusher_charges": 10,
+        "vendor_reference_prices": {
+          "lesser_fragment": 750000,
+          "greater_fragment": 2250000,
+          "crusher": 500
+        },
+        "vendor_price_evidence": "existing content/services/trade/trade-00000-00321.json; candidate reference, no trade mutation",
+        "state_operation_evidence": "WHEEL-GEM-0 sections 3, 5-9; official manual capture notes. in-vessel switch refusal is architect ruling R2.",
+        "vendor_buy_unrevealed_gem_prices": {
+          "lesser": 2500,
+          "regular": 5000,
+          "greater": 10000
+        }
+      }
+    },
+    "loot_reference": {
+      "evidence": "OTS_HYPOTHESIS_ONLY: Crystal summer-update data/libs/functions/gematelier.lua; fiendish integration is outside admitted GEM-R",
+      "roll_denominator": 100000,
+      "category_precedence": [
+        "influenced",
+        "fiendish",
+        "archfoe"
+      ],
+      "uniform_vocation_selection": true,
+      "per_quality": [
+        {
+          "quality": "lesser",
+          "chance_by_category": {
+            "influenced": 9000,
+            "fiendish": 3000,
+            "archfoe": 0
+          },
+          "independent_trials": 2
+        },
+        {
+          "quality": "regular",
+          "chance_by_category": {
+            "influenced": 0,
+            "fiendish": 3000,
+            "archfoe": 9000
+          },
+          "independent_trials": 2
+        },
+        {
+          "quality": "greater",
+          "chance_by_category": {
+            "influenced": 0,
+            "fiendish": 9000,
+            "archfoe": 3000
+          },
+          "independent_trials": 1
+        }
       ]
     },
     "reference_corrections": [
@@ -21482,7 +22970,44 @@
         "stage": 2,
         "planner_value": 25.5,
         "selected_value": 22.5,
-        "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text."
+        "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text.",
+        "planner_parameter": "mastery_decay_critical_extra_damage"
+      },
+      {
+        "key": "augmented_mystic_repulse",
+        "parameter": "cooldown_reduction",
+        "planner_parameter": "cooldown_reduction",
+        "stage": 1,
+        "planner_value": 6,
+        "selected_value": 4,
+        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json"
+      },
+      {
+        "key": "augmented_thousand_fist_blows",
+        "parameter": "cooldown_reduction",
+        "planner_parameter": "cooldown_reduction",
+        "stage": 2,
+        "planner_value": 6,
+        "selected_value": 4,
+        "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json"
+      },
+      {
+        "key": "augmented_mystic_repulse",
+        "parameter": "base_damage_bonus",
+        "planner_parameter": "base_damage_bonus",
+        "stage": 2,
+        "planner_value": 60,
+        "selected_value": 40,
+        "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending"
+      },
+      {
+        "key": "augmented_great_fire_wave",
+        "parameter": "critical_hit_chance",
+        "planner_parameter": "critical_extra_damage",
+        "stage": 1,
+        "planner_value": 15,
+        "selected_value": 10,
+        "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending"
       }
     ],
     "initial_gems": {

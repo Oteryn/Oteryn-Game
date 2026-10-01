@@ -1,0 +1,455 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_WHEEL_REFERENCE_VERIFICATION/v1"
+    },
+    "checked_on": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "vocations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "slots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revelation_assignments": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unique_conviction_types": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "basic_mods": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "supreme_mods": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revelation_numeric_values": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "vocations",
+        "slots",
+        "revelation_assignments",
+        "unique_conviction_types",
+        "basic_mods",
+        "supreme_mods",
+        "revelation_numeric_values"
+      ]
+    },
+    "planner_replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "source_commit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "result": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 7,
+          "maxItems": 7
+        }
+      },
+      "required": [
+        "command",
+        "source_commit",
+        "result",
+        "checks"
+      ]
+    },
+    "official_manual_notes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "capture": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "notes_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "result": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "capture",
+        "reference",
+        "notes_sha256",
+        "result"
+      ]
+    },
+    "icon_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "renderer_repository": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "renderer_commit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "renderer_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "renderer_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "layout_rule": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "layout_verified_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "revelation_asset": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository_path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            },
+            "sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cell_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "visual_inspection": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "repository_path",
+            "sha256",
+            "width",
+            "height",
+            "cell_count",
+            "visual_inspection"
+          ]
+        },
+        "unavailable_sprite_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "client_asset_crosswalk": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "live_asset_fetch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "renderer_repository",
+        "renderer_commit",
+        "renderer_path",
+        "renderer_sha256",
+        "layout_rule",
+        "layout_verified_categories",
+        "revelation_asset",
+        "unavailable_sprite_categories",
+        "client_asset_crosswalk",
+        "live_asset_fetch"
+      ]
+    },
+    "source_conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "parameter": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "stage": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "planner_value": {
+            "type": "number",
+            "minimum": 0
+          },
+          "selected_value": {
+            "type": "number",
+            "minimum": 0
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "planner_parameter": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          }
+        },
+        "required": [
+          "key",
+          "parameter",
+          "stage",
+          "planner_value",
+          "selected_value",
+          "evidence",
+          "planner_parameter"
+        ]
+      },
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerical_planner_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "unique_conviction_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "official_atelier_behavior": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "fees_and_extra_points": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "loot_probabilities": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "revealed_gem_limit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "live_website_and_wiki": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "runtime_client_binding": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "official_cooldown_corrections": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "great_fire_wave_and_mystic_repulse_damage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "special_spell_secondary_cooldown": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "numerical_planner_reference",
+        "unique_conviction_reference",
+        "official_atelier_behavior",
+        "fees_and_extra_points",
+        "loot_probabilities",
+        "revealed_gem_limit",
+        "live_website_and_wiki",
+        "runtime_client_binding",
+        "official_cooldown_corrections",
+        "great_fire_wave_and_mystic_repulse_damage",
+        "special_spell_secondary_cooldown"
+      ]
+    },
+    "live_verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tibiapal": {
+          "type": "boolean"
+        },
+        "fandom": {
+          "type": "boolean"
+        },
+        "static_sprite_sheets": {
+          "type": "boolean"
+        },
+        "live_global_parity_confirmed": {
+          "type": "boolean"
+        },
+        "network_mode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "policy_state": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "user_host_allowlist_empty": {
+          "type": "boolean"
+        },
+        "requested_urls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 8,
+          "maxItems": 8
+        },
+        "remaining_sprite_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "tibiapal",
+        "fandom",
+        "static_sprite_sheets",
+        "live_global_parity_confirmed",
+        "network_mode",
+        "policy_state",
+        "user_host_allowlist_empty",
+        "requested_urls",
+        "remaining_sprite_categories"
+      ]
+    },
+    "resolved_capture_limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 20000
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "candidate_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema",
+    "checked_on",
+    "counts",
+    "planner_replay",
+    "official_manual_notes",
+    "icon_evidence",
+    "source_conflicts",
+    "classification",
+    "live_verification",
+    "resolved_capture_limitations",
+    "candidate_sha256"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wheel reference verification evidence"
+}

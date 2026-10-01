@@ -122,4 +122,53 @@ class WheelAuthoringTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'INVALID_GEM_GRADES'):effective_gem_grades(grades)
     def test_icon_asset_mismatch_rejected(self):
         self.reject(lambda c:c['vocations']['knight']['slots'][0]['dedication_icon'].update(asset_url='https://static.tibia.com/images/wrong.png'),'ICON_ASSET_BINDING')
+    def test_unique_parameters_are_required(self):
+        self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction'].update(unique_parameters=None),'UNIQUE_PARAMETER_PRESENCE')
+    def test_unique_parameters_have_typed_units(self):
+        c=copy.deepcopy(self.candidate)
+        parameter=c['vocations']['knight']['slots'][0]['conviction']['unique_parameters']['numeric_effects'][0]
+        parameter['unit']='seconds'
+        with self.assertRaises(ValidationError):validate(c)
+    def test_unique_parameter_omission_rejected(self):
+        self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction']['unique_parameters']['numeric_effects'].pop(),'UNIQUE_PARAMETERS')
+    def test_unique_behavior_binding_rejected(self):
+        self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction']['unique_parameters'].update(behaviors=['shield_doubles_bonus']),'UNIQUE_BEHAVIOR_BINDING')
+    def test_no_unique_payload_on_stat_perk(self):
+        def mutate(c):
+            data=c['vocations']['knight']['slots']
+            stat=next(s['conviction'] for s in data if s['conviction']['category']=='skill_bonus')
+            stat['unique_parameters']=copy.deepcopy(data[0]['conviction']['unique_parameters'])
+        self.reject(mutate,'UNIQUE_PARAMETER_PRESENCE')
+    def test_unique_coverage_all_vocations(self):
+        for data in self.candidate['vocations'].values():
+            uniques={s['conviction']['key'] for s in data['slots'] if s['conviction']['category']=='unique'}
+            self.assertEqual(len(uniques),2)
+    def test_revelation_sprite_cells_cover_ids(self):
+        evidence=self.candidate['icon_evidence']['revelation_asset']
+        self.assertEqual(evidence['width'],evidence['height']*evidence['cell_count'])
+        self.assertTrue(evidence['visual_inspection'])
+        for data in self.candidate['vocations'].values():
+            for rev in data['revelations']:self.assertLess(rev['source_info_id'],evidence['cell_count'])
+    def test_official_8944_cooldown_corrections(self):
+        aug={s['conviction']['key']:s['conviction'] for s in self.candidate['vocations']['monk']['slots']}
+        for key,stage in [('augmented_mystic_repulse',1),('augmented_thousand_fist_blows',2)]:
+            effect=next(e for e in aug[key]['augment_stages'][stage-1]['numeric_effects'] if e['kind']=='cooldown_reduction')
+            self.assertEqual(effect['value'],4)
+            self.assertIn('-6s',aug[key]['augment_stages'][stage-1]['reference_text'])
+    def test_great_fire_wave_conflict_selection(self):
+        aug=next(s['conviction'] for s in self.candidate['vocations']['sorcerer']['slots'] if s['conviction']['key']=='augmented_great_fire_wave')
+        effect=aug['augment_stages'][0]['numeric_effects'][0]
+        self.assertEqual((effect['kind'],effect['value']),('critical_hit_chance',10))
+    def test_flurry_area_reference(self):
+        aug=next(s['conviction'] for s in self.candidate['vocations']['monk']['slots'] if s['conviction']['key']=='augmented_flurry_of_blows')
+        self.assertEqual(aug['augment_stages'][0]['area_reference'],'AREA_GREATER_FLURRY_OF_BLOWS')
+    def test_verification_evidence_binds_candidate(self):
+        import hashlib
+        from jsonschema import Draft202012Validator
+        evidence=read(ROOT/'samples/verification-evidence.json')
+        Draft202012Validator(read(ROOT/'verification.schema.json')).validate(evidence)
+        self.assertEqual(evidence['candidate_sha256'],hashlib.sha256((ROOT/'samples/wheel-candidate.json').read_bytes()).hexdigest())
+        self.assertEqual(evidence['counts']['slots'],sum(len(v['slots']) for v in self.candidate['vocations'].values()))
+        self.assertEqual(evidence['source_conflicts'],self.candidate['gems']['reference_corrections'])
+        self.assertFalse(evidence['live_verification']['live_global_parity_confirmed'])
 if __name__=='__main__':unittest.main()

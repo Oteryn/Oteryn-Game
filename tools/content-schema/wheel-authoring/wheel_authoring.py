@@ -84,19 +84,23 @@ def build():
             elif info['FormatType']=='PlusFullPercent':unit='percent_points'
             elif info['FormatType']=='PlusInteger':unit='flat'
             stages=[augment_stage(i,info[f'Aug{i}Info']) for i in (1,2)] if category=='augmentation' else []
-            conviction={'key':slug(info['Name']),'name':name(info['Name']),'category':category,'source_info_id':c['id'],'native_value':value,'unit':unit,'reference_description':clean(info.get('LongInfo','')),'augment_stages':stages,'icon':icon('conviction',c['id'])}
+            conviction={'key':slug(info['Name']),'name':name(info['Name']),'category':category,'source_info_id':c['id'],'native_value':value,'unit':unit,'reference_description':clean(info.get('LongInfo','')),'augment_targets':parameters['augment_targets'].get(slug(info['Name']),[name(info['Name']).removeprefix('Augmented ')] if category=='augmentation' else []),'reference_hypotheses':parameters['augment_hypotheses'].get(slug(info['Name']),[]),'unique_parameters':parameters['unique_conviction'].get(slug(info['Name'])),'augment_stages':stages,'icon':icon('conviction',c['id'])}
             for stage in conviction['augment_stages']:
                 area = parameters['area_references'].get(conviction['key'])
                 stage['area_reference'] = area['reference'] if area and area['stage']==stage['stage'] else None
                 extra = parameters['augment_parameters'].get(conviction['key'])
                 if extra and extra['stage']==stage['stage']:
                     stage['numeric_effects'].append({k:extra[k] for k in ('kind','value','unit')})
+                for correction in parameters['corrections']:
+                    if correction['key']==conviction['key'] and correction['stage']==stage['stage']:
+                        effect=next(e for e in stage['numeric_effects'] if e['kind']==correction['planner_parameter'])
+                        effect.update(kind=correction['parameter'],value=correction['selected_value'])
                 stage['unresolved_parameters'] = []
             slots.append({'state_slot':top['state_slot'],'dedication':dedication,'dedication_icon':icon('dedication',slot['dedication']['id']),'conviction':conviction})
         revelations=[]
         for rev in original['revelations']:
             info=rev['info'];descriptions=info['LongInfoPerLevel']
-            revelations.append({'domain':DOMAINS[rev['quarter']],'key':slug(info['Name']),'name':name(info['Name']),'source_info_id':rev['id'],'stage_zero_description':clean(descriptions['0']),'stages':[{'stage':i,'minimum_domain_points':threshold,'reference_description':clean(descriptions[str(i)]),'numeric_effects':[{'kind':e['kind'],'value':e['values'][i-1],'unit':e['unit']} for e in parameters['revelations'][slug(info['Name'])]]} for i,threshold in [(1,250),(2,500),(3,1000)]],'parameter_state':'REFERENCE_PARAMETERS_CAPTURED','icon':icon('revelation',rev['id'])})
+            revelations.append({'domain':DOMAINS[rev['quarter']],'key':slug(info['Name']),'name':name(info['Name']),'source_info_id':rev['id'],'behavior_rules':parameters['revelation_behaviors'][slug(info['Name'])],'area_reference':parameters['revelation_area_references'][slug(info['Name'])],'stage_zero_description':clean(descriptions['0']),'stages':[{'stage':i,'minimum_domain_points':threshold,'reference_description':clean(descriptions[str(i)]),'numeric_effects':[{'kind':e['kind'],'value':e['values'][i-1],'unit':e['unit']} for e in parameters['revelations'][slug(info['Name'])]]} for i,threshold in [(1,250),(2,500),(3,1000)]],'parameter_state':'REFERENCE_PARAMETERS_CAPTURED','icon':icon('revelation',rev['id'])})
         gems=original['gems'];vessels=raw['gem_library']['vessels']
         vocations[voc]={'gem_family':parameters['gem_families'][voc],'resonance_slots':{domain:[top['state_slot'] for top,entry in zip(topology,slots,strict=True) if top['domain']==domain and entry['conviction']['category']=='vessel_resonance'] for domain in DOMAINS.values()},'slots':slots,'revelations':revelations,'gem_names':{q:vessels['GemNames'][str(i)][voc] for i,q in enumerate(('lesser','regular','greater'))},'basic_mods_position_1':[m['id'] for m in gems['basic_mods_position_1']],'basic_mods_position_2':[m['id'] for m in gems['basic_mods_position_2']],'supreme_mods':gems['supreme_mod_ids']}
     lib=raw['gem_library'];basic=[]
@@ -111,7 +115,7 @@ def build():
     for identifier, info in lib['supreme_mods'].items():
         if not identifier.isdigit():continue
         supreme.append({'source_id':int(identifier),'name':name(info['Name']) or name(info['NameSummary']),'summary_name':name(info['NameSummary']),'format':info['FormatType'],'grades':[{'grade':g,'reference_text':clean(info['EffectInfo'][str(g)]),'numeric_effects':supreme_effects(clean(info['EffectInfo'][str(g)]),info['NameSummary'])} for g in range(4)],'reference_summary':clean(info['EffectInfoSummary']),'icon':icon('supreme_mod',int(identifier))})
-    return {'schema':'OTERYN_WHEEL_AUTHORING_CANDIDATE/v1','revision':'wheel-authoring-candidate-r1','release':{'kind':'initial','predecessor':None},'runtime_admitted':False,'sources':[{'id':'tibiapal','repository':'https://github.com/PawelKusnierek/TibiaPal','commit':raw['source']['commit']},{'id':'canary','repository':'https://github.com/opentibiabr/canary','commit':graph['source_commit']},{'id':'crystal_summer_update','repository':'https://github.com/zimbadev/crystalserver','commit':'00ce02a57ca5a12e48f32a3476e37471167e4c3f'}],'input_digests':{f:hashlib.sha256((ROOT/'samples'/f).read_bytes()).hexdigest() for f in ['source-wheel-reference.json','source-graph.json','source-parameters.json']},'topology':topology,'vocations':vocations,'gems':{'excluded_empty_basic_mod_ids':[int(k) for k,v in lib['basic_mod_config'].items() if not v],'qualities':[{'quality':q,'basic_mod_count':b,'supreme_mod_count':s,'matching_vessel_stage':v,'matching_damage_healing_bonus':bonus} for q,b,s,v,bonus in [('lesser',1,0,1,1),('regular',2,0,2,1),('greater',2,1,3,2)]],'basic_mods':basic,'supreme_mods':supreme,'grade_costs':[{'target_grade':g,'basic':{'gold':bg,'fragments':f},'supreme':{'gold':sg,'fragments':f}} for g,bg,sg,f in [(1,2000000,5000000,5),(2,5000000,12000000,15),(3,30000000,75000000,30)]],'atelier':parameters['gems'],'reference_corrections':parameters['corrections'],'initial_gems':{'count':8,'composition':'one_lesser_and_one_regular_per_domain'},'parameter_state':'REFERENCE_CATALOGUE_NOT_RUNTIME_ADMITTED'},'verification':{'planner_unlock_states_checked':1080,'planner_unlock_mismatches':0,'legal_allocation_snapshots':180,'live_website_verified':False,'wiki_verified':False,'blockers':['Formal admission requires the content owner review; this candidate changes no runtime ruleset.','Resolve dedication mitigation versus resistance wording in the owning decision.','Bind reference parameters and area names to admitted runtime effect and Spell owners.','Verify icon appearance and client-asset mappings.','Verify against the requested official/wiki sources when destination access is available.']}}
+    return {'schema':'OTERYN_WHEEL_AUTHORING_CANDIDATE/v1','revision':'wheel-authoring-candidate-r1','release':{'kind':'initial','predecessor':None},'runtime_admitted':False,'sources':[{'id':'tibiapal','repository':'https://github.com/PawelKusnierek/TibiaPal','commit':raw['source']['commit']},{'id':'canary','repository':'https://github.com/opentibiabr/canary','commit':graph['source_commit']},{'id':'crystal_summer_update','repository':'https://github.com/zimbadev/crystalserver','commit':'00ce02a57ca5a12e48f32a3476e37471167e4c3f'}],'input_digests':{f:hashlib.sha256((ROOT/'samples'/f).read_bytes()).hexdigest() for f in ['source-wheel-reference.json','source-graph.json','source-parameters.json']},'progression':parameters['progression'],'icon_evidence':parameters['icon_evidence'],'topology':topology,'vocations':vocations,'gems':{'excluded_empty_basic_mod_ids':[int(k) for k,v in lib['basic_mod_config'].items() if not v],'qualities':[{'quality':q,'basic_mod_count':b,'supreme_mod_count':s,'matching_vessel_stage':v,'matching_damage_healing_bonus':bonus} for q,b,s,v,bonus in [('lesser',1,0,1,1),('regular',2,0,2,1),('greater',2,1,3,2)]],'basic_mods':basic,'supreme_mods':supreme,'grade_costs':[{'target_grade':g,'basic':{'gold':bg,'fragments':f},'supreme':{'gold':sg,'fragments':f}} for g,bg,sg,f in [(1,2000000,5000000,5),(2,5000000,12000000,15),(3,30000000,75000000,30)]],'atelier':{k:v for k,v in parameters['gems'].items() if k!='loot_reference'},'loot_reference':parameters['gems']['loot_reference'],'reference_corrections':parameters['corrections'],'initial_gems':{'count':8,'composition':'one_lesser_and_one_regular_per_domain'},'parameter_state':'REFERENCE_CATALOGUE_NOT_RUNTIME_ADMITTED'},'verification':{'planner_unlock_states_checked':1080,'planner_unlock_mismatches':0,'legal_allocation_snapshots':180,'live_website_verified':False,'wiki_verified':False,'blockers':['Formal admission requires the content owner review; this candidate changes no runtime ruleset.','Resolve dedication mitigation versus resistance wording in the owning decision.','Bind reference parameters and area names to admitted runtime effect and Spell owners.','Verify icon appearance and client-asset mappings.','Verify against the requested official/wiki sources when destination access is available.']}}
 def validate_gem(candidate, vocation, quality, basic_1, basic_2=None, supreme=None):
     if vocation not in VOCATIONS:raise ValueError('UNKNOWN_VOCATION')
     if quality not in ('lesser','regular','greater'):raise ValueError('UNKNOWN_GEM_QUALITY')
@@ -159,7 +163,7 @@ def structure(candidate):
         if isinstance(value,dict):return {k:scrub(v,k) for k,v in value.items()}
         if isinstance(value,list):return [scrub(v) for v in value]
         return value
-    return scrub({k:candidate[k] for k in ['topology','vocations','gems']})
+    return scrub({k:candidate[k] for k in ['progression','topology','vocations','gems']})
 def validate(candidate, previous=None):
     schema=read(ROOT/'wheel.schema.json');Draft202012Validator.check_schema(schema);Draft202012Validator(schema).validate(candidate)
     def require(condition, code):
@@ -200,6 +204,13 @@ def validate(candidate, previous=None):
             require(c['icon']['sprite']=='conviction','CONVICTION_ICON_SPRITE')
             require(c['icon']==icon('conviction',c['source_info_id']),'ICON_ASSET_BINDING')
             require([g['stage'] for g in c['augment_stages']]==([1,2] if c['category']=='augmentation' else []),'AUGMENT_STAGES')
+            expected_unique=reference_parameters['unique_conviction'].get(c['key'])
+            require((c['category']=='unique')==(c['unique_parameters'] is not None),'UNIQUE_PARAMETER_PRESENCE')
+            if expected_unique is not None:
+                expected={e['kind']:e['unit'] for e in expected_unique['numeric_effects']}
+                actual={e['kind']:e['unit'] for e in c['unique_parameters']['numeric_effects']}
+                require(actual==expected and len(actual)==len(c['unique_parameters']['numeric_effects']),'UNIQUE_PARAMETERS')
+                require(c['unique_parameters']['behaviors']==expected_unique['behaviors'] and c['unique_parameters']['targets']==expected_unique['targets'],'UNIQUE_BEHAVIOR_BINDING')
             expected_units={'base_damage_bonus':'percent_points','base_healing_bonus':'percent_points','cooldown_reduction':'seconds','secondary_cooldown_reduction':'seconds','mana_cost_reduction':'mana','life_leech':'percent_points','critical_hit_chance':'percent_points','critical_extra_damage':'percent_points','additional_targets':'targets','range_increase':'tiles','next_attack_damage_reduction':'percent_points','duration_increase':'seconds'}
             for stage in c['augment_stages']:
                 for effect in stage['numeric_effects']:require(effect['unit']==expected_units[effect['kind']],'AUGMENT_EFFECT_UNIT')
@@ -208,6 +219,7 @@ def validate(candidate, previous=None):
             require([(r['stage'],r['minimum_domain_points']) for r in rev['stages']]==[(1,250),(2,500),(3,1000)],'REVELATION_THRESHOLDS')
             require(rev['key'] in reference_parameters['revelations'],'UNKNOWN_REVELATION_KEY')
             require(rev['icon']==icon('revelation',rev['source_info_id']),'ICON_ASSET_BINDING')
+            require(rev['behavior_rules']==reference_parameters['revelation_behaviors'][rev['key']],'REVELATION_BEHAVIORS')
             expected_kinds={e['kind'] for e in reference_parameters['revelations'][rev['key']]}
             for stage in rev['stages']:
                 kinds=[e['kind'] for e in stage['numeric_effects']]

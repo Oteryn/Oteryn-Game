@@ -1,0 +1,153 @@
+{
+  "schema": "OTERYN_WHEEL_REFERENCE_VERIFICATION/v1",
+  "checked_on": "2026-10-01",
+  "counts": {
+    "vocations": 5,
+    "slots": 180,
+    "revelation_assignments": 20,
+    "unique_conviction_types": 9,
+    "basic_mods": 46,
+    "supreme_mods": 94,
+    "revelation_numeric_values": 441
+  },
+  "planner_replay": {
+    "command": "node verify_planner.cjs <pinned TibiaPal checkout>",
+    "source_commit": "61ffa3e0502879ccec44e59ead859e92b6d88531",
+    "result": "PASS",
+    "checks": [
+      "all slot identities and capacities",
+      "all raw Dedication increments and full-slice values",
+      "all Conviction identities, values, categories and descriptions",
+      "all Revelation assignments and descriptions",
+      "all basic and supreme catalogue entries",
+      "all per-vocation mod availability lists",
+      "five fully populated 4000-point states"
+    ]
+  },
+  "official_manual_notes": {
+    "capture": "2026-09-28 owner capture",
+    "reference": "docs/reference/tibia-manual/characters.md#517-wheel-of-destiny",
+    "notes_sha256": "e01d04c6d8933a829e9c8e6dad08dd50a0e7a8308361e74948284794bbf11df8",
+    "result": "REVIEWED_OWNER_CAPTURE_NOT_LIVE_FETCH"
+  },
+  "icon_evidence": {
+    "renderer_repository": "https://github.com/PawelKusnierek/TibiaPal",
+    "renderer_commit": "61ffa3e0502879ccec44e59ead859e92b6d88531",
+    "renderer_path": "scripts/wod-assets/wheelofdestinyplanner.min.js",
+    "renderer_sha256": "4320b5e04c051678c160936c50487f15a7d8ac867529970a4b1536da3defa536",
+    "layout_rule": "source_x = source_index * image_height; square cell size = image_height",
+    "layout_verified_categories": [
+      "dedication",
+      "conviction",
+      "revelation",
+      "basic_mod",
+      "supreme_mod"
+    ],
+    "revelation_asset": {
+      "repository_path": "images/wod-planner/icons-skillwheel-largeperks.png",
+      "sha256": "5a36d866b59837fcee9395b88043f83c7fd0b4b8352cb27547aab8d2d1740872",
+      "width": 544,
+      "height": 34,
+      "cell_count": 16,
+      "visual_inspection": true
+    },
+    "unavailable_sprite_categories": [
+      "dedication",
+      "conviction",
+      "basic_mod",
+      "supreme_mod"
+    ],
+    "client_asset_crosswalk": "NOT_IMPLEMENTED",
+    "live_asset_fetch": "BLOCKED_NETWORK_POLICY"
+  },
+  "source_conflicts": [
+    {
+      "key": "lord_of_destruction",
+      "parameter": "mastery_decay_critical_extra_damage",
+      "stage": 2,
+      "planner_value": 25.5,
+      "selected_value": 22.5,
+      "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text.",
+      "planner_parameter": "mastery_decay_critical_extra_damage"
+    },
+    {
+      "key": "augmented_mystic_repulse",
+      "parameter": "cooldown_reduction",
+      "planner_parameter": "cooldown_reduction",
+      "stage": 1,
+      "planner_value": 6,
+      "selected_value": 4,
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json"
+    },
+    {
+      "key": "augmented_thousand_fist_blows",
+      "parameter": "cooldown_reduction",
+      "planner_parameter": "cooldown_reduction",
+      "stage": 2,
+      "planner_value": 6,
+      "selected_value": 4,
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json"
+    },
+    {
+      "key": "augmented_mystic_repulse",
+      "parameter": "base_damage_bonus",
+      "planner_parameter": "base_damage_bonus",
+      "stage": 2,
+      "planner_value": 60,
+      "selected_value": 40,
+      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending"
+    },
+    {
+      "key": "augmented_great_fire_wave",
+      "parameter": "critical_hit_chance",
+      "planner_parameter": "critical_extra_damage",
+      "stage": 1,
+      "planner_value": 15,
+      "selected_value": 10,
+      "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending"
+    }
+  ],
+  "classification": {
+    "numerical_planner_reference": "CONFIRMED_PINNED_SOURCE",
+    "unique_conviction_reference": "CONFIRMED_PINNED_SOURCE",
+    "official_atelier_behavior": "REVIEWED_OWNER_CAPTURE",
+    "fees_and_extra_points": "OTS_HYPOTHESIS_ONLY_WITH_PROJECT_CANDIDATE_DECISION",
+    "loot_probabilities": "OTS_HYPOTHESIS_ONLY",
+    "revealed_gem_limit": "PARITY_PENDING",
+    "live_website_and_wiki": "BLOCKED_NETWORK_POLICY",
+    "runtime_client_binding": "SEPARATE_IMPLEMENTATION",
+    "official_cooldown_corrections": "CONFIRMED_PROJECT_OFFICIAL_8944_CAPTURE",
+    "great_fire_wave_and_mystic_repulse_damage": "CONFLICT_SELECTED_EXISTING_PROJECT_TARGET_EVIDENCE_LIVE_PENDING",
+    "special_spell_secondary_cooldown": "OTS_HYPOTHESIS_ONLY_NOT_SELECTED"
+  },
+  "live_verification": {
+    "tibiapal": false,
+    "fandom": false,
+    "static_sprite_sheets": false,
+    "live_global_parity_confirmed": false,
+    "network_mode": "restricted",
+    "policy_state": "enforced",
+    "user_host_allowlist_empty": true,
+    "requested_urls": [
+      "https://tibia.fandom.com/wiki/Wheel_of_Destiny",
+      "https://tibia.fandom.com/wiki/Wheel_of_Destiny/Conviction_Perks",
+      "https://tibia.fandom.com/wiki/Wheel_of_Destiny/Dedication_Perks",
+      "https://tibia.fandom.com/wiki/Wheel_of_Destiny/Revelation_Perks",
+      "https://tibia.fandom.com/wiki/Lesser_Gem",
+      "https://tibia.fandom.com/wiki/Regular_Gem",
+      "https://tibia.fandom.com/wiki/Greater_Gem",
+      "https://tibiapal.com/wheel-planner?subtopic=wheelofdestinyplanner&code=K0Y2AgDP4jAQA"
+    ],
+    "remaining_sprite_categories": [
+      "dedication",
+      "conviction",
+      "basic_mod",
+      "supreme_mod"
+    ]
+  },
+  "resolved_capture_limitations": [
+    "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
+    "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
+  ],
+  "candidate_sha256": "20bdfae635e9e97fadb7587c3912b9b779d5d64eec13d4c739d916865d181478"
+}
