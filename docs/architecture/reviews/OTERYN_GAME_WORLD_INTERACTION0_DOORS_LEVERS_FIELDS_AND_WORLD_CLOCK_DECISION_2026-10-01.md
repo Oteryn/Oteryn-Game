@@ -234,7 +234,14 @@ how it resets, what limits it, which commands carry it; and what time it is in t
 - Every act runs in the owning scope runtime's lane (D37, D38). It is admitted against the handle's
   `overlay_incarnation` and `tile_revision`, the actor's session generation and position revision,
   and the content generation; any mismatch is `STALE`. The overlay change, any relocation and the
-  `TILE_SET` publish in the same tick; a request not committed in its tick is rejected.
+  `TILE_SET` publish in the same tick; a request not committed in its tick is rejected, except a
+  delayed push (§7.1).
+- **Delayed push.** A `PUSH_INTENT` is admitted in its arrival tick: that tick counts it against
+  the per-tick action cap, starts the `push` cooldown and arms one owner-lane timer due one push
+  delay later. The step commits in the tick the timer fires, which re-runs every fence above and
+  every §7.1 rule on the live state; in that tick due push timers run in order of (due tick, pusher
+  `ExactActorRef`), before new input, and are not counted against the cap again. A channel restart
+  drops a pending push with no step.
 - A world-object act writes nothing durable. A key, a tool and a moved durable item are touched only
   through DUR-03 shapes (§4.4, §7.2); nothing here mints or burns.
 - Replay: an act carries its CommandRef; a replay in the same overlay incarnation returns the first
@@ -405,7 +412,7 @@ quest doors, quest format §3.1) stays sealed.
   (`PZ_BLOCKED`); the target moved since the client saw it (`STALE`); the `push` cooldown runs
   or a push of this pusher is already pending (`EXHAUSTED`).
 - **Push delay** (server-side, the manual; Canary `pushDelay`): an admitted push executes one push
-  delay (`WORLDINT0-RL-04`, 1,000 ms) later, not at once. At execution every rule above is checked
+  delay (`WORLDINT0-RL-04`, 1,000 ms) later, not at once, under the §3.5 delayed-push rule. At execution every rule above is checked
   again on the live state, including the pusher's position and reach, and a failure ends it with
   that outcome and no step. At most one pending push per pusher; a client cannot shorten the
   delay.
