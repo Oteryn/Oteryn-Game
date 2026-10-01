@@ -63,6 +63,11 @@ def write(relative: str, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_bytes(value))
 
+def write_registry(relative: str, value: Any) -> None:
+    # One key per line, so PRs that register different families merge without a textual conflict.
+    text = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    (ROOT / relative).write_text(text, encoding="utf-8", newline="\n")
+
 def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
     return (target["family"], target["key"], target["revision"])
 
@@ -497,7 +502,7 @@ def main() -> int:
             relative = stale.relative_to(ROOT).as_posix()
             if shard_name.search(stale.name) and relative not in managed_set:
                 stale.unlink()
-    write("content/manifest.json", {
+    write_registry("content/manifest.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
         "project_revision": REVISION,
         "admission_main": ADMISSION_MAIN,
@@ -519,7 +524,7 @@ def main() -> int:
         },
         "compatibility": {"legacy_root": "content/world", "legacy_mutated": False, "runtime_switch_authorized": False},
     })
-    write("content/content.lock.json", {
+    write_registry("content/content.lock.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
         "project_revision": REVISION,
         "admission_main": ADMISSION_MAIN,
@@ -543,7 +548,7 @@ def main() -> int:
             "Mount": sum(row["target"]["family"] == "Mount" for row in editor["entries"]),
         },
     })
-    write("content/project.json", {
+    write_registry("content/project.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_PROJECT/v1",
         "project_revision": REVISION,
         "manifest": "content/manifest.json",

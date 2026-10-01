@@ -51,6 +51,8 @@ Never publish ordinary work through ad-hoc low-level Git Data reconstruction, an
 
 Protected `main` moving is first a read-only reconciliation event. Keep a published head when accepted requirements do not need source reconciliation, and let the Merge Queue qualify the `merge_group` against current `main`. Merge up (normal, non-force) only for a real source/contract conflict, a dependency whose bytes must exist in the candidate before its validation, or a repository without Merge Queue that has a strict-base requirement. Never merge up just to refresh a base, retrigger CI or manufacture newer evidence.
 
+Derived content (`content/world`, the content tree and registry, and the Rust package pins) is merged and regenerated only by the content integrator (content-tree Amendment 01 §5, #1390). Authors change sources only; they do not merge `main` into a content candidate or regenerate the tree. The integrator runs `python3 tools/content-migration/regenerate_content.py --resolve` after its merge: it resolves derived conflicts, regenerates and runs the content checks. It stops and lists any other conflicted path, including `imports/**` and `content/interactions/index.json`, which hold hand-maintained rows; that path needs a person. Hand-written count pins may still need a manual edit after a clean merge.
+
 ## Dispatching workers
 
 Dispatch one bounded, coherent task per worker, in parallel only when paths and custody are disjoint. Each worker gets only this packet:

@@ -66,6 +66,11 @@ def compact(payload) -> str:
     )
 
 
+def registry(payload: object) -> str:
+    """One key per line, matching world_project_v2_to_tree.py, so registrations merge cleanly."""
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+
+
 def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -363,7 +368,7 @@ def generate() -> dict[str, str]:
     for name, doc in zip(
         names, registered(*docs, len(records), sorted(outputs)), strict=True
     ):
-        outputs[f"content/{name}.json"] = compact(doc)
+        outputs[f"content/{name}.json"] = registry(doc)
     return outputs
 
 
