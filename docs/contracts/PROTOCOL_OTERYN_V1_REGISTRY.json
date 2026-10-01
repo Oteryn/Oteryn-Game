@@ -110,6 +110,15 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmAssignResultV1",
       "max_payload_bytes": 8,
       "max_result_payload_bytes": 4
+    },
+    {
+      "id": 10,
+      "name": "ACCOUNT_ACHIEVEMENTS_QUERY",
+      "owner_decision": "OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1 D223-D228 (#162 owner decision record 5911933242)",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsQuery",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsResult",
+      "max_payload_bytes": 6,
+      "max_result_payload_bytes": 32788
     }
   ],
   "state_domains": [
@@ -261,7 +270,8 @@
     {"code": 1032, "name": "SNAPSHOT_ASSEMBLY_INVALID", "category": "INVALID_INPUT", "default_disposition": "RESYNC_REQUIRED"},
     {"code": 1033, "name": "SNAPSHOT_LIMIT_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "SESSION_FATAL"},
     {"code": 1040, "name": "BOOTSTRAP_LIMIT_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "SESSION_FATAL"},
-    {"code": 1041, "name": "INVALID_CAPABILITY_SET", "category": "INVALID_INPUT", "default_disposition": "SESSION_FATAL"}
+    {"code": 1041, "name": "INVALID_CAPABILITY_SET", "category": "INVALID_INPUT", "default_disposition": "SESSION_FATAL"},
+    {"code": 1050, "name": "ACCOUNT_DATA_INTEGRITY", "category": "INTERNAL_UNAVAILABLE", "default_disposition": "OPERATION_TERMINAL"}
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},

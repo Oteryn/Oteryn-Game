@@ -22,6 +22,7 @@ WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enric
 CHARM_INDEX = "content/charms/index.json"
 # Proficiency likewise (tools/content-schema/proficiency-authoring, `proficiency_authoring.py content`).
 PROFICIENCY_INDEX = "content/proficiencies/index.json"
+PROFICIENCY_BINDINGS = "content/proficiencies/bindings.json"
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring, `reward_claim_authoring.py content`).
 REWARD_CLAIM_INDEX = "content/interactions/reward_claims/index.json"
 # A12 (ITEM-ID-1): the staged packet is history naming retired Item keys; its targets are emitted
@@ -59,6 +60,11 @@ def write(relative: str, value: Any) -> None:
     path = ROOT / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_bytes(value))
+
+def write_registry(relative: str, value: Any) -> None:
+    # One key per line, so PRs that register different families merge without a textual conflict.
+    text = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    (ROOT / relative).write_text(text, encoding="utf-8", newline="\n")
 
 def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
     return (target["family"], target["key"], target["revision"])
@@ -479,7 +485,7 @@ def main() -> int:
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",
                       *service_managed, CHARM_INDEX, *charm_index["shards"],
-                      PROFICIENCY_INDEX, *proficiency_index["shards"],
+                      PROFICIENCY_INDEX, *proficiency_index["shards"], PROFICIENCY_BINDINGS,
                       REWARD_CLAIM_INDEX, *reward_claim_index["shards"], *outputs.keys()])
     # A family that grows renames its last shard; drop the superseded shard files so every shard is managed.
     shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
@@ -489,7 +495,7 @@ def main() -> int:
             relative = stale.relative_to(ROOT).as_posix()
             if shard_name.search(stale.name) and relative not in managed_set:
                 stale.unlink()
-    write("content/manifest.json", {
+    write_registry("content/manifest.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
         "project_revision": REVISION,
         "admission_main": ADMISSION_MAIN,
@@ -510,7 +516,7 @@ def main() -> int:
         },
         "compatibility": {"legacy_root": "content/world", "legacy_mutated": False, "runtime_switch_authorized": False},
     })
-    write("content/content.lock.json", {
+    write_registry("content/content.lock.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
         "project_revision": REVISION,
         "admission_main": ADMISSION_MAIN,
@@ -534,7 +540,7 @@ def main() -> int:
             "Mount": sum(row["target"]["family"] == "Mount" for row in editor["entries"]),
         },
     })
-    write("content/project.json", {
+    write_registry("content/project.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_PROJECT/v1",
         "project_revision": REVISION,
         "manifest": "content/manifest.json",

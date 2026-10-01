@@ -51,6 +51,8 @@ Never publish ordinary work through ad-hoc low-level Git Data reconstruction, an
 
 Protected `main` moving is first a read-only reconciliation event. Keep a published head when accepted requirements do not need source reconciliation, and let the Merge Queue qualify the `merge_group` against current `main`. Merge up (normal, non-force) only for a real source/contract conflict, a dependency whose bytes must exist in the candidate before its validation, or a repository without Merge Queue that has a strict-base requirement. Never merge up just to refresh a base, retrigger CI or manufacture newer evidence.
 
+Derived content (`content/world`, the content tree and registry, and the Rust package pins) is merged and regenerated only by the content integrator (content-tree Amendment 01 §5, #1390). Authors change sources only; they do not merge `main` into a content candidate or regenerate the tree. The integrator runs `python3 tools/content-migration/regenerate_content.py --resolve` after its merge: it resolves derived conflicts, regenerates and runs the content checks. It stops and lists any other conflicted path, including `imports/**` and `content/interactions/index.json`, which hold hand-maintained rows; that path needs a person. Hand-written count pins may still need a manual edit after a clean merge.
+
 ## Dispatching workers
 
 Dispatch one bounded, coherent task per worker, in parallel only when paths and custody are disjoint. Each worker gets only this packet:
@@ -152,8 +154,26 @@ These cut reading, writing and waiting; they change no authority, review or inte
 - **Quiet session.** Stay reactive to PR events but keep the session small: handle no-op events (subscription or enqueue notices, cancelled or superseded runs) without a reply, keep state in `STATE`, and write to the owner only for questions, blockers and a short note when something significant finishes. On #162 post allocations, every FREEZE_SHA (each new candidate gets its own) and integrations, as the YAML packet plus at most five lines; fold validation results into the next of those entries.
 - **Batches.** Apply root `AGENTS.md` *Work in batches*; allocate follow-up findings as the next batch, not one task each. One owner-decision PR per day, regenerating `docs/agents/DECISION_INDEX.md` (`python tools/agents/build_decision_index.py`). Task records are archived inside their own final PR (`tasks/archive/README.md`); only leftovers go into one archive PR per day. Jira once a day in one batch (`docs/agents/JIRA_PROGRAMME_COORDINATION.md`); you are the only Jira writer.
 - **Expensive paths.** A PR touching `tools/agents/`, `tools/repository/`, `.github/workflows/` or the Cargo manifests runs the full Rust Linux and Windows lanes; keep docs, task-record and content PRs off them.
-- **Paid review only where required.** Trigger owner-funded review only when the bound review policy requires it for that head, not for docs-, content-data- or task-record-only heads unless the policy says so.
+- **Paid review only where required.** Trigger owner-funded review only when the bound review policy requires it for that head, or when the review split below (D245) calls for it.
 - **Context.** After closing a task in a long session, run `/compact` keeping task_ids, PRs, SHAs, blockers, decisions and the next step. After a second compaction, hand off to a new session with a 20-line state summary.
+
+## Review and Merge Queue rules (owner decisions 2026-09-30)
+
+- **Review split (D245).** Codex is the default exact-head reviewer, under `OWNER_FUNDED_AI_POLICY.md`, for every frozen candidate that needs review, docs-only architecture decisions included.
+  - Codex's part: after the live de-duplication check above, post one `@codex review` per exact frozen head, naming the head SHA and the review focus. A new freeze after a material repair gets one new trigger.
+  - Your part is a light qualification, with no local full-suite run:
+    - `merge-tree` against current `main`;
+    - changed paths against the allocation and owned paths;
+    - green CI on the exact head;
+    - fit with the owning decision and the owner's direction;
+    - the migration and registry leases.
+  - Codex P0/P1 findings block. P2 findings follow *Batches*.
+  - A verdict (KEEP or FIX) needs both parts on the same head.
+  - Claude reviewer agents are a fallback only, used when Codex is unavailable or out of quota, and for advisory content-train reviews the owner asks for.
+  - Workers never post `@codex review` and never enable auto-merge or enqueue. Say so in every packet.
+- **Findings reach the writer.** Task sessions do not receive PR comments. Deliver a FIX to the session that writes the branch. If that session is idle or unreachable, archive it and start one new fix session as the single writer. Never write to the branch yourself while another writer holds it.
+- **Merge Queue grouping (D246).** The queue builds up to 5 PRs at once and removes only a failing one. Keep the content train serialized anyway: at most one derived-content PR (`content/manifest.json` or locks) in the queue at a time. Order dependent PRs so that a migration or registry prerequisite enters first.
+- **Enqueue (D247).** The owner authorizes the control plane alone, never a worker, to enable auto-merge on a qualified exact head as its Merge Queue entry (#162, 2026-09-30). A direct merge, a branch update or a no-op commit is never an enqueue or retry substitute. An auto-merge flag, `mergeable_state: clean` or a queue event is not proof of admission or integration: if the PR does not enter the queue, reconcile live state and report it; integration still requires the real `merge_group` `game-gate` and protected-`main` readback.
 
 ## Architecture escalation
 
@@ -169,7 +189,7 @@ For every candidate:
 4. refresh `main` and keep the stable candidate unless source reconciliation is actually required;
 5. resolve protected integration through the current immutable bound META integration-capability router after a fresh exact repository/PR/`base=main`/head/auth/eligibility preflight;
 6. use a freshly proven `DIRECT_CAPABLE` route when available, otherwise a freshly proven `DELEGATED_CAPABLE` executor route, following the bound route-specific receipt and reconciliation contract exactly;
-7. never substitute direct merge, generic auto-merge, bypass, force, a default merge action, no-op/retrigger commits or ambiguous dequeue;
+7. never substitute direct merge, generic auto-merge (other than the control plane's D247 route above), bypass, force, a default merge action, no-op/retrigger commits or ambiguous dequeue;
 8. mark the lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither direct nor delegated capability is freshly proven, keeping the qualified candidate;
 9. require real `merge_group` `game-gate` SUCCESS and protected-main readback before archive, ownership release or `DONE`.
 

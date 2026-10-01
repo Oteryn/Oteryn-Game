@@ -15,6 +15,11 @@
 - Requested by: the owner (2026-09-27) after the quest interaction transcription
   (`OTERYN_QUEST_AUTHORING_FORMAT_V1.md` §3.3, §6.3, D36).
 - Unblocks: the Movement and WorldObject children that D36 keeps blocked.
+- **Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md`
+  §3-§4).** §3 (relocation within the scope to an anchor or the previous tile) and §4 (`TRANSFORM`,
+  `CREATE`, `REMOVE`, `RETAG`, without `revert_after`, which stays with §7) are accepted for quest
+  and level gates, gated tiles and teleports, and the `USE`, `ON_ENTER` and `ON_LEAVE` triggers
+  QUEST-GATE-0 names. Every other use stays as this document's status says.
 
 ## 1. Problem
 

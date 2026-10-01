@@ -258,6 +258,8 @@ Selling a guild leader Character does not transfer the guildhouse merely because
 
 Detailed guildhouse acquisition, leadership succession, rank ACL, rent funding, dissolution/merge, Rested and lifecycle interactions remain deferred until the guild system exists.
 
+**Pointer (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §6-§7 and §10).** Guildhall acquisition, succession, guild ACL entries, guild-first rent funding and dissolution are decided there; Rested and merge stay deferred.
+
 ## 10. PhysicalHouseEligibility and Premium
 
 Acquiring or retaining a **new** ordinary scarce physical-house slot requires BOTH:

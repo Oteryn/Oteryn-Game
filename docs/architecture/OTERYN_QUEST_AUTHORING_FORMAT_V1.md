@@ -98,6 +98,11 @@ Quest and level gates are checked per character on each passage. A key door's lo
 state of the channel or instance the door stands in (`ChannelRuntime`, local like NPC runtime state
 in the scope matrix), not character state.
 
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §3).**
+Quest and level gates lower to QUEST-STATE-0 predicates, bind to the door's `placement_key`, and are
+checked by the channel runtime at `USE` and at every step onto the door; a check writes nothing.
+Key and lever gates are not lowered there.
+
 ### 3.2 Quest log
 
 Canary keeps one catalog file per quest (`lib/core/quests/catalog/*.lua`), CrystalServer one `Quests`

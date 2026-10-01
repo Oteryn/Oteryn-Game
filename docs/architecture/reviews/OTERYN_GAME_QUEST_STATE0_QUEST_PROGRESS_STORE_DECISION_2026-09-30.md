@@ -31,6 +31,11 @@
 Callers come with their own decisions: NPC-QUEST-0 (dialogue), QUEST-GATE-0 (doors), the
 interaction and creature-event owners. A quest log wire is deferred (A8).
 
+**Amendment (pending on acceptance of QUEST-GATE-0; `OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §3-§7).** QUEST-GATE-0
+decides the gate, trigger and NPC dialogue callers, the quest XP obligation and the quest log wire
+(A8), with their children QUEST-GATE-1, QUEST-TRIGGER-1, NPC-QUEST-1, QUEST-XP-1 and
+QUEST-LOG-WIRE-1.
+
 ## 1. Question
 
 Where does a character's quest progress live, and how does it change safely?
