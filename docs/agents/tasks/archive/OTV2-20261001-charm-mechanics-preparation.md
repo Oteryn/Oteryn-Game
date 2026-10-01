@@ -213,3 +213,28 @@ boundary remain unchanged. Root selects exactly one new sole-parent API-native c
 from the fresh predecessor, preserves executable modes, performs one non-force branch update
 and verifies exact head before freeze and fresh qualification. This completes preparation;
 connected-runtime qualification remains the separately allocated coordinator/consumer task.
+
+## Owner-requested execution of all incomplete reference items, 2026-10-01
+
+The owner explicitly requested all remaining items be executed with subagents. Root returns
+the same exclusively allocated branch to AUTHORING from
+`5e126f273cc052484f6975db13a614891063b8ae` and remains the sole publisher. Five read-only
+reference lanes own separate local artifact directories; the sixth worker performs
+independent inventory/source/execution review. No runtime activation, accepted-contract
+change, protected integration or live-account action is allocated here. Remote Desktop
+continues to perform public browser research only.
+
+The supplement covers all 19 exact remaining-question groups and maps the 30 earlier
+distinguishing protocols. It executes isolated pinned C++ bodies, Lua loot functions and
+explicit mathematical models, retaining actual input/output artifacts, report hashes,
+source ranges and per-result authority limits. Five historical reported Life Leech traces
+provide a real arithmetic discriminator. Primary news5268 strengthens historical additive
+matching-family critical outcomes; news8610 confirms all-charms Physical Pierce exclusion.
+Explicit Agony-status documentation strengthens its qualified no-known-removal candidate.
+
+All 25 profiles bind the new executed-question claims. The hidden-RNG identity demand is
+closed for the proved observably equivalent cases. Current-server and connected-runtime
+proof remain precise per-question observations, not fabricated outcomes or runtime defaults.
+Root selects one new API-native sole-parent successor after a fresh predecessor read,
+preserves executable modes, performs one non-force branch update and verifies exact head.
+Fresh validation/review then qualifies the final inactive preparation candidate.

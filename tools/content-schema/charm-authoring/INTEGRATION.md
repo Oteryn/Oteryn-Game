@@ -183,9 +183,10 @@ the inactive boundary and rejection of OTS evidence promotion for this supplemen
 
 ## Public Global Tibia evidence and recommendation corrections
 
-`samples/charm-global-parity-2026-10-01.json` contains 97 version-scoped source records and
-149 claims after the completed browser supplement from current public official documentation, community references and historical
-player observations. All 25 descriptions and all 75 costs plus 75 stage bonuses match the
+`samples/charm-global-parity-2026-10-01.json` contains 141 version-scoped source records and
+168 claims after browser completion and execution of the remaining reference cases. Records
+distinguish official documentation, community references, pinned OTS source execution and
+historical player observations. All 25 descriptions and all 75 costs plus 75 stage bonuses match the
 fully extracted Brazilian Charms revision 432141 (23 January 2026). Agreement of copied
 wiki pages is not independent server proof. Indexed snippets, full extracted content,
 official CM statements and players writing on the official forum stay separately classified.
@@ -249,3 +250,38 @@ are not a prerequisite when candidate implementations have identical observable 
 The research preparation is complete and inactive. The allocated coordinator/consumer task
 qualifies any connected implementation; no current Global server or Oteryn combat execution
 is claimed by this packet.
+
+## Execution of all remaining reference cases
+
+The owner requested execution of every incomplete item with subagents. The `gap_closure`
+section records all 19 exact baseline question groups, their detailed findings, executed
+inputs/outputs, source/report hashes and links to all 25 affected Charm profiles. Five
+separate lanes execute isolated pinned C++ methods, Lua functions and explicit candidate
+models. Exact method execution, mocked call boundaries, mathematical models, public reports
+and current-server proof remain separately classified.
+
+| Case | Executed or newly documented result | Consumer qualification boundary |
+|---|---|---|
+| Agony/Cleanse | Full Agony revision1019512 describes a named Special Condition and explicitly says there is no known removal or mitigation. Crystal's typed Agony cleanse candidate conflicts with that description. | This is stronger than omission from a list; a current Cleanse/Agony observation would qualify any exception. Raw Agony damage remains distinct from the status. |
+| Condition selection/timers | Extracted source bodies exercise duplicate instances, removal of a selected type, reapplication and exact expiry boundaries. Whole incoming-condition-list suppression and order-sensitive immunity are reproduced. | These are source behaviors under explicit condition mocks; accepted type selection and live status ordering require the recorded consumer cases. |
+| Critical correlation | Full official archive5268,5November2019 documents additive historical8% and shared matching-family outcomes. Finite enumeration proves an alternative conditional family draw produces the same observable joint outcomes. | Retain modern4/8/9% stages. Hidden RNG implementation identity is unnecessary; equipment/proficiency-only eligibility still needs its specific observation. |
+| Life Leech rounding | Five historical reported controlled Avalanche/Vampirism inputs fit the documented relative AoE coefficient with per-target ceil5/5; pinned OTS lround fits3/5. | The measurements predate the new leech charms and do not select current charm-bonus layering. Paired candidate signatures distinguish combined/separate/undiluted bonus models. |
+| AoE divisor | Mixed admitted, immune, blocked and matching-family candidate sets produce distinct recovery32/53/96. Source paths snapshot affected targets before mitigation. | Measure which admitted targets actually enter the current-game divisor; source admission alone does not prove it. |
+| Damage reduction | Extracted damage methods reproduce fractional ceil, cap boundaries and a shared static2×→6×cap leak after Carnage. Reduction-order vectors produce distinct integer outcomes. | Keep accepted exact arithmetic and local caps. Neutral resistance bypass remains separate from mitigation, armor and prey. |
+| Physical Pierce | Full official archive8610,25November2025 explicitly removes Physical Pierce in combination with charms. | This primary statement is broader than the earlier Carnage-only wiki observation. |
+| Carnage targets/credit | Exact tile selection, damage-credit and extension gates execute; separate permission models cover obstacles, stacks and summoned recipients. Extension does not exclude every later callback. | Distinguish killed trigger victim, attacking summon and nearby recipient. Full PvP, callback/journal and current-server recipient behavior remain specific cases. |
+| Defensive/void | Actual extracted decisions reproduce differing health/mana major/minor order, zero/periodic packets, signed Parry arguments and Void RNG before the negative-mana test. | Mocked callback recursion is a conditional model, not observed gameplay. Mixed resources, shields and current-game precedence retain explicit cases. |
+| Gut/Scavenge | Unmodified pinned Lua functions execute loot eligibility, per-product draws, stack arithmetic and result-tier branches. Competing extra-roll/capped-success models have concrete discriminators. | Pinned probability-only Gut and faulty Scavenge arithmetic cannot override the qualified community reference choices. Current special-corpse/product ownership observations remain separate. |
+| Fatal Hold/Bless | Compiled setters, timers, callsites and flee predicates exercise refresh, lethal/summon gates and killer domains. Binary floating-point makes source XP881 where an exact rational candidate yields880; mana/skill truncation yields880. | Source quirks do not select current Global behavior or change accepted owner rules. |
+
+The retained assessment and execution artifacts provide commands and exact source versions;
+source-method reruns require the public pinned raw trees, Python3, g++ and the available Lua
+shared library. These are optional research tools, not new CI or runtime dependencies.
+Results are stored in the packet, and its immutable hash is checked by the existing offline
+validation entry. The independent review also reruns isolated binaries/Lua cases and checks
+literal bindings. No whole fork server, live game account or connected Oteryn combat session
+is executed by this preparation.
+
+Every identified reference/preparation case is handled. The remaining current-game cases
+have measurable inputs and competing outputs; no unresolved value becomes an implicit
+runtime default. Connecting the accepted implementation remains the allocated consumer task.

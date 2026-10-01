@@ -115,7 +115,7 @@ Charm payloads in the supplied 15.30 client assets. The existing offline checks 
 packet and its evidence boundary; they do not execute Global Tibia. See `INTEGRATION.md` for
 the corrected consumer choices and remaining distinguishing tests.
 
-The completed browser supplement contains 97 source records and 149 qualified claims,
+At browser completion, the supplement contained 97 source records and 149 qualified claims,
 including 24 full-page browser captures and 66 additional assessments. Normal Tavily search
 preceded public Chrome/CDP fallback. Its 89 literal quote checks retain capture/text/excerpt
 hashes, dates and revisions; repeated access to one revision is not independent evidence.
@@ -151,3 +151,18 @@ python tools/content-schema/charm-authoring/test_tibiapal_evidence.py
 All 25 descriptions match the catalogue's three costs and bonus values. They leave detailed
 combat behavior untested; for example, Gut's “more products” does not establish probability
 versus quantity, and Cleanse's prose does not establish exact immunity time or removal semantics.
+
+## Execution of every remaining reference question
+
+The owner-requested continuation executes the 19 remaining question groups across five
+lanes. The final packet contains 141 source records and 168 qualified claims. `samples/charm-global-parity-2026-10-01.json` now retains a `gap_closure` inventory,
+per-question claims, source bindings, lane assessments and actual input/output artifacts.
+Compiled extracted C++ bodies and Lua loot functions run under explicit mocks; mathematical
+candidate probes retain separate scopes. Current Global measurements are never inferred from
+those executions. All 25 profiles link their applicable executed-question claims.
+
+The supplement includes five historical reported Life Leech traces, two new full official
+announcements and explicit Agony-condition documentation. It closes the unnecessary demand
+for hidden RNG identity when candidate outcomes are observably equivalent. The integration
+packet records reproducible commands, resolved reference facts and the precise observations
+still required for connected/current-server qualification.
