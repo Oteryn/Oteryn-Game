@@ -48,28 +48,24 @@ line-range quotes); code answers about those engines are not automatic
 Global proof. The original prospective observation captures remain historical
 research provenance, with no invented gameplay observations or expected results.
 
-| Scope | Qualified public Global boundary | Residual Global detail |
-|---|---|---|
-| Etcher consumption | Clear-all and acquisition facts sourced | Counted successful and rejected use with before/after item state |
-| Equipped scroll target | Official Powerful-scroll location permission is anywhere | Explicit equipped-target statement or continuous target/action capture |
-| Fine timers | Dated equipped+online Swiftness wording | Combat/PZ boundaries, internal precision and logout/transfer observations |
-| Combat pipeline | Current Life-specific DamagePrey exclusion and mana formula | Life unequal/zero-target/rounding and broader modifier-order evidence |
-| Vibrancy PvP gate | Current full family wording says “if initially successful” | Exact success predicate, state lifetime and reset transitions |
-| Payment sources | Current inventory-first then Stash/bank corroboration | Container search, cross-resource debit order and route-specific behavior |
-| Rejection consumption/rollback | Old probabilistic craft failures are a different trigger | Current visible failure outcomes; hidden atomicity belongs to implementation contracts |
-| Native effect composition | Current Formulae supplies a named native percentage example | Universal imbuement/native/Wheel order and arbitrary caps |
-| Ownership transfer state/time | Sale advertisements are not completed transfers | Matching before/after item identity, duration and elapsed/equipped intervals |
-| Etcher purchase Premium | Free use does not prove Free NPC acquisition | Worthy Free/Premium purchase dialogues with sufficient resources |
-| Completed-scroll consumption | Blank inscription consumption is a separate operation | Successful/invalid completed-scroll counts by tier and target case |
+The authoritative per-group scope correction is in
+[global-research-closure.md](global-research-closure.md) and its validated
+[public-fact packet](samples/global-research-closure.json):23 bounded facts with
+literal source text, source identities and date/method qualifications. Public
+statements can qualify their described fields without gameplay recordings.
+The27 prospective recordings remain supplemental alternatives.
 
-The table records Global evidence needs; the corresponding current engine answers
-and catalogue references are delivered in `current-behavior-answers.json`. Formulae revision1205374,
-dated 7 September 2026, is current community mana-leech evidence, with its actual
-revision date and mana-specific scope preserved.
+Actual unconfirmed public fields are successful/rejected Etcher and filled-scroll
+units, filled-scroll use on a still-equipped target, Etcher NPC Premium acquisition,
+numerical remaining time across ownership change, and narrowly scoped Life
+calculation details. Timer PZ and physical armor ordering carry explicit public
+source conflicts. Normal-shrine source priority, coarse timers, Powerful Vibrancy
+recovery trigger and unrounded protection composition have qualified references.
 
-Public captures can qualify visible behavior at recorded precision; they cannot
-prove internal locks, storage or concurrency. No private account
-actions or gameplay experiments were performed in this research batch.
+Internal locks, debit chronology, persistence format/checkpoints, scheduler cadence,
+RNG call graphs and compensation are architecture contracts assigned below. They
+are not proprietary data required to finish recipe/effect-value research.
+No gameplay observation or full Global parity is claimed.
 
 ## Owning implementation handoff
 

@@ -3,7 +3,7 @@
   "activation": "DRAFT_NOT_RUNTIME_READY",
   "target": "global-tibia-current-2026-10-01",
   "status": "PUBLIC_EVIDENCE_NOT_SUFFICIENT",
-  "plan_scope": "Data/schema/research completion plan for the existing draft; no runtime activation or implementation. Scenarios are prospective public-evidence requirements, not executed tests or Global facts.",
+  "plan_scope": "Supplemental prospective public gameplay captures, not the sole acceptance route for authored public-reference facts.",
   "created_on": "2026-10-01",
   "source_catalogues": {
     "global-rules-evidence.json": {
@@ -238,7 +238,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#etcher_consumption"
+      "engine_answer_profile": "current-behavior-answers.json#etcher_consumption",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#etcher_consumption"
     },
     {
       "id": "scroll_application_equipped_target",
@@ -393,7 +396,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#scroll_application_equipped_target"
+      "engine_answer_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#scroll_application_equipped_target"
     },
     {
       "id": "fine_grained_timers",
@@ -655,7 +661,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#fine_grained_timers"
+      "engine_answer_profile": "current-behavior-answers.json#fine_grained_timers",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#fine_grained_timers"
     },
     {
       "id": "combat_pipeline",
@@ -942,7 +951,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#combat_pipeline"
+      "engine_answer_profile": "current-behavior-answers.json#combat_pipeline",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#combat_pipeline"
     },
     {
       "id": "vibrancy_pvp_gate",
@@ -1093,7 +1105,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#vibrancy_pvp_gate"
+      "engine_answer_profile": "current-behavior-answers.json#vibrancy_pvp_gate",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#vibrancy_pvp_gate"
     },
     {
       "id": "transaction_payment_sources",
@@ -1237,7 +1252,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#transaction_payment_sources"
+      "engine_answer_profile": "current-behavior-answers.json#transaction_payment_sources",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#transaction_payment_sources"
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
@@ -1372,7 +1390,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback"
+      "engine_answer_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#failed_transaction_consumption_and_rollback"
     },
     {
       "id": "native_effect_composition",
@@ -1545,7 +1566,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#native_effect_composition"
+      "engine_answer_profile": "current-behavior-answers.json#native_effect_composition",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#native_effect_composition"
     },
     {
       "id": "transfer_preserves_imbuement_state_and_remaining_duration",
@@ -1837,7 +1861,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration"
+      "engine_answer_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#transfer_preserves_imbuement_state_and_remaining_duration"
     },
     {
       "id": "etcher_npc_purchase_requires_premium",
@@ -1929,7 +1956,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium"
+      "engine_answer_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#etcher_npc_purchase_requires_premium"
     },
     {
       "id": "scroll_consumption",
@@ -2072,7 +2102,10 @@
         }
       ],
       "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
-      "engine_answer_profile": "current-behavior-answers.json#scroll_consumption"
+      "engine_answer_profile": "current-behavior-answers.json#scroll_consumption",
+      "public_reference_method": "PUBLIC_REFERENCE_LOOKUP",
+      "capture_requirement_scope": "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY",
+      "research_closure_ref": "global-research-closure.json#scroll_consumption"
     }
   ],
   "counts": {
@@ -2085,6 +2118,12 @@
     "No expected Global outcomes are invented: every scenario expected_global_result is null.",
     "Positive and rejected outcomes must both be preserved; public source excerpts and before/after views qualify only visible behavior at recorded precision.",
     "Public recordings can support net counts/balances and displayed item state, not hidden server atomicity, locking, durable persistence or concurrency guarantees.",
-    "An absent or hidden client icon, absent numerical target health, unknown version or missing resource view is a capture limitation, not a value."
+    "An absent or hidden client icon, absent numerical target health, unknown version or missing resource view is a capture limitation, not a value.",
+    "Literal scoped public references are accepted by global-research-closure.json; these unperformed recordings are supplemental. Proprietary internal contracts are not Global data acceptance prerequisites."
+  ],
+  "acceptance_profile": "global-research-closure.json",
+  "evidence_alternatives": [
+    "PUBLIC_REFERENCE_LOOKUP",
+    "DATED_PUBLIC_RECORDING_OR_LOG"
   ]
 }

@@ -16,6 +16,7 @@ CATALOGUE = HERE / "samples/imbuements-candidate.json"
 REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
+    "global-research-closure.json": "fa9905781e69bbbd970d6b71c55834b0f115411cf5a21eee86bfa2521fa4d20d",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-access.json": "95c966ebcbd3c1ed15277417c6e6f2acf720817c6b9776732873f511c7a15dcc",
     "imbuement-eligibility.json": "c26be2542ce0b048258f1a4bcc2604145608af6cb669e20dbeb75f0ee76c062e",
@@ -25,7 +26,7 @@ EVIDENCE_PINS = {
     "missing-item-definitions.json": "d1d324a100dbda840c1730561401f803aea4ec6014ec11dec23389e3280fd40d",
     "missing-item-source-facts.json": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d",
     "current-behavior-answers.json": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2",
-    "global-observation-plan.json": "1b72e0ae9187955643308da9e809095f74f1fe3e5d48057f115cd7ce42c09f7d",
+    "global-observation-plan.json": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb",
 }
 # Independently anchor reviewed capture requirements. Mutable scenario fields
 # cannot redefine the evidence necessary to qualify their own claims.
@@ -52,6 +53,9 @@ def validate_observation_plan(plan, packets):
             or plan["target"] != ledger["target"]
             or plan["status"] != "PUBLIC_EVIDENCE_NOT_SUFFICIENT"):
         raise ValueError("observation plan cannot certify or activate unobserved behavior")
+    if (plan.get("acceptance_profile") != "global-research-closure.json"
+            or plan.get("evidence_alternatives") != ["PUBLIC_REFERENCE_LOOKUP", "DATED_PUBLIC_RECORDING_OR_LOG"]):
+        raise ValueError("planned captures cannot be the sole acceptance route for public facts")
     catalogues = {"global-rules-evidence.json", "imbuement-combat.json"}
     if set(plan["source_catalogues"]) != catalogues:
         raise ValueError("observation plan references unsupported catalogues")
@@ -75,6 +79,9 @@ def validate_observation_plan(plan, packets):
                 or requirement["ledger_ref"] != {"catalogue": "global-rules-evidence.json",
                                                   "section": "unresolved", "id": requirement["id"]}
                 or requirement.get("engine_answer_profile") != "current-behavior-answers.json#" + requirement["id"]
+                or requirement.get("public_reference_method") != "PUBLIC_REFERENCE_LOOKUP"
+                or requirement.get("capture_requirement_scope") != "SUPPLEMENTAL_PLANNED_CAPTURE_ONLY"
+                or requirement.get("research_closure_ref") != "global-research-closure.json#" + requirement["id"]
                 or not requirement["source_and_capture_limitations"]
                 or not requirement["source_refs"] or not requirement["scenarios"]):
             raise ValueError("observation requirement lacks its qualified ledger context")
@@ -110,7 +117,7 @@ def supporting():
                 "imbuement-eligibility.json", "global-rules-evidence.json",
                 "imbuement-combat.json", "crystal-imbuements-evidence.json",
                 "missing-item-definitions.json", "missing-item-source-facts.json",
-                "global-observation-plan.json", "current-behavior-answers.json"}
+                "global-observation-plan.json", "current-behavior-answers.json", "global-research-closure.json"}
     if set(EVIDENCE_PINS) != expected:
         raise ValueError("supporting evidence pins are incomplete")
     packets = {}
@@ -134,6 +141,8 @@ def supporting():
     import newbranch_evidence
     combat_evidence.validate(packets["imbuement-combat.json"])
     newbranch_evidence.validate(packets["crystal-imbuements-evidence.json"])
+    import research_closure
+    research_closure.validate(packets["global-research-closure.json"])
     validate_observation_plan(packets["global-observation-plan.json"], packets)
     import behavior_answers
     errors = behavior_answers.validate(packets["current-behavior-answers.json"],
@@ -248,6 +257,7 @@ def schema():
                 "observation_plan_profile": {"const": "global-observation-plan.json"},
                 "combat_profile": {"const": "imbuement-combat.json"},
                 "current_behavior_profile": {"const": "current-behavior-answers.json"},
+                "global_research_profile": {"const": "global-research-closure.json"},
                 "missing_item_proposals": {"const": "missing-item-definitions.json"},
                 "engine_reference_profile": {"const": "crystal-imbuements-evidence.json"},
                 "architecture_reconciliation": {"const": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE"},
@@ -334,6 +344,7 @@ def build():
             "observation_plan_profile": "global-observation-plan.json",
             "combat_profile": "imbuement-combat.json",
             "current_behavior_profile": "current-behavior-answers.json",
+            "global_research_profile": "global-research-closure.json",
             "missing_item_proposals": "missing-item-definitions.json",
             "engine_reference_profile": "crystal-imbuements-evidence.json",
             "architecture_reconciliation": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE", "definitions": definitions}
@@ -378,6 +389,9 @@ def comparison():
                 "crystal_imbuements_revision": packets["crystal-imbuements-evidence.json"]["revision"],
                 "gold_token_exchange_bundles": len(packets["imbuement-access.json"]["material_acquisition"]["yana_gold_token_exchange"]["recipes"]),
             },
+            "global_research_profile": "global-research-closure.json",
+            "remaining_global_public_fields": {g["id"]: g["remaining_public_fields"] for g in packets["global-research-closure.json"]["groups"] if g["remaining_public_fields"]},
+            "observation_requirement_interpretation": "SUPPLEMENTAL_CAPTURE_ALTERNATIVES; LITERAL_PUBLIC_REFERENCES_ACCEPTED; RUNTIME_CONTRACTS_SEPARATE",
             "remaining_global_observation_requirements": packets["global-rules-evidence.json"]["unresolved"],
             "blocked": ["Candidate architecture reconciliation (fees, Basic inscription, Stash, Vibrancy)", "Canonical Quest runtime state",
                         "Canonical Imbuement ruleset remains READY_UNPOPULATED; the authoring schema is not installed in runtime",

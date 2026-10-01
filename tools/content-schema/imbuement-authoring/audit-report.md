@@ -112,7 +112,7 @@ scenarios. The owner has now resolved the historical snapshot question by choosi
 current data as of 2026-10-01. The [current answer table](current-behavior-answers.md)
 and validated packet deliver eleven implementation answer groups across three engines,
 with67 complete source-file identities and224 replayed exact line-range quotes.
-The residual observation plan has eleven groups and27 prospective scenarios. Expected Global
+The supplemental observation plan has eleven groups and27 prospective scenarios. Literal scoped public references are separately accepted by the validated research closure addendum. Expected Global
 observations are not invented from engine code. Validation rejects fabricated
 outcomes, broken references and invented observation counts.
 Capture groups are independently pinned; each scenario must retain the minimum
@@ -278,7 +278,7 @@ children. The architecture/coordinator packet is on
 
 ## Validation
 
-The current package has204 offline test cases and eight replay/schema commands,
+The current package has211 offline test cases and nine replay/schema commands,
 plus a reparse of all three pinned engine XMLs. Both missing Item proposals pass
 the owning Item validator with zero errors and warnings. The current behavior
 packet additionally pins67 full source files, with224 exact line-range quotes
@@ -288,3 +288,17 @@ are recorded against the frozen PR head through#162.
 Source counts are72 Global rules/51sources and18combat profiles/24sources. Seven
 fine-grained combat profiles retain null values for unsourced proprietary details;
 concrete implementation answers remain available in the separate12-question matrix.
+
+## Public research acceptance correction
+
+The prior plan required gameplay recordings across every unresolved group, even
+where explicit public statements already covered the authored facts.
+[global-research-closure.md](global-research-closure.md) corrects that scope and
+adds a validated23-fact packet with18 source identities, complete or explicitly
+selected captured text and literal quote checks. It includes newly retrieved
+2026 Powerful Vibrancy recovery wording, official60-second logout context,
+protection composition references and retained current PZ/armor conflicts.
+
+The change does not close unknown fields by relabelling groups, choosing OTS
+answers or assigning a runtime owner. Consumption/equipped-target/Premium/transfer
+counter questions remain explicit; full Global parity remains unproven.

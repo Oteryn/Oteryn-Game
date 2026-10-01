@@ -31,6 +31,10 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
+        "global-research-closure.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
         "global-rules-evidence.json": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
@@ -64,6 +68,7 @@
         "crystal-imbuements-evidence.json",
         "current-behavior-answers.json",
         "global-observation-plan.json",
+        "global-research-closure.json",
         "global-rules-evidence.json",
         "imbuement-access.json",
         "imbuement-bindings.json",
@@ -85,6 +90,9 @@
     },
     "current_behavior_profile": {
       "const": "current-behavior-answers.json"
+    },
+    "global_research_profile": {
+      "const": "global-research-closure.json"
     },
     "missing_item_proposals": {
       "const": "missing-item-definitions.json"
@@ -660,6 +668,7 @@
     "observation_plan_profile",
     "combat_profile",
     "current_behavior_profile",
+    "global_research_profile",
     "missing_item_proposals",
     "engine_reference_profile",
     "architecture_reconciliation",

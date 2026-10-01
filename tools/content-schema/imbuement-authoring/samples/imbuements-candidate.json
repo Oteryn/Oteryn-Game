@@ -6,7 +6,8 @@
   "supporting_catalogues": {
     "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
     "current-behavior-answers.json": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2",
-    "global-observation-plan.json": "1b72e0ae9187955643308da9e809095f74f1fe3e5d48057f115cd7ce42c09f7d",
+    "global-observation-plan.json": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb",
+    "global-research-closure.json": "fa9905781e69bbbd970d6b71c55834b0f115411cf5a21eee86bfa2521fa4d20d",
     "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
     "imbuement-access.json": "95c966ebcbd3c1ed15277417c6e6f2acf720817c6b9776732873f511c7a15dcc",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
@@ -19,6 +20,7 @@
   "observation_plan_profile": "global-observation-plan.json",
   "combat_profile": "imbuement-combat.json",
   "current_behavior_profile": "current-behavior-answers.json",
+  "global_research_profile": "global-research-closure.json",
   "missing_item_proposals": "missing-item-definitions.json",
   "engine_reference_profile": "crystal-imbuements-evidence.json",
   "architecture_reconciliation": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE",

@@ -41,5 +41,9 @@ ordering also differ. None of these differences is silently selected as Global p
 Late insertion/debit failures have code paths without compensating refunds. The
 architect/coordinator must choose an explicit transaction contract before workers
 implement it; copying an OTS failure path is not an integrity guarantee. The
-remaining11 observation-plan groups concern residual Global internal detail, not
-absence of the concrete implementation answers delivered here.
+[public research closure](global-research-closure.md) now documents23 bounded
+public facts separately from specific unconfirmed fields. The11 original groups
+are not11 wholly missing data sets. Published public statements suffice for
+literal scoped authoring facts; the27 unperformed captures are supplemental.
+This correction does not establish full Global parity or resolve unsourced
+consumption, equipped-target, purchase and numerical-transfer fields.

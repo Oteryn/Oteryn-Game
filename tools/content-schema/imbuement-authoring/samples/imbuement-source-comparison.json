@@ -394,7 +394,8 @@
   "supporting_catalogues": {
     "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
     "current-behavior-answers.json": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2",
-    "global-observation-plan.json": "1b72e0ae9187955643308da9e809095f74f1fe3e5d48057f115cd7ce42c09f7d",
+    "global-observation-plan.json": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb",
+    "global-research-closure.json": "fa9905781e69bbbd970d6b71c55834b0f115411cf5a21eee86bfa2521fa4d20d",
     "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
     "imbuement-access.json": "95c966ebcbd3c1ed15277417c6e6f2acf720817c6b9776732873f511c7a15dcc",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
@@ -423,6 +424,100 @@
     "crystal_imbuements_revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
     "gold_token_exchange_bundles": 9
   },
+  "global_research_profile": "global-research-closure.json",
+  "remaining_global_public_fields": {
+    "etcher_consumption": [
+      {
+        "description": "Global Etcher units consumed on successful use.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      },
+      {
+        "description": "Global net Etcher change for each specifically named ordinary rejection case, if that policy is required in authored operational data.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "scroll_application_equipped_target": [
+      {
+        "description": "Global acceptance of a still-equipped target, scoped to a named completed-scroll tier or an explicit general completed-scroll rule.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "fine_grained_timers": [
+      {
+        "description": "Combat timer in PZ: BR blanket pause versus Fandom and dated reported residual-combat countdown; no universal boundary selected.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "combat_pipeline": [
+      {
+        "description": "Current universal Life unequal-target/zero-damage/overkill/rounding formula is not stated in retrieved public references.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      },
+      {
+        "description": "Critical-healing permission for named current spell/vocation/augment contexts remains unqualified.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      },
+      {
+        "description": "These are optional operational formula/profile facts, not absent 24-family effect amounts or72 recipes.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "vibrancy_pvp_gate": [
+      {
+        "description": "Meaning of the family wording if initially successful for additional PvP paralysis; current family and Basic subpage wording differ. No persistent immunity state is established.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "failed_transaction_consumption_and_rollback": [
+      {
+        "description": "Global visible net gold/material/blank/filled-scroll/Etcher changes for each specifically required ordinary rejection case remain unstated.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "native_effect_composition": [
+      {
+        "description": "Physical armor/percentage stage conflicts between current Formulae and QA87; universal integer rounding and slot iteration are not selected.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "transfer_preserves_imbuement_state_and_remaining_duration": [
+      {
+        "description": "Exact Global visible remaining-duration preservation for a named transfer route is unconfirmed if required.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      },
+      {
+        "description": "The already-supported recipient usability fact is only prose in the broad null transfer rule; it can be authored as a distinct bounded boolean without claiming exact-duration preservation.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "etcher_npc_purchase_requires_premium": [
+      {
+        "description": "The explicit Global Free/Premium acquisition predicate in utility_acquisition.etcher_npc_purchase.premium_requirement.value remainsnull.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "scroll_consumption": [
+      {
+        "description": "Global filled-scroll success units and net units on each specifically named required rejection remainnull.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ]
+  },
+  "observation_requirement_interpretation": "SUPPLEMENTAL_CAPTURE_ALTERNATIVES; LITERAL_PUBLIC_REFERENCES_ACCEPTED; RUNTIME_CONTRACTS_SEPARATE",
   "remaining_global_observation_requirements": [
     {
       "id": "etcher_consumption",
