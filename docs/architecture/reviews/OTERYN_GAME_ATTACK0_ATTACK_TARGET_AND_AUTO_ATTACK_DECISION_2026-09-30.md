@@ -117,6 +117,9 @@ does a hit do?
   rules; `secure` is carried now and has no effect until then.
 - **Chase** is carried now and has no effect in the first slice: every actor acts as STAND. Chase
   needs server-driven player movement, which has no owner yet.
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8).** Once accepted
+  and CHASE-1 lands, `CHASE` makes the player follow its target through the Movement owner. Until
+  then the client ships the chase toggle disabled (always `STAND`).
 - Fight modes are runtime-only, as in Tibia, where the client sends them at login: the defaults
   are balanced, stand and secure on.
 - Domain 10 is owned by the channel runtime; its revision is monotonic per GameSession (FND-02
@@ -159,6 +162,9 @@ PVP-DEATH-1 and PVP-WIRE-1 land, the first slice stays creatures only.
   that set the target. The swing binds the formula content revision and the SIM profile. Its RNG
   purposes are closed: `hit_chance` (reserved for distance), `damage_draw`, `defence_draw` and
   `armor_draw`. Charm rolls take the swing as their `DecisionOccurrenceId`.
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §4.1).** The closed
+  purposes gain `miss_landing` and `break`; a ranged swing's DUR-03 key adds the World, Channel,
+  scope ownership generation and CharacterId (RANGED-0 §6.2).
 - **Timer.** Every attack interval (2,000 ms) while the target is valid, the actor swings once
   through the GAME-ABILITY-01 pipeline as one typed ability, `AutoAttack`. Catch-up policy
   `DEADLINE_STATE`: at most one swing per due deadline, never a backlog, as Canary never replays
@@ -173,7 +179,7 @@ PVP-DEATH-1 and PVP-WIRE-1 land, the first slice stays creatures only.
   auto-attack until its own decision (see the brief).
   **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §4).** Once
   accepted, distance, throwing and wand swings are variants of this `AutoAttack` with range-based
-  validity, and `chase` takes effect (RANGED-0 §8).
+  validity, one weapon-use slot, PREPARE and PRIMARY COMMIT (RANGED-0 §4).
 - **Skills.** Until CHAR-BUILD-1 and SKILLS-0 ship, every character fights with the starting
   skill 10. Once they ship, the attack reads the live skill and reports one try per swing to the
   build-state training of SKILLS-0.

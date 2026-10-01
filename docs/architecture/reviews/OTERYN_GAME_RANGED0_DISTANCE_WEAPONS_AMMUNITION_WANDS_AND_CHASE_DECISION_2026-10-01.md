@@ -2,17 +2,20 @@
 
 - Decision: `RANGED0-DISTANCE-WEAPONS-AMMUNITION-WANDS-AND-CHASE-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (combat,
-  persistence and protocol) and protected integration.
+  persistence, movement and protocol) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the base-mechanics close-out plan (#162 5929069698, item 1); ATTACK-0 left distance and
   throwing weapons, ammunition, wands and rods and chase movement to their own decision
   (ATTACK-0 brief and §8).
 - Builds on: ATTACK-0 (attack target, `AutoAttack` timer, fight modes, domain 10), GAME-ABILITY-01
-  (sole damage authority), DUR-03 §12, §15 and §39.3 (split, burn and the one-item burn shapes),
-  ITEM-USE-0 and RUNE-USE-0 (the one-unit burn committed before the effect), ITEM-MOVE-WIRE-1 and
-  BAGS-0 (equipment and containers), SKILLS-0 (distance tries), A13 (magic level), CREATURE-AI-0
-  §5 (paths and the step timer), VSL-MOVE-01 (sole movement authority), SPELL-PRESENT-0
-  (projectiles), PARTY-PVP-0 (legality against players), owner rule 5905825574 (Tibia parity).
+  (sole damage authority), DUR-03 §7, §12, §15, §23, §25, §39 (reservation, split, burn, retry,
+  the one-item shapes), the composition decision (rules 2-4 and the STARTER-BACKPACK-0
+  server-originated variant), RUNE-USE-0 §5-§8 (burn before effect, PREPARE and PRIMARY COMMIT,
+  one slot, ambiguous commits), ITEM-MOVE-WIRE-1 §4-§6 and BAGS-0 §3-§6 (equipment, Ground drops,
+  containers), SKILLS-0 §3 (distance tries), A13 §4.5 (magic-level training), CONDITIONS-0 §4
+  (pacing), CREATURE-AI-0 §5 (paths and steps), VSL-MOVE-01 §3, §5, §8 (movement authority),
+  SPELL-PRESENT-0 §5 (projectiles), PARTY-PVP-0 §7 (PvP legality and damage), owner rule
+  5905825574 (Tibia parity).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -20,20 +23,19 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| RANGED-CONTENT-1 | content lane | weapon rows on Item definitions: `weapon_kind` (`DISTANCE`, `THROWING`, `AMMUNITION`, `WAND`), `ammo_type`, `range_tiles`, `hit_chance`, `max_hit_chance`, `break_chance_pct`, `on_use` (`CONSUME`, `DROP`, `NONE`), `mana_per_shot`, wand `damage_min`/`damage_max` and `element`, `missile` appearance key, level and vocation; quivers as containers with the `quiver` flag; from TibiaWiki first, Canary `items.xml`/`weapons` as fallback (§7) | ITEM-SEM-2b |
-| QUIVER-1 | impl, persistence review | the quiver in the left hand: a container with contents in the shield slot for paladins (§3), the BAGS-0 and ITEM-MOVE-WIRE-1 amendments; the Extra slot (§3.3) | BAGS-1; ITEM-MOVE-2a |
-| RANGED-1 | hard (combat, persistence), combat and persistence review | distance, throwing and wand swings as `AutoAttack` variants (§4); hit chance and damage (§5); the `WeaponUseCause` burn and drop shapes (§6); mana for wands | ATTACK-1; QUIVER-1; RANGED-CONTENT-1; DUR-03 amendment accepted |
-| CHASE-1 | hard (movement), movement and determinism review | chase mode: server-driven steps toward the attack target through the Movement owner (§8) | ATTACK-1; CREATURE-MOVE-1 (path service and step timer) |
-| RANGED-PARITY-1 | impl | fixtures of §5 against TibiaPal and Canary: hit chance per distance and skill, damage bands, break rates over 10,000 seeded draws | RANGED-1 |
+| RANGED-CONTENT-1 | content lane | weapon rows on Item definitions (§7), lowered from the formal schema's mapped `weapontype` and TibiaWiki first, Canary `items.xml` as fallback; quivers | ITEM-SEM-2b |
+| QUIVER-1 | impl, persistence review | the quiver tree in the left hand and the Extra slot (§3) | BAGS-1; ITEM-MOVE-2a; BAGS-WIRE-1 |
+| RANGED-1 | hard (combat, persistence), combat and persistence review | distance, throwing and wand swings (§4-§5); the weapon-use slot, reservation and `WeaponUseCause` shapes (§6); wand mana | ATTACK-1; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b; DUR-03 amendment accepted |
+| CHASE-1 | hard (movement), movement and determinism review | chase: server-driven steps toward the attack target through the Movement owner (§8) | ATTACK-1; SPEED-1; CREATURE-MOVE-1 |
+| RANGED-PARITY-1 | impl | fixtures of §5 against TibiaPal and Canary; break rates over 10,000 seeded draws | RANGED-1 |
 
 No new command, state domain or capability. Ranged swings reuse `ATTACK_TARGET_INTENT`,
-`FIGHT_MODES_INTENT` (its `chase` field gains its effect) and domain 10; projectiles reuse
-SPELL-PRESENT-0's `WORLD_PRESENTATION` domain. A quiver can be equipped only by a session that
-negotiated the BAGS-0 container capability (§3.1).
+`FIGHT_MODES_INTENT` and domain 10; projectiles reuse SPELL-PRESENT-0's presentation stream. Quiver
+use needs `CONTAINER_TREE_V1` (§3.1). ATTACK-WIRE-1 ships the client's chase toggle disabled
+(always `STAND`) until CHASE-1 lands, so no released client gains server-driven movement unasked.
 
-Later, each with its own decision: the `FOLLOW` command (follow a creature without attacking),
-diagonal chase steps (with diagonal Movement), the Wheel and quiver Perfect Shot values, exercise
-weapons (offline-training decision, owner answer 2a).
+Later, each with its own decision: the `FOLLOW` command, diagonal chase steps (with diagonal
+Movement), the Wheel and quiver Perfect Shot values, exercise weapons (owner answer 2a).
 
 ## 1. Question
 
@@ -44,222 +46,267 @@ sorcerers and druids attack with wands and rods, and how does chase mode move a 
 
 **PROVEN**
 
-- ATTACK-0 §4: one target and one `AutoAttack` timer per actor, 2,000 ms, `DEADLINE_STATE`, the
-  RNG purpose `hit_chance` reserved for distance; "a distance weapon, throwing weapon, wand or rod in
-  the hand is treated as no weapon for auto-attack until its own decision". §3: `chase` is carried
-  and has no effect.
-- The Tibia manual (`docs/reference/tibia-manual/combat.md` §5.3.6): ranged attacks use the melee
-  cadence; a minimum level per weapon and ammunition; hit chance falls with distance; a point-blank
-  penalty at adjacent range; bows and crossbows are two-handed; thrown weapons can vanish.
-- The Tibia manual (`interface.md` §3.4.1): the shield slot holds a shield, a spellbook or a quiver
-  (paladin); paladins keep the quiver with a two-handed bow; the old ammunition slot is the free-form
-  **Extra Slot** (for example a torch).
+- ATTACK-0 §4: one target and one `AutoAttack` timer per actor, 2,000 ms, `DEADLINE_STATE`; RNG
+  purposes closed to `hit_chance` (reserved for distance), `damage_draw`, `defence_draw`,
+  `armor_draw`; "a distance weapon, throwing weapon, wand or rod in the hand is treated as no
+  weapon for auto-attack until its own decision". §3: `chase` "has no effect in the first slice".
+- The Tibia manual (`docs/reference/tibia-manual/combat.md` §5.3.6): the melee cadence; ammunition
+  and weapons below their minimum level "can't be used"; hit chance falls with distance; a
+  point-blank penalty; bows and crossbows are two-handed; thrown weapons can vanish.
+  `interface.md` §3.4.1: the shield slot holds a shield, spellbook or quiver (paladin); paladins keep
+  the quiver with a two-handed bow; the old ammunition slot is the free-form Extra Slot.
 - `apps/game-server/src/domain/equipment.rs`: the right hand is the weapon hand; the quiver is a
   left-hand item and the only one allowed beside a two-handed distance weapon.
-- DUR-03 §15 and §39.3: the admitted burn sinks are closed causes; RUNE-USE-0 made rune use "a
-  caller-chosen one-unit BURN, not `DECAY_RETIRE`", committed before the effect. §12 admits a split
-  of `x < q` units into a planned identity (§11.3). No cause admits ammunition or a thrown weapon.
-- ITEM-MOVE-WIRE-1 §4 refuses every item with `container` semantics in the nine slots ("a quiver or
-  a bag"); BAGS-0 §6 keeps that refusal ("the quiver waits").
-- SKILLS-0 §3.4: distance gets 2 tries for an unblocked hit and 1 for a blocked one, fed by
-  ATTACK-0 distance attacks.
-- VSL-MOVE-01 §3: GAME-AI and path workers only propose; the Movement owner derives and commits
-  every step. §8: "route/path semantics require their own accepted implementation profile".
-- CREATURE-AI-0 §5.1 and §5.3: a step timer family (`DEADLINE_STATE`, one pending step), a path
-  profile with a 12-tile chase search, and the writer's window budget (R3).
+- DUR-03: §7.1 reservation makes a reserved unit unavailable to competing moves; §12 split into a
+  planned identity (§11.3); §15 closed burn causes; RUNE-USE-0 §5 burn before effect; §39.1
+  excludes burn, multiple touched items, quantity redistribution and nested containers outside
+  admitted shapes; §28 ceilings must be fixed before implementation.
+- Composition decision rule 2 binds a cause to a CharacterId and a fence; rule 3 proves ingress by a
+  pending CommandRef; the STARTER-BACKPACK-0 amendment admits a server-originated variant fenced by
+  the admitted session's `CurrentCharacterItemFence` without a CommandRef.
+- ITEM-MOVE-WIRE-1 §5: Ground drops (10 items per tile `ITEMMOVE1-RL-01`, 20,000 per channel
+  `ITEMMOVE1-RL-02`, house tiles `BLOCKED`, the §32 scope fence, the per-tile row lock); §6.1
+  supersessions; §4 refuses containers and unknown equipment semantics in the nine slots. BAGS-0
+  §3: trees of depth 8 and 500 items, `GAMEITEM01-REACHABLE-ITEMS` 509; §4.1 entries keyed by
+  parent item; §6 "the quiver waits"; capability `CONTAINER_TREE_V1`.
+- SKILLS-0 §3: distance 2 tries per unblocked hit, 1 per blocked, a miss repeats the previous block
+  state (Canary). A13 §4.5: wand and spell mana count as `mana_spent` in the live session,
+  committed as build receipts.
+- CONDITIONS-0 §4.3: a player has one pacing clock with a one-step buffer. VSL-MOVE-01 §3: only the
+  Movement owner commits a step; §5: a movement occurrence is a source occurrence plus a semantic
+  kind; §8: a path needs "its own accepted implementation profile". CREATURE-AI-0 §5: the creature
+  step timer, the path profile, the window budget (R3), and the floor, zone and door bans of §5.2.
+- PARTY-PVP-0 §7: player targets, `PARTYPVP0-RL-11` 50% PvP damage (100% on a black skull) after the
+  damage draw.
+- SPELL-PRESENT-0 §5: projectiles are emitted per Effect with a `projectile_asset_binding`.
 
 **OTS_HYPOTHESIS_ONLY** (Canary `04b83b512114bfd888000d6e1433ed8ecaec7c5b`)
 
 - Ammunition comes only from the quiver: the first quiver entry whose `ammo_type` matches the bow
-  and whose level requirement the player meets (`player.cpp:405-451`). A distance weapon without
-  usable ammunition makes no attack at all, not even a fist (`player.cpp` `doAttacking`).
-- Range check: same floor and Chebyshev distance at most the weapon's shoot range
-  (`weapons.cpp:135-147`); a level or magic level below the requirement gives 0 damage, or half for
-  items flagged `wieldunproperly` (`:173-179`).
+  and whose level the player meets (`player.cpp:405-451`); a distance weapon without usable
+  ammunition makes no attack at all (`player.cpp` `doAttacking`).
+- Range: same floor, Chebyshev distance at most the shoot range (`weapons.cpp:135-147`).
 - Hit chance (`weapons.cpp:729-830`): an item `hit_chance` overrides the table; else the cap is
-  `max_hit_chance`, or 90 for weapons that use ammunition, or 75 for throwing weapons; then a table
-  by distance 1-7 and capped skill (for cap 75: `min(skill,74)+1` at 1 and 5, `min(skill,28)*2.40+8`
-  at 2, `min(skill,45)*1.55+6` at 3, `min(skill,58)*1.25+3` at 4, `min(skill,90)*0.80+3` at 6,
-  `min(skill,104)*0.70+2` at 7; for cap 90 and cap 100 their own rows). The bow's own
-  `hit_chance` adds to the ammunition's; one draw `chance >= uniform(1,100)` hits.
-- A miss lands on the target tile or, beyond adjacent range, on a random walkable tile around it
-  (`weapons.cpp:837-859`).
-- Damage (`weapons.cpp:899-940`): attack = bow attack + ammunition attack (+ ammunition element);
+  `max_hit_chance`, or 90 for ammunition weapons, or 75 for throwing weapons; a table by distance
+  1-7 and capped skill (cap 75: `min(skill,74)+1` at 1 and 5, `min(skill,28)*2.40+8` at 2,
+  `min(skill,45)*1.55+6` at 3, `min(skill,58)*1.25+3` at 4, `min(skill,90)*0.80+3` at 6,
+  `min(skill,104)*0.70+2` at 7; caps 90 and 100 have their own rows); the bow's `hit_chance` adds;
+  one draw `chance >= uniform(1,100)` hits. A miss lands on the target tile or, beyond adjacent
+  range, on a random walkable tile of the 3x3 around it (`:837-859`).
+- Damage (`weapons.cpp:899-940`): attack = bow + ammunition (+ ammunition element);
   `max = round(0.09 x attackFactor x distanceSkill x attack + level / 5)`, `min = level / 5`
-  (halved against players, quartered with an element), `normal_random(min, max x
-  distDamageMultiplier)`; physical and element split by attack share (`:282-295`); blocked by armor,
-  not by shield (`:666-670`).
-- Use (`weapons.cpp:335-390`): mana and soul debited; `break_chance` first (`uniform(1,100) <=
-  break_chance` removes one unit); else the action: `removecount` removes one unit, `move` moves one
-  unit to the landing tile.
-- Wands and rods: `normal_random(min, max)` of the wand's element, no hit roll, not blocked by
-  armor or shield, mana per shot spent as magic-level mana (`weapons.cpp:344-351, 968-983`).
-- Chase: setting a target in chase mode follows it; following re-paths when the target moves; a
-  failed follow waits 2,000 ms before the next try; the player path search is a full search with
-  target distance 1 (`player.cpp:6139-6210`).
+  (halved against players, quartered with an element); `normal_random(min, max x
+  distDamageMultiplier)`; physical and element split by attack share; blocked by armor, not by
+  shield.
+- Use (`weapons.cpp:335-390`): `break_chance` first (`uniform(1,100) <= break_chance` removes one
+  unit); else `removecount` removes one unit and `move` moves one unit to the landing tile, merging
+  into a matching stack there.
+- Wands and rods: `normal_random(min, max)` of their element, no hit roll, not blocked by armor or
+  shield, mana per shot (`weapons.cpp:344-351, 968-983`).
+- Chase follows the attacked creature, re-paths when it moves, waits 2,000 ms after a failed path,
+  full search with target distance 1 (`player.cpp:6139-6210`).
 
 ## 3. Equipment (QUIVER-1)
 
 ### 3.1 The quiver
 
-- A quiver is an Item with `container` semantics and the content flag `quiver`. It may be equipped
-  in the **left hand** by a paladin (content vocation), beside a two-handed distance weapon or
-  alone (the existing `NonQuiverLeftHand` rule).
-- It is the **only** container admitted in a slot other than the container slot. Its entries are
-  keyed to it exactly as the main backpack's are to the container slot (BAGS-0 §3), and its tree is
-  bounded by BAGS-0 §3; a quiver admits only items with `weapon_kind = AMMUNITION` (Canary
-  `quiver` container restriction, `PARITY_PENDING`).
-- Equipping, unequipping and moving items into or out of it use the BAGS-0 and ITEM-MOVE-WIRE-1
-  shapes unchanged (a container with contents moves as a tree). A session without the BAGS-0
-  container capability is refused `SLOT_MISMATCH` when it equips a quiver: it could not see the
-  entries it shoots.
-- Amended: ITEM-MOVE-WIRE-1 §4 and BAGS-0 §6 (this PR).
+- A quiver is an Item with `container` semantics and the content flag `quiver`. A paladin (content
+  vocation) may equip it in the **left hand**, beside a two-handed distance weapon or alone.
+- It is the only container admitted in a slot other than the container slot. Its tree has depth 1:
+  it admits only direct entries with `weapon_kind = AMMUNITION`, which are never containers
+  (`QUIVER_ONLY_AMMUNITION`, refused as `SLOT_MISMATCH` under `CONTAINER_TREE_V1`). Entries are
+  keyed to the quiver as their parent item (BAGS-0 §4.1). It is one of the character's own trees
+  (BAGS-0 §6): reach, views, invalidation and moves are those of the main backpack tree.
+- `GAMEITEM01-REACHABLE-ITEMS` becomes 529 (the main backpack tree, the nine slots and at most 20
+  quiver entries).
+- **Capability.** Only a session that negotiated `CONTAINER_TREE_V1` may equip a quiver, move it or
+  shoot from it. A session without it is refused `SLOT_MISMATCH` on equip, cannot move a quiver
+  tree that is equipped, and its swings draw no ammunition (no attack).
+- Amended: ITEM-MOVE-WIRE-1 §4 and BAGS-0 §3 and §6 (this PR).
 
 ### 3.2 Where ammunition comes from
 
-- A weapon with an `ammo_type` shoots the **first direct quiver entry**, in display order, whose
-  `ammo_type` matches and whose level requirement the character meets (Canary). Nested containers
-  inside a quiver are never searched.
-- No usable ammunition: the swing makes no attack, not a fist attack, and reports nothing.
+A weapon with an `ammo_type` shoots the **first direct quiver entry**, in display order, whose
+`ammo_type` matches, whose level requirement the character meets, and that is not reserved or
+unspendable (§6). No such entry: no attack.
 
 ### 3.3 The Extra slot
 
 The ninth slot keeps its semantic key (`ammo`, GAME-ITEM-01 §6.1) and becomes the manual's Extra
-slot: it admits any whole item that is not a container. Nothing in it is ever shot. Amended:
-ITEM-MOVE-WIRE-1 §4 (this PR).
+slot: it admits any whole item without `container` semantics, whatever its equipment semantics,
+with no level, vocation or Premium check. An item there grants no equipment effect (EQUIP-0 decides
+the one exception, light) and is never shot. Amended: ITEM-MOVE-WIRE-1 §4.
 
 ## 4. Swings (RANGED-1)
 
 - **One timer.** Distance, throwing and wand swings are variants of ATTACK-0's `AutoAttack`, with
-  its interval, `DEADLINE_STATE` catch-up, occurrence key, charm hooks and in-fight deadline. Nothing
-  else deals auto-attack damage.
-- **Weapon selection.** The right-hand weapon decides the variant: `DISTANCE` (with ammunition per
-  §3.2), `THROWING` (the hand stack itself), `WAND`; anything else stays ATTACK-0's melee or fist.
+  its interval, `DEADLINE_STATE` catch-up, charm hooks and in-fight deadline. The right-hand weapon
+  decides the variant: `DISTANCE` (ammunition per §3.2), `THROWING` (the hand stack), `WAND`;
+  anything else stays melee or fist.
 - **Validity** replaces ATTACK-0 §4's adjacency for these variants: same floor, Chebyshev distance
-  at most `range_tiles`, line of sight by the GAME-ABILITY-01 projectile query, neither actor in a
-  protection zone, re-entry protection respected. Out of range or sight, the swing waits.
-- **Requirements.** Level, vocation and (wands) magic level are checked at the swing; below them the
-  damage is 0, or half for `wield_unproperly` items (Canary). A wand needs `mana_per_shot` mana; with
-  less it does not swing.
-- **Order inside one swing** (one GAME-ABILITY-01 invocation):
-  1. validity and requirements;
-  2. for distance and throwing: the `hit_chance` draw (§5.1); for wands no draw;
-  3. the item consequence (§6) is committed durably **before** the effect, as for runes;
-  4. on commit success, the effect: damage on a hit, nothing on a miss; on a refused or ambiguous
-     commit, no effect (DUR-03 §25 resolves the commit; the swing is spent);
-  5. wands: the mana debit and its magic-level mana, through the same vitals path as an instant
-     spell's mana cost;
-  6. skill tries to SKILLS-0: distance 2 for an unblocked hit, 1 for a blocked one, 0 for a miss
-     (`PARITY_PENDING`: Canary reuses the last block type on a miss); wands give none.
-- **Attack interval after a stall** keeps ATTACK-0's rule; a pending commit does not delay the
-  next deadline.
+  at most `range_tiles` (content rejects values above 7), line of sight by the check RUNE-USE-0 §8
+  step 3 uses, neither actor in a protection zone, re-entry protection respected, PvP legality by
+  PARTY-PVP-0 §7. Out of range or sight, the swing waits.
+- **Requirements.** Level, vocation and (wands) magic level of the weapon and the ammunition are
+  checked at PREPARE; below them the weapon "can't be used" (the manual): no attack. Canary's
+  half or zero damage for `wieldunproperly` items is a `PARITY_PENDING` note. A wand needs
+  `mana_per_shot` unheld mana; with less it does not swing.
+- **The slot.** An actor has at most one weapon use between PREPARE and its outcome. A deadline that
+  falls due while it is pending makes no attack; the next deadline counts from that moment (a
+  stall, never a backlog). The slot is separate from RUNE-USE-0's rune slot and ITEM-USE-0's item
+  slot.
+
+### 4.1 PREPARE (channel owner, at the due deadline)
+
+1. Validity and requirements; select the shot entry (§3.2) or the hand stack.
+2. **Draws**, bound to the swing occurrence (§6.2) and frozen: `hit_chance` (distance and throwing),
+   then `damage_draw`, then for a miss beyond adjacent range `miss_landing`, then for throwing
+   `break`. Wands draw only `damage_draw`. Amended: ATTACK-0 §4's closed purposes gain
+   `miss_landing` and `break`.
+3. **Freeze**: target identity, landing tile, damage magnitudes, and the consequence (§6.1: burn,
+   or for throwing burn or drop). A tile that cannot take the drop at PREPARE (not walkable, house,
+   tile or channel limit reached, as the database would refuse) fixes a burn now.
+4. Wands: take a mana hold of `mana_per_shot` (RUNE-USE-0 §7 hold rules).
+5. Reserve the shot unit under DUR-03 §7.1 and send the transaction. Wands send none.
+
+A refusal in step 1 makes no attack and spends nothing.
+
+### 4.2 Commit and PRIMARY COMMIT
+
+- **Known commit.** In the owner lane: the caster must still be the same runtime actor in the
+  channel; the target must be alive, on the same floor, not in a protection zone, and still PvP
+  legal. Then the frozen effect runs through GAME-ABILITY-01 with origin `WeaponSwing`: damage on a
+  hit, none on a miss. A target that fails the recheck is not hit; the unit is spent.
+- **Known abort.** DUR-03 §25 retries the same transaction while it can; a terminal refusal
+  releases the reservation and holds, and the swing has no effect (nothing spent).
+- **Ambiguous commit.** After `RANGED0-RL-02` (2,000 ms, as `ITEMUSE0-RL-04`) the slot is freed; the
+  shot unit stays reserved and unspendable until reconciliation reads the receipt; a commit known
+  only then applies no late effect.
+- **Wands** have no transaction: PRIMARY COMMIT follows PREPARE in the same owner turn, and the
+  mana hold settles there.
+- **Afterwards:** skill tries to SKILLS-0 by its rule (2 unblocked, 1 blocked, a miss repeats the
+  previous block state); wand mana to A13 §4.5's `mana_spent`; the in-fight deadline refreshes.
+- **Channel transfer and logout** wait for the slot's outcome, within the same bound.
 - **Creatures** keep CREATURE-AI-0 §4.4: their ranged attacks are think entries, not this timer.
 
 ## 5. Formulas (RANGED-1)
 
-### 5.1 Hit chance
+- **Hit chance:** the Canary table of §2 for caps 75, 90 and 100 by Chebyshev distance 1-7 and the
+  live distance skill; an item `hit_chance` overrides; the bow's adds.
+- **Distance and throwing damage:** the Canary formula of §2 with ATTACK-0's fight-mode factor and
+  the vocation's distance multiplier, as `player_expression` trees for `spell/formula.rs` (ATTACK-0
+  §5). Blocked by armor only. Element ammunition splits physical and element by attack share;
+  resistances apply in GAME-ABILITY-01 mitigation.
+- **Wands and rods:** `normal_random(damage_min, damage_max)` of the wand's element; no armor,
+  shield or hit roll.
+- **Against players:** Canary's lower minimum is part of the draw; PARTY-PVP-0's
+  `PARTYPVP0-RL-11` then applies once to the drawn damage. Both are Canary behaviour
+  (`PARITY_PENDING`); RANGED-PARITY-1 checks the combined result.
+- Every value is `PARITY_PENDING` until RANGED-PARITY-1 matches TibiaPal (official, then TibiaPal,
+  then Canary, as ATTACK-0 §5).
 
-- The Canary table of §2 for caps 75, 90 and 100, by Chebyshev distance 1-7 and the live distance
-  skill; an item `hit_chance` overrides the table; the bow's `hit_chance` adds to the ammunition's;
-  PROFICIENCY-0's ranged hit chance bonus adds through its existing hook. One draw of RNG purpose
-  `hit_chance` per swing.
-- A miss lands on the target's tile, or beyond adjacent range on the first tile, in an order drawn
-  with RNG purpose `miss_landing`, among the 3x3 around the target that has ground and is not a
-  solid block (Canary).
+## 6. Item consequences (RANGED-1; DUR-03 and composition amendments)
 
-### 5.2 Damage
+### 6.1 Shapes
 
-- Distance and throwing: the Canary formula of §2, with the fight-mode factor of ATTACK-0 and the
-  vocation's distance multiplier, authored as `player_expression` trees for the spell formula
-  engine (`spell/formula.rs`), as ATTACK-0 §5 does for melee. Blocked by armor only.
-- Element ammunition: the physical and element parts split by attack share (Canary); element
-  resistances apply in GAME-ABILITY-01's mitigation stage.
-- Wands and rods: `normal_random(damage_min, damage_max)` of the wand's element; no armor, shield or
-  hit roll.
-- Every value is `PARITY_PENDING` until RANGED-PARITY-1 matches TibiaPal (ATTACK-0 §5 precedence:
-  official, then TibiaPal, then Canary).
-
-## 6. Item consequences (RANGED-1; DUR-03 amendment)
-
-- **Cause.** A new closed burn cause `WeaponUseCause {Ammunition, Throwing}`, keyed by the swing
-  occurrence of ATTACK-0 §4 (runtime scope, attacker actor id and generation, swing sequence), not
-  by a CommandRef: a swing is a timer occurrence. One swing has at most one consequence.
-- **Ammunition** (`on_use = CONSUME`): one BURN of one unit of the shot quiver entry, which keeps its
-  identity or retires at zero (DUR-03 §11.1, §11.5), hit or miss.
-- **Throwing** (`on_use = DROP`): first the `break_chance_pct` draw (RNG purpose `break`); broken:
-  one BURN of one unit of the hand stack; not broken: one unit moves to the landing tile's Ground
-  (the target's tile on a hit, the §5.1 landing on a miss) as a §12 split into a planned identity
-  (§11.3), or the whole item when it is the last unit, under the Ground drop rules of DUR-03 §8 and
-  ADR-0021 D191 (it survives a crash and retires at the planned world reset). A full or refusing
-  tile turns the drop into a BURN (no item is lost silently; the receipt records why).
+- **Ammunition burn** (`on_use = CONSUME`): one BURN of one unit of the shot quiver entry (keeps
+  identity or retires at zero, §11.1, §11.5), hit or miss.
+- **Throwing:** the frozen break draw decides. Broken, or a drop refused at PREPARE: one BURN of one
+  unit of the right-hand stack. Not broken: one unit to the landing tile's Ground. If a dropped item
+  of the same definition lies on top of that tile it merges into it (Canary, §13 quantity
+  transfer); else it is a §12 split into a planned identity (§11.3), or the whole item when it is
+  the last unit. The drop follows ITEM-MOVE-WIRE-1 §5's Ground rules (tile and channel limits with
+  the tile row lock and counter, house tiles refused, the §32 scope fence, D191 reset retirement);
+  reach and line of sight do not apply. A database refusal of the drop is a refused commit under the
+  same TransactionId (§23): the swing has no effect and the unit stays.
 - **Wands** consume nothing durable.
-- **Audit.** One `OneItemTransactionV1` event per consequence with its own suffixed resource rows
-  (`DUR03-RL-01-WEAPON`), committed before the effect.
-- **Bound.** At most 256 weapon-use transactions in flight per channel (`RANGED0-RL-01`,
-  registered by RANGED-1). A swing due while the bound is full makes no attack for that deadline,
-  and the next deadline counts from it (a stall, never a backlog).
-- Amended: DUR-03 §15 and §39.3 (this PR).
+
+### 6.2 Cause, key and fence
+
+- **Cause:** the closed `WeaponUseCause {Ammunition, Throwing}`.
+- **Key** (fully typed, unique across restarts): `(WorldId, ChannelId, scope ownership generation,
+  runtime actor id, actor generation, swing sequence, CharacterId)`. The swing sequence is
+  monotonic within the actor generation. TransactionId and the RNG stream derive from it.
+- **Fence:** the composition decision's server-originated variant (as STARTER-BACKPACK-0): the
+  actor's current admitted session's `CurrentCharacterItemFence` (GameSession, lease and scope
+  generations), its CharacterId and WorldId equal to the key's, no CommandRef; plus the §32 scope
+  fence for a Ground drop. Lock order rule 4: `character_root`, item rows in ItemInstanceId order,
+  the slot row, then the Ground tile row and the channel counter. A replay of the key returns the
+  first outcome. Amended: composition decision (this PR).
+- **Audit:** one `OneItemTransactionV1` event per consequence.
+
+### 6.3 Rows (values fixed here, registered by RANGED-1)
+
+| Row | Value |
+|---|---|
+| `DUR03-RL-01-WEAPON` touched items | burn 1; drop by split 2 (source and new item); drop by merge 2; whole drop 1 |
+| `DUR03-RL-02-WEAPON` location/quantity lines | burn 1; split 2; merge 2; whole drop 2 |
+| `DUR03-RL-06-WEAPON` participants / effect work units | 1 / burn 2, drop 4 |
+| `RANGED0-RL-01` weapon transactions in flight per channel | 256; above it a due swing makes no attack (a stall) |
+| `RANGED0-RL-02` ambiguous commit bound | 2,000 ms |
 
 ## 7. Content (RANGED-CONTENT-1)
 
-- The weapon rows of the brief, on Item definitions, lowered from TibiaWiki (attack, range, hit
-  chance, break chance, level, vocation, mana per shot, element, damage range) with Canary
-  `items.xml` as fallback, each with its source and a `PARITY_PENDING` flag where the two differ.
-- Quivers: the `quiver` flag, capacity and vocation.
-- The missile appearance key is the Ability's `projectile_asset_binding` (SPELL-PRESENT-0); the
-  combat presentation emits the projectile from the swing's commit, to the landing tile on a miss.
+- On Item definitions: `weapon_kind` (`DISTANCE`, `THROWING`, `AMMUNITION`, `WAND`) lowered from
+  the formal schema's mapped `weapontype` (`OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md`), with
+  `ammo_type`, `range_tiles` (1-7), `hit_chance`, `max_hit_chance`, `break_chance_pct`, `on_use`
+  (`CONSUME`, `DROP`, `NONE`), `mana_per_shot`, wand `damage_min`/`damage_max` and `element`, the
+  `missile` appearance key, level, magic level and vocation; quivers with the `quiver` flag. Sources
+  and a `PARITY_PENDING` flag where TibiaWiki and Canary differ.
+- **Presentation:** a weapon projectile is a `missile` event from the shooter to the landing tile
+  with the shot item's (or wand's) `missile` key, emitted at PRIMARY COMMIT, hit or miss, then the
+  §5 hit rows for committed damage. Amended: SPELL-PRESENT-0 §5.
 
 ## 8. Chase (CHASE-1)
 
-- **Effect.** With `chase = CHASE` and a target, the player's runtime actor follows the target: it
-  steps toward the nearest tile at Chebyshev distance 1 from the target, for every weapon (Canary
-  path target distance 1). With `STAND` it never moves on its own.
-- **Path profile.** This is the accepted path profile VSL-MOVE-01 §8 asks for: CREATURE-AI-0 §5.3's
-  profile (costs, tie order, `AI01-PATH-SEARCH-WORK`, `AI01-ROUTE-STEPS`, 12-tile search), run in
-  the writer's window budget; at most one request per player per 1,000 ms; a failed search waits
-  2,000 ms before the next (Canary).
-- **Steps.** A player chase step is one Movement owner step of the player's `ExactActorRef`, on the
-  CREATURE-AI-0 §5.1 step timer family with the player's own step duration (CONDITIONS-0 §4.2),
-  revalidated exactly like a client step; its lineage is the CommandRef that set the target. The
-  path is a proposal: the Movement owner commits each step or refuses it, and a refused step drops
-  the path.
-- **Client intent wins.** A client movement command cancels the pending chase step and the adopted
-  path; chase re-paths at its next 1,000 ms check if the target and chase mode still hold
-  (`PARITY_PENDING`).
+- **Effect.** With `chase = CHASE` and a target, the player's actor steps toward the nearest tile at
+  Chebyshev distance 1 from the target, for every weapon (Canary target distance 1). With `STAND` it
+  never moves on its own. Amended: ATTACK-0 §3.
+- **Path profile** (the profile VSL-MOVE-01 §8 asks for): CREATURE-AI-0 §5.3's costs, tie order,
+  `AI01-PATH-SEARCH-WORK` and `AI01-ROUTE-STEPS`, a 12-tile search (Canary searches fully,
+  `PARITY_PENDING`), with these player differences: no harmful-field cost (Canary applies it to
+  monsters only), and none of CREATURE-AI-0 §5.2's creature bans: a chasing player may path through
+  protection-zone, floor-change and teleport tiles exactly as its own steps may, and the Movement
+  owner's step rules decide each step. At most one search per player per 1,000 ms; a failed search
+  waits 2,000 ms (Canary). Player searches have their own row in the writer's window budget,
+  `RANGED0-RL-03` (64 searches per window per channel), served in actor-id order after creature
+  searches; over it, the search waits for the next window.
+- **Steps.** A chase step is one Movement owner step of the player's `ExactActorRef`, revalidated
+  like a client step. It uses the player's single pacing clock and one-step buffer (CONDITIONS-0
+  §4.3): a chase step is a step request from a server source. Its movement occurrence (VSL-MOVE-01
+  §5) is `(chase step timer, actor, chase step sequence)`, kind `CHASE`. A refused step drops the
+  path. Amended: CONDITIONS-0 §4.3.
+- **Client intent wins.** A client step request cancels the pending chase step and the path; chase
+  re-paths at its next 1,000 ms check if the target and chase mode still hold (`PARITY_PENDING`).
 - **Ends** when the target is cleared or changes, chase is set to `STAND`, the target leaves the
-  floor or perception, or the player is under re-entry protection. Chase never changes floors
-  (CREATURE-AI-0 R2 applies to players' chase too).
-- **Runtime only.** Chase writes nothing durable and does not survive a reconnect (the target is
-  cleared there, ATTACK-0 §3).
+  floor or perception, or the player is under re-entry protection. A chase never changes floors.
+- **Runtime only.** Nothing durable; cleared on reconnect with the target (ATTACK-0 §3).
 
 ## 9. Rejected options
 
-- **Ammunition from the Extra slot.** The manual made it free-form and Canary reads only the
-  quiver.
-- **A runtime ammunition counter flushed later.** A crash between flushes would duplicate arrows;
-  DUR-03 §4 forbids value created by recovery.
-- **A burn per batch of shots.** Unused reserved units would need a refund MINT and a cause; one
-  unit per swing is the rune shape that is already accepted.
-- **Always burning thrown weapons.** Spears that land on the ground are Tibia; the split and Ground
-  drop shapes already exist.
-- **Client-driven chase.** VSL-MOVE-01 forbids a client route as authority, and Tibia chases on the
+- **Ammunition from the Extra slot.** The manual made it free-form and Canary reads only the quiver.
+- **A runtime ammunition counter flushed later.** A crash would duplicate arrows (DUR-03 §4).
+- **Burning a batch of shots ahead.** Unused units would need a refund MINT; one unit per swing is
+  the accepted rune shape.
+- **Always burning thrown weapons.** Spears that land on the ground are Tibia; the split, merge and
+  Ground shapes already exist.
+- **Client-driven chase.** VSL-MOVE-01 forbids a client route as authority; Tibia chases on the
   server.
-- **A separate ranged timer.** ATTACK-0 has one auto-attack timer; a second would allow two swings
-  per interval.
+- **A separate ranged timer.** It would allow two swings per interval.
 
 ## 10. Architect rulings (owner rule 5905825574)
 
-- **R1. Ammunition commit.** a) Commit the one-unit burn before the effect (recommended: the
-  accepted rune shape, no duplication or free shot after a crash); b) commit after the effect and
-  reconcile. **Ruled a).**
-- **R2. Thrown weapons.** a) Tibia: break chance, else drop one unit on the landing tile
-  (recommended); b) always burn. **Ruled a).**
-- **R3. Chase steps.** a) Server-driven through the Movement owner with CREATURE-AI-0's path
-  profile (recommended: Tibia, one path profile); b) client-driven. **Ruled a).**
-- **R4. Overload.** a) No attack for that deadline above 256 in-flight weapon transactions per
-  channel (recommended: bounded, no queue, as WORLD-INTERACTION-0 R5); b) an unbounded queue. **Ruled a).**
-- **R5. The Extra slot.** a) Any whole non-container item (recommended: the manual, no nested
-  location); b) any item including containers. **Ruled a).**
+- **R1. Commit order.** a) Burn before the effect, RUNE-USE-0's PREPARE and PRIMARY COMMIT
+  (recommended: no duplication or free shot after a crash); b) effect first, reconcile later.
+  **Ruled a).**
+- **R2. Thrown weapons.** a) Tibia: break chance, else drop one unit (recommended); b) always burn.
+  **Ruled a).**
+- **R3. Chase steps.** a) Server-driven through the Movement owner on CREATURE-AI-0's profile with
+  player differences (recommended); b) client-driven. **Ruled a).**
+- **R4. Overload.** a) No attack for a due deadline above 256 weapon transactions in flight per
+  channel (recommended: bounded, no queue, as WORLD-INTERACTION-0 R5); b) a queue. **Ruled a).**
+- **R5. Requirements.** a) The manual: below the level the weapon cannot be used (recommended: an
+  official source governs); b) Canary's half or zero damage. **Ruled a).**
 
 ## 11. Owner questions
 
@@ -270,24 +317,27 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 - **Must decide now:** YES. Without it paladins, sorcerers and druids cannot auto-attack, and
   knights cannot chase.
-- **Minimum sufficient:** no new wire; one burn cause; one container admission; one path profile
-  reused for players.
+- **Minimum sufficient:** no new wire; one burn cause with the accepted rune pattern; one container
+  admission; one path profile reused for players.
 - **Superseding evidence:** an official formula, TibiaPal disagreeing with Canary, or a measured
   database cost of one transaction per shot above the DUR-03 §28 envelope.
 - **Deliberately not decided:** `FOLLOW`, diagonal steps, Perfect Shot values, exercise weapons,
-  creature ranged attacks (CREATURE-AI-0), PvP legality (PARTY-PVP-0).
+  creature ranged attacks (CREATURE-AI-0).
 
 ## 13. Before-freeze checklist
 
-1. **Contract amendments:** DUR-03 §15 and §39.3 (`WeaponUseCause`); ITEM-MOVE-WIRE-1 §4 and
-   BAGS-0 §6 (the quiver, the Extra slot); ATTACK-0 §4 (Weapon) points here. All applied in this PR.
-2. **Serialization:** each swing is one occurrence of the attacker's timer inside the channel
-   owner's tick; its durable consequence takes the item writer's `character_root` lock (DUR-03 §29); a
-   losing concurrent move of the same entry makes the swing's commit fail, and the swing has no
-   effect.
-3. **Restart:** a committed burn or drop is durable and its receipt replays to the same result; an
-   uncommitted swing has no effect. Chase, target and modes are runtime.
+1. **Contract amendments**, all applied in this PR: DUR-03 §15, §39.1 and §39.3 (`WeaponUseCause`
+   shapes and supersessions); the composition decision (server-originated swing variant);
+   ITEM-MOVE-WIRE-1 §4 (quiver, Extra slot); BAGS-0 §3 and §6 (quiver tree, reachable items);
+   ATTACK-0 §3 (chase) and §4 (variants, RNG purposes); CONDITIONS-0 §4.3 (chase steps);
+   SPELL-PRESENT-0 §5 (weapon projectiles).
+2. **Serialization:** one weapon-use slot per actor; the shot unit is reserved under DUR-03 §7.1, so a
+   concurrent move of that entry is refused; rule 4's lock order; the Ground tile row lock and
+   counter for drops; a known abort releases, an ambiguous commit keeps the unit unspendable.
+3. **Restart:** the cause key includes the scope ownership and actor generations; a committed
+   receipt replays; an uncommitted swing has no effect; chase, target and modes are runtime.
 4. **Typed references:** weapons and ammunition are A12 keys; the shot entry is its ItemInstanceId
-   with its container location; the swing occurrence is typed per ATTACK-0 §4.
-5. **Wire:** none new; quiver equip gated by the BAGS-0 capability.
-6. **Split work:** one swing, one invocation, one transaction committed before the effect.
+   with its parent quiver; the swing key is fully typed (§6.2).
+5. **Wire:** none new; the quiver is gated by `CONTAINER_TREE_V1`; the chase toggle ships disabled
+   until CHASE-1.
+6. **Split work:** one swing, one transaction committed before the effect, one PRIMARY COMMIT.

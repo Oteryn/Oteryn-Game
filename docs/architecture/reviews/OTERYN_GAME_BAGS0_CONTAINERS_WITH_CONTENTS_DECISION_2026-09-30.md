@@ -109,6 +109,8 @@ drop it whole, with every item still in exactly one location?
   limit (`PARITY_PENDING`).
 - **Reachable items** per character: the main backpack tree and the nine slots, 509
   (`GAMEITEM01-REACHABLE-ITEMS`, was 30).
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §3.1).** Plus at most
+  20 quiver entries: 529.
 - **No cycles.** An item never enters itself or a descendant; checked by walking the destination's
   ancestors (at most 8) and enforced by the database.
 
@@ -229,8 +231,10 @@ drop it whole, with every item still in exactly one location?
 - **Unequip into a nested bag.** ITEM-MOVE-WIRE-1's unequip may target `CONTAINER {handle}`.
 - Containers stay refused in the nine other slots (the quiver waits).
   **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §3.1).** Once
-  accepted, the quiver is the one exception: a container with contents in the left hand, its tree
-  bounded as §3, its entries keyed to it, and only ammunition admitted into it.
+  accepted, the quiver is the one exception: a container in the left hand whose tree has depth 1,
+  admitting only ammunition entries keyed to it (§4.1), refused otherwise as `SLOT_MISMATCH`. It is
+  one of the character's own trees for reach, views, invalidation and moves (this §6), under
+  `CONTAINER_TREE_V1`.
 
 ## 7. Capacity and weight
 
