@@ -29,6 +29,9 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | `quest_tree_authoring.py` | Populates `content/quests/definitions/` with the accepted first reward-only batch, resolving existing canonical claims through exact source identity/revision. Also emits the full source catalogue packet. |
 | `quest_tree.schema.json` | Strict definition/shard schema; `definition_ready` describes known definition fields, while overall quest completeness and runtime readiness remain unassessed. |
 | `quest_source_packet.schema.json` | Typed packet for every source quest kind, reusing the existing source Quest schema through an offline registry. |
+| `quest_catalogue_authoring.py` | Builds the 373-title source inventory with candidate/family coverage and independently scoped wiki facts. Fresh revision fingerprints and source snapshot digests are checked offline. |
+| `wiki_quest_facts.json` | Structured facts from 373 exact-revision Fandom pages, 370 spoilers and 283 BR pages, read through the owner-authorized browser fallback. Contains named entities/counts and provenance, without original narrative. |
+| `run_checks.py` | Runs all offline schemas, regressions, semantic validators and deterministic content/catalogue/packet checks; the Quest Authoring Schema workflow invokes it. |
 | `test_quest_completeness.py` | Regression cases for quest ownership, blocked children, missing reads/gates and stale diagnostic inventories. |
 | `samples/quest-coverage-2026-09-27.json` | The 373 wiki quests (facts only) with their status in each server. |
 | `samples/chests/` | `claims.json`, `quests.json`, `catalog.json`, `manifest.json`, `empty_containers.json`. |
@@ -60,6 +63,9 @@ python test_quest_identity.py
 python test_quest_tree_authoring.py
 python quest_tree_authoring.py content --source-packet samples/migration/quest-source-packet.json
 python quest_tree_authoring.py content --check --source-packet samples/migration/quest-source-packet.json
+python quest_catalogue_authoring.py
+python quest_catalogue_authoring.py --check
+python run_checks.py
 python refresh_quest_source_checks.py --check
 ```
 
@@ -72,3 +78,11 @@ Desert Dungeon deduplication. The migration packet preserves all 210 source ques
 including 58 storylines and 42 script-only quests. It hashes the supporting progress,
 interaction, gate, chest and manifest inputs. These are separate scopes: a populated
 tree or complete source inventory does not establish complete gameplay definitions.
+
+Fresh Fandom reads retain the historical 2026-09-27 revision cut; BR crosschecks
+retain their distinct 2026-10-01 cut. Level/premium and quest-log differences stay
+explicit, with no automatic promotion. A `conflict` row can also lack an authored
+candidate: inspect `authored_candidates` and `family_representation` separately.
+Reward/requirement entity lists are partial source facts, not full prerequisite
+expressions or admitted canonical Item references. Tibiopedia was unavailable
+(browser redirected to an empty setup page); three requested spoilers did not exist.

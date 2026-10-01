@@ -1,0 +1,238 @@
+{
+  "schema": "OTERYN_WIKI_QUEST_LINKS/v1",
+  "links": [
+    {
+      "wiki_title": "Barbarian Outfits Quest",
+      "wiki_pageid": 8573,
+      "wiki_revid": 683785,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "barbarian_outfit_quest"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Citizen Outfits Quest",
+      "wiki_pageid": 8591,
+      "wiki_revid": 795586,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "citizen_addon_backpack",
+        "citizen_addon_feather_hat"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Mage Outfits Quest",
+      "wiki_pageid": 8593,
+      "wiki_revid": 1090705,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "mage_amp_summoner_outfit_quest_wand",
+        "mage_amp_summoner_outfit_quest_fluid_belt",
+        "female_mage_and_male_summoner_addon_headgear"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Norseman Outfits Quest",
+      "wiki_pageid": 17073,
+      "wiki_revid": 842400,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "norseman_outfit_quest"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Pirate Outfits Quest",
+      "wiki_pageid": 8585,
+      "wiki_revid": 743084,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "pirate_outfit_quest_sabre"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Shaman Outfits Quest",
+      "wiki_pageid": 8587,
+      "wiki_revid": 683966,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "shaman_addon_staff",
+        "shaman_addon_mask"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Spike Tasks Quest",
+      "wiki_pageid": 65390,
+      "wiki_revid": 885773,
+      "target_key": "canary:quest/spike_task",
+      "mission_keys": [
+        "first_task",
+        "second_task",
+        "third_task"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Summoner Outfits Quest",
+      "wiki_pageid": 8776,
+      "wiki_revid": 976543,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "mage_amp_summoner_outfit_quest_wand",
+        "mage_amp_summoner_outfit_quest_fluid_belt",
+        "female_mage_and_male_summoner_addon_headgear"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "The Blessed Stake Quest",
+      "wiki_pageid": 27471,
+      "wiki_revid": 684001,
+      "target_key": "canary:quest/friends_and_traders",
+      "mission_keys": [
+        "the_blessed_stake"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "The Great Dragon Hunt Quest",
+      "wiki_pageid": 75167,
+      "wiki_revid": 847146,
+      "target_key": "canary:quest/adventurers_guild",
+      "mission_keys": [
+        "the_great_dragon_hunt"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "The Lost Brother Quest",
+      "wiki_pageid": 75165,
+      "wiki_revid": 933445,
+      "target_key": "canary:quest/adventurers_guild",
+      "mission_keys": [
+        "the_lost_brother"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "The Mermaid Marina Quest",
+      "wiki_pageid": 27470,
+      "wiki_revid": 684020,
+      "target_key": "canary:quest/friends_and_traders",
+      "mission_keys": [
+        "the_mermaid_marina"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "The Sweaty Cyclops Quest",
+      "wiki_pageid": 27469,
+      "wiki_revid": 684033,
+      "target_key": "canary:quest/friends_and_traders",
+      "mission_keys": [
+        "the_sweaty_cyclops"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Warrior Outfits Quest",
+      "wiki_pageid": 8778,
+      "wiki_revid": 684066,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "warrior_addon_shoulder_spike"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    },
+    {
+      "wiki_title": "Wizard Outfits Quest",
+      "wiki_pageid": 8579,
+      "wiki_revid": 1097930,
+      "target_key": "canary:quest/outfit_and_addon_quests",
+      "mission_keys": [
+        "wizard_outfits_quest"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Named candidate mission(s) match the source quest activity; establishes representation only, not complete coverage.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json"
+      }
+    }
+  ]
+}
