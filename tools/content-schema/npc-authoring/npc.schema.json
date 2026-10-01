@@ -118,8 +118,8 @@
         },
         "travel": {"type": "array", "items": {"$ref": "#/$defs/travel"}},
         "spells": {"type": "array", "items": {"$ref": "#/$defs/spell"}},
-        "blessings": {"type": "array", "items": {"type": "object", "required": ["keyword", "blessing", "price", "gate", "dialogue_path"]}},
-        "promotion": {"type": "array", "items": {"type": "object", "required": ["keyword", "price", "min_level", "promotion", "gate", "dialogue_path"]}},
+        "blessings": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["keyword", "blessing", "price", "gate", "dialogue_path"], "properties": {"keyword": {"type": ["string", "null"]}, "blessing": {"oneOf": [{"type": ["integer", "null"], "minimum": 0}, {"type": "string", "pattern": "^(?:[A-Z_][A-Z0-9_.]*|\\|[A-Z_]+\\|)$"}]}, "price": {"oneOf": [{"type": ["integer", "null"], "minimum": 0}, {"type": "string", "pattern": "^(?:[A-Z_][A-Z0-9_.]*|\\|[A-Z_]+\\|)$"}]}, "gate": {"enum": ["NONE", "LUA_PREDICATE"]}, "dialogue_path": {"type": "string"}}}},
+        "promotion": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["keyword", "price", "min_level", "promotion", "gate", "dialogue_path"], "properties": {"keyword": {"type": ["string", "null"]}, "price": {"type": ["integer", "null"], "minimum": 0}, "min_level": {"type": ["integer", "null"], "minimum": 0}, "promotion": {"type": ["integer", "null"], "minimum": 0}, "gate": {"enum": ["NONE", "LUA_PREDICATE"]}, "dialogue_path": {"type": "string"}}}},
         "kick": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["destinations", "dialogue_path"],
                                              "properties": {"destinations": {"type": "array"}, "dialogue_path": {"type": "string"}}}}
       }

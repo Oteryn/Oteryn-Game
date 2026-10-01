@@ -17230,21 +17230,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3362.BuyFromPlayer",
      "item_name": "studded legs",
@@ -17350,7 +17335,20 @@
     "key": "oteryn:npc.baltim",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -18911,42 +18909,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -26621,21 +26583,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3346.BuyFromPlayer",
      "item_name": "ripper lance",
@@ -26918,7 +26865,20 @@
     "key": "oteryn:npc.brengus",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -28719,42 +28679,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -34854,21 +34778,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3272.BuyFromPlayer",
      "item_name": "rapier",
@@ -35107,7 +35016,20 @@
     "key": "oteryn:npc.cedrik",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -36752,42 +36674,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -58323,21 +58209,6 @@
       "fandom",
       "tibiopedia"
      ]
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
     }
    ],
    "identity": {
@@ -58441,6 +58312,18 @@
     {
      "fact": "trade.4033",
      "reason": "GATED_OFFER"
+    },
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
     }
    ],
    "movement": {
@@ -60177,42 +60060,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      }
     ]
    },
@@ -65809,21 +65656,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3376.BuyFromPlayer",
      "item_name": "studded helmet",
@@ -65940,7 +65772,20 @@
     "key": "oteryn:npc.flint",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -67705,42 +67550,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -71760,21 +71569,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3462.BuyFromPlayer",
      "item_name": "small axe",
@@ -71870,7 +71664,20 @@
     "key": "oteryn:npc.gamel",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -72859,42 +72666,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -88011,21 +87782,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3273.BuyFromPlayer",
      "item_name": "sabre",
@@ -88143,7 +87899,20 @@
     "key": "oteryn:npc.habdel",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 0,
@@ -88958,42 +88727,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -91638,21 +91371,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3336.BuyFromPlayer",
      "item_name": "studded club",
@@ -91780,7 +91498,20 @@
     "key": "oteryn:npc.hardek",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -93305,42 +93036,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -125141,21 +124836,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3376.BuyFromPlayer",
      "item_name": "studded helmet",
@@ -125272,7 +124952,20 @@
     "key": "oteryn:npc.memech",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -126821,42 +126514,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -128997,21 +128654,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3462.BuyFromPlayer",
      "item_name": "small axe",
@@ -129150,7 +128792,20 @@
     "key": "oteryn:npc.morpel",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -130711,42 +130366,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -161435,21 +161054,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3410.BuyFromPlayer",
      "item_name": "plate shield",
@@ -161699,7 +161303,20 @@
     "key": "oteryn:npc.robert",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -163332,42 +162949,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -169897,21 +169478,6 @@
       "fandom",
       "tibiopedia"
      ]
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
     }
    ],
    "identity": {
@@ -169919,7 +169485,20 @@
     "key": "oteryn:npc.romella",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -170844,42 +170423,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      }
     ]
    },
@@ -172394,21 +171937,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3273.BuyFromPlayer",
      "item_name": "sabre",
@@ -172525,7 +172053,20 @@
     "key": "oteryn:npc.rowenna",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -173330,42 +172871,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -174661,21 +174166,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.17824.BuyFromPlayer",
      "item_name": "swampling club",
@@ -174692,7 +174182,20 @@
     "key": "oteryn:npc.sam",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -176361,42 +175864,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -179181,21 +178648,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3337.BuyFromPlayer",
      "item_name": "bone club",
@@ -179961,7 +179413,20 @@
     "key": "oteryn:npc.shanar",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -180854,42 +180319,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -186036,11 +185465,6 @@
   {
    "arbitration": [
     {
-     "chosen": "crystal",
-     "fact": "trade.3457x50",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "canary",
      "fact": "trade.3457",
      "rule": "WIKI_ARBITER"
@@ -186051,7 +185475,12 @@
     "key": "oteryn:npc.simon_the_beggar",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.3457x50",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -202319,21 +201748,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3376.BuyFromPlayer",
      "item_name": "studded helmet",
@@ -202450,7 +201864,20 @@
     "key": "oteryn:npc.turvy",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -203987,42 +203414,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -205842,21 +205233,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3336.BuyFromPlayer",
      "item_name": "studded club",
@@ -205962,7 +205338,20 @@
     "key": "oteryn:npc.ulrik",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -207370,42 +206759,6 @@
      },
      {
       "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
-     },
-     {
-      "count": null,
       "direction": "BuyFromPlayer",
       "item": {
        "family": "Item",
@@ -208244,21 +207597,6 @@
      ]
     },
     {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
-    },
-    {
      "chosen": "wiki",
      "fact": "trade.3286.BuyFromPlayer",
      "item_name": "mace",
@@ -208430,7 +207768,20 @@
     "key": "oteryn:npc.uzgod",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -209271,42 +208622,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -218461,21 +217776,6 @@
       "fandom",
       "tibiopedia"
      ]
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50293s500",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50294s1800",
-     "rule": "WIKI_ARBITER"
-    },
-    {
-     "chosen": "crystal",
-     "fact": "trade.50295s14400",
-     "rule": "WIKI_ARBITER"
     }
    ],
    "identity": {
@@ -218483,7 +217783,20 @@
     "key": "oteryn:npc.willard",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "trade.50293s500",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50294s1800",
+     "reason": "OFFER_UNCONFIRMED"
+    },
+    {
+     "fact": "trade.50295s14400",
+     "reason": "OFFER_UNCONFIRMED"
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -220452,42 +219765,6 @@
       "source_item_id": 50183,
       "sub_type": null,
       "unit_price": 180
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037607",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50293,
-      "sub_type": 500,
-      "unit_price": 347222
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037608",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50294,
-      "sub_type": 1800,
-      "unit_price": 1250000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037609",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50295,
-      "sub_type": 14400,
-      "unit_price": 10000000
      },
      {
       "count": null,
@@ -239235,10 +238512,10 @@
  ],
  "item_map_sha256": "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a",
  "schema": "OTERYN_NPC_PROMOTION_CANDIDATES/v1",
- "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
+ "snapshot_sha256": "2fcbc6ff2ee5c4b78b070741325d02c3c1c8bb04c7aa88e9cc8dc72236a36967",
  "tibiopedia_facts_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
  "totals": {
-  "arbitrated_facts": 1518,
+  "arbitrated_facts": 1460,
   "candidates": 1112,
   "held:DEFINITION_CONFLICT": 1,
   "held:EMPTY_SLUG": 1,
@@ -239249,9 +238526,9 @@
   "held:REMOVED_FROM_GAME": 5,
   "held:SUPPLEMENT_HELD": 13,
   "held:UNPLACED": 7,
-  "left_out_offers": 178,
+  "left_out_offers": 236,
   "left_out_routes": 68,
-  "offers": 12725,
+  "offers": 12668,
   "routes": 198,
   "with_trade": 324,
   "with_travel": 56

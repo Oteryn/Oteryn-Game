@@ -56,8 +56,8 @@ Merge rules:
   "chosen": "wiki", "item_name": <the offer's item name>, "price": <the price>, "wikis": <the agreeing
   wikis, sorted, from fandom/br/tibiopedia>}`. With the Tibiopedia facts, D12 and D13 look a plain offer up
   under its registered Item name, so Fandom and BR agreeing is always D12 and a majority always includes
-  Tibiopedia; an offer with a count or sub type (a fluid, charges) keeps the D12 lookup and is never changed by
-  D13. The source price stays whenever no two wikis agree;
+  Tibiopedia. Name-only D12/D13 prices and WIKI_ARBITER trade selection never settle count/subtype variants;
+  identical source variants remain provisional; conflicting or one-sided variants stay left out;
 - D13 offers: with the Tibiopedia facts, an admitted gold (or source-less) shop also gets every plain offer two of the
   three wikis list for that NPC and direction with the same price, when the item name is exactly one registered
   Item's name and the sources neither admit an offer of that Item and direction nor offer that Item at all in a
@@ -502,7 +502,7 @@ class Builder:
         in the most directions wins, and a tie between different offers decides nothing. The whole offer is admitted
         (owner 1c, #1358 5917959278); a direction no majority confirms is UNCONFIRMED and names its stating source."""
         item = self.item_ref(key[0])
-        if not self.tibiopedia_trade or item is None or key[1] or key[2] is not None:
+        if not self.tibiopedia_trade or item is None or key[1] is not None or key[2] is not None:
             return None
         item_name = self.registry_names.get(item['key'])
         ranked = {}
@@ -543,7 +543,9 @@ class Builder:
             if len(present) == len(bundles) and len(set(facts.values())) == 1:
                 chosen = next(iter(present))
             else:
-                row = wiki.get(str(next(iter(present.values()))['item_name']).lower())
+                # Name-only wiki rows cannot decide a count/sub_type variant.
+                row = (wiki.get(str(next(iter(present.values()))['item_name']).lower())
+                       if key[1] is None and key[2] is None else None)
                 agreeing = [s for s, o in present.items() if row
                             and (o['buy_price'] is None or o['buy_price'] == row['buy_price'])
                             and (o['sell_price'] is None or o['sell_price'] == row['sell_price'])]
@@ -573,11 +575,12 @@ class Builder:
             for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
                 # D13: with the Tibiopedia facts, a plain offer is looked up under its registered Item name, for D12
                 # and D13 alike, never under the source's own item name; an offer with a count or sub type (a fluid,
-                # charges) is more than its Item, so it keeps the D12 lookup and no majority settles it
+                # charges) is more than its Item, so name-only wiki evidence cannot settle its price
                 plain = offer['count'] is None and offer['sub_type'] is None
                 item_name = (self.registry_names.get(item['key']) if self.tibiopedia_trade and plain
                              else offer['item_name'])
-                wiki_price, rule, wikis = self.wiki_price(name, direction, item_name, wiki), 'WIKI_PRICE', None
+                # The wiki capture has no count/sub_type: it cannot price this variant.
+                wiki_price, rule, wikis = (self.wiki_price(name, direction, item_name, wiki) if plain else None), 'WIKI_PRICE', None
                 if wiki_price is None and self.tibiopedia_trade and plain:
                     wiki_price, wikis = self.majority_price(name, direction, item_name, wiki)
                     rule = 'WIKI_MAJORITY_PRICE'
