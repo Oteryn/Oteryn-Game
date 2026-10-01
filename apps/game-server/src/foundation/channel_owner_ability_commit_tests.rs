@@ -1,5 +1,9 @@
 //! Isolated preproduction composition of typed Ability and the physical owner slot.
-use super::super::exact_actor_test_ability::commit::{OwnerCommitError, commit_exact_owner_damage};
+use super::super::exact_actor_test_ability::commit::{
+    OwnerCharmDamagePlan, OwnerCharmDamageResult, OwnerCharmDamageSource, OwnerCommitError,
+    OwnerCommittedPrimaryDamage, commit_exact_owner_charm_damage, commit_exact_owner_damage,
+    commit_exact_owner_primary_damage,
+};
 use super::super::exact_actor_test_ability::exact_actor_resolution::{
     ExactActorProposal, ExactActorResolutionError, ResolvedExactActor, resolve_exact_actor,
 };
@@ -573,6 +577,13 @@ fn origins(carrier: &ChannelActorCarrier) -> Vec<Option<DamageOrigin>> {
         .collect()
 }
 
+fn charm_command() -> CommandRef {
+    CommandRef::new(
+        session(1),
+        super::super::CommandId::new(1).expect("command"),
+    )
+}
+
 fn charm_child(parent: &EffectPlan, generated: i64) -> EffectPlan {
     EffectPlan::ordered_sequential(
         parent.occurrence().clone(),
@@ -586,6 +597,49 @@ fn charm_child(parent: &EffectPlan, generated: i64) -> EffectPlan {
         parent.commit_group().group_id(),
     )
     .expect("declared child entries")
+}
+
+fn try_sealed_primary(
+    carrier: &mut ChannelActorCarrier,
+    continuity: &NamespaceContinuityGuard,
+    resolved: &ResolvedExactActor,
+    plan: &EffectPlan,
+) -> Result<OwnerCommittedPrimaryDamage, OwnerCommitError> {
+    commit_exact_owner_primary_damage(
+        &mut carrier.current_owner_exact_commit(continuity),
+        resolved,
+        plan,
+        who(1),
+        1,
+        charm_command(),
+    )
+}
+
+fn sealed_primary(
+    carrier: &mut ChannelActorCarrier,
+    continuity: &NamespaceContinuityGuard,
+    resolved: &ResolvedExactActor,
+    plan: &EffectPlan,
+) -> OwnerCommittedPrimaryDamage {
+    try_sealed_primary(carrier, continuity, resolved, plan).expect("real primary receipt")
+}
+
+fn native_charm_commit(
+    carrier: &mut ChannelActorCarrier,
+    continuity: &NamespaceContinuityGuard,
+    plan: &OwnerCharmDamagePlan,
+) -> Result<OwnerCharmDamageResult, OwnerCommitError> {
+    commit_exact_owner_charm_damage(
+        &mut carrier.current_owner_exact_commit(continuity),
+        plan,
+        who(1),
+        1,
+        charm_command(),
+    )
+}
+
+fn charm_hp(result: &OwnerDamageResult) -> (i64, i64) {
+    (result.health_before, result.health_after)
 }
 
 fn charm_magnitudes(plan: &EffectPlan) -> Vec<i64> {
@@ -613,6 +667,305 @@ fn charm_native_declared_child_order_preserves_canonical_constructor() {
             .ordinal(),
         1
     );
+}
+
+#[test]
+fn charm_native_evaluator_runs_after_real_primary_and_leaf_damage_replays_without_chaining() {
+    use super::super::exact_actor_test_combat::charm_effects::*;
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    struct Inputs(CharmDefinition);
+    impl CharmCatalogueRead for Inputs {
+        fn charm(&self, key: &str) -> Option<&CharmDefinition> {
+            (key == self.0.key()).then_some(&self.0)
+        }
+    }
+    impl CharmStateRead for Inputs {
+        fn character(&self) -> [u8; 16] {
+            *who(1).as_bytes()
+        }
+        fn assignments_for_race(
+            &self,
+            race: &str,
+        ) -> Result<Vec<CharmAssignment>, CharmStateUnavailable> {
+            Ok(if race == "target:one" {
+                vec![CharmAssignment {
+                    charm_key: self.0.key().to_owned(),
+                    unlocked_stage: 3,
+                }]
+            } else {
+                vec![]
+            })
+        }
+    }
+    let percent = |value| CharmPercent::from_hundredths(value).expect("percent");
+    let inputs = Inputs(
+        CharmDefinition::new(
+            "oteryn:charm.wound",
+            CharmCategory::Major,
+            CharmStageValue::TriggerChancePercent,
+            [percent(1), percent(2), percent(10_000)],
+            CharmEffect::AttackProcDamage {
+                damage: CharmDamageKind {
+                    element: CharmElement::Physical,
+                    ignores_resistances: false,
+                    reduced_by_armor: false,
+                },
+                percent_of_creature_max_health: percent(500),
+                damage_cap_level_multiplier: 2,
+            },
+        )
+        .expect("forced stage-three source definition"),
+    );
+    let (continuity, mut carrier, actor) = fixture(460);
+    let cast = occurrence("attack:charm", "rules:1");
+    let resolved = resolve(&carrier, &continuity, actor, &cast);
+    let primary_plan = plan(cast, "target:one", 3);
+    let parent = sealed_primary(&mut carrier, &continuity, &resolved, &primary_plan);
+    assert_eq!(
+        (charm_hp(parent.result()), health(&carrier)),
+        ((20, 17), Some(17))
+    );
+    let root = GameplayDecisionRoot::from_bytes([7; 32]);
+    let facts = CharmAttackerFacts {
+        level: 10,
+        max_health: 100,
+        max_mana: 100,
+    };
+    let mut input = CharmEvaluationInput {
+        character: *who(1).as_bytes(),
+        race_key: "target:one",
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
+        event: CharmHookEvent::committed_hit(
+            parent.result(),
+            CharmHitSource::CharacterAttack,
+            facts,
+            20,
+        ),
+    };
+    let outcomes =
+        evaluate_charm_hook(&input, &inputs, &inputs).expect("actual post-commit evaluator");
+    let amount = match outcomes[0].result {
+        CharmResult::Applied(CharmEffectOutcome::ProcDamage { amount, .. }) => Some(amount),
+        _ => None,
+    }
+    .expect("first outcome is proc damage");
+    assert_eq!(amount, 1);
+    // This fixture has no mitigation; production supplies the owning mitigation result here.
+    let frozen = OwnerCharmDamagePlan::prepare(
+        &parent,
+        charm_child(&primary_plan, i64::try_from(amount).expect("damage")),
+    )
+    .expect("real receipt lineage")
+    .expect("living target");
+    let result =
+        native_charm_commit(&mut carrier, &continuity, &frozen).expect("actual child HP commit");
+    assert_eq!(result.source, OwnerCharmDamageSource::CharmDamage);
+    assert_eq!(charm_hp(&result.result), (17, 16));
+    assert_eq!(
+        origins(&carrier),
+        [
+            Some(attack(1, 1, 1, 0).origin()),
+            Some(attack(1, 1, 1, 1).origin())
+        ]
+    );
+    let Slot::CreatureOccupied {
+        damage_contributors,
+        ..
+    } = &carrier.slots[0]
+    else {
+        unreachable!("creature");
+    };
+    assert_eq!(damage_contributors.entries[0].total, 4);
+    input.event =
+        CharmHookEvent::committed_hit(&result.result, CharmHitSource::CharmDamage, facts, 20);
+    assert!(
+        evaluate_charm_hook(&input, &inputs, &inputs)
+            .expect("generated source")
+            .is_empty()
+    );
+    let after = carrier.slots.clone();
+    let replay = native_charm_commit(&mut carrier, &continuity, &frozen).expect("leaf replay");
+    assert_eq!(charm_hp(&replay.result), charm_hp(&result.result));
+    assert!(!replay.result.applied);
+    assert_eq!(carrier.slots, after);
+}
+
+#[test]
+fn charm_native_parent_binding_stays_atomic_and_changed_lineage_or_child_is_refused() {
+    let (continuity, mut carrier, actor) = fixture(470);
+    let cast = occurrence("attack:prefix", "rules:1");
+    let resolved = resolve(&carrier, &continuity, actor, &cast);
+    let primary_plan = plan(cast.clone(), "target:one", 3);
+    let parent = sealed_primary(&mut carrier, &continuity, &resolved, &primary_plan);
+    let prefix = carrier.slots.clone();
+    for changed in [
+        plan(cast.clone(), "target:one", 4),
+        plan(occurrence("attack:prefix", "rules:2"), "target:one", 3),
+        plan(cast, "target:other", 3),
+    ] {
+        assert!(matches!(
+            OwnerCharmDamagePlan::prepare(&parent, charm_child(&changed, 9)),
+            Err(OwnerCommitError::InvalidPlan)
+        ));
+        assert_eq!(carrier.slots, prefix);
+    }
+    let frozen = OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 9))
+        .expect("prepare")
+        .expect("live");
+    native_charm_commit(&mut carrier, &continuity, &frozen).expect("child only");
+    let after = carrier.slots.clone();
+    let replayed_parent = sealed_primary(&mut carrier, &continuity, &resolved, &primary_plan);
+    assert!(!replayed_parent.result().applied);
+    assert_eq!(carrier.slots, after);
+    let changed_child = OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 8))
+        .expect("another proposed child")
+        .expect("live");
+    assert_eq!(
+        native_charm_commit(&mut carrier, &continuity, &changed_child),
+        Err(OwnerCommitError::Owner(CarrierError::PlanConflict))
+    );
+    assert_eq!(carrier.slots, after);
+}
+
+#[test]
+fn charm_native_lethal_parent_is_terminal_and_child_cannot_become_another_primary() {
+    let (continuity, mut carrier, actor) = fixture(480);
+    let cast = occurrence("attack:lethal", "rules:1");
+    let resolved = resolve(&carrier, &continuity, actor, &cast);
+    let primary_plan = plan(cast, "target:one", 25);
+    let parent = sealed_primary(&mut carrier, &continuity, &resolved, &primary_plan);
+    let after = carrier.slots.clone();
+    let child = charm_child(&primary_plan, 9);
+    assert!(
+        OwnerCharmDamagePlan::prepare(&parent, child.clone())
+            .expect("terminal disposition")
+            .is_none()
+    );
+    assert!(matches!(
+        try_sealed_primary(&mut carrier, &continuity, &resolved, &child),
+        Err(OwnerCommitError::InvalidPlan)
+    ));
+    assert_eq!(carrier.slots, after);
+    assert_eq!(health(&carrier), Some(0));
+    assert!(receipts(&carrier).lethal().is_some());
+}
+
+#[test]
+fn charm_native_capacity_preserves_failed_primary_and_child_replays_after_parent_eviction() {
+    for count in [16, 15] {
+        let (continuity, mut carrier, actor) = tall_fixture(490 + count as u64, 1_000);
+        for index in 0..count {
+            unsequenced(
+                &mut carrier,
+                &continuity,
+                actor,
+                &format!("full:{index}"),
+                1,
+            )
+            .expect("non-evictable");
+        }
+        let cast = occurrence("attack:capacity", "rules:1");
+        let resolved = resolve(&carrier, &continuity, actor, &cast);
+        let primary_plan = plan(cast, "target:one", 3);
+        let before = carrier.slots.clone();
+        let parent = try_sealed_primary(&mut carrier, &continuity, &resolved, &primary_plan);
+        if count == 16 {
+            assert!(matches!(
+                parent,
+                Err(OwnerCommitError::Owner(
+                    CarrierError::DamageReceiptCapacityExceeded
+                ))
+            ));
+            assert_eq!(carrier.slots, before);
+            continue;
+        }
+        let parent = parent.expect("sixteenth primary receipt");
+        let frozen = OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 9))
+            .expect("prepare")
+            .expect("live");
+        let first = native_charm_commit(&mut carrier, &continuity, &frozen)
+            .expect("evict only eligible primary");
+        assert!(!origins(&carrier).contains(&Some(attack(1, 1, 1, 0).origin())));
+        let after = carrier.slots.clone();
+        let replay = native_charm_commit(&mut carrier, &continuity, &frozen)
+            .expect("frozen child requires no parent reconstruction");
+        assert_eq!(charm_hp(&replay.result), charm_hp(&first.result));
+        assert!(!replay.result.applied);
+        assert_eq!(carrier.slots, after);
+        assert_eq!(health(&carrier), Some(973));
+    }
+}
+
+#[test]
+fn charm_native_frozen_proof_never_supplies_current_owner_or_command_authority() {
+    let (mut continuity, mut carrier, actor) = fixture(520);
+    let cast = occurrence("attack:fence", "rules:1");
+    let resolved = resolve(&carrier, &continuity, actor, &cast);
+    let primary_plan = plan(cast, "target:one", 3);
+    let parent = sealed_primary(&mut carrier, &continuity, &resolved, &primary_plan);
+    let frozen = OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 9))
+        .expect("prepare")
+        .expect("live");
+    let before = carrier.slots.clone();
+    for (character, lease, command) in [
+        (who(2), 1, charm_command()),
+        (who(1), 2, charm_command()),
+        (
+            who(1),
+            1,
+            CommandRef::new(
+                session(1),
+                super::super::CommandId::new(2).expect("different command"),
+            ),
+        ),
+    ] {
+        assert_eq!(
+            commit_exact_owner_charm_damage(
+                &mut carrier.current_owner_exact_commit(&continuity),
+                &frozen,
+                character,
+                lease,
+                command
+            ),
+            Err(OwnerCommitError::InvalidPlan)
+        );
+        assert_eq!(carrier.slots, before);
+    }
+    continuity
+        .advance(grant(520, 2))
+        .expect("independent owner supersession");
+    assert_eq!(
+        native_charm_commit(&mut carrier, &continuity, &frozen),
+        Err(OwnerCommitError::Owner(CarrierError::WrongScope))
+    );
+    assert_eq!(carrier.slots, before);
+}
+
+#[test]
+fn charm_native_combined_lineage_bytes_are_bounded_after_primary_without_rewriting_it() {
+    let (continuity, mut carrier, actor) = fixture(530);
+    let cast = occurrence("attack:bytes", "rules:1");
+    let resolved = resolve(&carrier, &continuity, actor, &cast);
+    let primary_plan = EffectPlan::immediate(
+        cast,
+        AbilityIntent::normalize(ProposalSource::Client, &"a".repeat(2_000), &["target:one"])
+            .expect("large bounded intent"),
+        vec![Effect::damage("target:one", 3).expect("primary")],
+        vec![],
+        CommitGroup::atomic("scope:fixture", "group:one").expect("group"),
+    )
+    .expect("individually bounded parent");
+    let parent = sealed_primary(&mut carrier, &continuity, &resolved, &primary_plan);
+    let after = carrier.slots.clone();
+    assert!(matches!(
+        OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 9)),
+        Err(OwnerCommitError::Plan(
+            super::super::exact_actor_test_ability::AbilityError::EffectPlanTooLarge
+        ))
+    ));
+    assert_eq!(carrier.slots, after);
+    assert_eq!(health(&carrier), Some(17));
 }
 
 #[test]
