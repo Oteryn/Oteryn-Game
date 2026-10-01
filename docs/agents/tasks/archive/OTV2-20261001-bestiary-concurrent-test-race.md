@@ -31,8 +31,9 @@ Test only. Both matches now also accept the late-starter outcome. The assertions
 
 ## Validation
 
-- `cargo test -p oteryn-game-server --test character_authority_postgres bestiary_progress` against local PostgreSQL 17: PASS.
-- `cargo fmt --check`, `cargo clippy` for the test target, and the governance and repository policy validators: PASS.
+- `cargo test -p oteryn-game-server --test character_authority_postgres bestiary_progress` against a local PostgreSQL 17.6 (the version the harness pins): 8 passed.
+- `concurrent_kills_serialize_on_the_character_revision` repeated 40 times: 40 passed.
+- `cargo fmt --check`, `cargo clippy -p oteryn-game-server --test character_authority_postgres -- -D warnings`, `python3 tools/agents/validate_governance.py` and `python3 tools/repository/validate_repository_policy.py`: PASS.
 
 ## Follow-up
 
