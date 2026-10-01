@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: codex/charm-source-effect-lowering-20261001
 branch: codex/charm-canonical-catalogue-20261001
-pr: null
+pr: 1520
 issue: 162
 base_sha: e299c4ca6a4398d576c8cc42eee4c7ac5fdcdd93
 head_sha: null
@@ -61,4 +61,4 @@ native hit/death/AI/tool consumers, commercial facts and atomic paid unassign re
 The original nine-row parent remains IMPLEMENTING. This child completes its source decoder only.
 Root owns guarded publication and exact independent review. Stack CI requires base main;
 the active control plane owns parent-first retarget/requalification and protected integration.
-This record reaches main only if its own PR merges. Its commit cannot contain its own frozen SHA.
+This record reaches main only if PR1520 merges. Its commit cannot contain its own frozen SHA.
