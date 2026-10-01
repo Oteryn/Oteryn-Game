@@ -354,7 +354,9 @@ delay later. When it is due:
   cell on its floor): the occurrence ends `BLOCKED` and one successor is due a full delay later
   (ruling R6).
 - **Warning** (not blockable): a spawn effect at the cell, and the admission 4,200 ms later in the
-  same occurrence (Canary 3 × 1,400 ms).
+  same occurrence (Canary 3 × 1,400 ms). Admission checks occupancy again; a cell occupied then
+  enters the Occupied chain below (each retry repeats the warning), so the point always ends
+  realized, `SKIPPED` with a successor, or `BLOCKED` with a successor.
 - **Occupied:** the accepted chain, 3 retries every 5,000 ms (D115) unless the source states
   another interval, then `SKIPPED` and a successor a full delay later. It never displaces or
   stacks (Canary forces placement; the accepted §4.3 rule stays).
@@ -442,8 +444,11 @@ decisions; until then the factor is 1.
 A summon is removed, with no death, when its owner logs out, dies, transfers channel or leaves the
 channel at the end of its in-fight deadline; when the owner is more than 30 tiles in x or y or 2
 floors away (checked on every committed move of either); when its owner link is stale (owner
-generation changed); and at `WorldReset`. A monster's summons are removed with their master (a
-removal, not a death: no death key, nothing dropped). A reconnect to the same GameSession keeps them. Summons are never saved and do
+generation changed); and at `WorldReset`. A monster's summons are removed with their master
+when the master is removed (a despawn, scope retirement or `WorldReset`: a removal, not a death,
+no death key, nothing dropped). When a monster master dies (a committed lethal transition), each
+of its summons dies too in the same owner step, through the summon death path of §8.2 (its own
+death key and occurrence, no descendant workflow; Canary kills them, `§2`). A reconnect to the same GameSession keeps them. Summons are never saved and do
 not return at login. Familiars are the spell lane's (C.1, its Q3).
 
 ### 8.5 Attribution
