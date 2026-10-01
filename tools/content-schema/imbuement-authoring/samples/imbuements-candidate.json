@@ -1,0 +1,2885 @@
+{
+  "schema": "OTERYN_IMBUEMENT_AUTHORING_CATALOGUE/v1",
+  "activation": "DRAFT_NOT_RUNTIME_READY",
+  "target": "global-tibia-observable-2026-07-28-post-server-save",
+  "source_facts_sha256": "33f2c1e26beb9fe0e20bd00901023510eca19f6a388a0d5610123cb6a317a9b0",
+  "definitions": [
+    {
+      "candidate_key": "bash",
+      "name": "Bash",
+      "category": "bash",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "club",
+            "amount": 1
+          },
+          "materials": [
+            {
+              "source_name": "Cyclops Toe",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "club",
+            "amount": 2
+          },
+          "materials": [
+            {
+              "source_name": "Cyclops Toe",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Ogre Nose Ring",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "club",
+            "amount": 4
+          },
+          "materials": [
+            {
+              "source_name": "Cyclops Toe",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Ogre Nose Ring",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Warmaster's Wristguards",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "blockade",
+      "name": "Blockade",
+      "category": "blockade",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "shielding",
+            "amount": 1
+          },
+          "materials": [
+            {
+              "source_name": "Piece of Scarab Shell",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "shielding",
+            "amount": 2
+          },
+          "materials": [
+            {
+              "source_name": "Piece of Scarab Shell",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Brimstone Shell",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "shielding",
+            "amount": 4
+          },
+          "materials": [
+            {
+              "source_name": "Piece of Scarab Shell",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Brimstone Shell",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Frazzle Skin",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "chop",
+      "name": "Chop",
+      "category": "chop",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "axe",
+            "amount": 1
+          },
+          "materials": [
+            {
+              "source_name": "Orc Tooth",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "axe",
+            "amount": 2
+          },
+          "materials": [
+            {
+              "source_name": "Orc Tooth",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Battle Stone",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "axe",
+            "amount": 4
+          },
+          "materials": [
+            {
+              "source_name": "Orc Tooth",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Battle Stone",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Moohtant Horn",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "cloud_fabric",
+      "name": "Cloud Fabric",
+      "category": "cloud_fabric",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "energy",
+            "absorb_bps": 300
+          },
+          "materials": [
+            {
+              "source_name": "Wyvern Talisman",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "energy",
+            "absorb_bps": 800
+          },
+          "materials": [
+            {
+              "source_name": "Wyvern Talisman",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Crawler Head Plating",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "energy",
+            "absorb_bps": 1500
+          },
+          "materials": [
+            {
+              "source_name": "Wyvern Talisman",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Crawler Head Plating",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Wyrm Scale",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "demon_presence",
+      "name": "Demon Presence",
+      "category": "demon_presence",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "holy",
+            "absorb_bps": 300
+          },
+          "materials": [
+            {
+              "source_name": "Cultish Robe",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "holy",
+            "absorb_bps": 800
+          },
+          "materials": [
+            {
+              "source_name": "Cultish Robe",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Cultish Mask",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "holy",
+            "absorb_bps": 1500
+          },
+          "materials": [
+            {
+              "source_name": "Cultish Robe",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Cultish Mask",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Hellspawn Tail",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "dragon_hide",
+      "name": "Dragon Hide",
+      "category": "dragon_hide",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "fire",
+            "absorb_bps": 300
+          },
+          "materials": [
+            {
+              "source_name": "Green Dragon Leather",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "fire",
+            "absorb_bps": 800
+          },
+          "materials": [
+            {
+              "source_name": "Green Dragon Leather",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Blazing Bone",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "fire",
+            "absorb_bps": 1500
+          },
+          "materials": [
+            {
+              "source_name": "Green Dragon Leather",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Blazing Bone",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Draken Sulphur",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "electrify",
+      "name": "Electrify",
+      "category": "elemental_damage",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "energy",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "source_name": "Rorc Feather",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "energy",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "source_name": "Rorc Feather",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Peacock Feather Fan",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "energy",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "source_name": "Rorc Feather",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Peacock Feather Fan",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Energy Vein",
+              "count": 1,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "epiphany",
+      "name": "Epiphany",
+      "category": "epiphany",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "magic_level",
+            "amount": 1
+          },
+          "materials": [
+            {
+              "source_name": "Elvish Talisman",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "magic_level",
+            "amount": 2
+          },
+          "materials": [
+            {
+              "source_name": "Elvish Talisman",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Broken Shamanic Staff",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "magic_level",
+            "amount": 4
+          },
+          "materials": [
+            {
+              "source_name": "Elvish Talisman",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Broken Shamanic Staff",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Strand of Medusa Hair",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "featherweight",
+      "name": "Featherweight",
+      "category": "featherweight",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "capacity_bonus",
+            "increase_bps": 300
+          },
+          "materials": [
+            {
+              "source_name": "Fairy Wings",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "capacity_bonus",
+            "increase_bps": 800
+          },
+          "materials": [
+            {
+              "source_name": "Fairy Wings",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Little Bowl of Myrrh",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "capacity_bonus",
+            "increase_bps": 1500
+          },
+          "materials": [
+            {
+              "source_name": "Fairy Wings",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Little Bowl of Myrrh",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Goosebump Leather",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "frost",
+      "name": "Frost",
+      "category": "elemental_damage",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "ice",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "source_name": "Frosty Heart",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "ice",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "source_name": "Frosty Heart",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Seacrest Hair",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "ice",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "source_name": "Frosty Heart",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Seacrest Hair",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Polar Bear Paw",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "lich_shroud",
+      "name": "Lich Shroud",
+      "category": "lich_shroud",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "death",
+            "absorb_bps": 200
+          },
+          "materials": [
+            {
+              "source_name": "Flask of Embalming Fluid",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "death",
+            "absorb_bps": 500
+          },
+          "materials": [
+            {
+              "source_name": "Flask of Embalming Fluid",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Gloom Wolf Fur",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "death",
+            "absorb_bps": 1000
+          },
+          "materials": [
+            {
+              "source_name": "Flask of Embalming Fluid",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Gloom Wolf Fur",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Mystical Hourglass",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "precision",
+      "name": "Precision",
+      "category": "precision",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "distance",
+            "amount": 1
+          },
+          "materials": [
+            {
+              "source_name": "Elven Scouting Glass",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "distance",
+            "amount": 2
+          },
+          "materials": [
+            {
+              "source_name": "Elven Scouting Glass",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Elven Hoof",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "distance",
+            "amount": 4
+          },
+          "materials": [
+            {
+              "source_name": "Elven Scouting Glass",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Elven Hoof",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Metal Spike",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "punch",
+      "name": "Punch",
+      "category": "punch",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "fist",
+            "amount": 1
+          },
+          "materials": [
+            {
+              "source_name": "Tarantula Egg",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "fist",
+            "amount": 2
+          },
+          "materials": [
+            {
+              "source_name": "Tarantula Egg",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Mantassin Tail",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "fist",
+            "amount": 4
+          },
+          "materials": [
+            {
+              "source_name": "Tarantula Egg",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Mantassin Tail",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Gold-Brocaded Cloth",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "quara_scale",
+      "name": "Quara Scale",
+      "category": "quara_scale",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "ice",
+            "absorb_bps": 300
+          },
+          "materials": [
+            {
+              "source_name": "Winter Wolf Fur",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "ice",
+            "absorb_bps": 800
+          },
+          "materials": [
+            {
+              "source_name": "Winter Wolf Fur",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Thick Fur",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "ice",
+            "absorb_bps": 1500
+          },
+          "materials": [
+            {
+              "source_name": "Winter Wolf Fur",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Thick Fur",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Deepling Warts",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "reap",
+      "name": "Reap",
+      "category": "elemental_damage",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "death",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "source_name": "Pile of Grave Earth",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "death",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "source_name": "Pile of Grave Earth",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Demonic Skeletal Hand",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "death",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "source_name": "Pile of Grave Earth",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Demonic Skeletal Hand",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Petrified Scream",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "scorch",
+      "name": "Scorch",
+      "category": "elemental_damage",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "fire",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "source_name": "Fiery Heart",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "fire",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "source_name": "Fiery Heart",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Green Dragon Scale",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "fire",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "source_name": "Fiery Heart",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Green Dragon Scale",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Demon Horn",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "slash",
+      "name": "Slash",
+      "category": "slash",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "sword",
+            "amount": 1
+          },
+          "materials": [
+            {
+              "source_name": "Lion's Mane",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "sword",
+            "amount": 2
+          },
+          "materials": [
+            {
+              "source_name": "Lion's Mane",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Mooh'tah Shell",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "skill_bonus",
+            "skill": "sword",
+            "amount": 4
+          },
+          "materials": [
+            {
+              "source_name": "Lion's Mane",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Mooh'tah Shell",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "War Crystal",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "snake_skin",
+      "name": "Snake Skin",
+      "category": "snake_skin",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "earth",
+            "absorb_bps": 300
+          },
+          "materials": [
+            {
+              "source_name": "Piece of Swampling Wood",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "earth",
+            "absorb_bps": 800
+          },
+          "materials": [
+            {
+              "source_name": "Piece of Swampling Wood",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Snake Skin",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "protection",
+            "element": "earth",
+            "absorb_bps": 1500
+          },
+          "materials": [
+            {
+              "source_name": "Piece of Swampling Wood",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Snake Skin",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Brimstone Fangs",
+              "count": 10,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "strike",
+      "name": "Strike",
+      "category": "strike",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "critical",
+            "chance_bps": 1000,
+            "extra_damage_bps": 1500
+          },
+          "materials": [
+            {
+              "source_name": "Protective Charm",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "critical",
+            "chance_bps": 1000,
+            "extra_damage_bps": 2500
+          },
+          "materials": [
+            {
+              "source_name": "Protective Charm",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Sabretooth (Item)",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "critical",
+            "chance_bps": 1000,
+            "extra_damage_bps": 5000
+          },
+          "materials": [
+            {
+              "source_name": "Protective Charm",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Sabretooth (Item)",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Vexclaw Talon",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "swiftness",
+      "name": "Swiftness",
+      "category": "swiftness",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "speed_bonus",
+            "amount": 10
+          },
+          "materials": [
+            {
+              "source_name": "Damselfly Wing",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "speed_bonus",
+            "amount": 15
+          },
+          "materials": [
+            {
+              "source_name": "Damselfly Wing",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Compass",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "speed_bonus",
+            "amount": 30
+          },
+          "materials": [
+            {
+              "source_name": "Damselfly Wing",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Compass",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Waspoid Wing",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "vampirism",
+      "name": "Vampirism",
+      "category": "vampirism",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "leech",
+            "chance_bps": 10000,
+            "share_bps": 500,
+            "resource": "health"
+          },
+          "materials": [
+            {
+              "source_name": "Vampire Teeth",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "leech",
+            "chance_bps": 10000,
+            "share_bps": 1000,
+            "resource": "health"
+          },
+          "materials": [
+            {
+              "source_name": "Vampire Teeth",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Bloody Pincers",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "leech",
+            "chance_bps": 10000,
+            "share_bps": 2500,
+            "resource": "health"
+          },
+          "materials": [
+            {
+              "source_name": "Vampire Teeth",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Bloody Pincers",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Piece of Dead Brain",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "venom",
+      "name": "Venom",
+      "category": "elemental_damage",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "earth",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "source_name": "Swamp Grass",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "earth",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "source_name": "Swamp Grass",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Poisonous Slime",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "elemental_conversion",
+            "element": "earth",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "source_name": "Swamp Grass",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Poisonous Slime",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Slime Heart",
+              "count": 2,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "vibrancy",
+      "name": "Vibrancy",
+      "category": "vibrancy",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "paralysis_deflection",
+            "chance_bps": 1500
+          },
+          "materials": [
+            {
+              "source_name": "Wereboar Hooves",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "paralysis_deflection",
+            "chance_bps": 2500
+          },
+          "materials": [
+            {
+              "source_name": "Wereboar Hooves",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Crystallized Anger",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "paralysis_deflection",
+            "chance_bps": 5000
+          },
+          "materials": [
+            {
+              "source_name": "Wereboar Hooves",
+              "count": 20,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Crystallized Anger",
+              "count": 15,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Quill",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_key": "void",
+      "name": "Void",
+      "category": "void",
+      "parity": "PARITY_PENDING",
+      "item_eligibility_binding": "UNRESOLVED",
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "leech",
+            "chance_bps": 10000,
+            "share_bps": 300,
+            "resource": "mana"
+          },
+          "materials": [
+            {
+              "source_name": "Rope Belt",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 5000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": false,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 2,
+          "name": "Intricate",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "leech",
+            "chance_bps": 10000,
+            "share_bps": 500,
+            "resource": "mana"
+          },
+          "materials": [
+            {
+              "source_name": "Rope Belt",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Silencer Claws",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 30000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        },
+        {
+          "tier": 3,
+          "name": "Powerful",
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "leech",
+            "chance_bps": 10000,
+            "share_bps": 800,
+            "resource": "mana"
+          },
+          "materials": [
+            {
+              "source_name": "Rope Belt",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Silencer Claws",
+              "count": 25,
+              "item_binding": "UNRESOLVED"
+            },
+            {
+              "source_name": "Some Grimeleech Wings",
+              "count": 5,
+              "item_binding": "UNRESOLVED"
+            }
+          ],
+          "apply_fee_gold": 200000,
+          "clear_fee_gold": 15000,
+          "access": {
+            "premium_required": true,
+            "quest_binding": "UNRESOLVED",
+            "source_quest": "Temple of the Forgotten Knowledge",
+            "per_type_unlock_binding": "UNRESOLVED"
+          },
+          "provenance": {
+            "effect": "wiki_br",
+            "materials": "wiki_br",
+            "duration": "manual",
+            "access": "decision",
+            "fees": "decision"
+          }
+        }
+      ]
+    }
+  ]
+}
