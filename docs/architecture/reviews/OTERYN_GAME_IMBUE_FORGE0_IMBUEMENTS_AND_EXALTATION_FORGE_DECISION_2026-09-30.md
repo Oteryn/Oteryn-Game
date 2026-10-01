@@ -193,6 +193,11 @@ Every effect is a GAME-ABILITY-01 input read from the equipped items at the stag
 | Capacity (Featherweight) | derived capacity | the item admission check reads it (§5.1) |
 | Paralysis deflection (Vibrancy) | CONDITIONS-0 admission of paralyze | chance, RNG purpose `imbue_deflect` |
 
+**Amendment (pending on acceptance of PROF-EFFECT-0,
+`OTERYN_GAME_PROF_EFFECT0_KILL_CREDIT_AND_PERK_EFFECTS_DECISION_2026-10-01.md` §4.3).** Strike's
+chance and extra damage are summed with every other critical source into one roll per hit under the
+purpose `crit`; `imbue_crit` is not used.
+
 ### 5.1 Capacity in the database
 
 Composition rule 5 checks capacity inside the PostgreSQL transaction. That check counts the
