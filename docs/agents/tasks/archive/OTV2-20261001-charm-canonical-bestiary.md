@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/charm-canonical-bestiary-20261001
-pr: null
+pr: 1510
 issue: 162
 base_sha: e225b3f76e152d195f75cb757b3d639a3ff5577a
 head_sha: null
@@ -54,5 +54,5 @@ and governance/lifecycle13PASS. Exact independent review belongs to the final fr
 Qualified Content generation attachment and actual native battle/Bestiary-credit consumer
 composition remain unfinished. A retained source revision is not current Content authority.
 The original nine-row completion parent remains IMPLEMENTING. Root publishes guarded actual
-Git identity. This archive reaches main only if its PR merges; a commit cannot contain its
+Git identity. This archive reaches main only if PR1510 merges; a commit cannot contain its
 own final frozen SHA.
