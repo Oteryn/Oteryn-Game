@@ -189,6 +189,8 @@ take?
 - **Superseding evidence:** an official skill formula, or an owner-trusted source that disagrees.
 - **Deliberately not decided:**
   - offline training, exercise weapons, skill boosts from equipment and imbuements;
+    **Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_TIMED_AND_CHARGED_ITEMS_DECISION_2026-10-01.md` §3).** Skill boosts from equipment are derived reads
+    of the equipment owner's active set; nothing is written to the build state.
   - client visibility. `ActorVitalsV1` has no skill or magic-level fields, so players do not see
     their skills until a later wire decision adds them.
 

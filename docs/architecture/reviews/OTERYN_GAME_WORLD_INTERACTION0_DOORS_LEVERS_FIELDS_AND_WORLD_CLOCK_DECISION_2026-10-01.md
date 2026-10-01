@@ -601,6 +601,8 @@ quest doors, quest format §3.1) stays sealed.
   a monster's from its content. Sent as VIS-2 `light`.
 - **Map light sources** (wall torches, lamps) render from their appearance; a torch bearer toggles
   by a LocalObject `TRANSFORM` (per channel).
+- **Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_TIMED_AND_CHARGED_ITEMS_DECISION_2026-10-01.md` §5.3).** Carried torches are decided there: lighting is an
+  ITEM-USE-0 `Transform`, burning a `WHILE_HELD` budget.
 - **Carried torches:** lighting and burning one transforms and decays a durable carried item; it
   waits for the timed-item decision (deferral, not a difference).
 

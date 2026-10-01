@@ -400,6 +400,10 @@ amendment in §39.3 admits the closed `ItemUseCause`.
 **Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
 The quest exchange amendment in §39.3 admits the closed `QuestExchangeCause`.
 
+**Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_TIMED_AND_CHARGED_ITEMS_DECISION_2026-10-01.md` §7).** The item life amendment in §39.3 admits the closed
+`ItemLifeCause {Checkpoint, Expire, ChargeReserve, ChargeReturn, Repair}` and the `ItemUseCause`
+variant `Transform`.
+
 **Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
 §15).** The rune and conjure amendment in §39.3 adds the variant `Rune` to `ItemUseCause` and
 admits the closed `ConjureCause` (a BURN of one reagent unit with a MINT of the conjured units).
@@ -843,6 +847,10 @@ tile of the same channel scope (§32 fence), with the destination tile limit and
 locked after the item rows in tile key order; a container tree moves by its root (BAGS-0 §4.3).
 Rows `DUR03-RL-0x-GROUND-MOVE`: 1 touched item, 2 location lines, 1 participant, 3 work units. A
 key's immutable `key_number` is part of the MINT and TRANSFER typed evidence (`DUR03-RL-07-KEY`).
+
+**Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_TIMED_AND_CHARGED_ITEMS_DECISION_2026-10-01.md` §7).** The item life amendment in §39.3 also admits a
+whole-instance BURN or `PRESERVE_INSTANCE` TRANSFORM at expiry, `STATE_MUTATION` of time and charge
+state, and the repair and torch TRANSFORMs.
 
 Each aggregate covers the complete applicable §39 semantic evidence. This includes
 typed item identity/lifecycle/type/quantity before and after; location/custody
@@ -1604,6 +1612,26 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
   event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
   use's effect, with its own suffixed resource rows.
+
+**Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_TIMED_AND_CHARGED_ITEMS_DECISION_2026-10-01.md` §5-§7).** Once accepted, in its EQUIP-TIME-1,
+EQUIP-CHARGE-1 and EQUIP-REPAIR-1 children and for these shapes only, item-only transactions of items
+in the character's equipment or own trees:
+
+- **Checkpoint.** `STATE_MUTATION` of `remaining_ms` down under `ItemLifeCause::Checkpoint`, no event,
+  batched with imbuement checkpoints (IMBUE-FORGE-0 §4.3).
+- **Expire.** At zero time, or zero charges with an empty reserve: one `TRANSFORM`
+  (`PRESERVE_INSTANCE`) to the definition's `expire_to`, or one whole-instance BURN, under
+  `ItemLifeCause::Expire`, audited.
+- **Charge reserve and return.** `STATE_MUTATION` moving at most 4 from `charges` to
+  `reserved_charges` (`ChargeReserve`, requires the item still active in the same slot) and back
+  (`ChargeReturn`, or inside the move that stops the item); `reserved_charges` found at recovery are
+  set to zero as spent.
+- **Repair.** One `TRANSFORM` (`PRESERVE_INSTANCE`, time reset) under `ItemLifeCause::Repair {npc,
+  offer}` with the gold fee shape under `FeeBurnCause::Repair` in one transaction.
+- **Torch.** One whole-instance `TRANSFORM` (`PRESERVE_INSTANCE`) under `ItemUseCause::Transform`.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn, transform, nested
+  containers (items in the character's own trees) and, for repair, multiple touched items within the
+  gold fee shape. Every other §39 obligation is unchanged; rows `DUR03-RL-0x-ITEMLIFE` as EQUIP-0 §7.1.
 
 **Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
 Once accepted, in its NPC-QUEST-1 child:

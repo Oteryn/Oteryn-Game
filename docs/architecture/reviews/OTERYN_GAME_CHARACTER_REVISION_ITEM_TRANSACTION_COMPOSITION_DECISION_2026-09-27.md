@@ -278,6 +278,14 @@ watched character's consent change to an entry naming it, and the `vip_status` s
 rows, not Character state. A VIP write advances no `CharacterRevision`, touches no item and
 takes rule 2's fence of the acting session.
 
+**Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_TIMED_AND_CHARGED_ITEMS_DECISION_2026-10-01.md` §7).** Rule 1 also covers the item life writes of
+`ItemLifeCause` (checkpoint, expire, charge reserve and return, repair) and `ItemUseCause::Transform`:
+no `CharacterRevision` advance. Server-originated ones use the STARTER-BACKPACK-0 server-originated
+variant, keyed by `(WorldId,
+ChannelId, scope ownership generation, runtime actor id, actor generation, ItemInstanceId, life
+sequence, CharacterId)` with the character's current admitted session's `CurrentCharacterItemFence`;
+repair and lighting are player commands under rule 2. Rule 4's lock order applies unchanged.
+
 ## 6. Handback
 
 ```yaml
