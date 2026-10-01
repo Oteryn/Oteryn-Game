@@ -223,6 +223,13 @@ The v1 registry initially contains **zero optional capabilities**. Speculative c
 
 Future additive capabilities use stable numeric IDs only when an older same-major peer can safely continue without the feature and the feature cannot weaken a core invariant.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3-§4).** A channel scope may declare required
+capabilities (`required_gameplay_capabilities`, beside its `world_policy_revision`, closed under each
+capability's registry `requires`, at most 16). FND-04 refuses fresh admission, reconnect and recovery
+of a peer whose supported list lacks that set, and selects every required capability. For such a
+channel, refusal is the safe outcome for an older peer that cannot continue without the feature; the
+capability stays optional for protocol major 1 and a channel with an empty list behaves as before.
+
 Negotiation rules:
 
 - a peer's **supported** capability list is sorted, unique and bounded;
@@ -231,12 +238,6 @@ Negotiation rules:
 - an unknown **selected/required** capability fails closed;
 - duplicate or unsorted selected/required capability IDs fail closed;
 - there is no capability digest and no exact full-list equality requirement.
-
-**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3).** A World's policy may
-require registered optional capabilities (`required_gameplay_capabilities`, closed under each
-capability's own requirements, at most 16). FND-04 refuses admission, reconnect and recovery of a
-client whose supported list lacks them, and a required capability is always selected. It stays
-optional for protocol major 1: a World with an empty list behaves as before.
 
 ## 10. Wire identifiers
 
