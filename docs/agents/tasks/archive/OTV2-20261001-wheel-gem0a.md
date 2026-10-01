@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-wheel-gem-0a
-pr: "assigned at PR creation; recorded in the #162 FREEZE_SHA entry"
+pr: 1472
 base_sha: aad17f99
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -44,7 +44,7 @@ external_repositories: []
 
 ## Closeout
 
-- PR: recorded in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1472. Review: Codex 5382889534 (P2 only) on `18351dfd` answered in the next head; frozen heads in the #162 FREEZE_SHA entries. Merge commit/result: its squash merge.
 - Amendment, pending on acceptance: WHEEL-GEM-0 §2, §4, §5.1, rows, declared differences.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 

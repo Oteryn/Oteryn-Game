@@ -27,7 +27,7 @@
 |---|---|---|---|
 | GEM-R | impl, content review | the gem ruleset: families, mod catalogues, values per grade, resonance slots, fees, yields, grade costs; validator; revision migration rule (§4, §5.3) | W-R |
 | GEM-CONTENT-1 | content lane | gem and fragment item facts (stack of 100), the vocation family of each gem item, loot rows for bosses, the jewelry NPC offers check (§3) | none |
-| GEM-1 | hard, persistence and economy review | the Atelier tables, a new receipt kind, `commit_character_atelier` on CHAR-REV-SEQ-1; the initial gems; reveal, dismantle, switch domain, lock, grade up; the causes and their DUR-03 and gold fee amendments (§5-§8) | W-1; GEM-R; GOLD-FEE-2 |
+| GEM-1 | hard, persistence and economy review | the Atelier tables, a new receipt kind, `commit_character_atelier` on CHAR-REV-SEQ-1; the initial gems; reveal, dismantle, switch domain, lock, grade up; the causes and their DUR-03 and gold fee amendments (§5-§8) | W-1; GEM-R; GOLD-FEE-2; WHEEL-GEM-0A accepted (its §5 ordering rule) |
 | GEM-VESSEL-1 | hard, persistence review | the vessel table in `commit_character_wheel`, the Wheel receipt extension (§9) | W-1; GEM-1 |
 | GEM-WIRE-1 | impl, protocol review | capability `WHEEL_GEM_V1`, `ATELIER_QUERY`, `ATELIER_INTENT`, the vessel field of `WHEEL_INTENT` (§10) | W-2; GEM-1; GEM-VESSEL-1 |
 | GEM-FX-1 | hard, combat review | mod effects through the W-FX-1 contribution and the ability hooks; resonance; revelation mastery; Grade IV points (§9.3) | W-FX-1; GEM-VESSEL-1 |

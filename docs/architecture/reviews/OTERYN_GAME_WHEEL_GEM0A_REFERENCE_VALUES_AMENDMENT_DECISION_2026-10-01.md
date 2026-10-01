@@ -49,10 +49,11 @@ the owner-verified tibiatools.io engine counts as a statement.
 
 ## 5. Migration
 
-None. No character holds revealed gems or grades yet (GEM-1 is not built). GEM-R and W-R carry
-these values in their first revision. If GEM-1 ships before this decision is accepted, the change
-to 225 follows WHEEL-GEM-0 §5.3: characters above 225 keep their gems and cannot reveal more until
-they are below the cap.
+None. No character holds revealed gems or grades yet (GEM-1 is not built). **Ordering rule:**
+GEM-R and W-R carry these values in their first revision, and GEM-1 is not admitted before this
+decision is accepted. So no row is ever written under the old cap, grade cost or slot-2 list, and
+no WHEEL-GEM-0 §5.3 migration is needed. Amended: WHEEL-GEM-0 implementation brief (GEM-1 depends
+on WHEEL-GEM-0A).
 
 ## 6. Owner questions
 
