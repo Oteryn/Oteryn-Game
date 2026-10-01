@@ -33,12 +33,12 @@
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
       "role": "quests",
-      "sha256": "108195169dcbde2689614005af5fa00e8f6e9240be741e28d7ce29704371189e"
+      "sha256": "a30efaad3f346f2e2efbd5902123984cf4591adea722c12a96cf7eff1696616d"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/catalogue/catalogue.json",
       "role": "wiki_catalogue",
-      "sha256": "dd3ab0bd61578e6de4eadee7b4d28ba0055b8fe1f23cfa55c8b659a608307aab"
+      "sha256": "de95a77cb3c573197a6b93a607f1b3bcfaeec16da547c6924d42882d3cea1c17"
     }
   ],
   "schema": "OTERYN_SOURCE_TEXT_REGISTRY/v1",

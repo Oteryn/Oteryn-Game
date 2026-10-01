@@ -13620,6 +13620,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/horse_station_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Horse Station World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Horse Station World Change",
+        "pageid": 54701,
+        "revid": 844780
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/hot_cuisine_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -30028,6 +30051,29 @@
       },
       "requirements": {
         "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/thawing_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Thawing Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Thawing Mini World Change",
+        "pageid": 76267,
+        "revid": 845260
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
         "min_level": 0
       }
     },
@@ -54150,6 +54196,32 @@
     },
     {
       "identity": {
+        "key": "canary:quest/thornfire_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Thornfire World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Thornfire World Change",
+        "pageid": 54125,
+        "revid": 844903
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "None"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "none"
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/threatened_dreams_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -59955,6 +60027,52 @@
     },
     {
       "identity": {
+        "key": "crystalserver:quest/afflicted_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Afflicted Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Afflicted Outfits Quest",
+        "pageid": 54472,
+        "revid": 844677
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/ancient_aucar_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Ancient Aucar Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Ancient Aucar Outfits Quest",
+        "pageid": 101462,
+        "revid": 1045730
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "crystalserver:quest/berserk_potion_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -60326,6 +60444,27 @@
       "requirements": {
         "premium": true,
         "min_level": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/feral_trappers_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Feral Trappers Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Feral Trappers Quest",
+        "pageid": 110524,
+        "revid": 1187332
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no"
+      },
+      "requirements": {
+        "premium": false
       }
     },
     {
@@ -61139,6 +61278,27 @@
       },
       "requirements_unparsed": {
         "min_level": "range"
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/within_the_tides_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Within the Tides Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Within the Tides Quest",
+        "pageid": 98526,
+        "revid": 1036406
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements": {
+        "premium": true
       }
     }
   ]

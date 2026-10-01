@@ -26,10 +26,10 @@
   "scheduler": "owner for delayed callbacks (none yet)"
  },
  "counts": {
-  "quests": 250,
+  "quests": 257,
   "by_kind": {
    "reward_only": 110,
-   "script_only": 82,
+   "script_only": 89,
    "storyline": 58
   },
   "quests_needing_feature": {
@@ -63,127 +63,127 @@
   {
    "feature": "trigger_step",
    "owner": "GAME-INTERACTION-01 step edges",
-   "quests_complete_on_engine_side": 32,
+   "quests_complete_on_engine_side": 39,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "teleport",
    "owner": "relocation owner (D37)",
-   "quests_complete_on_engine_side": 35,
+   "quests_complete_on_engine_side": 42,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "trigger_use",
    "owner": "GAME-INTERACTION-01 USE edge",
-   "quests_complete_on_engine_side": 36,
+   "quests_complete_on_engine_side": 43,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "reward_claim",
    "owner": "DUR-03 inventory mint and RewardClaim (D39-D42)",
-   "quests_complete_on_engine_side": 122,
+   "quests_complete_on_engine_side": 129,
    "of_which_without_data_gaps": 87
   },
   {
    "feature": "world_object",
    "owner": "world-object overlay (D38)",
-   "quests_complete_on_engine_side": 129,
+   "quests_complete_on_engine_side": 136,
    "of_which_without_data_gaps": 87
   },
   {
    "feature": "item_consume",
    "owner": "DUR-03 consumption",
-   "quests_complete_on_engine_side": 132,
+   "quests_complete_on_engine_side": 139,
    "of_which_without_data_gaps": 88
   },
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 136,
+   "quests_complete_on_engine_side": 143,
    "of_which_without_data_gaps": 89
   },
   {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 137,
+   "quests_complete_on_engine_side": 144,
    "of_which_without_data_gaps": 89
   },
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 160,
+   "quests_complete_on_engine_side": 167,
    "of_which_without_data_gaps": 95
   },
   {
    "feature": "door_progress",
    "owner": "door gate: quest progress",
-   "quests_complete_on_engine_side": 173,
+   "quests_complete_on_engine_side": 180,
    "of_which_without_data_gaps": 104
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
-   "quests_complete_on_engine_side": 179,
+   "quests_complete_on_engine_side": 186,
    "of_which_without_data_gaps": 104
   },
   {
    "feature": "item_hand_out",
    "owner": "DUR-03 inventory mint",
-   "quests_complete_on_engine_side": 190,
+   "quests_complete_on_engine_side": 197,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "summon",
    "owner": "GAME-AI-01 spawn",
-   "quests_complete_on_engine_side": 199,
+   "quests_complete_on_engine_side": 206,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "condition",
    "owner": "owner for player conditions (none yet)",
-   "quests_complete_on_engine_side": 207,
+   "quests_complete_on_engine_side": 214,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "achievement",
    "owner": "Achievement owner",
-   "quests_complete_on_engine_side": 219,
+   "quests_complete_on_engine_side": 226,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "creature_removal",
    "owner": "owner for creature removal (none yet)",
-   "quests_complete_on_engine_side": 225,
+   "quests_complete_on_engine_side": 232,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "boss_cooldown",
    "owner": "boss cooldown owner (none yet)",
-   "quests_complete_on_engine_side": 235,
+   "quests_complete_on_engine_side": 242,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "kv_state",
    "owner": "owner for key-value writes (none yet)",
-   "quests_complete_on_engine_side": 242,
+   "quests_complete_on_engine_side": 249,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "outfit",
    "owner": "Outfit grant owner",
-   "quests_complete_on_engine_side": 245,
+   "quests_complete_on_engine_side": 252,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "mount",
    "owner": "Mount grant owner",
-   "quests_complete_on_engine_side": 248,
+   "quests_complete_on_engine_side": 255,
    "of_which_without_data_gaps": 105
   },
   {
    "feature": "experience",
    "owner": "Character XP award from an interaction",
-   "quests_complete_on_engine_side": 250,
+   "quests_complete_on_engine_side": 257,
    "of_which_without_data_gaps": 105
   }
  ],
@@ -1633,6 +1633,16 @@
    }
   },
   {
+   "quest": "canary:quest/horse_station_world_change",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/hot_cuisine_quest",
    "kind": "storyline",
    "features": [
@@ -2871,6 +2881,16 @@
    }
   },
   {
+   "quest": "canary:quest/thawing_mini_world_change",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/the_ancient_tombs_quest",
    "kind": "storyline",
    "features": [
@@ -3543,6 +3563,16 @@
    }
   },
   {
+   "quest": "canary:quest/thornfire_world_change",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/threatened_dreams_quest",
    "kind": "storyline",
    "features": [
@@ -3930,6 +3960,26 @@
    }
   },
   {
+   "quest": "crystalserver:quest/afflicted_outfits_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "crystalserver:quest/ancient_aucar_outfits_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "crystalserver:quest/berserk_potion_quest",
    "kind": "reward_only",
    "features": [
@@ -3970,6 +4020,16 @@
   },
   {
    "quest": "crystalserver:quest/dream_warrior_outfits_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "crystalserver:quest/feral_trappers_quest",
    "kind": "script_only",
    "features": [],
    "interactions": 0,
@@ -4074,6 +4134,16 @@
    "data_gaps": {
     "interactions_with_gaps": 12,
     "unresolved_items": 39
+   }
+  },
+  {
+   "quest": "crystalserver:quest/within_the_tides_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
    }
   }
  ],

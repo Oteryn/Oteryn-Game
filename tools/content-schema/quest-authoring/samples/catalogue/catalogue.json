@@ -9,11 +9,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
-      "sha256": "108195169dcbde2689614005af5fa00e8f6e9240be741e28d7ce29704371189e"
+      "sha256": "a30efaad3f346f2e2efbd5902123984cf4591adea722c12a96cf7eff1696616d"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "fc4a33118ef8965222d5c66738c49530a7966b4515b82627faa29a74010727e7"
+      "sha256": "1d398389077ea703ae0db2ffaa60182950985781b602c98116fe5071eb244ad3"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -21,11 +21,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_facts.json",
-      "sha256": "bf8ba7d4a1318826af4dc2c42ddd3fbd9218b8fa9f9ed117ae56151c3fc08738"
+      "sha256": "5084dcbde8ed53f2e0535202549033f5f532b8e9d0e800121e548388f606b904"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
-      "sha256": "8869006ab863d2bc2ccc846d5de59f42ff9d88e8adfd1800d6ef57ecfab7872f"
+      "sha256": "b496b8ff08deb70bfe78c40a73ad607296deb803c2f9ac325a4c9b9bdc571fb7"
     }
   ],
   "historical_coverage_ots_sources": {
@@ -40,14 +40,14 @@
   },
   "summary": {
     "source_titles": 373,
-    "authored_records": 250,
+    "authored_records": 257,
     "coverage_states": {
-      "conflict": 91,
-      "directly_authored": 170,
+      "conflict": 92,
+      "directly_authored": 175,
       "represented_by_family": 21,
-      "unrepresented": 91
+      "unrepresented": 85
     },
-    "quest_log_conflicts": 25,
+    "quest_log_conflicts": 26,
     "duplicate_title_checks": 0
   },
   "fresh_acquisition_summary": {
@@ -5145,11 +5145,408 @@
         "lvl": "0",
         "implemented": "9.10"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "crystalserver:quest/afflicted_outfits_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
-      "source_backed_authoring": null,
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Afflicted Outfits Quest",
+          "pageid": 54472,
+          "revid": 844677
+        },
+        "curator_entry": {
+          "title": "Afflicted Outfits Quest",
+          "key": "afflicted_outfits_quest",
+          "source_paths": [
+            "data/scripts/actions/items/usable_afflicted_outfit_items.lua"
+          ],
+          "basis": "Exact named callback restores Afflicted base outfit from six cloth item IDs and grants two addon IDs; pinned wiki corroborates restoration/addon requirements. Source component only.",
+          "coverage_gap": "Canonical item/outfit/achievement admission, acquisition routes, native quest state and runtime remain unassessed.",
+          "source_evidence": [
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 3,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 4,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 37,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 44,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 45,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 48,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 49,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 56,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 57,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 3,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 4,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 37,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 44,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 45,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 48,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 49,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 56,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+              "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+              "line": 57,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ]
+        },
+        "sources": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 3,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 4,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 37,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 44,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 45,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 48,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 49,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 56,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 57,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 3,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 4,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 37,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 44,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 45,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 48,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 49,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 56,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+            "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+            "line": 57,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",
@@ -7917,7 +8314,25 @@
         "implemented": "13.10.12852"
       },
       "coverage_state": "conflict",
-      "authored_candidates": [],
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "crystalserver:quest/ancient_aucar_outfits_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [
         {
@@ -7931,7 +8346,206 @@
           "resolution": "Preserve scoped fields; align dates and meanings before promotion"
         }
       ],
-      "source_backed_authoring": null,
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Ancient Aucar Outfits Quest",
+          "pageid": 101462,
+          "revid": 1045730
+        },
+        "curator_entry": {
+          "title": "Ancient Aucar Outfits Quest",
+          "key": "ancient_aucar_outfits_quest",
+          "source_paths": [
+            "scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua"
+          ],
+          "basis": "Named source base-outfit grant in Idol of Tukh callback; source references establish use of an already acquired idol.",
+          "coverage_gap": "Acquisition, addons, achievement, whole quest and native/runtime admission remain unassessed. Shared Galthen path does not establish exclusive mission or interaction ownership.",
+          "source_evidence": [
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 2,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 3,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 4,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 16,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 17,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 18,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 21,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 29,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+              "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+              "line": 31,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ]
+        },
+        "sources": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 2,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 3,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 4,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 16,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 17,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 18,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 21,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 29,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+            "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+            "line": 31,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",
@@ -47946,11 +48560,248 @@
         "lvl": "",
         "implemented": "15.20.7a5cc9"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "crystalserver:quest/feral_trappers_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
-      "source_backed_authoring": null,
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Feral Trappers Quest",
+          "pageid": 110524,
+          "revid": 1187332
+        },
+        "curator_entry": {
+          "title": "Feral Trappers Quest",
+          "key": "feral_trappers_quest",
+          "source_paths": [
+            "data/scripts/lib/task_board_shop.lua"
+          ],
+          "basis": "Exact Feral Trapper base/addon offers plus executable C++ purchase component; shop component only.",
+          "coverage_gap": "CPP grant lies outside Lua Interaction transcription. Configured looktype1907 is granted; female delivery, complete activity and achievement semantics remain unknown.",
+          "source_evidence": [
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/lib/task_board_shop.lua",
+              "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+              "line": 42,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/lib/task_board_shop.lua",
+              "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+              "line": 44,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/lib/task_board_shop.lua",
+              "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+              "line": 51,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/lib/task_board_shop.lua",
+              "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+              "line": 53,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/lib/task_board_shop.lua",
+              "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+              "line": 60,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/lib/task_board_shop.lua",
+              "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+              "line": 62,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "src/io/ioweeklytasks.cpp",
+              "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+              "line": 561,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "src/io/ioweeklytasks.cpp",
+              "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+              "line": 592,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "src/io/ioweeklytasks.cpp",
+              "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+              "line": 671,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "src/io/ioweeklytasks.cpp",
+              "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+              "line": 673,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ]
+        },
+        "sources": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/lib/task_board_shop.lua",
+            "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+            "line": 42,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/lib/task_board_shop.lua",
+            "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+            "line": 44,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/lib/task_board_shop.lua",
+            "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+            "line": 51,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/lib/task_board_shop.lua",
+            "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+            "line": 53,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/lib/task_board_shop.lua",
+            "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+            "line": 60,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/lib/task_board_shop.lua",
+            "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+            "line": 62,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "src/io/ioweeklytasks.cpp",
+            "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+            "line": 561,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "src/io/ioweeklytasks.cpp",
+            "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+            "line": 592,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "src/io/ioweeklytasks.cpp",
+            "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+            "line": 671,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "src/io/ioweeklytasks.cpp",
+            "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+            "line": 673,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",
@@ -62734,11 +63585,212 @@
         "lvl": "0",
         "implemented": "9.10"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/horse_station_world_change",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
-      "source_backed_authoring": null,
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Horse Station World Change",
+          "pageid": 54701,
+          "revid": 844780
+        },
+        "curator_entry": {
+          "title": "Horse Station World Change",
+          "key": "horse_station_world_change",
+          "source_paths": [
+            "npc/palomino.lua",
+            "npc/appaloosa.lua",
+            "scripts/globalevents/spawn/horse_station_world_change.lua",
+            "scripts/globalevents/others/horse_station.lua",
+            "scripts/actions/mounts/mounts.lua"
+          ],
+          "basis": "Registered station startup/return events, named rental NPCs and shared taming callbacks implement bounded station components.",
+          "coverage_gap": "Rental expiry, stable locality and independent NPC wave-event cancellation remain unestablished; shared taming only covers a reward component.",
+          "source_evidence": [
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/palomino.lua",
+              "blob_sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da",
+              "line": 175,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/palomino.lua",
+              "blob_sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da",
+              "line": 231,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/appaloosa.lua",
+              "blob_sha256": "2972dcf9913edd16f693bf265a97acbdec9acde1de8487141ee776ed98efce19",
+              "line": 175,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "blob_sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b",
+              "line": 55,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/globalevents/others/horse_station.lua",
+              "blob_sha256": "0d6615155766a3ccd21a5ba8519a687dcca1ff5314ed57d07600dbe021c863f0",
+              "line": 44,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/globalevents/others/horse_station.lua",
+              "blob_sha256": "0d6615155766a3ccd21a5ba8519a687dcca1ff5314ed57d07600dbe021c863f0",
+              "line": 75,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/actions/mounts/mounts.lua",
+              "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+              "line": 71,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/actions/mounts/mounts.lua",
+              "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+              "line": 291,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ]
+        },
+        "sources": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/palomino.lua",
+            "blob_sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da",
+            "line": 175,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/palomino.lua",
+            "blob_sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da",
+            "line": 231,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/appaloosa.lua",
+            "blob_sha256": "2972dcf9913edd16f693bf265a97acbdec9acde1de8487141ee776ed98efce19",
+            "line": 175,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+            "blob_sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b",
+            "line": 55,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/globalevents/others/horse_station.lua",
+            "blob_sha256": "0d6615155766a3ccd21a5ba8519a687dcca1ff5314ed57d07600dbe021c863f0",
+            "line": 44,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/globalevents/others/horse_station.lua",
+            "blob_sha256": "0d6615155766a3ccd21a5ba8519a687dcca1ff5314ed57d07600dbe021c863f0",
+            "line": 75,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/actions/mounts/mounts.lua",
+            "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+            "line": 71,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/actions/mounts/mounts.lua",
+            "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+            "line": 291,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",
@@ -125062,11 +126114,228 @@
         "lvl": "0",
         "implemented": "9.40"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/thawing_mini_world_change",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
-      "source_backed_authoring": null,
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Thawing Mini World Change",
+          "pageid": 76267,
+          "revid": 845260
+        },
+        "curator_entry": {
+          "title": "Thawing Mini World Change",
+          "key": "thawing_mini_world_change",
+          "source_paths": [
+            "scripts/world_changes/thawing.lua"
+          ],
+          "basis": "Registered ThawingMiniWorldChange startup creates Ice Flowers at fixed positions and publishes the named world-board flag.",
+          "coverage_gap": "Lifecycle/reset, flower pickup/use and NPC exchange are not fully transcribed.",
+          "source_evidence": [
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 1,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 2,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 29,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 31,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 32,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 33,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 35,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 38,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/world_changes/thawing.lua",
+              "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+              "line": 47,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ]
+        },
+        "sources": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 1,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 2,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 29,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 31,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 32,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 33,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 35,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 38,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/world_changes/thawing.lua",
+            "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+            "line": 47,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",
@@ -161779,11 +163048,210 @@
         "lvl": "None",
         "implemented": "9.10"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/thornfire_world_change",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
-      "source_backed_authoring": null,
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Thornfire World Change",
+          "pageid": 54125,
+          "revid": 844903
+        },
+        "curator_entry": {
+          "title": "Thornfire World Change",
+          "key": "thornfire_world_change",
+          "source_paths": [
+            "data/scripts/actions/tools/prepared_bucket.lua",
+            "data/scripts/movements/thornfire_wolf.lua",
+            "scripts/actions/mounts/mounts.lua"
+          ],
+          "basis": "Bog-water bucket, extinguishing, Thornfire-to-Crystal-Wolf and shared Crystal-Wolf taming components exist; activity subset only.",
+          "coverage_gap": "World scheduler/lifecycle/locality are unbound. Firefighter check is nested in wolf-spawn branch; Coal and Flintstone reward delivery remain unknown.",
+          "source_evidence": [
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/tools/prepared_bucket.lua",
+              "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+              "line": 34,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/tools/prepared_bucket.lua",
+              "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+              "line": 52,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/tools/prepared_bucket.lua",
+              "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+              "line": 59,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/actions/tools/prepared_bucket.lua",
+              "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+              "line": 67,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/movements/thornfire_wolf.lua",
+              "blob_sha256": "010270cc7a3ad1ecdd960b645d1013bc61f24feace4df38092295b91aca2b7cf",
+              "line": 3,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data/scripts/movements/thornfire_wolf.lua",
+              "blob_sha256": "010270cc7a3ad1ecdd960b645d1013bc61f24feace4df38092295b91aca2b7cf",
+              "line": 17,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/actions/mounts/mounts.lua",
+              "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+              "line": 12,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/scripts/actions/mounts/mounts.lua",
+              "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+              "line": 142,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ]
+        },
+        "sources": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/tools/prepared_bucket.lua",
+            "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+            "line": 34,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/tools/prepared_bucket.lua",
+            "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+            "line": 52,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/tools/prepared_bucket.lua",
+            "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+            "line": 59,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/actions/tools/prepared_bucket.lua",
+            "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+            "line": 67,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/movements/thornfire_wolf.lua",
+            "blob_sha256": "010270cc7a3ad1ecdd960b645d1013bc61f24feace4df38092295b91aca2b7cf",
+            "line": 3,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data/scripts/movements/thornfire_wolf.lua",
+            "blob_sha256": "010270cc7a3ad1ecdd960b645d1013bc61f24feace4df38092295b91aca2b7cf",
+            "line": 17,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/actions/mounts/mounts.lua",
+            "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+            "line": 12,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/actions/mounts/mounts.lua",
+            "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+            "line": 142,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",
@@ -178150,11 +179618,75 @@
         "lvl": "",
         "implemented": "12.90.12182"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "conflict",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "crystalserver:quest/within_the_tides_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
-      "source_checks": [],
-      "source_backed_authoring": null,
+      "source_checks": [
+        {
+          "kind": "quest_log_conflict",
+          "key": "crystalserver:quest/within_the_tides_quest",
+          "wiki_reference_in_quest_log": true,
+          "ots_shown_in_quest_log": false
+        }
+      ],
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Within the Tides Quest",
+          "pageid": 98526,
+          "revid": 1036406
+        },
+        "curator_entry": {
+          "title": "Within the Tides Quest",
+          "key": "within_the_tides_quest",
+          "source_paths": [
+            "scripts/quests/marapur/actions_boss_timira_fight.lua"
+          ],
+          "basis": "Pinned wiki spoiler98527@1106110 names Timira the Many-Headed; source Encounter defines that boss under marapur. Timira component only.",
+          "coverage_gap": "NPC missions, access prerequisites, full quest rewards, native/runtime admission remain unassessed.",
+          "source_evidence": [
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+              "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+              "line": 175,
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ]
+        },
+        "sources": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+            "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+            "line": 175,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",

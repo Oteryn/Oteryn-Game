@@ -415,21 +415,21 @@
     "transitions_in_both_servers": 1345,
     "storyline_quests_linked_to_wiki": 52,
     "reward_only_quests_absorbed": 25,
-    "script_only_quests": 82,
-    "catalogue_quests": 250,
+    "script_only_quests": 89,
+    "catalogue_quests": 257,
     "by_status": {
       "mapped": 529
     },
     "requirements_parsed": {
-      "quests_with_wiki_requirements": 244,
+      "quests_with_wiki_requirements": 251,
       "premium": {
-        "parsed": 242,
+        "parsed": 249,
         "partial": 2
       },
       "min_level": {
-        "none": 1,
+        "none": 2,
         "note": 4,
-        "parsed": 225,
+        "parsed": 229,
         "range": 5,
         "uncertain": 4,
         "varies": 1
@@ -753,6 +753,68 @@
           "npc/yalahari.lua"
         ],
         "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/afflicted_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_afflicted_outfit_items.lua"
+        ],
+        "coverage_gap": "Canonical item/outfit/achievement admission, acquisition routes, native quest state and runtime remain unassessed.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/ancient_aucar_outfits_quest",
+        "source_paths": [
+          "scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua"
+        ],
+        "coverage_gap": "Acquisition, addons, achievement, whole quest and native/runtime admission remain unassessed. Shared Galthen path does not establish exclusive mission or interaction ownership.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/feral_trappers_quest",
+        "source_paths": [
+          "data/scripts/lib/task_board_shop.lua"
+        ],
+        "coverage_gap": "CPP grant lies outside Lua Interaction transcription. Configured looktype1907 is granted; female delivery, complete activity and achievement semantics remain unknown.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/within_the_tides_quest",
+        "source_paths": [
+          "scripts/quests/marapur/actions_boss_timira_fight.lua"
+        ],
+        "coverage_gap": "NPC missions, access prerequisites, full quest rewards, native/runtime admission remain unassessed.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/thawing_mini_world_change",
+        "source_paths": [
+          "scripts/world_changes/thawing.lua"
+        ],
+        "coverage_gap": "Lifecycle/reset, flower pickup/use and NPC exchange are not fully transcribed.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/horse_station_world_change",
+        "source_paths": [
+          "npc/palomino.lua",
+          "npc/appaloosa.lua",
+          "scripts/globalevents/spawn/horse_station_world_change.lua",
+          "scripts/globalevents/others/horse_station.lua",
+          "scripts/actions/mounts/mounts.lua"
+        ],
+        "coverage_gap": "Rental expiry, stable locality and independent NPC wave-event cancellation remain unestablished; shared taming only covers a reward component.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/thornfire_world_change",
+        "source_paths": [
+          "data/scripts/actions/tools/prepared_bucket.lua",
+          "data/scripts/movements/thornfire_wolf.lua",
+          "scripts/actions/mounts/mounts.lua"
+        ],
+        "coverage_gap": "World scheduler/lifecycle/locality are unbound. Firefighter check is nested in wolf-spawn branch; Coal and Flintstone reward delivery remain unknown.",
         "classification": "UNKNOWN"
       }
     ],
