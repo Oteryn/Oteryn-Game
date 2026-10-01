@@ -21,6 +21,8 @@ on:
       - content/npcs/definitions/**
       - content/assets/files/catalog-content.json
       - content/assets/files/appearances-*.dat
+      - imports/official/client-assets/15.30/manifest.json
+      - content/world/definitions/reference.json
       - .github/workflows/world-metadata-authoring.yml
   workflow_dispatch:
 
