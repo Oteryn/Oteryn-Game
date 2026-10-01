@@ -238,7 +238,12 @@ how it resets, what limits it, which commands carry it; and what time it is in t
 - A world-object act writes nothing durable. A key, a tool and a moved durable item are touched only
   through DUR-03 shapes (§4.4, §7.2); nothing here mints or burns.
 - Replay: an act carries its CommandRef; a replay in the same overlay incarnation returns the first
-  outcome; after a channel restart the old handle is `STALE` and nothing repeats.
+  outcome; after a channel restart the old handle is `STALE` and no volatile child (overlay,
+  relocation, presentation) repeats.
+- Durable trigger children are the exception. A lever, switch or plate firing whose root plan
+  admitted a durable child (a quest transition, QUEST-GATE-0 §4) keeps that plan's occurrence-based
+  recovery: after a crash or channel restart the unstarted durable children are recovered and
+  committed exactly once from the occurrence, even though the overlay children are not repeated.
 
 ## 4. Doors (DOOR-1, KEY-1)
 
@@ -348,8 +353,14 @@ quest doors, quest format §3.1) stays sealed.
 - **Rope** on a rope spot: the user relocates upstairs to the first walkable tile in the fixed order
   south, north, east, west, then the diagonals (Canary `moveUpstairs`), at most `WORLDINT0-RL-12`
   (8) candidates; none walkable is `NOT_POSSIBLE`. **Rope on an open hole:** the topmost player on
-  the tile below is relocated up the same way, or else the topmost movable item is moved up (§7.2);
+  the tile below is relocated up the same way, or else the topmost movable item is moved up;
   creatures are never roped (TibiaWiki).
+- **Roped item.** A bounded cross-floor exception to the §7.2 reach and same-floor rules: the source
+  is the tile directly below the hole (one floor down), the destination is the first tile around
+  the rope spot that accepts items, in the same fixed order on the user's floor. A durable Ground
+  item moves by the one-item Ground→Ground TRANSFER of §7.2 (same channel scope, tile limit and
+  locks), a movable base item by the §7.2 overlay move; no candidate accepting it is
+  `NOT_POSSIBLE`.
 - **Shovel** on a loose stone pile, **pick** on a cracked or secret floor: `TRANSFORM` to an open
   hole with `revert_after` from content. The digger is not moved: it walks onto the hole
   (TibiaWiki; Canary moves it at once, declared, §14).
@@ -392,7 +403,12 @@ quest doors, quest format §3.1) stays sealed.
   (`NOT_MOVABLE`); `to` holds a creature, blocks, or has no ground (`NO_ROOM`); the target is on a
   PZ tile and `to` is not (`NOT_POSSIBLE`); `to` is a PZ tile and the target has a PZ block
   (`PZ_BLOCKED`); the target moved since the client saw it (`STALE`); the `push` cooldown runs
-  (`EXHAUSTED`).
+  or a push of this pusher is already pending (`EXHAUSTED`).
+- **Push delay** (server-side, the manual; Canary `pushDelay`): an admitted push executes one push
+  delay (`WORLDINT0-RL-04`, 1,000 ms) later, not at once. At execution every rule above is checked
+  again on the live state, including the pusher's position and reach, and a failure ends it with
+  that outcome and no step. At most one pending push per pusher; a client cannot shorten the
+  delay.
 - The pushed step is an ordinary step of the target, with its step duration: a floor change, an
   open hole or a teleport on `to` applies (pushing down a hole is Tibia), and its `ON_ENTER` and
   `ON_LEAVE` triggers fire with the push command as root (QUEST-GATE-0 §4). Gated tiles push back
@@ -403,7 +419,7 @@ quest doors, quest format §3.1) stays sealed.
 
 ### 7.2 Items on the Ground and movable map items
 
-- **Reach.** The source is within `WORLDINT0-RL-01`; the destination is on the same floor, within
+- **Reach.** Except for a roped item (§6.3), the source is within `WORLDINT0-RL-01`; the destination is on the same floor, within
   `WORLDINT0-RL-05` on each axis (15 for a pickupable item, 2 for a movable item that is not
   pickupable, Canary `item.hpp:327-329`), in line of sight, and accepts items. A destination that is
   an open hole or a teleport resolves to its destination tile before commit.
@@ -591,10 +607,10 @@ quest doors, quest format §3.1) stays sealed.
 
 | Row | Value |
 |---|---|
-| `WORLDINT0-RL-01` reach of USE and USE-WITH on a map item, of a push, a push destination from the target, and of a Ground move source | Chebyshev 1, same floor |
+| `WORLDINT0-RL-01` reach of USE and USE-WITH on a map item, of a push, a push destination from the target, and of a Ground move source (a roped item excepted, §6.3) | Chebyshev 1, same floor |
 | `WORLDINT0-RL-02` `world_action` cooldown | 200 ms |
 | `WORLDINT0-RL-03` `world_ex_action` cooldown | 1,000 ms |
-| `WORLDINT0-RL-04` `push` cooldown | 1,000 ms |
+| `WORLDINT0-RL-04` `push` delay and cooldown | 1,000 ms |
 | `WORLDINT0-RL-05` move range: pickupable item / movable non-pickupable base item | 15 / 2 tiles on each axis, same floor, line of sight |
 | `WORLDINT0-RL-06` moved base items on one tile | 10 |
 | `WORLDINT0-RL-07` children per trigger firing | 16 |
