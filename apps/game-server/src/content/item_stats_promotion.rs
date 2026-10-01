@@ -6,15 +6,19 @@
 //! Item keys (A12). The materializer applies it once, after [`super::item_identity`]'s key
 //! switch: each row sets its field to the wiki value, replacing whatever an earlier promotion
 //! put there. A field the wiki is silent on is left as it is.
+//! Equipment rows contain one source-qualified pattern; absent restrictions remain Unknown.
+//! They do not grant materialization or a legal destination, and the main backpack retains
+//! its separately qualified starter admission.
 //!
 //! Every row is decoded strictly (exact shape, bounds and closed enums), must name an existing
 //! Item record, and a field may appear once per item; anything else fails closed.
 
 use super::{
     ProjectReferenceRecord, ProjectV2Draft, ReferenceCells, ReferenceElementalAttack,
-    ReferenceItemField, ReferenceItemImbuement, ReferenceItemPhysical, ReferenceItemProtection,
-    ReferenceItemSemantics, ReferenceItemWeapon, ReferenceSignedPoints, ReferenceWeaponElement,
-    ReferenceWeaponType, world_project_sha256,
+    ReferenceEquipmentPattern, ReferenceEquipmentSlot, ReferenceItemEquipment, ReferenceItemField,
+    ReferenceItemImbuement, ReferenceItemPhysical, ReferenceItemProtection, ReferenceItemSemantics,
+    ReferenceItemWeapon, ReferenceSignedPoints, ReferenceWeaponElement, ReferenceWeaponType,
+    world_project_sha256,
 };
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -23,9 +27,9 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
 pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
-    "89402ad7af593f2277008c1f0175dbcc3bfc9133cc330e90689cdfb1a92a521c";
-pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 10_502;
-pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_524;
+    "85a900853641fe1cb8a7b37e7635221af0b5f7ef8cb282eb323f71ae68c8f795";
+pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 12_286;
+pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_530;
 const SCHEMA: &str = "OTERYN_ITEM_STATS_PROMOTION/v2";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,6 +103,7 @@ struct Row {
     deny_unknown_fields
 )]
 enum TypedValue {
+    EquipmentPatterns(Vec<ReferenceEquipmentPattern>),
     SignedPoints(i32),
     Cells(u16),
     WeaponType(ReferenceWeaponType),
@@ -220,6 +225,19 @@ fn set_field(
 ) -> Result<bool, ItemStatsPromotionError> {
     let wrong = || row_error(row, "typed value does not fit the field");
     Ok(match (row.field_path.as_str(), &row.typed_value) {
+        ("equipment.patterns", TypedValue::EquipmentPatterns(patterns)) => {
+            if patterns.len() != 1 || !qualified_equipment_pattern(&patterns[0]) {
+                return Err(wrong());
+            }
+            let equipment = group(
+                &mut semantics.equipment,
+                || ReferenceItemEquipment {
+                    patterns: ReferenceItemField::Unknown,
+                },
+                row,
+            )?;
+            set(&mut equipment.patterns, patterns.clone())
+        }
         ("weapon.attack", TypedValue::SignedPoints(points)) => set(
             &mut weapon(semantics, row)?.attack,
             ReferenceSignedPoints(*points),
@@ -267,6 +285,36 @@ fn set_field(
         }
         _ => return Err(wrong()),
     })
+}
+
+// This packet lowers one observed equip pattern, never an arbitrary grammar.
+fn qualified_equipment_pattern(pattern: &ReferenceEquipmentPattern) -> bool {
+    use ReferenceItemField::{Known, Unknown};
+    let Known(primary) = pattern.primary_slot else {
+        return false;
+    };
+    pattern.pattern_id == 1
+        && matches!(pattern.mutually_exclusive_groups, Unknown)
+        && matches!(pattern.compatibility_rule, Unknown)
+        && matches!(pattern.level, Known(_) | Unknown)
+        && match &pattern.additional_reserved_slots {
+            Unknown => true,
+            Known(slots) => {
+                slots.is_empty()
+                    || (primary == ReferenceEquipmentSlot::Weapon
+                        && slots.as_slice() == [ReferenceEquipmentSlot::Shield])
+            }
+            _ => false,
+        }
+        && match &pattern.vocations {
+            Unknown => true,
+            Known(values) => {
+                !values.is_empty()
+                    && values.len() <= 5
+                    && values.windows(2).all(|pair| pair[0] < pair[1])
+            }
+            _ => false,
+        }
 }
 
 /// The Known group of `field`, created (all members Unknown) when the group is Unknown.
@@ -441,6 +489,57 @@ mod tests {
             panic!("physical group");
         };
         assert_eq!(physical.weight, ReferenceItemField::Known(4100));
+    }
+
+    #[test]
+    fn equipment_is_typed_and_rejects_invalid_claims() {
+        let pattern = serde_json::json!({
+            "pattern_id": 1,
+            "primary_slot": {"state": "KNOWN", "value": "WEAPON"},
+            "additional_reserved_slots": {"state": "KNOWN", "value": ["SHIELD"]},
+            "mutually_exclusive_groups": {"state": "UNKNOWN"},
+            "vocations": {"state": "KNOWN", "value": ["KNIGHT", "PALADIN"]},
+            "level": {"state": "KNOWN", "value": 400},
+            "compatibility_rule": {"state": "UNKNOWN"}
+        });
+        let apply_pattern = |value: serde_json::Value| {
+            let typed = serde_json::json!({"kind": "EQUIPMENT_PATTERNS", "value": [value]});
+            let bytes = packet(&row(KEY, "equipment.patterns", &typed.to_string()), 1, 1);
+            let mut semantics = ReferenceItemSemantics::default();
+            apply(&bytes, &mut semantics).map(|_| semantics)
+        };
+        let semantics = apply_pattern(pattern.clone()).expect("qualified pattern");
+        assert!(matches!(semantics.equipment, ReferenceItemField::Known(_)));
+        for (field, bad) in [
+            (
+                "primary_slot",
+                serde_json::json!({"state": "KNOWN", "value": "AMMO"}),
+            ),
+            (
+                "additional_reserved_slots",
+                serde_json::json!({"state": "KNOWN", "value": ["WEAPON"]}),
+            ),
+            (
+                "vocations",
+                serde_json::json!({"state": "KNOWN", "value": ["PALADIN", "KNIGHT"]}),
+            ),
+            (
+                "vocations",
+                serde_json::json!({"state": "KNOWN", "value": ["KNIGHT", "KNIGHT"]}),
+            ),
+            (
+                "level",
+                serde_json::json!({"state": "KNOWN", "value": 65536}),
+            ),
+            (
+                "compatibility_rule",
+                serde_json::json!({"state": "KNOWN", "value": null}),
+            ),
+        ] {
+            let mut invalid = pattern.clone();
+            invalid[field] = bad;
+            assert!(apply_pattern(invalid).is_err(), "{field}");
+        }
     }
 
     #[test]

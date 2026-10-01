@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "97ca45a0995d063bbbfd9e3b58a56b98efe8b2a1d682336a0d0528833eb4d150",
+        "7072fa73ab4b3f027902d0b9ae959da525b1a9141f3e2459ab6d231c93950213",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        22_538_307,
-        "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3",
+        23_128_531,
+        "e1b01f5285a907ae79314a284e0389b617894f4335aab0860351f2892f77d5e4",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "f2afbb2eaa7b1b4914f503c907186ed77c4123c5ab00df3cc1325e0b2cf39a04",
+        "69fc744b05b7c34f05d9076670bb6c081fbc64ae5b04230bb25f3247ece07bfa",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "e44ea14fb1c1df14a077177e28c056905b1d79564c52f0f03e324a3d34bb1345",
+        "6e00803855c9f15f78bdf7e1a5affcaf04734f23f761277d7f587b330f6aef56",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "563578738baafc89398ca94f5e4324f6a0718f1533332f163cdb81ec79443139";
+const TREE_SHA256: &str = "0c0f95f1105493a06d29971f6e23d1a6b2dad17d99487c7888760d6ab855d39c";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
