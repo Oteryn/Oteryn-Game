@@ -24,6 +24,76 @@ CLIENT_BYTES = 5017996
 UNKNOWN = {"state": "UNKNOWN"}
 CLAIMS = "tools/content-schema/quest-authoring/samples/chests/claims.json"
 
+# ITEM-SEM-2 precedence, bounded to exact client identities and English Wiki cuts.
+# Donor XML stays in the packet as a witness; only its container fact is superseded.
+CONTAINER_SUPERSESSIONS = {
+    235: (23973, 1114558, "fbc2f956d46ffbceb95975109b7b89103ce32ce15e823e7aa1600fb2297d5fc7",
+          "bag", 8, False, None),
+    25302: (81587, 1115726, "9467dbe4ee2fb67adfeb8fe9c63aefc35124340cb896edc4958aafd8d2ad1143",
+            "present", 5, True, None),
+    53074: (110081, 1198148, "580fc275e40356845c3d3d736a1076afd6deb0a7b84854c1b61e6a98ce73762f",
+            "adventurer backpack", 20, False, 22),
+}
+
+
+def container_supersession(entry, flags):
+    spec = CONTAINER_SUPERSESSIONS.get(entry["item_id"])
+    if spec is None:
+        return None
+    page_id, revision_id, digest, name, old_capacity, stackable, capacity = spec
+    observations = [o for o in entry.get("wiki", []) if
+        (o.get("page_id"), o.get("revision_id"), o.get("content_sha256")) ==
+        (page_id, revision_id, digest)]
+    if not observations:
+        return None
+    if len(observations) != 1:
+        raise ValueError("CONTAINER_SUPERSESSION_DUPLICATE_WIKI")
+    fields = observations[0]["fields"]
+    expected_stack = "yes" if stackable else "no"
+    if (fields.get("itemid") != str(entry["item_id"]) or
+            fields.get("actualname") != name or entry["client_name"] != name or
+            fields.get("pickupable") != "yes" or fields.get("immobile") != "no" or
+            flags.get("flags.container", False) != (capacity is not None) or
+            flags.get("flags.cumulative", False) != stackable or
+            (capacity is None and (fields.get("volume") is not None or
+                                  fields.get("stackable") != expected_stack)) or
+            (capacity is not None and fields.get("volume") != str(capacity))):
+        raise ValueError("CONTAINER_SUPERSESSION_SOURCE_CHANGED")
+    witness = {source: row["attrs"].get("containersize")
+               for source, row in entry["xml"].items()}
+    if not witness or any(value != str(old_capacity) for value in witness.values()):
+        raise ValueError("CONTAINER_SUPERSESSION_XML_CHANGED")
+    return {
+        "item_id": entry["item_id"], "previous_capacity": old_capacity,
+        "replacement": ({"state": "NOT_APPLICABLE"} if capacity is None else
+                        known({"capacity": known(capacity)})),
+        "basis": {"page_id": page_id, "revision_id": revision_id, "content_sha256": digest},
+        "xml_capacity_conflict_witness": witness,
+    }
+
+
+def apply_container_supersession(definition, proof):
+    spec = CONTAINER_SUPERSESSIONS.get(proof.get("item_id"))
+    if spec is None:
+        raise ValueError("CONTAINER_SUPERSESSION_PROOF")
+    page_id, revision_id, digest, _, old_capacity, _, capacity = spec
+    target = ({"state": "NOT_APPLICABLE"} if capacity is None else
+              known({"capacity": known(capacity)}))
+    if (proof.get("previous_capacity") != old_capacity or
+            proof.get("replacement") != target or proof.get("basis") != {
+                "page_id": page_id, "revision_id": revision_id, "content_sha256": digest}):
+        raise ValueError("CONTAINER_SUPERSESSION_PROOF")
+    if (definition["identity"].get("family") != "Item" or
+            definition["identity"]["key"] != f'oteryn:item.tibia.i{proof["item_id"]}'):
+        raise ValueError("CONTAINER_SUPERSESSION_IDENTITY")
+    semantics = definition.get("semantics", {})
+    current = semantics.get("container", UNKNOWN)
+    if current == target:
+        return
+    if current != known({"capacity": known(proof["previous_capacity"])}):
+        raise ValueError("CONTAINER_SUPERSESSION_BASE_CHANGED")
+    semantics["container"] = copy.deepcopy(target)
+
 
 def canonical(value):
     return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode()
@@ -127,12 +197,21 @@ def item_facts(entry, appearance):
         raise ValueError("CONTAINER_CAPACITY_RANGE")
     if charges is not None and not 1 <= int(charges) <= 4294967295:
         raise ValueError("CHARGES_RANGE")
+    supersession = container_supersession(entry, flags)
+    if supersession is not None:
+        replacement = supersession["replacement"]
+        capacity = (replacement["value"]["capacity"]["value"]
+                    if replacement["state"] == "KNOWN" else None)
+        hold = [reason for reason in hold if reason not in {
+            "CONTAINER_KIND_CLIENT_XML_CONFLICT", "WIKI_XML_CONTAINER_CAPACITY_CONFLICT"}]
     facts = {
         "stackable": stackable,
         "capacity": int(capacity) if capacity is not None else None,
         "charges": int(charges) if charges is not None else None,
         "holds": hold,
     }
+    if supersession is not None:
+        facts["container_supersession"] = supersession
     if "native_core_hold" in entry:
         facts["native_core_hold"] = entry["native_core_hold"]
         facts["holds"].append("ACCEPTED_NATIVE_SOURCE_STACK_CLASS_CONFLICT")
@@ -162,6 +241,8 @@ def enrich(definition, facts, xml):
                 hashlib.sha256(canonical(definition)).hexdigest() != hold["accepted_definition_sha256"]):
             raise ValueError("PROTECTED_NATIVE_CORE_HOLD_CHANGED")
         return definition
+    if "container_supersession" in facts:
+        apply_container_supersession(definition, facts["container_supersession"])
     if definition["stack_class"] not in {"Unknown", stack_class}:
         raise ValueError("EXISTING_STACK_CLASS_CONFLICT")
     definition["stack_class"] = stack_class

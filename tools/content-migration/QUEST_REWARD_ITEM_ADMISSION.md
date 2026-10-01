@@ -33,14 +33,18 @@ does not prove that today's claim representation reproduces its source subtype.
 
 An exact owning donor row may prove identity when another pinned donor lacks that
 ID. Missing rows remain UNKNOWN; source disagreement is never resolved by a donor
-majority. Extra i53074 has Crystal/summer XML capacity20 and exact wiki capacity22:
-its capacity and new materialization remain held. Extra i25302 is stackable and
-not a container in the client while XML declares capacity5: retain the conflict.
+majority. Extra i53074 has Crystal/summer XML capacity20 and exact wiki capacity22;
+the exact pinned wiki fact selects22 for its definition. Runtime capacity above
+BAGS-0 maximum20 remains unsupported. Extra i25302 is stackable and noncontainer
+in the accepted client and exact wiki; its old XML capacity5 is historical conflict
+evidence and container semantics are NOT_APPLICABLE. Exact supersession guards
+cover only these source-qualified facts and i235 below.
 Extra i901 has accepted NonStackable native core versus StackCapable client/wiki;
 the complete accepted definition is preserved with its digest and an explicit hold.
 
-The first packet keeps i235's client/XML container conflict, charged nonstackable
-and fluid instance holds. Existing i3048/i3081 admissions remain intact; the source
+The first packet selects i235 noncontainer from the accepted client and exact
+pinned wiki; historical XML capacity8 remains evidence. Charged nonstackable
+and fluid instance holds remain. Existing i3048/i3081 admissions remain intact; the source
 claims independently retain subtype/charge holds. Four extra nonconflicting
 containers add capacities20,24,32,32. No runtime qualification is promoted.
 

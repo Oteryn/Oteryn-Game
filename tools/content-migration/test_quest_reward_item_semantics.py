@@ -157,6 +157,145 @@ class RewardItemAdmissionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "PROTECTED_NATIVE_CORE_HOLD_CHANGED"):
             enrich(definition, facts, entry["xml"])
 
+    def container_override_fixture(self, item_id):
+        from quest_reward_item_semantics import CONTAINER_SUPERSESSIONS
+        page, revision, digest, name, previous, stackable, capacity = CONTAINER_SUPERSESSIONS[item_id]
+        flags = {"flags.cumulative": True} if stackable else {}
+        if capacity is not None:
+            flags["flags.container"] = True
+        entry, appearance, definition = self.fixture(flags, {"containersize": str(previous)})
+        entry.update(item_id=item_id, item_key=f"oteryn:item.tibia.i{item_id}", client_name=name)
+        appearance["name"] = name
+        for row in entry["xml"].values():
+            row.update(item_id=item_id, name=name)
+        definition["identity"]["key"] = entry["item_key"]
+        definition["semantics"] = {
+            "container": known({"capacity": known(previous)}),
+            "physical": known({"weight": known(40000), "movable": known(True), "pickupable": known(True)}),
+            "presentation": known({"name": known(name), "description": known("Keep this exact fact")}),
+        }
+        fields = {"itemid": str(item_id), "actualname": name, "pickupable": "yes", "immobile": "no"}
+        if capacity is None:
+            fields["stackable"] = "yes" if stackable else "no"
+        else:
+            fields["volume"] = str(capacity)
+        entry["wiki"] = [{"page_id": page, "revision_id": revision,
+                          "content_sha256": digest, "fields": fields}]
+        return entry, appearance, definition
+
+    def test_exact_client_and_wiki_remove_two_wrong_container_facts(self):
+        for item_id in (235, 25302):
+            with self.subTest(item_id=item_id):
+                entry, appearance, definition = self.container_override_fixture(item_id)
+                facts = item_facts(entry, appearance)
+                enrich(definition, facts, entry["xml"])
+                self.assertEqual(definition["semantics"]["container"], {"state": "NOT_APPLICABLE"})
+                self.assertTrue(definition["materializable"])
+                self.assertIsNone(facts["capacity"])
+                self.assertEqual(facts["holds"], [])
+                self.assertEqual(set(facts["container_supersession"]["xml_capacity_conflict_witness"].values()),
+                                 {"8" if item_id == 235 else "5"})
+
+    def test_exact_wiki_capacity22_supersedes_donor20_without_inventing_runtime_support(self):
+        entry, appearance, definition = self.container_override_fixture(53074)
+        del entry["xml"]["canary"]
+        entry["owning_donors"] = ["crystal", "crystal-summer"]
+        facts = item_facts(entry, appearance)
+        enrich(definition, facts, entry["xml"])
+        self.assertEqual(definition["semantics"]["container"], known({"capacity": known(22)}))
+        self.assertEqual(facts["capacity"], 22)
+        self.assertTrue(definition["materializable"])
+        self.assertNotIn("runtime_ready", facts)
+
+    def test_supersession_is_idempotent_and_preserves_identity_and_other_known_facts(self):
+        for item_id in (235, 25302, 53074):
+            entry, appearance, definition = self.container_override_fixture(item_id)
+            identity = copy.deepcopy(definition["identity"])
+            physical = copy.deepcopy(definition["semantics"]["physical"])
+            presentation = copy.deepcopy(definition["semantics"]["presentation"])
+            facts = item_facts(entry, appearance)
+            enrich(definition, facts, entry["xml"])
+            frozen = canonical(definition)
+            enrich(definition, facts, entry["xml"])
+            self.assertEqual(canonical(definition), frozen)
+            self.assertEqual(definition["identity"], identity)
+            self.assertEqual(definition["semantics"]["physical"], physical)
+            self.assertEqual(definition["semantics"]["presentation"], presentation)
+
+    def test_nonmatching_wiki_cut_retains_original_hold(self):
+        for field, replacement in (("revision_id", 1), ("content_sha256", "0" * 64)):
+            entry, appearance, _ = self.container_override_fixture(235)
+            entry["wiki"][0][field] = replacement
+            facts = item_facts(entry, appearance)
+            self.assertNotIn("container_supersession", facts)
+            self.assertIn("CONTAINER_KIND_CLIENT_XML_CONFLICT", facts["holds"])
+
+    def test_duplicate_exact_wiki_cut_is_rejected(self):
+        entry, appearance, _ = self.container_override_fixture(235)
+        entry["wiki"].append(copy.deepcopy(entry["wiki"][0]))
+        with self.assertRaisesRegex(ValueError, "CONTAINER_SUPERSESSION_DUPLICATE_WIKI"):
+            item_facts(entry, appearance)
+
+    def test_supersession_rejects_changed_source_identity_applicability_or_volume(self):
+        for change in ("wrong_item", "wrong_name", "client_container", "client_stack", "volume_zero", "xml"):
+            entry, appearance, _ = self.container_override_fixture(235)
+            if change == "wrong_item":
+                entry["wiki"][0]["fields"]["itemid"] = "2853"
+            elif change == "wrong_name":
+                entry["wiki"][0]["fields"]["actualname"] = "bag variant"
+            elif change == "client_container":
+                appearance["flags"]["flags.container"] = True
+            elif change == "client_stack":
+                appearance["flags"]["flags.cumulative"] = True
+            elif change == "volume_zero":
+                entry["wiki"][0]["fields"]["volume"] = "0"
+            else:
+                entry["xml"]["canary"]["attrs"]["containersize"] = "9"
+            with self.assertRaisesRegex(ValueError, "CONTAINER_SUPERSESSION_(SOURCE|XML)_CHANGED"):
+                item_facts(entry, appearance)
+
+    def test_supersession_rejects_unknown_changed_or_extra_known_base_container_fields(self):
+        for current in (UNKNOWN, known({"capacity": known(9)}),
+                        known({"capacity": known(8), "unexpected": known(1)})):
+            entry, appearance, definition = self.container_override_fixture(235)
+            definition["semantics"]["container"] = copy.deepcopy(current)
+            with self.assertRaisesRegex(ValueError, "CONTAINER_SUPERSESSION_BASE_CHANGED"):
+                enrich(definition, item_facts(entry, appearance), entry["xml"])
+
+    def test_supersession_cannot_be_replayed_against_another_item_or_definition_revision(self):
+        entry, appearance, definition = self.container_override_fixture(235)
+        facts = item_facts(entry, appearance)
+        for field, replacement in (("key", "oteryn:item.tibia.i2853"), ("family", "Creature"),
+                                   ("revision", "definition-r2")):
+            candidate = copy.deepcopy(definition)
+            candidate["identity"][field] = replacement
+            with self.assertRaisesRegex(ValueError, "(CONTAINER_SUPERSESSION_IDENTITY|ITEM_IDENTITY_SCOPE)"):
+                enrich(candidate, facts, entry["xml"])
+
+    def test_supersession_proof_cannot_change_its_target_or_known_base(self):
+        entry, appearance, definition = self.container_override_fixture(235)
+        facts = item_facts(entry, appearance)
+        for field, replacement in (("item_id", 1), ("previous_capacity", 9),
+                                   ("replacement", known({"capacity": known(0)}))):
+            candidate = copy.deepcopy(facts)
+            candidate["container_supersession"][field] = replacement
+            with self.assertRaisesRegex(ValueError, "CONTAINER_SUPERSESSION_PROOF"):
+                enrich(copy.deepcopy(definition), candidate, entry["xml"])
+
+    def test_committed_i901_whole_definition_is_preserved_even_with_a_foreign_supersession(self):
+        root = Path(__file__).resolve().parents[2]
+        packet = json.loads((root / EXTRA_PACKET).read_bytes())
+        entry = next(e for e in packet["admissions"] if e["item_id"] == 901)
+        shard = json.loads((root / "content/items/definitions/items-32500-32999.json").read_bytes())
+        definition = next(r["definition"] for r in shard["records"]
+                          if r["definition"]["identity"]["key"] == entry["item_key"])
+        frozen = canonical(definition)
+        facts = item_facts(entry, {"name": entry["client_name"], "flags": entry["client_flags"]})
+        foreign, appearance, _ = self.container_override_fixture(235)
+        facts["container_supersession"] = item_facts(foreign, appearance)["container_supersession"]
+        enrich(definition, facts, entry["xml"])
+        self.assertEqual(canonical(definition), frozen)
+
     def test_written_carrier_preserves_missing_bounds_and_transform(self):
         entry, appearance, definition = self.fixture(attrs={"writeable": "1", "writeonceitemid": "2"})
         enrich(definition, item_facts(entry, appearance), entry["xml"])

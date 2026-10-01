@@ -62,9 +62,12 @@ def charge_disposition(pi, field, qi, raw, item):
     value = known.get('value') if known.get('state') == 'KNOWN' else None
     fact = {'state': 'KNOWN', 'value': value} if type(value) is int and value > 0 else {'state': 'UNKNOWN'}
     equal = fact['state'] == 'KNOWN' and raw == value
+    # Physical quantity does not depend on source/default charge equality.
+    one_instance = ((item or {}).get('stack_class') == 'NonStackable'
+                    and fact['state'] == 'KNOWN' and type(raw) is int and raw > 0)
     return {'placement_index': pi, 'reward_field': field, 'reward_index': qi,
             'source_raw_argument': raw, 'definition_charges': fact,
-            'normalized_quantity': {'state': 'KNOWN', 'value': 1} if equal else {'state': 'UNKNOWN'},
+            'normalized_quantity': {'state': 'KNOWN', 'value': 1} if one_instance else {'state': 'UNKNOWN'},
             'data_status': 'AUTHORED' if equal else ('CONFLICT' if fact['state'] == 'KNOWN' else 'WAITING_DATA'),
             'reason': 'DEFINITION_CHARGES_EQUAL_SOURCE_EVIDENCE' if equal else ('SOURCE_CHARGE_MISMATCH' if fact['state'] == 'KNOWN' else 'CHARGES_DEFINITION_FACT_UNKNOWN'),
             'native_status': 'WAITING_IMPLEMENTATION'}

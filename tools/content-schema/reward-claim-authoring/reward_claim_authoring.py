@@ -235,9 +235,12 @@ def charged_source_reward(definition: dict | None, pilot_key: str, position: dic
     proof = matches[0]
     check["source_argument_kind"] = "CHARGES_SUBTYPE"
     check["source_default_charges"] = proof["source_default_charges"]
+    # Exact charge-subtype evidence proves one physical instance, including
+    # when the historical source charges disagree with the Item definition.
+    check.update(quantity=1, normalization="ONE_INSTANCE_FROM_DEFINITION_CHARGES")
     if raw_count != charges or charges != proof["source_default_charges"]:
         check.update(reason="SOURCE_CHARGE_MISMATCH", classification="CONFLICT")
-        return raw_count, check
+        return 1, check
     check.update(quantity=1, reason="NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED",
                  normalization="ONE_INSTANCE_FROM_DEFINITION_CHARGES")
     return 1, check

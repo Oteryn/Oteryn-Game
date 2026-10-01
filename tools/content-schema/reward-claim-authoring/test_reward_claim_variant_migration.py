@@ -171,7 +171,7 @@ class VariantMigration(unittest.TestCase):
                 self.assertEqual(check['data_status'],'AUTHORED')
             else:
                 self.assertEqual(check['reason'],'SOURCE_CHARGE_MISMATCH')
-                self.assertEqual(check['normalized_quantity'],{'state':'UNKNOWN'})
+                self.assertEqual(check['normalized_quantity'],{'state':'KNOWN','value':1})
         self.assertEqual(sum(c['data_status']=='CONFLICT'for c in checks),3)
         broken=copy.deepcopy(self.packet);target=next(r for r in broken['records']if any(c['data_status']=='CONFLICT'for c in r['charge_dispositions']));check=next(c for c in target['charge_dispositions']if c['data_status']=='CONFLICT');check.update(data_status='AUTHORED',reason='DEFINITION_CHARGES_EQUAL_SOURCE_EVIDENCE',normalized_quantity={'state':'KNOWN','value':1})
         with self.assertRaisesRegex(ValueError,'charge_dispositions'):tool.validate(broken,self.root)

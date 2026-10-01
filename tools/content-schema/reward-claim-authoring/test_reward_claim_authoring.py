@@ -298,7 +298,7 @@ def test_banshee_one_charge_is_a_source_definition_conflict():
     claim,items,proof=charged_fixture(raw=1,default=5);records,checks=build_charged(claim,items,proof)
     assert checks[0]['reason']=='SOURCE_CHARGE_MISMATCH'
     assert checks[0]['classification']=='CONFLICT'
-    assert 'normalization' not in checks[0]
+    assert checks[0]['quantity']==1 and checks[0]['normalization']=='ONE_INSTANCE_FROM_DEFINITION_CHARGES'
     assert rca.validate(records,items,checks,[claim],proof)==[]
 
 def test_forged_quantity_or_source_diagnostics_are_rejected():
@@ -329,7 +329,8 @@ def test_changed_definition_charge_fact_never_uses_reward_as_its_replacement():
     claim,items,proof=charged_fixture();items[AMULET]['semantics']['charges']['value']['count']['value']=10
     records,checks=build_charged(claim,items,proof)
     assert checks[0]['reason']=='SOURCE_CHARGE_MISMATCH'
-    assert records[0]['definition']['placements'][0]['reward']['items'][0]['count']==5
+    assert records[0]['definition']['placements'][0]['reward']['items'][0]['count']==1
+    assert checks[0]['source_count_argument']==5
     assert checks[0]['definition_charges']==10
 
 def test_exact_charged_source_without_a_definition_charge_fact_stays_held():

@@ -44,8 +44,9 @@ closes the architecture for charged rewards: one ItemInstance, quantity1, charge
 from the Item definition. The raw reward argument never creates an Item charges fact.
 `source_charge_evidence.json` binds the historical two-argument chest helper calls
 by source claim, position, Item and raw argument, with pinned source and ruling evidence.
-Only an exact binding with known NonStackable semantics and matching positive
-`charges.count`/source default is normalized. The original pilot stays unchanged;
+Only an exact binding with known NonStackable semantics and positive
+`charges.count` is normalized to physical quantity1. Source/default charge
+disagreement remains an independent diagnostic. The original pilot stays unchanged;
 `source_checks` preserves the raw argument and the derived canonical quantity.
 
 A default-matching reward stays held as `NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED`:
