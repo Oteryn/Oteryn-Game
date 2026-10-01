@@ -74,7 +74,11 @@ training?
 An Item definition that is a bed part carries `bed {part: head | foot, partner_direction,
 free_type, occupied_type_male, occupied_type_female}`. A validator checks, for every placed bed in
 the active bundle, that there is exactly one `head` part and one `foot` part, that each names the
-other through its `partner_direction`, and that both lie on tiles of the same house. A bed is
+other through its `partner_direction`, and that both lie on tiles of the same house. It also compares each house's
+number of valid pairs with the catalogue's official `beds` count (house catalogue contract §3). The
+84 houses the catalogue lists as known discrepancies (`samples/otbm-tile-check.json`) are an explicit
+exception list carried by BED-CONTENT-1: such a house offers its valid pairs and the report names
+it. Any other mismatch fails the bundle. When the base-map owner fixes a house, it leaves the list. A bed is
 identified by its **head part's tile** in the house (`BedKey = (HouseId, x, y, z)`). Every path that
 derives a `BedKey` (USE, `BED_SLEEP_INTENT`, the reservation, the sleeper insert, the view and the
 bed-removed check) first normalises the target to the head: a `foot` target resolves through its
@@ -93,11 +97,14 @@ bed-removed check) first normalises the target to the head: a `foot` target reso
   - the bed is occupied and the user is not the house owner: `BED_OCCUPIED`;
   - the bed is occupied and the user is the house owner: the bed is freed (§6), the answer is
     `BED_WOKEN`, and the owner does not fall asleep.
-- **Free bed:** the house runtime reserves the bed for the user for `BED0-RL-01` (60 s) and answers
+- **Free bed:** the house runtime reserves the bed for the user for `BED0-RL-01` (60 s), recording
+  the house's `acl_revision` (and, for a role from a guild entry, the guild revisions) that
+  authorised the user (HOUSE-RUNTIME-0 §5.4), and answers
   `BED_CHOOSE_SKILL`. The client shows the offline training dialog.
 - **Choice:** the new command `BED_SLEEP_INTENT {bed map_item handle, skill}`, with `skill` one of
   fist, club, sword, axe, distance or magic level. The house runtime checks the reservation, the
-  refusals above and reach again. On success it marks the pending activation `{skill, BedKey}` and
+  refusals above, reach and the recorded revisions again; a changed revision re-checks access and
+  releases the reservation if access is gone. On success it marks the pending activation `{skill, BedKey}` and
   starts the graceful logout, exactly as a training statue does (OFFLINE-0 §6); the answer is
   `OFFLINE_TRAINING`. A cancel, a timeout, a move out of reach or a session end releases the
   reservation and nothing is written.
@@ -132,8 +139,12 @@ Table `game_house_bed_sleepers`:
 - **Insert:** in the `logout` marker's transaction (OFFLINE-0 §4.1), together with the activation.
   The same transaction first deletes any older row of the character (one a skipped settlement left),
   so the `character_id` constraint never blocks a new sleep.
-  It takes `FOR SHARE` on the house property row and inserts only when the property is `OWNED` or
-  `MOVE_OUT_PENDING` (or the guildhall equivalent) with no content fence set. The fence transaction
+  It takes `FOR SHARE` on the house property row and, for a guild-derived role, on the granting
+  guild and membership rows (HOUSE-RUNTIME-0 §5.4's locks), and inserts only when the property is
+  `OWNED` or `MOVE_OUT_PENDING` (or the guildhall equivalent) with no content fence set and the
+  character still holds an entry grant at the current `acl_revision` and guild revisions. A
+  revocation therefore either commits first (no row, no activation) or after the marker (the
+  sleeper keeps the bed until its next login, §6). The fence transaction
   takes the property row `FOR UPDATE`, so it either commits first (the marker's `FOR SHARE` read then
   sees the fence and inserts nothing) or waits for the marker and then frees the new row with the
   others (§6). On a unique conflict (the bed was taken or the house fenced in between), the marker commits without
@@ -145,8 +156,13 @@ Table `game_house_bed_sleepers`:
 - **Replay:** the row is part of the `logout` marker. A marker retry is answered from its first
   receipt by key (OFFLINE-0 §3) before any write, so the insert never runs twice; a settlement retry
   likewise never deletes twice.
-- The house runtime reads the open rows of its house at activation and on every change it makes;
-  it is the only writer of `owner_wake` and `bed_removed`.
+- **Occupancy revision.** Every insert, free and delete of a sleeper row, the settlement's delete
+  included, advances `game_house_bed_revisions.revision` for its house in the same transaction (one
+  row per house, taken `FOR UPDATE`). The house runtime and HOUSE-VIEW-1 re-read the house's rows
+  when the revision moves: at activation, before answering a bed USE, and at least every
+  `BED0-RL-04` (5 s) while the house is active. A deletion made outside the runtime (a settlement on
+  a Channel) is thus shown within that bound and never makes a free bed look occupied for longer.
+- The house runtime is the only writer of `owner_wake` and `bed_removed`.
 
 ## 6. Waking without a login (BED-1)
 
@@ -211,6 +227,7 @@ coefficients are `PARITY_PENDING`; the manual confirms the soul rate.
 | `BED0-RL-01` bed reservation awaiting the skill choice | 60 s |
 | `BED0-RL-02` `BED_SLEEP_INTENT` size | 24 bytes |
 | `BED0-RL-03` sleep time counted | 21 days (OFFLINE-0's offline cap) |
+| `BED0-RL-04` occupancy re-read interval while a house is active | 5 s |
 
 Each with max and max+1 tests. Also tested: a USE on the foot and a `BED_SLEEP_INTENT` on the head
 (and the reverse) derive the same `BedKey`, so a second sleeper on the other half is refused
