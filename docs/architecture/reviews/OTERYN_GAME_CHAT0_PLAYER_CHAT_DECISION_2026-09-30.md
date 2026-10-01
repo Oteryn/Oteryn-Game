@@ -87,7 +87,7 @@ How do players talk to each other: nearby, privately, and to the whole World?
   nearest wins, then the lowest actor id. The line is still shown to every spectator.
 - **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §6).** An NPC actor may speak its admitted voice lines as
   `say` or `yell` with these ranges and floor rules; NPC lines are exempt from the player yell
-  cooldown and level rule.
+  cooldown, level rule, yell upper-casing and spam control (Canary upper-cases player yells only).
 
 ## 4. Text and bounds (CHAT-1)
 

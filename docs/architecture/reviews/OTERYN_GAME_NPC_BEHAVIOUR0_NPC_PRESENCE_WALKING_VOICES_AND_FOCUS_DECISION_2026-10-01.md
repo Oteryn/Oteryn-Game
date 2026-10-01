@@ -137,7 +137,8 @@ conversations?
   class (shop NPCs stand in protection zones). Movement occurrences (VSL-MOVE-01 §5): a step is
   (NPC `ExactActorRef`, think sequence, `NPC_STEP`), a relocation (NPC ref, think sequence,
   `NPC_RELOCATE`), a turn (the opening conversation's CommandRef, `NPC_TURN`).
-- **Out of range:** on every think, perceived or not, an NPC more than 50 tiles from its placement
+- **Out of range:** on every committed move or relocation of the NPC (the only ways it can leave its
+  range; Canary checks on each think, which is equivalent), an NPC more than 50 tiles from its placement
   or 2 floors away (Canary `deSpawnRadius`, `deSpawnRange`) is moved back to its placement by one
   Movement owner relocation, asking GAME-NPC-SERVICE to close its conversations; if the placement
   cannot admit it, it stays in place (CREATURE-AI-0 §5.5's fallback).
@@ -156,15 +157,15 @@ conversations?
 ## 7. Focus (NPC-TALK-2 and NPC-ACTOR-1)
 
 - **Ownership.** The customer queue and every conversation close belong to GAME-NPC-SERVICE (the NPC
-  service boundary §4 and §11: GAME-AI owns no dialogue state). GAME-AI reads only the queue head to
-  turn the NPC, and asks GAME-NPC-SERVICE to close on a relocation.
+  service boundary §4 and §11: GAME-AI owns no dialogue state). GAME-AI reads only the newest customer
+  (the queue's tail) to turn the NPC, and asks GAME-NPC-SERVICE to close on a relocation.
 - When a conversation opens (NPC-0 §4, or a CHAT-0 greeting), the character joins the end of the
   queue and the NPC turns to face it (a Movement owner turn, shown as the actor's direction).
 - **Range check.** On every committed move or relocation of the customer or the NPC (Canary checks on
   each move), not on the budgeted think: a customer beyond talk range (4 tiles, Chebyshev, same
   floor, now NPC-0's own `NPC0-RL-07`) has its conversation closed with the NPC's walk-away line, or
-  the generated farewell when the NPC has no Dialogue (NPC-0 §3.3); the NPC turns to the remaining
-  head. A pending service invocation still resolves by replay (boundary §7).
+  the generated farewell when the NPC has no Dialogue (NPC-0 §3.3); the NPC turns to the newest
+  remaining customer (the tail, Canary `playerInteractionsOrder.back()`). A pending service invocation still resolves by replay (boundary §7).
 - The queue holds at most `NPC0-RL-05` characters; it is runtime only and is cleared on channel
   restart, transfer and reconnect with the conversations (NPC-0 §4). Amended: NPC-0 §4.1.
 
