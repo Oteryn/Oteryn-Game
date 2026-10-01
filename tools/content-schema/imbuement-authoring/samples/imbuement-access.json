@@ -1,0 +1,3530 @@
+{
+  "schema": "OTERYN_IMBUEMENT_ACCESS_FACTS/v1",
+  "captured_on": "2026-10-01",
+  "target_client_version": "15.30",
+  "status": "SOURCE_SEMANTICS_COMPLETE_RUNTIME_BINDING_REQUIRED",
+  "counts": {
+    "imbuement_families": 24,
+    "direct_shrine_tier_routes": 72,
+    "scroll_apply_tier_routes": 72,
+    "scroll_inscription_tier_routes": 48,
+    "powerful_alternative_families": 8
+  },
+  "sources": {
+    "official_manual": {
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+      "role": "PRIMARY_OFFICIAL"
+    },
+    "official_tradeable_imbuements": {
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8396",
+      "published_on": "2025-06-12",
+      "mirror_url": "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7",
+      "role": "PRIMARY_OFFICIAL_TEXT_MIRROR",
+      "scope": "World construction, five tomes, NPC blank purchase, Powerful inscription and Free scroll use; final July2025 feature/manual supersede teaser for Intricate."
+    },
+    "official_echo_wardens": {
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8834",
+      "role": "PRIMARY_OFFICIAL",
+      "scope": "Basic imbuement scrolls as Echo Wardens loot; application alongside higher-tier scrolls."
+    },
+    "br_imbuements": {
+      "url": "https://www.tibiawiki.com.br/wiki/Imbuements",
+      "role": "COMMUNITY_GLOBAL_REFERENCE"
+    },
+    "br_forgotten_knowledge": {
+      "url": "https://www.tibiawiki.com.br/wiki/Forgotten_Knowledge_Quest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE"
+    },
+    "br_heart_of_destruction": {
+      "url": "https://www.tibiawiki.com.br/wiki/Heart_of_Destruction_Quest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE"
+    },
+    "br_dangerous_depths": {
+      "url": "https://www.tibiawiki.com.br/wiki/Dangerous_Depths_Quest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE"
+    },
+    "br_dream_courts": {
+      "url": "https://www.tibiawiki.com.br/wiki/The_Dream_Courts_Quest",
+      "role": "COMMUNITY_GLOBAL_REFERENCE"
+    }
+  },
+  "predicate_definitions": {
+    "shrine_access": {
+      "all_of": [
+        {
+          "type": "world_event_completed",
+          "event_source_name": "The Temple of the Forgotten Knowledge built",
+          "scope": "world",
+          "source_refs": [
+            "official_tradeable_imbuements"
+          ]
+        },
+        {
+          "type": "npc_item_handover_completed",
+          "npc_source_name": "Albinius",
+          "item_source_name": "Heavy Old Tome",
+          "quantity": 5,
+          "scope": "character",
+          "source_refs": [
+            "official_tradeable_imbuements",
+            "br_forgotten_knowledge"
+          ]
+        }
+      ],
+      "notes": "The world construction gate and the individual five-tome contribution are separate. These are completed events, not an ongoing inventory requirement."
+    },
+    "premium": {
+      "type": "account_premium_active",
+      "source_refs": [
+        "official_manual",
+        "br_imbuements"
+      ]
+    },
+    "compatible_item": {
+      "all_of": [
+        {
+          "type": "item_has_empty_imbuement_slot"
+        },
+        {
+          "type": "item_accepts_imbuement_family"
+        },
+        {
+          "type": "item_has_no_duplicate_imbuement_family"
+        }
+      ],
+      "source_refs": [
+        "official_tradeable_imbuements",
+        "br_imbuements"
+      ]
+    },
+    "forgotten_lady_tenebris": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "boss_source_name": "Lady Tenebris"
+        },
+        {
+          "type": "quest_object_used_after_boss",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "boss_source_name": "Lady Tenebris",
+          "location_source_name": "Lady Tenebris reward room"
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 125,
+        "source_index": 67,
+        "name": "Forgotten Knowledge",
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "forgotten_lloyd": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "boss_source_name": "Lloyd"
+        },
+        {
+          "type": "quest_object_used_after_boss",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "boss_source_name": "Lloyd",
+          "location_source_name": "Lloyd reward room"
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 125,
+        "source_index": 67,
+        "name": "Forgotten Knowledge",
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "forgotten_the_enraged_thorn_knight": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "boss_source_name": "The Enraged Thorn Knight"
+        },
+        {
+          "type": "quest_object_used_after_boss",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "boss_source_name": "The Enraged Thorn Knight",
+          "location_source_name": "The Enraged Thorn Knight reward room"
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 125,
+        "source_index": 67,
+        "name": "Forgotten Knowledge",
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "forgotten_soul_of_dragonking_zyrtarch": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "boss_source_name": "Soul of Dragonking Zyrtarch"
+        },
+        {
+          "type": "quest_object_used_after_boss",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "boss_source_name": "Soul of Dragonking Zyrtarch",
+          "location_source_name": "Soul of Dragonking Zyrtarch reward room"
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 125,
+        "source_index": 67,
+        "name": "Forgotten Knowledge",
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "forgotten_melting_frozen_horror": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "boss_source_name": "Melting Frozen Horror"
+        },
+        {
+          "type": "quest_object_used_after_boss",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "boss_source_name": "Melting Frozen Horror",
+          "location_source_name": "Melting Frozen Horror reward room"
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 125,
+        "source_index": 67,
+        "name": "Forgotten Knowledge",
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "forgotten_the_time_guardian": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "boss_source_name": "The Time Guardian"
+        },
+        {
+          "type": "quest_object_used_after_boss",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "boss_source_name": "The Time Guardian",
+          "location_source_name": "The Time Guardian reward room",
+          "required_item_source_name": "Imbuing Crystal"
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 125,
+        "source_index": 67,
+        "name": "Forgotten Knowledge",
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "forgotten_the_last_lore_keeper": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "boss_source_name": "The Last Lore Keeper"
+        },
+        {
+          "type": "quest_object_used_after_boss",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "boss_source_name": "The Last Lore Keeper",
+          "location_source_name": "The Last Lore Keeper reward room"
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 125,
+        "source_index": 67,
+        "name": "Forgotten Knowledge",
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "heart_of_destruction": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Heart of Destruction",
+          "source_refs": [
+            "br_heart_of_destruction"
+          ],
+          "boss_source_name": "World Devourer"
+        },
+        {
+          "type": "npc_dialogue_reward_claimed",
+          "quest_source_name": "Heart of Destruction",
+          "source_refs": [
+            "br_heart_of_destruction"
+          ],
+          "npc_source_name": "Yana",
+          "dialogue_keyword": "worth"
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 124,
+        "source_index": 66,
+        "name": "Heart of Destruction",
+        "staticdata_sha256": "178642cf4a29a708791cc63924c2bf16dad8301e882b83d333879fb5db578871",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "dangerous_depths": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths"
+          ],
+          "boss_source_name": "The Baron from Below",
+          "warzone": 4
+        },
+        {
+          "type": "quest_object_destroyed_after_boss",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths"
+          ],
+          "object_source_name": "Lava Pump",
+          "boss_source_name": "The Baron from Below",
+          "warzone": 4
+        },
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths"
+          ],
+          "boss_source_name": "The Count of the Core",
+          "warzone": 5
+        },
+        {
+          "type": "quest_object_destroyed_after_boss",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths"
+          ],
+          "object_source_name": "Lava Pump",
+          "boss_source_name": "The Count of the Core",
+          "warzone": 5
+        },
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths"
+          ],
+          "boss_source_name": "The Duke of the Depths",
+          "warzone": 6
+        },
+        {
+          "type": "quest_object_destroyed_after_boss",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths"
+          ],
+          "object_source_name": "Lava Pump",
+          "boss_source_name": "The Duke of the Depths",
+          "warzone": 6
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 136,
+        "source_index": 71,
+        "name": "Dangerous Depths",
+        "staticdata_sha256": "6af0b9fc9520179bb3ed44bad99709353680086efd75deea5cf5c0c815c05dde",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    },
+    "dream_courts": {
+      "all_of": [
+        {
+          "type": "quest_boss_defeated",
+          "quest_source_name": "The Dream Courts",
+          "source_refs": [
+            "br_dream_courts"
+          ],
+          "boss_source_name": "The Nightmare Beast"
+        },
+        {
+          "any_of": [
+            {
+              "type": "npc_task_reward_reported",
+              "quest_source_name": "The Dream Courts",
+              "source_refs": [
+                "br_dream_courts"
+              ],
+              "npc_source_name": "Vanys",
+              "task_source_name": "The Nightmare Beast"
+            },
+            {
+              "type": "npc_task_reward_reported",
+              "quest_source_name": "The Dream Courts",
+              "source_refs": [
+                "br_dream_courts"
+              ],
+              "npc_source_name": "Undal",
+              "task_source_name": "The Nightmare Beast"
+            }
+          ]
+        }
+      ],
+      "quest_line_source_locator": {
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "source_id": 142,
+        "source_index": 74,
+        "name": "The Dream Courts",
+        "staticdata_sha256": "ce63974efc1fb6bc83446a8ea22e4f950ed9596f4b2584463e9b82d93abee1d4",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID"
+      }
+    }
+  },
+  "scroll_acquisition": {
+    "blank_npc_purchase": {
+      "npc_source_name": "Albinius",
+      "gold": 25000,
+      "all_of": [
+        {
+          "predicate_ref": "shrine_access"
+        },
+        {
+          "predicate_ref": "premium"
+        }
+      ],
+      "source_refs": [
+        "official_manual",
+        "official_tradeable_imbuements"
+      ]
+    },
+    "loot": {
+      "blank_scroll": true,
+      "basic_scroll": true,
+      "intricate_scroll": null,
+      "powerful_scroll": null,
+      "basic_origin_source_name": "Echo Wardens",
+      "source_refs": [
+        "official_tradeable_imbuements",
+        "official_echo_wardens"
+      ],
+      "evidence_status_by_item": {
+        "blank_scroll": "PRIMARY_OFFICIAL_EXPLICIT",
+        "basic_scroll": "PRIMARY_OFFICIAL_EXPLICIT",
+        "intricate_scroll": "UNKNOWN",
+        "powerful_scroll": "UNKNOWN"
+      },
+      "source_gaps": [
+        {
+          "kind": "COMPLETED_SCROLL_LOOT_UNCONFIRMED",
+          "tiers": [
+            "intricate",
+            "powerful"
+          ],
+          "reason": "The manual wording about scrolls being looted follows the blank-scroll purchase discussion and does not identify any completed Intricate or Powerful scroll drop. The Echo Wardens announcement explicitly identifies Basic scroll loot only. Completed higher-tier loot is unknown; crafting and application remain independently evidenced."
+        }
+      ]
+    },
+    "player_trade": {
+      "all_tiers": true,
+      "requires_premium": false,
+      "requires_shrine_access": false,
+      "requires_powerful_unlock": false,
+      "source_refs": [
+        "official_manual",
+        "official_tradeable_imbuements"
+      ]
+    }
+  },
+  "by_name": {
+    "Bash": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Bash"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Bash"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Blockade": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_melting_frozen_horror"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Blockade"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Blockade"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Chop": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Chop"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Chop"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Cloud Fabric": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lloyd"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Cloud Fabric"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Cloud Fabric"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Demon Presence": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_time_guardian"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Demon Presence"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Demon Presence"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Dragon Hide": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_soul_of_dragonking_zyrtarch"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Dragon Hide"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Dragon Hide"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Electrify": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lloyd"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Electrify"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Electrify"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Epiphany": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_last_lore_keeper"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Epiphany"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Epiphany"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Featherweight": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "dangerous_depths"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Featherweight"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Featherweight"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Frost": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_melting_frozen_horror"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Frost"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Frost"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Lich Shroud": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lady_tenebris"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Lich Shroud"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Lich Shroud"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Precision": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_time_guardian"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Precision"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Precision"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Punch": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lloyd"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Punch"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Punch"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Quara Scale": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_melting_frozen_horror"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Quara Scale"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Quara Scale"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Reap": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lady_tenebris"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Reap"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Reap"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Scorch": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_soul_of_dragonking_zyrtarch"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Scorch"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Scorch"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Slash": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Slash"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Slash"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Snake Skin": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Snake Skin"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Snake Skin"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Strike": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_last_lore_keeper"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Strike"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Strike"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Swiftness": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lloyd"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Swiftness"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Swiftness"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Vampirism": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lady_tenebris"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Vampirism"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Vampirism"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Venom": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Venom"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Venom"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Vibrancy": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "dream_courts"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Vibrancy"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Vibrancy"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    },
+    "Void": {
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_soul_of_dragonking_zyrtarch"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Void"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            }
+          ]
+        }
+      },
+      "scroll_apply": {
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ],
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens"
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        }
+      },
+      "scroll_inscription": {
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "intricate"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Void"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "type": "imbuement_gold_and_materials_available",
+              "tier": "powerful"
+            }
+          ]
+        },
+        "basic": {
+          "allowed": false,
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection.",
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE"
+        }
+      }
+    }
+  },
+  "integration_gaps": [
+    {
+      "kind": "CANONICAL_QUEST_STATE_BINDING_UNAVAILABLE",
+      "canonical_index": "content/quests/definitions/index.json",
+      "reported_index_status": "READY_UNPOPULATED",
+      "affected": "World/character events, boss completion, room shrine activation, NPC reward claims and Lava Pump destruction.",
+      "source_definition_status": "COMPLETE",
+      "required_work": "Bind typed source predicates to accepted Game quest/event state when runtime quest definitions exist; client quest-line source_id is only a provenance locator."
+    }
+  ],
+  "notes": [
+    "All 24 Powerful unlock definitions are populated from quest-specific Global reference pages. The summary Imbuements page omits several post-boss reward actions; these are included here.",
+    "A Premium or quest requirement applies to shrine crafting/scroll inscription, not wearing an already imbued item or applying a valid scroll.",
+    "No entire quest completion is required for a Forgotten Knowledge branch unlock: its boss defeat plus room shrine use suffices. All previous portals are access prerequisites for the final Lore Keeper boss; they are not duplicated as separate imprint gates.",
+    "The world temple construction consists of an earlier collective quest event. The character contributes five Heavy Old Tomes once; world contribution quantities are not charged per imbue.",
+    "These records are authoring facts, not a runtime quest implementation or an assertion that source client quest-line IDs are canonical Game quest identities.",
+    "The accepted source manifest identifies client version 15.30 but contains no dated snapshot field; this packet does not infer a client capture date from version or file metadata. External access sources were retrieved on captured_on, rather than archived at the client snapshot date.",
+    "No Intricate or Powerful completed-scroll loot is asserted without a named drop source. Null acquisition values mean unknown, not impossible."
+  ],
+  "target_client_manifest": "imports/cipsoft-staticdata/quest-lines/manifest.json",
+  "status_scope": "Source access and crafting predicate definitions; scroll acquisition has separate item-specific evidence statuses."
+}

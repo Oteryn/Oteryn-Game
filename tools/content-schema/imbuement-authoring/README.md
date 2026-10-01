@@ -1,110 +1,156 @@
-# Imbuement authoring schema candidate v1
+# Imbuement authoring and Global parity audit
 
-Preparation of the 24 imbuement types and their 72 tiers under
-[IMBUE-FORGE-0 sections 3–5](../../../docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md).
-Requested directly by the owner on 2026-10-01 as a reviewable draft. Owned paths:
-`tools/content-schema/imbuement-authoring/**`; one author on
-`codex/imbuement-authoring-draft-20261001`. This is preparation only, with no
-programme allocation, runtime activation, merge request or production authority.
+The owner requested complete imbuement definitions and a check against Global Tibia.
+This draft contains the 24 types and 72 tiers, resolved material and scroll Item
+references, source-defined quest predicates, a census of every client item with
+imbuement slots, and a field-by-field evidence ledger. It remains a reviewable
+authoring package: no runtime consumes these files.
 
-The full-game tree assigns definitions to `rulesets/items/imbuements/`. This draft
-keeps its samples under the authoring tool until the content lane resolves the
-remaining bindings and qualifies population. The existing directory index stays
-`READY_UNPOPULATED`. No runtime reads these samples.
+Owned paths are `tools/content-schema/imbuement-authoring/**`, on the single-writer
+branch `codex/imbuement-authoring-draft-20261001`. User direction in this chat
+authorizes draft preparation and updates, not protected integration or deployment.
+The ruleset destination from the full-game tree remains
+`rulesets/items/imbuements/`; its existing index is unchanged.
+
+## Contents
 
 | File | Purpose |
 | --- | --- |
-| `imbuement.schema.json` | Generated JSON Schema 2020-12 with closed records and eight typed effect shapes. |
-| `imbuement_authoring.py` | Offline deterministic `build`, `build --check`, and schema plus source-consistency `validate`. Writes only inside this tool directory. |
-| `test_imbuement_authoring.py` | Positive coverage and rejection checks, including source disagreements and blocked admission. |
-| `samples/imbuements-candidate.json` | 24 definitions, three tiers each; source facts and accepted Oteryn fees are selected explicitly. |
-| `samples/imbuement-sources-2026-10-01.json` | Normalized facts, source identities and SHA-256 pins. No wiki prose, sprites or third-party engine code. |
-| `samples/imbuement-source-comparison.json` | Generated per-name/per-tier engine differences and remaining blockers. |
+| `imbuement.schema.json` | Closed JSON Schema 2020-12: eight typed effects, canonical material/scroll references, and exact references to evidence catalogues. |
+| `imbuement_authoring.py` | Deterministic catalogue/schema/comparison generation and validation against SHA-pinned evidence. |
+| `samples/imbuements-candidate.json` | 24 definitions × 3 tiers; cumulative recipes, correct Global fees, duration, scroll Item, access and eligibility profiles. |
+| `samples/imbuement-sources-2026-10-01.json` | Original normalized Wiki/Canary/Crystal facts; old architecture values retained as comparison evidence, not selected fees. |
+| `samples/imbuement-bindings.json` | All 72 ingredient names and 72 scrolls, blank scroll, etcher, tome, Gold Token and usable shrine variants with canonical Item identities. |
+| `samples/imbuement-access.json` | All 72 direct shrine routes, scroll routes and exact Powerful unlock alternatives, including claim actions after bosses. |
+| `samples/imbuement-eligibility.json` | Exhaustive 663-item client census with primary slots, per-source type/tier claims, discrepancies and explicit missing evidence. |
+| `samples/global-rules-evidence.json` | 43 rules, 14 sources, architecture conflicts and unresolved behavioral questions, each with evidence strength. |
+| `samples/imbuement-source-comparison.json` | Reproducible engine differences plus the Global fee correction. |
+| `binding_evidence.py`, `eligibility_evidence.py` | Rebuild/check identity and eligibility evidence from pinned repository inputs; never manufacture an identity from a number alone. |
+| `test_*.py` | Offline semantic, source-selection and adversarial validation tests. |
 
-## Sources and selection
+## Source order and what was actually checked
 
-Research used the Tavily search and extract connector. Search discovers sources;
-the retrieved page or pinned engine file supplies the facts. Extracted markdown
-digests describe the retrieved representation, not a MediaWiki wikitext digest.
+1. **Owner-provided CipSoft client 15.30 assets.**
+   `content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat`
+   supplies object ids, names, raw record hashes and observed slot flags. Existing
+   canonical Item definitions and revisioned wiki observations establish identity
+   bindings. `staticdata-62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128.dat`
+   supplies staged quest-line locators. Neither file contains the complete server
+   imbuement rules; the slot-field interpretation is recorded with its inference
+   boundary. Client quest ids are provenance, not invented Game Quest identities.
+2. **Official CipSoft material.** The current
+   [manual](https://www.tibia.com/gameguides?subtopic=manual&section=characters),
+   [Tradeable Imbuements announcement](https://www.tibia.com/news?subtopic=newsarchive&id=8396),
+   release news 8436 and Echo Wardens announcement 8834. Full manual extraction
+   succeeded; news snippets and a labelled news mirror cover unavailable news
+   extractions. Every digest states whether it hashes extracted markdown or an
+   indexed snippet; a snippet is never described as a full-page capture.
+3. **Community data.**
+   [Wiki BR Imbuements, revision 427991](https://www.tibiawiki.com.br/index.php?title=Imbuements&oldid=427991),
+   quest-specific guides, the twelve real item tables used by the Imbuement Tool,
+   and 607 direct per-item [Tibiopedia](https://tibiopedia.pl/items) tables.
+   Existing imported Fandom item observations add revisioned identity evidence.
+   Live Fandom root extraction failed; exact indexed results are labelled as such.
+   Recipe/effect corroboration remains community-derived.
+4. **Engine hypotheses.**
+   [Canary 04b83b512114bfd888000d6e1433ed8ecaec7c5b](https://github.com/opentibiabr/canary/tree/04b83b512114bfd888000d6e1433ed8ecaec7c5b)
+   and [Crystal summer-update 00ce02a57ca5a12e48f32a3476e37471167e4c3f](https://github.com/zimbadev/crystalserver/tree/00ce02a57ca5a12e48f32a3476e37471167e4c3f).
+   Imbuement and Item XML facts are compared by qualified identity, not document
+   position. They remain `OTS_HYPOTHESIS_ONLY` and cannot close a Global evidence gap.
 
-- **Official Tibia manual**, [characters section](https://www.tibia.com/gameguides?subtopic=manual&section=characters):
-  20-hour duration, three power tiers, up to three slots, unequipped target and the
-  shrine/scroll distinction. These agree with the repository's manual snapshot.
-- **TibiaWiki BR**, [Imbuements, revision 427991](https://www.tibiawiki.com.br/index.php?title=Imbuements&oldid=427991):
-  primary community evidence for all 24 names, tier effect numbers and the three
-  incremental ingredients per type. Higher-tier recipes include lower-tier
-  ingredients. Selected facts remain `DERIVED` and every definition remains
-  `PARITY_PENDING`; the page's approval date does not prove immutable target parity.
-- **Canary**, [04b83b512114bfd888000d6e1433ed8ecaec7c5b](https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/XML/imbuements.xml):
-  72 records, costs, category exclusions, material ids, storages and scroll ids.
-  `OTS_HYPOTHESIS_ONLY`, as required by the accepted decision.
-- **CrystalServer summer-update**, [00ce02a57ca5a12e48f32a3476e37471167e4c3f](https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/XML/imbuements.xml):
-  independently inspected 72 records, compared by `(name, tier)` because the
-  document order differs. `OTS_HYPOTHESIS_ONLY`; not a second parity oracle.
-- **[Imbuement Tool](https://www.tibiawiki.com.br/index.php?title=Imbuement_Tool&oldid=210844)**:
-  calculator last modified in 2018. Its Powerful Vampirism ingredients agree;
-  its 250,000-gold total includes protection and is not selected as the Oteryn fee.
-  Market ingredient prices and Gold Token conversion are outside this schema.
-- **[Fandom Imbuing](https://tibia.fandom.com/wiki/Imbuing)**: both advanced
-  extraction attempts failed. Tavily search returned the root-page snippet only.
-  Recorded for discovery; no numeric field claims corroboration from this page.
-- **Oteryn IMBUE-FORGE-0 sections 3 and 6**, owner decisions R2 and I1/D178:
-  always succeeds, no protection charge; apply fees 5,000 / 30,000 / 200,000 and
-  clear fee 15,000 gold. Every direct shrine tier requires a quest predicate;
-  Intricate and Powerful additionally require Premium. The canonical per-type
-  predicates are unresolved, including Powerful alternatives, and fail closed.
+Research used the Tavily search/extract connector, with four independent agent
+lanes for rules, identities, per-item eligibility and quest predicates.
+No third-party engine code, wiki prose, sprites or asset bytes are copied into
+the new evidence files.
 
-## Differences requiring explicit source choice
+## Corrections found during Global verification
 
-| Field | Wiki BR / selected candidate | Canary | Crystal summer-update |
-| --- | --- | --- | --- |
-| Strike | 10% chance; +15 / 25 / 50% damage | same numbers (raw XML chance 1000; bonus 1500 / 2500 / 5000) | raw XML chance 500; bonus 500 / 1500 / 4000; different from the wiki and Canary |
-| Basic Punch | 25 Tarantula Eggs | 20 of source item 9690 | 25 of source item 10281; agrees with wiki quantity |
-| Vibrancy | 15 / 25 / 50% deflection chance | `paralysis`, explicit `pvpDeflect=1` | `vibrancy`, no PvP attribute |
-| Fee / success | accepted Oteryn decision: always succeeds, no protection charge | historical 90 / 70 / 50% base success plus protection prices | same historical model |
+| Field | Global evidence / selected catalogue | Earlier draft or engine discrepancy |
+| --- | --- | --- |
+| Apply fees | **7,500 / 60,000 / 250,000 gold** | Old XML and accepted Oteryn decision give 5,000 / 30,000 / 200,000. |
+| Success / protection | **100%**, no protection add-on | Historical XML fields remain present but do not establish current Global behavior. |
+| Basic Punch | **25 Tarantula Eggs** | Canary Basic recipe uses 20 of item 9690; higher tiers use the wiki ingredients. |
+| Strike | **10% chance**, +15 / 25 / 50% damage | Crystal's raw chance and bonus values differ from Wiki/Canary. |
+| Scroll inventory | **All 72 scrolls** are bound, including Basic | Basic scrolls were missing from the first candidate. |
+| Scroll inscription | Official sources describe **Intricate and Powerful** | Basic loot-scroll presence does not prove Basic shrine crafting. |
+| Powerful unlock | Boss completion **plus the applicable reward claim** | Generic boss-only prerequisites omit required steps. |
+| Materials source | Global permits **backpack and Stash** | Oteryn's first slice deliberately limits access to direct backpack entries. |
+| Item slots | Official client observations take priority in discrepancies | Community tool tables disagree with the client for some items. |
 
-The candidate selects the wiki's Basic Punch recipe, rather than carrying Canary's
-Basic recipe forward into the higher tiers. Raw engine ids remain qualified source
-facts; no numeric-id/name equality is used to mint an Oteryn Item reference.
-Vibrancy PvP behavior stays unresolved; the schema carries the chance alone and
-does not imply that the engines implement the same admission behavior.
+The accepted
+[IMBUE-FORGE-0 decision](../../../docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md)
+needs reconciliation with these findings before integration. The draft uses the
+evidenced Global fees and records the old decision as a conflict; it does not
+silently rewrite an accepted architecture document.
 
-## Shape and admission boundaries
+## Exact access predicates
 
-- `candidate_key` is a local authoring identifier, not a minted ContentKey or
-  wire identifier. Population chooses canonical keys and definition revisions.
-- One shared `elemental_damage` category covers all five conversions; the other
-  19 types have separate exclusion categories. Categories govern the decision's
-  one-per-category rule; they do not implement it.
-- Percentages use integer **basis points** (`100 = 1%`); skill and speed bonuses
-  use integer points. Duration is exactly `72_000_000` ms. There is no timer state
-  or ability-pipeline implementation in a definition.
-- Each material has a source name, positive quantity and an explicit
-  `UNRESOLVED` Item binding. Quest, per-type unlock and per-item eligibility
-  bindings are also unresolved. Generic wiki equipment classes must not replace
-  the Item schema's slot counts and per-type maximum tier.
-- `activation` is fixed to `DRAFT_NOT_RUNTIME_READY`; the validator rejects
-  runtime-ready claims, invented bindings, unproven parity, unknown fields,
-  category drift, invalid tier sets, changed source facts and source-value drift.
-- `validate` is deliberately a validator for this pinned **candidate**, not a
-  future production importer. New evidence requires a reviewed source refresh,
-  an updated facts digest and regenerated samples, not a silent override.
+Every direct shrine route includes the completed temple construction event and
+the character's completed handover of five Heavy Old Tomes to Albinius. Intricate
+and Powerful additionally require Premium. The tome handover is historical
+character progress, not a requirement to keep five tomes in inventory.
 
-## Next implementation slices
+Powerful access uses the per-type source predicate:
 
-1. **IMBUE-CONTENT-1:** qualify Reference target evidence; resolve material Item
-   references, quest/unlock predicates, shrine objects and per-item allow lists;
-   mint definition identities and populate `rulesets/items/imbuements/`.
-2. **IMBUE-1:** add the accepted `game_item_imbuements` persistence shape and
-   transaction semantics for Apply/Clear/Expiry. No migration is added here.
-3. **IMBUE-RT-1 / IMBUE-WIRE-1:** timer/checkpoints, ability effects and protocol/UI.
-   Scroll production/application remains IMBUE-SCROLL-1.
+- Forgotten Knowledge: the applicable boss completion and use of its reward-room
+  Abandoned Imbuing Shrine.
+- Heart of Destruction: World Devourer completion and the `worth` reward claim
+  from Yana; an alternative only for the eight sourced families.
+- Vibrancy: The Nightmare Beast completion plus the report to Vanys or Undal.
+- Featherweight: all three Dangerous Depths boss/pump steps.
 
-## Local validation
+Completed-scroll application has separate compatibility predicates and Premium/
+quest exemptions. Basic exemption strength is labelled as derived from primary
+announcements and client evidence; it is not overstated as an observed server
+test. The source predicates are complete; canonical Quest state is still absent
+from `content/quests/definitions/`, so no fake runtime Quest reference is minted.
+
+## Verification limits and admission
+
+The immutable repository target remains
+`global-tibia-observable-2026-07-28-post-server-save`. Current retrieved pages and
+a versioned client file are evidence, not a blanket proof of every server rule at
+that exact timestamp. The ledger preserves temporal qualification for each claim.
+
+The eligibility census records all 663 client slot items. Types and maximum tiers
+are filled for 629 current items: 607 direct Tibiopedia tables and 22 explicit
+Wiki BR fallbacks. Of these, 627 bind to canonical Item definitions; Bursa Obscura
+(49160) and Sailor's Backpack (53192) have no canonical definition. Thirty legacy
+Mayhem/Remedy/Carving items are explicitly documented as withdrawn in version
+11.50; four TEST objects lack eligibility evidence and remain excluded.
+
+The selected draft values prefer the direct item table when its slots match the
+client. All 607 native slot counts match; the older BR helper has 21 slot errors
+and omits Monk-era Punch entries. The 101 disagreements in types or maximum tiers
+retain both source claims and use `DERIVED_SELECTED_OVER_STALE_HELPER`; the 22
+fallback rows remain `COMMUNITY_SINGLE_SOURCE`. This source-selection policy
+fills the candidate without calling community data verified server behavior.
+The packet records zero officially verified per-item allow lists. Exact counts,
+affected names and per-source claims live in its `summary` and `items` records.
+
+Fine-grained timers, Vibrancy PvP behavior, leech/critical composition, etcher
+consumption, loot of completed Intricate/Powerful scrolls and target-time
+continuity have their own remaining evidence limits.
+They are not filled with arbitrary values to make the catalogue appear complete.
+
+`candidate_key` identifies a local authoring definition. Percentages use integer
+basis points (`100 = 1%`), skill/speed bonuses use points, and duration is
+`72_000_000` ms. Schema/semantic validation reject changed evidence pins,
+invented Item references, unsupported parity claims, wrong tier/category sets,
+noncumulative recipes and old fee values.
+
+Runtime activation stays `DRAFT_NOT_RUNTIME_READY`. Implementing the accepted
+persistence table, timers/checkpoints, ability effects, protocol/UI, quest-state
+bindings and qualifying population remains separate implementation work.
+A passing source audit is not a playable Global parity test.
+
+## Offline validation
 
 ```sh
 python -m pip install -r tools/content-schema/imbuement-authoring/requirements.txt
+python tools/content-schema/imbuement-authoring/binding_evidence.py --check
+python tools/content-schema/imbuement-authoring/eligibility_evidence.py --check
 python tools/content-schema/imbuement-authoring/imbuement_authoring.py build --check
 python tools/content-schema/imbuement-authoring/imbuement_authoring.py validate
-python tools/content-schema/imbuement-authoring/test_imbuement_authoring.py
+python -m unittest discover -s tools/content-schema/imbuement-authoring -p 'test_*.py'
 ```

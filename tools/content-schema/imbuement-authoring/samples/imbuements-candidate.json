@@ -3,13 +3,24 @@
   "activation": "DRAFT_NOT_RUNTIME_READY",
   "target": "global-tibia-observable-2026-07-28-post-server-save",
   "source_facts_sha256": "33f2c1e26beb9fe0e20bd00901023510eca19f6a388a0d5610123cb6a317a9b0",
+  "supporting_catalogues": {
+    "global-rules-evidence.json": "051d86fbbe7f3fd48cc4361bc1dcea41f9d8912fe6c3db75af29da72308e40ea",
+    "imbuement-access.json": "7b18978f9c2b31d98bc42dba5a9a799d8845f974beb51299efd92bac7fc00334",
+    "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
+    "imbuement-eligibility.json": "f39b7a1c1593907e424f70ed2db6d27ba9b8c4835346d30cb3a35e4112f0e677"
+  },
+  "global_rules_profile": "global-rules-evidence.json",
+  "architecture_reconciliation": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE",
   "definitions": [
     {
       "candidate_key": "bash",
       "name": "Bash",
       "category": "bash",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "bash"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -24,23 +35,33 @@
             {
               "source_name": "Cyclops Toe",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9657",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53751",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Bash",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -56,28 +77,42 @@
             {
               "source_name": "Cyclops Toe",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9657",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Ogre Nose Ring",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22189",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51724",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Bash",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -93,33 +128,51 @@
             {
               "source_name": "Cyclops Toe",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9657",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Ogre Nose Ring",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22189",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Warmaster's Wristguards",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10405",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51444",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Bash",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -128,8 +181,11 @@
       "candidate_key": "blockade",
       "name": "Blockade",
       "category": "blockade",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "blockade"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -144,23 +200,33 @@
             {
               "source_name": "Piece of Scarab Shell",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9641",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53752",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Blockade",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -176,28 +242,42 @@
             {
               "source_name": "Piece of Scarab Shell",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9641",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Brimstone Shell",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11703",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51725",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Blockade",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -213,33 +293,51 @@
             {
               "source_name": "Piece of Scarab Shell",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9641",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Brimstone Shell",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11703",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Frazzle Skin",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20199",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51445",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Blockade",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -248,8 +346,11 @@
       "candidate_key": "chop",
       "name": "Chop",
       "category": "chop",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "chop"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -264,23 +365,33 @@
             {
               "source_name": "Orc Tooth",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10196",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53753",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Chop",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -296,28 +407,42 @@
             {
               "source_name": "Orc Tooth",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10196",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Battle Stone",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11447",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51726",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Chop",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -333,33 +458,51 @@
             {
               "source_name": "Orc Tooth",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10196",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Battle Stone",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11447",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Moohtant Horn",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21200",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51446",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Chop",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -368,8 +511,11 @@
       "candidate_key": "cloud_fabric",
       "name": "Cloud Fabric",
       "category": "cloud_fabric",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "cloud_fabric"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -384,23 +530,33 @@
             {
               "source_name": "Wyvern Talisman",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9644",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53754",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Cloud Fabric",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -416,28 +572,42 @@
             {
               "source_name": "Wyvern Talisman",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9644",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Crawler Head Plating",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i14079",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51727",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Cloud Fabric",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -453,33 +623,51 @@
             {
               "source_name": "Wyvern Talisman",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9644",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Crawler Head Plating",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i14079",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Wyrm Scale",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9665",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51447",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Cloud Fabric",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -488,8 +676,11 @@
       "candidate_key": "demon_presence",
       "name": "Demon Presence",
       "category": "demon_presence",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "demon_presence"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -504,23 +695,33 @@
             {
               "source_name": "Cultish Robe",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9639",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53755",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Demon Presence",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -536,28 +737,42 @@
             {
               "source_name": "Cultish Robe",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9639",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Cultish Mask",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9638",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51728",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Demon Presence",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -573,33 +788,51 @@
             {
               "source_name": "Cultish Robe",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9639",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Cultish Mask",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9638",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Hellspawn Tail",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10304",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51448",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Demon Presence",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -608,8 +841,11 @@
       "candidate_key": "dragon_hide",
       "name": "Dragon Hide",
       "category": "dragon_hide",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "dragon_hide"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -624,23 +860,33 @@
             {
               "source_name": "Green Dragon Leather",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5877",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53756",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Dragon Hide",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -656,28 +902,42 @@
             {
               "source_name": "Green Dragon Leather",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5877",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Blazing Bone",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i16131",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51729",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Dragon Hide",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -693,33 +953,51 @@
             {
               "source_name": "Green Dragon Leather",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5877",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Blazing Bone",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i16131",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Draken Sulphur",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11658",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51449",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Dragon Hide",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -728,8 +1006,11 @@
       "candidate_key": "electrify",
       "name": "Electrify",
       "category": "elemental_damage",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "electrify"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -744,23 +1025,33 @@
             {
               "source_name": "Rorc Feather",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18993",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53757",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Electrify",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -776,28 +1067,42 @@
             {
               "source_name": "Rorc Feather",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18993",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Peacock Feather Fan",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21975",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51730",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Electrify",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -813,33 +1118,51 @@
             {
               "source_name": "Rorc Feather",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18993",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Peacock Feather Fan",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21975",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Energy Vein",
               "count": 1,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i23508",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51450",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Electrify",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -848,8 +1171,11 @@
       "candidate_key": "epiphany",
       "name": "Epiphany",
       "category": "epiphany",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "epiphany"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -864,23 +1190,33 @@
             {
               "source_name": "Elvish Talisman",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9635",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53758",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Epiphany",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -896,28 +1232,42 @@
             {
               "source_name": "Elvish Talisman",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9635",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Broken Shamanic Staff",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11452",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51731",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Epiphany",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -933,33 +1283,51 @@
             {
               "source_name": "Elvish Talisman",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9635",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Broken Shamanic Staff",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11452",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Strand of Medusa Hair",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10309",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51451",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Epiphany",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -968,8 +1336,11 @@
       "candidate_key": "featherweight",
       "name": "Featherweight",
       "category": "featherweight",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "featherweight"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -983,23 +1354,33 @@
             {
               "source_name": "Fairy Wings",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25694",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53759",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Featherweight",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1014,28 +1395,42 @@
             {
               "source_name": "Fairy Wings",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25694",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Little Bowl of Myrrh",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25702",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51732",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Featherweight",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1050,33 +1445,51 @@
             {
               "source_name": "Fairy Wings",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25694",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Little Bowl of Myrrh",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25702",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Goosebump Leather",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20205",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51452",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Featherweight",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -1085,8 +1498,11 @@
       "candidate_key": "frost",
       "name": "Frost",
       "category": "elemental_damage",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "frost"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -1101,23 +1517,33 @@
             {
               "source_name": "Frosty Heart",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9661",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53760",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Frost",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1133,28 +1559,42 @@
             {
               "source_name": "Frosty Heart",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9661",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Seacrest Hair",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21801",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51733",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Frost",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1170,33 +1610,51 @@
             {
               "source_name": "Frosty Heart",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9661",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Seacrest Hair",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21801",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Polar Bear Paw",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9650",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51453",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Frost",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -1205,8 +1663,11 @@
       "candidate_key": "lich_shroud",
       "name": "Lich Shroud",
       "category": "lich_shroud",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "lich_shroud"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -1221,23 +1682,33 @@
             {
               "source_name": "Flask of Embalming Fluid",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11466",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53761",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Lich Shroud",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1253,28 +1724,42 @@
             {
               "source_name": "Flask of Embalming Fluid",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11466",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Gloom Wolf Fur",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22007",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51734",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Lich Shroud",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1290,33 +1775,51 @@
             {
               "source_name": "Flask of Embalming Fluid",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11466",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Gloom Wolf Fur",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22007",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Mystical Hourglass",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9660",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51454",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Lich Shroud",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -1325,8 +1828,11 @@
       "candidate_key": "precision",
       "name": "Precision",
       "category": "precision",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "precision"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -1341,23 +1847,33 @@
             {
               "source_name": "Elven Scouting Glass",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11464",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53762",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Precision",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1373,28 +1889,42 @@
             {
               "source_name": "Elven Scouting Glass",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11464",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Elven Hoof",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18994",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51735",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Precision",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1410,33 +1940,51 @@
             {
               "source_name": "Elven Scouting Glass",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11464",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Elven Hoof",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18994",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Metal Spike",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10298",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51455",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Precision",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -1445,8 +1993,11 @@
       "candidate_key": "punch",
       "name": "Punch",
       "category": "punch",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "punch"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -1461,23 +2012,33 @@
             {
               "source_name": "Tarantula Egg",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10281",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53763",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Punch",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1493,28 +2054,42 @@
             {
               "source_name": "Tarantula Egg",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10281",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Mantassin Tail",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11489",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51736",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Punch",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1530,33 +2105,51 @@
             {
               "source_name": "Tarantula Egg",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10281",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Mantassin Tail",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11489",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Gold-Brocaded Cloth",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i40529",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51456",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Punch",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -1565,8 +2158,11 @@
       "candidate_key": "quara_scale",
       "name": "Quara Scale",
       "category": "quara_scale",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "quara_scale"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -1581,23 +2177,33 @@
             {
               "source_name": "Winter Wolf Fur",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10295",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53764",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Quara Scale",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1613,28 +2219,42 @@
             {
               "source_name": "Winter Wolf Fur",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10295",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Thick Fur",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10307",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51737",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Quara Scale",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1650,33 +2270,51 @@
             {
               "source_name": "Winter Wolf Fur",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10295",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Thick Fur",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10307",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Deepling Warts",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i14012",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51457",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Quara Scale",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -1685,8 +2323,11 @@
       "candidate_key": "reap",
       "name": "Reap",
       "category": "elemental_damage",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "reap"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -1701,23 +2342,33 @@
             {
               "source_name": "Pile of Grave Earth",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11484",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53765",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Reap",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1733,28 +2384,42 @@
             {
               "source_name": "Pile of Grave Earth",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11484",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Demonic Skeletal Hand",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9647",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51738",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Reap",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1770,33 +2435,51 @@
             {
               "source_name": "Pile of Grave Earth",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11484",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Demonic Skeletal Hand",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9647",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Petrified Scream",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10420",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51458",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Reap",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -1805,8 +2488,11 @@
       "candidate_key": "scorch",
       "name": "Scorch",
       "category": "elemental_damage",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "scorch"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -1821,23 +2507,33 @@
             {
               "source_name": "Fiery Heart",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9636",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53766",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Scorch",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1853,28 +2549,42 @@
             {
               "source_name": "Fiery Heart",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9636",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Green Dragon Scale",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5920",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51739",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Scorch",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1890,33 +2600,51 @@
             {
               "source_name": "Fiery Heart",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9636",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Green Dragon Scale",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5920",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Demon Horn",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5954",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51459",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Scorch",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -1925,8 +2653,11 @@
       "candidate_key": "slash",
       "name": "Slash",
       "category": "slash",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "slash"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -1941,23 +2672,33 @@
             {
               "source_name": "Lion's Mane",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9691",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53767",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Slash",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -1973,28 +2714,42 @@
             {
               "source_name": "Lion's Mane",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9691",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Mooh'tah Shell",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21202",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51740",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Slash",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2010,33 +2765,51 @@
             {
               "source_name": "Lion's Mane",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9691",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Mooh'tah Shell",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21202",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "War Crystal",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9654",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51460",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Slash",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -2045,8 +2818,11 @@
       "candidate_key": "snake_skin",
       "name": "Snake Skin",
       "category": "snake_skin",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "snake_skin"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -2061,23 +2837,33 @@
             {
               "source_name": "Piece of Swampling Wood",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17823",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53768",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Snake Skin",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2093,28 +2879,42 @@
             {
               "source_name": "Piece of Swampling Wood",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17823",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Snake Skin",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9694",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51741",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Snake Skin",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2130,33 +2930,51 @@
             {
               "source_name": "Piece of Swampling Wood",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17823",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Snake Skin",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9694",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Brimstone Fangs",
               "count": 10,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11702",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51461",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Snake Skin",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -2165,8 +2983,11 @@
       "candidate_key": "strike",
       "name": "Strike",
       "category": "strike",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "strike"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -2181,23 +3002,33 @@
             {
               "source_name": "Protective Charm",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53769",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Strike",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2213,28 +3044,42 @@
             {
               "source_name": "Protective Charm",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Sabretooth (Item)",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10311",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51742",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Strike",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2250,33 +3095,51 @@
             {
               "source_name": "Protective Charm",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Sabretooth (Item)",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10311",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Vexclaw Talon",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22728",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51462",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Strike",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -2285,8 +3148,11 @@
       "candidate_key": "swiftness",
       "name": "Swiftness",
       "category": "swiftness",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "swiftness"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -2300,23 +3166,33 @@
             {
               "source_name": "Damselfly Wing",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17458",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53770",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Swiftness",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2331,28 +3207,42 @@
             {
               "source_name": "Damselfly Wing",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17458",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Compass",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10302",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51743",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Swiftness",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2367,33 +3257,51 @@
             {
               "source_name": "Damselfly Wing",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17458",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Compass",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10302",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Waspoid Wing",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i14081",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51463",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Swiftness",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -2402,8 +3310,11 @@
       "candidate_key": "vampirism",
       "name": "Vampirism",
       "category": "vampirism",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "vampirism"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -2419,23 +3330,33 @@
             {
               "source_name": "Vampire Teeth",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53771",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Vampirism",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2452,28 +3373,42 @@
             {
               "source_name": "Vampire Teeth",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Bloody Pincers",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9633",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51744",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Vampirism",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2490,33 +3425,51 @@
             {
               "source_name": "Vampire Teeth",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Bloody Pincers",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9633",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Piece of Dead Brain",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9663",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51464",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Vampirism",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -2525,8 +3478,11 @@
       "candidate_key": "venom",
       "name": "Venom",
       "category": "elemental_damage",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "venom"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -2541,23 +3497,33 @@
             {
               "source_name": "Swamp Grass",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9686",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53772",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Venom",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2573,28 +3539,42 @@
             {
               "source_name": "Swamp Grass",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9686",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Poisonous Slime",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9640",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51745",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Venom",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2610,33 +3590,51 @@
             {
               "source_name": "Swamp Grass",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9686",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Poisonous Slime",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9640",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Slime Heart",
               "count": 2,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21194",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51465",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Venom",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -2645,8 +3643,11 @@
       "candidate_key": "vibrancy",
       "name": "Vibrancy",
       "category": "vibrancy",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "vibrancy"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -2660,23 +3661,33 @@
             {
               "source_name": "Wereboar Hooves",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22053",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53773",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Vibrancy",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2691,28 +3702,42 @@
             {
               "source_name": "Wereboar Hooves",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22053",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Crystallized Anger",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i23507",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51746",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Vibrancy",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2727,33 +3752,51 @@
             {
               "source_name": "Wereboar Hooves",
               "count": 20,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22053",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Crystallized Anger",
               "count": 15,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i23507",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Quill",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i28567",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51466",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Vibrancy",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]
@@ -2762,8 +3805,11 @@
       "candidate_key": "void",
       "name": "Void",
       "category": "void",
-      "parity": "PARITY_PENDING",
-      "item_eligibility_binding": "UNRESOLVED",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "item_eligibility_binding": {
+        "catalogue": "imbuement-eligibility.json",
+        "candidate_key": "void"
+      },
       "tiers": [
         {
           "tier": 1,
@@ -2779,23 +3825,33 @@
             {
               "source_name": "Rope Belt",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 5000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53774",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 7500,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": false,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Void",
+            "tier": "basic",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2812,28 +3868,42 @@
             {
               "source_name": "Rope Belt",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Silencer Claws",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20200",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 30000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51747",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 60000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Void",
+            "tier": "intricate",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         },
         {
@@ -2850,33 +3920,51 @@
             {
               "source_name": "Rope Belt",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Silencer Claws",
               "count": 25,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20200",
+                "revision": "definition-r1"
+              }
             },
             {
               "source_name": "Some Grimeleech Wings",
               "count": 5,
-              "item_binding": "UNRESOLVED"
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22730",
+                "revision": "definition-r1"
+              }
             }
           ],
-          "apply_fee_gold": 200000,
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51467",
+            "revision": "definition-r1"
+          },
+          "apply_fee_gold": 250000,
           "clear_fee_gold": 15000,
           "access": {
             "premium_required": true,
-            "quest_binding": "UNRESOLVED",
-            "source_quest": "Temple of the Forgotten Knowledge",
-            "per_type_unlock_binding": "UNRESOLVED"
+            "catalogue": "imbuement-access.json",
+            "profile": "Void",
+            "tier": "powerful",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
             "effect": "wiki_br",
             "materials": "wiki_br",
             "duration": "manual",
-            "access": "decision",
-            "fees": "decision"
+            "access": "imbuement-access.json",
+            "fees": "global-rules-evidence.json"
           }
         }
       ]

@@ -557,13 +557,29 @@
       "crystal": []
     }
   ],
-  "selection": "Wiki BR effect values and cumulative materials; Oteryn decision fees and access; no engine ids promoted",
+  "selection": "Wiki BR effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
+  "global_fee_conflict": {
+    "accepted_decision": [
+      5000,
+      30000,
+      200000
+    ],
+    "global_since_2025": [
+      7500,
+      60000,
+      250000
+    ]
+  },
+  "supporting_catalogues": {
+    "global-rules-evidence.json": "051d86fbbe7f3fd48cc4361bc1dcea41f9d8912fe6c3db75af29da72308e40ea",
+    "imbuement-access.json": "7b18978f9c2b31d98bc42dba5a9a799d8845f974beb51299efd92bac7fc00334",
+    "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
+    "imbuement-eligibility.json": "f39b7a1c1593907e424f70ed2db6d27ba9b8c4835346d30cb3a35e4112f0e677"
+  },
   "blocked": [
-    "Item material references",
-    "Per-item eligibility and slot audit",
-    "Quest and per-type unlock references",
-    "Immutable Reference target continuity",
-    "Fandom full extraction unavailable",
+    "Accepted architecture fee correction",
+    "Canonical Quest runtime state",
+    "Per-field evidence gaps listed in eligibility and Global rules packets",
     "Runtime, persistence and wire implementation"
   ]
 }

@@ -16,6 +16,40 @@
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
     },
+    "supporting_catalogues": {
+      "type": "object",
+      "properties": {
+        "global-rules-evidence.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imbuement-access.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imbuement-bindings.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imbuement-eligibility.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "global-rules-evidence.json",
+        "imbuement-access.json",
+        "imbuement-bindings.json",
+        "imbuement-eligibility.json"
+      ],
+      "additionalProperties": false
+    },
+    "global_rules_profile": {
+      "const": "global-rules-evidence.json"
+    },
+    "architecture_reconciliation": {
+      "const": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE"
+    },
     "definitions": {
       "type": "array",
       "items": {
@@ -102,10 +136,48 @@
             ]
           },
           "parity": {
-            "const": "PARITY_PENDING"
+            "const": "AUDITED_WITH_EXPLICIT_GAPS"
           },
           "item_eligibility_binding": {
-            "const": "UNRESOLVED"
+            "type": "object",
+            "properties": {
+              "catalogue": {
+                "const": "imbuement-eligibility.json"
+              },
+              "candidate_key": {
+                "enum": [
+                  "bash",
+                  "blockade",
+                  "chop",
+                  "cloud_fabric",
+                  "demon_presence",
+                  "dragon_hide",
+                  "electrify",
+                  "epiphany",
+                  "featherweight",
+                  "frost",
+                  "lich_shroud",
+                  "precision",
+                  "punch",
+                  "quara_scale",
+                  "reap",
+                  "scorch",
+                  "slash",
+                  "snake_skin",
+                  "strike",
+                  "swiftness",
+                  "vampirism",
+                  "venom",
+                  "vibrancy",
+                  "void"
+                ]
+              }
+            },
+            "required": [
+              "catalogue",
+              "candidate_key"
+            ],
+            "additionalProperties": false
           },
           "tiers": {
             "type": "array",
@@ -340,7 +412,25 @@
                         "minimum": 1
                       },
                       "item_binding": {
-                        "const": "UNRESOLVED"
+                        "type": "object",
+                        "properties": {
+                          "family": {
+                            "const": "Item"
+                          },
+                          "key": {
+                            "type": "string",
+                            "pattern": "^oteryn:item\\.tibia\\.i[0-9]+$"
+                          },
+                          "revision": {
+                            "const": "definition-r1"
+                          }
+                        },
+                        "required": [
+                          "family",
+                          "key",
+                          "revision"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
@@ -352,6 +442,27 @@
                   },
                   "minItems": 1,
                   "maxItems": 3
+                },
+                "scroll_item": {
+                  "type": "object",
+                  "properties": {
+                    "family": {
+                      "const": "Item"
+                    },
+                    "key": {
+                      "type": "string",
+                      "pattern": "^oteryn:item\\.tibia\\.i[0-9]+$"
+                    },
+                    "revision": {
+                      "const": "definition-r1"
+                    }
+                  },
+                  "required": [
+                    "family",
+                    "key",
+                    "revision"
+                  ],
+                  "additionalProperties": false
                 },
                 "apply_fee_gold": {
                   "type": "integer",
@@ -367,21 +478,54 @@
                     "premium_required": {
                       "type": "boolean"
                     },
-                    "quest_binding": {
-                      "const": "UNRESOLVED"
+                    "catalogue": {
+                      "const": "imbuement-access.json"
                     },
-                    "source_quest": {
-                      "const": "Temple of the Forgotten Knowledge"
+                    "profile": {
+                      "enum": [
+                        "Bash",
+                        "Blockade",
+                        "Chop",
+                        "Cloud Fabric",
+                        "Demon Presence",
+                        "Dragon Hide",
+                        "Electrify",
+                        "Epiphany",
+                        "Featherweight",
+                        "Frost",
+                        "Lich Shroud",
+                        "Precision",
+                        "Punch",
+                        "Quara Scale",
+                        "Reap",
+                        "Scorch",
+                        "Slash",
+                        "Snake Skin",
+                        "Strike",
+                        "Swiftness",
+                        "Vampirism",
+                        "Venom",
+                        "Vibrancy",
+                        "Void"
+                      ]
                     },
-                    "per_type_unlock_binding": {
-                      "const": "UNRESOLVED"
+                    "tier": {
+                      "enum": [
+                        "basic",
+                        "intricate",
+                        "powerful"
+                      ]
+                    },
+                    "runtime_quest_binding": {
+                      "const": "QUEST_FAMILY_NOT_POPULATED"
                     }
                   },
                   "required": [
                     "premium_required",
-                    "quest_binding",
-                    "source_quest",
-                    "per_type_unlock_binding"
+                    "catalogue",
+                    "profile",
+                    "tier",
+                    "runtime_quest_binding"
                   ],
                   "additionalProperties": false
                 },
@@ -398,10 +542,10 @@
                       "const": "manual"
                     },
                     "access": {
-                      "const": "decision"
+                      "const": "imbuement-access.json"
                     },
                     "fees": {
-                      "const": "decision"
+                      "const": "global-rules-evidence.json"
                     }
                   },
                   "required": [
@@ -420,6 +564,7 @@
                 "duration_ms",
                 "effect",
                 "materials",
+                "scroll_item",
                 "apply_fee_gold",
                 "clear_fee_gold",
                 "access",
@@ -450,6 +595,9 @@
     "activation",
     "target",
     "source_facts_sha256",
+    "supporting_catalogues",
+    "global_rules_profile",
+    "architecture_reconciliation",
     "definitions"
   ],
   "additionalProperties": false

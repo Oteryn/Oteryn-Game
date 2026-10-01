@@ -49,7 +49,7 @@ class ImbuementAuthoringTests(unittest.TestCase):
         material = self.definition("Punch")["tiers"][0]["materials"][0]
         self.assertEqual(material["source_name"], "Tarantula Egg")
         self.assertEqual(material["count"], 25)
-        self.assertEqual(material["item_binding"], "UNRESOLVED")
+        self.assertEqual(material["item_binding"]["key"], "oteryn:item.tibia.i10281")
 
     def test_recipes_are_cumulative(self):
         tiers = self.definition("Void")["tiers"]
@@ -60,9 +60,9 @@ class ImbuementAuthoringTests(unittest.TestCase):
         tiers = self.definition("Lich Shroud")["tiers"]
         self.assertEqual([t["effect"]["absorb_bps"] for t in tiers], [200, 500, 1000])
 
-    def test_accepted_fees_exclude_protection(self):
+    def test_current_global_fees_exclude_obsolete_xml_prices(self):
         tiers = self.definition("Vampirism")["tiers"]
-        self.assertEqual([t["apply_fee_gold"] for t in tiers], [5000, 30000, 200000])
+        self.assertEqual([t["apply_fee_gold"] for t in tiers], [7500, 60000, 250000])
         self.assertEqual([t["clear_fee_gold"] for t in tiers], [15000] * 3)
 
     def test_comparison_matches_by_name_and_tier(self):
@@ -107,7 +107,32 @@ class ImbuementAuthoringTests(unittest.TestCase):
 
     def test_reject_access_and_fee_drift(self):
         self.rejects(lambda c: c["definitions"][0]["tiers"][1]["access"].__setitem__("premium_required", False))
-        self.rejects(lambda c: c["definitions"][0]["tiers"][2].__setitem__("apply_fee_gold", 250000))
+        self.rejects(lambda c: c["definitions"][0]["tiers"][2].__setitem__("apply_fee_gold", 200000))
+
+    def test_all_materials_and_scrolls_are_canonical_references(self):
+        for definition in self.candidate["definitions"]:
+            for tier in definition["tiers"]:
+                refs = [m["item_binding"] for m in tier["materials"]] + [tier["scroll_item"]]
+                self.assertTrue(all(r["family"] == "Item" and r["key"].startswith("oteryn:item.tibia.i") for r in refs))
+        self.assertEqual(len({t["scroll_item"]["key"] for d in self.candidate["definitions"] for t in d["tiers"]}), 72)
+
+    def test_exact_access_and_eligibility_references(self):
+        for definition in self.candidate["definitions"]:
+            self.assertEqual(definition["item_eligibility_binding"]["candidate_key"], definition["candidate_key"])
+            for tier in definition["tiers"]:
+                self.assertEqual(tier["access"]["profile"], definition["name"])
+                self.assertEqual(tier["access"]["tier"], tier["name"].lower())
+
+    def test_reject_swapped_valid_item_and_scroll_references(self):
+        self.rejects(lambda c: c["definitions"][0]["tiers"][0]["materials"][0].__setitem__("item_binding", self.definition("Punch")["tiers"][0]["materials"][0]["item_binding"]))
+        self.rejects(lambda c: c["definitions"][0]["tiers"][0].__setitem__("scroll_item", self.definition("Punch")["tiers"][0]["scroll_item"]))
+
+    def test_reject_evidence_pin_drift(self):
+        pins = dict(authoring.EVIDENCE_PINS)
+        pins["imbuement-bindings.json"] = "0" * 64
+        with patch.object(authoring, "EVIDENCE_PINS", pins):
+            with self.assertRaisesRegex(ValueError, "supporting evidence digest changed"):
+                authoring.build()
 
     def test_reject_source_packet_digest_drift(self):
         with patch.object(authoring, "FACTS_SHA256", "0" * 64):
