@@ -1,0 +1,530 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.dev/schemas/content/island/v1",
+  "title": "Oteryn Area.Island authoring files v1 (family index, shard, capture summary, wiki snapshot)",
+  "description": "Island, archipelago and continent Areas confirmed on the committed base map: an island is a land component the map encloses with water or lava. Footprints are computed from the map; names and page bindings come from the pinned English TibiaWiki snapshot. Events, ownership and runtime state never appear here.",
+  "oneOf": [
+    { "$ref": "#/$defs/family_index" },
+    { "$ref": "#/$defs/island_shard" },
+    { "$ref": "#/$defs/capture_summary" },
+    { "$ref": "#/$defs/snapshot" },
+    { "$ref": "#/$defs/evidence_anchors" }
+  ],
+  "$defs": {
+    "slug_key": { "type": "string", "maxLength": 128 },
+    "u16": { "type": "integer", "minimum": 0, "maximum": 65535 },
+    "floor": { "type": "integer", "minimum": 0, "maximum": 15 },
+    "count": { "type": "integer", "minimum": 0 },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "coordinate_frame": { "const": "global-target-2026-09-27" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "wiki_id": { "type": "integer", "minimum": 1 },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coordinate_frame", "floor", "x", "y"],
+      "properties": {
+        "coordinate_frame": { "$ref": "#/$defs/coordinate_frame" },
+        "floor": { "$ref": "#/$defs/floor" },
+        "x": { "$ref": "#/$defs/u16" },
+        "y": { "$ref": "#/$defs/u16" }
+      }
+    },
+    "footprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coordinate_frame", "floor", "max_x", "max_y", "min_x", "min_y", "tile_count"],
+      "properties": {
+        "coordinate_frame": { "$ref": "#/$defs/coordinate_frame" },
+        "floor": { "$ref": "#/$defs/floor" },
+        "max_x": { "$ref": "#/$defs/u16" },
+        "max_y": { "$ref": "#/$defs/u16" },
+        "min_x": { "$ref": "#/$defs/u16" },
+        "min_y": { "$ref": "#/$defs/u16" },
+        "tile_count": { "type": "integer", "minimum": 1, "maximum": 399999 }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "revision"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^oteryn:area\\.island\\.[a-z0-9]+(_[a-z0-9]+)*$"
+        },
+        "revision": { "const": "definition-r1" }
+      }
+    },
+    "area_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "key", "revision"],
+      "properties": {
+        "family": { "const": "Area" },
+        "key": { "$ref": "#/$defs/slug_key" },
+        "revision": { "const": "definition-r1" }
+      }
+    },
+    "area_references": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/area_reference" }
+    },
+    "wiki_source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "external_id", "identity_namespace", "source_key", "source_revision", "target"],
+      "properties": {
+        "disposition": { "const": "EXACT" },
+        "external_id": { "type": "string", "pattern": "^[1-9][0-9]{0,11}$" },
+        "identity_namespace": { "const": "tibiawiki-fandom/page-id" },
+        "source_key": { "const": "oteryn:source.tibiawiki" },
+        "source_revision": { "type": "string", "pattern": "^[1-9][0-9]{0,11}$" },
+        "target": { "$ref": "#/$defs/area_reference" }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anchor", "footprint"],
+      "properties": {
+        "anchor": { "$ref": "#/$defs/position" },
+        "footprint": { "$ref": "#/$defs/footprint" },
+        "island": { "$ref": "#/$defs/area_reference" }
+      }
+    },
+    "anchor_source": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^(crystalserver-npc:[^:]+|crystalserver-monster:[^:]+|teleport:oteryn:transition\\.teleport\\.x[0-9]+_y[0-9]+_z[0-9]+)$"
+    },
+    "additional_component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anchor", "footprint"],
+      "properties": {
+        "anchor": { "$ref": "#/$defs/position" },
+        "footprint": { "$ref": "#/$defs/footprint" }
+      }
+    },
+    "source_facts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence", "wiki_class"],
+      "properties": {
+        "anchor_correction_note": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "anchor_origin": { "enum": ["city_temple", "derived", "evidence_anchor", "map_correction", "wiki_body", "wiki_lead"] },
+        "anchor_source": { "$ref": "#/$defs/anchor_source" },
+        "component_note": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "evidence": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "evidence_page": { "$ref": "#/$defs/title" },
+        "removed_from_game": { "const": true },
+        "source_coordinate": { "$ref": "#/$defs/position" },
+        "wiki_cities": { "$ref": "#/$defs/area_references" },
+        "wiki_class": { "enum": ["archipelago", "island"] },
+        "wiki_status": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 32 }
+        }
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["area_kind", "identity", "kind", "name", "source_facts"],
+      "properties": {
+        "additional_components": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/additional_component" }
+        },
+        "also_known_as": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/title" }
+        },
+        "anchor": { "$ref": "#/$defs/position" },
+        "anchor_corrected_from_wiki": { "const": true },
+        "area_kind": { "enum": ["archipelago", "continent", "island"] },
+        "cities": { "$ref": "#/$defs/area_references" },
+        "components": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/component" }
+        },
+        "event_only": { "const": true },
+        "footprint": { "$ref": "#/$defs/footprint" },
+        "identity": { "$ref": "#/$defs/identity" },
+        "kind": { "const": "Area" },
+        "name": { "$ref": "#/$defs/title" },
+        "source_facts": { "$ref": "#/$defs/source_facts" },
+        "underground": { "const": true }
+      },
+      "if": { "properties": { "area_kind": { "const": "archipelago" } } },
+      "then": {
+        "required": ["components"],
+        "not": { "anyOf": [{ "required": ["anchor"] }, { "required": ["footprint"] }, { "required": ["anchor_corrected_from_wiki"] }, { "required": ["additional_components"] }] }
+      },
+      "else": {
+        "required": ["anchor", "footprint"],
+        "not": { "required": ["components"] }
+      }
+    },
+    "island_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declaration", "source_bindings"],
+      "properties": {
+        "declaration": { "$ref": "#/$defs/declaration" },
+        "source_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/wiki_source_binding" }
+        }
+      }
+    },
+    "island_shard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "records", "schema", "shard"],
+      "properties": {
+        "family": { "const": "Area.Island" },
+        "records": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "$ref": "#/$defs/island_record" } },
+        "schema": { "const": "OTERYN_AREA_AUTHORING_SHARD/v1" },
+        "shard": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count", "end", "index", "start"],
+          "properties": {
+            "count": { "type": "integer", "minimum": 1, "maximum": 500 },
+            "end": { "type": "integer", "minimum": 0 },
+            "index": { "type": "integer", "minimum": 0 },
+            "start": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "pinned_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_map", "evidence", "evidence_anchors", "fetched_at", "ground_classes", "license", "site", "snapshot", "source_key"],
+      "properties": {
+        "base_map": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": { "const": "content/world/placements/index.json" },
+            "sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "evidence": { "const": "Derived" },
+        "evidence_anchors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": { "const": "tools/content-schema/world-authoring/island-evidence-anchors.json" },
+            "sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "fetched_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "ground_classes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": { "const": "tools/content-schema/world-authoring/island-ground-classes.json" },
+            "sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "license": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "site": { "const": "https://tibia.fandom.com" },
+        "snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": { "const": "imports/tibiawiki/islands/fandom-snapshot-v1.json" },
+            "sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "source_key": { "const": "oteryn:source.tibiawiki" }
+      }
+    },
+    "family_index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coordinate_frame", "family", "generator", "population_state", "record_count", "schema",
+        "shard_size", "shards", "source"
+      ],
+      "properties": {
+        "coordinate_frame": { "$ref": "#/$defs/coordinate_frame" },
+        "family": { "const": "Area.Island" },
+        "generator": { "const": "tools/content-schema/world-authoring/convert_islands.py" },
+        "population_state": { "const": "POPULATED" },
+        "record_count": { "type": "integer", "minimum": 1 },
+        "schema": { "const": "OTERYN_FAMILY_INDEX/v1" },
+        "shard_size": { "const": 500 },
+        "shards": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^content/world/areas/islands/islands-[0-9]{5}-[0-9]{5}\\.json$" }
+        },
+        "source": { "$ref": "#/$defs/pinned_source" }
+      }
+    },
+    "capture_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "area_kinds", "excluded", "excluded_reasons", "families", "included", "parameters",
+        "records_with", "schema", "snapshot_pages", "source", "wiki_cities_unmatched"
+      ],
+      "properties": {
+        "area_kinds": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "archipelago": { "$ref": "#/$defs/count" },
+            "continent": { "$ref": "#/$defs/count" },
+            "island": { "$ref": "#/$defs/count" }
+          }
+        },
+        "excluded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pageid", "reason", "title"],
+            "properties": {
+              "detail": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "pageid": { "$ref": "#/$defs/wiki_id" },
+              "reason": { "enum": ["event_only_not_on_map", "no_coordinates", "not_on_map", "part_of_landmass"] },
+              "title": { "$ref": "#/$defs/title" }
+            }
+          }
+        },
+        "excluded_reasons": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/count" }
+        },
+        "families": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Area.Island"],
+          "properties": { "Area.Island": { "type": "integer", "minimum": 1 } }
+        },
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["area_kind", "boundary_tiles", "components", "key", "tile_count", "title"],
+            "properties": {
+              "area_kind": { "enum": ["archipelago", "continent", "island"] },
+              "boundary_tiles": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "lava": { "$ref": "#/$defs/count" },
+                  "void": { "$ref": "#/$defs/count" },
+                  "water": { "$ref": "#/$defs/count" }
+                }
+              },
+              "components": { "type": "integer", "minimum": 1 },
+              "key": { "$ref": "#/$defs/slug_key" },
+              "tile_count": { "type": "integer", "minimum": 1 },
+              "title": { "$ref": "#/$defs/title" }
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["anchor_radius", "component_cap"],
+          "properties": {
+            "anchor_radius": { "const": 5 },
+            "component_cap": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "records_with": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "additional_components", "also_known_as", "anchor_corrected", "anchor_moved", "cities",
+            "component_island_links", "components", "event_only", "evidence_anchored", "underground",
+            "wiki_cities"
+          ],
+          "properties": {
+            "additional_components": { "$ref": "#/$defs/count" },
+            "evidence_anchored": { "$ref": "#/$defs/count" },
+            "underground": { "$ref": "#/$defs/count" },
+            "also_known_as": { "$ref": "#/$defs/count" },
+            "anchor_corrected": { "$ref": "#/$defs/count" },
+            "anchor_moved": { "$ref": "#/$defs/count" },
+            "cities": { "$ref": "#/$defs/count" },
+            "component_island_links": { "$ref": "#/$defs/count" },
+            "components": { "$ref": "#/$defs/count" },
+            "event_only": { "$ref": "#/$defs/count" },
+            "wiki_cities": { "$ref": "#/$defs/count" }
+          }
+        },
+        "schema": { "const": "OTERYN_ISLANDS_SOURCE_CAPTURE/v1" },
+        "snapshot_pages": { "type": "integer", "minimum": 1 },
+        "source": { "$ref": "#/$defs/pinned_source" },
+        "wiki_cities_unmatched": { "$ref": "#/$defs/count" }
+      }
+    },
+    "evidence_anchors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anchors", "schema", "selection", "source"],
+      "properties": {
+        "anchors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["anchor_source", "floor", "pageid", "title", "use", "x", "y"],
+            "properties": {
+              "anchor_source": { "$ref": "#/$defs/anchor_source" },
+              "floor": { "$ref": "#/$defs/floor" },
+              "note": { "type": "string", "minLength": 1, "maxLength": 160 },
+              "pageid": { "$ref": "#/$defs/wiki_id" },
+              "spawn": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["file", "name", "x", "y", "z"],
+                "properties": {
+                  "file": { "enum": ["data-global/world/world-monster.xml", "data-global/world/world-npc.xml"] },
+                  "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+                  "x": { "$ref": "#/$defs/u16" },
+                  "y": { "$ref": "#/$defs/u16" },
+                  "z": { "$ref": "#/$defs/floor" }
+                }
+              },
+              "title": { "$ref": "#/$defs/title" },
+              "underground": { "const": true },
+              "use": { "enum": ["only", "primary"] },
+              "x": { "$ref": "#/$defs/u16" },
+              "y": { "$ref": "#/$defs/u16" }
+            }
+          }
+        },
+        "schema": { "const": "OTERYN_ISLAND_EVIDENCE_ANCHORS/v1" },
+        "selection": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["files", "repository", "revision"],
+          "properties": {
+            "files": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "sha256"],
+                "properties": {
+                  "path": { "enum": ["data-global/world/world-monster.xml", "data-global/world/world-npc.xml"] },
+                  "sha256": { "$ref": "#/$defs/sha256" }
+                }
+              }
+            },
+            "repository": { "const": "zimbadev/crystalserver" },
+            "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+          }
+        }
+      }
+    },
+    "snapshot_coordinate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["floor", "origin", "x", "y"],
+      "properties": {
+        "city": { "$ref": "#/$defs/title" },
+        "floor": { "$ref": "#/$defs/floor" },
+        "label": { "type": "string", "maxLength": 64 },
+        "origin": { "enum": ["city_temple", "derived", "wiki_body", "wiki_lead"] },
+        "source_page": { "$ref": "#/$defs/title" },
+        "x": { "$ref": "#/$defs/u16" },
+        "y": { "$ref": "#/$defs/u16" }
+      }
+    },
+    "snapshot_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pageid", "revid", "sha256", "title"],
+      "properties": {
+        "pageid": { "$ref": "#/$defs/wiki_id" },
+        "revid": { "$ref": "#/$defs/wiki_id" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "timestamp": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$" },
+        "title": { "$ref": "#/$defs/title" }
+      }
+    },
+    "snapshot_page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coordinates", "event_only", "evidence", "pageid", "revid", "sha256", "title", "wiki_class"],
+      "properties": {
+        "alias_of": { "$ref": "#/$defs/title" },
+        "coordinates": { "type": "array", "items": { "$ref": "#/$defs/snapshot_coordinate" } },
+        "event_only": { "type": "boolean" },
+        "evidence": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "evidence_page": { "$ref": "#/$defs/title" },
+        "kind_hint": { "const": "continent" },
+        "map_correction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["floor", "note", "source_page", "x", "y"],
+          "properties": {
+            "floor": { "$ref": "#/$defs/floor" },
+            "note": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "source_page": { "$ref": "#/$defs/title" },
+            "x": { "$ref": "#/$defs/u16" },
+            "y": { "$ref": "#/$defs/u16" }
+          }
+        },
+        "pageid": { "$ref": "#/$defs/wiki_id" },
+        "place_within": { "$ref": "#/$defs/title" },
+        "removed": { "const": true },
+        "revid": { "$ref": "#/$defs/wiki_id" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "status": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 32 }
+        },
+        "timestamp": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$" },
+        "title": { "$ref": "#/$defs/title" },
+        "wiki_cities": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/title" } },
+        "wiki_class": { "enum": ["archipelago", "island"] }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coordinate_pages", "fetched_at", "license", "pages", "schema", "source_url"],
+      "properties": {
+        "coordinate_pages": { "type": "array", "items": { "$ref": "#/$defs/snapshot_identity" } },
+        "fetched_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "license": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "pages": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/snapshot_page" } },
+        "schema": { "const": "OTERYN_TIBIAWIKI_FANDOM_ISLANDS_SNAPSHOT/v1" },
+        "source_url": { "const": "https://tibia.fandom.com" }
+      }
+    }
+  }
+}
