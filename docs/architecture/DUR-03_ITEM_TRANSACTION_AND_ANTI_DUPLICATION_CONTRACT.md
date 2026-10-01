@@ -1395,7 +1395,8 @@ authority, conservation) is unchanged.
   with the NPC service amendment below, `NpcTrade(NpcTradeCause)` and `NpcTravel { npc, route,
   occurrence }`. **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7).** Plus `NpcRepair { npc, offer, occurrence }`
   (owner answer 1a), whose transaction also transforms one item (`PRESERVE_INSTANCE`) and resets
-  its timed row; transfers that cross between live, deadline and frozen locations write the item's
+  its timed row; its plan admits at most 19 coin inputs, so inputs, change and the repaired item
+  stay within the fee-shape rows below (22 touched items, 64 work units); transfers that cross between live, deadline and frozen locations write the item's
   timed row in the same transaction (TIMED-ITEM-0 §4). For a container tree it admits the bounded
   multi-item shape `TimedTreeMove`: the root's TRANSFER plus at most 32 `STATE_MUTATION` lines of
   the tree's `continuous` timed descendants under `TimedItemCause::TreeClock`, no other lines, at

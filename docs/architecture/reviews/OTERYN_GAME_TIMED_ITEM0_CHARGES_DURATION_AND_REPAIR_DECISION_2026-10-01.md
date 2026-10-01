@@ -93,6 +93,16 @@ unlit torch:
   restarts the clock from that value. An inactive form minted new has no row, which means the full
   duration of its active form; the first transform into the active form creates the row. Items minted before TIMED-1 lands get their row from a TIMED-1 backfill with the
   definition's values. Amended: DUR-03 §39.3.
+- **Backfill of over-cap trees.** BAGS-0 lets a pre-TIMED-1 tree hold more than
+  `TIMEDITEM0-RL-05` `continuous` timed items. The backfill gives every item its row (the guard
+  holds) and then, in the same migration transaction per tree, puts out every such item beyond the
+  first 32 in ItemInstanceId order: a `TRANSFORM` (`PRESERVE_INSTANCE`) into its inactive form,
+  keeping its full `remaining_ms` frozen in its row, under `TimedItemCause::BackfillCap {tree root}`.
+  Nothing is lost; the player can light it again when the tree has room. A `continuous` item with no
+  inactive form cannot be put out: the migration's preflight counts such trees and, if any tree
+  would stay above 32, stops before writing and reports them; TIMED-1 does not land until an owner
+  answer settles those items. After the backfill every tree meets RL-05, so no tree move ever needs
+  more than 32 descendant lines.
 - Every write is a DUR-03 `STATE_MUTATION` (§11.1) or part of a `TRANSFORM`, in a one-item
   transaction (or, for a container tree's move, the bounded `TimedTreeMove` of §4) under the item writer's fence and the holder's `character_root` lock when a character
   holds the item, under a closed `TimedItemCause` (§10). The row moves with the item, because it is
@@ -124,8 +134,14 @@ An item's time runs only while it is **live**, as in Canary:
   row to still have that revision, so a replay or a superseded checkpoint writes nothing. A crash loses at most one checkpoint
   of elapsed time and charges, in the player's favour (R2).
 - **Deadline items** (Ground, containers on Ground, `HouseInterior`): a move into such a location
-  sets `deadline_at = database time + remaining_ms` in the move transaction, including a death that
-  drops a held item into a corpse; a move out sets `remaining_ms = max(0, deadline_at − database
+  sets `deadline_at = database time + remaining_ms` in the move transaction, where for an item
+  that was held `remaining_ms` is the runtime's **current** live budget, not the persisted value,
+  which can lag by up to one checkpoint. The hosting runtime reads its live budget (and charges) for
+  the root and every affected descendant at the move, passes them into the move transaction, and
+  that transaction writes them to the rows and derives `deadline_at` from them atomically; the
+  runtime drops its live clock for those items only when the commit succeeds. Picking an item up and
+  dropping it again therefore never wins back time. This holds for a death drop too, a death that
+  drops a held item into a corpse included; a move out sets `remaining_ms = max(0, deadline_at − database
   time)` and clears the deadline. The scope that hosts the location (the channel, or the house scope
   while active) expires items at their deadline as a resumable step from durable state, the D3
   corpse decay pattern; a scope that loads late, or a house that activates, expires overdue items at
@@ -201,7 +217,12 @@ An item's time runs only while it is **live**, as in Canary:
     player's backpack or its containers (the first in inventory order, as NPC-0 SELL finds its item),
     into `to_item`. The old timed row is deleted and a fresh one is created from `to_item`'s
     definition: full charges and full duration. Nothing carries over from the worn item.
-  - Insufficient funds or no such item rejects the whole transaction and writes nothing.
+  - The gold fee plan is admitted with at most **19** coin inputs here (not 20), so the 19 inputs,
+    at most 2 change stacks and the repaired item stay within the fee shape's 22 touched items and
+    64 work units (DUR-03 §39.3). 10,000 gold fits in one crystal coin, so this only refuses a
+    player who pays from 20 or more small stacks.
+  - Insufficient funds, more than 19 coin inputs, or no such item rejects the whole transaction and
+    writes nothing.
 - Amended: DUR-03 §39.3 (the `FeeBurnCause` variant), NPC-0 (the repair offer).
 
 ## 8. When a timed item is active (EQUIP-0)
@@ -244,7 +265,8 @@ Amended: EQUIP-0 §3.1 and §3.2; CONDITIONS-0 §3 (the `ITEM_REGENERATION` fami
 ## 10. Causes (DUR-03)
 
 Closed `TimedItemCause`: `Checkpoint {item, state_revision}`, `ClockStart`, `ClockStop`,
-`ChargeSpent`, `EquipForm {direction}`, `Toggle`, `TreeClock {root, move occurrence}`, `Expire {reason: Deadline {deadline_at} | TimeExhausted {state_revision} |
+`ChargeSpent`, `EquipForm {direction}`, `Toggle`, `TreeClock {root, move occurrence}`,
+`BackfillCap {tree root}` (the TIMED-1 migration only, §3), `Expire {reason: Deadline {deadline_at} | TimeExhausted {state_revision} |
 ChargesExhausted {state_revision}}`. Each names its ItemInstanceId and an occurrence issued by the
 runtime. `Expire` of a definition with no decay target is a BURN sink. The repair burn is
 `FeeBurnCause::NpcRepair` (§7). No generic or caller-chosen reason. Amended: DUR-03 §15 and §39.3.
@@ -261,7 +283,10 @@ runtime. `Expire` of a definition with no decay target is a BURN sink. The repai
 
 Each with max and max+1 tests. Also tested: unequip then re-equip keeps the remaining time (the
 timer does not reset); putting out a torch and lighting it again keeps its remaining time; a replayed
-or stale `Expire` writes nothing; a life ring's regeneration ticks alongside food regeneration; the
+or stale `Expire` writes nothing; dropping a held lit torch 59 s after its last checkpoint sets its
+deadline from the live budget, and a pick-up/drop cycle never adds time; a pre-TIMED-1 tree with 33
+lit torches is backfilled with 32 lit and 1 put out, all rows present; a repair paid from 19 coin
+stacks commits and from 20 is refused; a life ring's regeneration ticks alongside food regeneration; the
 energy ring's shield stays while mana is 0 and ends at unequip; a lit torch inside a dropped bag gets its Ground deadline in the drop
 commit; a charge-only item at 0 charges with a `transform {trigger: decay}` transforms, and is
 burned only without any decay target. Content validation refuses a definition above RL-01 or RL-02.
@@ -321,7 +346,7 @@ None open. Owner answer 1a settled the only fee source.
    separate from the A13 build receipt; a tree move is the bounded `TimedTreeMove` shape; expiry is keyed by (item, `state_revision`) and replays.
 3. **Restart:** held items lose at most one checkpoint, in the player's favour; deadline items
    expire from their durable deadline; frozen items do not change; items minted before TIMED-1 get
-   rows from its backfill.
+   rows from its backfill, which brings every tree within RL-05 (§3).
 4. **Typed references:** ItemInstanceId, definition keys, NPC offer ids, database times.
 5. **Wire:** one capability with two optional fields; no new command.
 6. **Split work:** expiry, repair and each clock start or stop are single-item transactions.
