@@ -250,6 +250,29 @@ fn premium_time_derived_state_is_not_a_lifecycle_change() -> TestResult {
         assert_eq!(harness.count("game_premium_evidence").await?, 2);
         Ok(())
     })?;
+    run("premium_expiry_rollback", async |harness, root| {
+        accept(root, &evidence(5, 1, Active)).await?;
+        // EXPIRED while `effective_until` is still ahead: a producer expiry, not elapsed time.
+        assert_eq!(
+            accept(root, &evidence(6, 1, Expired)).await?,
+            ("accepted", 6, Expired, false)
+        );
+        // ACTIVE again under the same lifecycle revision is a step back: no re-authorization.
+        assert_eq!(
+            accept(root, &evidence(7, 1, Active)).await?,
+            ("conflict", 6, Expired, true)
+        );
+        assert_eq!(harness.count("game_premium_evidence").await?, 2);
+        Ok(())
+    })?;
+    run("premium_start_rollback", async |_, root| {
+        accept(root, &evidence(5, 1, Active)).await?;
+        assert_eq!(
+            accept(root, &evidence(6, 1, NotYetEffective)).await?,
+            ("conflict", 5, Active, true)
+        );
+        Ok(())
+    })?;
     run("premium_withdrawn_entitlement", async |harness, root| {
         use EntitlementState::None as NoEntitlement;
         accept(root, &evidence(5, 1, Active)).await?;

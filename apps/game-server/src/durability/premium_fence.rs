@@ -11,9 +11,10 @@
 //!   the account conflicting, stickily, even below the high water (§6.2 rule 4);
 //! - a revision below the high water that was never stored is stale;
 //! - a higher authority revision that lowers an entitlement's `lifecycle_revision`, or repeats
-//!   it with other lifecycle facts (product, entitlement, effective window, revocation; not a
-//!   time-derived state), is a conflict too, and so is one that reopens an entitlement a later
-//!   snapshot withdrew (`NONE` or another entitlement) without a new lifecycle revision.
+//!   it with other lifecycle facts (product, entitlement, effective window, revocation), is a
+//!   conflict too. Within one lifecycle revision the state may only move as elapsed time does,
+//!   NOT_YET_EFFECTIVE -> ACTIVE -> EXPIRED; a step back, or reopening an entitlement a later
+//!   snapshot withdrew (`NONE` or another entitlement), needs a new lifecycle revision.
 //!
 //! Every outcome returns the durable view after the transaction. The caller authorizes benefit
 //! only from that view (fence before authorize, §6.3); this module holds no Premium policy.
@@ -37,6 +38,16 @@ pub enum EntitlementState {
 }
 
 impl EntitlementState {
+    /// The order elapsed time moves a state within one `lifecycle_revision`. A step back needs a
+    /// new lifecycle revision; REVOKED is a lifecycle fact of its own (the fingerprint bit).
+    fn time_rank(self) -> u8 {
+        match self {
+            Self::NotYetEffective => 0,
+            Self::Active => 1,
+            Self::Expired | Self::Revoked | Self::None => 2,
+        }
+    }
+
     fn from_stored(value: i16) -> Result<Self, DurabilityError> {
         Ok(match value {
             1 => Self::Active,
@@ -260,9 +271,10 @@ enum EntitlementStep {
     Skip,
     Open,
     Advance,
-    /// The evidence lowers the entitlement's lifecycle revision, repeats it with other
-    /// lifecycle facts, or repeats it after a later snapshot withdrew the entitlement (a grant
-    /// needs a new lifecycle revision, PREMIUM-DELIVERY-0 §4).
+    /// The evidence lowers the entitlement's lifecycle revision, or repeats it with other
+    /// lifecycle facts, with a state that elapsed time cannot reach (EXPIRED -> ACTIVE, ACTIVE
+    /// -> NOT_YET_EFFECTIVE), or after a later snapshot withdrew the entitlement. Each of
+    /// these needs a new lifecycle revision (PREMIUM-DELIVERY-0 §4).
     Regress,
 }
 
@@ -278,11 +290,14 @@ async fn entitlement_step(
     // or none (`NONE`). The evidence log is never deleted, so this survives restarts.
     let Some(row) = sqlx::query(
         "SELECT f.lifecycle_revision::text AS lifecycle, f.lifecycle_fingerprint, \
+                l.entitlement_state AS latest_state, \
                 EXISTS (SELECT 1 FROM game_premium_evidence e \
                          WHERE e.account_id = f.account_id \
                            AND e.authority_revision > f.authority_revision \
                            AND e.entitlement_id IS DISTINCT FROM f.entitlement_id) AS withdrawn \
            FROM game_premium_entitlement_fence f \
+           JOIN game_premium_evidence l \
+             ON l.account_id = f.account_id AND l.authority_revision = f.authority_revision \
           WHERE f.account_id = encode($1,'hex')::uuid AND f.entitlement_id = $2 FOR UPDATE OF f",
     )
     .bind(evidence.account_id.as_slice())
@@ -295,10 +310,12 @@ async fn entitlement_step(
     let stored: u64 = numeric(&row, "lifecycle")?;
     let stored_fingerprint: Vec<u8> = row.try_get("lifecycle_fingerprint")?;
     let withdrawn: bool = row.try_get("withdrawn")?;
+    let latest_state = EntitlementState::from_stored(row.try_get("latest_state")?)?;
     Ok(
         if evidence.lifecycle_revision < stored
             || (evidence.lifecycle_revision == stored
                 && (withdrawn
+                    || evidence.state.time_rank() < latest_state.time_rank()
                     || stored_fingerprint.as_slice()
                         != evidence.lifecycle_fingerprint().as_slice()))
         {
@@ -501,6 +518,10 @@ mod tests {
             revoked.lifecycle_fingerprint(),
             base.lifecycle_fingerprint()
         );
+        // Elapsed time only moves forward: NOT_YET_EFFECTIVE -> ACTIVE -> EXPIRED.
+        use EntitlementState::{Active, Expired, NotYetEffective};
+        assert!(NotYetEffective.time_rank() < Active.time_rank());
+        assert!(Active.time_rank() < Expired.time_rank());
         let changes: [fn(&mut PremiumEvidence); 5] = [
             |e| e.product_id.push('x'),
             |e| e.product_version += 1,
