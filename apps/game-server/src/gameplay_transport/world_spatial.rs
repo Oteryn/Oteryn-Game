@@ -5,4 +5,160 @@
 //! has no dependency on this one. This module re-exports the whole original `pub(crate)` surface
 //! unchanged, so nothing else in this crate needed to change.
 
+// The caller is the connection composition (VIS-3); until then only the tests exercise it.
+#![cfg_attr(not(test), allow(dead_code))]
+
 pub(crate) use oteryn_protocol_oteryn::world_spatial::*;
+pub(crate) use oteryn_protocol_oteryn::world_spatial_entities::*;
+
+/// Server side: the payload type and bytes one session receives for a full snapshot. A session
+/// that selected capability 6 gets the entity revision; every other session keeps the v1 type
+/// with its own actor only.
+pub(crate) fn encode_visibility_snapshot(
+    selected_capabilities: &[u32],
+    snapshot: &WorldSpatialEntitiesSnapshot,
+) -> Result<(u32, Vec<u8>), WorldSpatialError> {
+    if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) {
+        Ok((
+            SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+            encode_world_spatial_entities_snapshot(snapshot)?,
+        ))
+    } else {
+        validate_snapshot(snapshot)?;
+        Ok((
+            SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            encode_world_spatial(&WorldSpatialObservation {
+                content_generation: snapshot.content_generation,
+                actor_position: snapshot.actor_position,
+            }),
+        ))
+    }
+}
+
+/// Server side: the payload type and bytes one session receives for a delta, gated as above.
+pub(crate) fn encode_visibility_delta(
+    selected_capabilities: &[u32],
+    delta: &WorldSpatialEntitiesDelta,
+) -> Result<(u32, Vec<u8>), WorldSpatialError> {
+    if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) {
+        Ok((
+            DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+            encode_world_spatial_entities_delta(delta)?,
+        ))
+    } else {
+        validate_delta(delta)?;
+        Ok((
+            DELTA_TYPE_WORLD_SPATIAL_V1,
+            encode_world_spatial(&WorldSpatialObservation {
+                content_generation: delta.content_generation,
+                actor_position: delta.actor_position,
+            }),
+        ))
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    fn entity(n: u8, kind: EntityKind) -> WorldSpatialEntity {
+        let mut identity = [0_u8; ENTITY_IDENTITY_BYTES];
+        identity[15] = n;
+        WorldSpatialEntity {
+            kind,
+            entity: EntityRef {
+                identity,
+                generation: u64::from(n),
+            },
+            position: ActorPosition {
+                x: i32::from(n),
+                y: 0,
+                floor: 7,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 3,
+                health_percent: 50,
+            },
+        }
+    }
+
+    fn snapshot() -> WorldSpatialEntitiesSnapshot {
+        let own = entity(0, EntityKind::Player);
+        WorldSpatialEntitiesSnapshot {
+            content_generation: [7; 32],
+            actor_position: own.position,
+            own_identity: own.entity.identity,
+            entities: vec![own, entity(1, EntityKind::Creature)],
+        }
+    }
+
+    #[test]
+    fn only_a_session_that_selected_capability_6_receives_the_entity_revision() {
+        let snapshot = snapshot();
+        // Old client against a new server: v1 type and payload, own actor only.
+        let (kind, payload) = encode_visibility_snapshot(&[], &snapshot).expect("v1");
+        assert_eq!(kind, SNAPSHOT_TYPE_WORLD_SPATIAL_V1);
+        assert_eq!(
+            decode_world_spatial(&payload),
+            Ok(WorldSpatialObservation {
+                content_generation: snapshot.content_generation,
+                actor_position: snapshot.actor_position,
+            })
+        );
+        // A session that selected another capability still gets v1.
+        assert_eq!(
+            encode_visibility_snapshot(&[1], &snapshot).expect("v1").0,
+            SNAPSHOT_TYPE_WORLD_SPATIAL_V1
+        );
+        // New client against a new server: type 2 carries every entity.
+        let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES];
+        let (kind, payload) = encode_visibility_snapshot(&selected, &snapshot).expect("v2");
+        assert_eq!(kind, SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2);
+        assert_eq!(
+            decode_world_spatial_snapshot_view(&selected, kind, &payload),
+            Ok(WorldSpatialSnapshotView::Entities(snapshot))
+        );
+        // New client against an old server: it selected nothing and decodes the v1 type.
+        let (kind, payload) = encode_visibility_snapshot(&[], &self::snapshot()).expect("v1");
+        assert!(matches!(
+            decode_world_spatial_snapshot_view(&[], kind, &payload),
+            Ok(WorldSpatialSnapshotView::OwnActor(_))
+        ));
+    }
+
+    #[test]
+    fn delta_follows_the_same_gate_and_refuses_an_over_bound_change() {
+        let delta = WorldSpatialEntitiesDelta {
+            content_generation: [7; 32],
+            actor_position: ActorPosition {
+                x: 2,
+                y: 0,
+                floor: 7,
+            },
+            enter: vec![entity(2, EntityKind::Creature)],
+            update: vec![entity(0, EntityKind::Player)],
+            leave: vec![entity(1, EntityKind::Creature).entity],
+        };
+        let (kind, payload) = encode_visibility_delta(&[], &delta).expect("v1");
+        assert_eq!(kind, DELTA_TYPE_WORLD_SPATIAL_V1);
+        assert!(decode_world_spatial(&payload).is_ok());
+        let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES];
+        let (kind, payload) = encode_visibility_delta(&selected, &delta).expect("v2");
+        assert_eq!(kind, DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2);
+        assert_eq!(
+            decode_world_spatial_delta_view(&selected, kind, &payload),
+            Ok(WorldSpatialDeltaView::Entities(delta.clone()))
+        );
+        // The bound applies to v1 sessions too: the change is one the server must resync.
+        let mut over = delta;
+        over.leave = (0..=255_u8)
+            .map(|n| entity(n, EntityKind::Creature).entity)
+            .collect();
+        assert_eq!(
+            encode_visibility_delta(&[], &over),
+            Err(WorldSpatialError::LimitExceeded)
+        );
+    }
+}

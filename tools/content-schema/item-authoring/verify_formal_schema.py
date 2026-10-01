@@ -9,10 +9,9 @@ from build_formal_schema import main as build
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
 from proficiency_profiles import (
-    BERSERK_REF,
     CANARY_PROFICIENCY_SOURCE,
+    CLIENT_PROFICIENCY_SOURCE,
     CRYSTAL_PROFICIENCY_SOURCE,
-    INTENSE_WOUND_CLEANSING_REF,
     MAGIC_SWORD_PROFICIENCY_REF,
     magic_sword_proficiency,
     proficiency_crosswalk,
@@ -449,17 +448,16 @@ def main():
         external_id="238",
         version=3,
         target=None,
-        include_crystal=True,
+        include_client=True,
+        include_engines=True,
     ):
         target = deepcopy(target or MAGIC_SWORD_PROFICIENCY_REF)
         item["proficiency"] = magic_sword_proficiency()
         item["proficiency"]["profile_binding"] = target
-        dependencies["definitions"].extend(
-            [target, deepcopy(INTENSE_WOUND_CLEANSING_REF), deepcopy(BERSERK_REF)]
-        )
-        sources = [CANARY_PROFICIENCY_SOURCE]
-        if include_crystal:
-            sources.append(CRYSTAL_PROFICIENCY_SOURCE)
+        dependencies["definitions"].append(target)
+        sources = [CLIENT_PROFICIENCY_SOURCE] if include_client else []
+        if include_engines:
+            sources += [CANARY_PROFICIENCY_SOURCE, CRYSTAL_PROFICIENCY_SOURCE]
         for source in sources:
             crosswalk = proficiency_crosswalk(source)
             crosswalk["external_id"] = external_id
@@ -666,13 +664,7 @@ def main():
         "reject proficiency reference without source identity crosswalk",
         lambda item, dependencies, manifest: (
             item.__setitem__("proficiency", magic_sword_proficiency()),
-            dependencies["definitions"].extend(
-                [
-                    deepcopy(MAGIC_SWORD_PROFICIENCY_REF),
-                    deepcopy(INTENSE_WOUND_CLEANSING_REF),
-                    deepcopy(BERSERK_REF),
-                ]
-            ),
+            dependencies["definitions"].append(deepcopy(MAGIC_SWORD_PROFICIENCY_REF)),
         ),
         expected_error="missing admitted source identity crosswalk",
     )
@@ -682,12 +674,36 @@ def main():
             dependencies["definitions"].append(deepcopy(MAGIC_SWORD_PROFICIENCY_REF)),
             dependencies["proficiency_crosswalks"].extend(
                 [
+                    proficiency_crosswalk(CLIENT_PROFICIENCY_SOURCE),
                     proficiency_crosswalk(CANARY_PROFICIENCY_SOURCE),
                     proficiency_crosswalk(CRYSTAL_PROFICIENCY_SOURCE),
                 ]
             ),
         ),
         expected_error="dependencies/proficiency_crosswalks: unused crosswalks",
+    )
+    case(
+        "reject proficiency profile binding without a threshold class",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"].pop("threshold_class"),
+        ),
+        expected_error="'threshold_class' is a dependency of 'profile_binding'",
+    )
+    case(
+        "reject unknown threshold class on a proficiency profile binding",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"].__setitem__("threshold_class", "unknown"),
+        ),
+        expected_error="'unknown' is not one of",
+    )
+    case(
+        "reject proficiency threshold class without a profile binding",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "proficiency", {"threshold_class": "knight"}
+        ),
+        expected_error="'profile_binding' is a dependency of 'threshold_class'",
     )
     case(
         "client proficiency binding with a threshold class validates",
@@ -743,18 +759,41 @@ def main():
         expected_error="'xp' was unexpected",
     )
     case(
-        "admitted Canary and Crystal proficiency 238/3 validates",
+        "client proficiency 238/3 with Canary and Crystal corroboration validates",
         lambda item, dependencies, manifest: bind_magic_sword_proficiency(
             item, dependencies
         ),
         True,
     )
     case(
-        "reject admitted proficiency without Crystal corroboration",
+        "the 15.30 client source alone admits proficiency 238/3",
         lambda item, dependencies, manifest: bind_magic_sword_proficiency(
-            item, dependencies, include_crystal=False
+            item, dependencies, include_engines=False
         ),
-        expected_error="exact Canary and Crystal source corroboration is required",
+        True,
+    )
+    case(
+        "any committed client proficiency definition is admitted (6/7)",
+        lambda item, dependencies, manifest: bind_magic_sword_proficiency(
+            item,
+            dependencies,
+            external_id="6",
+            version=7,
+            target={
+                "family": "Proficiency",
+                "key": "oteryn:proficiency.tibia.p6",
+                "revision": "definition-r1",
+            },
+            include_engines=False,
+        ),
+        True,
+    )
+    case(
+        "reject Canary and Crystal without the 15.30 client source",
+        lambda item, dependencies, manifest: bind_magic_sword_proficiency(
+            item, dependencies, include_client=False
+        ),
+        expected_error="the 15.30 client source crosswalk is required",
     )
     case(
         "reject invented target for otherwise pinned proficiency 238/3",
@@ -763,7 +802,7 @@ def main():
             dependencies,
             target=ref("Proficiency", "completely-invented-target"),
         ),
-        expected_error="target has no admitted canonical profile",
+        expected_error="exact source-to-target mapping is not in the pinned admitted index",
     )
     case(
         "reject unknown proficiency source ID",
@@ -793,7 +832,7 @@ def main():
         "reject wrong Crystal proficiency artifact path",
         lambda item, dependencies, manifest: (
             bind_magic_sword_proficiency(item, dependencies),
-            dependencies["proficiency_crosswalks"][1].__setitem__(
+            dependencies["proficiency_crosswalks"][2].__setitem__(
                 "path", "data/items/proficiencies.json"
             ),
         ),
@@ -803,39 +842,27 @@ def main():
         "reject wrong Crystal proficiency artifact digest",
         lambda item, dependencies, manifest: (
             bind_magic_sword_proficiency(item, dependencies),
-            dependencies["proficiency_crosswalks"][1].__setitem__(
+            dependencies["proficiency_crosswalks"][2].__setitem__(
                 "digest_sha256", "0" * 64
             ),
         ),
         expected_error="'digest_sha256': '000000000000",
     )
     case(
-        "reject proficiency payload drift from admitted source profile",
+        "reject inline proficiency levels in Item definition",
         lambda item, dependencies, manifest: (
             bind_magic_sword_proficiency(item, dependencies),
-            item["proficiency"]["levels"][0]["perks"][0]["value"]["value"].__setitem__(
-                "numerator", 8
-            ),
+            item["proficiency"].__setitem__("levels", []),
         ),
-        expected_error="inline profile differs from its admitted canonical payload",
+        expected_error="'levels' was unexpected",
     )
     case(
-        "reject non-contiguous proficiency selection slots",
+        "reject inline perk shaping in Item definition",
         lambda item, dependencies, manifest: (
             bind_magic_sword_proficiency(item, dependencies),
-            item["proficiency"]["levels"][1]["perks"][1].__setitem__(
-                "selection_slot", 4
-            ),
+            item["proficiency"].__setitem__("shaping", {"max_rank": 10}),
         ),
-        expected_error="selection_slot must be contiguous in source order",
-    )
-    case(
-        "reject more than one active proficiency perk per level",
-        lambda item, dependencies, manifest: (
-            bind_magic_sword_proficiency(item, dependencies),
-            item["proficiency"]["levels"][1].__setitem__("selection_count", 2),
-        ),
-        expected_error="selection_count: 1 was expected",
+        expected_error="'shaping' was unexpected",
     )
     case(
         "reject player proficiency experience in Item definition",

@@ -666,18 +666,33 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
             }
         ]
     );
-    assert!(
+    let body = oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
+        "oteryn:character-authority:primary",
+        &snapshot,
+    )?;
+    // A retry of the same (epoch, revision) is byte-identical, however much
+    // later it reads: `source_observed_at` is when the revision was assigned
+    // (0028), so a lost acknowledgement never becomes a 409.
+    tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
+    let retry = root
+        .next_account_characters_snapshot(&authority)
+        .await
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("the unacknowledged snapshot is still queued")?;
+    assert_eq!(
         oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
             "oteryn:character-authority:primary",
-            &snapshot
-        )
-        .is_ok()
+            &retry,
+        )?,
+        body
     );
     let facts = root
         .account_characters_watermark_facts(&authority)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(facts.projection_epoch, 1);
+    // Never later than the read.
+    assert!(retry.source_observed_at * 1000 <= facts.now_ms);
     assert!(
         facts
             .oldest_undelivered_ms
@@ -2235,6 +2250,12 @@ mod character_death_receipts_postgres_cases;
 #[path = "support/check_function_privileges_postgres_cases.rs"]
 mod check_function_privileges_postgres_cases;
 
+// HOUSE-CUSTODY-1 HouseInterior, reclaim provenance and the item location
+// exclusivity guard (migration 0025) share their cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/house_custody_postgres_cases.rs"]
+mod house_custody_postgres_cases;
+
 // STANCE-0 stance slot and stance receipts (migration 0017) share their cases
 // with the focused standalone target through the same protected lane.
 #[path = "support/character_stance_postgres_cases.rs"]
@@ -2269,6 +2290,11 @@ mod account_achievement_postgres_cases;
 // share their cases with the protected PostgreSQL lane.
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
+
+// CHAR-BUILD-1a build state, build receipts and death build fields (migration
+// 0030) and their admission verifier checks, on the CHARM-2 harness included above.
+#[path = "support/character_build_postgres_cases.rs"]
+mod character_build_postgres_cases;
 
 // SPELL-D8 H-1 durable monk Harmony and remaining forced Serene time (migration
 // 0026, `durability::monk_state`) run in the same protected lane, on the

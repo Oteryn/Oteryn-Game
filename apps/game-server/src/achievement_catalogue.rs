@@ -8,15 +8,26 @@
 //! `Retired`, or `Absent`. [`AchievementCatalogue::unbound_reward_claim_achievements`] is the
 //! §3.3 Content validation of the reward-claim granters against it.
 //!
-//! Only the facts the grant path needs are kept (key, revision, retired). The complete record
-//! schema is checked offline by `tools/content-schema/achievement-authoring/`.
+//! [`AchievementCatalogue::account_achievements_page`] is the display read of
+//! `OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1` (§2.1, §3; D223-D228): the name, description, grade,
+//! points and secret flag of every fact come from this catalogue's record of its key.
+//!
+//! Only the fields the grant path and the display read need are kept. The complete record
+//! schema, including the text and grade bounds, is checked offline by
+//! `tools/content-schema/achievement-authoring/`; the wire encoder refuses a row over its bounds.
 
 use std::collections::BTreeMap;
 
+use oteryn_protocol_oteryn::FoundationProtocolError;
+use oteryn_protocol_oteryn::account_achievements::{
+    ACCOUNT_ACHIEVEMENTS_PAGE_ROWS, AccountAchievementRow, AccountAchievementsResult,
+};
 use serde::Deserialize;
 
 use crate::content::{CanonicalReferencePlayableContent, ReferenceDefinitionKind};
-use crate::durability::account_achievement::{AchievementCatalogueLookup, valid_catalogue_entry};
+use crate::durability::account_achievement::{
+    AchievementCatalogueLookup, EarnedAchievement, valid_catalogue_entry,
+};
 
 /// Every `content/achievements/achievements-*.json` shard, in file-name order. A unit test keeps
 /// this list equal to the directory.
@@ -34,10 +45,16 @@ struct Shard {
     records: Vec<Record>,
 }
 
-/// A catalogue record; the fields the grant path does not read are ignored here.
+/// A catalogue record; the fields neither the grant path nor the display read uses are ignored
+/// here.
 #[derive(Deserialize)]
 struct Record {
     identity: Identity,
+    name: String,
+    description: String,
+    grade: u32,
+    points: u32,
+    secret: bool,
     #[serde(default)]
     retired: bool,
 }
@@ -54,6 +71,69 @@ struct Identity {
 struct Entry {
     revision: String,
     retired: bool,
+    name: String,
+    description: String,
+    grade: u32,
+    points: u32,
+    secret: bool,
+}
+
+/// The display read failed closed (display contract §4.3): a fact whose key the catalogue lacks
+/// is a server integrity error, never skipped, because a skip would understate the points.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum AccountAchievementsPageError {
+    /// A fact under this key, which the catalogue lacks.
+    UnknownKey(String),
+    /// The fact count or the point total does not fit `uint32`.
+    Overflow,
+}
+
+impl AccountAchievementsPageError {
+    /// The registered operation-terminal error of the reply (owner decision 2026-09-30): an
+    /// unknown key is `ACCOUNT_DATA_INTEGRITY`, which tells the client only that its account data
+    /// needs support; an overflow stays a plain `REJECTED`.
+    pub(crate) const fn protocol_error(&self) -> Option<FoundationProtocolError> {
+        match self {
+            Self::UnknownKey(_) => Some(FoundationProtocolError::AccountDataIntegrity),
+            Self::Overflow => None,
+        }
+    }
+}
+
+/// One `ACCOUNT_ACHIEVEMENTS_QUERY` as the server answers it: the session's own account (display
+/// contract §4.1), the page, and the request's correlation (FND-02 §20), which only the operator
+/// event of an integrity fault uses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct AccountAchievementsRequest {
+    pub(crate) account_id: [u8; 16],
+    pub(crate) page: u32,
+    pub(crate) game_session_id: [u8; 16],
+    pub(crate) command_id: u64,
+}
+
+/// The operator event of an Achievement integrity fault (owner decision 2026-09-30): one
+/// error-level line with the account, the offending key and the request (GameSessionId and
+/// CommandId), and nothing else. The key is quoted and escaped, so stored text cannot break the
+/// line.
+pub(crate) fn integrity_fault_event(request: &AccountAchievementsRequest, key: &str) -> String {
+    format!(
+        "event=account_achievement_integrity_fault level=error account_id={} achievement_key={key:?} game_session_id={} command_id={}",
+        uuid(&request.account_id),
+        uuid(&request.game_session_id),
+        request.command_id
+    )
+}
+
+/// Canonical lowercase UUID text of 16 bytes.
+fn uuid(bytes: &[u8; 16]) -> String {
+    let mut text = String::with_capacity(36);
+    for (index, byte) in bytes.iter().enumerate() {
+        if matches!(index, 4 | 6 | 8 | 10) {
+            text.push('-');
+        }
+        text.push_str(&format!("{byte:02x}"));
+    }
+    text
 }
 
 /// The catalogue could not be loaded; the server refuses readiness.
@@ -84,7 +164,7 @@ impl AchievementCatalogue {
     }
 
     /// All shards together form one catalogue, so keys are unique across them.
-    fn from_shards(shards: &[&str]) -> Result<Self, AchievementCatalogueError> {
+    pub(crate) fn from_shards(shards: &[&str]) -> Result<Self, AchievementCatalogueError> {
         let mut entries = BTreeMap::new();
         for shard in shards {
             let shard: Shard = serde_json::from_str(shard)
@@ -92,7 +172,8 @@ impl AchievementCatalogue {
             if shard.family != FAMILY {
                 return Err(AchievementCatalogueError::WrongFamily);
             }
-            for Record { identity, retired } in shard.records {
+            for record in shard.records {
+                let identity = &record.identity;
                 if identity.family != FAMILY {
                     return Err(AchievementCatalogueError::WrongFamily);
                 }
@@ -100,10 +181,29 @@ impl AchievementCatalogue {
                     return Err(AchievementCatalogueError::InvalidIdentity);
                 }
                 if entries.contains_key(&identity.key) {
-                    return Err(AchievementCatalogueError::DuplicateKey(identity.key));
+                    return Err(AchievementCatalogueError::DuplicateKey(
+                        identity.key.clone(),
+                    ));
                 }
-                let revision = identity.revision;
-                entries.insert(identity.key, Entry { revision, retired });
+                let Record {
+                    identity,
+                    name,
+                    description,
+                    grade,
+                    points,
+                    secret,
+                    retired,
+                } = record;
+                let entry = Entry {
+                    revision: identity.revision,
+                    retired,
+                    name,
+                    description,
+                    grade,
+                    points,
+                    secret,
+                };
+                entries.insert(identity.key, entry);
             }
         }
         if entries.is_empty() {
@@ -152,6 +252,78 @@ impl AchievementCatalogue {
             .filter(|key| self.lookup(key) == AchievementCatalogueLookup::Absent)
             .collect()
     }
+
+    /// Display contract §2.1, §3: page `page` of an account's `facts`, one row per fact and
+    /// nothing else. The display fields of a fact come from this catalogue's record of its key; a
+    /// retired record shows and counts 0 points. `total_points` sums over all facts and
+    /// `fact_count` is their number, the same on every page. Rows are ordered by grade, then name
+    /// by Unicode code point (UTF-8 byte order is code point order), then key; a page holds
+    /// `min(64, remaining)` rows and a page past the end holds none.
+    pub(crate) fn account_achievements_page(
+        &self,
+        facts: &[EarnedAchievement],
+        page: u32,
+    ) -> Result<AccountAchievementsResult, AccountAchievementsPageError> {
+        let mut rows = Vec::with_capacity(facts.len());
+        let mut total_points = 0_u32;
+        for fact in facts {
+            let entry = self.entries.get(&fact.achievement_key).ok_or_else(|| {
+                AccountAchievementsPageError::UnknownKey(fact.achievement_key.clone())
+            })?;
+            let points = if entry.retired { 0 } else { entry.points };
+            total_points = total_points
+                .checked_add(points)
+                .ok_or(AccountAchievementsPageError::Overflow)?;
+            rows.push(AccountAchievementRow {
+                key: fact.achievement_key.clone(),
+                name: entry.name.clone(),
+                description: entry.description.clone(),
+                grade: entry.grade,
+                points,
+                earned_at: fact.earned_at_unix_ms,
+                secret: entry.secret,
+            });
+        }
+        let fact_count =
+            u32::try_from(rows.len()).map_err(|_| AccountAchievementsPageError::Overflow)?;
+        rows.sort_unstable_by(|left, right| {
+            (left.grade, &left.name, &left.key).cmp(&(right.grade, &right.name, &right.key))
+        });
+        let start = usize::try_from(page)
+            .ok()
+            .and_then(|page| page.checked_mul(ACCOUNT_ACHIEVEMENTS_PAGE_ROWS))
+            .unwrap_or(usize::MAX)
+            .min(rows.len());
+        let end = start
+            .saturating_add(ACCOUNT_ACHIEVEMENTS_PAGE_ROWS)
+            .min(rows.len());
+        let has_more = end < rows.len();
+        rows.truncate(end);
+        Ok(AccountAchievementsResult {
+            total_points,
+            fact_count,
+            page,
+            has_more,
+            rows: rows.split_off(start),
+        })
+    }
+
+    /// The server's answer to `request` over the account's `facts`: its page, or the failure.
+    /// An unknown key is an integrity fault (owner decision 2026-09-30): the operator learns of it
+    /// through one [`integrity_fault_event`] passed to `log`, the client only through the reply's
+    /// [`AccountAchievementsPageError::protocol_error`].
+    pub(crate) fn answer_account_achievements(
+        &self,
+        facts: &[EarnedAchievement],
+        request: &AccountAchievementsRequest,
+        log: &mut dyn FnMut(&str),
+    ) -> Result<AccountAchievementsResult, AccountAchievementsPageError> {
+        let answer = self.account_achievements_page(facts, request.page);
+        if let Err(AccountAchievementsPageError::UnknownKey(key)) = &answer {
+            log(&integrity_fault_event(request, key));
+        }
+        answer
+    }
 }
 
 #[cfg(test)]
@@ -164,7 +336,7 @@ mod tests {
 
     fn record(key: &str, revision: &str, extra: &str) -> String {
         format!(
-            r#"{{"identity":{{"family":"Achievement","key":"{key}","revision":"{revision}"}},"name":"N","points":1{extra}}}"#
+            r#"{{"identity":{{"family":"Achievement","key":"{key}","revision":"{revision}"}},"name":"N","description":"D","grade":1,"points":1,"secret":false{extra}}}"#
         )
     }
 
@@ -305,5 +477,237 @@ mod tests {
             .collect();
         assert_eq!(names.len(), SHARDS.len());
         assert_eq!(on_disk, SHARDS);
+    }
+
+    fn fact(slug: &str, earned_at: i64) -> EarnedAchievement {
+        EarnedAchievement {
+            achievement_key: format!("oteryn:achievement/{slug}"),
+            earned_at_unix_ms: earned_at,
+        }
+    }
+
+    fn display(
+        slug: &str,
+        name: &str,
+        grade: u32,
+        points: u32,
+        secret: bool,
+        extra: &str,
+    ) -> String {
+        format!(
+            r#"{{"identity":{{"family":"Achievement","key":"oteryn:achievement/{slug}","revision":"1"}},"name":"{name}","description":"About {name}","grade":{grade},"points":{points},"secret":{secret}{extra}}}"#
+        )
+    }
+
+    fn keys(result: &AccountAchievementsResult) -> Vec<&str> {
+        result
+            .rows
+            .iter()
+            .map(|row| row.key.trim_start_matches("oteryn:achievement/"))
+            .collect()
+    }
+
+    /// Display contract §2.1, §3.2, §3.4: exactly the earned facts, ordered by grade, then name
+    /// by code point (`É` after `Z`), then key; a retired fact shows with 0 points even when its
+    /// record carries others, and a secret record that was never earned is never sent.
+    #[test]
+    fn a_page_holds_only_the_facts_in_grade_name_key_order() -> TestResult {
+        let catalogue = AchievementCatalogue::from_shards(&[&shard(
+            &[
+                display("beta", "Beta", 2, 3, false, ""),
+                display("zeta_a", "Zeta", 1, 1, false, ""),
+                display("eclair", "\u{c9}clair", 1, 2, true, ""),
+                display("zeta_b", "Zeta", 1, 1, false, ""),
+                display("unearned", "Unearned", 3, 5, true, ""),
+                display("retired", "Retired", 1, 4, false, r#","retired":true"#),
+            ]
+            .join(","),
+        )])
+        .map_err(|error| format!("{error:?}"))?;
+        let facts = [
+            fact("beta", 10),
+            fact("zeta_b", 11),
+            fact("eclair", 12),
+            fact("zeta_a", 13),
+            fact("retired", 14),
+        ];
+        let page = catalogue
+            .account_achievements_page(&facts, 0)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            keys(&page),
+            ["retired", "zeta_a", "zeta_b", "eclair", "beta"]
+        );
+        assert_eq!((page.total_points, page.fact_count), (7, 5));
+        assert_eq!((page.page, page.has_more), (0, false));
+        assert_eq!(page.rows[0].points, 0);
+        assert_eq!(
+            page.rows[3],
+            AccountAchievementRow {
+                key: "oteryn:achievement/eclair".into(),
+                name: "\u{c9}clair".into(),
+                description: "About \u{c9}clair".into(),
+                grade: 1,
+                points: 2,
+                earned_at: 12,
+                secret: true,
+            }
+        );
+        // A zero-point fact moves the watermark and the rows, not the total (§3.3).
+        let without_retired = catalogue
+            .account_achievements_page(&facts[..4], 0)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            (without_retired.total_points, without_retired.fact_count),
+            (7, 4)
+        );
+        // An empty account.
+        assert_eq!(
+            catalogue.account_achievements_page(&[], 0),
+            Ok(AccountAchievementsResult::default())
+        );
+        // A fact under a key the catalogue lacks fails closed instead of being skipped (§4.3).
+        assert_eq!(
+            catalogue.account_achievements_page(&[fact("beta", 1), fact("absent", 2)], 0),
+            Err(AccountAchievementsPageError::UnknownKey(
+                "oteryn:achievement/absent".into()
+            ))
+        );
+        Ok(())
+    }
+
+    /// Owner decision 2026-09-30: an unknown key answers `ACCOUNT_DATA_INTEGRITY` and emits one
+    /// error-level operator event with the account, the key and the request, and nothing else; a
+    /// valid page and an overflow emit none, and an overflow carries no code.
+    #[test]
+    fn an_unknown_key_is_an_integrity_fault_with_one_operator_event() -> TestResult {
+        let catalogue =
+            AchievementCatalogue::from_shards(&[&shard(&display("beta", "Beta", 2, 3, false, ""))])
+                .map_err(|error| format!("{error:?}"))?;
+        let mut account_id = [0_u8; 16];
+        account_id[0] = 0xab;
+        account_id[15] = 0x01;
+        let request = AccountAchievementsRequest {
+            account_id,
+            page: 0,
+            game_session_id: [0x5e; 16],
+            command_id: 42,
+        };
+        let mut events = Vec::new();
+        let answer = catalogue.answer_account_achievements(
+            &[fact("beta", 1), fact("gone\"\n", 2)],
+            &request,
+            &mut |line| events.push(line.to_owned()),
+        );
+        assert_eq!(
+            answer,
+            Err(AccountAchievementsPageError::UnknownKey(
+                "oteryn:achievement/gone\"\n".into()
+            ))
+        );
+        assert_eq!(
+            answer.map_err(|error| error.protocol_error()),
+            Err(Some(FoundationProtocolError::AccountDataIntegrity))
+        );
+        assert_eq!(
+            events,
+            [concat!(
+                "event=account_achievement_integrity_fault level=error ",
+                "account_id=ab000000-0000-0000-0000-000000000001 ",
+                r#"achievement_key="oteryn:achievement/gone\"\n" "#,
+                "game_session_id=5e5e5e5e-5e5e-5e5e-5e5e-5e5e5e5e5e5e command_id=42"
+            )]
+        );
+        // A valid page logs nothing.
+        events.clear();
+        assert!(
+            catalogue
+                .answer_account_achievements(&[fact("beta", 1)], &request, &mut |line| events
+                    .push(line.to_owned()))
+                .is_ok()
+        );
+        assert!(events.is_empty());
+        assert_eq!(
+            AccountAchievementsPageError::Overflow.protocol_error(),
+            None
+        );
+        Ok(())
+    }
+
+    /// Display contract §3.3: 64 rows a page, `has_more` until the last, and a page past the end
+    /// holds no rows; the totals are the same on every page.
+    #[test]
+    fn pages_hold_64_rows_and_a_page_past_the_end_holds_none() -> TestResult {
+        let records: Vec<String> = (0..130)
+            .map(|index| {
+                display(
+                    &format!("k{index:03}"),
+                    &format!("N{index:03}"),
+                    1,
+                    1,
+                    false,
+                    "",
+                )
+            })
+            .collect();
+        let catalogue = AchievementCatalogue::from_shards(&[&shard(&records.join(","))])
+            .map_err(|error| format!("{error:?}"))?;
+        let facts: Vec<EarnedAchievement> = (0..130)
+            .rev()
+            .map(|index| fact(&format!("k{index:03}"), index))
+            .collect();
+        for (page, rows, first, has_more) in [
+            (0, 64, Some("k000"), true),
+            (1, 64, Some("k064"), true),
+            (2, 2, Some("k128"), false),
+            (3, 0, None, false),
+            (u32::MAX, 0, None, false),
+        ] {
+            let result = catalogue
+                .account_achievements_page(&facts, page)
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(result.rows.len(), rows, "page {page}");
+            assert_eq!(keys(&result).first().copied(), first, "page {page}");
+            assert_eq!(result.has_more, has_more, "page {page}");
+            assert_eq!(
+                (result.total_points, result.fact_count, result.page),
+                (130, 130, page)
+            );
+        }
+        // Exactly one full page: no more.
+        let full = catalogue
+            .account_achievements_page(&facts[66..], 0)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!((full.rows.len(), full.has_more), (64, false));
+        Ok(())
+    }
+
+    /// Display contract §3.3: the current catalogue fits the wire. An account holding every
+    /// record reads 9 pages that all encode within the registered bounds.
+    #[test]
+    fn every_embedded_record_fits_the_wire() -> TestResult {
+        use oteryn_protocol_oteryn::account_achievements::encode_account_achievements_result;
+        let catalogue = AchievementCatalogue::embedded().map_err(|error| format!("{error:?}"))?;
+        let facts: Vec<EarnedAchievement> = catalogue
+            .entries
+            .keys()
+            .map(|key| EarnedAchievement {
+                achievement_key: key.clone(),
+                earned_at_unix_ms: 1,
+            })
+            .collect();
+        let mut seen = 0;
+        for page in 0..9 {
+            let result = catalogue
+                .account_achievements_page(&facts, page)
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!((result.total_points, result.fact_count), (1523, 571));
+            assert_eq!(result.has_more, page < 8, "page {page}");
+            encode_account_achievements_result(&result)
+                .map_err(|error| format!("page {page}: {error:?}"))?;
+            seen += result.rows.len();
+        }
+        assert_eq!(seen, 571);
+        Ok(())
     }
 }

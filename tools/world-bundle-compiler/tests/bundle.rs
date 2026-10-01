@@ -5,6 +5,7 @@ use std::error::Error as StdError;
 use oteryn_world_bundle_compiler::Error;
 use oteryn_world_bundle_compiler::bundle::{self, BuildClass, Extent, Family, Identity, Manifest};
 use oteryn_world_bundle_compiler::compile::{Compiled, Input, KeyResolver, Resolution, compile};
+use oteryn_world_bundle_compiler::project::Families;
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
 
 type TestResult = Result<(), Box<dyn StdError>>;
@@ -115,7 +116,20 @@ fn fixture() -> Result<Vec<Vec<u8>>, Box<dyn StdError>> {
     Ok(vec![region(7, 0, 0, &ground)?, region(6, 1, 0, &upper)?])
 }
 
-fn input<'a>(regions: &'a [Vec<u8>], palette: &'a [String], class: BuildClass) -> Input<'a> {
+/// The families the fixture agrees with: its one teleport and its one house.
+fn families() -> Families {
+    let mut families = Families::default();
+    families.teleports.insert((5, 2, 7), (300, 40, 6));
+    families.houses.insert(12);
+    families
+}
+
+fn input<'a>(
+    regions: &'a [Vec<u8>],
+    palette: &'a [String],
+    class: BuildClass,
+    families: &'a Families,
+) -> Input<'a> {
     Input {
         regions,
         palette,
@@ -132,6 +146,7 @@ fn input<'a>(regions: &'a [Vec<u8>], palette: &'a [String], class: BuildClass) -
         },
         build_class: class,
         draft_areas: Vec::new(),
+        families,
     }
 }
 
@@ -140,7 +155,7 @@ fn build(class: BuildClass) -> Result<Compiled, Error> {
         fixture().map_err(|e| Error::Format(e.to_string()))?,
         palette(),
     );
-    compile(&input(&regions, &palette, class), &Resolver)
+    compile(&input(&regions, &palette, class, &families()), &Resolver)
 }
 
 #[test]
@@ -225,8 +240,9 @@ fn provisional_keys_fail_production_and_unknown_keys_always_fail() -> TestResult
     );
     let regions = vec![region(7, 0, 0, &[(0, vec![tile(1, 1, vec![item(4, 0)])])])?];
     let palette = palette();
+    let fams = Families::default();
     let result = compile(
-        &input(&regions, &palette, BuildClass::NonProduction),
+        &input(&regions, &palette, BuildClass::NonProduction, &fams),
         &Resolver,
     );
     assert!(matches!(result, Err(Error::Key(_))));
@@ -236,6 +252,7 @@ fn provisional_keys_fail_production_and_unknown_keys_always_fail() -> TestResult
 #[test]
 fn limits_bounds_and_production_gate_fail_closed() -> TestResult {
     let palette = palette();
+    let fams = Families::default();
     let crowded = vec![region(
         7,
         0,
@@ -243,13 +260,13 @@ fn limits_bounds_and_production_gate_fail_closed() -> TestResult {
         &[(0, vec![tile(1, 1, vec![item(0, 0); 65])])],
     )?];
     let result = compile(
-        &input(&crowded, &palette, BuildClass::NonProduction),
+        &input(&crowded, &palette, BuildClass::NonProduction, &fams),
         &Resolver,
     );
     assert!(matches!(result, Err(Error::Limit(_))));
     let deep = vec![region(5, 0, 0, &[(0, vec![tile(1, 1, vec![item(0, 0)])])])?];
     let result = compile(
-        &input(&deep, &palette, BuildClass::NonProduction),
+        &input(&deep, &palette, BuildClass::NonProduction, &fams),
         &Resolver,
     );
     assert!(matches!(result, Err(Error::Bounds(_))));
@@ -259,7 +276,7 @@ fn limits_bounds_and_production_gate_fail_closed() -> TestResult {
         0,
         &[(0, vec![tile(1, 1, vec![item(0, 0); 64])])],
     )?];
-    let mut drafts = input(&fine, &palette, BuildClass::Production);
+    let mut drafts = input(&fine, &palette, BuildClass::Production, &fams);
     assert!(compile(&drafts, &Resolver).is_ok());
     drafts.draft_areas = vec!["area:temple-of-light".into()];
     assert!(matches!(compile(&drafts, &Resolver), Err(Error::Format(_))));
@@ -471,6 +488,7 @@ fn registered_limits_are_checked_before_allocation() -> TestResult {
 #[test]
 fn skipped_containers_still_resolve_and_the_writer_round_trips() -> TestResult {
     let palette = palette();
+    let fams = Families::default();
     // A provisional container (3) holding an unknown key (4) fails even outside production.
     let hidden = vec![region(
         7,
@@ -479,7 +497,7 @@ fn skipped_containers_still_resolve_and_the_writer_round_trips() -> TestResult {
         &[(0, vec![tile(1, 1, vec![item(3, 0), item(4, 1)])])],
     )?];
     let result = compile(
-        &input(&hidden, &palette, BuildClass::NonProduction),
+        &input(&hidden, &palette, BuildClass::NonProduction, &fams),
         &Resolver,
     );
     assert!(matches!(result, Err(Error::Key(_))));

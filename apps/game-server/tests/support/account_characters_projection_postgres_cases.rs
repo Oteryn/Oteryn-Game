@@ -1,5 +1,5 @@
-// Shared LCFA-1 cases (migration 0024): the `ListCharactersForAccount` outbox,
-// per-account revision and epoch. The cases use SQL only (a root insert is the
+// Shared LCFA-1 cases (migrations 0024 and 0028): the `ListCharactersForAccount`
+// outbox, per-account revision and epoch. The cases use SQL only (a root insert is the
 // exact row a bootstrap writes), so any PostgreSQL wrapper target can include
 // this file. The Rust snapshot/clear/watermark reads over a real bootstrap are
 // covered in `character_authority_postgres.rs`.
@@ -20,6 +20,10 @@ struct Database {
 
 impl Database {
     async fn create(admin_url: String) -> TestResult<Self> {
+        Self::create_at(admin_url, None).await
+    }
+
+    async fn create_at(admin_url: String, through: Option<i64>) -> TestResult<Self> {
         if !admin_url.starts_with("postgresql://oteryn_test_admin:")
             || !admin_url.ends_with("@127.0.0.1:5432/postgres")
         {
@@ -45,7 +49,11 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        let migrator = sqlx::migrate!("./migrations");
+        match through {
+            Some(version) => migrator.run_to(version, &mut connection).await?,
+            None => migrator.run(&mut connection).await?,
+        }
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -120,6 +128,20 @@ async fn epoch(pool: &sqlx::PgPool) -> TestResult<i64> {
     )
 }
 
+/// Every account's `revised_at` is the `created_at` of the row that queued its
+/// current revision, so the publisher's `source_observed_at` is fixed per pair.
+async fn revised_at_matches_its_row(pool: &sqlx::PgPool) -> TestResult<bool> {
+    Ok(sqlx::query_scalar(
+        "SELECT bool_and(p.revised_at = (SELECT max(o.created_at) \
+                  FROM game_character_account_projection_outbox o \
+                 WHERE o.account_id = p.account_id \
+                   AND o.projection_revision = p.projection_revision)) \
+           FROM game_character_account_projections p",
+    )
+    .fetch_one(pool)
+    .await?)
+}
+
 /// The adapter's clear statement (`clear_account_characters`).
 async fn clear(pool: &sqlx::PgPool, account: u8, epoch: i64, revision: i64) -> TestResult {
     sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
@@ -191,49 +213,78 @@ async fn projection_cases(database: &Database) -> TestResult {
     clear(&pool, 0xa0, 1, 1).await?;
     assert_eq!(state(&pool).await?.0, vec![(0xa0, 1, 2), (0xa1, 1, 1)]);
 
-    // Resync without an epoch raise queues every account at its current revision.
+    assert!(revised_at_matches_its_row(&pool).await?);
+
+    // Resync without an epoch raise queues every account at a new revision, so
+    // an acknowledgement of the snapshot read before it (in flight across the
+    // resync) never clears the resync row (0028; 0024 re-queued the same pair
+    // with ON CONFLICT DO NOTHING, which that acknowledgement then cleared).
     let resync: i64 = sqlx::query_scalar("SELECT game_character_account_projection_resync(false)")
         .fetch_one(&pool)
         .await?;
     assert_eq!(resync, 1);
-    assert_eq!(state(&pool).await?.0, vec![(0xa0, 1, 2), (0xa1, 1, 1)]);
+    assert_eq!(
+        state(&pool).await?,
+        (
+            vec![(0xa0, 1, 2), (0xa0, 1, 3), (0xa1, 1, 1), (0xa1, 1, 2)],
+            vec![(0xa0, 3), (0xa1, 2)]
+        )
+    );
+    assert!(revised_at_matches_its_row(&pool).await?);
     clear(&pool, 0xa0, 1, 2).await?;
-    clear(&pool, 0xa1, 1, 1).await?;
+    assert_eq!(
+        state(&pool).await?.0,
+        vec![(0xa0, 1, 3), (0xa1, 1, 1), (0xa1, 1, 2)]
+    );
+    clear(&pool, 0xa0, 1, 3).await?;
+    clear(&pool, 0xa1, 1, 2).await?;
     assert_eq!(state(&pool).await?.0, vec![]);
 
-    // An epoch raise exceeds any earlier epoch and the current Unix second, and
-    // queues a new-epoch snapshot of every account.
+    // An epoch raise exceeds any earlier epoch and the current Unix millisecond,
+    // and queues a new-epoch snapshot of every account at a new revision.
     let raised: i64 = sqlx::query_scalar("SELECT game_character_account_projection_resync(true)")
         .fetch_one(&pool)
         .await?;
-    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
-        .fetch_one(&pool)
-        .await?;
-    assert!(raised > 1 && raised >= now - 1, "{raised} {now}");
+    let now_ms: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint")
+            .fetch_one(&pool)
+            .await?;
+    assert!(
+        raised > 1_000_000_000_000 && raised <= now_ms && raised >= now_ms - 60_000,
+        "{raised} {now_ms}"
+    );
     assert_eq!(epoch(&pool).await?, raised);
     assert_eq!(
         state(&pool).await?.0,
-        vec![(0xa0, raised, 2), (0xa1, raised, 1)]
+        vec![(0xa0, raised, 4), (0xa1, raised, 3)]
     );
-    // An acknowledgement of an older-epoch snapshot of the same revision (in
-    // flight across the raise) never clears the new epoch's resync row.
-    clear(&pool, 0xa0, 1, 2).await?;
+    // An acknowledgement of an older-epoch snapshot (in flight across the
+    // raise) never clears the new epoch's resync row, even at the same revision.
+    clear(&pool, 0xa0, 1, 4).await?;
     assert_eq!(state(&pool).await?.0.len(), 2);
     // A change after the raise carries the new epoch and stays queued past an
     // acknowledgement of the earlier revision.
     attempt(&pool, &root(0x15, 0xa1, "Dara")).await?;
-    clear(&pool, 0xa1, raised, 1).await?;
+    clear(&pool, 0xa1, raised, 3).await?;
     assert_eq!(
         state(&pool).await?.0,
-        vec![(0xa0, raised, 2), (0xa1, raised, 2)]
+        vec![(0xa0, raised, 4), (0xa1, raised, 4)]
     );
+    // Raises in quick succession stay distinct and in milliseconds, so a raise
+    // after a restore does not land on an epoch published before it.
     let raised_again: i64 =
         sqlx::query_scalar("SELECT game_character_account_projection_resync(true)")
             .fetch_one(&pool)
             .await?;
-    assert!(raised_again > raised);
-    clear(&pool, 0xa0, raised_again, 2).await?;
-    clear(&pool, 0xa1, raised_again, 2).await?;
+    let raised_third: i64 =
+        sqlx::query_scalar("SELECT game_character_account_projection_resync(true)")
+            .fetch_one(&pool)
+            .await?;
+    assert!(raised_again > raised && raised_third > raised_again);
+    assert!(raised_third - raised < 60_000, "{raised} {raised_third}");
+    assert!(revised_at_matches_its_row(&pool).await?);
+    clear(&pool, 0xa0, raised_third, 6).await?;
+    clear(&pool, 0xa1, raised_third, 6).await?;
     assert_eq!(state(&pool).await?.0, vec![]);
 
     // The epoch only rises, a revision only advances by one, and neither table truncates.
@@ -297,6 +348,7 @@ async fn projection_cases(database: &Database) -> TestResult {
             uuid(0xa0)
         ),
         "UPDATE game_character_account_projections SET projection_revision = projection_revision + 1".into(),
+        "UPDATE game_character_account_projections SET revised_at = 0".into(),
         "UPDATE game_character_account_projection_epoch SET projection_epoch = projection_epoch + 1".into(),
         "SELECT game_character_account_projection_resync(true)".into(),
         format!("SELECT game_character_account_projection_touch({})", uuid(0xa0)),
@@ -308,6 +360,51 @@ async fn projection_cases(database: &Database) -> TestResult {
     // the definer trigger.
     attempt(&pool, &runtime(&root(0x16, 0xa2, "Eryn"))).await?;
     assert!(state(&pool).await?.1.contains(&(0xa2, 1)));
+    pool.close().await;
+    Ok(())
+}
+
+#[test]
+fn account_characters_projection_0028_gives_existing_revisions_a_time() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create_at(admin, Some(26)).await?;
+            let result = existing_revisions(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+async fn existing_revisions(database: &Database) -> TestResult {
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    attempt(&pool, &root(0x21, 0xb0, "Aldric")).await?;
+    let mut connection = pool.acquire().await?;
+    sqlx::migrate!("./migrations").run(&mut *connection).await?;
+    drop(connection);
+    // The existing revision reads the migration time: after its queued row,
+    // never in the future.
+    let (queued, revised, now): (i64, i64, i64) = sqlx::query_as(
+        "SELECT o.created_at, p.revised_at, \
+                floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint \
+           FROM game_character_account_projections p \
+           JOIN game_character_account_projection_outbox o USING (account_id)",
+    )
+    .fetch_one(&pool)
+    .await?;
+    assert!(
+        queued <= revised && revised <= now,
+        "{queued} {revised} {now}"
+    );
+    // The next Character write of the account assigns a new revision and time.
+    attempt(&pool, &root(0x22, 0xb0, "Bera")).await?;
+    assert_eq!(state(&pool).await?.1, vec![(0xb0, 2)]);
+    assert!(revised_at_matches_its_row(&pool).await?);
     pool.close().await;
     Ok(())
 }
