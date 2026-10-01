@@ -14,6 +14,7 @@ Game truth and nothing writes `content/`.
 | `wiki_fandom.py` | TibiaWiki (Fandom) snapshot fetch and position/travel/trade comparison (stdlib only, ≤2 requests/s, neutral User-Agent). |
 | `wiki_br.py` | TibiaWiki BR NPC pages: `fetch` captures the raw wikitext at exact revisions (stdlib only, ≤2 requests/s, neutral User-Agent; run by `.github/workflows/npc-tibiawiki-br-capture.yml`, artifact only), `facts` reduces it to the committed facts in `imports/tibiawiki/npc-br/`. |
 | `tibiopedia.py` | Tibiopedia NPC pages: `fetch` reads the NPC list from the sitemap and keeps only trade facts (trade flag, item, each row's price) in the committed `imports/tibiawiki/npc-tibiopedia/` file (D13); `self-test` checks the parser offline. |
+| `wiki_outfit_fit.py` | D16 evidence, a manual tool: renders an outfit from the client sprites and fits its colours to the TibiaWiki image. It needs numpy 2.4.6 and Pillow 12.3.0 (the versions that produced the recorded fits); no CI step runs or imports it. |
 | `tibiawiki_br_crosscheck.py` | Cross-checks every admitted NPC's position, trade and dialogue against the BR facts (`samples/tibiawiki-br-crosscheck-v1.json`). |
 | `population_census.py` | Readiness census over converted bundles. |
 | `promotion_candidates.py` | Merges Canary+Crystal with the wiki as tie-breaker into native-keyed promotion candidates (D4–D6). |

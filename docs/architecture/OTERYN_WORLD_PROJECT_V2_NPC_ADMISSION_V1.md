@@ -230,6 +230,16 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    `parity_pending: true`. Wave A becomes 1,102 NPCs with 715 Dialogues, 322 trade and 56 travel Services and 2,352
    bindings. The slice also restores the D13 offer rule after ITEM-ID-1b: a wiki item name counts only the keys of
    the pinned item map, and the admission stage accepts a retired Item key that aliases to a registered one.
+4i. Reviewed definitions and unconfirmed Crystal facts (D16): `OTV2-20260930-npc-reviewed-definitions`. 42 left-out
+   offers are confirmed by the wiki majority (nunchaku and sai at the weapon dealers among them); each is admitted
+   whole, and its arbitration row marks every direction CONFIRMED or UNCONFIRMED (owner 1c). Eight of the nine
+   definition conflicts are settled in review: Ambassador Manop, Enpa Rudra and Gareth take outfit colours fitted to
+   their TibiaWiki images, Enpa-Deia Pema the Canary look by owner decision (both image fits score above 35), Grumpy
+   Stone and Storkus the Crystal look, and Ambassador Manop, Flickering Soul and Omrabas their observed movement;
+   Testserver Assistant stays held. 35 single-source Crystal NPCs mark facts TODO: 30 lose the dialogue Crystal wrote
+   itself (`SOURCE_AUTHORED_TEXT` holds the whole NPC's dialogue before any transcript lookup, so a transcript cannot
+   revive text Crystal marks as its own), and seven take wiki-fitted outfit colours. Wave A becomes 1,110 NPCs with 694 Dialogues, 324 trade and 56 travel
+   Services, 12,725 offer rows and 2,376 bindings.
 5. Later:
    - placements after World admission;
    - conditional dialogue and dialogue conflicts;

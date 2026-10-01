@@ -577,6 +577,10 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: P
         provenance = candidate['provenance']
         by_source: dict[str, dict | None] = {}
         unverified = []
+        if 'text' in candidate.get('source_unconfirmed', []):
+            # D16: dialogue the only (Crystal) source wrote itself; the NPC keeps generated replies (NPC-0 §3.3)
+            held.append({'npc': npc_key, 'reason': 'SOURCE_AUTHORED_TEXT', 'sources': sorted(provenance)})
+            continue
         for source, bundles_dir in (('canary', canary_dir), ('crystal', crystal_dir)):
             if source not in provenance:
                 continue
@@ -675,6 +679,7 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: P
     counts: dict[str, Any] = {'npcs_with_dialogue': len(dialogues),
                                'held_dialogue_conflict': sum(h['reason'] == 'DIALOGUE_CONFLICT' for h in held),
                                'held_text_bundle_unverified': sum(h['reason'] == 'TEXT_BUNDLE_UNVERIFIED' for h in held),
+                               'held_source_authored_text': sum(h['reason'] == 'SOURCE_AUTHORED_TEXT' for h in held),
                                'keyword_nodes': keyword_node_total, 'voice_lines': voice_line_total,
                                'greet': greet_total, 'farewell': farewell_total, 'walkaway': walkaway_total,
                                'send_trade': send_trade_total,
