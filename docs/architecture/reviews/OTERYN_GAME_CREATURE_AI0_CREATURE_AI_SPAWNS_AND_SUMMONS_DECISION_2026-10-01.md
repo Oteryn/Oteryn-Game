@@ -198,6 +198,10 @@ disagree, §13 R6).
   zone, not under re-entry or login protection, not invisible unless the profile has
   `sense_invisible` (when invisibility exists), and for a summon the PvP rules (§8.3). A
   non-hostile profile (`hostile` false) or one with `can_target` false never targets.
+- **Player-summon targets.** A player summon also targets creatures: its owner's target creature
+  is eligible for it when that creature lies inside the MOVE-RL-11 interest area centred on the
+  summon and meets the other conditions above (§8.3). Perception of creatures by creatures is used
+  for nothing else.
 
 ### 4.3 Selection and change (Canary order)
 
@@ -394,9 +398,11 @@ decisions; until then the factor is 1.
   `max_summons` checks each `summons` entry: due by the §4.4 tick rule, fewer than `count` of that
   creature among its summons, then a draw with `chance_ppm`. A success admits the creature on a
   free tile next to the caster, linked to the caster; no free tile, nothing.
-- **Placement** (every summon): the caster's tile if it admits the creature, else one of its 8
-  neighbours that does, drawn uniformly with the purpose `SUMMON_PLACE` of the creating occurrence
+- **Placement** (monster summons, Summon Creature): the caster's tile if it admits the creature,
+  else one of its 8 neighbours that does, drawn uniformly with the purpose `SUMMON_PLACE` of the creating occurrence
   (Canary shuffles the 8, `map.cpp:603-630`).
+- **Animate Dead** places its creature on the corpse tile only (S27); a corpse tile that does not
+  admit it fails the acquisition with nothing consumed (§8.2). Convince does not place.
 - Encounter summons (D45 `ability_cast`) stay with the encounter runtime.
 
 ### 8.2 Player summons
@@ -408,7 +414,7 @@ decisions; until then the factor is 1.
   This runtime commits every effect of one acquisition (mana, corpse removal, rune charge, summon
   admission) as one all-or-nothing operation, checking the cap of 2 summons per character
   (`RL-19`) and the placement in it: if admission fails, nothing is consumed.
-  Summon Creature and Animate Dead admit a new creature (placed as §8.1; on the corpse tile). Convince changes the owner of the existing creature, keeping its
+  Summon Creature admits a new creature placed as §8.1; Animate Dead admits one on the corpse tile (§8.1). Convince changes the owner of the existing creature, keeping its
   actor and health.
 - A convinced spawned creature keeps its point: the point respawns only after it is gone (Canary;
   ruling R7).
@@ -421,7 +427,7 @@ decisions; until then the factor is 1.
 ### 8.3 Behaviour
 
 - **Target:** its owner's current target (the ATTACK-0 target of a player, the target of a
-  monster), when eligible for the summon (§4.2); a player target only where PARTY-PVP-0 §7 lets the
+  monster), when eligible for the summon (§4.2, including a creature target); a player target only where PARTY-PVP-0 §7 lets the
   owner attack it, because the summon's actions are the owner's. Otherwise it follows its owner to
   within 2 tiles.
 - It uses the attack, step and path rules above; it never flees, wanders, walks back or idles
