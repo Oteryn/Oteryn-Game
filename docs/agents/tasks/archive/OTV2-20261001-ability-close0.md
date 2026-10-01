@@ -22,8 +22,10 @@ owned_paths:
   - docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md
   - docs/architecture/reviews/OTERYN_GAME_CHARACTER_APPEARANCE_OWNER_DECISION_2026-09-28.md
   - docs/architecture/reviews/OTERYN_GAME_OWNER_DECISION_BATCH_D118_D128_2026-09-28.md
+  - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
   - docs/agents/tasks/archive/OTV2-20261001-ability-close0.md
-public_contracts: []
+public_contracts:
+  - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
 depends_on: []
 blocks: []
 cross_repository_coordination_id: null
@@ -36,11 +38,13 @@ Three owner decisions of 2026-10-01 (#162) are recorded as dated amendments in t
 
 - 8a: the archived 2026-07-28 wiki cut is accepted as `OBSERVED` evidence for the four GAME-ABILITY-01
   Light Healing / Ice Strike cases; the evidence blocker is cleared, acceptance of the gate is unchanged.
-  The machine-checked manifest is not edited here.
+  Manifest revision 6 records the four cases as `OBSERVED`, provenance and legal review `CLEARED`
+  (reference use only, no redistribution of wiki text), parity `PARITY_PENDING_EVIDENCE`; owner
+  approval of the manifest edit 2026-10-01 (#162, answer 1a).
 - 3a: an active mount adds +10 speed as a Reference-profile ruleset fact, applied now (D47, D125).
-- XP: kill XP is base creature XP times a closed list of multipliers (stamina, Prey, party sharing); no boost source exists now.
+- XP: creature-kill XP has a closed, ordered set of modifiers (party split, then Prey, then stamina per character); no boost source exists now.
 
-No code, migration, manifest or content change is made.
+No code, migration or content change is made.
 
 ## Architecture and source of truth
 
@@ -57,13 +61,15 @@ No code, migration, manifest or content change is made.
 
 ## Excluded scope
 
-- `docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json` (machine-checked; needs its own manifest revision), code and content.
+- Code, content and any runtime promotion of the four cases (`OBSERVED` is not reference-promotable).
 
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS.
 - `python3 tools/repository/validate_repository_policy.py`: PASS.
 - `git diff --cached --check`: clean.
+- Manifest validated against `REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.schema.json` (jsonschema): PASS.
+- `cargo test -p oteryn-game-server --lib` (manifest consumer): PASS.
 
 ## Closeout
 

@@ -29,7 +29,7 @@ Patch-note/search absence is not continuity proof. OTS code is not used as Refer
 
 ## Amendment (owner decision 2026-10-01, #162): evidence blocker closed
 
-The archived 2026-07-28 wiki cut is accepted as `OBSERVED` reference evidence for the four cases of this package (Light Healing cast metadata and self-heal semantics; Ice Strike cast metadata and targeted ice-damage semantics). Target continuity is accepted on that cut, which clears the blocker recorded in "Evidence boundary" and "Recommended next paper-only evidence step". A difference later found against tibia.com is recorded as `PARITY_PENDING`, not as a blocker. This text is history and is not rewritten; the manifest cases still read `UNKNOWN` / `PENDING` until a manifest revision records the decision, and no executable fixture, runtime authority or whole-gate acceptance follows from it.
+The archived 2026-07-28 wiki cut is accepted as `OBSERVED` reference evidence for the four cases of this package (Light Healing cast metadata and self-heal semantics; Ice Strike cast metadata and targeted ice-damage semantics). Target continuity is accepted on that cut, which clears the blocker recorded in "Evidence boundary" and "Recommended next paper-only evidence step". A difference later found against tibia.com is recorded as `PARITY_PENDING`, not as a blocker. This text is history and is not rewritten; manifest revision 6 (`docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json`) records the four cases as `OBSERVED` with cleared provenance and reference-only legal review, parity still `PARITY_PENDING_EVIDENCE`, and no executable fixture, runtime authority or whole-gate acceptance follows from it.
 
 ## Catalogue package — Light Healing
 
