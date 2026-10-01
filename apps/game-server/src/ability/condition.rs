@@ -437,6 +437,30 @@ impl<S: Clone> ConditionStore<S> {
             .map_or(0, |instance| instance.speed_delta)
     }
 
+    /// A timed speed contribution ends at its exact deadline, even before owner cleanup.
+    pub(crate) fn active_speed_delta(&self, now: u64) -> i64 {
+        self.get(ConflictKey::Speed)
+            .filter(|instance| instance.ends_at.is_none_or(|end| now < end))
+            .map_or(0, |instance| instance.speed_delta)
+    }
+
+    /// Owner-local expiry without executing or discarding any scheduled occurrence.
+    /// DOT, food and recovery remain exclusively under `take_due`, including overdue ticks.
+    pub(crate) fn expire_non_ticking(&mut self, now: u64) -> bool {
+        let before = (self.instances.len(), self.cleanse_immunities.len());
+        self.instances.retain(|instance| {
+            !matches!(
+                instance.definition.values,
+                ConditionValues::Speed { .. }
+                    | ConditionValues::Light { .. }
+                    | ConditionValues::ManaShield { .. }
+            ) || instance.ends_at.is_none_or(|end| now < end)
+        });
+        self.cleanse_immunities
+            .retain(|immunity| now < immunity.until);
+        before != (self.instances.len(), self.cleanse_immunities.len())
+    }
+
     /// One application at admission (§3, §3.1, §6.1). The provenance is frozen here (§3.2): the
     /// definition key and revision are always those of `definition`, never a caller's copy.
     pub(crate) fn apply(

@@ -166,6 +166,56 @@ impl ChannelRuntimeV1 {
         Ok(&self.condition_state(index).store)
     }
 
+    /// Read the current actor's active contribution, never an expired stored speed.
+    pub(crate) fn actor_active_speed_delta(
+        &self,
+        actor: ExactActorRef,
+        session: Option<GameSessionId>,
+        now: SemanticTimeMicros,
+    ) -> Result<i64, ConditionOwnerError> {
+        let index = self.condition_index(actor, session)?;
+        let current = self.condition_state(index);
+        if now.get() < current.at {
+            return Err(ConditionOwnerError::TimeMismatch);
+        }
+        Ok(current.store.active_speed_delta(now.get()))
+    }
+
+    /// Prepare only non-ticking expiry under the same actor revision as other transitions.
+    /// The owner retains this original plan for replay; no timer or tick consumer is added.
+    pub(crate) fn prepare_actor_condition_expiry(
+        &self,
+        actor: ExactActorRef,
+        session: Option<GameSessionId>,
+        occurrence: DecisionOccurrenceId,
+        now: SemanticTimeMicros,
+    ) -> Result<ActorConditionPlan, ConditionOwnerError> {
+        let index = self.condition_index(actor, session)?;
+        let current = self.condition_state(index);
+        if now.get() < current.at {
+            return Err(ConditionOwnerError::TimeMismatch);
+        }
+        if current
+            .receipt
+            .is_some_and(|receipt| receipt.occurrence == occurrence)
+        {
+            return Err(ConditionOwnerError::StalePlan);
+        }
+        let mut next = current.store.clone();
+        next.expire_non_ticking(now.get());
+        Ok(ActorConditionPlan {
+            actor,
+            session,
+            next,
+            receipt: ConditionReceipt {
+                occurrence,
+                revision: current.revision,
+                at: now.get(),
+                source: None,
+            },
+        })
+    }
+
     /// Read/resolve one transition while holding the Channel owner. No slot changes yet.
     pub(crate) fn prepare_actor_condition(
         &self,
@@ -196,6 +246,7 @@ impl ChannelRuntimeV1 {
             self.condition_source(source, actor)?;
         }
         let mut next = current.store.clone();
+        next.expire_non_ticking(now.get());
         match transition {
             ActorConditionTransition::Apply {
                 definition,

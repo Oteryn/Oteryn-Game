@@ -1105,3 +1105,106 @@ fn cleanse_paralysis_immunity_refuses_the_shared_speed_key_including_haste() {
         ConditionType::Haste,
     );
 }
+
+#[test]
+fn non_ticking_expiry_removes_speed_light_shield_at_the_exact_deadline() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    for definition in [
+        speed(false, 1_300, 40),
+        def(
+            "cond.light",
+            ConditionValues::Light {
+                level: 8,
+                duration_ms: 6_000,
+            },
+        ),
+        def(
+            "cond.shield",
+            ConditionValues::ManaShield { duration_ms: 6_000 },
+        ),
+    ] {
+        apply(
+            &mut store,
+            &definition,
+            ConditionSourceKind::SelfUse,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    let delta = store.speed_delta();
+    assert!(delta > 0);
+    assert!(!store.expire_non_ticking(6_000 * MS - 1));
+    assert_eq!(store.instances().len(), 3);
+    assert_eq!(store.active_speed_delta(6_000 * MS - 1), delta);
+    assert_eq!(store.active_speed_delta(6_000 * MS), 0);
+    assert!(store.expire_non_ticking(6_000 * MS));
+    assert!(store.instances().is_empty());
+    assert!(!store.expire_non_ticking(6_000 * MS));
+}
+
+#[test]
+fn non_ticking_expiry_removes_cleanse_immunity_without_replaying_removal() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &speed(true, -1_000, 0),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let plan = store.prepare_cleanse(&facts(0, &root)).unwrap().unwrap();
+    assert!(store.commit_cleanse(plan));
+    assert!(!store.expire_non_ticking(11_000 * MS - 1));
+    assert_eq!(store.cleanse_immunities.len(), 1);
+    assert!(store.expire_non_ticking(11_000 * MS));
+    assert!(store.cleanse_immunities.is_empty());
+    assert!(!store.commit_cleanse(plan));
+    assert!(!store.expire_non_ticking(11_000 * MS + 1));
+}
+
+#[test]
+fn non_ticking_expiry_preserves_overdue_dot_regeneration_and_tick_budget() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    for definition in [
+        dot(DotElement::Poison, 100, 100, false),
+        def(
+            "cond.food",
+            ConditionValues::FoodRegeneration {
+                added_ms: 10_000,
+                interval_ms: 1_000,
+            },
+        ),
+        def(
+            "cond.recovery",
+            ConditionValues::Recovery {
+                duration_ms: 10_000,
+                interval_ms: 1_000,
+            },
+        ),
+    ] {
+        apply(
+            &mut store,
+            &definition,
+            ConditionSourceKind::Creature,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    let now = 20_000 * MS;
+    assert_eq!(
+        store.take_due(now, TickFacts::default()).len(),
+        COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK
+    );
+    let mut before = store.clone();
+    assert!(!store.expire_non_ticking(now));
+    // The elapsed regeneration durations and late DOT retain every pending tick and ordinal.
+    assert_eq!(store, before);
+    assert!(store.take_due(now, TickFacts::default()).is_empty());
+    assert_eq!(
+        store.take_due(now + 1, TickFacts::default()),
+        before.take_due(now + 1, TickFacts::default()),
+    );
+}
