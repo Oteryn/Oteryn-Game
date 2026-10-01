@@ -1,0 +1,25 @@
+{
+  "schema": "NPC_R10_AUTHORING_VALIDATION/v1",
+  "phase": "AUTHORING_PRE_PUBLICATION",
+  "baseline_head": "357f917bfc97cc3c2006351c4caa3b4546abe2fb",
+  "checks": {
+    "all_authoring_tests": {
+      "result": "PASS",
+      "count": 157,
+      "skipped": 0,
+      "log_sha256": "eeeb7d00d971a87dbf08c680512ae57812885e8de8f2da1b8e607d56c301170f"
+    },
+    "dedicated_bridge_tests": {
+      "result": "PASS",
+      "count": 9,
+      "full_native_input": true
+    },
+    "governance": {
+      "result": "PASS",
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    }
+  },
+  "source_fact_packet_sha256": "62191d37f34adbc8d3b3392a620e2b400c079ec1367ada2d480b2b979c472181",
+  "original_five_area_goal_complete": false,
+  "native_content_change": false
+}
