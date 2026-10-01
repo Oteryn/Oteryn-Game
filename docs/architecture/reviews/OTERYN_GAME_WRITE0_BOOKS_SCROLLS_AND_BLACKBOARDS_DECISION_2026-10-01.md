@@ -173,14 +173,26 @@ DUR-03 §39.3.
     `WRITE0-RL-05` open reports per reporting account (`REPORT_QUOTA`);
   - at most `WRITE0-RL-06` open snapshots in the World; a report beyond it is refused
     `REPORT_CAPACITY` and the alarm fires at 80%.
-  - **Atomic admission.** A report is one transaction: it locks, in this order and `FOR UPDATE`,
-    the reporter's hourly counter row (CharacterId, hour), the reporting account's open-report
-    counter row (AccountId), and the World's open-snapshot counter row; checks the dedup key (a
-    unique index on (reporter, target, revision)), the three limits and the expected revision; then
-    inserts the snapshot and increments the counters. Any failure rolls the whole transaction back
-    and returns its result with nothing stored. Closing or expiring a report decrements the account
-    and World counters in its own transaction under the same order. Reports from many channels
-    therefore never overshoot a limit.
+  - **Atomic admission.** A report is one database transaction, in this exact sequence:
+    1. **Fence:** the reporter's current composition rule 2 fence (GameSession, lease and scope
+       generations) and `character_root`; a stale execution commits nothing.
+    2. **Counter rows, upserted then locked, in fixed order:** the reporter's hourly row
+       (CharacterId, hour), the reporting account's open-report row (AccountId), the World's
+       open-snapshot row. Each is first created by `INSERT … ON CONFLICT DO NOTHING` at zero, then
+       read `FOR UPDATE`, so a missing row can never be raced past.
+    3. **Dedup:** an existing snapshot with the unique key (reporter, target, revision) returns that
+       report's first result; the unique index backs it, and a uniqueness conflict on insert maps to
+       the same result, never to a raw error.
+    4. **Limits:** `WRITE0-RL-04`, `-RL-05`, `-RL-06` against the locked counters.
+    5. **Expected revision** (and map-object scope generation) still current, else `REPORT_STALE`.
+    6. **Insert** the snapshot.
+    7. **Increment** the three counters.
+    8. **Commit**; any failure in 1-7 rolls everything back and returns its result, storing nothing.
+  - **Close or expiry** of a report is one transaction with the same order: the moderation actor's
+    authority (GM tools decision) in place of step 1, then the account and World counter rows
+    upserted and locked as in step 2, the snapshot deleted or marked closed, the two counters
+    decremented, commit. Hourly rows are never decremented and are deleted after their hour.
+    Reports from many channels therefore never overshoot a limit.
 - **Removal.** A moderation **clear** deletes the text row if its `text_revision` still equals the
   reported one, under the item row lock of §5.2, else refuses with `STALE` (the moderator sees the
   newer text through a new report). For a map object the snapshot also records the channel scope
