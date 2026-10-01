@@ -16,8 +16,13 @@ def known(value) -> dict:
     return {"state": "KNOWN", "value": value}
 
 
+def identity(key: str, revision: str = "definition-r1") -> dict:
+    return {"family": "Item", "key": key, "revision": revision}
+
+
 def backpack() -> dict:
     return {
+        "identity": identity(BACKPACK),
         "materializable": True,
         "stack_class": "NonStackable",
         "semantics": {
@@ -36,7 +41,12 @@ def backpack() -> dict:
 def items() -> dict:
     return {
         BACKPACK: backpack(),
-        COIN: {"materializable": True, "stack_class": "StackCapable", "semantics": {}},
+        COIN: {
+            "identity": identity(COIN),
+            "materializable": True,
+            "stack_class": "StackCapable",
+            "semantics": {},
+        },
     }
 
 
@@ -123,6 +133,12 @@ def test_admission_fails_closed() -> None:
     cases.append((ska.build_records(source(row(), row())), items()))
     cases.append((ska.build_records(source(row(key="Starter.Backpack"))), items()))
     cases.append((ska.build_records(source(row(), label="starter-1")), items()))
+    # The named revision must be the one the key resolves to (§4: unknown revision).
+    advanced = items()
+    advanced[BACKPACK]["identity"]["revision"] = "definition-r2"
+    cases.append((ska.build_records(source(row())), advanced))
+    # A JSON boolean is not a quantity, although `True == 1`.
+    cases.append((ska.build_records(source(row(quantity=True))), items()))
     for records, item_table in cases:
         assert errors_for(records, item_table), records
     print("ok test_admission_fails_closed")
@@ -145,12 +161,24 @@ def test_labels_are_immutable() -> None:
     )
     assert errors_for(both, seals=seals)
     assert errors_for(both) == []
+    # Across revisions the ledger is append-only: editing a record together with its seal,
+    # or dropping both, is caught against the base revision's ledger.
+    changed_seals = sealed(changed)
+    assert changed_seals != seals and errors_for(changed, seals=changed_seals) == []
+    assert ska.base_seal_errors(changed_seals, seals)
+    assert ska.base_seal_errors({}, seals)
+    assert ska.base_seal_errors({**seals, **sealed(both)}, seals) == []
     print("ok test_labels_are_immutable")
 
 
 def test_committed_family() -> None:
     assert ska.committed_errors() == [], ska.committed_errors()
     assert ska.content_command(check=True) == 0
+    # The committed ledger keeps every seal of the base revision when history is available.
+    base = ska.resolve_base(None)
+    if base is not None:
+        assert ska.base_seal_errors(ska.load_seals(), ska.load_base_seals(base)) == []
+    assert ska.history_errors("no-such-revision") is not None
     print("ok test_committed_family")
 
 

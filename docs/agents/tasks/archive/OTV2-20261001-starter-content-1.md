@@ -70,7 +70,13 @@ external_repositories: []
   repository policy core, `git diff --check`.
 - Failing on `main` as well (not this task): `validate_full_game_content_tree.py` and its test
   (`SOURCE_ID_BOUNDARY_MISSING`), condition `content --check` (`content/conditions/` absent).
-- Review: control plane triggers Codex on the frozen head (D245).
+- Review round 1 (Codex on `3ade5a4`, three findings), fixed in one new candidate:
+  P1 the seal ledger is also checked append-only against a base revision (`--seal-base`, default
+  merge base with `origin/main`); P2 the record's Item revision must equal the resolved
+  definition's revision; P2 a JSON boolean is rejected as a quantity.
+- Open (control plane): the PR CI checkouts are shallow, so CI reports the base-ledger check as
+  skipped; enforcing it in CI needs a workflow step with history (`.github/workflows` is
+  owner-owned). Locally and with history it fails closed.
 
 ## High-risk authority/recovery qualification
 

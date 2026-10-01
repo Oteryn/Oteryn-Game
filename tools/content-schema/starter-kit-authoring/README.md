@@ -22,18 +22,25 @@ closed on an unknown label.
 - **Record (§4).** A key (`oteryn:starter.<name>`), an Item definition key and revision, a
   quantity and a destination, under one template label (`oteryn:starter-template.<name>`).
   A key appears once per template.
-- **Admission (§4).** The Item is an A12 key that resolves in `content/items`, is materializable
+- **Admission (§4).** The Item is an A12 key that resolves in `content/items` at the named
+  revision (a record naming another revision fails), is materializable
   with a known stack class, and fits the quantity. `container_slot` takes one non-stackable
   Item with a known capacity and a container-slot equipment pattern (D114), at most once per
-  template. Anything else fails the build.
+  template. The quantity is a JSON integer, never a boolean. Anything else fails the build.
 - **Immutable labels (§4.2).** Each label with records must match its seal, and a sealed label
   never loses its records. A later kit (for example the verified Dawnport kit) goes into a new
   label for new creations only; seal it with `seal --label`. Never edit or remove a seal.
+- **Append-only across revisions.** Within one head, editing a record together with its seal
+  passes. `content --check --seal-base <rev>` therefore also compares the ledger with the ledger
+  at a base revision (default: the merge base with `origin/main`): a seal there must be kept
+  unchanged. An explicit base that does not resolve fails; with no base and no `origin/main`
+  (a shallow CI checkout) the history check is reported as skipped.
 
 ```sh
 cd tools/content-schema/starter-kit-authoring
 python starter_kit_authoring.py content          # rebuild after templates.json or content/items changes
 python starter_kit_authoring.py content --check  # CI
+python starter_kit_authoring.py content --check --seal-base origin/main  # with history
 python starter_kit_authoring.py seal --label oteryn:starter-template.<name>
 python test_starter_kit_authoring.py
 ```

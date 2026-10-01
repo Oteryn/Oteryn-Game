@@ -29,6 +29,7 @@ import copy
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -112,12 +113,18 @@ def admission_problem(record: dict, items: dict) -> str | None:
     definition = items.get(ref["key"])
     if not definition:
         return f"{ref['key']} has no Item record in content/items"
+    if definition["identity"]["revision"] != ref["revision"]:
+        return (
+            f"{ref['key']} revision {ref['revision']} is not the resolved revision "
+            f"{definition['identity']['revision']}"
+        )
     if (
         not definition.get("materializable")
         or definition.get("stack_class") not in KNOWN_STACK
     ):
         return f"{ref['key']} is not materializable with a known stack class"
-    if not isinstance(record["quantity"], int) or record["quantity"] < 1:
+    # `bool` is an `int` in Python; a JSON `true` is not a quantity.
+    if type(record["quantity"]) is not int or record["quantity"] < 1:
         return "quantity must be a positive integer"
     if definition["stack_class"] == "NonStackable" and record["quantity"] != 1:
         return "a NonStackable Item takes quantity 1"
@@ -216,8 +223,44 @@ def seal_errors(records: list, seals: dict) -> list[str]:
     return errors
 
 
+def base_seal_errors(seals: dict, base_seals: dict) -> list[str]:
+    """§4.2 across revisions: the ledger is append-only against a base revision's ledger."""
+    errors = []
+    for label, seal in sorted(base_seals.items()):
+        if label not in seals:
+            errors.append(f"{label}: seal removed since the base revision (§4.2)")
+        elif seals[label] != seal:
+            errors.append(f"{label}: seal changed since the base revision (§4.2)")
+    return errors
+
+
+def git(*args: str) -> str | None:
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def resolve_base(base: str | None) -> str | None:
+    """The base revision: `base` if given, else the merge base with origin/main if known."""
+    if base:
+        return git("rev-parse", "--verify", f"{base}^{{commit}}")
+    return git("merge-base", "HEAD", "origin/main")
+
+
+def load_base_seals(revision: str) -> dict:
+    """The ledger at `revision`; a revision before the ledger existed has no seals."""
+    text = git("show", f"{revision}:{SEALS_REL}")
+    if text is None:
+        return {}
+    return parse_seals(json.loads(text))
+
+
 def load_seals() -> dict:
-    document = load_json(ROOT / SEALS_REL)
+    return parse_seals(load_json(ROOT / SEALS_REL))
+
+
+def parse_seals(document: dict) -> dict:
     if document.get("schema") != SEALS_SCHEMA:
         raise ValueError(f"{SEALS_REL}: schema")
     seals = {}
@@ -324,11 +367,27 @@ def generate() -> dict[str, str]:
     return outputs
 
 
-def content_command(check: bool) -> int:
+def history_errors(seal_base: str | None) -> list[str] | None:
+    """Base-ledger errors; None when no base is given and none can be found."""
+    revision = resolve_base(seal_base)
+    if revision is None:
+        if seal_base:
+            return [f"seal base {seal_base} does not resolve to a commit"]
+        return None
+    return base_seal_errors(load_seals(), load_base_seals(revision))
+
+
+def content_command(check: bool, seal_base: str | None = None) -> int:
     try:
         outputs = generate()
+        errors = history_errors(seal_base)
     except ValueError as error:
         print(error, file=sys.stderr)
+        return 1
+    if errors is None:
+        print("starter kit seal history: no base revision (pass --seal-base), skipped")
+    elif errors:
+        print("\n".join(errors), file=sys.stderr)
         return 1
     stale = []
     for rel, text in sorted(outputs.items()):
@@ -396,11 +455,15 @@ def main() -> int:
         "content", help="write (or --check) the family and registration"
     )
     content.add_argument("--check", action="store_true")
+    content.add_argument(
+        "--seal-base",
+        help="git revision whose seal ledger must be kept unchanged (default: merge base with origin/main)",
+    )
     seal = sub.add_parser("seal", help="seal a new template label (append-only)")
     seal.add_argument("--label", required=True)
     args = parser.parse_args()
     if args.command == "content":
-        return content_command(args.check)
+        return content_command(args.check, args.seal_base)
     if args.command == "seal":
         return seal_command(args.label)
     return 2
