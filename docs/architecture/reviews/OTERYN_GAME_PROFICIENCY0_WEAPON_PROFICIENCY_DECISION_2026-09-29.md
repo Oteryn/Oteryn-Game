@@ -251,6 +251,9 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   - Pending progress belongs to the live session. A new `GameSessionId` after a recovery starts
     from the committed rows. At most one checkpoint of progress is lost.
 - **Accrual.** Progress accrues in the live session at kill credit for the equipped weapon.
+  **Amendment (pending on acceptance of PROF-EFFECT-0, `OTERYN_GAME_PROF_EFFECT0_KILL_CREDIT_AND_PERK_EFFECTS_DECISION_2026-10-01.md` §3).** Kill credit goes to every
+  character that damaged the creature within 5 minutes before its death, each earning the full
+  points of the TibiaWiki table for the weapon equipped at the death; no durable write per kill.
 - **Checkpoints.** One `training` receipt covers every changed track:
   - at a level-up, which is always durable. The level's perk slot opens only after that receipt
     commits;
@@ -305,6 +308,10 @@ until admitted).
   Mastery, and multi-player weighting are UNKNOWN. PROF-2 may build them behind a versioned
   policy, but proficiency is not enabled in production, nor claimed as Reference behaviour, until
   each is evidenced or owner-accepted as a `DECLARED_DIFFERENCE`.
+  **Amendment (pending on acceptance of PROF-EFFECT-0, `OTERYN_GAME_PROF_EFFECT0_KILL_CREDIT_AND_PERK_EFFECTS_DECISION_2026-10-01.md` §3-§4).** Multi-player weighting (full
+  points to every contributor) and the point table are evidenced by the official manual and TibiaWiki.
+  The thresholds come from TibiaWiki through the catalogue. The perk effects' stages, stacking and
+  rounding are decided there, with their own `PARITY_PENDING` release gates.
 - **Deferred.** Perk modification (reroll, rank, reshape), the Lunar Ascension Orb and catalysts
   spend value (dust, items) under GAME-ITEM-01/DUR-03 (rule 4), and their costs are UNKNOWN. They
   get their own decision (PROFICIENCY-1). This is sequencing, not a scope cut. Mastery is
