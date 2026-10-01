@@ -124,6 +124,9 @@ exists per conflict key.
   40) + b_max]`; the delta is target − base, fixed when applied; a paralysis target is at least 40,
   and a paralysis on an actor whose base speed is below 40 leaves its speed unchanged (delta 0).
 - Later families (drunk, invisible, outfit, skill boosts, fear, root) come with their own decisions.
+- **Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_DECISION_2026-10-01.md` §4).** An active item's `SUPPRESS` refuses admission of an
+  instance with the named conflict key and removes an existing one. Skill boosts from equipment are
+  derived reads (EQUIP-0 §3), not a condition family.
 
 ### 3.1 Damage over time
 
