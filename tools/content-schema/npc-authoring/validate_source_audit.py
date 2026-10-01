@@ -65,8 +65,8 @@ def validate(root):
         npc = by_npc[proof['npc_key']]
         roots = by_dialogue[npc['dialogue']['key']]['keywords']
         assert [r['key'] for r in roots] == [r[0] for r in proof['root_proofs']]
-        for root, branch in zip(roots, proof['root_proofs']):
-            raw = json.dumps(semantics(root), ensure_ascii=False, sort_keys=True,
+        for keyword_root, branch in zip(roots, proof['root_proofs']):
+            raw = json.dumps(semantics(keyword_root), ensure_ascii=False, sort_keys=True,
                              separators=(',', ':')).encode('utf-8')
             assert digest(raw) == branch[1], (proof['npc_key'], branch[0])
     print('PASS: 1112 NPC candidates, 902 source programs, 20872 roots, 71 service corrections; unactivated')
