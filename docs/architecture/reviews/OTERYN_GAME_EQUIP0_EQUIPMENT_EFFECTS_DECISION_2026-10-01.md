@@ -22,12 +22,14 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| EQUIP-CONTENT-1 | content lane | typed ability rows on Item definitions (§3.1) from TibiaWiki first, Canary `items.xml` as fallback, with unit conversion (§3.1); items with time or charges flagged `timed` | ITEM-SEM-2b |
-| EQUIP-RT-1 | hard (combat), combat and determinism review | the equipment owner's active set and the Reference evaluation plan (§3); effects at their stages (§4); recomputation triggers | ITEM-MOVE-2a; SPEED-1; COND-1 |
+| EQUIP-CONTENT-1 | content lane | typed ability rows on Item definitions (§3.1) from TibiaWiki first, Canary `items.xml` as fallback, with unit conversion (§3.1); `timed` derived from the item schema's `charges.count` and `temporal.duration_ms`, with a validator that rejects a mismatch | ITEM-SEM-2b |
+| EQUIP-RT-1 | hard (combat), combat and determinism review | the equipment owner's active set and the Reference evaluation plan (§3); effects at their stages (§4); recomputation triggers | ITEM-MOVE-2a; SPEED-1; COND-1; CHAR-BUILD-1 and SKILLS-0's live skill read (the base a `SKILL_BOOST` adds to) |
 | EQUIP-PARITY-1 | impl | fixtures: protection sums and signs, skill, stat and speed values against TibiaWiki | EQUIP-RT-1 |
 
-No new command, capability or durable state. Effects show through existing views: skills and stats
-(A13, SKILLS-0), speed (VIS-2), light (VIS-2 `light`).
+No new command, capability or durable state. Speed and light show through existing views (VIS-2);
+skill and stat boosts are server-side only until the character view wire decision adds skills and
+maxima to the client (SKILLS-0 §5: `ActorVitalsV1` has no skill fields), as SKILLS-0's own skills
+are.
 
 Later, each with its own decision: TIMED-ITEM-0 (time, charges, equip forms, repair, torches,
 equipment regeneration and mana shield), invisibility from equipment (with the invisibility family),
@@ -82,10 +84,14 @@ What does a worn item without time or charges do for its wearer, and in what ord
 ### 3.2 When an item is active
 
 - An item is **active** when it sits in the slot its definition names, it met its requirements at
-  equip (ITEM-MOVE-WIRE-1 §4), its Premium requirement holds now, and it is not flagged `timed`.
+  equip (ITEM-MOVE-WIRE-1 §4), its Premium requirement holds now, and it is not `timed`. `timed` is
+  derived from the item schema (`charges.count` or `temporal.duration_ms` present), never a free
+  flag; content validation rejects a definition whose flag and fields disagree.
 - A `timed` item grants nothing until TIMED-ITEM-0 decides its time or charges (fail closed: no free
   rings or amulets).
-- An item in the Extra slot (`ammo`, RANGED-0 §3.3) contributes only `LIGHT` (the manual's torch).
+- An item whose designated slot is the Extra slot (`ammo`, RANGED-0 §3.3; TibiaWiki `slot = Extra
+  Slot`, for example item 49176 with speed +25) contributes all its abilities there. Any other item
+  merely placed in the Extra slot contributes only `LIGHT` (the manual's torch).
 - The channel runtime's equipment owner keeps each actor's active set and recomputes it on equip,
   unequip, death, channel transfer, respawn and Premium changes. It writes nothing durable; after a
   transfer or restart the set is derived again from the equipped items.
