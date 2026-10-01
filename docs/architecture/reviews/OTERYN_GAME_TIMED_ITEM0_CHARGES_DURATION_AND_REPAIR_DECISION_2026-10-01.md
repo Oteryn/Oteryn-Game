@@ -69,8 +69,9 @@ happens when they run out, and how a worn pair of soft boots is repaired?
 ## 3. State (TIMED-1)
 
 Table `game_item_timed_states`, one row per ItemInstance whose current definition is `timed`, or is
-the **inactive form** of a timed pair (a definition with a `transform {trigger: equip}` into a
-timed definition, such as an unworn ring or unworn soft boots):
+the **inactive form** of a timed pair: a definition with a `transform {trigger: equip}` or
+`transform {trigger: use}` into a timed definition, such as an unworn ring, unworn soft boots or an
+unlit torch:
 
 | Column | Meaning |
 |---|---|
@@ -86,10 +87,11 @@ timed definition, such as an unworn ring or unworn soft boots):
   definition's charges), and by a transform into a timed definition. A transform out of a timed
   definition other than its own inactive form, and every retirement of the item (`DECAY_RETIRE`, a
   burn, `Expire`), deletes it in the same transaction.
-- **Paired forms keep the row.** The row belongs to the item, not to the form. An unequip transform
-  into the inactive form keeps the row frozen with its `remaining_ms`; the next equip transform
+- **Paired forms keep the row.** The row belongs to the item, not to the form. A transform into the
+  inactive form (an unequip, or a use that puts out a torch) keeps the row frozen with its
+  `remaining_ms`; the next transform into the active form (an equip, or a use that lights it)
   restarts the clock from that value. An inactive form minted new has no row, which means the full
-  duration of its active form; the first equip creates the row. Items minted before TIMED-1 lands get their row from a TIMED-1 backfill with the
+  duration of its active form; the first transform into the active form creates the row. Items minted before TIMED-1 lands get their row from a TIMED-1 backfill with the
   definition's values. Amended: DUR-03 §39.3.
 - Every write is a DUR-03 `STATE_MUTATION` (§11.1) or part of a `TRANSFORM`, in a one-item
   transaction under the item writer's fence and the holder's `character_root` lock when a character
@@ -139,8 +141,11 @@ An item's time runs only while it is **live**, as in Canary:
   present, else `temporal.decay_target`; content validation rejects a definition with both set to
   different targets. The same target applies whether the item runs out of time or of charges.
 - **Expiry** at `remaining_ms = 0`, at the deadline, or at 0 charges: one transaction under
-  `TimedItemCause::Expire {item, deadline or exhaustion revision}`, keyed by the item and its
-  `state_revision`, so a replay finds the row already changed and writes nothing: a `TRANSFORM`
+  `TimedItemCause::Expire {item, reason}`, where `reason` is `Deadline {deadline_at}` (a deadline
+  item), `TimeExhausted {state_revision}` (a held item's budget reached 0) or `ChargesExhausted
+  {state_revision}`. It is keyed by (item, reason); the transaction requires the row's current
+  `deadline_at` or `state_revision` to equal the reason's, so a replay, or a reason made stale by a
+  later write, finds no match and writes nothing: a `TRANSFORM`
   (`PRESERVE_INSTANCE`) to the decay target, whose timed row is created fresh from its own
   definition or deleted; or, only when the definition has no decay target, a BURN that retires
   the item. The item stops being active (§8) at the moment the
@@ -195,14 +200,25 @@ other §3.2 condition, its charges (if any) are above 0, its remaining time (if 
 for an `on_equip` definition, it is equipped in its slot. Its abilities then apply as EQUIP-0
 says, including two the active forms need:
 
-- `REGENERATION {hp_per_tick, mana_per_tick, interval_ms}` (life ring, ring of healing): a
-  CONDITIONS-0 `REGENERATION` instance whose provenance has source kind `item` and the
-  ItemInstanceId, present while the item is active
-  and removed when it stops being active; the protection-zone rule of CONDITIONS-0 still applies.
-- `MANA_SHIELD` (energy ring): the CONDITIONS-0 mana shield instance with source kind `item`,
-  present while the item is active.
+- `REGENERATION {hp_per_tick, mana_per_tick, interval_ms}` (life ring, ring of healing): an
+  instance of the new CONDITIONS-0 family **`ITEM_REGENERATION`**, conflict key
+  `item_regeneration:<equipment slot>`, so there is one instance per slot. It stacks with
+  `FOOD_REGENERATION` and `RECOVERY`: each ticks on its own, as in Tibia, where a life ring adds to
+  food regeneration (Canary keeps the ring's regeneration as a separate condition id). Its
+  provenance has source kind `item` and the ItemInstanceId. It is created when the item becomes
+  active, has no duration of its own and ends when the item stops being active. In a protection zone
+  its ticks are skipped, like every regeneration (CONDITIONS-0).
+- `MANA_SHIELD` (energy ring): a CONDITIONS-0 `MANA_SHIELD` instance with source kind `item` and
+  **no capacity**: while the item is active, damage that reaches the §3.3 stage goes to mana up to
+  the mana available, and the rest to health. It has no `remaining` and no duration of its own; it
+  ends only when the item stops being active (unequip, expiry, charges at 0), never because a
+  capacity or mana reaches 0. This overrides CONDITIONS-0 §3.3's capacity and end rules for this
+  source only. A spell mana shield applied while the ring's instance exists replaces it under the
+  `mana_shield` key's policy, and the ring's instance is created again when the spell's ends, if the
+  ring is still active (`PARITY_PENDING`).
 
-Amended: EQUIP-0 §3.1 and §3.2; CONDITIONS-0 §3 and §3.2 (source kind `item`).
+Amended: EQUIP-0 §3.1 and §3.2; CONDITIONS-0 §3 (the `ITEM_REGENERATION` family), §3.2 (source kind
+`item`) and §3.3 (the item-sourced mana shield).
 
 ## 9. Wire (TIMED-WIRE-1)
 
@@ -217,8 +233,9 @@ Amended: EQUIP-0 §3.1 and §3.2; CONDITIONS-0 §3 and §3.2 (source kind `item`
 ## 10. Causes (DUR-03)
 
 Closed `TimedItemCause`: `Checkpoint`, `ClockStart`, `ClockStop`, `ChargeSpent`, `EquipForm
-{direction}`, `Toggle`, `Expire {deadline}`. Each names its ItemInstanceId and an occurrence issued
-by the runtime. `Expire` without a `decay_target` is a BURN sink. The repair burn is
+{direction}`, `Toggle`, `Expire {reason: Deadline {deadline_at} | TimeExhausted {state_revision} |
+ChargesExhausted {state_revision}}`. Each names its ItemInstanceId and an occurrence issued by the
+runtime. `Expire` of a definition with no decay target is a BURN sink. The repair burn is
 `FeeBurnCause::NpcRepair` (§7). No generic or caller-chosen reason. Amended: DUR-03 §15 and §39.3.
 
 ## 11. Rows
@@ -232,7 +249,9 @@ by the runtime. `Expire` without a `decay_target` is a BURN sink. The repair bur
 | `TIMEDITEM0-RL-05` `continuous` timed items per container tree | 32 |
 
 Each with max and max+1 tests. Also tested: unequip then re-equip keeps the remaining time (the
-timer does not reset); a lit torch inside a dropped bag gets its Ground deadline in the drop
+timer does not reset); putting out a torch and lighting it again keeps its remaining time; a replayed
+or stale `Expire` writes nothing; a life ring's regeneration ticks alongside food regeneration; the
+energy ring's shield stays while mana is 0 and ends at unequip; a lit torch inside a dropped bag gets its Ground deadline in the drop
 commit; a charge-only item at 0 charges with a `transform {trigger: decay}` transforms, and is
 burned only without any decay target. Content validation refuses a definition above RL-01 or RL-02.
 

@@ -129,8 +129,12 @@ exists per conflict key.
   derived reads (EQUIP-0 §3), not a condition family.
 
 **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §8).** An active timed item with `REGENERATION` or `MANA_SHIELD` holds
-one instance of that family whose provenance has the new source kind `item` and the ItemInstanceId
-(§3.2); the instance ends when the item stops being active.
+an instance whose provenance has the new source kind `item` and the ItemInstanceId (§3.2); the
+instance ends when the item stops being active. `REGENERATION` uses the new family
+`ITEM_REGENERATION` (conflict key `item_regeneration:<equipment slot>`, one per slot, stacking with
+`FOOD_REGENERATION` and `RECOVERY`, no duration of its own, ticks skipped in a protection zone).
+`MANA_SHIELD` from an item has no capacity and no `remaining`, and ends only when the item stops
+being active, overriding §3.3's capacity and end rules for that source.
 
 ### 3.1 Damage over time
 
