@@ -87,7 +87,8 @@ Table `game_character_proficiency_modifications`, at most 2 rows per track:
   - progress, selections and the definition key and revision are unchanged;
   - exactly one slot's row changes: absent to present (`MODIFY`: rank 1, no offer), present to
     absent (`CLEAR`), or present to present with the same slot and level;
-  - by operation: `RANK_UP` raises the rank by exactly 1; `ORB_RANK` sets it to 10 from below 10;
+  - by operation: `RANK_UP` raises the rank by exactly 1 and `ORB_RANK` sets it to 10 from below 10, each with
+    `modified_perk`, `pending_offer`, slot and level unchanged;
     `RESHAPE_OFFER` sets a NULL `pending_offer` and changes nothing else; `RESHAPE_CHOOSE` clears
     the offer and either keeps `modified_perk` or sets it to one of the offer's entries, with the
     rank unchanged.
@@ -121,7 +122,7 @@ is the `character_root`, the track row and its modification rows, the forge dust
 | `MODIFY {level, slot}` | protection zone; slot unlocked and empty; the level has a selection | dust BURN | a modification at rank 1 with a perk drawn from the pool |
 | `RANK_UP {slot}` | rank < 10 | dust BURN | rank + 1 |
 | `ORB_RANK {slot}` | rank < 10; a Lunar Ascension Orb as a direct entry of the main backpack (the first in B3 order, as NPC-0 SELL finds its item) | one-unit item BURN of the orb | rank 10 |
-| `RESHAPE_OFFER {slot}` | protection zone; no pending offer; the pool holds at least one entry besides the current perk | dust BURN | `pending_offer` = `min(3, pool size − 1)` distinct perks drawn from the pool, excluding the current one |
+| `RESHAPE_OFFER {slot}` | protection zone; no pending offer; the pool holds at least 3 entries besides the current perk (4 distinct entries) | dust BURN | `pending_offer` = exactly 3 distinct perks drawn from the pool, excluding the current one |
 | `RESHAPE_CHOOSE {slot, choice 0..2 or keep}` | protection zone; a pending offer | none | the chosen perk replaces the modified one at the same rank, or the current one stays; the offer is cleared |
 | `CLEAR {slot}` | protection zone | none | the modification is removed; the level's selected perk applies again |
 
@@ -129,8 +130,10 @@ is the `character_root`, the track row and its modification rows, the forge dust
   operation's occurrence, so a retry never draws again. The reshape offer is durable and paid when
   drawn, so asking again cannot fish for better options.
 - **Revision binding.** When an operation's occurrence is reserved, it binds the full
-  behaviour-affecting set: the definition revision, and the shaping content revision that holds the
-  pool, the odds, the costs and the rank values. The receipt stores that set. If any part has
+  behaviour-affecting set: the definition revision, the shaping content revision that holds the
+  pool, the odds, the costs and the rank values, and the `SimulationDeterminismProfileRevision`
+  (SIM-DETERMINISM-01 §5 and §12) under which the draws run. The `REVISION_CHANGED` comparison
+  covers all three. The receipt stores that set. If any part has
   changed when the transaction commits, the operation is refused `REVISION_CHANGED`, terminal for
   that occurrence; the client starts again with a new occurrence, as in the forge (IMBUE-FORGE-0
   §10).
@@ -156,7 +159,7 @@ is the `character_root`, the track row and its modification rows, the forge dust
   an owner answer before the operation is admitted. This decision admits no gold cost.
 - **Refusals** (nothing written): `NOT_IN_PROTECTION_ZONE`, `SLOT_LOCKED`, `SLOT_OCCUPIED`,
   `NO_SELECTION`, `NO_MODIFICATION`, `RANK_MAX`, `NO_PENDING_OFFER`, `OFFER_PENDING`,
-  `INSUFFICIENT_DUST`, `SHAPING_REVISION_OLD` (§3), `NO_ORB`, `POOL_TOO_SMALL` (no other entry to offer), `MODIFIED_LEVEL` (a
+  `INSUFFICIENT_DUST`, `SHAPING_REVISION_OLD` (§3), `NO_ORB`, `POOL_TOO_SMALL` (fewer than 3 other entries to offer, checked before any burn), `MODIFIED_LEVEL` (a
   selection change at a modified level, §3), `STALE_REVISION` (the client's expected track revision differs),
   `NOT_ADMITTED` (§5). `REVISION_CHANGED` is the one refusal that writes its terminal receipt
   (above).
