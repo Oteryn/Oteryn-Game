@@ -203,6 +203,8 @@ drop it whole, with every item still in exactly one location?
 - **Command 9 under the capability.** The source may be the handle of any entry of an open view.
   New destination `CONTAINER {handle}`: into the named container, which must be visible (a domain
   9 entry, a view, or an entry of a view). Whole items only.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §3-§4).** Under
+  `ITEM_STACK_COUNT_V1` an optional `count` moves part of a stack.
 - **Results** reuse the existing set: `NO_ROOM` (the container has no free entry, or the tree
   would pass 500), `BLOCKED` (depth over 8, or into itself or a descendant), `STALE`,
   `NOT_SUPPORTED` (a destination this decision does not admit yet).
@@ -220,8 +222,10 @@ drop it whole, with every item still in exactly one location?
   depot, Inbox or Ground source when its child admits it.
 - **Merge.** A stackable item moved into a container merges or tops up into a compatible stack of
   that container, first in display order, by the D83 shapes; else it takes a new entry. Merging
-  (Amendment, pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md`: with an optional `count`, STACK-0 §4 moves part of a stack.)
   never searches other containers.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4).** The
+  source is never its own receiver, a reserved stack is skipped, and Canary's partial fit applies
+  under `ITEM_STACK_COUNT_V1`.
 - **`MAIN_BACKPACK`** keeps B3: only direct entries; a full main backpack is `NO_ROOM`. There is no
   fall-through into nested bags (R2).
 - **Container slot.** A container with contents may move into the empty container slot; it becomes

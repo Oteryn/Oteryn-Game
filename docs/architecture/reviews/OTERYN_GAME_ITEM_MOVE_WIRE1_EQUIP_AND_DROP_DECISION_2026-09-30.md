@@ -91,7 +91,7 @@ How does a player equip and unequip items, and drop and pick up items on the gro
 - Every move is of a whole item. There is no count field.
   **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §3-§4).** Under `ITEM_STACK_COUNT_V1` command 9 takes an
   optional `count`; slots and Ground merge into a compatible stack (the slot's item, the tile's top
-  Ground item), and a partial move onto an occupied slot exchanges as Canary.
+  Ground item), and a slot follows Canary's four cases (STACK-0 §4.4).
 - Domain 9 gains the nine slots: each empty, or with a handle, definition, count and sub-type.
 - New results: `SLOT_MISMATCH` (wrong slot, a hands conflict, a container, or unknown
   equipment semantics), `REQUIREMENT_NOT_MET`, `BLOCKED` (the tile does not accept the item, no
@@ -113,6 +113,9 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   replaces the source entry that the moving item leaves (entries are immutable). The number of
   entries is unchanged, so a swap always has room. Two items are touched. Same-definition stacks
   (ammunition) swap too; merging them waits for the partial-count decision (`PARITY_PENDING`).
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4.4).** A
+  compatible stack in the slot takes what fits and a full or unequal same-definition stack refuses
+  (`NO_ROOM`); only a different definition or a non-stackable item is exchanged.
 - **Unequip.** Into the main backpack by the B3 rule: a D83 merge or top-up into a compatible stack
   (same definition key and revision, equal state), else a new entry. Only a new entry needs room;
   without one it is `NO_ROOM`. With no main backpack it is `NO_BACKPACK`.
@@ -141,6 +144,10 @@ exactly the change, under the tile and counter row lock.
   left on Ground by the ADR-0021 amendment) to `MAIN_BACKPACK`, standing on it or next to it
   (Chebyshev distance 1, same floor), by the existing `0011` shape with the deltas of §6. Into a
   slot it waits for a later decision. The client walks; the server never walks the player.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4).** A drop or
+  pickup merges into a compatible receiver (the tile's top Ground item, the main backpack's first
+  compatible stack) and, under `ITEM_STACK_COUNT_V1`, may move part of a stack. Ground to a slot
+  still waits.
 - **Corpses.** D133 and D134 bind every move whose source is a corpse entry, on the database clock
   with reach. A corpse is never a move source.
 - **Limits.** `ITEMMOVE1-RL-01` loose items per tile: 10. `ITEMMOVE1-RL-02` dropped items per
@@ -165,6 +172,9 @@ For the shapes of §4 and §5 only, this decision supersedes:
 - §39.1 and §39.3: TRANSFER goes only to `CharacterInventory` and the B3 destinations. The nine
   non-container `CharacterEquipment` slots, and `Ground` from a backpack entry or a slot, are
   admitted.
+
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §5).** Partial
+and merging moves are STACK-0's three-item shape; the whole-item swap keeps the rows below.
 
 Every other §39 obligation is unchanged: fences, cause (the command's CommandRef), evidence,
 idempotency, current authority, one event per transaction with complete TransactionEventRef
@@ -202,6 +212,9 @@ membership.
 | `ITEMV0-RL-01` entries in domain 9 | 30 |
 | `ITEMMOVE1-RL-01` | 10 loose items per tile |
 | `ITEMMOVE1-RL-02` | 20,000 dropped items per channel, alarm at 16,000 |
+
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §6).** Partial and
+merging moves use `DUR03-RL-0x-STACK` (3 items, 3 location lines, 3 quantity changes, 3 / 8).
 
 ## 7. Other amendments
 
@@ -263,4 +276,5 @@ dispositions are unchanged.
 4. **Typed references:** handles; `EquipmentSlotV1` on the wire, semantic slot keys in storage;
    `WorldTilePosition`.
 5. **Wire:** §3, capability `ITEM_EQUIP_DROP_V1`.
-6. **Split work:** at most two items per move.
+6. **Split work:** at most two items per move (STACK-0 §6 admits three for partial and merging
+   moves, pending on its acceptance).

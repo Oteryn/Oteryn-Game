@@ -394,6 +394,11 @@ Player corpses stay exempt.
 
 ### 4.5 D134 — Pickup: a new TRANSFER source family, and the corpse item's own exclusion
 
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4.5).** A partial
+loot is a §12 split or §13 quantity line from a corpse entry; the D133 gate and the
+`CorpseNotPickupable` trigger bind those lines as they bind a TRANSFER, and the entry keeps its
+identity, parent and D136 decay.
+
 B3-1's TRANSFER admits only a `Ground` source (migration 0011). This decision adds
 **`Container { parent = a corpse ItemInstance }` as a second admitted TRANSFER source, for loot
 entries only**, destination unchanged (`CharacterEquipment` container slot or a `MainBackpack`
