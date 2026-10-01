@@ -2076,10 +2076,10 @@
       "label": "Rathleton quest door",
       "quest": {
         "family": "Quest",
-        "key": "canary:quest/rathleton_quest",
+        "key": "canary:quest/hero_of_rathleton_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
-      "quest_link_basis": "label",
+      "quest_link_basis": "storage_key",
       "condition": {
         "kind": "quest_progress",
         "progress": "canary:quest-progress/hero_rathleton/access_door",
@@ -3399,8 +3399,12 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/a_pirates_tail",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "quest_link_basis": "storage_key",
       "condition": {
         "kind": "quest_progress",
         "progress": "canary:quest-progress/quest/u12_60/apirates_tail/tentugly_door",

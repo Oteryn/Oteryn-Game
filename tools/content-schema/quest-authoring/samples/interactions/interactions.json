@@ -81395,7 +81395,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
                           "op": "<",
                           "value": 5
                         },

@@ -17,6 +17,7 @@ import argparse
 import glob
 import hashlib
 import json
+import source_reference_tracks
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -627,6 +628,14 @@ def build(repos, chests_dir, doors_dir, coverage):
                          'writes': {n: found['count'][n] for n in repos},
                          'transitions': [progress_transition(t) for t in mission_transitions(found)]})
     progress += auxiliary_tracks(index, progress, catalogue, gates, repos)
+    requested_reader_keys = set(json.loads((ROOT / 'source_read_track_requests.json').read_text())['keys'])
+    reader_declarations = storage_declarations(repos)
+    reader_evidence = source_reference_tracks.storage_readers(
+        repos, SOURCES, track_of, requested_reader_keys, reader_declarations)
+    reader_tracks, reader_checks = source_reference_tracks.retain_reader_tracks(
+        progress, reader_evidence, reader_declarations, index, track_of,
+        mission_transitions, progress_transition)
+    progress += reader_tracks
     all_transitions = [t for q in storyline.values() for m in q['missions'] for t in m['transitions']]
     counts = Counter(e['status'] for e in manifest_entries)
     unused_decisions('missions', used_decisions)
@@ -665,7 +674,7 @@ def build(repos, chests_dir, doors_dir, coverage):
         },
         'reward_only_absorbed': absorbed,
         'quest_source_aliases': source_aliases,
-        'source_checks': {'progress_track_unknowns': [
+        'source_checks': {'source_reference_readers': reader_checks, 'progress_track_unknowns': [
             {'key': p['key'], **p['source_checks']} for p in progress if p.get('source_checks')],
             'deferred_track_owners': DEFERRED_TRACKS,
             'script_coverage_holds': curation_coverage_holds(catalogue, SCRIPT_QUESTS),

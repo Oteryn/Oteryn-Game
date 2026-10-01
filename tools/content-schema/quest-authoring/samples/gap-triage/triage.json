@@ -67,12 +67,12 @@
   "unresolved_lines": 2017,
   "unresolved_conditions": 1759,
   "blocked_children": 487,
-  "reference_gaps": 73,
-  "total_unresolved_items": 4336,
+  "reference_gaps": 1,
+  "total_unresolved_items": 4264,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3724
+   "bespoke": 3652
   },
   "quests_triaged": 268,
   "quests_with_bespoke_work": 105,
@@ -696,7 +696,7 @@
    "counts": {
     "owner_pending": 31,
     "shared_mechanism": 3,
-    "bespoke": 212
+    "bespoke": 208
    },
    "owners_needed": [
     "boss_cooldown",
@@ -713,7 +713,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:212"
+    "bespoke:208"
    ]
   },
   {
@@ -792,7 +792,7 @@
    "counts": {
     "owner_pending": 1,
     "shared_mechanism": 3,
-    "bespoke": 15
+    "bespoke": 14
    },
    "owners_needed": [
     "kv_state"
@@ -803,7 +803,7 @@
    "to_finish": [
     "owner:kv_state",
     "mechanism:kill_reward_fanout",
-    "bespoke:15"
+    "bespoke:14"
    ]
   },
   {
@@ -1195,7 +1195,7 @@
    "counts": {
     "owner_pending": 52,
     "shared_mechanism": 8,
-    "bespoke": 199
+    "bespoke": 197
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1212,7 +1212,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:199"
+    "bespoke:197"
    ]
   },
   {
@@ -1281,7 +1281,7 @@
    "counts": {
     "owner_pending": 24,
     "shared_mechanism": 7,
-    "bespoke": 139
+    "bespoke": 136
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1298,7 +1298,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:139"
+    "bespoke:136"
    ]
   },
   {
@@ -1307,12 +1307,12 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 3
+    "bespoke": 1
    },
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:3"
+    "bespoke:1"
    ]
   },
   {
@@ -1419,7 +1419,7 @@
    "counts": {
     "owner_pending": 8,
     "shared_mechanism": 1,
-    "bespoke": 102
+    "bespoke": 96
    },
    "owners_needed": [
     "condition",
@@ -1432,7 +1432,7 @@
     "owner:condition",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:102"
+    "bespoke:96"
    ]
   },
   {
@@ -1470,7 +1470,7 @@
    "counts": {
     "owner_pending": 3,
     "shared_mechanism": 18,
-    "bespoke": 25
+    "bespoke": 24
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1483,7 +1483,7 @@
     "owner:boss_cooldown",
     "owner:condition",
     "mechanism:boss_portal_spectator_gate",
-    "bespoke:25"
+    "bespoke:24"
    ]
   },
   {
@@ -1504,7 +1504,7 @@
    "counts": {
     "owner_pending": 21,
     "shared_mechanism": 0,
-    "bespoke": 175
+    "bespoke": 173
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1516,7 +1516,7 @@
     "owner:boss_cooldown",
     "owner:creature_removal",
     "owner:scheduler",
-    "bespoke:175"
+    "bespoke:173"
    ]
   },
   {
@@ -1600,12 +1600,12 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 7
+    "bespoke": 3
    },
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:7"
+    "bespoke:3"
    ]
   },
   {
@@ -1740,7 +1740,7 @@
    "counts": {
     "owner_pending": 2,
     "shared_mechanism": 26,
-    "bespoke": 87
+    "bespoke": 79
    },
    "owners_needed": [
     "boss_cooldown"
@@ -1753,7 +1753,7 @@
     "owner:boss_cooldown",
     "mechanism:boss_portal_spectator_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:87"
+    "bespoke:79"
    ]
   },
   {
@@ -1774,7 +1774,7 @@
    "counts": {
     "owner_pending": 1,
     "shared_mechanism": 0,
-    "bespoke": 11
+    "bespoke": 9
    },
    "owners_needed": [
     "scheduler"
@@ -1782,7 +1782,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:11"
+    "bespoke:9"
    ]
   },
   {
@@ -2858,7 +2858,7 @@
    "counts": {
     "owner_pending": 3,
     "shared_mechanism": 0,
-    "bespoke": 53
+    "bespoke": 50
    },
    "owners_needed": [
     "condition",
@@ -2868,7 +2868,7 @@
    "to_finish": [
     "owner:condition",
     "owner:scheduler",
-    "bespoke:53"
+    "bespoke:50"
    ]
   },
   {
@@ -2966,7 +2966,7 @@
    "counts": {
     "owner_pending": 30,
     "shared_mechanism": 1,
-    "bespoke": 163
+    "bespoke": 160
    },
    "owners_needed": [
     "condition",
@@ -2981,7 +2981,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:163"
+    "bespoke:160"
    ]
   },
   {
@@ -2990,12 +2990,12 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 17
+    "bespoke": 13
    },
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:17"
+    "bespoke:13"
    ]
   },
   {
@@ -3030,7 +3030,7 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 1,
-    "bespoke": 40
+    "bespoke": 25
    },
    "owners_needed": [],
    "mechanisms_needed": [
@@ -3038,7 +3038,7 @@
    ],
    "to_finish": [
     "mechanism:kill_reward_fanout",
-    "bespoke:40"
+    "bespoke:25"
    ]
   },
   {
@@ -3047,7 +3047,7 @@
    "counts": {
     "owner_pending": 1,
     "shared_mechanism": 1,
-    "bespoke": 61
+    "bespoke": 60
    },
    "owners_needed": [
     "creature_removal"
@@ -3058,7 +3058,7 @@
    "to_finish": [
     "owner:creature_removal",
     "mechanism:boss_room_entry_gate",
-    "bespoke:61"
+    "bespoke:60"
    ]
   },
   {
@@ -3164,7 +3164,7 @@
    "counts": {
     "owner_pending": 3,
     "shared_mechanism": 2,
-    "bespoke": 33
+    "bespoke": 31
    },
    "owners_needed": [
     "scheduler"
@@ -3177,7 +3177,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:33"
+    "bespoke:31"
    ]
   },
   {
@@ -3241,7 +3241,7 @@
    "counts": {
     "owner_pending": 5,
     "shared_mechanism": 0,
-    "bespoke": 68
+    "bespoke": 67
    },
    "owners_needed": [
     "scheduler"
@@ -3249,7 +3249,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:68"
+    "bespoke:67"
    ]
   },
   {
@@ -3311,7 +3311,7 @@
    "counts": {
     "owner_pending": 12,
     "shared_mechanism": 0,
-    "bespoke": 166
+    "bespoke": 160
    },
    "owners_needed": [
     "boss_cooldown",
@@ -3323,7 +3323,7 @@
     "owner:boss_cooldown",
     "owner:condition",
     "owner:scheduler",
-    "bespoke:166"
+    "bespoke:160"
    ]
   },
   {
@@ -3467,7 +3467,7 @@
    "counts": {
     "owner_pending": 8,
     "shared_mechanism": 4,
-    "bespoke": 116
+    "bespoke": 115
    },
    "owners_needed": [
     "boss_cooldown",
@@ -3482,7 +3482,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:116"
+    "bespoke:115"
    ]
   },
   {
@@ -3779,7 +3779,7 @@
    "counts": {
     "owner_pending": 17,
     "shared_mechanism": 2,
-    "bespoke": 69
+    "bespoke": 68
    },
    "owners_needed": [
     "condition",
@@ -3794,7 +3794,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:69"
+    "bespoke:68"
    ]
   },
   {

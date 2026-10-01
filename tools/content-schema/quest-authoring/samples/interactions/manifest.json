@@ -42,8 +42,8 @@
     "unresolved_conditions": 1759,
     "by_status": {
       "conflict": 1,
-      "mapped": 218,
-      "unresolved_semantics": 1002
+      "mapped": 246,
+      "unresolved_semantics": 974
     }
   },
   "undeclared_progress_tracks": [],
@@ -3252,7 +3252,7 @@
     },
     {
       "destination": "canary:interaction/dawnport/movements_legion_helmet",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "the servers differ; D25 decides for canary (equivalent: Player-storage check replaced with kv() scoped store for the same discovered-teleport flag.)",
       "sources": [
         {
@@ -7897,7 +7897,7 @@
     },
     {
       "destination": "canary:interaction/hunter_outfits_quest/action_all_hymn_piano_teleport",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -8798,7 +8798,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/actions_augerfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8863,7 +8863,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/actions_glasshoneyfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8902,7 +8902,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/actions_peelerfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8915,7 +8915,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/actions_pickenchanted",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -9253,7 +9253,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/actions_augerfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -9305,7 +9305,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/actions_glasshoneyfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -9344,7 +9344,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/actions_peelerfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -9357,7 +9357,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/actions_pickenchanted",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -9571,7 +9571,7 @@
     },
     {
       "destination": "canary:interaction/koshei_the_deathless_quest/action_boss",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "the servers differ; D25 decides for canary (wiki: Crystal drops the AmuletStatus==2 check; wiki's 'glad you didn't use it' line implies it matters., https://tibia.fandom.com/wiki/Koshei_the_Deathless_Quest/Spoiler?oldid=1037072)",
       "sources": [
         {
@@ -13171,7 +13171,7 @@
     },
     {
       "destination": "canary:interaction/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -13190,7 +13190,7 @@
     },
     {
       "destination": "canary:interaction/the_ancient_tombs/movements_enter_diprath_room",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -13904,7 +13904,7 @@
     },
     {
       "destination": "crystalserver:interaction/the_dream_courts/actions_portal_nightmare_beast",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -14590,7 +14590,7 @@
     },
     {
       "destination": "canary:interaction/the_explorer_society/actions_stone",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15046,7 +15046,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_bones",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15103,7 +15103,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_caixa",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15122,7 +15122,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_candles",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15141,7 +15141,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_cape",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15160,7 +15160,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_chalk",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15217,7 +15217,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_inscriptions",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15255,7 +15255,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_key2",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15293,7 +15293,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_palanca",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15407,7 +15407,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_tears",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15426,7 +15426,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_tincture",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15616,7 +15616,7 @@
     },
     {
       "destination": "canary:interaction/the_hidden_city_of_beregar/actions_ladder",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -17595,7 +17595,7 @@
     },
     {
       "destination": "canary:interaction/the_pits_of_inferno_quest/movements_pumin_teleport",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -19566,7 +19566,7 @@
     },
     {
       "destination": "canary:interaction/the_secret_library_quest/the_lament_asuras/actions_mirror",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -21411,423 +21411,9 @@
   "source_checks": [
     {
       "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/dwarven_legs",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_hidden_city_of_beregar/actions_ladder"
-    },
-    {
-      "field": "condition.quest_stage.progress",
       "key": "canary:quest-progress/hero_rathleton/fast_way",
       "reason": "progress track not declared",
       "record": "canary:interaction/hero_of_rathleton/movements_fast_way"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_amforas"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission08",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_brain"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission11",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_flask"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission14",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_tears"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission17",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_bones"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission23",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_tincture"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission27",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_chalk"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission31",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_candles"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission31",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_key1"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission39",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_palanca"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission45",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_inscriptions"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission52",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_key2"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission59",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_cape"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission67",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_caixa"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission74",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_gravedigger_of_drefia/actions_sacrifice"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_55/sanctuary_of_the_lizard_god/lizard_god_teleport",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/dawnport/movements_legion_helmet"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_80/grimvale_quest/ancient_feud_shortcut",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/grimvale/actions_ancient_feud_entrances"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_90/ferumbras_ascension/access",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/ferumbras_ascension/movements_entrance"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_90/ferumbras_ascension/the_lord_of_the_lice_access",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/ferumbras_ascension/movements_plagirath_access"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_02/forgotten_knowledge/diamond_servant_counter",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/forgotten_knowledge/movements_servant_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_02/forgotten_knowledge/golden_servant_counter",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/forgotten_knowledge/movements_servant_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/barkless/sulphur",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/cults_of_tibia/movements_tar_tar_2"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/barkless/tar",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/cults_of_tibia/movements_tar_tar_2"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/humans/decaying",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/cults_of_tibia/movements_energy_fence"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/humans/vaporized",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/cults_of_tibia/movements_energy_fence"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_80/the_secret_library/asuras/flamming_orchid",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_secret_library_quest/the_lament_asuras/actions_mirror"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_80/the_secret_library/falcon_bastion/killing_bosses",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_secret_library_quest/the_order_of_the_falcon/movements_boss_entrance"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/green_gem",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_secret_library_quest/bursting_at_the_seams_museum/movements_teleport_to"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/red_gem",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_secret_library_quest/bursting_at_the_seams_museum/movements_teleport_to"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/yellow_gem",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_secret_library_quest/bursting_at_the_seams_museum/movements_teleport_to"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/hawser",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_dream_courts_quest/movements_acess_teleports"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/permission",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_dream_courts_quest/movements_acess_teleports"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/grave_danger/custodian_killed",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/grave_danger_quest/cobra_bastion/actions_scarlett"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/grave_danger/custodian_killed",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/grave_danger_quest/movements_cobra_mini_bosses"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/grave_danger/custodian_killed",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/grave_danger_quest/movements_quaid_den"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/grave_danger/gaffir_killed",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/grave_danger_quest/actions_custodian_door"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/grave_danger/gaffir_killed",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/grave_danger_quest/cobra_bastion/actions_scarlett"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/grave_danger/quaid_killed",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/grave_danger_quest/cobra_bastion/actions_scarlett"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/narsai",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/kilmaresh_quest/actions_augerfun"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/narsai",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/kilmaresh_quest/actions_glasshoneyfun"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/tefrit",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/kilmaresh_quest/actions_peelerfun"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/yonan",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/kilmaresh_quest/actions_pickenchanted"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/ashmunrah_switches_global_storage",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign8",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_ancient_tombs/movements_enter_diprath_room"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/diprath_switches_global_storage",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_ancient_tombs/movements_enter_diprath_room"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_6/explorer_society/spectral_stone",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_explorer_society/actions_stone"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet01",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/hunter_outfits_quest/action_all_hymn_piano_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet02",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/hunter_outfits_quest/action_all_hymn_piano_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet03",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/hunter_outfits_quest/action_all_hymn_piano_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet04",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/hunter_outfits_quest/action_all_hymn_piano_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_9/the_pits_of_inferno/throne_pumin",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_pits_of_inferno_quest/movements_pumin_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/formogar_mine_hoist/movements_hoist"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/formogar_mine_hoist/movements_hoist"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u8_54/the_new_frontier/corruption_hole",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_new_frontier/movement_corruption_hole"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u8_54/the_new_frontier/snake_head_teleport",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_new_frontier/movements_snake_head_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/wote10",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/wrath_of_the_emperor/movements_boss_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/storage/14330",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/heart_of_destruction/movements_teleport_heart"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/storage/14332",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/heart_of_destruction/movements_teleport_heart"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/storage/23734",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/forgotten_knowledge/actions_lantern"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/storage/483293",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/koshei_the_deathless_quest/action_bag"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/sweety_cyclops/amulet_status",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/koshei_the_deathless_quest/action_boss"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/kilmaresh/eighth/narsai",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/kilmaresh/actions_augerfun"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/kilmaresh/eighth/narsai",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/kilmaresh/actions_glasshoneyfun"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/kilmaresh/eighth/tefrit",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/kilmaresh/actions_peelerfun"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/kilmaresh/eighth/yonan",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/kilmaresh/actions_pickenchanted"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission03/an_unlikely_couple",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/threatened_dreams_quest/actions_swan_spots"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/the_dream_courts/actions_portal_nightmare_beast"
     }
   ]
 }

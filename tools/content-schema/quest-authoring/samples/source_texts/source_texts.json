@@ -13,22 +13,22 @@
     {
       "path": "tools/content-schema/quest-authoring/samples/doors/gates.json",
       "role": "gates",
-      "sha256": "6de32f550b6d75a1e73a2305ee32ae04c04174bcd3f914c57ce0ceda931afe6b"
+      "sha256": "dfcd8f8424d01c393fc6e0a25dbf26aeab902ec5cc691bd21ddbe336ddad7e87"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/interactions/interactions.json",
       "role": "interactions",
-      "sha256": "cea3b22147e124a55c21bf6bd28f2ef84c9e67ba8a587b47eb1302c6f307dec8"
+      "sha256": "8c86eca58a6a667b7e9ef48d53e51f5994c886cfb1d75d93cdc497251fcd5b62"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/interactions/manifest.json",
       "role": "interactions_manifest",
-      "sha256": "772f74141f5c09c31dc749f499d3c75684027c7501090a62d84977e9a0524ada"
+      "sha256": "c3471c395617e4263faf226b81378378f33e78ceccc0276f62a1eca1b447147e"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/progress.json",
       "role": "progress",
-      "sha256": "3d4ec6d84dfd1625ce839f2fa2d094b3d69f8e8ec264037c8bdeb9aee2e0da7e"
+      "sha256": "c17e7d39762cc90ffc26dc69ff83c34efc86f2930106cf9001649be0a2ff3583"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
@@ -38,7 +38,7 @@
     {
       "path": "tools/content-schema/quest-authoring/samples/catalogue/catalogue.json",
       "role": "wiki_catalogue",
-      "sha256": "5b2a7ffb9ac95cf86edbb98da912edfff4e4ebc8401cc265576a8c85e8e0ba04"
+      "sha256": "239ce243a30e8386e919a8876355e218df4c04573ec109a4b924c423235922f1"
     }
   ],
   "schema": "OTERYN_SOURCE_TEXT_REGISTRY/v1",

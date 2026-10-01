@@ -138,6 +138,9 @@ def link_gate_quest(gate, match_quest, owners):
     if shared.get('shared_npc_gate'):
         gate['quest'], gate['quest_link_basis'] = None, None
         return 'Shared NPC gate: unique quest owner UNKNOWN; ' + shared['note']
+    if shared.get('quest'):
+        gate['quest'], gate['quest_link_basis'] = ref('Quest', shared['quest']), 'storage_key'
+        return None
     storage_quest = re.match(r'[a-z]+:quest-progress/quest/u[0-9_]+/([a-z0-9_]+)', gate['condition']['progress'])
     basis, wiki = next(((b, w) for b, w in ((b, match_quest(t)) for b, t in (
         ('storage_key', storage_quest.group(1) if storage_quest else None), ('label', gate['label']))) if w), (None, None))

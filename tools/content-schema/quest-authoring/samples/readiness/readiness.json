@@ -37,7 +37,7 @@
    "boss_cooldown": 10,
    "condition": 21,
    "creature_removal": 17,
-   "door_progress": 53,
+   "door_progress": 55,
    "experience": 2,
    "item_consume": 63,
    "item_hand_out": 49,
@@ -45,7 +45,7 @@
    "mount": 3,
    "npc_dialogue": 90,
    "outfit": 4,
-   "quest_state": 111,
+   "quest_state": 112,
    "reward_claim": 135,
    "scheduler": 50,
    "summon": 36,
@@ -99,19 +99,19 @@
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 154,
+   "quests_complete_on_engine_side": 153,
    "of_which_without_data_gaps": 89
   },
   {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 155,
+   "quests_complete_on_engine_side": 154,
    "of_which_without_data_gaps": 89
   },
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 178,
+   "quests_complete_on_engine_side": 177,
    "of_which_without_data_gaps": 95
   },
   {
@@ -208,7 +208,9 @@
    "quest": "canary:quest/a_pirates_tail",
    "kind": "script_only",
    "features": [
+    "door_progress",
     "item_consume",
+    "quest_state",
     "teleport",
     "trigger_kill",
     "trigger_step",
@@ -1613,6 +1615,7 @@
    "kind": "script_only",
    "features": [
     "achievement",
+    "door_progress",
     "item_consume",
     "item_hand_out",
     "mount",

@@ -110,7 +110,20 @@ def walk_condition(cond):
         yield 'cond', cond
 
 
-def interaction_facts(inter, declared_tracks=None):
+def uncertain_progress_keys(progress):
+    """A declared source node may still have unresolved semantics; aliases retain it."""
+    keys = {p['key'] for p in progress}
+    uncertain = {p['key'] for p in progress if p.get('source_checks')}
+    while True:
+        added = {p['key'] for p in progress if p.get('alias_of')
+                 and (p['alias_of'] not in keys or p['alias_of'] in uncertain)} - uncertain
+        if not added:
+            return uncertain
+        uncertain.update(added)
+
+
+def interaction_facts(inter, declared_tracks=None, uncertain_tracks=None):
+    uncertain_tracks = uncertain_tracks or set()
     tracks, features, unresolved_conditions = set(), set(), 0
     blocked_children = 0
     features.add(EDGE_FEATURE[inter['source']['edge']])
@@ -118,7 +131,7 @@ def interaction_facts(inter, declared_tracks=None):
         if kind == 'cond':
             if 'quest_stage' in x:
                 tracks.add(x['quest_stage']['progress'])
-                if declared_tracks is not None and x['quest_stage']['progress'] not in declared_tracks:
+                if declared_tracks is not None and (x['quest_stage']['progress'] not in declared_tracks or x['quest_stage']['progress'] in uncertain_tracks):
                     unresolved_conditions += 1
             if 'unresolved' in x:
                 unresolved_conditions += 1
@@ -127,7 +140,7 @@ def interaction_facts(inter, declared_tracks=None):
         owner = x['owner']
         if owner == 'Quest' and 'progress' in x:
             tracks.add(x['progress'])
-            if declared_tracks is not None and x['progress'] not in declared_tracks:
+            if declared_tracks is not None and (x['progress'] not in declared_tracks or x['progress'] in uncertain_tracks):
                 blocked_children += 1
         if owner == 'Quest':
             features.add('quest_state')
@@ -269,10 +282,11 @@ def main():
             json.loads((SAMPLES / 'interactions/manifest.json').read_text()), joined, quests, progress).items():
         info[key]['unresolved'] += count
     declared_tracks = {track['key'] for track in progress}
+    uncertain_tracks = uncertain_progress_keys(progress)
     unlinked = []
     for inter in interactions:
         key = inter['identity']['key']
-        _, features, gaps = interaction_facts(inter, declared_tracks)
+        _, features, gaps = interaction_facts(inter, declared_tracks, uncertain_tracks)
         if not joined[key]:
             unlinked.append(key)
             continue
@@ -286,7 +300,8 @@ def main():
     for gate in gates:
         if (gate.get('quest') and gate['quest']['key'] in info
                 and gate['condition']['kind'] == 'quest_progress'
-                and gate['condition']['progress'] not in declared_tracks):
+                and (gate['condition']['progress'] not in declared_tracks
+                     or gate['condition']['progress'] in uncertain_tracks)):
             info[gate['quest']['key']]['unresolved'] += 1
 
     rows = []

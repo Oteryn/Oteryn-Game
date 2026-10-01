@@ -13,7 +13,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "c46fc8f212c3d3f59a0feda7ce44abe93fa6511a2860de8608a1b94a00bd037d"
+      "sha256": "494e2f8e738abb6d99e6802b4e12bdaac3e847fb5a19b7ef00e6a390b60b4c3d"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -25,7 +25,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
-      "sha256": "5aed107ee962def817bd35b0dc757d65d17c38d5c2776d9758b058aac3154f9a"
+      "sha256": "e6e9b19d84c2938fe0f6033013ec73b27ca094663607e86fe1145ca9e38fbcc1"
     }
   ],
   "historical_coverage_ots_sources": {
@@ -3330,7 +3330,9 @@
           "readiness_data": {
             "classification": "DERIVED",
             "features": [
+              "door_progress",
               "item_consume",
+              "quest_state",
               "teleport",
               "trigger_kill",
               "trigger_step",
@@ -62505,6 +62507,7 @@
             "classification": "DERIVED",
             "features": [
               "achievement",
+              "door_progress",
               "item_consume",
               "item_hand_out",
               "mount",

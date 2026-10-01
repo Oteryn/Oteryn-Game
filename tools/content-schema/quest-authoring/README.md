@@ -186,3 +186,13 @@ The resulting donor packet contains268 quests,1425 tracks,3462 non-alias
 transitions and6545 write occurrences; it still contains185 quests with gaps
 and74 missing reference occurrences. Native Quest field readiness remains43/67.
 These counts describe the prepared data candidate, not merged or playable content.
+
+SOURCE getter/declaration closure adds65 records and91 indexed writes while
+preserving all1425 old progress records. The reader packet has1490 tracks,
+3516 non-alias transitions and6636 writes; missing references fall74 to1.
+Sixty-three added records retain unknown semantics. Consumer readiness propagates
+these holds, including through source-only aliases. Four numeric getter records
+have no proven named declaration or complete writer inventory; they are never
+joined to named Storage paths by number. The unresolved FastWay getter names
+Storage while the declaration names GlobalStorage. Native field readiness43/67
+and185 quests with source gaps are preserved; graph closure is a separate scope.

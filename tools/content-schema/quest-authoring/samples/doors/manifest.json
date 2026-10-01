@@ -156,11 +156,11 @@
     },
     "progress_gates_reading_a_claim": 1,
     "key_gates_with_a_key_from_a_chest": 24,
-    "progress_gates_linked_to_wiki_quest": 175,
+    "progress_gates_linked_to_wiki_quest": 176,
     "by_status": {
       "approved_omission": 1,
-      "mapped": 433,
-      "unresolved_semantics": 19
+      "mapped": 435,
+      "unresolved_semantics": 17
     }
   },
   "entries": [
@@ -2951,7 +2951,7 @@
         31951,
         14
       ],
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/hero_rathleton/access_door",
       "sources": [
@@ -2977,7 +2977,7 @@
         31951,
         14
       ],
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present in both servers and identical",
       "destination": "canary:door-gate/progress/hero_rathleton/access_door",
       "sources": [
@@ -11145,12 +11145,5 @@
       ]
     }
   ],
-  "source_checks": [
-    {
-      "field": "quest",
-      "key": "canary:quest/rathleton_quest",
-      "reason": "quest not declared in catalogue",
-      "record": "canary:door-gate/progress/hero_rathleton/access_door"
-    }
-  ]
+  "source_checks": []
 }
