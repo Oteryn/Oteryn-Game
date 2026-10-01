@@ -834,13 +834,13 @@ mod tests {
                 r#"{"kind":"RESISTANCES","value":[]}"#,
             ),
             row(
-                "oteryn:item.tibia.i1",
+                "oteryn:item.test.missing",
                 "protection.resistances",
                 &resistance_value().to_string(),
             ),
         ] {
             let mut semantics = ReferenceItemSemantics::default();
-            let item_count = if second.contains("tibia.i1\"") { 2 } else { 1 };
+            let item_count = 1 + usize::from(second.contains("item.test.missing\""));
             assert!(
                 apply(
                     &packet(&format!("{first},{second}"), 2, item_count),
