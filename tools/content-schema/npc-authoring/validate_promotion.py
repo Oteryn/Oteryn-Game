@@ -64,7 +64,7 @@ Semantic rules:
   `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
   GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
-  CURRENCY_CONFLICT; trade facts start with `trade.`, route facts with `travel.`; no left_out
+  CURRENCY_CONFLICT / SCRIPTED_ROUTE / ROUTE_SEMANTICS_UNKNOWN / PALETTE_OUT_OF_RANGE; trade facts start with `trade.`, route facts with `travel.`; no left_out
   travel keyword also appears among the candidate's promoted routes;
 - no text anywhere (D5): no 'text', 'description', 'voices' or 'dialogue' key at any depth of a
   candidate;
@@ -77,16 +77,15 @@ Usage: python validate_promotion.py <report.json>
 """
 import argparse
 import copy
-from functools import lru_cache
 import hashlib
 import json
 import re
 import sys
+from functools import lru_cache
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
-
 import promotion_candidates
+from jsonschema import Draft202012Validator
 from promotion_candidates import slug
 
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
@@ -112,7 +111,7 @@ ITEM_KEY_RE = re.compile(r'^oteryn:item\.[a-z0-9_.]+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 DIRECTIONS = {'NORTH', 'EAST', 'SOUTH', 'WEST'}
 TRADE_DIRECTIONS = {'SellToPlayer', 'BuyFromPlayer'}
-LEFT_OUT_REASONS = {'GATED_ROUTE', 'ROUTE_CONFLICT_WIKI_UNDECIDED', 'ROUTE_UNCONFIRMED',
+LEFT_OUT_REASONS = {'PALETTE_OUT_OF_RANGE', 'SCRIPTED_ROUTE', 'ROUTE_SEMANTICS_UNKNOWN', 'GATED_ROUTE', 'ROUTE_CONFLICT_WIKI_UNDECIDED', 'ROUTE_UNCONFIRMED',
                      'GATED_OFFER', 'OFFER_UNCONFIRMED', 'OFFER_CONFLICT_WIKI_UNDECIDED',
                      'ITEM_NOT_REGISTERED', 'CURRENCY_CONFLICT'}
 TEXT_KEYS = {'text', 'description', 'voices', 'dialogue'}
@@ -179,7 +178,7 @@ def definition_shape_validators():
     del presentation['properties']['light']
     outfit = presentation['properties']['outfit']['oneOf'][2]['properties']
     for key in ('head', 'body', 'legs', 'feet'):
-        outfit[key]['maximum'] = 4294967295
+        outfit[key]['maximum'] = 132
     for key in ('look_type', 'mount'):
         outfit[key]['maximum'] = 4294967295
     presentation['properties']['outfit']['oneOf'][1]['properties']['item_look']['maximum'] = 4294967295

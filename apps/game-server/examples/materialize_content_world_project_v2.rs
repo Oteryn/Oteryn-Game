@@ -9,13 +9,14 @@ use oteryn_game_server::content::{
     CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_FULL_ITEM_REVISION,
     CandidateValue, CanonicalProjectDocuments, DefinitionIdentityDocument, ImportBatch,
     ItemStackDocument, ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord,
-    ProjectV2AuthoringProfile, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft,
-    ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity,
-    ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
-    ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
-    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
-    ProjectionDocument, R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField,
-    ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
+    ProjectV2AuthoringProfile, ProjectV2CandidateField, ProjectV2CandidateValue,
+    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
+    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
+    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
+    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition, ProjectV2State, ProjectionDocument,
+    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
+    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     item_admission::apply_item_admission_v1,
@@ -23,6 +24,7 @@ use oteryn_game_server::content::{
     item_stats_promotion::apply_item_stats_promotion_v2,
     protected_cw2_b1_donor_identity_epoch_2_import, protected_r7_p04_gold_coin_item_family_import,
 };
+use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
@@ -125,6 +127,12 @@ const ITEM_ALLOCATION_SHA256: &str =
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
 const NPC_STAGED_SHA256: &str = "74cb17b45e073702ef36b09bb35f86bb259d264b437d20219a68a83d1f82d333";
+const NPC_R5_NATIVE_REPAIRS: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/native-repairs.json"
+);
+const NPC_R5_NATIVE_REPAIRS_SHA256: &str =
+    "f8c377b9c997e733922c69200b3445eb700dc9ad18f5b6ecae27581742c1d117";
+const NPC_R5_PROJECT_REVISION: &str = "g4-npc-source-repairs-r10";
 const NPC_STAGE_TOOL_SHA256: &str =
     "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff";
 const NPC_CANDIDATES_SHA256: &str =
@@ -1735,6 +1743,229 @@ fn appearance_only_items(
     Ok(records)
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NpcNativeRepairPacket {
+    schema: String,
+    project_revision: String,
+    repairs: Vec<NpcNativeDeclarationRepair>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NpcNativeDeclarationRepair {
+    identity: ProjectV2Identity,
+    before: ProjectV2Declaration,
+    after: ProjectV2Declaration,
+}
+
+fn npc_repair_identity(
+    declaration: &ProjectV2Declaration,
+) -> Option<(&'static str, &ProjectV2Identity)> {
+    match declaration {
+        ProjectV2Declaration::Npc { identity, .. } => Some(("NPC", identity)),
+        ProjectV2Declaration::Dialogue { identity, .. } => Some(("Dialogue", identity)),
+        ProjectV2Declaration::Service { identity, .. } => Some(("Service", identity)),
+        _ => None,
+    }
+}
+
+fn retained_subsequence<T>(before: &[T], after: &[T], same: impl Fn(&T, &T) -> bool) -> bool {
+    let mut remaining = before.iter();
+    after
+        .iter()
+        .all(|new| remaining.by_ref().any(|old| same(old, new)))
+}
+
+fn npc_source_fields_allowed(
+    before: &[ProjectV2CandidateField],
+    after: &[ProjectV2CandidateField],
+) -> bool {
+    let mut paths = BTreeSet::new();
+    if after.iter().any(|field| !paths.insert(&field.field_path)) {
+        return false;
+    }
+    if before
+        .iter()
+        .any(|old| !after.iter().any(|new| new.field_path == old.field_path))
+    {
+        return false;
+    }
+    after.iter().all(|new| {
+        before.contains(new)
+            || (new.field_path.starts_with("oteryn:source.npc.")
+                && matches!(new.value, ProjectV2CandidateValue::Text(_)))
+    })
+}
+
+fn npc_dialogue_replies_allowed(
+    before: &[oteryn_game_server::content::ProjectV2DialogueKeyword],
+    after: &[oteryn_game_server::content::ProjectV2DialogueKeyword],
+) -> bool {
+    before.len() == after.len()
+        && before.iter().zip(after).all(|(old, new)| {
+            if !npc_dialogue_replies_allowed(&old.children, &new.children) {
+                return false;
+            }
+            let mut permitted = old.clone();
+            permitted.reply.clone_from(&new.reply);
+            permitted.children.clone_from(&new.children);
+            permitted == *new
+        })
+}
+
+fn npc_repair_scope_allowed(before: &ProjectV2Declaration, after: &ProjectV2Declaration) -> bool {
+    let mut permitted = before.clone();
+    let fields_valid = match (&mut permitted, after) {
+        (
+            ProjectV2Declaration::Npc {
+                presentation,
+                fields,
+                ..
+            },
+            ProjectV2Declaration::Npc {
+                presentation: new_presentation,
+                fields: new_fields,
+                ..
+            },
+        ) => {
+            if new_presentation.is_some() && new_presentation != presentation {
+                return false;
+            }
+            if !npc_source_fields_allowed(fields, new_fields) {
+                return false;
+            }
+            presentation.clone_from(new_presentation);
+            fields.clone_from(new_fields);
+            true
+        }
+        (
+            ProjectV2Declaration::Service {
+                offers,
+                routes,
+                fields,
+                ..
+            },
+            ProjectV2Declaration::Service {
+                offers: new_offers,
+                routes: new_routes,
+                fields: new_fields,
+                ..
+            },
+        ) => {
+            if !retained_subsequence(offers, new_offers, |old, new| old == new)
+                || !retained_subsequence(routes, new_routes, |old, new| {
+                    let mut candidate = old.clone();
+                    candidate.price = new.price;
+                    candidate == *new
+                })
+                || !npc_source_fields_allowed(fields, new_fields)
+            {
+                return false;
+            }
+            offers.clone_from(new_offers);
+            routes.clone_from(new_routes);
+            fields.clone_from(new_fields);
+            true
+        }
+        (
+            ProjectV2Declaration::Dialogue {
+                keywords,
+                send_trade,
+                fields,
+                ..
+            },
+            ProjectV2Declaration::Dialogue {
+                keywords: new_keywords,
+                send_trade: new_send_trade,
+                fields: new_fields,
+                ..
+            },
+        ) => {
+            if !npc_dialogue_replies_allowed(keywords, new_keywords)
+                || !npc_source_fields_allowed(fields, new_fields)
+            {
+                return false;
+            }
+            keywords.clone_from(new_keywords);
+            send_trade.clone_from(new_send_trade);
+            fields.clone_from(new_fields);
+            true
+        }
+        _ => false,
+    };
+    // Everything outside the narrow correction fields, including every identity,
+    // NPC behavior/dialogue/Service reference, recipes and keyword actions, is immutable.
+    fields_valid && permitted == *after
+}
+
+/// Only replaces exact existing authoring declarations; never allocates or qualifies runtime.
+fn apply_npc_r5_native_repairs(
+    draft: &mut ProjectV2Draft,
+) -> Result<usize, Box<dyn std::error::Error>> {
+    if hex_sha256(NPC_R5_NATIVE_REPAIRS) != NPC_R5_NATIVE_REPAIRS_SHA256 {
+        return Err("frozen R5 NPC repair packet digest drifted".into());
+    }
+    let packet: NpcNativeRepairPacket = serde_json::from_slice(NPC_R5_NATIVE_REPAIRS)?;
+    if packet.schema != "OTERYN_NPC_NATIVE_DECLARATION_REPAIRS/v1"
+        || packet.project_revision != NPC_R5_PROJECT_REVISION
+        || draft.core.project_revision != "g4-npc-wave-a-r9"
+        || packet.repairs.is_empty()
+    {
+        return Err("R5 NPC repair packet schema/revision/scope drifted".into());
+    }
+    let mut identities = BTreeSet::new();
+    let mut previous = None;
+    let mut replacements = Vec::new();
+    for repair in packet.repairs {
+        let before = npc_repair_identity(&repair.before)
+            .ok_or("R5 repair before must be NPC, Dialogue or Service")?;
+        let after = npc_repair_identity(&repair.after)
+            .ok_or("R5 repair after must be NPC, Dialogue or Service")?;
+        if before.0 != after.0 || before.1 != &repair.identity || after.1 != &repair.identity {
+            return Err("R5 repair changed declaration kind or identity".into());
+        }
+        if !npc_repair_scope_allowed(&repair.before, &repair.after) {
+            return Err("R5 repair changed an out-of-scope native field".into());
+        }
+        let key = (
+            before.0,
+            repair.identity.key.clone(),
+            repair.identity.revision.clone(),
+        );
+        if previous.as_ref().is_some_and(|prior| prior >= &key)
+            || !identities.insert((
+                repair.identity.key.clone(),
+                repair.identity.revision.clone(),
+            ))
+        {
+            return Err("R5 repairs must be unique and sorted by kind/key/revision".into());
+        }
+        previous = Some(key);
+        let index = draft
+            .state
+            .declarations
+            .iter()
+            .position(|declaration| {
+                npc_repair_identity(declaration).is_some_and(|(kind, identity)| {
+                    kind == before.0 && identity == &repair.identity
+                })
+            })
+            .ok_or("R5 repair target is not an existing native declaration")?;
+        if draft.state.declarations[index] != repair.before {
+            return Err(format!("R5 repair original drifted: {}", repair.identity.key).into());
+        }
+        replacements.push((index, repair.after));
+    }
+    let count = replacements.len();
+    // Preflight every original before changing any declaration.
+    for (index, declaration) in replacements {
+        draft.state.declarations[index] = declaration;
+    }
+    draft.core.project_revision = NPC_R5_PROJECT_REVISION.to_owned();
+    Ok(count)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
     let promoted = protected_r7_p04_gold_coin_item_family_import(
@@ -1945,13 +2176,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stats = apply_item_stats_promotion_v2(&mut draft)?;
     // STARTER-CONTENT-1: the main backpack becomes materializable and container-slot equippable.
     let admitted = apply_item_admission_v1(&mut draft)?;
+    // The protected staged builder orders some rows by source capture. The before
+    // fence is the original canonical R9 declaration, so obtain it through the
+    // native writer/parser rather than hand-normalizing or weakening equality.
+    let original = CanonicalProjectDocuments::from_v2_draft(draft, limits())?
+        .into_snapshot(limits())?
+        .parse(limits())?;
+    let mut draft = original.migrate_to_v2();
+    let npc_r5_repairs = apply_npc_r5_native_repairs(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} npc_r5_repairs={npc_r5_repairs} tree_sha256={tree_sha256}",
         APPEARANCE_ONLY_ITEM_IDS.len(),
         promoted.promoted_items,
         promoted.promoted_fields,
@@ -1961,4 +2200,165 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         admitted
     );
     Ok(())
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod npc_r5_guard_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn npc() -> ProjectV2Declaration {
+        serde_json::from_value(json!({
+            "kind": "NPC", "identity": {"key": "oteryn:npc.guard_test", "revision": "definition-r1"},
+            "presentation": {"family": "Presentation", "key": "oteryn:presentation.guard_test", "revision": "definition-r1"},
+            "behavior": {"family": "Behavior", "key": "oteryn:behavior.guard_test", "revision": "definition-r1"},
+            "dialogue": {"family": "Dialogue", "key": "oteryn:dialogue.guard_test", "revision": "definition-r1"},
+            "services": [], "fields": []
+        })).expect("typed NPC fixture")
+    }
+
+    fn service() -> ProjectV2Declaration {
+        serde_json::from_value(json!({
+            "kind": "Service", "identity": {"key": "oteryn:service.guard_test", "revision": "definition-r1"},
+            "offers": [{"item": {"family": "Item", "key": "oteryn:item.guard_test", "revision": "definition-r1"},
+                "direction": "SellToPlayer", "unit_price": 7}],
+            "routes": [{"key": "thais", "destination": {"coordinate_frame": "guard-frame", "x": 100, "y": 100, "floor": 7},
+                "price": 10, "premium": false}], "fields": []
+        })).expect("typed Service fixture")
+    }
+
+    fn dialogue() -> ProjectV2Declaration {
+        serde_json::from_value(json!({
+            "kind": "Dialogue", "identity": {"key": "oteryn:dialogue.guard_test", "revision": "definition-r1"},
+            "keywords": [{"key": "name", "triggers": ["name"], "reply": ["Old observed reply."]}],
+            "fields": []
+        })).expect("typed Dialogue fixture")
+    }
+
+    #[test]
+    fn frozen_packet_changes_only_allowed_native_fields() {
+        assert_eq!(
+            hex_sha256(NPC_R5_NATIVE_REPAIRS),
+            NPC_R5_NATIVE_REPAIRS_SHA256
+        );
+        let packet: NpcNativeRepairPacket =
+            serde_json::from_slice(NPC_R5_NATIVE_REPAIRS).expect("frozen typed repair packet");
+        assert!(!packet.repairs.is_empty());
+        for repair in packet.repairs {
+            assert!(
+                npc_repair_scope_allowed(&repair.before, &repair.after),
+                "{}",
+                repair.identity.key
+            );
+        }
+    }
+
+    #[test]
+    fn npc_reference_and_identity_changes_are_rejected() {
+        let before = npc();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Npc { behavior, .. } = &mut after {
+            *behavior = None;
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+        after = before.clone();
+        if let ProjectV2Declaration::Npc { identity, .. } = &mut after {
+            identity.revision = "unexpected-r2".into();
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+        after = before.clone();
+        if let ProjectV2Declaration::Npc { presentation, .. } = &mut after {
+            presentation.as_mut().expect("presentation").key =
+                "oteryn:presentation.arbitrary".into();
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+    }
+
+    #[test]
+    fn presentation_null_and_source_evidence_are_allowed_but_other_fields_are_not() {
+        let before = npc();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Npc {
+            presentation,
+            fields,
+            ..
+        } = &mut after
+        {
+            *presentation = None;
+            fields.push(ProjectV2CandidateField {
+                field_path: "oteryn:source.npc.presentation_reference_hold".into(),
+                value: ProjectV2CandidateValue::Text("source-observation-only".into()),
+            });
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Npc { fields, .. } = &mut after {
+            fields[0].field_path = "oteryn:native.runtime_authority".into();
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+    }
+
+    #[test]
+    fn item_and_quest_records_are_rejected() {
+        let before = npc();
+        let identity = npc_repair_identity(&before)
+            .expect("NPC identity")
+            .1
+            .clone();
+        let quest = ProjectV2Declaration::Quest {
+            identity,
+            fields: vec![],
+        };
+        assert!(!npc_repair_scope_allowed(&quest, &quest));
+        assert!(!npc_repair_scope_allowed(&before, &quest));
+        assert!(serde_json::from_value::<ProjectV2Declaration>(json!({
+            "kind": "Item", "identity": {"key": "oteryn:item.guard_test", "revision": "definition-r1"}, "fields": []
+        })).is_err());
+    }
+
+    #[test]
+    fn offers_can_only_be_removed_without_repricing_or_rebinding() {
+        let before = service();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Service { offers, .. } = &mut after {
+            offers[0].unit_price = 8;
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Service { offers, .. } = &mut after {
+            offers.clear();
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+    }
+
+    #[test]
+    fn routes_allow_base_price_or_hold_without_destination_or_gate_changes() {
+        let before = service();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Service { routes, .. } = &mut after {
+            routes[0].price = 20;
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Service { routes, .. } = &mut after {
+            routes[0].premium = true;
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Service { routes, .. } = &mut after {
+            routes.clear();
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+    }
+
+    #[test]
+    fn dialogue_replies_change_without_matcher_or_action_changes() {
+        let before = dialogue();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Dialogue { keywords, .. } = &mut after {
+            keywords[0].reply = vec!["Corrected observed reply.".into()];
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Dialogue { keywords, .. } = &mut after {
+            keywords[0].triggers = vec!["different matcher".into()];
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+    }
 }

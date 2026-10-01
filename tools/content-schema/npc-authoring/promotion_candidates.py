@@ -99,6 +99,12 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import source_diff
+from trade_variant_repair import access_fact, source_fluid_fact
+from travel_semantics import (
+    held_source_semantics,
+    route_hold_reason,
+    source_route_signature,
+)
 from wiki_fandom import classify_position, compare_travel, normalize_name
 
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
@@ -326,7 +332,7 @@ def routes(bundle):
 
 
 def route_fact(row):
-    return (json.dumps(row['destination'], sort_keys=True), row['price'], row['premium'], row['min_level'], row['gate'])
+    return source_route_signature(row)
 
 
 def wiki_item(name):
@@ -467,6 +473,14 @@ class Builder:
         merged = []
         for keyword in sorted(set().union(*per_source.values())):
             present = {s: r[keyword] for s, r in per_source.items() if keyword in r}
+            # An agreed price never qualifies a Lua gate/action or unknown semantics.
+            hold_reasons = {route_hold_reason(row) for row in present.values()} - {None}
+            if hold_reasons:
+                reason = next(r for r in ('SCRIPTED_ROUTE', 'ROUTE_SEMANTICS_UNKNOWN', 'GATED_ROUTE')
+                              if r in hold_reasons)
+                left_out.append({'fact': f'travel.{keyword}', 'reason': reason,
+                                 'source_semantics': held_source_semantics(bundles, present)})
+                continue
             facts = {s: route_fact(r) for s, r in present.items()}
             wiki_row = wiki_prices.get(keyword, {})
             wiki_price = wiki_row.get('wiki_price')
@@ -476,15 +490,12 @@ class Builder:
                 agreeing = [s for s, r in present.items() if wiki_price is not None and r['price'] == wiki_price]
                 destinations = {json.dumps(present[s]['destination'], sort_keys=True) for s in agreeing}
                 if len(agreeing) >= 1 and len(destinations) == 1:
-                    chosen, rule = sorted(agreeing)[0], 'WIKI_ARBITER'
+                    chosen, rule = min(agreeing), 'WIKI_ARBITER'
                 else:
                     left_out.append({'fact': f'travel.{keyword}', 'reason': 'ROUTE_UNCONFIRMED' if len(present) == 1
                                      else 'ROUTE_CONFLICT_WIKI_UNDECIDED'})
                     continue
             row = present[chosen]
-            if row['gate'] != 'NONE':
-                left_out.append({'fact': f'travel.{keyword}', 'reason': 'GATED_ROUTE'})
-                continue
             if rule != 'AGREE' and rule != 'SINGLE_SOURCE':
                 arbitration.append({'fact': f'travel.{keyword}', 'rule': rule, 'chosen': chosen})
             merged.append({'destination_keyword': keyword, 'destination': row['destination'], 'price': row['price'],
@@ -529,7 +540,7 @@ class Builder:
         winners = {source: value for source, value in ranked.items() if value[0] == best}
         if not winners or len({value[1] for value in winners.values()}) != 1:
             return None
-        chosen = sorted(winners)[0]
+        chosen = min(winners)
         return chosen, winners[chosen][2], winners[chosen][3]
 
     def merge_offers(self, bundles, name, arbitration, left_out):
@@ -540,6 +551,18 @@ class Builder:
             present = {s: o[key] for s, o in per_source.items() if key in o}
             facts = {s: (o['buy_price'], o['sell_price'], json.dumps(o['stock_gate'], sort_keys=True)) for s, o in present.items()}
             label = f'trade.{key[0]}' + (f'x{key[1]}' if key[1] else '') + (f's{key[2]}' if key[2] is not None else '')
+            access = access_fact(slug(name))
+            fluid = [fact for source, row in present.items()
+                     for fact in [source_fluid_fact(row, bundles[source].get('source', {}))] if fact]
+            if access or fluid:
+                left_out.append({'fact': label, 'reason': 'GATED_OFFER' if access else 'OFFER_UNCONFIRMED',
+                                 'source_semantics': {'hold_reason':
+                                     'SOURCE_TRADE_ACCESS_NATIVE_PREDICATE_UNAVAILABLE' if access else
+                                     'SOURCE_FLUID_NATIVE_BINDING_UNQUALIFIED',
+                                     'access': access, 'fluid': fluid,
+                                     'offers': {source: dict(row) for source, row in present.items()},
+                                     'native_binding': None, 'runtime_qualified': False}})
+                continue
             if len(present) == len(bundles) and len(set(facts.values())) == 1:
                 chosen = next(iter(present))
             else:
@@ -552,7 +575,7 @@ class Builder:
                 decided = bool(agreeing) and len({facts[s] for s in agreeing}) == 1
                 majority = None if decided else self.majority_arbiter(name, key, present, wiki)
                 if decided:
-                    chosen = sorted(agreeing)[0]
+                    chosen = min(agreeing)
                     arbitration.append({'fact': label, 'rule': 'WIKI_ARBITER', 'chosen': chosen})
                 elif majority:
                     chosen, wikis, directions = majority
@@ -649,6 +672,8 @@ class Builder:
     def wiki_offers(self, name, offers, left_out, arbitration):
         """D13 offers: the plain offers two of the three wikis list for this NPC with the same price that the
         admitted offers lack, each with its WIKI_OFFER row, sorted by (item name, direction)."""
+        if access_fact(slug(name)) is not None:
+            return []  # A table price never bypasses a held whole-shop callback.
         fandom = {row['item'].lower(): row for row in self.wiki_trade.get(normalize_name(name), [])}
         have = {(offer['direction'], offer['item']['key']) for offer in offers}
         # an Item the sources offer in a left-out offer (gated, unconfirmed, conflicting) is theirs to settle
@@ -718,7 +743,7 @@ class Builder:
                 pages = self.fan_wiki_pages(name)
                 if not pages:
                     return self.hold(name, sources, 'SINGLE_SOURCE_NOT_ON_WIKI')
-                arbitration.append({'fact': 'identity', 'rule': 'FAN_WIKI_CONFIRMED', 'chosen': sorted(pages)[0],
+                arbitration.append({'fact': 'identity', 'rule': 'FAN_WIKI_CONFIRMED', 'chosen': min(pages),
                                     'wikis': sorted(pages), 'pages': pages})
         definition, conflicts = self.merge_definition(bundles, arbitration)
         for field in [f for f in conflicts if f in DEFINITION_REVIEWED.get(name, {})]:  # D16
@@ -774,10 +799,16 @@ class Builder:
         if offers:
             trade = {'identity': {'family': 'Service', 'key': f'oteryn:service.trade.{key_slug}',
                                   'revision': 'definition-r1'}, 'currency': currency, 'offers': offers}
+        outfit = definition['outfit']
+        if outfit and any(isinstance(outfit.get(slot), int) and not 0 <= outfit[slot] <= 132
+                          for slot in ('head', 'body', 'legs', 'feet')):
+            left_out.append({'fact': 'definition.outfit', 'reason': 'PALETTE_OUT_OF_RANGE',
+                             'source_value': outfit})
+            outfit = None
         record = {
             'identity': {'family': 'NPC', 'key': f'oteryn:npc.{key_slug}', 'revision': 'definition-r1'},
             'name': name, 'profession': definition['profession'],
-            'presentation': {'outfit': definition['outfit'], 'speech_bubble': definition['speech_bubble']},
+            'presentation': {'outfit': outfit, 'speech_bubble': definition['speech_bubble']},
             'movement': definition['movement'],
             'placements': placements,
             'travel_service': ({'identity': {'family': 'Service', 'key': f'oteryn:service.travel.{key_slug}',

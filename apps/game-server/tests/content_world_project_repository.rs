@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        364,
-        "97ca45a0995d063bbbfd9e3b58a56b98efe8b2a1d682336a0d0528833eb4d150",
+        391,
+        "25efbf51f72c9e4e9b42a0d2f2b2b0d47a0168ab39e3d1c6c10a376fab3642e0",
     ),
     (
         "definitions/declarations.json",
-        15_148_142,
-        "01c03a2c2c73ad28d82756a5aebac0ad75bfbf1bd263f1488accf21319917722",
+        16_557_178,
+        "b5e573a3a10484688e0486708a7ec17235a9896f8f0a5418f32a4ae99bad126e",
     ),
     (
         "definitions/reference.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_937,
-        "f2afbb2eaa7b1b4914f503c907186ed77c4123c5ab00df3cc1325e0b2cf39a04",
+        1_946,
+        "b6b6a9f5e503546a2efa4c0b43602fa8ad0c03f225cad275aebeadb722abc4b0",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        390,
-        "e44ea14fb1c1df14a077177e28c056905b1d79564c52f0f03e324a3d34bb1345",
+        399,
+        "251dad218422da48ee58f5fea899db808675b8fc0917f37eb3727222d07bdaf9",
     ),
     (
         "provenance/imports.json",
@@ -107,7 +107,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "563578738baafc89398ca94f5e4324f6a0718f1533332f163cdb81ec79443139";
+const TREE_SHA256: &str = "bdf3d42d43cde152d93a7871f917566b9fda5193a6045c36841d34e46d70dd08";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -319,7 +319,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r9");
+    assert_eq!(project.project_revision(), "g4-npc-source-repairs-r10");
     assert_eq!(project.imports().len(), 12);
     let provenance = &project.imports()[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -468,34 +468,52 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .count(),
         252
     );
-    assert!(v2.declarations.iter().all(|declaration| match declaration {
-        ProjectV2Declaration::Outfit {
-            presentations,
-            premium: None,
-            acquisition_interactions,
-            fields,
-            ..
-        } => presentations.is_empty() && acquisition_interactions.is_empty() && fields.is_empty(),
-        ProjectV2Declaration::Mount {
-            presentation: None,
-            speed_bonus: None,
-            premium: None,
-            taming_item: None,
-            acquisition_interactions,
-            fields,
-            ..
-        } => acquisition_interactions.is_empty() && fields.is_empty(),
-        ProjectV2Declaration::Npc {
-            presentation: Some(_),
-            behavior: Some(_),
-            ..
-        } => true,
-        ProjectV2Declaration::Dialogue { fields, .. } => fields.is_empty(),
-        ProjectV2Declaration::Service {
-            recipes, fields, ..
-        } => recipes.is_empty() && fields.is_empty(),
-        ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
-        _ => false,
+    assert!(v2.declarations.iter().all(|declaration| {
+        match declaration {
+            ProjectV2Declaration::Outfit {
+                presentations,
+                premium: None,
+                acquisition_interactions,
+                fields,
+                ..
+            } => {
+                presentations.is_empty() && acquisition_interactions.is_empty() && fields.is_empty()
+            }
+            ProjectV2Declaration::Mount {
+                presentation: None,
+                speed_bonus: None,
+                premium: None,
+                taming_item: None,
+                acquisition_interactions,
+                fields,
+                ..
+            } => acquisition_interactions.is_empty() && fields.is_empty(),
+            ProjectV2Declaration::Npc {
+                identity,
+                presentation,
+                behavior: Some(_),
+                ..
+            } => {
+                presentation.is_some()
+                    || matches!(
+                        identity.key.as_str(),
+                        "oteryn:npc.hagor" | "oteryn:npc.a_sleeping_dragon"
+                    )
+            }
+            ProjectV2Declaration::Dialogue { fields, .. } => fields
+                .iter()
+                .all(|field| field.field_path == "oteryn:source.npc.static_speech_corrections"),
+            ProjectV2Declaration::Service {
+                recipes, fields, ..
+            } => {
+                recipes.is_empty()
+                    && fields
+                        .iter()
+                        .all(|field| field.field_path.starts_with("oteryn:source.npc."))
+            }
+            ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
+            _ => false,
+        }
     }));
     assert_eq!(v2.item_authoring.len(), 164);
     assert!(v2.item_authoring.iter().all(|entry| {
@@ -1091,4 +1109,83 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         legacy_locators
     );
     assert_eq!(tree_digest(&root), TREE_SHA256);
+}
+
+#[test]
+fn npc_corrections_preserve_unexecutable_quest_guards_and_bound_source_links() {
+    let root = project_root();
+    let project = capture_world_project(
+        root.parent().expect("content parent"),
+        OsStr::new("world"),
+        filesystem_limits(),
+    )
+    .expect("capture corrected NPC content");
+    let state = project.v2().expect("native v2 state");
+    let find = |key: &str| {
+        state
+            .declarations
+            .iter()
+            .find(|declaration| match declaration {
+                ProjectV2Declaration::Npc { identity, .. }
+                | ProjectV2Declaration::Dialogue { identity, .. }
+                | ProjectV2Declaration::Service { identity, .. } => identity.key == key,
+                _ => false,
+            })
+            .expect("existing declaration")
+    };
+    for key in ["rashid", "haroun", "nah_bob", "alesar", "yaman"] {
+        let ProjectV2Declaration::Service { offers, fields, .. } =
+            find(&format!("oteryn:service.trade.{key}"))
+        else {
+            panic!("trade service")
+        };
+        assert!(offers.is_empty(), "unmapped quest guard: {key}");
+        assert!(!fields.is_empty(), "held source tuples must survive: {key}");
+    }
+    let ProjectV2Declaration::Service { routes, .. } =
+        find("oteryn:service.travel.captain_breezelda")
+    else {
+        panic!("travel service")
+    };
+    assert_eq!(
+        routes
+            .iter()
+            .find(|route| route.key == "carlin")
+            .expect("Carlin")
+            .price,
+        110
+    );
+    assert_eq!(
+        routes
+            .iter()
+            .find(|route| route.key == "thais")
+            .expect("Thais")
+            .price,
+        180
+    );
+    let mut quest_links = 0;
+    for declaration in &state.declarations {
+        if let ProjectV2Declaration::Npc { fields, .. } = declaration {
+            for field in fields
+                .iter()
+                .filter(|field| field.field_path == "oteryn:source.npc.quest_bindings")
+            {
+                let ProjectV2CandidateValue::Text(text) = &field.value else {
+                    panic!("source locator is text")
+                };
+                let proof: serde_json::Value =
+                    serde_json::from_str(text).expect("source association proof");
+                assert_eq!(proof["runtime_eligible"], false);
+                assert_eq!(proof["sha256"].as_str().expect("custody hash").len(), 64);
+                quest_links += 1;
+            }
+        }
+    }
+    assert_eq!(quest_links, 275);
+    assert!(
+        !state
+            .declarations
+            .iter()
+            .any(|row| matches!(row, ProjectV2Declaration::Quest { .. }))
+    );
 }

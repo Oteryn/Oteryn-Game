@@ -88873,7 +88873,21 @@
     "key": "oteryn:npc.hagor",
     "revision": "definition-r1"
    },
-   "left_out": [],
+   "left_out": [
+    {
+     "fact": "definition.outfit",
+     "reason": "PALETTE_OUT_OF_RANGE",
+     "source_value": {
+      "addons": 0,
+      "body": 116,
+      "feet": 1156,
+      "head": 57,
+      "legs": 63,
+      "look_type": 129,
+      "mount": null
+     }
+    }
+   ],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -88893,15 +88907,7 @@
     }
    ],
    "presentation": {
-    "outfit": {
-     "addons": 0,
-     "body": 116,
-     "feet": 1156,
-     "head": 57,
-     "legs": 63,
-     "look_type": 129,
-     "mount": null
-    },
+    "outfit": null,
     "speech_bubble": "NORMAL"
    },
    "profession": "normal",

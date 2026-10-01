@@ -436,7 +436,10 @@ def main() -> int:
     service_shards: dict[str, list[str]] = {}
     service_counts: dict[str, int] = {}
     for family, (node, stem, field) in SERVICE_FAMILIES.items():
-        records = [row for row in service_records if field in row]
+        # Native serialization omits empty arrays; source-held merchants keep their
+        # existing trade identities and Service declarations even with no offers.
+        records = [row for row in service_records
+                   if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
         service_counts[family] = len(records)
         service_shards[family] = []
         for start in range(0, len(records), ITEM_SHARD_SIZE):

@@ -249,7 +249,9 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     migrated_service_count = 0
     for family, count in SERVICE_FAMILY_COUNTS.items():
         node, field = SERVICE_FAMILY_NODES[family]
-        legacy = [row for row in legacy_services if field in row]
+        stem = "trade" if family == "Service.Trade" else "travel"
+        legacy = [row for row in legacy_services
+                  if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
         require(len(legacy) == count, f"LEGACY_{family.upper()}_COUNT")
         index = load(ROOT / node / "index.json")
         require(index["schema"] == "OTERYN_FAMILY_INDEX/v1" and index["family"] == family, f"{family.upper()}_INDEX")

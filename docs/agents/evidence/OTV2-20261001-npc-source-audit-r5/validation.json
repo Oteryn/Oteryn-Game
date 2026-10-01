@@ -1,0 +1,29 @@
+{
+  "canonical_tree_sha256": "bdf3d42d43cde152d93a7871f917566b9fda5193a6045c36841d34e46d70dd08",
+  "checks": {
+    "cargo_clippy_game_server_all_targets_D_warnings": "PASS",
+    "cargo_fmt_all": "PASS",
+    "changed_python_ruff": "PASS",
+    "governance": "PASS",
+    "materialized_tree_directories": 97,
+    "native_corrective_guard_tests": 7,
+    "native_cw2_import_tests": 16,
+    "native_identical_documents": 11,
+    "native_materialization_runs": 2,
+    "native_npc_admission_tests": 7,
+    "native_project_v2_tests": 18,
+    "native_repository_tests": 4,
+    "promotion_candidates": 1112,
+    "python_authoring_tests": 130,
+    "python_npc_migration_tests": 51,
+    "r4_roots_reverified": 20872,
+    "successor_tree_roundtrip": "PASS"
+  },
+  "ci": "PENDING_LIVE_PR_EXACT_HEAD",
+  "global_complete": false,
+  "independent_finding": "Arbitrary supplied plans could mutate Item/Quest records; fixed with preflight family, identity and per-kind operation guards and negative tests.",
+  "native_repair_packet_sha256": "f8c377b9c997e733922c69200b3445eb700dc9ad18f5b6ecae27581742c1d117",
+  "qualification_phase": "LOCAL_AUTHORING_CHECKS",
+  "runtime_qualified": false,
+  "schema": "oteryn.npc-corrective-validation.v1"
+}

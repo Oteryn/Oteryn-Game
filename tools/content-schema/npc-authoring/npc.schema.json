@@ -45,8 +45,8 @@
                  "required": ["look_type", "head", "body", "legs", "feet", "addons", "mount"],
                  "properties": {
                    "look_type": {"type": ["integer", "null"], "minimum": 0},
-                   "head": {"type": "integer", "minimum": 0}, "body": {"type": "integer", "minimum": 0},
-                   "legs": {"type": "integer", "minimum": 0}, "feet": {"type": "integer", "minimum": 0},
+                   "head": {"type": "integer", "minimum": 0, "maximum": 132}, "body": {"type": "integer", "minimum": 0, "maximum": 132},
+                   "legs": {"type": "integer", "minimum": 0, "maximum": 132}, "feet": {"type": "integer", "minimum": 0, "maximum": 132},
                    "addons": {"type": "integer", "minimum": 0, "maximum": 3},
                    "mount": {"type": ["integer", "null"], "minimum": 0}
                  }}
