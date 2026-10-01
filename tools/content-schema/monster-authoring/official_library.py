@@ -15,6 +15,7 @@ import hashlib
 import json
 import re
 import shutil
+import tempfile
 import time
 from pathlib import Path
 
@@ -117,21 +118,23 @@ def capture(directory, paths):
         match = re.search(r'Game\.createMonsterType\("([^"]+)"', path.read_text(encoding='utf-8', errors='replace'))
         if match:
             wanted |= {norm(match.group(1)), norm(plural(match.group(1)))}
-    # Write into a sibling work directory and rename it only when every record arrived, so a failed run never
-    # leaves a partial capture that a later run would take for a complete one.
-    partial = directory.with_name(directory.name + '.partial')
-    if partial.exists():
-        shutil.rmtree(partial)
-    partial.mkdir(parents=True)
-    saved = 0
-    for entry in listed:
-        if norm(entry['race']) in wanted or norm(entry['name']) in wanted:
-            record = get(API + entry['race'])['creature']
-            (partial / (entry['race'] + '.json')).write_text(json.dumps(record, ensure_ascii=False), encoding='utf-8')
-            saved += 1
-    if directory.exists():
-        directory.rmdir()  # only an empty directory reaches capture()
-    partial.rename(directory)
+    # Write into a fresh work directory this run creates, and rename it only when every record arrived, so a failed
+    # run never leaves a partial capture that a later run would take for a complete one.
+    directory.parent.mkdir(parents=True, exist_ok=True)
+    partial = Path(tempfile.mkdtemp(prefix=directory.name + '.partial-', dir=directory.parent))
+    try:
+        saved = 0
+        for entry in listed:
+            if norm(entry['race']) in wanted or norm(entry['name']) in wanted:
+                record = get(API + entry['race'])['creature']
+                (partial / (entry['race'] + '.json')).write_text(json.dumps(record, ensure_ascii=False), encoding='utf-8')
+                saved += 1
+        if directory.exists():
+            directory.rmdir()  # only an empty directory reaches capture(); rmdir refuses anything else
+        partial.rename(directory)
+    except BaseException:
+        shutil.rmtree(partial, ignore_errors=True)
+        raise
     print(json.dumps({'captured': saved, 'directory': str(directory)}))
 
 
@@ -150,7 +153,10 @@ def main():
         parser.error('--canary and --captures are required unless --extra-captures is given')
     if args.extra_captures:
         import crystal_batch
-        paths = [args.crystal / crystal_batch.MONSTER_ROOT / (relative + '.lua') for relative in crystal_batch.EXTRA_MONSTERS]
+        extra = tuple(f'{crystal_batch.MONSTER_ROOT}/{relative}.lua' for relative in crystal_batch.EXTRA_MONSTERS)
+        # The sample is evidence for crystal_batch.REVISION: the files read must be those of the pinned commit.
+        crystal_batch.require_pinned(args.crystal, 'CrystalServer', crystal_batch.REVISION, extra, extra=False)
+        paths = [args.crystal / path for path in extra]
         if not any(args.extra_captures.glob('*.json')):
             capture(args.extra_captures, paths)
         library = [json.loads(path.read_text(encoding='utf-8')) for path in sorted(args.extra_captures.glob('*.json'))]
