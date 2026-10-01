@@ -7,7 +7,7 @@
 // CharacterId (FND-02 §10). Unknown fields, repeated singular fields, more than one intent, zero
 // and unknown enum values, fields that do not belong to a line's kind, and values outside the
 // declared bounds all fail closed. A string is UTF-8; text is 1..=1020 bytes (CHAT0-RL-01) and a
-// name 1..=120 bytes. The server also trims text and refuses control characters (CHAT-0 §4).
+// name 1..=120 bytes (CHAT1-RL-01). The server also trims text and refuses control characters (CHAT-0 §4).
 syntax = "proto3";
 
 package oteryn.protocol.v1.chat;
@@ -80,7 +80,7 @@ message ChatIntentResultV1 {
 // StateDomainSnapshot.payload of snapshot type 1 and StateDelta.payload of delta type 2: the
 // whole set of rooms the session has open; a delta replaces it. At most 4 bytes.
 message ChatRoomsV1 {
-  uint32 open_rooms = 1; // bit (room - 1) per open ChatRoom; bits 4 and up are refused
+  uint32 open_rooms = 1; // bit (room - 1) per open ChatRoom; bits 4 and up exceed CHAT0-RL-07
 }
 
 enum ChatLineKind {
@@ -103,7 +103,7 @@ message ChatPositionV1 {
 message ChatLineV1 {
   ChatLineKind kind = 1;
   bytes speaker_identity = 2;    // the 16-byte spatial identity (world_spatial EntityRefV1)
-  uint64 speaker_generation = 3; // the speaker's actor generation
+  uint64 speaker_generation = 3; // the speaker's actor generation; never 0 on a local line
   string speaker_name = 4;
   ChatSpeechMode mode = 5;
   ChatRoom room = 6;

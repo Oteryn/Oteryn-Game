@@ -7,11 +7,13 @@
 //! composes it.
 //!
 //! Decoding is strict, and encoding refuses the same values as a server fault before any byte is
-//! emitted: zero or unknown enums, an intent with no or several variants, empty or oversized text
+//! emitted: zero or unknown enums, a local speaker's zero generation, an intent with no or several variants, empty or oversized text
 //! or names, invalid UTF-8, a wait outside `1..=`[`MAX_CHAT_WAIT_SECONDS`] with `MUTED` or
 //! `EXHAUSTED` or any wait with another disposition, room bits outside the four rooms, a floor
 //! outside `0..=15`, a line field that does not belong to its kind, and unknown or repeated fields
 //! all fail closed. Trimming and control characters are the server's text rule (CHAT-0 §4).
+
+use std::num::NonZeroU64;
 
 pub use crate::charm_wire::CyclopediaWireError as ChatWireError;
 use crate::charm_wire::{
@@ -180,7 +182,8 @@ impl ChatRoomSet {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChatSpeaker {
     pub identity: [u8; ENTITY_IDENTITY_BYTES],
-    pub generation: u64,
+    /// An actor's generation is never zero (zero marks corpses and ground items).
+    pub generation: NonZeroU64,
 }
 
 /// `ChatLineV1`: one line of the session's chat.
@@ -398,10 +401,11 @@ pub fn decode_chat_rooms(payload: &[u8]) -> WireResult<ChatRoomSet> {
         return Err(ChatWireError::LimitExceeded);
     }
     let [bits] = crate::charm_wire::read_uint32_fields::<1>(payload)?;
+    // A bit beyond the four rooms exceeds `CHAT0-RL-07`.
     let bits = u8::try_from(bits)
         .ok()
         .filter(|bits| bits & !ChatRoomSet::ALL_BITS == 0)
-        .ok_or(ChatWireError::Malformed)?;
+        .ok_or(ChatWireError::LimitExceeded)?;
     Ok(ChatRoomSet(bits))
 }
 
@@ -421,7 +425,7 @@ pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
             check_position(position)?;
             push_varint_field(&mut output, 1, 1);
             push_message_field(&mut output, 2, &speaker.identity);
-            push_nonzero_varint_field(&mut output, 3, speaker.generation);
+            push_varint_field(&mut output, 3, speaker.generation.get());
             push_message_field(&mut output, 4, speaker_name.as_bytes());
             push_varint_field(&mut output, 5, *mode as u64);
             push_message_field(&mut output, 7, text.as_bytes());
@@ -496,7 +500,10 @@ pub fn decode_chat_line(payload: &[u8]) -> WireResult<ChatLine> {
         Some(1) if f.room.is_none() => Ok(ChatLine::Local {
             speaker: ChatSpeaker {
                 identity: f.identity.ok_or_else(malformed)?,
-                generation: f.generation.unwrap_or(0),
+                generation: f
+                    .generation
+                    .and_then(NonZeroU64::new)
+                    .ok_or_else(malformed)?,
             },
             speaker_name: f.name.ok_or_else(malformed)?,
             mode: ChatSpeechMode::from_wire(f.mode.ok_or_else(malformed)?)?,

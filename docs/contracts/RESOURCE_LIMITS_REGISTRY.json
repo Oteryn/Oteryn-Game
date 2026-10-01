@@ -6997,7 +6997,7 @@
     {
       "id": "CHAT0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
-      "resource": "Text of one chat intent or line, and the name of a chat speaker or recipient",
+      "resource": "Text of one chat intent or line",
       "unit": "bytes of UTF-8 text",
       "hard_maximum": 1020,
       "configurable_range": {
@@ -7005,17 +7005,61 @@
         "maximum": 1020
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "The decoder refuses text above 1,020 bytes or a name above 120 bytes before copying it; an intent is at most 1,148 bytes (command type 13) and a line at most 1,194 bytes (domain 12 delta type 1). The server also limits trimmed text to 255 Unicode scalar values (CHAT-0 \u00a74).",
+      "allocation_impact": "The decoder refuses text above 1,020 bytes before copying it; an intent is at most 1,148 bytes (command type 13) and a line at most 1,194 bytes (domain 12 delta type 1).",
       "client_visible": true,
       "boundary_tests": [
-        "max=1020: a say intent and a local line with 1,020 bytes of text and a 120-byte name round-trip at their byte bounds",
-        "max+1=1021: 1,021 bytes of text or a 121-byte name are refused in both directions"
+        "max=1020: a say intent and a local line with 1,020 bytes of text round-trip at their byte bounds",
+        "max+1=1021: 1,021 bytes of text are refused in both directions"
       ],
       "consumers": [
-        "crates/protocol-oteryn/src/chat.rs MAX_CHAT_TEXT_BYTES, MAX_CHAT_NAME_BYTES",
-        "apps/game-server/src/chat/mod.rs TEXT_MAX_BYTES, TEXT_MAX_CHARS"
+        "crates/protocol-oteryn/src/chat.rs MAX_CHAT_TEXT_BYTES",
+        "apps/game-server/src/chat/mod.rs TEXT_MAX_BYTES"
       ],
-      "notes": "CHAT-0 \u00a74 and \u00a78. Registered by OTV2-20261001-chat-1b-1."
+      "notes": "CHAT-0 \u00a74 and \u00a78. The character bound of the same row is CHAT0-RL-01A. Registered by OTV2-20261001-chat-1b-1."
+    },
+    {
+      "id": "CHAT0-RL-01A",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "Unicode scalar values of one chat text after trimming",
+      "unit": "Unicode scalar values",
+      "hard_maximum": 255,
+      "configurable_range": {
+        "minimum": 255,
+        "maximum": 255
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked by the server after the wire's 1,020-byte bound (CHAT0-RL-01) and trimming; a longer text is refused with REJECTED and nothing is relayed.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=255: 255 four-byte scalars (1,020 bytes) are accepted",
+        "max+1=256: 256 scalars are refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/chat/mod.rs TEXT_MAX_CHARS"
+      ],
+      "notes": "CHAT-0 \u00a74 and \u00a78 (the character half of CHAT0-RL-01). Registered by OTV2-20261001-chat-1b-1."
+    },
+    {
+      "id": "CHAT1-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "A character name on the chat wire: a line's speaker or a private message's recipient",
+      "unit": "bytes of UTF-8 text",
+      "hard_maximum": 120,
+      "configurable_range": {
+        "minimum": 120,
+        "maximum": 120
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses a name above 120 bytes before copying it; it is part of the 1,148-byte intent and 1,194-byte line bounds.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=120: a private intent and a room line with a 120-byte name round-trip",
+        "max+1=121: a 121-byte name is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/chat.rs MAX_CHAT_NAME_BYTES"
+      ],
+      "notes": "The sender name bound of the CHAT-0 \u00a75 relay payload; revision 1 names are at most 29 ASCII letters (CHARACTER_AUTHORITY_PLATFORM_BOUNDARY \u00a76.1). Registered by OTV2-20261001-chat-1b-1."
     },
     {
       "id": "CHAT0-RL-07",

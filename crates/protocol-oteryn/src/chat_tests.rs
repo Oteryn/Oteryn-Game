@@ -2,6 +2,8 @@
 
 use serde_json::Value;
 
+use std::num::NonZeroU64;
+
 use super::*;
 
 const PROTOCOL_REGISTRY: &str =
@@ -19,7 +21,7 @@ fn local_line(name: usize, body: usize) -> ChatLine {
     ChatLine::Local {
         speaker: ChatSpeaker {
             identity: [0xab; ENTITY_IDENTITY_BYTES],
-            generation: u64::MAX,
+            generation: NonZeroU64::MAX,
         },
         speaker_name: text(name),
         mode: ChatSpeechMode::Whisper,
@@ -223,18 +225,18 @@ fn the_room_set_is_four_bits() {
     assert!(!rooms.contains(ChatRoom::English));
     assert!(rooms.contains(ChatRoom::Advertising));
     assert_eq!(encode_chat_rooms(rooms), [0x08, 0x0d]);
-    for payload in [
-        &[0x08, 0x10][..],
-        &[0x08, 0x1f],
-        &[0x08, 0x80, 0x02],
-        &[0x10, 0x01],
-    ] {
+    // A fifth room bit exceeds CHAT0-RL-07; an unknown field is malformed.
+    for payload in [&[0x08, 0x10][..], &[0x08, 0x1f], &[0x08, 0x80, 0x02]] {
         assert_eq!(
             decode_chat_rooms(payload),
-            Err(ChatWireError::Malformed),
+            Err(ChatWireError::LimitExceeded),
             "{payload:02x?}"
         );
     }
+    assert_eq!(
+        decode_chat_rooms(&[0x10, 0x01]),
+        Err(ChatWireError::Malformed)
+    );
 }
 
 #[test]
@@ -246,7 +248,7 @@ fn lines_round_trip_and_the_local_line_is_the_byte_bound() {
     let at_origin = ChatLine::Local {
         speaker: ChatSpeaker {
             identity: [1; ENTITY_IDENTITY_BYTES],
-            generation: 0,
+            generation: NonZeroU64::MIN,
         },
         speaker_name: "Bob".to_owned(),
         mode: ChatSpeechMode::Say,
@@ -328,6 +330,18 @@ fn lines_with_fields_of_another_kind_or_out_of_bounds_are_refused() {
         decode_chat_line(&short_identity),
         Err(ChatWireError::Malformed)
     );
+    // A local speaker is an actor: its generation is never zero or absent.
+    let local = encode_chat_line(&local_line(1, 1)).expect("line");
+    let generation_at = 2 + 2 + ENTITY_IDENTITY_BYTES;
+    assert_eq!(local[generation_at], 0x18);
+    let mut zero_generation = local[..generation_at].to_vec();
+    zero_generation.extend([0x18, 0x00]);
+    zero_generation.extend(&local[generation_at + 11..]);
+    let mut no_generation = local[..generation_at].to_vec();
+    no_generation.extend(&local[generation_at + 11..]);
+    for payload in [zero_generation, no_generation] {
+        assert_eq!(decode_chat_line(&payload), Err(ChatWireError::Malformed));
+    }
     let mut oversized = vec![0u8; MAX_CHAT_LINE_BYTES + 1];
     oversized[0] = 0x08;
     assert_eq!(
@@ -466,5 +480,7 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
         matches[0]["hard_maximum"].as_u64()
     };
     assert_eq!(limit("CHAT0-RL-01"), Some(MAX_CHAT_TEXT_BYTES as u64));
+    assert_eq!(limit("CHAT0-RL-01A"), Some(255));
+    assert_eq!(limit("CHAT1-RL-01"), Some(MAX_CHAT_NAME_BYTES as u64));
     assert_eq!(limit("CHAT0-RL-07"), Some(MAX_CHAT_OPEN_ROOMS as u64));
 }
