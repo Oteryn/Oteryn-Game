@@ -283,8 +283,8 @@
           "planner_parameter"
         ]
       },
-      "minItems": 5,
-      "maxItems": 5
+      "minItems": 4,
+      "maxItems": 4
     },
     "classification": {
       "type": "object",
@@ -344,6 +344,11 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 20000
+        },
+        "flurry_cast_range": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
         }
       },
       "required": [
@@ -357,7 +362,8 @@
         "runtime_client_binding",
         "official_cooldown_corrections",
         "great_fire_wave_and_mystic_repulse_damage",
-        "special_spell_secondary_cooldown"
+        "special_spell_secondary_cooldown",
+        "flurry_cast_range"
       ]
     },
     "live_verification": {
@@ -455,6 +461,26 @@
         "file",
         "sha256"
       ]
+    },
+    "item_asset_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "file",
+        "sha256"
+      ]
     }
   },
   "required": [
@@ -469,7 +495,8 @@
     "live_verification",
     "resolved_capture_limitations",
     "candidate_sha256",
-    "live_source_audit"
+    "live_source_audit",
+    "item_asset_reference"
   ],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Wheel reference verification evidence"

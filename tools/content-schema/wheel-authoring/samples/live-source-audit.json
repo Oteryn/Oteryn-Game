@@ -410,12 +410,22 @@
     {
       "key": "augmented_great_fire_wave",
       "stage": 1,
-      "status": "CONFLICT_TARGET_VERSION_PENDING",
+      "status": "RECONCILED_PROJECT_EFFECT_COMPLETENESS_GLOBAL_PARITY_PENDING",
       "sources": [
         "https://www.tibiawiki.com.br/index.php?title=Augmented_Great_Fire_Wave&oldid=423338"
       ],
-      "observation": "Wiki lists both +15% critical extra damage and +10% non-stacking critical chance; planner only extra damage, candidate only chance. Wiki published revision is dated 27 March 2025.",
-      "derivation": "The secondary page does not establish which combination is current for the target version. Preserve the selection and conflict."
+      "observation": "BR wiki r423338 lists both +15% critical extra damage and +10% non-stacking critical chance; planner only extra damage. Historical Wheel candidate omitted extra damage.",
+      "derivation": "Existing project spell-authoring/wheel-augments.json contains both effects at stage I, each captured from Fandom:1206174 and corroborated by Canary. Wheel now preserves both. Live current Global parity is still not established."
+    },
+    {
+      "key": "augmented_flurry_of_blows",
+      "stage": 1,
+      "status": "CONFLICT_CAST_RANGE_NOT_SELECTED",
+      "sources": [
+        "project:tools/content-schema/spell-authoring/wheel-augments.json#official:8833"
+      ],
+      "observation": "Pinned planner says Range increased by 1; project spell capture and native behavior define an enlarged affected area.",
+      "derivation": "Select only AREA_GREATER_FLURRY_OF_BLOWS; retain range +1 as an unselected hypothesis until cast-range versus affected-area meaning is established."
     }
   ],
   "remaining": [

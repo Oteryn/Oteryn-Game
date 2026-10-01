@@ -1,7 +1,12 @@
 import copy
+import hashlib
+import json
+import subprocess
+import sys
+import tempfile
 import unittest
 from jsonschema.exceptions import ValidationError
-from wheel_authoring import ROOT, VOCATIONS, build, read, validate, validate_allocation, validate_gem, effective_gem_grades
+from wheel_authoring import ROOT, VOCATIONS, build, read, validate, validate_evidence, validate_allocation, validate_gem, effective_gem_grades
 class WheelAuthoringTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls): cls.candidate=read(ROOT/'samples/wheel-candidate.json')
@@ -157,11 +162,118 @@ class WheelAuthoringTests(unittest.TestCase):
             self.assertIn('-6s',aug[key]['augment_stages'][stage-1]['reference_text'])
     def test_great_fire_wave_conflict_selection(self):
         aug=next(s['conviction'] for s in self.candidate['vocations']['sorcerer']['slots'] if s['conviction']['key']=='augmented_great_fire_wave')
-        effect=aug['augment_stages'][0]['numeric_effects'][0]
-        self.assertEqual((effect['kind'],effect['value']),('critical_hit_chance',10))
+        effects={e['kind']:e['value'] for e in aug['augment_stages'][0]['numeric_effects']}
+        rows=read(ROOT.parent/'spell-authoring/wheel-augments.json')['augments']
+        rows=[r for r in rows if r['spell']=='Great Fire Wave' and r['augment']==1]
+        units={'percent_crit_chance':'critical_hit_chance','percent_crit_extra_damage':'critical_extra_damage'}
+        self.assertEqual(effects,{units[r['unit']]:r['value'] for r in rows})
     def test_flurry_area_reference(self):
         aug=next(s['conviction'] for s in self.candidate['vocations']['monk']['slots'] if s['conviction']['key']=='augmented_flurry_of_blows')
         self.assertEqual(aug['augment_stages'][0]['area_reference'],'AREA_GREATER_FLURRY_OF_BLOWS')
+        self.assertEqual(aug['augment_stages'][0]['numeric_effects'],[])
+        self.assertIn('Range increased by 1',aug['augment_stages'][0]['reference_text'])
+        self.assertEqual(aug['reference_hypotheses'][0]['kind'],'range_increase')
+        rows=read(ROOT.parent/'spell-authoring/wheel-augments.json')['augments']
+        self.assertTrue(any(r['spell']=='Flurry of Blows' and r['augment']==1 and r['unit']=='bool_area' for r in rows))
+    def augment(self,c,vocation,key):
+        return next(s['conviction'] for s in c['vocations'][vocation]['slots'] if s['conviction']['key']==key)
+    def test_augment_completeness_and_targets(self):
+        for mutation in [
+            lambda a:a['augment_stages'][0].update(numeric_effects=[]),
+            lambda a:a.update(augment_targets=['Heal Friend']),
+            lambda a:a['augment_stages'][0]['numeric_effects'].append(copy.deepcopy(a['augment_stages'][0]['numeric_effects'][0]))]:
+            with self.subTest(mutation=mutation):
+                self.reject(lambda c:mutation(self.augment(c,'knight','augmented_fierce_berserk')),'REFERENCE_STRUCTURE_MISMATCH')
+    def test_area_bindings_cannot_disappear(self):
+        self.reject(lambda c:self.augment(c,'sorcerer','augmented_energy_wave')['augment_stages'][0].update(area_reference=None),'REFERENCE_STRUCTURE_MISMATCH')
+        self.reject(lambda c:c['vocations']['paladin']['revelations'][1].update(area_reference=None),'REFERENCE_STRUCTURE_MISMATCH')
+    def test_dedication_icon_index_matches_capture(self):
+        self.reject(lambda c:c['vocations']['knight']['slots'][0]['dedication_icon'].update(source_index=255),'REFERENCE_STRUCTURE_MISMATCH')
+    def test_revelation_identity_and_domain_binding(self):
+        def mutate(c):
+            revs=c['vocations']['knight']['revelations'];duplicate=copy.deepcopy(revs[1]);duplicate['domain']=revs[0]['domain'];revs[0]=duplicate
+        self.reject(mutate,'REFERENCE_STRUCTURE_MISMATCH')
+    def test_unknown_unique_key_does_not_bypass_validation(self):
+        self.reject(lambda c:c['vocations']['knight']['slots'][0]['conviction'].update(key='battle_instinct_typo'),'UNKNOWN_UNIQUE_KEY')
+    def test_adjacent_threshold_and_cap_must_be_feasible(self):
+        for threshold,cap in [(100,1),(1,9),(0,8),(1.5,8)]:
+            def mutate(c):
+                effects=c['vocations']['knight']['slots'][0]['conviction']['unique_parameters']['numeric_effects']
+                effects[0]['value']=threshold;effects[1]['value']=cap
+            with self.subTest(threshold=threshold,cap=cap):self.reject(mutate)
+    def test_initial_cannot_restart_revision_chain(self):
+        c=copy.deepcopy(self.candidate);c['revision']='r2'
+        with self.assertRaisesRegex(ValueError,'INITIAL_WITH_PREDECESSOR'):validate(c,self.candidate)
+    def test_atelier_contract_invariants(self):
+        for field,value in [('revealed_tradeable',True),('reveal_requires_matching_vocation',False),('grade_max',99),('grade_decrease_allowed',True),('vessel_requires_matching_domain',False)]:
+            with self.subTest(field=field):self.reject(lambda c:c['gems']['atelier']['operation_policy'].update({field:value}))
+    def test_loot_probabilities_have_a_positive_denominator(self):
+        self.reject(lambda c:c['gems']['loot_reference'].update(roll_denominator=0))
+        self.reject(lambda c:c['gems']['loot_reference']['per_quality'][0]['chance_by_category'].update(influenced=100001),'LOOT_CHANCE_BOUNDS')
+    def test_nonfinite_numbers_rejected_in_memory_and_from_json(self):
+        for value in [float('nan'),float('inf'),float('-inf')]:
+            with self.subTest(value=value):self.reject(lambda c:c['vocations']['knight']['slots'][0]['dedication'][0].update(value_per_point=value),'NON_FINITE_NUMBER')
+        with tempfile.TemporaryDirectory() as temporary:
+            path=ROOT.__class__(temporary)/'invalid.json'
+            for literal in ['NaN','Infinity','-Infinity','1e999']:
+                path.write_text('{"value":'+literal+'}')
+                with self.subTest(literal=literal),self.assertRaisesRegex(ValueError,'NON_FINITE_NUMBER'):read(path)
+    def test_source_and_graph_declarations_match_captures(self):
+        self.reject(lambda c:c['sources'][0].update(commit='0'*40),'SOURCE_REVISION_BINDING')
+        self.reject(lambda c:c['topology'][0]['source'].update(canary_enum='SLOT_GREEN_50'),'REFERENCE_STRUCTURE_MISMATCH')
+    def test_unresolved_area_is_not_silently_cleared(self):
+        from unittest.mock import patch
+        original_read=read
+        def without_area(path):
+            value=original_read(path)
+            if path.name=='source-parameters.json':del value['area_references']['augmented_energy_wave']
+            return value
+        with patch('wheel_authoring.read',side_effect=without_area):candidate=build()
+        self.assertTrue(self.augment(candidate,'sorcerer','augmented_energy_wave')['augment_stages'][0]['unresolved_parameters'])
+    def test_cross_kind_correction_cannot_replace_an_independent_bonus(self):
+        from unittest.mock import patch
+        original_read=read
+        def cross_kind(path):
+            value=original_read(path)
+            if path.name=='source-parameters.json':value['corrections'][1]['parameter']='critical_hit_chance'
+            return value
+        with patch('wheel_authoring.read',side_effect=cross_kind),self.assertRaisesRegex(ValueError,'CROSS_KIND_CORRECTION'):build()
+    def test_committed_candidate_has_qualified_evidence(self):
+        validate_evidence(self.candidate,(ROOT/'samples/wheel-candidate.json').read_bytes())
+    def test_gem_item_assets_bind_all_item_keys(self):
+        from verify_item_assets import build_reference
+        reference=read(ROOT/'samples/item-asset-reference.json');self.assertEqual(reference,build_reference())
+        self.assertEqual(len(reference['items']),18);self.assertFalse(reference['runtime_admitted'])
+        gem=self.candidate['vocations']['knight']['gem_family']['items']['lesser']
+        self.assertEqual(reference['items'][gem]['appearance_object_id'],44602)
+        self.assertEqual(reference['items'][gem]['frame_groups'][0]['atlases'][0]['sprite_id'],235999)
+    def test_cli_rejects_nonstandard_json(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path=ROOT.__class__(temporary)/'candidate.json';c=copy.deepcopy(self.candidate)
+            c['vocations']['knight']['slots'][0]['dedication'][0]['value_per_point']=float('nan');path.write_text(json.dumps(c))
+            result=subprocess.run([sys.executable,str(ROOT/'wheel_authoring.py'),'validate','--file',str(path)],capture_output=True,text=True)
+            self.assertNotEqual(result.returncode,0);self.assertIn('NON_FINITE_NUMBER',result.stderr)
+    def test_semantic_custom_candidate_requires_separate_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path=ROOT.__class__(temporary)/'candidate.json';c=copy.deepcopy(self.candidate)
+            c['vocations']['knight']['slots'][0]['dedication'][0]['value_per_point']=4;path.write_text(json.dumps(c))
+            command=[sys.executable,str(ROOT/'wheel_authoring.py'),'validate','--file',str(path)]
+            result=subprocess.run(command,capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr);self.assertIn('evidence not qualified',result.stdout)
+            result=subprocess.run(command+['--evidence',str(ROOT/'samples/verification-evidence.json')],capture_output=True,text=True)
+            self.assertNotEqual(result.returncode,0);self.assertIn('EVIDENCE_CANDIDATE_DIGEST',result.stderr)
+    def test_evidence_tampering_is_rejected_by_qualification(self):
+        evidence=read(ROOT/'samples/verification-evidence.json')
+        with tempfile.TemporaryDirectory() as temporary:
+            path=ROOT.__class__(temporary)/'evidence.json'
+            for field,mutate in [
+                ('counts',lambda e:e['counts'].update(slots=179)),
+                ('audit',lambda e:e['live_source_audit'].update(sha256='0'*64)),
+                ('corrections',lambda e:e['source_conflicts'].clear()),
+                ('icons',lambda e:e['icon_evidence'].update(renderer_sha256='0'*64))]:
+                altered=copy.deepcopy(evidence);mutate(altered);path.write_text(json.dumps(altered))
+                with self.subTest(field=field),self.assertRaises((ValueError,ValidationError)):
+                    validate_evidence(self.candidate,(ROOT/'samples/wheel-candidate.json').read_bytes(),path)
     def test_verification_evidence_binds_candidate(self):
         import hashlib
         from jsonschema import Draft202012Validator

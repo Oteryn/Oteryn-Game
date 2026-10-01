@@ -20,6 +20,7 @@ execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/wheel-authoring/
   - docs/agents/tasks/archive/OTV2-20261001-wheel-authoring-reference.md
+  - .github/workflows/wheel-authoring-schema.yml
 public_contracts: []
 depends_on: []
 blocks: []
@@ -173,3 +174,53 @@ governance validation and all 36 governance tests, pinned planner replay and
 whitespace/owned-path checks are required for the successor candidate. Its exact
 published SHA and results are reported in the PR after freeze, without a
 metadata-only follow-up commit.
+
+## Audit repair (2026-10-01)
+
+The owner's direct instruction to fix all audit findings returns the branch to
+AUTHORING and supersedes frozen `9ede8c40f2e734104f9a74a96d6e05a9d6f6cc31`.
+The same sole writer retains the original paths; the requested CI repair adds
+only `.github/workflows/wheel-authoring-schema.yml` to this task's owned paths.
+The live PR head and #162 STATE/latest page were refreshed; no competing Wheel
+writer was identified. Review dispatch and protected integration remain with the
+programme control plane. No runtime allocation or architecture change is made.
+
+The eight audit findings are repaired in five related areas, within 500 changed
+lines of hand-written code: source/effect completeness, reference and policy
+bindings (including provenance), revision chaining, strict JSON, and CI.
+
+- Great Fire Wave I preserves both critical effects from the existing project
+  spell capture. Flurry I retains range +1 as an unselected hypothesis and selects
+  only the enlarged affected area. Corrections cannot replace effect kinds, and
+  unresolved area/duration observations are no longer silently cleared.
+- Candidate source revisions, topology crosswalks, perk identities/placement,
+  complete effect kinds/units, areas, targets and icon indices are checked against
+  the input captures. Atelier operation invariants are schema-bound; adjacency
+  thresholds/caps and loot chances are checked for feasible bounds.
+- A supplied previous candidate forbids `initial`. Value-only restrictions and
+  predecessor requirements remain enforced; structural source changes require
+  corresponding source-capture updates.
+- Readers and validators reject NaN, Infinity and numeric overflow. Writers use
+  standard JSON. Default CLI validation qualifies exact-file evidence; custom
+  candidates explicitly report semantic-only validation unless evidence is supplied.
+- CI checks byte-identical schema/candidate/report rebuilds, evidence, regressions
+  and the existing asset input bindings. No upstream network fetch is required.
+
+The owner's asset-directory link was inspected. All 18 Atelier item appearances
+resolve to sprite IDs and three existing atlas files; the reference is digest-bound
+and reproducible. This supplies item presentation evidence, not the missing Wheel
+perk UI crosswalk, client asset admission or proprietary sprite redistribution.
+
+Qualification for the successor: authoring regressions, deterministic checks,
+pinned planner replay, governance validator/tests, repository policy validator and
+matching repository tests, whitespace and owned-path checks. Exact-head results
+are recorded in the PR after publication/freeze. Global target-version conflicts,
+runtime behavior and independent review remain outside this reference repair.
+
+Local repair evidence: 78 authoring regressions, all 19 mutation probes rejected
+(including the 17 formerly accepted malformed candidates), deterministic rebuilds,
+complete pinned planner replay and the five-vocation browser check pass. Governance
+validation/36 tests, repository policy validation and content/post-merge/PR routing
+regressions pass. The broader merge-group and canonical PR PG/SIM scripts reach
+native PowerShell canaries and stop because `pwsh` is absent in this workspace;
+those unchanged native checks remain for repository CI. No check is weakened.

@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import html
 import json
+import math
 import re
 from pathlib import Path
 from jsonschema import Draft202012Validator
@@ -12,7 +13,17 @@ VOCATIONS = ('knight', 'paladin', 'sorcerer', 'druid', 'monk')
 DOMAINS = {'TL':'green','TR':'red','BL':'blue','BR':'purple'}
 CATEGORY = {'Unique':'unique','SkillBonus':'skill_bonus','Leech':'leech','Augmentation':'augmentation','VesselResonance':'vessel_resonance','Other':'other'}
 STATS = {'Hit Points':'max_health','Mana':'max_mana','Capacity':'capacity','Mitigation Multiplier':'mitigation_multiplier'}
-def read(path): return json.loads(Path(path).read_text())
+def finite_json(value):
+    if isinstance(value,float) and not math.isfinite(value):raise ValueError('NON_FINITE_NUMBER')
+    if isinstance(value,dict):
+        for child in value.values():finite_json(child)
+    elif isinstance(value,list):
+        for child in value:finite_json(child)
+def read(path):
+    def reject_constant(value):raise ValueError('NON_FINITE_NUMBER: '+value)
+    value=json.loads(Path(path).read_text(),parse_constant=reject_constant)
+    finite_json(value)
+    return value
 def clean(text): return html.unescape(re.sub(r'<[^>]*>', ' ', text)).strip()
 def name(text): return clean(text).split('|')[0]
 def slug(text): return re.sub(r'[^a-z0-9]+','_', name(text).lower()).strip('_')
@@ -93,9 +104,15 @@ def build():
                     stage['numeric_effects'].append({k:extra[k] for k in ('kind','value','unit')})
                 for correction in parameters['corrections']:
                     if correction['key']==conviction['key'] and correction['stage']==stage['stage']:
+                        if correction['planner_parameter']!=correction['parameter']:raise ValueError('CROSS_KIND_CORRECTION')
                         effect=next(e for e in stage['numeric_effects'] if e['kind']==correction['planner_parameter'])
-                        effect.update(kind=correction['parameter'],value=correction['selected_value'])
-                stage['unresolved_parameters'] = []
+                        effect['value']=correction['selected_value']
+                for hypothesis in conviction['reference_hypotheses']:
+                    if hypothesis['stage']==stage['stage']:
+                        stage['numeric_effects']=[e for e in stage['numeric_effects'] if e['kind']!=hypothesis['kind']]
+                stage['unresolved_parameters']=[reason for reason in stage['unresolved_parameters']
+                    if not (('affected-tile' in reason and stage['area_reference']) or
+                            ('duration' in reason and extra and extra['stage']==stage['stage'] and extra['kind']=='duration_increase'))]
             slots.append({'state_slot':top['state_slot'],'dedication':dedication,'dedication_icon':icon('dedication',slot['dedication']['id']),'conviction':conviction})
         revelations=[]
         for rev in original['revelations']:
@@ -165,9 +182,15 @@ def structure(candidate):
         return value
     return scrub({k:candidate[k] for k in ['progression','topology','vocations','gems']})
 def validate(candidate, previous=None):
+    finite_json(candidate)
     schema=read(ROOT/'wheel.schema.json');Draft202012Validator.check_schema(schema);Draft202012Validator(schema).validate(candidate)
     def require(condition, code):
         if not condition:raise ValueError(code)
+    release=candidate['release']
+    if release['kind']=='initial':require(previous is None,'INITIAL_WITH_PREDECESSOR')
+    else:
+        require(previous is not None,'PREDECESSOR_REQUIRED');require(release['predecessor']==previous['revision'] and candidate['revision']!=previous['revision'],'REVISION_CHAIN')
+        if release['kind']=='value_only':require(structure(candidate)==structure(previous),'VALUE_ONLY_STRUCTURE_CHANGED')
     for filename,digest in candidate['input_digests'].items():
         require(hashlib.sha256((ROOT/'samples'/filename).read_bytes()).hexdigest()==digest,'INPUT_DIGEST_MISMATCH')
     topology=candidate['topology'];require([s['state_slot'] for s in topology]==list(range(1,37)),'SLOT_IDENTITIES')
@@ -206,11 +229,16 @@ def validate(candidate, previous=None):
             require([g['stage'] for g in c['augment_stages']]==([1,2] if c['category']=='augmentation' else []),'AUGMENT_STAGES')
             expected_unique=reference_parameters['unique_conviction'].get(c['key'])
             require((c['category']=='unique')==(c['unique_parameters'] is not None),'UNIQUE_PARAMETER_PRESENCE')
+            require(c['category']!='unique' or expected_unique is not None,'UNKNOWN_UNIQUE_KEY')
             if expected_unique is not None:
                 expected={e['kind']:e['unit'] for e in expected_unique['numeric_effects']}
                 actual={e['kind']:e['unit'] for e in c['unique_parameters']['numeric_effects']}
                 require(actual==expected and len(actual)==len(c['unique_parameters']['numeric_effects']),'UNIQUE_PARAMETERS')
                 require(c['unique_parameters']['behaviors']==expected_unique['behaviors'] and c['unique_parameters']['targets']==expected_unique['targets'],'UNIQUE_BEHAVIOR_BINDING')
+                if c['key']=='battle_instinct':
+                    values={e['kind']:e['value'] for e in c['unique_parameters']['numeric_effects']}
+                    threshold=values['adjacent_creature_threshold'];cap=values['adjacent_creature_cap']
+                    require(threshold==int(threshold) and cap==int(cap) and 0<threshold<=cap<=8,'ADJACENT_CREATURE_BOUNDS')
             expected_units={'base_damage_bonus':'percent_points','base_healing_bonus':'percent_points','cooldown_reduction':'seconds','secondary_cooldown_reduction':'seconds','mana_cost_reduction':'mana','life_leech':'percent_points','critical_hit_chance':'percent_points','critical_extra_damage':'percent_points','additional_targets':'targets','range_increase':'tiles','next_attack_damage_reduction':'percent_points','duration_increase':'seconds'}
             for stage in c['augment_stages']:
                 for effect in stage['numeric_effects']:require(effect['unit']==expected_units[effect['kind']],'AUGMENT_EFFECT_UNIT')
@@ -246,17 +274,63 @@ def validate(candidate, previous=None):
         if any(e['kind']=='cooldown_reduction' for g in mod['grades'] for e in g['numeric_effects']):
             reductions=[next(e['value'] for e in g['numeric_effects'] if e['kind']=='cooldown_reduction') for g in mod['grades']]
             require(len(set(reductions))==1,'COOLDOWN_GRADES_REQUIRE_MOMENTUM')
-    release=candidate['release']
-    if release['kind']!='initial':
-        require(previous is not None,'PREDECESSOR_REQUIRED');require(release['predecessor']==previous['revision'] and candidate['revision']!=previous['revision'],'REVISION_CHAIN')
-        if release['kind']=='value_only':require(structure(candidate)==structure(previous),'VALUE_ONLY_STRUCTURE_CHANGED')
+    loot=gems['loot_reference']
+    require(loot['roll_denominator']>0,'LOOT_DENOMINATOR')
+    for quality in loot['per_quality']:
+        require(all(0<=chance<=loot['roll_denominator'] for chance in quality['chance_by_category'].values()),'LOOT_CHANCE_BOUNDS')
+    # Reference identities, placement, complete effect shapes and policies must agree
+    # with the hash-bound captures. Numeric effect tuning remains possible.
+    reference=build()
+    require(candidate['sources']==reference['sources'],'SOURCE_REVISION_BINDING')
+    require(candidate['icon_evidence']==reference['icon_evidence'],'ICON_EVIDENCE_BINDING')
+    require(candidate['verification']==reference['verification'],'VERIFICATION_CLAIM_BINDING')
+    require(structure(candidate)==structure(reference),'REFERENCE_STRUCTURE_MISMATCH')
+
+def validate_evidence(candidate, candidate_bytes, evidence_path=None):
+    """Qualify an exact serialized candidate separately from semantic authoring."""
+    evidence=read(evidence_path or ROOT/'samples/verification-evidence.json')
+    Draft202012Validator(read(ROOT/'verification.schema.json')).validate(evidence)
+    def require(condition, code):
+        if not condition:raise ValueError(code)
+    require(evidence['candidate_sha256']==hashlib.sha256(candidate_bytes).hexdigest(),'EVIDENCE_CANDIDATE_DIGEST')
+    require(candidate==json.loads(candidate_bytes),'EVIDENCE_CANDIDATE_CONTENT')
+    require(evidence['source_conflicts']==candidate['gems']['reference_corrections'],'EVIDENCE_CORRECTIONS')
+    require(evidence['icon_evidence']==candidate['icon_evidence'],'EVIDENCE_ICONS')
+    require(evidence['planner_replay']['source_commit']==candidate['sources'][0]['commit'],'EVIDENCE_SOURCE_REVISION')
+    counts=evidence['counts']
+    actual={'vocations':len(candidate['vocations']),
+        'slots':sum(len(v['slots']) for v in candidate['vocations'].values()),
+        'revelation_assignments':sum(len(v['revelations']) for v in candidate['vocations'].values()),
+        'unique_conviction_types':len({s['conviction']['key'] for v in candidate['vocations'].values() for s in v['slots'] if s['conviction']['category']=='unique'}),
+        'basic_mods':len(candidate['gems']['basic_mods']),'supreme_mods':len(candidate['gems']['supreme_mods']),
+        'revelation_numeric_values':sum(len(s['numeric_effects']) for v in candidate['vocations'].values() for r in v['revelations'] for s in r['stages'])}
+    require(counts==actual,'EVIDENCE_COUNTS')
+    binding=evidence['live_source_audit'];require(binding['file']=='samples/live-source-audit.json','EVIDENCE_AUDIT_PATH')
+    require(binding['sha256']==hashlib.sha256((ROOT/binding['file']).read_bytes()).hexdigest(),'EVIDENCE_AUDIT_DIGEST')
+    audit=read(ROOT/binding['file'])
+    item_binding=evidence['item_asset_reference']
+    require(item_binding['file']=='samples/item-asset-reference.json','EVIDENCE_ITEM_ASSET_PATH')
+    require(item_binding['sha256']==hashlib.sha256((ROOT/item_binding['file']).read_bytes()).hexdigest(),'EVIDENCE_ITEM_ASSET_DIGEST')
+    from verify_item_assets import build_reference
+    require(read(ROOT/item_binding['file'])==build_reference(),'EVIDENCE_ITEM_ASSET_INPUTS')
+    require(not audit['runtime_admitted'] and not audit['live_global_parity_confirmed'] and not evidence['live_verification']['live_global_parity_confirmed'],'EVIDENCE_ADMISSION')
+    if candidate['verification']['live_website_verified']:
+        observations={o['key']:o for o in audit['http_observations']}
+        for key in ('module','library'):
+            observation=observations[key]
+            require(observation['status']==200 and observation['equals_pinned_bytes'] and observation['sha256']==observation['pinned_sha256'],'EVIDENCE_LIVE_INPUTS')
+        require(observations['renderer']['sha256']==evidence['icon_evidence']['renderer_sha256'],'EVIDENCE_RENDERER')
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=['build','validate']);parser.add_argument('--check',action='store_true');parser.add_argument('--file',type=Path,default=ROOT/'samples/wheel-candidate.json');parser.add_argument('--previous',type=Path);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=['build','validate']);parser.add_argument('--check',action='store_true');parser.add_argument('--file',type=Path,default=ROOT/'samples/wheel-candidate.json');parser.add_argument('--previous',type=Path);parser.add_argument('--evidence',type=Path);args=parser.parse_args()
+    qualified=False
     if args.command=='build':
         candidate=build();validate(candidate)
         if args.check:
-            if read(args.file)!=candidate:raise ValueError('REBUILD_DRIFT')
-        else:args.file.write_text(json.dumps(candidate,indent=2)+'\n')
-    else:validate(read(args.file),read(args.previous) if args.previous else None)
-    print('PASS: Wheel authoring candidate, 5 vocations × 36 slots; reference only.')
+            if args.file.read_text()!=json.dumps(candidate,indent=2,allow_nan=False)+'\n':raise ValueError('REBUILD_DRIFT')
+        else:args.file.write_text(json.dumps(candidate,indent=2,allow_nan=False)+'\n')
+    else:
+        candidate=read(args.file);validate(candidate,read(args.previous) if args.previous else None)
+    if args.evidence or ((args.command=='validate' or args.check) and args.file.resolve()==(ROOT/'samples/wheel-candidate.json').resolve()):
+        validate_evidence(candidate,args.file.read_bytes(),args.evidence);qualified=True
+    print('PASS: Wheel reference candidate; '+('exact-file evidence qualified.' if qualified else 'semantic validation only; evidence not qualified.'))
 if __name__=='__main__':main()

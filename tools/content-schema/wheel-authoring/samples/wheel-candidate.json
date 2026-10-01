@@ -26,7 +26,7 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "b1b5c699e2cde9b84631880a9dc1b39665f3abc9475c87a4d2efbaf8779263a0"
+    "source-parameters.json": "cb90eb3d1c3ff040cc465b2f7daf2d7a124e365f4453881ce91b79be622fdd73"
   },
   "progression": {
     "minimum_level": 51,
@@ -6492,6 +6492,11 @@
                 "reference_text": "Adds 15% critical extra damage for this spell.",
                 "numeric_effects": [
                   {
+                    "kind": "critical_extra_damage",
+                    "value": 15.0,
+                    "unit": "percent_points"
+                  },
+                  {
                     "kind": "critical_hit_chance",
                     "value": 10,
                     "unit": "percent_points"
@@ -7222,6 +7227,11 @@
                 "stage": 1,
                 "reference_text": "Adds 15% critical extra damage for this spell.",
                 "numeric_effects": [
+                  {
+                    "kind": "critical_extra_damage",
+                    "value": 15.0,
+                    "unit": "percent_points"
+                  },
                   {
                     "kind": "critical_hit_chance",
                     "value": 10,
@@ -11211,19 +11221,21 @@
             "augment_targets": [
               "Flurry of Blows"
             ],
-            "reference_hypotheses": [],
+            "reference_hypotheses": [
+              {
+                "stage": 1,
+                "kind": "range_increase",
+                "value": 1,
+                "unit": "tiles",
+                "evidence": "CONFLICT_NOT_SELECTED: planner says Range increased by 1; official:8833 in spell-authoring/wheel-augments.json and native behaviours appendix A.1 define enlarged affected area. No separate cast-range bonus is established; raw phrase retained."
+              }
+            ],
             "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
                 "reference_text": "Range increased by 1",
-                "numeric_effects": [
-                  {
-                    "kind": "range_increase",
-                    "value": 1.0,
-                    "unit": "tiles"
-                  }
-                ],
+                "numeric_effects": [],
                 "unresolved_parameters": [],
                 "area_reference": "AREA_GREATER_FLURRY_OF_BLOWS"
               },
@@ -11964,19 +11976,21 @@
             "augment_targets": [
               "Flurry of Blows"
             ],
-            "reference_hypotheses": [],
+            "reference_hypotheses": [
+              {
+                "stage": 1,
+                "kind": "range_increase",
+                "value": 1,
+                "unit": "tiles",
+                "evidence": "CONFLICT_NOT_SELECTED: planner says Range increased by 1; official:8833 in spell-authoring/wheel-augments.json and native behaviours appendix A.1 define enlarged affected area. No separate cast-range bonus is established; raw phrase retained."
+              }
+            ],
             "unique_parameters": null,
             "augment_stages": [
               {
                 "stage": 1,
                 "reference_text": "Range increased by 1",
-                "numeric_effects": [
-                  {
-                    "kind": "range_increase",
-                    "value": 1.0,
-                    "unit": "tiles"
-                  }
-                ],
+                "numeric_effects": [],
                 "unresolved_parameters": [],
                 "area_reference": "AREA_GREATER_FLURRY_OF_BLOWS"
               },
@@ -22999,15 +23013,6 @@
         "planner_value": 60,
         "selected_value": 40,
         "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
-      },
-      {
-        "key": "augmented_great_fire_wave",
-        "parameter": "critical_hit_chance",
-        "planner_parameter": "critical_extra_damage",
-        "stage": 1,
-        "planner_value": 15,
-        "selected_value": 10,
-        "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending Live BR wiki r423338 (published 2025-03-27) lists both +15% extra damage and +10% chance; target-version/effect-combination conflict remains pending."
       }
     ],
     "initial_gems": {

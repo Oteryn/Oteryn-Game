@@ -1140,15 +1140,6 @@
       "planner_value": 60,
       "selected_value": 40,
       "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
-    },
-    {
-      "key": "augmented_great_fire_wave",
-      "parameter": "critical_hit_chance",
-      "planner_parameter": "critical_extra_damage",
-      "stage": 1,
-      "planner_value": 15,
-      "selected_value": 10,
-      "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending Live BR wiki r423338 (published 2025-03-27) lists both +15% extra damage and +10% chance; target-version/effect-combination conflict remains pending."
     }
   ],
   "augment_parameters": {
@@ -1157,6 +1148,12 @@
       "kind": "duration_increase",
       "value": 4,
       "unit": "seconds"
+    },
+    "augmented_great_fire_wave": {
+      "stage": 1,
+      "kind": "critical_hit_chance",
+      "value": 10,
+      "unit": "percent_points"
     }
   },
   "area_references": {
@@ -1796,6 +1793,15 @@
         "value": 4,
         "unit": "seconds",
         "evidence": "OTS_HYPOTHESIS_ONLY: pinned Canary, project wheel-augments.json; absent from official and captured Fandom descriptions, not selected as a confirmed effect"
+      }
+    ],
+    "augmented_flurry_of_blows": [
+      {
+        "stage": 1,
+        "kind": "range_increase",
+        "value": 1,
+        "unit": "tiles",
+        "evidence": "CONFLICT_NOT_SELECTED: planner says Range increased by 1; official:8833 in spell-authoring/wheel-augments.json and native behaviours appendix A.1 define enlarged affected area. No separate cast-range bonus is established; raw phrase retained."
       }
     ]
   },

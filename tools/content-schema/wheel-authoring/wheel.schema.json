@@ -2749,38 +2749,73 @@
       ]
     },
     "augment_hypothesis": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "stage": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 2
-        },
-        "kind": {
-          "enum": [
-            "secondary_cooldown_reduction"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2
+            },
+            "kind": {
+              "const": "secondary_cooldown_reduction"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "seconds"
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "stage",
+            "kind",
+            "value",
+            "unit",
+            "evidence"
           ]
         },
-        "value": {
-          "type": "number",
-          "minimum": 0
-        },
-        "unit": {
-          "const": "seconds"
-        },
-        "evidence": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 20000
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2
+            },
+            "kind": {
+              "const": "range_increase"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unit": {
+              "const": "tiles"
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "stage",
+            "kind",
+            "value",
+            "unit",
+            "evidence"
+          ]
         }
-      },
-      "required": [
-        "stage",
-        "kind",
-        "value",
-        "unit",
-        "evidence"
       ]
     },
     "unique_effect": {
@@ -3451,114 +3486,89 @@
       "additionalProperties": false,
       "properties": {
         "revealed_gem_storage": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 20000
+          "const": "character_build_state"
         },
         "unrevealed_stack_limit": {
-          "type": "integer",
-          "minimum": 0
+          "const": 100
         },
         "unrevealed_tradeable": {
-          "type": "boolean"
+          "const": true
         },
         "unrevealed_droppable": {
-          "type": "boolean"
+          "const": true
         },
         "revealed_tradeable": {
-          "type": "boolean"
+          "const": false
         },
         "reveal_requires_matching_vocation": {
-          "type": "boolean"
+          "const": true
         },
         "reveal_distribution": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 20000
+          "const": "uniform_over_eligible_catalogue_candidates_ots"
         },
         "reveal_draw_order": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000
-          },
-          "minItems": 4,
-          "maxItems": 4
+          "const": [
+            "domain",
+            "basic_1",
+            "basic_2",
+            "supreme"
+          ]
         },
         "dismantle_refusals": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000
-          },
-          "minItems": 4,
-          "maxItems": 4
+          "const": [
+            "locked",
+            "in_vessel",
+            "last_gem_of_domain",
+            "non_current_ruleset"
+          ]
         },
         "switch_domain_refusals": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000
-          },
-          "minItems": 3,
-          "maxItems": 3
+          "const": [
+            "locked",
+            "in_vessel",
+            "non_current_ruleset"
+          ]
         },
         "lock_refusals": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000
-          },
-          "minItems": 1,
-          "maxItems": 1
+          "const": [
+            "non_current_ruleset"
+          ]
         },
         "vessel_requires_matching_domain": {
-          "type": "boolean"
+          "const": true
         },
         "gem_can_occupy_only_one_vessel": {
-          "type": "boolean"
+          "const": true
         },
         "vessel_without_resonance_allowed": {
-          "type": "boolean"
+          "const": true
         },
         "initial_gems_once_per_character": {
-          "type": "boolean"
+          "const": true
         },
         "initial_gems_revealed": {
-          "type": "boolean"
+          "const": true
         },
         "revealed_gem_limit": {
-          "type": "integer",
-          "minimum": 0
+          "const": 250
         },
         "revealed_gem_limit_evidence": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 20000
+          "const": "PARITY_PENDING: WHEEL-GEM-0 WHEELGEM0-RL-02"
         },
         "grade_min": {
-          "type": "integer",
-          "minimum": 0
+          "const": 0
         },
         "grade_max": {
-          "type": "integer",
-          "minimum": 0
+          "const": 3
         },
         "grade_decrease_allowed": {
-          "type": "boolean"
+          "const": false
         },
         "crusher_item": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 20000
+          "const": "oteryn:item.tibia.i46627"
         },
         "crusher_charges": {
-          "type": "integer",
-          "minimum": 0
+          "const": 10
         },
         "vendor_reference_prices": {
           "type": "object",
@@ -3584,14 +3594,10 @@
           ]
         },
         "vendor_price_evidence": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 20000
+          "const": "existing content/services/trade/trade-00000-00321.json; candidate reference, no trade mutation"
         },
         "state_operation_evidence": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 20000
+          "const": "WHEEL-GEM-0 sections 3, 5-9; official manual capture notes. in-vessel switch refusal is architect ruling R2."
         },
         "vendor_buy_unrevealed_gem_prices": {
           "type": "object",
@@ -3770,7 +3776,7 @@
         },
         "roll_denominator": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 1
         },
         "category_precedence": {
           "type": "array",

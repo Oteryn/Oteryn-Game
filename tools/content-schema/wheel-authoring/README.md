@@ -10,11 +10,12 @@ is deliberately separate from runtime admission (`runtime_admitted: false`).
 With Python 3 and `requirements.txt` installed, run from this directory:
 
 ```sh
-python build_schema.py
+python build_schema.py --check
 python wheel_authoring.py build --check
 python wheel_authoring.py validate
 python -m unittest discover -s . -q
-python build_report.py
+python build_report.py --check
+python verify_item_assets.py --check
 node verify_planner.cjs /path/to/pinned/TibiaPal
 ```
 
@@ -25,6 +26,10 @@ The viewer includes perk and gem icons without redistributing source image bytes
 `build` without `--check` writes `samples/wheel-candidate.json`. Validation never
 writes files. Rebuilding needs only the committed source captures, without the
 original JavaScript/WASM module or network access.
+The default `validate` and `build --check` qualify the candidate's exact file hash,
+coverage, corrections and evidence digests. Custom `--file` authoring validates
+semantics only; supply `--evidence` to qualify that exact file. The CLI labels the
+difference. Non-finite numbers are rejected when reading and validating JSON.
 
 ## Data and evidence
 
@@ -43,6 +48,9 @@ original JavaScript/WASM module or network access.
 - `samples/live-source-audit.json`: live Tavily source revisions/content hashes, HTTP
   observations, bounded official facts and per-conflict outcomes. No original
   manual, upstream module or sprite bytes are redistributed.
+- `samples/item-asset-reference.json`: 18 Gem item appearances, sprite IDs and
+  atlas files from the existing digest-verified 15.30 assets, reproduced by
+  `verify_item_assets.py`. It does not assign icons to Wheel perks or admit assets.
 - `samples/planner-allocation-snapshots.json`: 180 legal allocations.
 - `samples/planner-graph-comparison.json`: 1,080 observed unlock states with no
   differences during the tested fill sequences. This is bounded evidence, not
@@ -95,10 +103,12 @@ Revelation has three stages at 250/500/1,000 domain points, typed numeric effect
 explicit behavior rules and reference areas, with conditions also retained in descriptions and the shared +4/+9/+20 damage/healing
 bonuses. Avatar cooldowns are converted from minutes to seconds; Gift of Life
 cooldowns count battle-sign time. The official 8944 cooldown changes select -4 s for Mystic Repulse I and Thousand
-Fist Blows II instead of the planner's -6 s. Great Fire Wave I and Mystic Repulse II
-select the existing project target evidence (critical chance +10% and damage +40%)
-while retaining conflicting planner values (critical extra damage +15%, damage
-+60%). The Special Spells secondary cooldown remains a separately labelled
+Fist Blows II instead of the planner's -6 s. Great Fire Wave I preserves both
+effects in the existing project spell evidence: critical extra damage +15% and
+critical chance +10%. Mystic Repulse II selects project damage +40% while retaining
+planner +60% and BR wiki +15%. Flurry I selects its enlarged affected area and
+retains the planner's range +1 as an unselected hypothesis; no independent cast
+range bonus is established. The Special Spells secondary cooldown remains a separately labelled
 Canary-only hypothesis. All selections are recorded with their source.
 Lord of Destruction's stage-2 death critical
 bonus uses the project's corroborated **22.5%** value while preserving the
@@ -146,11 +156,21 @@ implemented by reference tooling.
 
 ## Revisions and admission
 
-An initial revision has no predecessor. Successors require the previous candidate;
+An initial revision accepts no previous candidate. Successors require the previous candidate;
 `value_only` rejects changes to topology, perk identities, effect kinds/units and
 other nonnumeric structure. `wheel_reset` describes the Wheel's revision policy,
 not permission to erase paid gems: GEM-R admission separately requires the
 WHEEL-GEM-0 §5.3 compatible mapping or staged migration.
+Source identities, complete effect shapes, areas, targets, placement and icon
+indices must agree with the committed input captures. Structural source updates
+must update those captures; numeric effect tuning remains possible. Operation
+invariants follow WHEEL-GEM-0, Battle Instinct thresholds/caps must be feasible,
+and loot probabilities require a positive denominator and bounded chances.
+
+The Wheel Authoring Schema workflow checks deterministic schemas, candidate,
+evidence, item assets, comparison HTML and regressions on relevant pull requests.
+Its source replay against upstream WASM remains an explicitly separate local
+check; CI does not fetch upstream source or sprites.
 
 The authoring package creates no runtime ruleset, protocol capability, Character
 writer or native-key admission. Runtime owners must bind the effects and reference
@@ -170,12 +190,12 @@ gets additional derived corroboration: the wiki's combined 52.5% minus Master of
 Decay's base 30% gives the selected 22.5 percentage-point increment. This is
 secondary-source evidence, not a new official confirmation.
 
-Two conflicts remain open. Mystic Repulse II has three observations: planner
-+60%, existing project target +40%, and BR wiki r443774 +15%. Great Fire Wave I
-has planner extra critical damage +15%, project critical chance +10%, and BR wiki
-r423338 listing both; that page's published revision is from March 2025. The
-source audit preserves all observations and their revision dates. Neither a
+Mystic Repulse II has three observations: planner +60%, existing project target
++40%, and BR wiki r443774 +15%. The Great Fire Wave omission was corrected using
+both existing project effect rows, also observed in BR wiki r423338. Flurry's
+cast-range interpretation remains unselected. The source audit preserves all
+observations and their revision dates. Neither a
 secondary page nor successful access selects a new Global target version.
-The numerical candidate remains unchanged, `live_global_parity_confirmed` stays
-false, and runtime admission remains false. Independent content review and
+The corrected candidate retains `live_global_parity_confirmed: false` and
+`runtime_admitted: false`. Independent content review and
 protected integration still belong to the active programme control plane.

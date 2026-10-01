@@ -1,5 +1,6 @@
 """Build a standalone, offline comparison from the validated authoring candidate."""
 import json
+import sys
 from pathlib import Path
 from wheel_authoring import ROOT, read, validate
 
@@ -8,7 +9,7 @@ def build_report():
     candidate = read(ROOT / 'samples/wheel-candidate.json')
     validate(candidate)
     # Escape HTML script terminators; render every data string with textContent.
-    embedded = json.dumps(candidate, ensure_ascii=False).replace('<', '\\u003c')
+    embedded = json.dumps(candidate, ensure_ascii=False, allow_nan=False).replace('<', '\\u003c')
     template = '''<!doctype html><html lang="pl"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width"><title>Wheel of Destiny — schemat</title>
 <style>body{font:15px system-ui;background:#101924;color:#e6edf4;margin:24px auto;padding:16px;max-width:1450px}p{line-height:1.5}select,input{padding:10px;margin:8px;background:#223346;color:white}table{width:100%;border-collapse:collapse}td,th{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid #324356}details{padding:14px;margin:8px 0;background:#1b2939}summary{cursor:pointer}pre{white-space:pre-wrap}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}a{color:#83c7ff}.icon{display:inline-block;position:relative;overflow:hidden;vertical-align:middle;margin:4px;min-width:24px;min-height:24px}.icon img{position:absolute;top:0;max-width:none}.icon-pending{font-size:11px;color:#a9bbce}</style>
@@ -41,4 +42,8 @@ voc.onchange=render;document.querySelector('#search').oninput=render;render();
 
 
 if __name__ == '__main__':
-    (ROOT / 'wheel-comparison.html').write_text(build_report())
+    path = ROOT / 'wheel-comparison.html'
+    report = build_report()
+    if '--check' in sys.argv:
+        if path.read_text() != report:raise ValueError('REPORT_REBUILD_DRIFT')
+    else:path.write_text(report)

@@ -1,6 +1,8 @@
 """Generate the closed draft-2020-12 Wheel authoring schema; no runtime admission."""
 import json
+import sys
 from pathlib import Path
+from wheel_authoring import read
 ROOT = Path(__file__).resolve().parent
 VOCATIONS = ['knight', 'paladin', 'sorcerer', 'druid', 'monk']
 DOMAINS = ['green', 'red', 'blue', 'purple']
@@ -17,7 +19,7 @@ def integer(lo,hi=None):
     s={'type':'integer','minimum':lo}
     if hi is not None:s['maximum']=hi
     return s
-parameters=json.loads((ROOT/'samples/source-parameters.json').read_text())
+parameters=read(ROOT/'samples/source-parameters.json')
 text={'type':'string','minLength':1,'maxLength':20000}
 number={'type':'number','minimum':0}
 slot_id=integer(1,36)
@@ -41,7 +43,6 @@ cost=obj({'gold':integer(0),'fragments':integer(0)})
 grade_cost=obj({'target_grade':integer(1,3),'basic':ref('cost'),'supreme':ref('cost')})
 source=obj({'id':key,'repository':{'type':'string','pattern':'^https://github.com/'},'commit':{'type':'string','pattern':'^[a-f0-9]{40}$'}})
 release={'oneOf':[obj({'kind':{'const':'initial'},'predecessor':{'type':'null'}}),obj({'kind':enum(['value_only','wheel_reset']),'predecessor':text})]}
-parameters=json.loads((ROOT/'samples/source-parameters.json').read_text())
 parameter_units={e['kind']:e['unit'] for effects in parameters['revelations'].values() for e in effects}
 revelation_effect={'oneOf':[obj({'kind':{'const':k},'value':number,'unit':{'const':u}}) for k,u in parameter_units.items()]}
 supreme_units={'dodge':'percent_points','critical_extra_damage':'percent_points','life_leech':'percent_points','mana_leech':'percent_points','base_damage_bonus':'percent_points','base_healing_bonus':'percent_points','cooldown_reduction':'seconds','momentum_chance':'percent_points','revelation_mastery_points':'points'}
@@ -49,7 +50,7 @@ supreme_effect={'oneOf':[obj({'kind':{'const':k},'value':number,'unit':{'const':
 # Candidate Atelier policy: source values remain labelled hypotheses or official facts.
 atelier=obj({'clockwise_domains':arr(enum(DOMAINS),4,4,True),'basic_pair_compatibility':{'const':'different_source_mod_ids'},'effective_grade_order':{'const':['basic_1','basic_2','supreme']},'effective_grade_rule':{'const':'minimum_of_self_and_present_preceding_mod_grades'},'grade_iv_promotion_points_per_mod_type':integer(0),'fees':obj({action:obj({q:integer(0) for q in ['lesser','regular','greater']}) for action in ['reveal','switch_domain']}),'fragment_items':obj({k:{'type':'string','pattern':'^oteryn:item.tibia.i[0-9]+$'} for k in ['basic','supreme']}),'fragment_yields':obj({q:obj({'fragment':enum(['basic','supreme']),'unrevealed':arr(integer(0),2,2),'revealed':arr(integer(0),2,2)}) for q in ['lesser','regular','greater']}),'operation_policy':ref('operation_policy'),'yield_evidence':text,'fee_evidence':text,'grade_scope':{'const':'character_mod_type'},'resonance_activation_order':{'const':['basic_1','basic_2','supreme']}})
 correction=obj({'key':key,'parameter':key,'planner_parameter':key,'stage':integer(1,3),'planner_value':number,'selected_value':number,'evidence':text})
-augment_hypothesis=obj({'stage':integer(1,2),'kind':enum(['secondary_cooldown_reduction']),'value':number,'unit':{'const':'seconds'},'evidence':text})
+augment_hypothesis={'oneOf':[obj({'stage':integer(1,2),'kind':{'const':k},'value':number,'unit':{'const':u},'evidence':text}) for k,u in [('secondary_cooldown_reduction','seconds'),('range_increase','tiles')]]}
 unique_units={e['kind']:e['unit'] for p in parameters['unique_conviction'].values() for e in p['numeric_effects']}
 unique_effect={'oneOf':[obj({'kind':{'const':k},'value':number,'unit':{'const':u}}) for k,u in unique_units.items()]}
 unique_parameters=obj({'numeric_effects':arr(ref('unique_effect')),'behaviors':arr(enum(sorted({b for p in parameters['unique_conviction'].values() for b in p['behaviors']})),1,None,True),'targets':arr(text,0,None,True)})
@@ -65,15 +66,30 @@ def literal_shape(value):
     raise TypeError(value)
 progression=literal_shape(parameters['progression'])
 operation_policy=literal_shape(parameters['gems']['operation_policy'])
+# These accepted WHEEL-GEM-0 invariants cannot be changed by editing a capture.
+operation_contract={'revealed_tradeable':False,'reveal_requires_matching_vocation':True,
+    'grade_min':0,'grade_max':3,'grade_decrease_allowed':False,
+    'vessel_requires_matching_domain':True,'gem_can_occupy_only_one_vessel':True,
+    'initial_gems_once_per_character':True,'initial_gems_revealed':True}
+for field,value in parameters['gems']['operation_policy'].items():
+    if field in operation_contract and value!=operation_contract[field]:raise ValueError('ATELIER_CONTRACT: '+field)
+    if field not in ('vendor_reference_prices','vendor_buy_unrevealed_gem_prices'):
+        operation_policy['properties'][field]={'const':value}
 icon_evidence=literal_shape(parameters['icon_evidence'])
 loot_reference=literal_shape(parameters['gems']['loot_reference'])
+loot_reference['properties']['roll_denominator']=integer(1)
 root=obj({'schema':{'const':'OTERYN_WHEEL_AUTHORING_CANDIDATE/v1'},'revision':{'type':'string','minLength':1,'maxLength':128},'release':release,'runtime_admitted':{'const':False},'sources':arr(ref('source'),1,None),'input_digests':obj({f:{'type':'string','pattern':'^[a-f0-9]{64}$'} for f in ['source-wheel-reference.json','source-graph.json','source-parameters.json']}),'progression':ref('progression'),'icon_evidence':ref('icon_evidence'),'topology':arr(ref('topology'),36,36),'vocations':obj({v:ref('vocation') for v in VOCATIONS}),'gems':obj({'excluded_empty_basic_mod_ids':arr(integer(0,255),0,255,True),'qualities':arr(ref('gem_quality'),3,3),'basic_mods':arr(ref('basic_mod'),1,255),'supreme_mods':arr(ref('supreme_mod'),1,255),'grade_costs':arr(ref('grade_cost'),3,3),'atelier':ref('atelier'),'loot_reference':ref('loot_reference'),'reference_corrections':arr(ref('correction')),'initial_gems':obj({'count':{'const':8},'composition':{'const':'one_lesser_and_one_regular_per_domain'}}),'parameter_state':{'const':'REFERENCE_CATALOGUE_NOT_RUNTIME_ADMITTED'}}),'verification':obj({'planner_unlock_states_checked':integer(1),'planner_unlock_mismatches':{'const':0},'legal_allocation_snapshots':integer(1),'live_website_verified':{'const':parameters['live_source_verification']['tibiapal_content_verified']},'wiki_verified':{'const':parameters['live_source_verification']['requested_fandom_verified']},'blockers':arr(text,1,None,True)})})
 root.update({'$schema':'https://json-schema.org/draft/2020-12/schema','title':'Wheel of Destiny authoring candidate v1','$defs':{k:v for k,v in locals().copy().items() if k in ['icon','effect','stage','conviction','dedication','slot','revelation_stage','revelation','vocation','topology','modgrade','basic_effect','basic_mod','supreme_mod','gem_quality','cost','grade_cost','source','revelation_effect','supreme_effect','atelier','correction','unique_effect','unique_parameters','progression','operation_policy','icon_evidence','loot_reference','augment_hypothesis']}})
 root['$defs']['augment_effect']=root['$defs'].pop('effect');root['$defs']['augment_stage']=root['$defs'].pop('stage');root['$defs']['mod_grade']=root['$defs'].pop('modgrade')
-(ROOT/'wheel.schema.json').write_text(json.dumps(root,indent=2)+'\n')
+def output(filename,value):
+    path=ROOT/filename;rendered=json.dumps(value,indent=2,allow_nan=False)+'\n'
+    if '--check' in sys.argv:
+        if path.read_text()!=rendered:raise ValueError('SCHEMA_REBUILD_DRIFT: '+filename)
+    else:path.write_text(rendered)
+output('wheel.schema.json',root)
 
-evidence=literal_shape(json.loads((ROOT/'samples/verification-evidence.json').read_text()))
+evidence=literal_shape(read(ROOT/'samples/verification-evidence.json'))
 evidence['properties']['schema']={'const':'OTERYN_WHEEL_REFERENCE_VERIFICATION/v1'}
 evidence['properties']['candidate_sha256']={'type':'string','pattern':'^[a-f0-9]{64}$'}
 evidence.update({'$schema':'https://json-schema.org/draft/2020-12/schema','title':'Wheel reference verification evidence'})
-(ROOT/'verification.schema.json').write_text(json.dumps(evidence,indent=2)+'\n')
+output('verification.schema.json',evidence)

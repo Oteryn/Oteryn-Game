@@ -96,15 +96,6 @@
       "planner_value": 60,
       "selected_value": 40,
       "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, live verification pending Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
-    },
-    {
-      "key": "augmented_great_fire_wave",
-      "parameter": "critical_hit_chance",
-      "planner_parameter": "critical_extra_damage",
-      "stage": 1,
-      "planner_value": 15,
-      "selected_value": 10,
-      "evidence": "CONFLICT: planner critical extra damage +15%, pinned Canary and captured Fandom:1206174 critical chance +10%; selected existing project target evidence, live verification pending Live BR wiki r423338 (published 2025-03-27) lists both +15% extra damage and +10% chance; target-version/effect-combination conflict remains pending."
     }
   ],
   "classification": {
@@ -117,8 +108,9 @@
     "live_website_and_wiki": "LIVE_TIBIAPAL_INPUTS_CONFIRMED_BR_WIKI_PARTIAL_REQUESTED_FANDOM_FETCH_FAILED",
     "runtime_client_binding": "SEPARATE_IMPLEMENTATION",
     "official_cooldown_corrections": "CONFIRMED_PROJECT_OFFICIAL_8944_CAPTURE",
-    "great_fire_wave_and_mystic_repulse_damage": "CONFLICT_SELECTED_EXISTING_PROJECT_TARGET_EVIDENCE_LIVE_BR_DISAGREES",
-    "special_spell_secondary_cooldown": "OTS_HYPOTHESIS_ONLY_NOT_SELECTED"
+    "great_fire_wave_and_mystic_repulse_damage": "GREAT_FIRE_WAVE_PROJECT_COMPLETENESS_RECONCILED; MYSTIC_REPULSE_TARGET_VERSION_CONFLICT_PENDING",
+    "special_spell_secondary_cooldown": "OTS_HYPOTHESIS_ONLY_NOT_SELECTED",
+    "flurry_cast_range": "CONFLICT_NOT_SELECTED; AFFECTED_AREA_REFERENCE_SELECTED"
   },
   "live_verification": {
     "tibiapal": true,
@@ -149,9 +141,13 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "1128bc0591d78261cd8a4be6258d76d345faba292907a7d03ed646e21ba1a9db",
+  "candidate_sha256": "7389d2bc64cfa4d225b8efa9be3a34d9390487497714c751578b6015e47d1383",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
-    "sha256": "d2384942c083b2e772141c041c0245f6ff95de7135b55d079a1f6aa93eb6ed4d"
+    "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
+  },
+  "item_asset_reference": {
+    "file": "samples/item-asset-reference.json",
+    "sha256": "b6ffddbe19e7762f0f842bb9da1b4e0a4075ed51d7c1a2c793ba178de7832e19"
   }
 }
