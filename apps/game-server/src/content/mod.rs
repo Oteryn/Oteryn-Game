@@ -30,6 +30,11 @@
 
 mod activation;
 mod artifact;
+#[allow(
+    dead_code,
+    reason = "source adapters await the separately allocated canonical Charm decoder"
+)]
+pub(crate) mod charm_source_json;
 mod compiler;
 mod cw2_b1_import;
 mod cw2_b4_import;
