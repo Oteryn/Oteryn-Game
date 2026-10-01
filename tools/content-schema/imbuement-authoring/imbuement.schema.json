@@ -540,6 +540,9 @@
                 "access": {
                   "type": "object",
                   "properties": {
+                    "direct_shrine_target_unequipped_required": {
+                      "const": true
+                    },
                     "premium_required": {
                       "type": "boolean"
                     },
@@ -586,6 +589,7 @@
                     }
                   },
                   "required": [
+                    "direct_shrine_target_unequipped_required",
                     "premium_required",
                     "catalogue",
                     "profile",

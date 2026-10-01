@@ -16,9 +16,9 @@ CATALOGUE = HERE / "samples/imbuements-candidate.json"
 REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
-    "global-research-closure.json": "fa9905781e69bbbd970d6b71c55834b0f115411cf5a21eee86bfa2521fa4d20d",
+    "global-research-closure.json": "2e1318b1c8b7d72765483970c2a4b1fbdd2783727e0b3dbec0d49260cf5dacb8",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-access.json": "95c966ebcbd3c1ed15277417c6e6f2acf720817c6b9776732873f511c7a15dcc",
+    "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
     "imbuement-eligibility.json": "c26be2542ce0b048258f1a4bcc2604145608af6cb669e20dbeb75f0ee76c062e",
     "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
     "imbuement-combat.json": "3166820fc12c066bd87918321f15a2637d27b986e34c7e0ae51914bc7799088b",
@@ -131,6 +131,13 @@ def supporting():
         raise ValueError("access profiles do not cover exactly the 24 types")
     if any(set(row["direct_shrine"]) != {"basic", "intricate", "powerful"} for row in access.values()):
         raise ValueError("access profiles must cover all 72 direct shrine routes")
+    for family in access.values():
+        for route in family["direct_shrine"].values():
+            if route["all_of"].count({"predicate_ref": "unequipped_shrine_target"}) != 1:
+                raise ValueError("direct shrine routes require an unequipped target")
+        if ({"predicate_ref": "unequipped_shrine_target"} in family["scroll_apply"]["all_of"]
+                or family["scroll_apply"]["equipped_target_permission"]["value"] is not None):
+            raise ValueError("scroll equipped-target permission remains separately unconfirmed")
     rule_rows = packets["global-rules-evidence.json"]["rules"]
     if len({r["id"] for r in rule_rows}) != len(rule_rows):
         raise ValueError("duplicate Global rule id")
@@ -234,7 +241,8 @@ def schema():
                 "materials": array(obj({"source_name": text, "count": integer(), "item_binding": item_ref}), 1, 3),
                 "scroll_item": item_ref,
                 "apply_fee_gold": integer(), "clear_fee_gold": integer(),
-                "access": obj({"premium_required": {"type": "boolean"},
+                "access": obj({"direct_shrine_target_unequipped_required": {"const": True},
+                               "premium_required": {"type": "boolean"},
                                "catalogue": {"const": "imbuement-access.json"},
                                "profile": enum(*sorted(LAYOUT)),
                                "tier": enum("basic", "intricate", "powerful"),
@@ -326,7 +334,7 @@ def build():
                                         for m in record["incremental_materials"][:i + 1]],
                           "scroll_item": bindings["scroll_bindings"][name][tier_name.lower()]["item_ref"],
                           "apply_fee_gold": fees[tier_name.lower()], "clear_fee_gold": rules["clear_fee_gold"]["value"],
-                          "access": {"premium_required": i > 0, "catalogue": "imbuement-access.json",
+                          "access": {"direct_shrine_target_unequipped_required": True, "premium_required": i > 0, "catalogue": "imbuement-access.json",
                                      "profile": name, "tier": tier_name.lower(),
                                      "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"},
                           "provenance": {"effect": ("global-rules-evidence.json#strike_additive_modifiers"

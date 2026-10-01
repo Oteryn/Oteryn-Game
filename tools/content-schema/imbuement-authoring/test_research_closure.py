@@ -43,6 +43,11 @@ class ResearchClosureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "each original"):
             research_closure.validate(self.packet)
 
+    def test_fabricated_conflict_witness_is_rejected(self):
+        self.packet["source_conflicts"][-1]["literal_quote"] = "The PZ timer always resets to zero."
+        with self.assertRaisesRegex(ValueError, "conflict quote missing"):
+            research_closure.validate(self.packet)
+
 
 if __name__ == "__main__":
     unittest.main()

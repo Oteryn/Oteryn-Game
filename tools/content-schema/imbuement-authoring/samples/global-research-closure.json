@@ -573,6 +573,10 @@
         {
           "source_id": "fandom_life_current_1101811",
           "text": "Damage Preys do not affect the leech."
+        },
+        {
+          "source_id": "fandom_formulae_1205374",
+          "text": "Damage preys do not influence the mana/health leech amount, but Critical Hits do increase the leech."
         }
       ],
       "limits": [
@@ -1261,11 +1265,6 @@
       "remaining_public_fields": [
         {
           "description": "Exact Global visible remaining-duration preservation for a named transfer route is unconfirmed if required.",
-          "value": null,
-          "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
-        },
-        {
-          "description": "The already-supported recipient usability fact is only prose in the broad null transfer rule; it can be authored as a distinct bounded boolean without claiming exact-duration preservation.",
           "value": null,
           "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
         }

@@ -710,6 +710,13 @@
         }
       ],
       "notes": "Completed historical qualification: the world temple construction event and character five-tome contribution. No current temple-open interaction or present inventory of tomes is added."
+    },
+    "unequipped_shrine_target": {
+      "type": "item_is_not_equipped",
+      "source_refs": [
+        "official_manual"
+      ],
+      "notes": "Official manual: you can only imbue items when they are not equipped. Direct shrine only; completed-scroll equipped permission remains unconfirmed."
     }
   },
   "scroll_acquisition": {
@@ -1328,6 +1335,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1341,6 +1351,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1357,6 +1370,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -1400,6 +1416,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -1463,6 +1485,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1476,6 +1501,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1492,6 +1520,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -1535,6 +1566,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -1598,6 +1635,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1611,6 +1651,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1627,6 +1670,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -1670,6 +1716,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -1733,6 +1785,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1746,6 +1801,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1762,6 +1820,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -1805,6 +1866,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -1868,6 +1935,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1881,6 +1951,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -1897,6 +1970,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -1940,6 +2016,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -2006,6 +2088,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2019,6 +2104,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2035,6 +2123,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -2078,6 +2169,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -2141,6 +2238,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2154,6 +2254,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2170,6 +2273,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -2213,6 +2319,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -2279,6 +2391,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2292,6 +2407,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2308,6 +2426,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -2351,6 +2472,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -2414,6 +2541,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2427,6 +2557,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2443,6 +2576,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -2486,6 +2622,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -2549,6 +2691,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2562,6 +2707,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2578,6 +2726,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -2621,6 +2772,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -2687,6 +2844,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2700,6 +2860,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2716,6 +2879,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -2759,6 +2925,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -2822,6 +2994,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2835,6 +3010,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2851,6 +3029,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -2894,6 +3075,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -2957,6 +3144,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2970,6 +3160,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -2986,6 +3179,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -3029,6 +3225,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -3092,6 +3294,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3105,6 +3310,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3121,6 +3329,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -3164,6 +3375,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -3230,6 +3447,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3243,6 +3463,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3259,6 +3482,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -3302,6 +3528,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -3368,6 +3600,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3381,6 +3616,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3397,6 +3635,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -3440,6 +3681,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -3503,6 +3750,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3516,6 +3766,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3532,6 +3785,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -3575,6 +3831,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -3638,6 +3900,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3651,6 +3916,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3667,6 +3935,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -3710,6 +3981,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -3776,6 +4053,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3789,6 +4069,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3805,6 +4088,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -3848,6 +4134,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -3911,6 +4203,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3924,6 +4219,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -3940,6 +4238,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -3983,6 +4284,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -4049,6 +4356,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -4062,6 +4372,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -4078,6 +4391,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -4121,6 +4437,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -4184,6 +4506,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -4197,6 +4522,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -4213,6 +4541,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -4256,6 +4587,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -4319,6 +4656,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -4332,6 +4672,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -4348,6 +4691,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -4391,6 +4737,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {
@@ -4457,6 +4809,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -4470,6 +4825,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         },
@@ -4486,6 +4844,9 @@
             },
             {
               "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
             }
           ]
         }
@@ -4529,6 +4890,12 @@
             "scroll_application_equipped_target"
           ],
           "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+        },
+        "equipped_target_permission": {
+          "value": null,
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission."
         }
       },
       "scroll_inscription": {

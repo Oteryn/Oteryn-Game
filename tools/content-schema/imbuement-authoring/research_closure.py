@@ -42,6 +42,11 @@ def validate(packet: dict) -> None:
                 "capture date must remain separate from publication dates")
     for conflict in packet["source_conflicts"]:
         require(all(sid in sources for sid in conflict["source_refs"]), "conflict references a missing source")
+        for field in ("quote", "literal_quote"):
+            if field in conflict:
+                require(conflict[field] and any(conflict[field] in sources[sid]["captured_text"]
+                                               for sid in conflict["source_refs"]),
+                        "conflict quote missing from its attributed source")
         for claim in conflict.get("claims", []):
             require(claim["quote"] in sources[claim["source"]]["captured_text"], "conflict quote missing from source")
     groups = packet["groups"]

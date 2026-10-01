@@ -228,12 +228,25 @@ class AccessEvidenceTest(unittest.TestCase):
                     self.leaves(family["scroll_inscription"][tier])
 
     def test_free_character_can_shrine_basic_but_not_higher_tiers(self):
-        events = self.leaves(self.definitions["shrine_access"]) | self.leaves(self.definitions["compatible_item"])
+        events = (self.leaves(self.definitions["shrine_access"])
+                  | self.leaves(self.definitions["compatible_item"])
+                  | self.leaves(self.definitions["unequipped_shrine_target"]))
         for name, family in self.families.items():
             with self.subTest(name=name):
                 self.assertTrue(self.granted(family["direct_shrine"]["basic"], events))
                 self.assertFalse(self.granted(family["direct_shrine"]["intricate"], events))
                 self.assertFalse(self.granted(family["direct_shrine"]["powerful"], events))
+
+    def test_equipped_shrine_target_rejected_without_restricting_completed_scrolls(self):
+        unequipped = self.leaves(self.definitions["unequipped_shrine_target"])
+        for family in self.families.values():
+            for route in family["direct_shrine"].values():
+                valid = self.leaves(route)
+                self.assertTrue(self.granted(route, valid))
+                self.assertFalse(self.granted(route, valid - unequipped))
+            application = family["scroll_apply"]
+            self.assertFalse(self.leaves(application) & unequipped)
+            self.assertIsNone(application["equipped_target_permission"]["value"])
 
     def test_each_initial_shrine_event_is_required(self):
         events = self.leaves(self.definitions["shrine_access"])
@@ -279,7 +292,10 @@ class AccessEvidenceTest(unittest.TestCase):
             self.assertFalse(self.granted(self.families[name]["powerful_unlock"], without_report))
 
     def test_premium_does_not_replace_powerful_unlock(self):
-        events = self.leaves(self.definitions["shrine_access"]) | self.leaves(self.definitions["compatible_item"]) | self.leaves(self.definitions["premium"])
+        events = (self.leaves(self.definitions["shrine_access"])
+                  | self.leaves(self.definitions["compatible_item"])
+                  | self.leaves(self.definitions["premium"])
+                  | self.leaves(self.definitions["unequipped_shrine_target"]))
         for name, family in self.families.items():
             with self.subTest(name=name):
                 self.assertTrue(self.granted(family["direct_shrine"]["intricate"], events))

@@ -278,7 +278,7 @@ children. The architecture/coordinator packet is on
 
 ## Validation
 
-The current package has211 offline test cases and nine replay/schema commands,
+The current package has213 offline test cases and nine replay/schema commands,
 plus a reparse of all three pinned engine XMLs. Both missing Item proposals pass
 the owning Item validator with zero errors and warnings. The current behavior
 packet additionally pins67 full source files, with224 exact line-range quotes
@@ -302,3 +302,5 @@ protection composition references and retained current PZ/armor conflicts.
 The change does not close unknown fields by relabelling groups, choosing OTS
 answers or assigning a runtime owner. Consumption/equipped-target/Premium/transfer
 counter questions remain explicit; full Global parity remains unproven.
+
+Final source review repairs bind the explicit Mana/health Prey quote, remove an already-selected recipient-usability residual, and put the sourced unequipped-target prerequisite in all72 direct shrine routes. Completed-scroll equipped permission remains separately null.

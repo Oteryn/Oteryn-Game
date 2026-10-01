@@ -395,9 +395,9 @@
     "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
     "current-behavior-answers.json": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2",
     "global-observation-plan.json": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb",
-    "global-research-closure.json": "fa9905781e69bbbd970d6b71c55834b0f115411cf5a21eee86bfa2521fa4d20d",
+    "global-research-closure.json": "2e1318b1c8b7d72765483970c2a4b1fbdd2783727e0b3dbec0d49260cf5dacb8",
     "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
-    "imbuement-access.json": "95c966ebcbd3c1ed15277417c6e6f2acf720817c6b9776732873f511c7a15dcc",
+    "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-combat.json": "3166820fc12c066bd87918321f15a2637d27b986e34c7e0ae51914bc7799088b",
     "imbuement-eligibility.json": "c26be2542ce0b048258f1a4bcc2604145608af6cb669e20dbeb75f0ee76c062e",
@@ -493,11 +493,6 @@
     "transfer_preserves_imbuement_state_and_remaining_duration": [
       {
         "description": "Exact Global visible remaining-duration preservation for a named transfer route is unconfirmed if required.",
-        "value": null,
-        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
-      },
-      {
-        "description": "The already-supported recipient usability fact is only prose in the broad null transfer rule; it can be authored as a distinct bounded boolean without claiming exact-duration preservation.",
         "value": null,
         "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
       }
