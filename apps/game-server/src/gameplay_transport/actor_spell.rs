@@ -120,6 +120,54 @@ impl ChannelSpellStates {
             .monk_save_values(now)
     }
 
+    /// Commit a resolved health credit under the Channel owner's runtime lock.
+    /// The occurrence owner suppresses replay before calling this method.
+    /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.
+    #[allow(
+        dead_code,
+        reason = "prepared native combat credit awaits the owning occurrence caller"
+    )]
+    pub(crate) fn apply_health_gain(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        amount: u64,
+    ) -> Option<(u32, u64)> {
+        let state = self.get(runtime, actor, game_session_id)?;
+        let (next, gained) = state.after_health_gain(amount)?;
+        let revision = next.revision();
+        if gained == 0 {
+            return Some((0, revision));
+        }
+        self.commit(runtime, actor, game_session_id, next)
+            .then_some((gained, revision))
+    }
+
+    /// Commit a resolved mana credit under the Channel owner's runtime lock.
+    /// The occurrence owner suppresses replay before calling this method.
+    /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.
+    #[allow(
+        dead_code,
+        reason = "prepared native combat credit awaits the owning occurrence caller"
+    )]
+    pub(crate) fn apply_mana_gain(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        amount: u64,
+    ) -> Option<(u32, u64)> {
+        let state = self.get(runtime, actor, game_session_id)?;
+        let (next, gained) = state.after_mana_gain(amount)?;
+        let revision = next.revision();
+        if gained == 0 {
+            return Some((0, revision));
+        }
+        self.commit(runtime, actor, game_session_id, next)
+            .then_some((gained, revision))
+    }
+
     fn get_mut(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -411,6 +459,122 @@ pub(crate) mod tests {
             &exura(),
             now(millis),
         )
+    }
+
+    #[test]
+    fn health_credit_commits_native_vitals_and_preserves_noops() {
+        let (runtime, actor, session) = runtime_with_player(0x73);
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("initialized");
+        wound(&mut states, actor, session, 100);
+        assert_eq!(
+            states.apply_health_gain(&runtime, actor, session, 0),
+            Some((0, 1))
+        );
+        assert_eq!(
+            states.apply_health_gain(&runtime, actor, session, 7),
+            Some((7, 2))
+        );
+        let (revision, vitals) =
+            observe_vitals(&runtime, &states, actor, session).expect("observed");
+        assert_eq!(
+            (revision, vitals.health, vitals.mana, vitals.soul),
+            (2, 107, 90, 100)
+        );
+        assert_eq!(
+            states.apply_health_gain(&runtime, actor, session, u64::MAX),
+            Some((78, 3))
+        );
+        let before = states.get(&runtime, actor, session).expect("present").clone();
+        assert_eq!(
+            states.apply_health_gain(&runtime, actor, session, 1),
+            Some((0, 3))
+        );
+        assert_eq!(states.get(&runtime, actor, session), Some(&before));
+    }
+
+    #[test]
+    fn mana_credit_commits_native_vitals_and_preserves_noops() {
+        let (runtime, actor, session) = runtime_with_player(0x74);
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("initialized");
+        assert_eq!(
+            cast_at(&runtime, &mut states, actor, session, 1, 0).disposition,
+            SpellCastDisposition::Cast
+        );
+        assert_eq!(
+            states.apply_mana_gain(&runtime, actor, session, 0),
+            Some((0, 2))
+        );
+        assert_eq!(
+            states.apply_mana_gain(&runtime, actor, session, 7),
+            Some((7, 3))
+        );
+        let (revision, vitals) =
+            observe_vitals(&runtime, &states, actor, session).expect("observed");
+        assert_eq!(
+            (revision, vitals.mana, vitals.health, vitals.soul),
+            (3, 77, 185, 100)
+        );
+        assert_eq!(
+            states.apply_mana_gain(&runtime, actor, session, u64::MAX),
+            Some((13, 4))
+        );
+        let before = states.get(&runtime, actor, session).expect("present").clone();
+        assert_eq!(
+            states.apply_mana_gain(&runtime, actor, session, 1),
+            Some((0, 4))
+        );
+        assert_eq!(states.get(&runtime, actor, session), Some(&before));
+    }
+
+    #[test]
+    fn vitals_credit_refuses_foreign_sessions_and_ended_generations() {
+        let (mut runtime, actor, session) = runtime_with_player(0x75);
+        let other = GameSessionId::decode(&uuid_v7(0x76)).expect("other session");
+        let mut states = ChannelSpellStates::default();
+        assert!(states.apply_health_gain(&runtime, actor, session, 7).is_none());
+        assert!(states.apply_mana_gain(&runtime, actor, session, 7).is_none());
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("initialized");
+        assert_eq!(
+            cast_at(&runtime, &mut states, actor, session, 1, 0).disposition,
+            SpellCastDisposition::Cast
+        );
+        wound(&mut states, actor, session, 100);
+        let before = states.actors.clone();
+        assert!(states.apply_health_gain(&runtime, actor, other, 7).is_none());
+        assert!(states.apply_mana_gain(&runtime, actor, other, 7).is_none());
+        assert_eq!(states.actors, before);
+
+        runtime
+            .remove_terminal_session(session, actor)
+            .expect("ended");
+        assert!(states.apply_health_gain(&runtime, actor, session, 7).is_none());
+        assert!(states.apply_mana_gain(&runtime, actor, session, 7).is_none());
+        assert_eq!(states.actors, before);
+
+        let reservation = runtime.reserve_fresh_session(other).expect("reserve");
+        let successor = runtime.commit_fresh_session(reservation).expect("successor");
+        assert_ne!(actor, successor);
+        states
+            .initialize(&runtime, successor, other, FACTS, (0, 0), now(0))
+            .expect("fresh state");
+        assert!(states.apply_health_gain(&runtime, actor, session, 7).is_none());
+        assert!(states.apply_mana_gain(&runtime, actor, session, 7).is_none());
+        assert_eq!(
+            states.apply_health_gain(&runtime, successor, other, 7),
+            Some((0, 1))
+        );
+        assert_eq!(
+            states.apply_mana_gain(&runtime, successor, other, 7),
+            Some((0, 1))
+        );
     }
 
     #[test]
