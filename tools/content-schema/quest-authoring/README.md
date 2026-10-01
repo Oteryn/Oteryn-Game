@@ -74,8 +74,8 @@ and a search of both servers' Lua sources; its `method` field records how, inclu
 corrected by hand.
 
 The canonical tree currently includes the 110 distinct reward-only quests after
-Desert Dungeon deduplication. The migration packet preserves all 210 source quests,
-including 58 storylines and 42 script-only quests. It hashes the supporting progress,
+Desert Dungeon deduplication. The migration packet preserves all 250 source quests,
+including 58 storylines and 82 script-only quests. It hashes the supporting progress,
 interaction, gate, chest and manifest inputs. These are separate scopes: a populated
 tree or complete source inventory does not establish complete gameplay definitions.
 
@@ -93,3 +93,9 @@ are admitted only with an unshadowed Game binding. An unresolved source conflict
 retains both full typed graphs in `manifest.json` under `conflict_alternatives`;
 readiness counts that conflict as a data gap for every linked quest. Explicit
 NPC/script coverage holds likewise prevent presence from implying completeness.
+
+The pinned-source completion packet records all 129 historical OTS candidates.
+Only 40 executable curations and nine partial mission-family links are newly
+authored; declaration/reference-only evidence is not promoted to a quest.
+Progress preserves each source occurrence, its blob/line digest and full write
+requester context, even when multiple writes share the same effect.

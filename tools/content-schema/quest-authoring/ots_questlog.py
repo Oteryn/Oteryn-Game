@@ -121,7 +121,11 @@ def transition_index(repos):
         for pack in packs:
             for path in sorted(glob.glob(str(Path(repo) / pack / '**/*.lua'), recursive=True)):
                 rel = str(Path(path).relative_to(repo))
-                for write in lua_writers.scan(Path(path).read_text(errors='replace'), rel):
+                raw = Path(path).read_bytes()
+                source_text = raw.decode('utf-8', errors='replace')
+                source_lines = raw.splitlines()
+                blob_sha256 = hashlib.sha256(raw).hexdigest()
+                for write in lua_writers.scan(source_text, rel):
                     target = int(write['target']) if write['target'].isdigit() else write['target']
                     track = tracks[norm(track_of(target))]
                     track['count'][name] += 1
@@ -130,10 +134,16 @@ def transition_index(repos):
                                        sort_keys=True)
                     entry = track['transitions'].setdefault(ident, {
                         'owner': write['owner'], 'callback': write['callback'], 'from': write['from'], **effect_of(write),
-                        'script': script_of(rel), 'sources': {}})
-                    entry['sources'].setdefault(name, {'path': rel, 'line': write['line'],
-                                                       'registrations': write['registrations'],
-                                                       **({'dialogue': write['dialogue']} if 'dialogue' in write else {})})
+                        'script': script_of(rel), 'sources': {}, 'source_occurrences': []})
+                    source = {'path': rel, 'line': write['line'],
+                              'registrations': write['registrations'],
+                              **({'dialogue': write['dialogue']} if 'dialogue' in write else {})}
+                    entry['sources'].setdefault(name, source)
+                    entry['source_occurrences'].append({
+                        'source': name, 'occurrence': track['count'][name],
+                        'repository': SOURCES[name]['repository'], 'revision': SOURCES[name]['revision'],
+                        'target': write['target'], 'blob_sha256': blob_sha256,
+                        'line_sha256': hashlib.sha256(source_lines[write['line'] - 1]).hexdigest(), **source})
     return tracks
 
 
@@ -141,7 +151,11 @@ def requested_by(entry):
     """The NPC dialogue that requests an NPC-owned transition (D35): the NPC bundle key of the NPC authoring
     format and the player keywords and topics of the if-blocks around the write, from Canary when it has it."""
     server = 'canary' if 'canary' in entry['sources'] else 'crystalserver'
-    source = entry['sources'][server]
+    return requested_by_source(server, entry['sources'][server])
+
+
+def requested_by_source(server, source):
+    """The requester belongs to this exact source occurrence, including its dialogue context."""
     # a keyword of up to two words is a player command; a longer phrase is reserved text (LICENSE-ASSETS.md)
     keywords = [k if len(k.split()) <= 2 and len(k) <= 20 else text_ref(k) for k in source['dialogue']['keywords']]
     return {'npc': f'{NPC_NAMESPACE[server]}:npc/{Path(source["path"]).stem}', 'keywords': keywords,
@@ -161,9 +175,61 @@ def mission_transitions(found):
     return out
 
 
+def progress_transition(transition):
+    """Preserve every scanned write and its requester while retaining the primary source view."""
+    entry = transition['_entry']
+    write = {k: v for k, v in transition.items() if k != '_entry'}
+    occurrences = []
+    for source in sorted(entry.get('source_occurrences', []),
+                         key=lambda source: (source['source'], source['occurrence'])):
+        actual_write = {**write, 'servers': [source['source']]}
+        if entry['owner'] == 'npc':
+            actual_write['requested_by'] = requested_by_source(source['source'], source)
+        occurrences.append({**source, 'write': actual_write})
+    return {'key': transition['key'], 'script': entry['script'], 'sources': entry['sources'],
+            'write': write, 'source_occurrences': occurrences}
+
+
 TRACK_OWNERS = {norm(track): owner for track, owner in json.loads((ROOT / 'track_owners.json').read_text())['tracks'].items()}
 SCRIPT_QUESTS = json.loads((ROOT / 'script_quests.json').read_text())['quests']
 DEFERRED_TRACKS = json.loads((ROOT / 'track_owners.json').read_text()).get('deferred_tracks', {})
+
+
+def validate_source_curations(entries, repos):
+    """Exact pinned blobs support new source curations; names alone do not prove execution."""
+    for entry in entries:
+        if not entry.get('source_paths'):
+            continue  # Historical curations retain their independently reviewed basis.
+        evidence = entry.get('source_evidence', [])
+        canonical = [e for e in evidence if e.get('source') in repos]
+        if not canonical or not entry.get('coverage_gap'):
+            raise ValueError('missing pinned canonical source or explicit coverage gap: ' + entry['title'])
+        if not {script_of(path) for path in entry['source_paths']} <= {script_of(e['path']) for e in canonical}:
+            raise ValueError('unproven source path: ' + entry['title'])
+        for item in canonical:
+            source = item['source']
+            expected = SOURCES[source]
+            path = Path(item['path'])
+            if (path.is_absolute() or '..' in path.parts
+                    or item.get('repository') != expected['repository']
+                    or item.get('revision') != expected['revision']
+                    or item.get('role') != 'executable'
+                    or item.get('classification') != 'OTS_HYPOTHESIS_ONLY'):
+                raise ValueError('invalid source curation provenance: ' + entry['title'])
+            actual = Path(repos[source]) / path
+            if not actual.is_file() or hashlib.sha256(actual.read_bytes()).hexdigest() != item.get('blob_sha256'):
+                raise ValueError('stale source curation blob: ' + entry['title'])
+            if not isinstance(item.get('line'), int) or not 1 <= item['line'] <= len(actual.read_text().splitlines()):
+                raise ValueError('invalid source curation line: ' + entry['title'])
+
+
+def curation_coverage_holds(catalogue, entries):
+    """An executable source outside the transcribed slice remains an explicit data gap."""
+    by_title = {q['display_name']: q['identity']['key'] for q in catalogue}
+    return [{'quest': by_title[e['title']], 'source_paths': e['source_paths'],
+             'coverage_gap': e['coverage_gap'], 'classification': 'UNKNOWN'}
+            for e in entries if e.get('source_paths') and not e.get('npc_source')
+            and e.get('coverage_gap') and e['title'] in by_title]
 
 
 def script_only_quests(coverage):
@@ -242,6 +308,25 @@ def merge_source_checks(owner, evidence):
     return merged
 
 
+def exclusive_npc_writers(found, recorded):
+    """A curated NPC owner requires every observed writer, with no extra shared writer."""
+    expected = set(recorded.get('npc_sources') or ([recorded['npc_source']] if recorded.get('npc_source') else []))
+    writes = list(found['transitions'].values())
+    return bool(expected and writes and {t['script'] for t in writes} == expected
+                and all(t['owner'] == 'npc' for t in writes))
+
+
+def unique_track_prefix(paths, prefixes):
+    """Match whole path segments; similarly named storage fields are separate owners."""
+    matches = [prefix for prefix, owners in prefixes.items() if len(owners) == 1
+               and any(path == prefix or path.startswith(prefix + '/') for path in paths)]
+    if not matches:
+        return None
+    depth = max(len(prefix.split('/')) for prefix in matches)
+    nearest = [prefix for prefix in matches if len(prefix.split('/')) == depth]
+    return nearest[0] if len({tuple(sorted(prefixes[p])) for p in nearest}) == 1 else None
+
+
 def auxiliary_tracks(index, progress, catalogue, gates, repos):
     """Declare every track a quest script writes outside the missions (D35): seal doors, counters, cooldowns.
 
@@ -262,7 +347,7 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
             path = mission['progress'].split('/', 1)[1]
             parts = path.split('/')
             for k in range(2, len(parts)):
-                prefixes[norm('/'.join(parts[:k]))].add(quest['identity']['key'])
+                prefixes['/'.join(parts[:k])].add(quest['identity']['key'])
             for t in index.get(norm(path), {'transitions': {}})['transitions'].values():
                 if t['script'].startswith('scripts/quests/'):
                     directories[t['script'].split('/')[2]].add(quest['identity']['key'])
@@ -270,26 +355,40 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
     for key_norm in sorted(set(index) | set(gate_tracks)):
         found = index.get(key_norm, {'count': Counter(), 'transitions': {}, 'paths': set()})
         scripts = sorted({t['script'] for t in found['transitions'].values() if t['script'].startswith('scripts/quests/')})
-        recorded_npc = TRACK_OWNERS.get(key_norm, {}).get('npc_source')
-        npc_owned = (recorded_npc and {t['script'] for t in found['transitions'].values()} == {recorded_npc}
-                     and all(t['owner'] == 'npc' for t in found['transitions'].values()))
+        npc_owned = exclusive_npc_writers(found, TRACK_OWNERS.get(key_norm, {}))
         if key_norm in declared or (not scripts and key_norm not in gate_tracks and not npc_owned):
             continue
         owner = {}
-        prefix = max((p for p in prefixes if key_norm.startswith(p) and len(prefixes[p]) == 1), key=len, default=None)
+        source_paths = {path for _, path in found['paths']} | {
+            g['condition']['progress'].split('/', 1)[1] for g in gate_tracks.get(key_norm, [])}
+        prefix = unique_track_prefix(source_paths, prefixes)
         by_directory = set().union(*(directories.get(s.split('/')[2], set()) for s in scripts))
         gate_owners = {g['quest']['key'] for g in gate_tracks.get(key_norm, [])
                        if g.get('quest') and g['quest']['key'] in catalogue_keys}
         if key_norm in TRACK_OWNERS and key_norm in gate_tracks:
             used.add(key_norm)
         shared_gate = TRACK_OWNERS.get(key_norm, {})
-        if shared_gate.get('shared_npc_gate'):
+        expected_npcs = set(shared_gate.get('npc_sources') or ([shared_gate['npc_source']] if shared_gate.get('npc_source') else []))
+        if expected_npcs and not npc_owned and not shared_gate.get('shared_npc_gate'):
+            used.add(key_norm)
+            owner = {'auxiliary_of': [], 'owner_basis': 'UNKNOWN',
+                     'source_checks': {'owner': 'UNKNOWN: curated exclusive NPC writer set changed; observed '
+                                       + ', '.join(sorted({t['script'] for t in found['transitions'].values()}))
+                                       + '; expected ' + ', '.join(sorted(expected_npcs))}}
+        elif shared_gate.get('shared_npc_gate'):
             actual_npcs = {t['script'] for t in found['transitions'].values() if t['owner'] == 'npc'}
             if actual_npcs != set(shared_gate['npc_sources']):
                 raise SystemExit(f'shared NPC gate curation is stale for {key_norm}')
             used.add(key_norm)
             owner = {'auxiliary_of': [], 'owner_basis': 'UNKNOWN',
                      'source_checks': {'owner': 'UNKNOWN: ' + shared_gate['note']}}
+        elif npc_owned and key_norm in TRACK_OWNERS:
+            used.add(key_norm)
+            recorded = TRACK_OWNERS[key_norm]
+            quest = recorded.get('quest') or by_title.get(recorded.get('wiki_quest'))
+            owner = {'auxiliary_of': [quest] if quest else [],
+                     'owner_basis': 'exclusive curated NPC writers',
+                     **({'source_checks': {'owner': 'UNKNOWN: curated NPC has no catalogue quest'}} if not quest else {})}
         elif len(gate_owners) == 1:
             owner = {'auxiliary_of': sorted(gate_owners), 'owner_basis': 'gate catalogue link'}
         elif prefix:
@@ -321,8 +420,7 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
                     'read_by_gates': sorted(g['identity']['key'] for g in gates if g['condition'].get('progress')
                                             and norm(g['condition']['progress'].split('/', 1)[1]) == key_norm),
                     **merge_source_checks(owner, storage_evidence(source_storage, f'{server}:quest-progress/{path}', key_norm in gate_tracks)), 'writes': {n: found['count'][n] for n in repos},
-                    'transitions': [{'key': t['key'], 'script': t['_entry']['script'], 'sources': t['_entry']['sources']}
-                                    for t in mission_transitions(found)]})
+                    'transitions': [progress_transition(t) for t in mission_transitions(found)]})
     # Gates retain their exact source-qualified track keys. A matching path under
     # another namespace is an explicit alias of the transcription, not numeric-ID equality.
     for group in gate_tracks.values():
@@ -368,6 +466,7 @@ def reward_script_owner(quest, by_key, by_page):
 
 
 def build(repos, chests_dir, doors_dir, coverage):
+    validate_source_curations(SCRIPT_QUESTS, repos)
     logs = {name: read_questlogs(name, repo) for name, repo in repos.items()}
     claims = json.loads((chests_dir / 'claims.json').read_text())['claims']
     reward_only = {q['identity']['key']: q for q in json.loads((chests_dir / 'quests.json').read_text())['quests']}
@@ -510,8 +609,7 @@ def build(repos, chests_dir, doors_dir, coverage):
                          'read_by_gates': sorted(g['identity']['key'] for g in gates if g['condition'].get('progress')
                                                  and norm(g['condition']['progress'].split('/', 1)[1]) == norm(track.split('/', 1)[1])),
                          'writes': {n: found['count'][n] for n in repos},
-                         'transitions': [{'key': t['key'], 'script': t['_entry']['script'], 'sources': t['_entry']['sources']}
-                                         for t in mission_transitions(found)]})
+                         'transitions': [progress_transition(t) for t in mission_transitions(found)]})
     progress += auxiliary_tracks(index, progress, catalogue, gates, repos)
     all_transitions = [t for q in storyline.values() for m in q['missions'] for t in m['transitions']]
     counts = Counter(e['status'] for e in manifest_entries)
@@ -554,6 +652,7 @@ def build(repos, chests_dir, doors_dir, coverage):
         'source_checks': {'progress_track_unknowns': [
             {'key': p['key'], **p['source_checks']} for p in progress if p.get('source_checks')],
             'deferred_track_owners': DEFERRED_TRACKS,
+            'script_coverage_holds': curation_coverage_holds(catalogue, SCRIPT_QUESTS),
             'npc_only_quests': [
                 {'quest': q['identity']['key'], 'npc_source': entry['npc_source'],
                  'coverage_gap': 'NPC item/achievement/dialogue side effects have not been transcribed as quest interactions',

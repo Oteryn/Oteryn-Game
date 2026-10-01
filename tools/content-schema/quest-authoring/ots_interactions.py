@@ -1079,7 +1079,7 @@ def transition_keys(questlog_dir):
         for mission in quest.get('missions', []):
             track = progress.get(mission['progress'], {})
             for evidence in track.get('transitions', []):
-                for source in evidence['sources'].values():
+                for source in evidence.get('source_occurrences', list(evidence['sources'].values())):
                     keys[(norm(mission['progress'].split('/', 1)[1]), script_of(source['path']), source['line'])] = \
                         f'{quest["identity"]["key"]}#{mission["key"]}:{evidence["key"]}'
     return keys

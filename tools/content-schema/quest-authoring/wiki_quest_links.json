@@ -233,6 +233,443 @@
         "wiki_path": "samples/quest-coverage-2026-09-27.json",
         "questlog_path": "samples/questlog/quests.json"
       }
+    },
+    {
+      "wiki_title": "Against the Spider Cult Quest",
+      "wiki_pageid": 20036,
+      "wiki_revid": 842642,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "against_the_spider_cult"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+            "line": 97,
+            "blob_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4511,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4511,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "Arito's Task Quest",
+      "wiki_pageid": 20494,
+      "wiki_revid": 1176671,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "arito_s_task"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+            "line": 21,
+            "blob_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4435,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4435,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "Formorgar Mines Quest",
+      "wiki_pageid": 17388,
+      "wiki_revid": 850221,
+      "target_key": "canary:quest/the_ice_islands_quest",
+      "mission_keys": [
+        "formorgar_mines_1_the_mission",
+        "formorgar_mines_2_ghostwhisperer",
+        "formorgar_mines_3_the_secret",
+        "formorgar_mines_4_retaliation"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/022_the_ice_islands_quest.lua",
+            "line": 133,
+            "blob_sha256": "6c498746fc51934f0751e8e770f55592218f5fd40e0da1556be8dfc4d927e473",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 3284,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 3284,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "Into The Bone Pit Quest",
+      "wiki_pageid": 20027,
+      "wiki_revid": 1091432,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "into_the_bone_pit"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+            "line": 138,
+            "blob_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4552,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4552,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "Jack to the Future Quest",
+      "wiki_pageid": 50739,
+      "wiki_revid": 844537,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "jack_to_the_future"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+            "line": 193,
+            "blob_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4607,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4607,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "Rest in Hallowed Ground Quest",
+      "wiki_pageid": 20033,
+      "wiki_revid": 842882,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "rest_in_hallowed_ground",
+        "graves_sanctified_in_progress"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+            "line": 129,
+            "blob_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4543,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4543,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "The Exterminator Quest",
+      "wiki_pageid": 20028,
+      "wiki_revid": 842929,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "the_exterminator"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+            "line": 166,
+            "blob_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/005_bigfoot_s_burden.lua",
+            "line": 155,
+            "blob_sha256": "f3f331caaa27123f382d7d1c9f309c3806c8d6ad068385a6282476df1ecc6f2c",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 417,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 417,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "The Ultimate Booze Quest",
+      "wiki_pageid": 20029,
+      "wiki_revid": 842934,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "the_ultimate_booze"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+            "line": 180,
+            "blob_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4594,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4594,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "To Appease the Mighty Quest",
+      "wiki_pageid": 20030,
+      "wiki_revid": 842941,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "to_appease_the_mighty"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Exact named source missions and their bounded progress fields already exist in this composite catalogue quest; this link records partial representation only.",
+      "evidence": {
+        "wiki_path": "samples/quest-coverage-2026-09-27.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_refs": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+            "line": 7,
+            "blob_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4421,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/lib/core/quests.lua",
+            "line": 4421,
+            "blob_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+            "role": "quest_log_reference",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ]
+      }
     }
   ]
 }

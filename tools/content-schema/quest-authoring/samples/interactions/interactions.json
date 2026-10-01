@@ -50957,7 +50957,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/mission10",
-                          "to": 5
+                          "to": 5,
+                          "transition": "canary:quest/in_service_of_yalahar_quest#mission_10_the_final_battle:action_1"
                         },
                         {
                           "owner": "Item",
@@ -51022,7 +51023,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/mission10",
-                          "to": 5
+                          "to": 5,
+                          "transition": "canary:quest/in_service_of_yalahar_quest#mission_10_the_final_battle:action_1"
                         },
                         {
                           "owner": "Item",
@@ -51087,7 +51089,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/mission10",
-                          "to": 5
+                          "to": 5,
+                          "transition": "canary:quest/in_service_of_yalahar_quest#mission_10_the_final_battle:action_1"
                         },
                         {
                           "owner": "Item",
@@ -57173,7 +57176,8 @@
           "owner": "Quest",
           "request": "set_progress",
           "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
-          "value_source_line": 104
+          "value_source_line": 104,
+          "transition": "canary:quest/tibia_tales#lion_s_rock:action_2"
         },
         {
           "owner": "Quest",
@@ -60362,7 +60366,8 @@
                                   "owner": "Quest",
                                   "request": "set_progress",
                                   "progress": "canary:quest-progress/quest/u10_50/oramond_quest/to_take_roots/mission",
-                                  "to": 1
+                                  "to": 1,
+                                  "transition": "canary:quest/oramond_quest#to_take_roots:action_1"
                                 }
                               ]
                             }
@@ -87684,7 +87689,8 @@
                   "owner": "Quest",
                   "request": "set_progress",
                   "progress": "canary:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
-                  "to": 55
+                  "to": 55,
+                  "transition": "canary:quest/the_explorer_society_quest#the_spectral_stone:action_2"
                 },
                 {
                   "owner": "Quest",
@@ -94231,7 +94237,8 @@
                                   "owner": "Quest",
                                   "request": "set_progress",
                                   "progress": "canary:quest-progress/quest/u8_0/the_ice_islands/mission12",
-                                  "value_source_line": 27
+                                  "value_source_line": 27,
+                                  "transition": "canary:quest/the_ice_islands_quest#formorgar_mines_4_retaliation:action_1"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -94279,7 +94286,8 @@
                                   "owner": "Quest",
                                   "request": "set_progress",
                                   "progress": "canary:quest-progress/quest/u8_0/the_ice_islands/mission12",
-                                  "value_source_line": 34
+                                  "value_source_line": 34,
+                                  "transition": "canary:quest/the_ice_islands_quest#formorgar_mines_4_retaliation:action_1"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -94327,7 +94335,8 @@
                                   "owner": "Quest",
                                   "request": "set_progress",
                                   "progress": "canary:quest-progress/quest/u8_0/the_ice_islands/mission12",
-                                  "value_source_line": 41
+                                  "value_source_line": 41,
+                                  "transition": "canary:quest/the_ice_islands_quest#formorgar_mines_4_retaliation:action_1"
                                 },
                                 {
                                   "owner": "Presentation",

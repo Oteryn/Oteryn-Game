@@ -387,8 +387,8 @@
       "per_stage": 468,
       "fixed": 38
     },
-    "progress_tracks": 1114,
-    "tracks_written_by_both_servers": 748,
+    "progress_tracks": 1131,
+    "tracks_written_by_both_servers": 763,
     "tracks_without_a_writer": 206,
     "transitions": 1645,
     "transitions_by_owner": {
@@ -415,22 +415,23 @@
     "transitions_in_both_servers": 1306,
     "storyline_quests_linked_to_wiki": 52,
     "reward_only_quests_absorbed": 25,
-    "script_only_quests": 42,
-    "catalogue_quests": 210,
+    "script_only_quests": 82,
+    "catalogue_quests": 250,
     "by_status": {
       "mapped": 529
     },
     "requirements_parsed": {
-      "quests_with_wiki_requirements": 204,
+      "quests_with_wiki_requirements": 244,
       "premium": {
-        "parsed": 202,
+        "parsed": 242,
         "partial": 2
       },
       "min_level": {
+        "none": 1,
         "note": 4,
-        "parsed": 190,
+        "parsed": 225,
         "range": 5,
-        "uncertain": 3,
+        "uncertain": 4,
         "varies": 1
       }
     }
@@ -500,9 +501,436 @@
           "note": "Unknown quest owner: literal playerDoubleMageKill=775558 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:3, writerL10; source callback/value retained, no initial/bounds inferred."
         },
         "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+      },
+      "quest/u9_1/elementalist_outfits/addon1": {
+        "owner_evidence": {
+          "wiki_quest": "Elementalist Outfits Quest",
+          "npc_source": "npc/broken_servant_sentry.lua",
+          "owner_evidence": [
+            {
+              "source": "canary",
+              "repository": "https://github.com/opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+              "line": 74,
+              "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 72,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystal-summer",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 72,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ],
+          "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+        },
+        "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
+      },
+      "quest/u9_1/elementalist_outfits/addon2": {
+        "owner_evidence": {
+          "wiki_quest": "Elementalist Outfits Quest",
+          "npc_source": "npc/broken_servant_sentry.lua",
+          "owner_evidence": [
+            {
+              "source": "canary",
+              "repository": "https://github.com/opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+              "line": 89,
+              "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 87,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystal-summer",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 87,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ],
+          "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+        },
+        "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
+      },
+      "quest/u9_1/elementalist_outfits/outfit": {
+        "owner_evidence": {
+          "wiki_quest": "Elementalist Outfits Quest",
+          "npc_source": "npc/broken_servant_sentry.lua",
+          "owner_evidence": [
+            {
+              "source": "canary",
+              "repository": "https://github.com/opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+              "line": 103,
+              "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "https://github.com/opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+              "line": 115,
+              "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 101,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 113,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystal-summer",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 101,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystal-summer",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 113,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ],
+          "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+        },
+        "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
+      },
+      "quest/u9_1/elementalist_outfits/questline": {
+        "owner_evidence": {
+          "wiki_quest": "Elementalist Outfits Quest",
+          "npc_source": "npc/broken_servant_sentry.lua",
+          "owner_evidence": [
+            {
+              "source": "canary",
+              "repository": "https://github.com/opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+              "line": 104,
+              "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 102,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystal-summer",
+              "repository": "https://github.com/zimbadev/crystalserver",
+              "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+              "path": "data-global/npc/broken_servant_sentry.lua",
+              "line": 102,
+              "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ],
+          "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+        },
+        "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
       }
     },
+    "script_coverage_holds": [
+      {
+        "quest": "canary:quest/fury_gates_mini_world_change",
+        "source_paths": [
+          "scripts/world_changes/fury_gates.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/nightmare_isles_mini_world_change",
+        "source_paths": [
+          "scripts/world_changes/nightmare_isles.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/oriental_trader_mini_world_change",
+        "source_paths": [
+          "scripts/world_changes/oriental_trader.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/rapier_quest",
+        "source_paths": [
+          "scripts/actions/rookgaard/rapier_quest.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/chayenne_realm",
+        "source_paths": [
+          "scripts/quests/chayenne_realm/movements_enter_realm.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/steal_from_thieves_quest",
+        "source_paths": [
+          "scripts/quests/others/actions_steal_from_thieves.lua",
+          "npc/ahmet.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/the_mummys_curse_world_change",
+        "source_paths": [
+          "scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/citizen_outfits_quest_on_rook",
+        "source_paths": [
+          "npc/amber.lua",
+          "npc/norma.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/crystal_warlord_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "npc/gnomally.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/decaying_defender_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/dream_warrior_outfits_quest",
+        "source_paths": [
+          "npc/undal.lua",
+          "npc/vanys.lua",
+          "scripts/quests/the_dream_courts/creaturescripts_dream_courts_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/falconer_outfits_quest",
+        "source_paths": [
+          "data/scripts/lib/task_board_shop.lua",
+          "npc/walter_jaeger.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/fiend_slayer_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/no_rest_for_the_wicked/arbaziloth_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/fire_fighter_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/formal_dress_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/golden_outfits_quest",
+        "source_paths": [
+          "npc/emperor_kruzak.lua",
+          "npc/king_tibianus.lua",
+          "npc/queen_eloise.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/hand_of_the_inquisition_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "npc/jack_springer.lua",
+          "scripts/quests/grave_danger/creaturescripts_zelosDeath.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/illuminator_outfit_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/makeshift_warrior_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/rascoohan_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/a_pirates_tail/creaturescripts_ratmiral_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/revenant_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "npc/flickering_soul.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/rift_warrior_outfits_quest",
+        "source_paths": [
+          "npc/cledwyn.lua",
+          "scripts/quests/ferumbras_ascension/actions_reward.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/soil_guardian_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "npc/gnomally.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/warmaster_outfits_quest",
+        "source_paths": [
+          "npc/cael.lua",
+          "scripts/quests/the_new_frontier/action_outfit.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/wayfarer_outfits_quest",
+        "source_paths": [
+          "npc/cranky_lizard_crone.lua",
+          "scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/yalaharian_outfits_quest",
+        "source_paths": [
+          "npc/palimuth.lua",
+          "npc/yalahari.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      }
+    ],
     "npc_only_quests": [
+      {
+        "quest": "canary:quest/battle_mage_outfits_quest",
+        "npc_source": "npc/dedoras.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
       {
         "quest": "canary:quest/brotherhood_outfits_quest",
         "npc_source": "npc/the_bone_master.lua",
@@ -510,8 +938,86 @@
         "classification": "UNKNOWN"
       },
       {
+        "quest": "canary:quest/cave_explorer_outfits_quest",
+        "npc_source": "npc/gnommander.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/demon_outfits_quest",
+        "npc_source": "npc/avar_tar.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/dream_warden_outfits_quest",
+        "npc_source": "npc/eruaran.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/druid_outfits_quest_on_rook",
+        "npc_source": "npc/tom.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/elementalist_outfits_quest",
+        "npc_source": "npc/broken_servant_sentry.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/festive_outfits_quest",
+        "npc_source": "npc/muriel.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/glooth_engineer_outfits_quest",
+        "npc_source": "npc/ezebeth.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/marlin_trophy_quest",
+        "npc_source": "npc/pemaret.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
         "quest": "canary:quest/nightmare_outfits_quest",
         "npc_source": "npc/the_dream_master.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/nobleman_outfits_quest",
+        "npc_source": "npc/irmana.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/obsidian_knife_quest",
+        "npc_source": "npc/uzgod.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/pick_quest",
+        "npc_source": "npc/al_dee.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/royal_costume_outfits_quest",
+        "npc_source": "npc/percybald.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/sinatuki_quest",
+        "npc_source": "npc/sinatuki.lua",
         "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
         "classification": "UNKNOWN"
       }

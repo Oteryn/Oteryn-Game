@@ -74,17 +74,17 @@
    "shared_mechanism": 145,
    "bespoke": 3740
   },
-  "quests_triaged": 210,
-  "quests_with_bespoke_work": 104,
+  "quests_triaged": 250,
+  "quests_with_bespoke_work": 105,
   "quests_fully_covered_by_owners_and_mechanisms": 1,
-  "interactions_unlinked_to_a_quest": 50
+  "interactions_unlinked_to_a_quest": 47
  },
  "owners_ranked_by_quests": [
   {
    "owner": "scheduler",
    "lines": 287,
    "interactions": 183,
-   "quests": 49
+   "quests": 50
   },
   {
    "owner": "condition",
@@ -143,43 +143,43 @@
  "unlock_order": [
   {
    "adds": "owner:scheduler",
-   "quests_owner_mechanism_complete": 14,
-   "of_which_still_have_bespoke_gaps": 14
+   "quests_owner_mechanism_complete": 15,
+   "of_which_still_have_bespoke_gaps": 15
   },
   {
    "adds": "mechanism:kill_reward_fanout",
-   "quests_owner_mechanism_complete": 26,
-   "of_which_still_have_bespoke_gaps": 25
+   "quests_owner_mechanism_complete": 27,
+   "of_which_still_have_bespoke_gaps": 26
   },
   {
    "adds": "owner:condition",
-   "quests_owner_mechanism_complete": 38,
-   "of_which_still_have_bespoke_gaps": 37
+   "quests_owner_mechanism_complete": 39,
+   "of_which_still_have_bespoke_gaps": 38
   },
   {
    "adds": "owner:creature_removal",
-   "quests_owner_mechanism_complete": 44,
-   "of_which_still_have_bespoke_gaps": 43
+   "quests_owner_mechanism_complete": 45,
+   "of_which_still_have_bespoke_gaps": 44
   },
   {
    "adds": "owner:kv_state",
-   "quests_owner_mechanism_complete": 52,
-   "of_which_still_have_bespoke_gaps": 51
+   "quests_owner_mechanism_complete": 53,
+   "of_which_still_have_bespoke_gaps": 52
   },
   {
    "adds": "owner:boss_cooldown",
-   "quests_owner_mechanism_complete": 59,
-   "of_which_still_have_bespoke_gaps": 58
+   "quests_owner_mechanism_complete": 60,
+   "of_which_still_have_bespoke_gaps": 59
   },
   {
    "adds": "mechanism:boss_room_entry_gate",
-   "quests_owner_mechanism_complete": 68,
-   "of_which_still_have_bespoke_gaps": 67
+   "quests_owner_mechanism_complete": 69,
+   "of_which_still_have_bespoke_gaps": 68
   },
   {
    "adds": "mechanism:boss_portal_spectator_gate",
-   "quests_owner_mechanism_complete": 71,
-   "of_which_still_have_bespoke_gaps": 70
+   "quests_owner_mechanism_complete": 72,
+   "of_which_still_have_bespoke_gaps": 71
   }
  ],
  "quests": [
@@ -380,6 +380,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/battle_mage_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/bear_room_quest",
    "kind": "reward_only",
    "counts": {
@@ -523,6 +535,35 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/cave_explorer_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/chayenne_realm",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 0,
+    "bespoke": 2
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:2"
+   ]
+  },
+  {
    "quest": "canary:quest/children_of_the_revolution_quest",
    "kind": "storyline",
    "counts": {
@@ -542,6 +583,18 @@
   {
    "quest": "canary:quest/circle_room_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/citizen_outfits_quest_on_rook",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -592,6 +645,18 @@
   {
    "quest": "canary:quest/crystal_wand_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/crystal_warlord_outfits_quest",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -730,6 +795,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/decaying_defender_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/deeper_fibula_quest",
    "kind": "reward_only",
    "counts": {
@@ -782,6 +859,18 @@
    "to_finish": [
     "bespoke:25"
    ]
+  },
+  {
+   "quest": "canary:quest/demon_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/demona_ring_quest",
@@ -886,6 +975,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/dream_warden_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/dreamer_s_challenge_quest",
    "kind": "reward_only",
    "counts": {
@@ -905,6 +1006,18 @@
   {
    "quest": "canary:quest/druid_outfits_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/druid_outfits_quest_on_rook",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -947,6 +1060,18 @@
    ]
   },
   {
+   "quest": "canary:quest/elementalist_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/elephant_tusk_quest",
    "kind": "reward_only",
    "counts": {
@@ -985,6 +1110,18 @@
   {
    "quest": "canary:quest/factions",
    "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/falconer_outfits_quest",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -1055,8 +1192,44 @@
    ]
   },
   {
+   "quest": "canary:quest/festive_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/fiend_slayer_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/fire_axe_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/fire_fighter_outfits_quest",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -1131,6 +1304,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/fury_gates_mini_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/geomancer_quest",
    "kind": "reward_only",
    "counts": {
@@ -1169,8 +1354,32 @@
    ]
   },
   {
+   "quest": "canary:quest/glooth_engineer_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/goblin_temple_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/golden_outfits_quest",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -1252,6 +1461,18 @@
     "mechanism:boss_portal_spectator_gate",
     "bespoke:25"
    ]
+  },
+  {
+   "quest": "canary:quest/hand_of_the_inquisition_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/heart_of_destruction_quest",
@@ -1625,6 +1846,30 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/makeshift_warrior_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/marlin_trophy_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/medusa_shield_quest",
    "kind": "reward_only",
    "counts": {
@@ -1699,6 +1944,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/nightmare_isles_mini_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/nightmare_outfits_quest",
    "kind": "script_only",
    "counts": {
@@ -1749,6 +2006,30 @@
   {
    "quest": "canary:quest/noble_armor_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/nobleman_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/obsidian_knife_quest",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -1812,6 +2093,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/oriental_trader_mini_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/ornamented_shield_quest",
    "kind": "reward_only",
    "counts": {
@@ -1850,6 +2143,18 @@
   {
    "quest": "canary:quest/parchment_room_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/pick_quest",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -1961,6 +2266,54 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/rapier_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/rascoohan_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/revenant_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/rift_warrior_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/ring_quest",
    "kind": "reward_only",
    "counts": {
@@ -2036,6 +2389,18 @@
     "owner:scheduler",
     "bespoke:11"
    ]
+  },
+  {
+   "quest": "canary:quest/royal_costume_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/sam_s_old_backpack_quest",
@@ -2177,8 +2542,32 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/sinatuki_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/six_rubies_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/soil_guardian_outfits_quest",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -2256,6 +2645,18 @@
    "to_finish": [
     "bespoke:10"
    ]
+  },
+  {
+   "quest": "canary:quest/steal_from_thieves_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/stealth_ring_quest",
@@ -2600,6 +3001,18 @@
     "owner:kv_state",
     "bespoke:8"
    ]
+  },
+  {
+   "quest": "canary:quest/the_mummys_curse_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/the_new_frontier_quest",
@@ -3124,6 +3537,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/warmaster_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/waterfall_quest",
    "kind": "reward_only",
    "counts": {
@@ -3136,6 +3561,18 @@
    "to_finish": [
     "bespoke:6"
    ]
+  },
+  {
+   "quest": "canary:quest/wayfarer_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/wedding_ring_quest",
@@ -3191,6 +3628,18 @@
     "mechanism:kill_reward_fanout",
     "bespoke:69"
    ]
+  },
+  {
+   "quest": "canary:quest/yalaharian_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "crystalserver:quest/25_years_of_tibia_quest",
@@ -3265,8 +3714,44 @@
    "to_finish": []
   },
   {
+   "quest": "crystalserver:quest/dream_warrior_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/formal_dress_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "crystalserver:quest/frost_dragon_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/illuminator_outfit_quest",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -3333,9 +3818,6 @@
   }
  ],
  "interactions_unlinked": [
-  "canary:interaction/chayenne_realm/actions_lever",
-  "canary:interaction/chayenne_realm/actions_reward",
-  "canary:interaction/chayenne_realm/movements_enter_realm",
   "canary:interaction/dreamers_challenge_quest/actions_stone_teleport",
   "canary:interaction/dreamers_challenge_quest/actions_tic_tac",
   "canary:interaction/dreamers_challenge_quest/actions_tic_tac_teleport",

@@ -835,6 +835,27 @@
     },
     {
       "identity": {
+        "key": "canary:quest/battle_mage_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Battle Mage Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Battle Mage Outfits Quest",
+        "pageid": 85574,
+        "revid": 848685
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements": {
+        "premium": true
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/bear_room_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -6416,6 +6437,52 @@
     },
     {
       "identity": {
+        "key": "canary:quest/cave_explorer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Cave Explorer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Cave Explorer Outfits Quest",
+        "pageid": 65476,
+        "revid": 846116
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/chayenne_realm",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Realm of Dreams Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Realm of Dreams Quest",
+        "pageid": 61230,
+        "revid": 683951
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "40"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 40
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/children_of_the_revolution_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -7139,6 +7206,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/citizen_outfits_quest_on_rook",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Citizen Outfits Quest on Rook",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Citizen Outfits Quest on Rook",
+        "pageid": 9741,
+        "revid": 683811
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/combat_knife_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -7250,6 +7340,29 @@
       "requirements": {
         "premium": false,
         "min_level": 60
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/crystal_warlord_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Crystal Warlord Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Crystal Warlord Outfits Quest",
+        "pageid": 60684,
+        "revid": 845400
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -9921,6 +10034,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/decaying_defender_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Decaying Defender Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Decaying Defender Outfits Quest",
+        "pageid": 103191,
+        "revid": 1010579
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/deeper_fibula_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -10056,6 +10192,29 @@
       "requirements": {
         "premium": true,
         "min_level": 120
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/demon_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Demon Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Demon Outfits Quest",
+        "pageid": 62985,
+        "revid": 845741
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "100"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 100
       }
     },
     {
@@ -10347,6 +10506,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/dream_warden_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Dream Warden Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dream Warden Outfits Quest",
+        "pageid": 66771,
+        "revid": 846247
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/dreamer_s_challenge_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -10420,6 +10602,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/druid_outfits_quest_on_rook",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Druid Outfits Quest on Rook",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Druid Outfits Quest on Rook",
+        "pageid": 9744,
+        "revid": 683839
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/edron_goblin_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -10473,6 +10678,29 @@
       "requirements": {
         "premium": true,
         "min_level": 80
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/elementalist_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Elementalist Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Elementalist Outfits Quest",
+        "pageid": 54199,
+        "revid": 844737
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "8"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 8
       }
     },
     {
@@ -10799,6 +11027,27 @@
     },
     {
       "identity": {
+        "key": "canary:quest/falconer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Falconer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Falconer Outfits Quest",
+        "pageid": 96699,
+        "revid": 909040
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no"
+      },
+      "requirements": {
+        "premium": false
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/fanfare_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -10895,6 +11144,52 @@
     },
     {
       "identity": {
+        "key": "canary:quest/festive_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Festive Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Festive Outfits Quest",
+        "pageid": 83163,
+        "revid": 849791
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "40"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/fiend_slayer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Fiend Slayer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fiend Slayer Outfits Quest",
+        "pageid": 107656,
+        "revid": 1177418
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/fire_axe_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -10925,6 +11220,29 @@
       "requirements": {
         "premium": true,
         "min_level": 60
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/fire_fighter_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Fire-Fighter Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fire-Fighter Outfits Quest",
+        "pageid": 98824,
+        "revid": 938141
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
       }
     },
     {
@@ -11823,6 +12141,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/fury_gates_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Fury Gates Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fury Gates Mini World Change",
+        "pageid": 76237,
+        "revid": 1099676
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "60"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 60
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/geomancer_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -11914,6 +12255,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/glooth_engineer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Glooth Engineer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Glooth Engineer Outfits Quest",
+        "pageid": 67748,
+        "revid": 846508
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/goblin_temple_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -11943,6 +12307,29 @@
       },
       "requirements": {
         "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/golden_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Golden Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Golden Outfits Quest",
+        "pageid": 88407,
+        "revid": 892279
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
         "min_level": 0
       }
     },
@@ -12572,6 +12959,29 @@
       "requirements": {
         "premium": true,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/hand_of_the_inquisition_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Hand of the Inquisition Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Hand of the Inquisition Outfits Quest",
+        "pageid": 89178,
+        "revid": 848187
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
       }
     },
     {
@@ -20127,6 +20537,50 @@
     },
     {
       "identity": {
+        "key": "canary:quest/makeshift_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Makeshift Warrior Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Makeshift Warrior Outfits Quest",
+        "pageid": 83854,
+        "revid": 849124
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements": {
+        "premium": true
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/marlin_trophy_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Marlin Trophy Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Marlin Trophy Quest",
+        "pageid": 21716,
+        "revid": 683910
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/medusa_shield_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -20305,6 +20759,29 @@
       },
       "requirements": {
         "premium": false
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/nightmare_isles_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Nightmare Isles Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Nightmare Isles Mini World Change",
+        "pageid": 76248,
+        "revid": 891482
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -20569,6 +21046,52 @@
     },
     {
       "identity": {
+        "key": "canary:quest/nobleman_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Nobleman Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Nobleman Outfits Quest",
+        "pageid": 8768,
+        "revid": 683922
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/obsidian_knife_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Obsidian Knife Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Obsidian Knife Quest",
+        "pageid": 9098,
+        "revid": 683928
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/oramond_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -20771,6 +21294,29 @@
           "revision": "canary-04b83b51+crystalserver-9f5a72c6"
         }
       ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/oriental_trader_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Oriental Trader Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Oriental Trader Mini World Change",
+        "pageid": 76255,
+        "revid": 845183
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
@@ -24008,6 +24554,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/pick_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Pick Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Pick Quest",
+        "pageid": 3180,
+        "revid": 1044889
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/plate_armor_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -24244,6 +24813,101 @@
       "requirements": {
         "premium": false,
         "min_level": 60
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/rapier_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Rapier Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Rapier Quest",
+        "pageid": 3334,
+        "revid": 1043841
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/rascoohan_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Rascoohan Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Rascoohan Outfits Quest",
+        "pageid": 93016,
+        "revid": 895793
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "?"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "uncertain"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/revenant_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Revenant Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Revenant Outfits Quest",
+        "pageid": 92416,
+        "revid": 1008240
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/rift_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Rift Warrior Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Rift Warrior Outfits Quest",
+        "pageid": 77049,
+        "revid": 683954
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -24529,6 +25193,29 @@
         "pageid": 50684,
         "revid": 844603
       },
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/royal_costume_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Royal Costume Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Royal Costume Outfits Quest",
+        "pageid": 95554,
+        "revid": 892593
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
@@ -27584,6 +28271,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/sinatuki_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Sinatuki Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Sinatuki Quest",
+        "pageid": 67095,
+        "revid": 842457
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/six_rubies_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -27608,6 +28318,29 @@
       },
       "requirements": {
         "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/soil_guardian_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Soil Guardian Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Soil Guardian Outfits Quest",
+        "pageid": 60686,
+        "revid": 845628
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
         "min_level": 0
       }
     },
@@ -28222,6 +28955,29 @@
         "pageid": 50764,
         "revid": 844628
       },
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/steal_from_thieves_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Steal From Thieves Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Steal From Thieves Quest",
+        "pageid": 20034,
+        "revid": 842913
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
@@ -38079,6 +38835,32 @@
       "requirements": {
         "premium": true,
         "min_level": 35
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_mummys_curse_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Mummy's Curse World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Mummy's Curse World Change",
+        "pageid": 54567,
+        "revid": 844898
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "None"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "none"
       }
     },
     {
@@ -55514,6 +56296,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/warmaster_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Warmaster Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Warmaster Outfits Quest",
+        "pageid": 42269,
+        "revid": 795619
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/waterfall_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -55539,6 +56344,29 @@
       "requirements": {
         "premium": true,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/wayfarer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Wayfarer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Wayfarer Outfits Quest",
+        "pageid": 46398,
+        "revid": 844411
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
       }
     },
     {
@@ -57297,6 +58125,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/yalaharian_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Yalaharian Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Yalaharian Outfits Quest",
+        "pageid": 68910,
+        "revid": 843726
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
+      }
+    },
+    {
+      "identity": {
         "key": "crystalserver:quest/25_years_of_tibia_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -57695,6 +58546,52 @@
     },
     {
       "identity": {
+        "key": "crystalserver:quest/dream_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Dream Warrior Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dream Warrior Outfits Quest",
+        "pageid": 87004,
+        "revid": 848563
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/formal_dress_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Formal Dress Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Formal Dress Outfits Quest",
+        "pageid": 96197,
+        "revid": 898654
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "20"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 20
+      }
+    },
+    {
+      "identity": {
         "key": "crystalserver:quest/frost_dragon_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -57720,6 +58617,29 @@
       "requirements": {
         "premium": true,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/illuminator_outfit_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Illuminator Outfit Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Illuminator Outfit Quest",
+        "pageid": 108929,
+        "revid": 1111818
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
       }
     },
     {

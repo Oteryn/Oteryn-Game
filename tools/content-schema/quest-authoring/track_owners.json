@@ -517,6 +517,1569 @@
         "npc/the_dream_master.lua"
       ],
       "note": "Shared KnightwatchTowerDoor41014 is written by both Nightmare DreamMaster and Brotherhood BoneMaster source branches (Canary NPC writerL124/L128 and CrystalL94/L99). Distinct BR/Fandom quest pages; unique quest owner UNKNOWN. No collapse into Nightmare merely from Storage namespace."
+    },
+    "quest/u7_8/marlin_trophy": {
+      "wiki_quest": "Marlin Trophy Quest",
+      "npc_source": "npc/pemaret.lua",
+      "note": "Exact named storage is written only by the source NPC exchange callback; initial value and canonical bounds remain UNKNOWN."
+    },
+    "quest/u7_8/obsidian_knife": {
+      "wiki_quest": "Obsidian Knife Quest",
+      "npc_source": "npc/uzgod.lua",
+      "note": "Exact named storage is written only by the source NPC exchange callback; initial value and canonical bounds remain UNKNOWN."
+    },
+    "quest/u7_8/citizen_outfits_rook/addon_hat_rook": {
+      "wiki_quest": "Citizen Outfits Quest on Rook",
+      "npc_source": "npc/norma.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/norma.lua",
+          "line": 96,
+          "blob_sha256": "4f6972a5957c04533515ebd9c32b53560b2b8d4766ccbd58310708504b35adc2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/norma.lua",
+          "line": 120,
+          "blob_sha256": "4f6972a5957c04533515ebd9c32b53560b2b8d4766ccbd58310708504b35adc2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/norma.lua",
+          "line": 94,
+          "blob_sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/norma.lua",
+          "line": 118,
+          "blob_sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/norma.lua",
+          "line": 94,
+          "blob_sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/norma.lua",
+          "line": 118,
+          "blob_sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u7_8/citizen_outfits_rook/mission_hat_rook": {
+      "wiki_quest": "Citizen Outfits Quest on Rook",
+      "npc_source": "npc/norma.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/norma.lua",
+          "line": 97,
+          "blob_sha256": "4f6972a5957c04533515ebd9c32b53560b2b8d4766ccbd58310708504b35adc2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/norma.lua",
+          "line": 119,
+          "blob_sha256": "4f6972a5957c04533515ebd9c32b53560b2b8d4766ccbd58310708504b35adc2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/norma.lua",
+          "line": 95,
+          "blob_sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/norma.lua",
+          "line": 117,
+          "blob_sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/norma.lua",
+          "line": 95,
+          "blob_sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/norma.lua",
+          "line": 117,
+          "blob_sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u7_8/citizen_outfits_rook/mission_backpack_rook": {
+      "wiki_quest": "Citizen Outfits Quest on Rook",
+      "npc_source": "npc/amber.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/amber.lua",
+          "line": 86,
+          "blob_sha256": "7a888690153c3face673ff91addb5ffc5c955dea5d3e4305de3d3550ee834624",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/amber.lua",
+          "line": 108,
+          "blob_sha256": "7a888690153c3face673ff91addb5ffc5c955dea5d3e4305de3d3550ee834624",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/amber.lua",
+          "line": 122,
+          "blob_sha256": "7a888690153c3face673ff91addb5ffc5c955dea5d3e4305de3d3550ee834624",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/amber.lua",
+          "line": 84,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/amber.lua",
+          "line": 106,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/amber.lua",
+          "line": 120,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/amber.lua",
+          "line": 84,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/amber.lua",
+          "line": 106,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/amber.lua",
+          "line": 120,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u7_8/citizen_outfits_rook/addon_backpack_rook": {
+      "wiki_quest": "Citizen Outfits Quest on Rook",
+      "npc_source": "npc/amber.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/amber.lua",
+          "line": 87,
+          "blob_sha256": "7a888690153c3face673ff91addb5ffc5c955dea5d3e4305de3d3550ee834624",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/amber.lua",
+          "line": 107,
+          "blob_sha256": "7a888690153c3face673ff91addb5ffc5c955dea5d3e4305de3d3550ee834624",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/amber.lua",
+          "line": 123,
+          "blob_sha256": "7a888690153c3face673ff91addb5ffc5c955dea5d3e4305de3d3550ee834624",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/amber.lua",
+          "line": 85,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/amber.lua",
+          "line": 105,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/amber.lua",
+          "line": 121,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/amber.lua",
+          "line": 85,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/amber.lua",
+          "line": 105,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/amber.lua",
+          "line": 121,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer": {
+      "wiki_quest": "Citizen Outfits Quest on Rook",
+      "npc_source": "npc/amber.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/amber.lua",
+          "line": 124,
+          "blob_sha256": "7a888690153c3face673ff91addb5ffc5c955dea5d3e4305de3d3550ee834624",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/amber.lua",
+          "line": 122,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/amber.lua",
+          "line": 122,
+          "blob_sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u7_8/druid_outfits_rook/druid_body_addon_rook": {
+      "wiki_quest": "Druid Outfits Quest on Rook",
+      "npc_source": "npc/tom.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/tom.lua",
+          "line": 235,
+          "blob_sha256": "107ce7f0257f398e7d43a862b3dad6cb8cdc3503820aa1b6ebfe325057e21075",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/tom.lua",
+          "line": 249,
+          "blob_sha256": "107ce7f0257f398e7d43a862b3dad6cb8cdc3503820aa1b6ebfe325057e21075",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/tom.lua",
+          "line": 233,
+          "blob_sha256": "5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/tom.lua",
+          "line": 247,
+          "blob_sha256": "5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/tom.lua",
+          "line": 233,
+          "blob_sha256": "5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/tom.lua",
+          "line": 247,
+          "blob_sha256": "5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u11_02/festive_outfits/addon1": {
+      "wiki_quest": "Festive Outfits Quest",
+      "npc_source": "npc/muriel.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/muriel.lua",
+          "line": 117,
+          "blob_sha256": "c4342042565e8f3a4cd9e78379b332ce945641601932454c6b7370d71e70c4c7",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/muriel.lua",
+          "line": 148,
+          "blob_sha256": "c4342042565e8f3a4cd9e78379b332ce945641601932454c6b7370d71e70c4c7",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/muriel.lua",
+          "line": 115,
+          "blob_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/muriel.lua",
+          "line": 146,
+          "blob_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/muriel.lua",
+          "line": 115,
+          "blob_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/muriel.lua",
+          "line": 146,
+          "blob_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u11_02/festive_outfits/addon2": {
+      "wiki_quest": "Festive Outfits Quest",
+      "npc_source": "npc/muriel.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/muriel.lua",
+          "line": 128,
+          "blob_sha256": "c4342042565e8f3a4cd9e78379b332ce945641601932454c6b7370d71e70c4c7",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/muriel.lua",
+          "line": 151,
+          "blob_sha256": "c4342042565e8f3a4cd9e78379b332ce945641601932454c6b7370d71e70c4c7",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/muriel.lua",
+          "line": 126,
+          "blob_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/muriel.lua",
+          "line": 149,
+          "blob_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/muriel.lua",
+          "line": 126,
+          "blob_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/muriel.lua",
+          "line": 149,
+          "blob_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u10_50/glooth_engineer_outfits/addon2": {
+      "wiki_quest": "Glooth Engineer Outfits Quest",
+      "npc_source": "npc/ezebeth.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/ezebeth.lua",
+          "line": 99,
+          "blob_sha256": "1a53f5f075bda58811d933a38854bd6a514580b85911b8a39a7238fc20453c64",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/ezebeth.lua",
+          "line": 97,
+          "blob_sha256": "280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/ezebeth.lua",
+          "line": 97,
+          "blob_sha256": "280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u10_50/glooth_engineer_outfits/addon1": {
+      "wiki_quest": "Glooth Engineer Outfits Quest",
+      "npc_source": "npc/ezebeth.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/ezebeth.lua",
+          "line": 105,
+          "blob_sha256": "1a53f5f075bda58811d933a38854bd6a514580b85911b8a39a7238fc20453c64",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/ezebeth.lua",
+          "line": 103,
+          "blob_sha256": "280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/ezebeth.lua",
+          "line": 103,
+          "blob_sha256": "280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u7_8/nobleman_outfits/nobleman_first_addon": {
+      "wiki_quest": "Nobleman Outfits Quest",
+      "npc_source": "npc/irmana.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/irmana.lua",
+          "line": 75,
+          "blob_sha256": "d49d72d946c7c832181aa6ace804374787dc3a2087e851e7e77949d6ef9e1a7d",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/irmana.lua",
+          "line": 86,
+          "blob_sha256": "d49d72d946c7c832181aa6ace804374787dc3a2087e851e7e77949d6ef9e1a7d",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/irmana.lua",
+          "line": 155,
+          "blob_sha256": "d49d72d946c7c832181aa6ace804374787dc3a2087e851e7e77949d6ef9e1a7d",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/irmana.lua",
+          "line": 163,
+          "blob_sha256": "d49d72d946c7c832181aa6ace804374787dc3a2087e851e7e77949d6ef9e1a7d",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/irmana.lua",
+          "line": 73,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/irmana.lua",
+          "line": 84,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/irmana.lua",
+          "line": 153,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/irmana.lua",
+          "line": 161,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/irmana.lua",
+          "line": 73,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/irmana.lua",
+          "line": 84,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/irmana.lua",
+          "line": 153,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/irmana.lua",
+          "line": 161,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u7_8/nobleman_outfits/nobleman_second_addon": {
+      "wiki_quest": "Nobleman Outfits Quest",
+      "npc_source": "npc/irmana.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/irmana.lua",
+          "line": 110,
+          "blob_sha256": "d49d72d946c7c832181aa6ace804374787dc3a2087e851e7e77949d6ef9e1a7d",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/irmana.lua",
+          "line": 122,
+          "blob_sha256": "d49d72d946c7c832181aa6ace804374787dc3a2087e851e7e77949d6ef9e1a7d",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/irmana.lua",
+          "line": 187,
+          "blob_sha256": "d49d72d946c7c832181aa6ace804374787dc3a2087e851e7e77949d6ef9e1a7d",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/irmana.lua",
+          "line": 196,
+          "blob_sha256": "d49d72d946c7c832181aa6ace804374787dc3a2087e851e7e77949d6ef9e1a7d",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/irmana.lua",
+          "line": 108,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/irmana.lua",
+          "line": 120,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/irmana.lua",
+          "line": 185,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/irmana.lua",
+          "line": 194,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/irmana.lua",
+          "line": 108,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/irmana.lua",
+          "line": 120,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/irmana.lua",
+          "line": 185,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/irmana.lua",
+          "line": 194,
+          "blob_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "outfit_quest/royal_costume_outfit": {
+      "wiki_quest": "Royal Costume Outfits Quest",
+      "npc_source": "npc/percybald.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/percybald.lua",
+          "line": 173,
+          "blob_sha256": "e51b3aeab67bd6e215f9f61ded7fb840be029e48aa167eccbcad3ac9a8f56763",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/percybald.lua",
+          "line": 189,
+          "blob_sha256": "e51b3aeab67bd6e215f9f61ded7fb840be029e48aa167eccbcad3ac9a8f56763",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/percybald.lua",
+          "line": 208,
+          "blob_sha256": "e51b3aeab67bd6e215f9f61ded7fb840be029e48aa167eccbcad3ac9a8f56763",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/percybald.lua",
+          "line": 171,
+          "blob_sha256": "b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/percybald.lua",
+          "line": 187,
+          "blob_sha256": "b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/percybald.lua",
+          "line": 206,
+          "blob_sha256": "b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/percybald.lua",
+          "line": 171,
+          "blob_sha256": "b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/percybald.lua",
+          "line": 187,
+          "blob_sha256": "b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/percybald.lua",
+          "line": 206,
+          "blob_sha256": "b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u12_15/golden_outfits": {
+      "wiki_quest": "Golden Outfits Quest",
+      "npc_sources": [
+        "npc/emperor_kruzak.lua",
+        "npc/king_tibianus.lua",
+        "npc/queen_eloise.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/emperor_kruzak.lua",
+          "line": 97,
+          "blob_sha256": "e66073a2e23010a6416e921d870370d9fd627da64bad3fea34ee21752ef0f1b2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/emperor_kruzak.lua",
+          "line": 119,
+          "blob_sha256": "e66073a2e23010a6416e921d870370d9fd627da64bad3fea34ee21752ef0f1b2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/emperor_kruzak.lua",
+          "line": 145,
+          "blob_sha256": "e66073a2e23010a6416e921d870370d9fd627da64bad3fea34ee21752ef0f1b2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/king_tibianus.lua",
+          "line": 102,
+          "blob_sha256": "52bb690654f77eb61499d5912f0cddc1f215ff132adf0cf3f2a304a26b1c7935",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/king_tibianus.lua",
+          "line": 124,
+          "blob_sha256": "52bb690654f77eb61499d5912f0cddc1f215ff132adf0cf3f2a304a26b1c7935",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/king_tibianus.lua",
+          "line": 150,
+          "blob_sha256": "52bb690654f77eb61499d5912f0cddc1f215ff132adf0cf3f2a304a26b1c7935",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/queen_eloise.lua",
+          "line": 92,
+          "blob_sha256": "683772d66aee49072b0387c20abf3e32047eb3a8ae61e2fcdfaca862c98a8de1",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/queen_eloise.lua",
+          "line": 114,
+          "blob_sha256": "683772d66aee49072b0387c20abf3e32047eb3a8ae61e2fcdfaca862c98a8de1",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/queen_eloise.lua",
+          "line": 140,
+          "blob_sha256": "683772d66aee49072b0387c20abf3e32047eb3a8ae61e2fcdfaca862c98a8de1",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 95,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 117,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 143,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 145,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 165,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 189,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 90,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 112,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 138,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 95,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 117,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 143,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 145,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 165,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 189,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 90,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 112,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 138,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "All direct writes to this exact source field are these three NPC Golden outfit1210/1211 callbacks. No cross-source storage alias or initial value is inferred."
+    },
+    "outfit_quest/golden_outfit": {
+      "wiki_quest": "Golden Outfits Quest",
+      "npc_sources": [
+        "npc/emperor_kruzak.lua",
+        "npc/king_tibianus.lua",
+        "npc/queen_eloise.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/emperor_kruzak.lua",
+          "line": 97,
+          "blob_sha256": "e66073a2e23010a6416e921d870370d9fd627da64bad3fea34ee21752ef0f1b2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/emperor_kruzak.lua",
+          "line": 119,
+          "blob_sha256": "e66073a2e23010a6416e921d870370d9fd627da64bad3fea34ee21752ef0f1b2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/emperor_kruzak.lua",
+          "line": 145,
+          "blob_sha256": "e66073a2e23010a6416e921d870370d9fd627da64bad3fea34ee21752ef0f1b2",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/king_tibianus.lua",
+          "line": 102,
+          "blob_sha256": "52bb690654f77eb61499d5912f0cddc1f215ff132adf0cf3f2a304a26b1c7935",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/king_tibianus.lua",
+          "line": 124,
+          "blob_sha256": "52bb690654f77eb61499d5912f0cddc1f215ff132adf0cf3f2a304a26b1c7935",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/king_tibianus.lua",
+          "line": 150,
+          "blob_sha256": "52bb690654f77eb61499d5912f0cddc1f215ff132adf0cf3f2a304a26b1c7935",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/queen_eloise.lua",
+          "line": 92,
+          "blob_sha256": "683772d66aee49072b0387c20abf3e32047eb3a8ae61e2fcdfaca862c98a8de1",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/queen_eloise.lua",
+          "line": 114,
+          "blob_sha256": "683772d66aee49072b0387c20abf3e32047eb3a8ae61e2fcdfaca862c98a8de1",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/queen_eloise.lua",
+          "line": 140,
+          "blob_sha256": "683772d66aee49072b0387c20abf3e32047eb3a8ae61e2fcdfaca862c98a8de1",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 95,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 117,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 143,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 145,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 165,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 189,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 90,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 112,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 138,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 95,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 117,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/emperor_kruzak.lua",
+          "line": 143,
+          "blob_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 145,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 165,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/king_tibianus.lua",
+          "line": 189,
+          "blob_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 90,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 112,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/queen_eloise.lua",
+          "line": 138,
+          "blob_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "All direct writes to this exact source field are these three NPC Golden outfit1210/1211 callbacks. No cross-source storage alias or initial value is inferred."
     }
   },
   "deferred_tracks": {
@@ -549,6 +2112,196 @@
         "note": "Unknown quest owner: literal playerDoubleMageKill=775558 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:3, writerL10; source callback/value retained, no initial/bounds inferred."
       },
       "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+    },
+    "quest/u9_1/elementalist_outfits/addon1": {
+      "owner_evidence": {
+        "wiki_quest": "Elementalist Outfits Quest",
+        "npc_source": "npc/broken_servant_sentry.lua",
+        "owner_evidence": [
+          {
+            "source": "canary",
+            "repository": "https://github.com/opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+            "line": 74,
+            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 72,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 72,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+      },
+      "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
+    },
+    "quest/u9_1/elementalist_outfits/addon2": {
+      "owner_evidence": {
+        "wiki_quest": "Elementalist Outfits Quest",
+        "npc_source": "npc/broken_servant_sentry.lua",
+        "owner_evidence": [
+          {
+            "source": "canary",
+            "repository": "https://github.com/opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+            "line": 89,
+            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 87,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 87,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+      },
+      "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
+    },
+    "quest/u9_1/elementalist_outfits/outfit": {
+      "owner_evidence": {
+        "wiki_quest": "Elementalist Outfits Quest",
+        "npc_source": "npc/broken_servant_sentry.lua",
+        "owner_evidence": [
+          {
+            "source": "canary",
+            "repository": "https://github.com/opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+            "line": 103,
+            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "https://github.com/opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+            "line": 115,
+            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 101,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 113,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 101,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 113,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+      },
+      "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
+    },
+    "quest/u9_1/elementalist_outfits/questline": {
+      "owner_evidence": {
+        "wiki_quest": "Elementalist Outfits Quest",
+        "npc_source": "npc/broken_servant_sentry.lua",
+        "owner_evidence": [
+          {
+            "source": "canary",
+            "repository": "https://github.com/opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+            "line": 104,
+            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 102,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystal-summer",
+            "repository": "https://github.com/zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "path": "data-global/npc/broken_servant_sentry.lua",
+            "line": 102,
+            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+      },
+      "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
     }
   }
 }
