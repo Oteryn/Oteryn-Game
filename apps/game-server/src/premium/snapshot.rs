@@ -70,13 +70,22 @@ pub fn validate(
     {
         return Err(Malformed);
     }
-    if text("schema") != Some(SNAPSHOT_SCHEMA)
-        || text("product_id") != Some(PRODUCT_ID)
-        || members
+    // A missing or ill-typed member is malformed; only a well-typed value outside the record is
+    // unsupported.
+    let (Some(schema), Some(product_id), Some(product_version), Some(producer_profile)) = (
+        text("schema"),
+        text("product_id"),
+        members
             .get("product_version")
-            .and_then(serde_json::Value::as_u64)
-            != Some(u64::from(PRODUCT_VERSION))
-        || text("producer_profile") != Some(PRODUCER_PROFILE)
+            .and_then(serde_json::Value::as_u64),
+        text("producer_profile"),
+    ) else {
+        return Err(Malformed);
+    };
+    if schema != SNAPSHOT_SCHEMA
+        || product_id != PRODUCT_ID
+        || product_version != u64::from(PRODUCT_VERSION)
+        || producer_profile != PRODUCER_PROFILE
     {
         return Err(Unsupported);
     }

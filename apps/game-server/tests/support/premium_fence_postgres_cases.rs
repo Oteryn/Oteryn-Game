@@ -250,6 +250,37 @@ fn premium_time_derived_state_is_not_a_lifecycle_change() -> TestResult {
         assert_eq!(harness.count("game_premium_evidence").await?, 2);
         Ok(())
     })?;
+    run("premium_withdrawn_entitlement", async |harness, root| {
+        use EntitlementState::None as NoEntitlement;
+        accept(root, &evidence(5, 1, Active)).await?;
+        assert_eq!(
+            accept(root, &evidence(6, 0, NoEntitlement)).await?,
+            ("accepted", 6, NoEntitlement, false)
+        );
+        // The old grant again after NONE, without a new lifecycle revision: no re-grant.
+        assert_eq!(
+            accept(root, &evidence(7, 1, Active)).await?,
+            ("conflict", 6, NoEntitlement, true)
+        );
+        assert_eq!(harness.count("game_premium_evidence").await?, 2);
+        Ok(())
+    })?;
+    run("premium_regranted_entitlement", async |_, root| {
+        use EntitlementState::None as NoEntitlement;
+        accept(root, &evidence(5, 1, Active)).await?;
+        accept(root, &evidence(6, 0, NoEntitlement)).await?;
+        // A new grant raises the lifecycle revision and reopens the entitlement.
+        assert_eq!(
+            accept(root, &evidence(7, 2, Active)).await?,
+            ("accepted", 7, Active, false)
+        );
+        // Renewals of that grant stay accepted.
+        assert_eq!(
+            accept(root, &evidence(8, 2, Active)).await?,
+            ("accepted", 8, Active, false)
+        );
+        Ok(())
+    })?;
     run("premium_unversioned_revoke", async |_, root| {
         use EntitlementState::Revoked;
         accept(root, &evidence(5, 1, Active)).await?;

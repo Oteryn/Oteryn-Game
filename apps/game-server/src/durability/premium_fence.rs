@@ -12,7 +12,8 @@
 //! - a revision below the high water that was never stored is stale;
 //! - a higher authority revision that lowers an entitlement's `lifecycle_revision`, or repeats
 //!   it with other lifecycle facts (product, entitlement, effective window, revocation; not a
-//!   time-derived state), is a conflict too.
+//!   time-derived state), is a conflict too, and so is one that reopens an entitlement a later
+//!   snapshot withdrew (`NONE` or another entitlement) without a new lifecycle revision.
 //!
 //! Every outcome returns the durable view after the transaction. The caller authorizes benefit
 //! only from that view (fence before authorize, §6.3); this module holds no Premium policy.
@@ -259,8 +260,9 @@ enum EntitlementStep {
     Skip,
     Open,
     Advance,
-    /// The evidence lowers the entitlement's lifecycle revision or repeats it with other
-    /// lifecycle facts.
+    /// The evidence lowers the entitlement's lifecycle revision, repeats it with other
+    /// lifecycle facts, or repeats it after a later snapshot withdrew the entitlement (a grant
+    /// needs a new lifecycle revision, PREMIUM-DELIVERY-0 §4).
     Regress,
 }
 
@@ -272,10 +274,16 @@ async fn entitlement_step(
     let Some(entitlement) = &evidence.entitlement_id else {
         return Ok(EntitlementStep::Skip);
     };
+    // `withdrawn`: accepted evidence after this entitlement's latest names another entitlement
+    // or none (`NONE`). The evidence log is never deleted, so this survives restarts.
     let Some(row) = sqlx::query(
-        "SELECT lifecycle_revision::text AS lifecycle, lifecycle_fingerprint \
-           FROM game_premium_entitlement_fence \
-          WHERE account_id = encode($1,'hex')::uuid AND entitlement_id = $2 FOR UPDATE",
+        "SELECT f.lifecycle_revision::text AS lifecycle, f.lifecycle_fingerprint, \
+                EXISTS (SELECT 1 FROM game_premium_evidence e \
+                         WHERE e.account_id = f.account_id \
+                           AND e.authority_revision > f.authority_revision \
+                           AND e.entitlement_id IS DISTINCT FROM f.entitlement_id) AS withdrawn \
+           FROM game_premium_entitlement_fence f \
+          WHERE f.account_id = encode($1,'hex')::uuid AND f.entitlement_id = $2 FOR UPDATE OF f",
     )
     .bind(evidence.account_id.as_slice())
     .bind(entitlement)
@@ -286,10 +294,13 @@ async fn entitlement_step(
     };
     let stored: u64 = numeric(&row, "lifecycle")?;
     let stored_fingerprint: Vec<u8> = row.try_get("lifecycle_fingerprint")?;
+    let withdrawn: bool = row.try_get("withdrawn")?;
     Ok(
         if evidence.lifecycle_revision < stored
             || (evidence.lifecycle_revision == stored
-                && stored_fingerprint.as_slice() != evidence.lifecycle_fingerprint().as_slice())
+                && (withdrawn
+                    || stored_fingerprint.as_slice()
+                        != evidence.lifecycle_fingerprint().as_slice()))
         {
             EntitlementStep::Regress
         } else {

@@ -162,6 +162,29 @@ fn responses_outside_the_compatibility_record_fail_closed() {
         ]),
         SnapshotRejection::Malformed
     );
+    // A bound response with a missing or ill-typed compatibility member is malformed: it
+    // changes nothing.
+    for key in [
+        "schema",
+        "product_id",
+        "product_version",
+        "producer_profile",
+    ] {
+        assert_eq!(
+            rejected(&[(key, serde_json::Value::Null)]),
+            SnapshotRejection::Malformed
+        );
+        let ill_typed = if key == "product_version" {
+            serde_json::json!("1")
+        } else {
+            serde_json::json!(1)
+        };
+        assert_eq!(rejected(&[(key, ill_typed)]), SnapshotRejection::Malformed);
+    }
+    assert_eq!(
+        rejected(&[("product_version", (-1).into())]),
+        SnapshotRejection::Malformed
+    );
     let long_lease = serde_json::json!("2026-09-30T13:00:01Z");
     assert_eq!(
         rejected(&[("authority_valid_until", long_lease)]),
