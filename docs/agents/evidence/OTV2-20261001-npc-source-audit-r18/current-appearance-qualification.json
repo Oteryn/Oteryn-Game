@@ -1,0 +1,1485 @@
+{
+  "schema": "NPC_NINE_SOURCE_CLOSED_CURRENT_IMAGE_CANDIDATES/v1",
+  "records": [
+    {
+      "name": "Sniff",
+      "source": {
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__sniff.lua",
+        "sha256": "039035e972a75d111dd2b8114236eb6121e76569e62cc837b08afb9b302f61be",
+        "blob_sha1": "2b1b4fc65d3d3071c7e0c97aa9d658a83c18643c",
+        "bytes": 4608,
+        "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__sniff.lua",
+        "name": "Sniff",
+        "repository_path": "data-otservbr-global/npc/sniff.lua",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/sniff.lua",
+        "git_blob_verified": true
+      },
+      "source_fields": {
+        "look_type": 1346,
+        "palette": {
+          "head": 2,
+          "body": 57,
+          "legs": 78,
+          "feet": 96
+        },
+        "addons": 1,
+        "mount": 0,
+        "walk_interval_ms": 2000,
+        "walk_radius_tiles": 2,
+        "floorchange": false
+      },
+      "native_kind": "Outfit",
+      "native_id": 1346,
+      "qualified_palette": {
+        "head": 38,
+        "body": 19,
+        "legs": 78,
+        "feet": 96
+      },
+      "addons": 1,
+      "frame_group": 1,
+      "phase": 0,
+      "score": 1.679514,
+      "source_mount_field": 0,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "Sniff",
+        "pageid": 50710,
+        "revid": 357215,
+        "url": "https://www.tibiawiki.com.br/images/6/63/Sniff.gif",
+        "sha256": "b3c8f4d384b1e3c2207796fff51e3f73ab061d8eb44006acc0e10c3ff9a17fef",
+        "bytes": 5853,
+        "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/sniff.gif",
+        "actor_page_source": "https://www.tibiawiki.com.br/wiki/Sniff",
+        "custody_manifest_path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "custody_manifest_sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395",
+        "literal_actor_and_two_image_anchors_verified": true,
+        "role": "NPC",
+        "removed_flag": "NOT_MARKED_REMOVED"
+      },
+      "palette_reasons": {
+        "head": "wiki",
+        "body": "wiki",
+        "legs": "few_pixels",
+        "feet": "few_pixels"
+      },
+      "movement_admission": "SOURCE_LITERAL2000_RADIUS2_FLOORFALSE_ENGINE_CHAIN",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "Sniff",
+        "pageid": 50710,
+        "revid": 357215,
+        "image_capture": {
+          "bytes": 5853,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/sniff.gif",
+          "sha256": "b3c8f4d384b1e3c2207796fff51e3f73ab061d8eb44006acc0e10c3ff9a17fef",
+          "url": "https://www.tibiawiki.com.br/images/6/63/Sniff.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "upstream_custody_sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/6/63/Sniff.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/6/63/Sniff.gif",
+            "literal_alt": "Sniff.gif",
+            "literal_parent_href": "/wiki/Arquivo:Sniff.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Sniff.gif",
+            "byte_witness": {
+              "alt": "Sniff.gif",
+              "image_tag": {
+                "byte_end": 228340,
+                "byte_start": 228250,
+                "fragment_sha256": "a4408f5692955879e6c32b8c4230070cfa0eae9237bc445107a1cd567c5bc0aa"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/6/63/Sniff.gif",
+              "parent_anchor_tag": {
+                "byte_end": 228250,
+                "byte_start": 228193,
+                "fragment_sha256": "fc7da66c238b80dfc499e4d68344452da6d6e19d2ce98392323efd777b2f5c79"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Sniff.gif"
+            }
+          },
+          {
+            "literal_src": "/images/6/63/Sniff.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/6/63/Sniff.gif",
+            "literal_alt": "Sniff.gif",
+            "literal_parent_href": "/wiki/Arquivo:Sniff.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Sniff.gif",
+            "byte_witness": {
+              "alt": "Sniff.gif",
+              "image_tag": {
+                "byte_end": 229468,
+                "byte_start": 229378,
+                "fragment_sha256": "a4408f5692955879e6c32b8c4230070cfa0eae9237bc445107a1cd567c5bc0aa"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/6/63/Sniff.gif",
+              "parent_anchor_tag": {
+                "byte_end": 229378,
+                "byte_start": 229321,
+                "fragment_sha256": "fc7da66c238b80dfc499e4d68344452da6d6e19d2ce98392323efd777b2f5c79"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Sniff.gif"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Ra'Clette",
+      "source": {
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__Ra'Clette.lua",
+        "sha256": "c0371b93a4c69c6e41c6e8fbceca17c4448c28c8c20a68d49df586e7e68d4658",
+        "blob_sha1": "2039ff364011fb5045f174105f66bbd5036915fd",
+        "bytes": 4433,
+        "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__Ra'Clette.lua",
+        "name": "Ra'Clette",
+        "repository_path": "data-otservbr-global/npc/Ra'Clette.lua",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Ra%27Clette.lua",
+        "git_blob_verified": true
+      },
+      "source_fields": {
+        "look_type": 533,
+        "palette": {
+          "head": 0,
+          "body": 132,
+          "legs": 76,
+          "feet": 0
+        },
+        "addons": 0,
+        "mount": 0,
+        "walk_interval_ms": 2000,
+        "walk_radius_tiles": 2,
+        "floorchange": false
+      },
+      "native_kind": "Outfit",
+      "native_id": 533,
+      "qualified_palette": {
+        "head": 0,
+        "body": 113,
+        "legs": 19,
+        "feet": 0
+      },
+      "addons": 0,
+      "frame_group": 1,
+      "phase": 0,
+      "score": 0.989819,
+      "source_mount_field": 0,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "Ra'Clette",
+        "pageid": 50712,
+        "revid": 367577,
+        "url": "https://www.tibiawiki.com.br/images/8/87/Ra%27Clette.gif",
+        "sha256": "1d134d231b970637741a3701be5d85e09b50a5182194a3194fffa728c6cd177d",
+        "bytes": 7023,
+        "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/raclette.gif",
+        "actor_page_source": "https://www.tibiawiki.com.br/wiki/Ra'Clette",
+        "custody_manifest_path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "custody_manifest_sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395",
+        "literal_actor_and_two_image_anchors_verified": true,
+        "role": "NPC",
+        "removed_flag": "NOT_MARKED_REMOVED"
+      },
+      "palette_reasons": {
+        "head": "few_pixels",
+        "body": "wiki",
+        "legs": "wiki",
+        "feet": "few_pixels"
+      },
+      "movement_admission": "SOURCE_LITERAL2000_RADIUS2_FLOORFALSE_ENGINE_CHAIN",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "Ra'Clette",
+        "pageid": 50712,
+        "revid": 367577,
+        "image_capture": {
+          "bytes": 7023,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/raclette.gif",
+          "sha256": "1d134d231b970637741a3701be5d85e09b50a5182194a3194fffa728c6cd177d",
+          "url": "https://www.tibiawiki.com.br/images/8/87/Ra%27Clette.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "upstream_custody_sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/8/87/Ra%27Clette.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/8/87/Ra%27Clette.gif",
+            "literal_alt": "Ra'Clette.gif",
+            "literal_parent_href": "/wiki/Arquivo:Ra%27Clette.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Ra%27Clette.gif",
+            "byte_witness": {
+              "alt": "Ra'Clette.gif",
+              "image_tag": {
+                "byte_end": 92930,
+                "byte_start": 92830,
+                "fragment_sha256": "d89874fcabfe85f1be210af7e6646d4ce71a7a49444efd7a225a9d70977bdfdc"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/8/87/Ra%27Clette.gif",
+              "parent_anchor_tag": {
+                "byte_end": 92830,
+                "byte_start": 92767,
+                "fragment_sha256": "6ee1aa37ad04a9cc624345f59548645cc2040842dff1279c6cfe2cdf0c163e91"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Ra%27Clette.gif"
+            }
+          },
+          {
+            "literal_src": "/images/8/87/Ra%27Clette.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/8/87/Ra%27Clette.gif",
+            "literal_alt": "Ra'Clette.gif",
+            "literal_parent_href": "/wiki/Arquivo:Ra%27Clette.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Ra%27Clette.gif",
+            "byte_witness": {
+              "alt": "Ra'Clette.gif",
+              "image_tag": {
+                "byte_end": 94078,
+                "byte_start": 93978,
+                "fragment_sha256": "d89874fcabfe85f1be210af7e6646d4ce71a7a49444efd7a225a9d70977bdfdc"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/8/87/Ra%27Clette.gif",
+              "parent_anchor_tag": {
+                "byte_end": 93978,
+                "byte_start": 93915,
+                "fragment_sha256": "6ee1aa37ad04a9cc624345f59548645cc2040842dff1279c6cfe2cdf0c163e91"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Ra%27Clette.gif"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "The Draccoon (NPC)",
+      "source": {
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__The Draccoon.lua",
+        "sha256": "32154735d97f9357cf82ed011698bf849778fa2dbb973647d65abd0092c34073",
+        "blob_sha1": "4baeacc7b5ab2d9793beadfbe8dd46c59dcc2ff0",
+        "bytes": 4299,
+        "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__The Draccoon.lua",
+        "name": "The Draccoon (NPC)",
+        "repository_path": "data-otservbr-global/npc/The Draccoon.lua",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/The%20Draccoon.lua",
+        "git_blob_verified": true
+      },
+      "source_fields": {
+        "look_type": 1703,
+        "palette": {
+          "head": 0,
+          "body": 0,
+          "legs": 0,
+          "feet": 0
+        },
+        "addons": 0,
+        "mount": null,
+        "walk_interval_ms": 2000,
+        "walk_radius_tiles": 2,
+        "floorchange": false
+      },
+      "native_kind": "Outfit",
+      "native_id": 1703,
+      "qualified_palette": {
+        "head": 0,
+        "body": 0,
+        "legs": 0,
+        "feet": 0
+      },
+      "addons": 0,
+      "frame_group": 1,
+      "phase": 0,
+      "score": 11.030914,
+      "source_mount_field": null,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "The Draccoon (NPC)",
+        "pageid": 61322,
+        "revid": 416298,
+        "url": "https://www.tibiawiki.com.br/images/b/bc/The_Draccoon_%28NPC%29.gif",
+        "sha256": "3882639caa448a3a026e36dacfb7ac3888eef233da5dcf19ef2a05b3ea8800a6",
+        "bytes": 25404,
+        "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/thedraccoonnpc.gif",
+        "actor_page_source": "https://www.tibiawiki.com.br/wiki/The_Draccoon_(NPC)",
+        "custody_manifest_path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "custody_manifest_sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395",
+        "literal_actor_and_two_image_anchors_verified": true,
+        "role": "NPC",
+        "removed_flag": "NOT_MARKED_REMOVED"
+      },
+      "palette_reasons": {
+        "head": "few_pixels",
+        "body": "few_pixels",
+        "legs": "few_pixels",
+        "feet": "few_pixels"
+      },
+      "movement_admission": "SOURCE_LITERAL2000_RADIUS2_FLOORFALSE_ENGINE_CHAIN",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "The Draccoon (NPC)",
+        "pageid": 61322,
+        "revid": 416298,
+        "image_capture": {
+          "bytes": 25404,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/thedraccoonnpc.gif",
+          "sha256": "3882639caa448a3a026e36dacfb7ac3888eef233da5dcf19ef2a05b3ea8800a6",
+          "url": "https://www.tibiawiki.com.br/images/b/bc/The_Draccoon_%28NPC%29.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "upstream_custody_sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/b/bc/The_Draccoon_%28NPC%29.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/b/bc/The_Draccoon_%28NPC%29.gif",
+            "literal_alt": "The Draccoon (NPC).gif",
+            "literal_parent_href": "/wiki/Arquivo:The_Draccoon_(NPC).gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:The_Draccoon_(NPC).gif",
+            "byte_witness": {
+              "alt": "The Draccoon (NPC).gif",
+              "image_tag": {
+                "byte_end": 93703,
+                "byte_start": 93583,
+                "fragment_sha256": "eea339757a1bdf4c90a3a5b3b161dc957176999822cd5fc15c5052c463e056a3"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/b/bc/The_Draccoon_%28NPC%29.gif",
+              "parent_anchor_tag": {
+                "byte_end": 93583,
+                "byte_start": 93513,
+                "fragment_sha256": "98dc8a51cab934d0f9cda99f95cb7fd2e54d7dfc5e9588a623696beccbeabfb9"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:The_Draccoon_(NPC).gif"
+            }
+          },
+          {
+            "literal_src": "/images/b/bc/The_Draccoon_%28NPC%29.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/b/bc/The_Draccoon_%28NPC%29.gif",
+            "literal_alt": "The Draccoon (NPC).gif",
+            "literal_parent_href": "/wiki/Arquivo:The_Draccoon_(NPC).gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:The_Draccoon_(NPC).gif",
+            "byte_witness": {
+              "alt": "The Draccoon (NPC).gif",
+              "image_tag": {
+                "byte_end": 98445,
+                "byte_start": 98325,
+                "fragment_sha256": "eea339757a1bdf4c90a3a5b3b161dc957176999822cd5fc15c5052c463e056a3"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/b/bc/The_Draccoon_%28NPC%29.gif",
+              "parent_anchor_tag": {
+                "byte_end": 98325,
+                "byte_start": 98255,
+                "fragment_sha256": "98dc8a51cab934d0f9cda99f95cb7fd2e54d7dfc5e9588a623696beccbeabfb9"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:The_Draccoon_(NPC).gif"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Toffee",
+      "source": {
+        "name": "Toffee",
+        "path": "/workspace/npc-r18-research/lane_c/raw/fifth-empearl__fencore__toffee.lua",
+        "repository": "fifth-empearl/fencore",
+        "revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+        "repository_path": "data-otservbr-global/npc/toffee.lua",
+        "blob_sha1": "1ce1fd2e5da008e1909abcacb7a4d0dab087ee3a",
+        "sha256": "bec8dcc5681ca2afd6c6f5b099a81cad5a16b933d32f8935b0d704aa59a09581",
+        "git_blob_verified": true,
+        "bytes": 3520,
+        "url": "https://raw.githubusercontent.com/fifth-empearl/fencore/00484ac96d3379fd7f18a3a410e53c2ae31fc981/data-otservbr-global/npc/toffee.lua"
+      },
+      "source_fields": {
+        "look_type": 1751,
+        "palette": {
+          "head": 0,
+          "body": 0,
+          "legs": 0,
+          "feet": 0
+        },
+        "addons": 0,
+        "mount": null,
+        "walk_interval_ms": 0,
+        "walk_radius_tiles": 2,
+        "floorchange": false
+      },
+      "native_kind": "Outfit",
+      "native_id": 1751,
+      "qualified_palette": {
+        "head": 0,
+        "body": 0,
+        "legs": 0,
+        "feet": 0
+      },
+      "addons": 0,
+      "frame_group": 1,
+      "phase": 0,
+      "score": 0.006245,
+      "source_mount_field": null,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "Toffee",
+        "pageid": 62172,
+        "revid": 443790,
+        "url": "https://www.tibiawiki.com.br/images/4/42/Toffee.gif",
+        "sha256": "10d95232b3d7e607db8e2a23277b9557933d30d059f1553f56cf47631d40f99a",
+        "bytes": 17000,
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/toffee.gif",
+        "actor_page_source": "https://www.tibiawiki.com.br/wiki/Toffee",
+        "custody_manifest_path": "/workspace/npc-r18-research/wiki_captures/additional-current/toffee-current-br-actor-image-custody.json",
+        "custody_manifest_sha256": "8215c515d863f23b7a172e4a3f8541ee7764cbb25dcfb741fd399490bab4abf2",
+        "literal_actor_and_two_image_anchors_verified": true,
+        "role": "NPC",
+        "removed_flag": "NOT_MARKED_REMOVED"
+      },
+      "palette_reasons": {
+        "head": "few_pixels",
+        "body": "few_pixels",
+        "legs": "few_pixels",
+        "feet": "few_pixels"
+      },
+      "movement_admission": "SOURCE_LITERAL_WALK0_ENGINE_DISABLED_WANDER_NONE",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "Toffee",
+        "pageid": 62172,
+        "revid": 443790,
+        "image_capture": {
+          "bytes": 17000,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/additional-current/toffee.gif",
+          "sha256": "10d95232b3d7e607db8e2a23277b9557933d30d059f1553f56cf47631d40f99a",
+          "url": "https://www.tibiawiki.com.br/images/4/42/Toffee.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "upstream_custody_sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/4/42/Toffee.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/4/42/Toffee.gif",
+            "literal_alt": "Toffee.gif",
+            "literal_parent_href": "/wiki/Arquivo:Toffee.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Toffee.gif",
+            "byte_witness": {
+              "alt": "Toffee.gif",
+              "image_tag": {
+                "byte_end": 99837,
+                "byte_start": 99745,
+                "fragment_sha256": "5f1b517f44c5f261c4dc4c7750dfd5038a3c75cb558c65ad09db9dca3a7d586e"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/4/42/Toffee.gif",
+              "parent_anchor_tag": {
+                "byte_end": 99745,
+                "byte_start": 99687,
+                "fragment_sha256": "a130ae057fdb2ca66b6f9906e5d8a1c20cc5e3dbf9eed602440f4c8331295d85"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Toffee.gif"
+            }
+          },
+          {
+            "literal_src": "/images/4/42/Toffee.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/4/42/Toffee.gif",
+            "literal_alt": "Toffee.gif",
+            "literal_parent_href": "/wiki/Arquivo:Toffee.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Toffee.gif",
+            "byte_witness": {
+              "alt": "Toffee.gif",
+              "image_tag": {
+                "byte_end": 101623,
+                "byte_start": 101531,
+                "fragment_sha256": "5f1b517f44c5f261c4dc4c7750dfd5038a3c75cb558c65ad09db9dca3a7d586e"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/4/42/Toffee.gif",
+              "parent_anchor_tag": {
+                "byte_end": 101531,
+                "byte_start": 101473,
+                "fragment_sha256": "a130ae057fdb2ca66b6f9906e5d8a1c20cc5e3dbf9eed602440f4c8331295d85"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Toffee.gif"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Gunther",
+      "source": {
+        "name": "Gunther",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "repository_path": "data-otservbr-global/npc/gunther.lua",
+        "blob_sha1": "fc2cda82500817e37365628ecb0e6828d4f70cec",
+        "git_blob_verified": true,
+        "sha256": "3d94fa8dcc167088392cf4aebf3b008fc83f5678e55096c0eb84ecd2c3846303",
+        "bytes": 5385,
+        "path": "/workspace/npc-r18-research/lane_b/gunther.lua",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/gunther.lua",
+        "reused_capture": null
+      },
+      "source_fields": {
+        "look_type": 128,
+        "palette": {
+          "head": 59,
+          "body": 79,
+          "legs": 104,
+          "feet": 106
+        },
+        "addons": 0,
+        "mount": null,
+        "walk_interval_ms": 2000,
+        "walk_radius_tiles": 2,
+        "floorchange": false
+      },
+      "native_kind": "Outfit",
+      "native_id": 128,
+      "qualified_palette": {
+        "head": 40,
+        "body": 79,
+        "legs": 104,
+        "feet": 49
+      },
+      "addons": 0,
+      "frame_group": 1,
+      "phase": 0,
+      "score": 0.47091,
+      "source_mount_field": null,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "Gunther",
+        "pageid": 62158,
+        "revid": 419325,
+        "url": "https://www.tibiawiki.com.br/images/f/fe/Gunther.gif",
+        "sha256": "e4c43c334247ec6b9b188cbf7933c40dc595f4b92bb5553466498c51431d9c4b",
+        "bytes": 6718,
+        "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/gunther.gif",
+        "actor_page_source": "https://www.tibiawiki.com.br/wiki/Gunther",
+        "custody_manifest_path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "custody_manifest_sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395",
+        "literal_actor_and_two_image_anchors_verified": true,
+        "role": "NPC",
+        "removed_flag": "NOT_MARKED_REMOVED"
+      },
+      "palette_reasons": {
+        "head": "wiki",
+        "body": "source",
+        "legs": "source",
+        "feet": "wiki"
+      },
+      "movement_admission": "SOURCE_LITERAL2000_RADIUS2_FLOORFALSE_ENGINE_CHAIN",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "Gunther",
+        "pageid": 62158,
+        "revid": 419325,
+        "image_capture": {
+          "bytes": 6718,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/gunther.gif",
+          "sha256": "e4c43c334247ec6b9b188cbf7933c40dc595f4b92bb5553466498c51431d9c4b",
+          "url": "https://www.tibiawiki.com.br/images/f/fe/Gunther.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "upstream_custody_sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/f/fe/Gunther.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/f/fe/Gunther.gif",
+            "literal_alt": "Gunther.gif",
+            "literal_parent_href": "/wiki/Arquivo:Gunther.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Gunther.gif",
+            "byte_witness": {
+              "alt": "Gunther.gif",
+              "image_tag": {
+                "byte_end": 92939,
+                "byte_start": 92845,
+                "fragment_sha256": "68f3ce3719a898b6150f78d491575f32941460a116bcd8ffc67f00334347112f"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/f/fe/Gunther.gif",
+              "parent_anchor_tag": {
+                "byte_end": 92845,
+                "byte_start": 92786,
+                "fragment_sha256": "cc8bc7f588ce1f03dc3facaf98c23a16d9b61e78cd07430a1041a6b2cab692ba"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Gunther.gif"
+            }
+          },
+          {
+            "literal_src": "/images/f/fe/Gunther.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/f/fe/Gunther.gif",
+            "literal_alt": "Gunther.gif",
+            "literal_parent_href": "/wiki/Arquivo:Gunther.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Gunther.gif",
+            "byte_witness": {
+              "alt": "Gunther.gif",
+              "image_tag": {
+                "byte_end": 96554,
+                "byte_start": 96460,
+                "fragment_sha256": "68f3ce3719a898b6150f78d491575f32941460a116bcd8ffc67f00334347112f"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/f/fe/Gunther.gif",
+              "parent_anchor_tag": {
+                "byte_end": 96460,
+                "byte_start": 96401,
+                "fragment_sha256": "cc8bc7f588ce1f03dc3facaf98c23a16d9b61e78cd07430a1041a6b2cab692ba"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Gunther.gif"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Coco",
+      "source": {
+        "name": "Coco",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "repository_path": "data-otservbr-global/npc/coco.lua",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/coco.lua",
+        "blob_sha1": "d139ecf5077d024a5fcfcae7d97870b529d979df",
+        "git_blob_verified": true,
+        "sha256": "6cb58c1e3d7934133eb36b52b40e30bee4518e2ffc0eab7b806798d4ff02bfa8",
+        "bytes": 9475,
+        "path": "/workspace/npc-r16-research/presentation/coco.lua",
+        "status": 200
+      },
+      "native_kind": "Outfit",
+      "native_id": 1747,
+      "qualified_palette": {
+        "head": 86,
+        "body": 19,
+        "legs": 110,
+        "feet": 68
+      },
+      "addons": 0,
+      "source_addons": 2,
+      "selector_rule": "D16c_WIKI_IMAGE_REVIEW source2\u2192native0 boundedmasktopology",
+      "frame_group": 1,
+      "phase": 0,
+      "score": 3.7088706411966466,
+      "source_mount_field": null,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "Coco",
+        "pageid": 62168,
+        "revid": 428493,
+        "url": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif",
+        "sha256": "4a1d261b7dad0e392a40ee2b0269455e798f3a59435e8f0cb03cd3557cd86e92",
+        "bytes": 14274,
+        "path": "/workspace/npc-r16-research/presentation/coco.gif",
+        "status": 200,
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true
+      },
+      "palette_reasons": {
+        "head": "wiki",
+        "body": "wiki",
+        "legs": "wiki",
+        "feet": "few_pixels"
+      },
+      "movement_admission": "SOURCE_LITERAL2000_RADIUS2_FLOORFALSE_ENGINE_CHAIN",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "Coco",
+        "pageid": 62168,
+        "revid": 428493,
+        "image_capture": {
+          "bytes": 14274,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/additional-current/coco.gif",
+          "sha256": "4a1d261b7dad0e392a40ee2b0269455e798f3a59435e8f0cb03cd3557cd86e92",
+          "url": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "upstream_custody_sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/b/b3/Coco.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif",
+            "literal_alt": "Coco.gif",
+            "literal_parent_href": "/wiki/Arquivo:Coco.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Coco.gif",
+            "byte_witness": {
+              "alt": "Coco.gif",
+              "image_tag": {
+                "byte_end": 99827,
+                "byte_start": 99739,
+                "fragment_sha256": "402db5839fff2b3a033bd047ec3f4413d45f01939f1b7953bd99021e37582c0a"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif",
+              "parent_anchor_tag": {
+                "byte_end": 99739,
+                "byte_start": 99683,
+                "fragment_sha256": "1cf0c89085cff6e53da8982c9d5b16ee59c67d61ffc02b63d896f3e4a3db25d7"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Coco.gif"
+            }
+          },
+          {
+            "literal_src": "/images/b/b3/Coco.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif",
+            "literal_alt": "Coco.gif",
+            "literal_parent_href": "/wiki/Arquivo:Coco.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Coco.gif",
+            "byte_witness": {
+              "alt": "Coco.gif",
+              "image_tag": {
+                "byte_end": 101110,
+                "byte_start": 101022,
+                "fragment_sha256": "402db5839fff2b3a033bd047ec3f4413d45f01939f1b7953bd99021e37582c0a"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif",
+              "parent_anchor_tag": {
+                "byte_end": 101022,
+                "byte_start": 100966,
+                "fragment_sha256": "1cf0c89085cff6e53da8982c9d5b16ee59c67d61ffc02b63d896f3e4a3db25d7"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Coco.gif"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Kiru",
+      "source": {
+        "name": "Kiru",
+        "repository": "Brunowots/Happen",
+        "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+        "repository_path": "data/npc/kiru.lua",
+        "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/kiru.lua",
+        "blob_sha1": "7cd14ca4f5e70278e1ea2664924de826b61bc9d9",
+        "git_blob_verified": true,
+        "sha256": "96e744f6bf5732117c282f0c02ab68db5e2abaed305365f4f3343fbb5bb60e95",
+        "bytes": 4104,
+        "path": "/workspace/npc-r16-research/presentation/kiru-Happen.lua"
+      },
+      "source_fields": {
+        "look_type": 1647,
+        "palette": {
+          "head": 115,
+          "body": 99,
+          "legs": 20,
+          "feet": 87
+        },
+        "addons": 0,
+        "mount": 0,
+        "walk_interval_ms": 2000,
+        "walk_radius_tiles": 2,
+        "floorchange": false
+      },
+      "native_kind": "Outfit",
+      "native_id": 1647,
+      "qualified_palette": {
+        "head": 115,
+        "body": 43,
+        "legs": 20,
+        "feet": 124
+      },
+      "addons": 0,
+      "frame_group": 1,
+      "phase": 0,
+      "score": 1.385666,
+      "source_mount_field": 0,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "Kiru",
+        "pageid": 59877,
+        "revid": 401291,
+        "url": "https://www.tibiawiki.com.br/images/0/00/Kiru.gif",
+        "sha256": "d5245ed56345eb802387b3ba168714dfea88502beb7b835a5f9c465a1be9cd17",
+        "bytes": 16580,
+        "path": "/workspace/npc-r16-research/presentation/kiru.gif",
+        "status": 200,
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true
+      },
+      "palette_reasons": {
+        "head": "source",
+        "body": "wiki",
+        "legs": "source",
+        "feet": "wiki"
+      },
+      "selector_review": null,
+      "movement_admission": "SOURCE_LITERAL2000_RADIUS2_FLOORFALSE",
+      "quest_guards": "BR ParadiseLostGrimvale gate pending owningQuestbinding; no unconditionalshops",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "Kiru",
+        "pageid": 59877,
+        "revid": 401291,
+        "image_capture": {
+          "bytes": 16580,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/additional-current/kiru.gif",
+          "sha256": "d5245ed56345eb802387b3ba168714dfea88502beb7b835a5f9c465a1be9cd17",
+          "url": "https://www.tibiawiki.com.br/images/0/00/Kiru.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "upstream_custody_sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/0/00/Kiru.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/0/00/Kiru.gif",
+            "literal_alt": "Kiru.gif",
+            "literal_parent_href": "/wiki/Arquivo:Kiru.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Kiru.gif",
+            "byte_witness": {
+              "alt": "Kiru.gif",
+              "image_tag": {
+                "byte_end": 99740,
+                "byte_start": 99652,
+                "fragment_sha256": "06b6fbd04fb2bead32b7ffe359eb285993654a33f3c30085a940fafa4dfb1771"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/0/00/Kiru.gif",
+              "parent_anchor_tag": {
+                "byte_end": 99652,
+                "byte_start": 99596,
+                "fragment_sha256": "d494273a5b07eb035dffc0f19bfd3b9e32f526480e88d3b5318927bb8c2f547f"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Kiru.gif"
+            }
+          },
+          {
+            "literal_src": "/images/0/00/Kiru.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/0/00/Kiru.gif",
+            "literal_alt": "Kiru.gif",
+            "literal_parent_href": "/wiki/Arquivo:Kiru.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Kiru.gif",
+            "byte_witness": {
+              "alt": "Kiru.gif",
+              "image_tag": {
+                "byte_end": 100933,
+                "byte_start": 100845,
+                "fragment_sha256": "06b6fbd04fb2bead32b7ffe359eb285993654a33f3c30085a940fafa4dfb1771"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/0/00/Kiru.gif",
+              "parent_anchor_tag": {
+                "byte_end": 100845,
+                "byte_start": 100789,
+                "fragment_sha256": "d494273a5b07eb035dffc0f19bfd3b9e32f526480e88d3b5318927bb8c2f547f"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Kiru.gif"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Tamru",
+      "source": {
+        "name": "Tamru",
+        "repository": "Brunowots/Happen",
+        "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+        "repository_path": "data/npc/tamru.lua",
+        "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/tamru.lua",
+        "blob_sha1": "8a41d8266c986e4c3fbd7d64fc8b1cc53bedf6e8",
+        "git_blob_verified": true,
+        "sha256": "ac0cc0540a2c7ffd570ccce0344795383cf1bb252cc1277c1d0a85fe77eabaa9",
+        "bytes": 6471,
+        "path": "/workspace/npc-r16-research/presentation/tamru-Happen.lua"
+      },
+      "source_fields": {
+        "look_type": 146,
+        "palette": {
+          "head": 95,
+          "body": 71,
+          "legs": 128,
+          "feet": 19
+        },
+        "addons": 0,
+        "mount": null,
+        "walk_interval_ms": 2000,
+        "walk_radius_tiles": 2,
+        "floorchange": false
+      },
+      "native_kind": "Outfit",
+      "native_id": 146,
+      "qualified_palette": {
+        "head": 95,
+        "body": 71,
+        "legs": 128,
+        "feet": 0
+      },
+      "addons": 0,
+      "frame_group": 1,
+      "phase": 0,
+      "score": 0.446796,
+      "source_mount_field": null,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "Tamru",
+        "pageid": 59878,
+        "revid": 408357,
+        "url": "https://www.tibiawiki.com.br/images/2/2a/Tamru.gif",
+        "sha256": "1c9722433b9927ea800b8df06d6733c002f43f7ed8d0e99d56078b08999d9637",
+        "bytes": 6893,
+        "path": "/workspace/npc-r16-research/presentation/tamru.gif",
+        "status": 200,
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true
+      },
+      "palette_reasons": {
+        "head": "source",
+        "body": "source",
+        "legs": "source",
+        "feet": "wiki"
+      },
+      "selector_review": null,
+      "movement_admission": "SOURCE_LITERAL2000_RADIUS2_FLOORFALSE",
+      "quest_guards": "BR ParadiseLostGrimvale gate pending owningQuestbinding; no unconditionalshops",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "Tamru",
+        "pageid": 59878,
+        "revid": 408357,
+        "image_capture": {
+          "bytes": 6893,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/additional-current/tamru.gif",
+          "sha256": "1c9722433b9927ea800b8df06d6733c002f43f7ed8d0e99d56078b08999d9637",
+          "url": "https://www.tibiawiki.com.br/images/2/2a/Tamru.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "upstream_custody_sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/2/2a/Tamru.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/2/2a/Tamru.gif",
+            "literal_alt": "Tamru.gif",
+            "literal_parent_href": "/wiki/Arquivo:Tamru.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Tamru.gif",
+            "byte_witness": {
+              "alt": "Tamru.gif",
+              "image_tag": {
+                "byte_end": 229080,
+                "byte_start": 228990,
+                "fragment_sha256": "9eda1d457cab8293f80d3da31552f67a519c30549b32559bcbc2f03bd1d5f45b"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/2/2a/Tamru.gif",
+              "parent_anchor_tag": {
+                "byte_end": 228990,
+                "byte_start": 228933,
+                "fragment_sha256": "9a68786d0c876080196a3c15eca48b89dc7f816a4643cb7fddf52e50c883d3f9"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Tamru.gif"
+            }
+          },
+          {
+            "literal_src": "/images/2/2a/Tamru.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/2/2a/Tamru.gif",
+            "literal_alt": "Tamru.gif",
+            "literal_parent_href": "/wiki/Arquivo:Tamru.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Tamru.gif",
+            "byte_witness": {
+              "alt": "Tamru.gif",
+              "image_tag": {
+                "byte_end": 230217,
+                "byte_start": 230127,
+                "fragment_sha256": "9eda1d457cab8293f80d3da31552f67a519c30549b32559bcbc2f03bd1d5f45b"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/2/2a/Tamru.gif",
+              "parent_anchor_tag": {
+                "byte_end": 230127,
+                "byte_start": 230070,
+                "fragment_sha256": "9a68786d0c876080196a3c15eca48b89dc7f816a4643cb7fddf52e50c883d3f9"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Tamru.gif"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Yerga",
+      "source": {
+        "name": "Yerga",
+        "repository": "Brunowots/Happen",
+        "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+        "repository_path": "data/npc/yerga.lua",
+        "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/yerga.lua",
+        "blob_sha1": "c37a08a72b12dcef967ffa2bd2c8b33a35bef01f",
+        "git_blob_verified": true,
+        "sha256": "6fba061d53d9d9b4b8337f34b1e60bf693644c9e75ac4a04c1470975e4f99162",
+        "bytes": 6449,
+        "path": "/workspace/npc-r16-research/presentation/yerga-Happen.lua"
+      },
+      "source_fields": {
+        "look_type": 1648,
+        "palette": {
+          "head": 104,
+          "body": 95,
+          "legs": 123,
+          "feet": 71
+        },
+        "addons": 2,
+        "mount": null,
+        "walk_interval_ms": 2000,
+        "walk_radius_tiles": 2,
+        "floorchange": false
+      },
+      "native_kind": "Outfit",
+      "native_id": 1648,
+      "qualified_palette": {
+        "head": 53,
+        "body": 76,
+        "legs": 104,
+        "feet": 71
+      },
+      "addons": 2,
+      "frame_group": 1,
+      "phase": 0,
+      "score": 1.370678,
+      "source_mount_field": null,
+      "opaque_coverage": 1.0,
+      "source_image": {
+        "name": "Yerga",
+        "pageid": 59876,
+        "revid": 429318,
+        "url": "https://www.tibiawiki.com.br/images/7/7a/Yerga.gif",
+        "sha256": "867167eb41d9ebbd9f4f79c2f39922b5cd9dbe607334534dc18fe8e94ab9133a",
+        "bytes": 14202,
+        "path": "/workspace/npc-r16-research/presentation/yerga.gif",
+        "status": 200,
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true
+      },
+      "palette_reasons": {
+        "head": "wiki",
+        "body": "wiki",
+        "legs": "wiki",
+        "feet": "few_pixels"
+      },
+      "selector_review": {
+        "rule": "D16(c) WIKI_IMAGE",
+        "chosen": 2,
+        "bounded_probes": [
+          {
+            "look_type": 1648,
+            "addons": 0,
+            "frame_group": 1,
+            "phase": 0,
+            "direction": "south",
+            "source_addons": 2,
+            "source_palette": {
+              "head": 104,
+              "body": 95,
+              "legs": 123,
+              "feet": 71
+            },
+            "fit": {
+              "head": 53,
+              "body": 76,
+              "legs": 104,
+              "feet": 85,
+              "score": 16.68,
+              "align": {
+                "frame": 0,
+                "dy": -4,
+                "dx": -9
+              },
+              "region_dist": {
+                "head": 0.35,
+                "body": 20.53,
+                "legs": 0.52,
+                "feet": 0.0
+              },
+              "region_px": {
+                "head": 1,
+                "body": 564,
+                "legs": 88,
+                "feet": 2
+              }
+            },
+            "arbitrated_palette": {
+              "head": 104,
+              "body": 76,
+              "legs": 104,
+              "feet": 71
+            },
+            "arbitration_reasons": {
+              "head": "few_pixels",
+              "body": "wiki",
+              "legs": "wiki",
+              "feet": "few_pixels"
+            },
+            "score": 17.3218684256662,
+            "align": [
+              0,
+              -4,
+              -9
+            ],
+            "visible_region_px": {
+              "head": 1,
+              "body": 564,
+              "legs": 88,
+              "feet": 2
+            },
+            "cost_fit_visible_region_px": {
+              "head": 1,
+              "body": 564,
+              "legs": 88,
+              "feet": 2
+            },
+            "opaque_coverage": 1.0,
+            "override_visible_pixels_valid": true,
+            "accepted": true
+          },
+          {
+            "look_type": 1648,
+            "addons": 1,
+            "frame_group": 1,
+            "phase": 0,
+            "direction": "south",
+            "source_addons": 2,
+            "source_palette": {
+              "head": 104,
+              "body": 95,
+              "legs": 123,
+              "feet": 71
+            },
+            "fit": {
+              "head": 53,
+              "body": 76,
+              "legs": 104,
+              "feet": 85,
+              "score": 55.44,
+              "align": {
+                "frame": 0,
+                "dy": -4,
+                "dx": -9
+              },
+              "region_dist": {
+                "head": 0.35,
+                "body": 16.63,
+                "legs": 0.52,
+                "feet": 0.0
+              },
+              "region_px": {
+                "head": 1,
+                "body": 466,
+                "legs": 88,
+                "feet": 2
+              }
+            },
+            "arbitrated_palette": {
+              "head": 104,
+              "body": 76,
+              "legs": 104,
+              "feet": 71
+            },
+            "arbitration_reasons": {
+              "head": "few_pixels",
+              "body": "wiki",
+              "legs": "wiki",
+              "feet": "few_pixels"
+            },
+            "score": 55.996236313868614,
+            "align": [
+              0,
+              -4,
+              -9
+            ],
+            "visible_region_px": {
+              "head": 1,
+              "body": 466,
+              "legs": 88,
+              "feet": 2
+            },
+            "cost_fit_visible_region_px": {
+              "head": 1,
+              "body": 466,
+              "legs": 88,
+              "feet": 2
+            },
+            "opaque_coverage": 1.0,
+            "override_visible_pixels_valid": true,
+            "accepted": false
+          },
+          {
+            "look_type": 1648,
+            "addons": 2,
+            "frame_group": 1,
+            "phase": 0,
+            "direction": "south",
+            "source_addons": 2,
+            "source_palette": {
+              "head": 104,
+              "body": 95,
+              "legs": 123,
+              "feet": 71
+            },
+            "fit": {
+              "head": 53,
+              "body": 76,
+              "legs": 104,
+              "feet": 85,
+              "score": 0.8,
+              "align": {
+                "frame": 0,
+                "dy": -4,
+                "dx": -9
+              },
+              "region_dist": {
+                "head": 0.6,
+                "body": 0.43,
+                "legs": 0.27,
+                "feet": 0.0
+              },
+              "region_px": {
+                "head": 178,
+                "body": 408,
+                "legs": 87,
+                "feet": 2
+              }
+            },
+            "arbitrated_palette": {
+              "head": 53,
+              "body": 76,
+              "legs": 104,
+              "feet": 71
+            },
+            "arbitration_reasons": {
+              "head": "wiki",
+              "body": "wiki",
+              "legs": "wiki",
+              "feet": "few_pixels"
+            },
+            "score": 1.3706782446388983,
+            "align": [
+              0,
+              -4,
+              -9
+            ],
+            "visible_region_px": {
+              "head": 178,
+              "body": 408,
+              "legs": 87,
+              "feet": 2
+            },
+            "cost_fit_visible_region_px": {
+              "head": 178,
+              "body": 408,
+              "legs": 87,
+              "feet": 2
+            },
+            "opaque_coverage": 1.0,
+            "override_visible_pixels_valid": true,
+            "accepted": true
+          },
+          {
+            "look_type": 1648,
+            "addons": 3,
+            "frame_group": 1,
+            "phase": 0,
+            "direction": "south",
+            "source_addons": 2,
+            "source_palette": {
+              "head": 104,
+              "body": 95,
+              "legs": 123,
+              "feet": 71
+            },
+            "fit": {
+              "head": 101,
+              "body": 114,
+              "legs": 95,
+              "feet": 0,
+              "score": 86.08,
+              "align": {
+                "frame": 0,
+                "dy": -4,
+                "dx": -9
+              },
+              "region_dist": {
+                "head": 163.0,
+                "body": 234.87,
+                "legs": 234.41,
+                "feet": 255.0
+              },
+              "region_px": {
+                "head": 178,
+                "body": 372,
+                "legs": 87,
+                "feet": 2
+              }
+            },
+            "arbitrated_palette": {
+              "head": 101,
+              "body": 95,
+              "legs": 123,
+              "feet": 71
+            },
+            "arbitration_reasons": {
+              "head": "wiki",
+              "body": "source",
+              "legs": "source",
+              "feet": "few_pixels"
+            },
+            "score": 73.90577396953405,
+            "align": [
+              0,
+              -4,
+              -9
+            ],
+            "visible_region_px": {
+              "head": 178,
+              "body": 372,
+              "legs": 87,
+              "feet": 2
+            },
+            "cost_fit_visible_region_px": {
+              "head": 178,
+              "body": 346,
+              "legs": 87,
+              "feet": 2
+            },
+            "opaque_coverage": 1.0,
+            "override_visible_pixels_valid": true,
+            "accepted": false
+          }
+        ],
+        "scores": {
+          "0": 17.3218684256662,
+          "1": 55.996236313868614,
+          "2": 1.3706782446388983,
+          "3": 73.90577396953405
+        },
+        "qualification": "Addon2 retains donor Happen literal selector and shows native178-pixel head decoration present on current source GIF; addon0 loses head decoration and scores17.321868 while2scores1.370678. Both0and2 are below35; threshold alone does not uniquely select2. Actual visual review confirms decoration shape.",
+        "source_foot_palette_qualification": "71 literal selected Happen source;2pixels insufficient to replace or image-confirm;fencore122 source separately retained in its fit"
+      },
+      "movement_admission": "SOURCE_LITERAL2000_RADIUS2_FLOORFALSE",
+      "quest_guards": "BR ParadiseLostGrimvale gate pending owningQuestbinding; no unconditionalshops",
+      "dialogue_admission": false,
+      "service_admission": false,
+      "current_actual_dom_image_custody": {
+        "name": "Yerga",
+        "pageid": 59876,
+        "revid": 429318,
+        "image_capture": {
+          "bytes": 14202,
+          "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+          "path": "/workspace/npc-r18-research/wiki_captures/additional-current/yerga.gif",
+          "sha256": "867167eb41d9ebbd9f4f79c2f39922b5cd9dbe607334534dc18fe8e94ab9133a",
+          "url": "https://www.tibiawiki.com.br/images/7/7a/Yerga.gif"
+        },
+        "upstream_custody_path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "upstream_custody_sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6",
+        "actual_literal_html_attrs_independently_parsed": [
+          {
+            "literal_src": "/images/7/7a/Yerga.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/7/7a/Yerga.gif",
+            "literal_alt": "Yerga.gif",
+            "literal_parent_href": "/wiki/Arquivo:Yerga.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Yerga.gif",
+            "byte_witness": {
+              "alt": "Yerga.gif",
+              "image_tag": {
+                "byte_end": 93006,
+                "byte_start": 92916,
+                "fragment_sha256": "4aa07df091f035342c252b1cf5126ed9a41c7d06ec81425bfeded1eee2a073a4"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/7/7a/Yerga.gif",
+              "parent_anchor_tag": {
+                "byte_end": 92916,
+                "byte_start": 92859,
+                "fragment_sha256": "dbab01e7820926de1b1cefd2ccda9c6fe7f31a464affd8944d2e5b4c545c7a12"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Yerga.gif"
+            }
+          },
+          {
+            "literal_src": "/images/7/7a/Yerga.gif",
+            "resolved_src": "https://www.tibiawiki.com.br/images/7/7a/Yerga.gif",
+            "literal_alt": "Yerga.gif",
+            "literal_parent_href": "/wiki/Arquivo:Yerga.gif",
+            "resolved_parent_href": "https://www.tibiawiki.com.br/wiki/Arquivo:Yerga.gif",
+            "byte_witness": {
+              "alt": "Yerga.gif",
+              "image_tag": {
+                "byte_end": 94201,
+                "byte_start": 94111,
+                "fragment_sha256": "4aa07df091f035342c252b1cf5126ed9a41c7d06ec81425bfeded1eee2a073a4"
+              },
+              "image_url": "https://www.tibiawiki.com.br/images/7/7a/Yerga.gif",
+              "parent_anchor_tag": {
+                "byte_end": 94111,
+                "byte_start": 94054,
+                "fragment_sha256": "dbab01e7820926de1b1cefd2ccda9c6fe7f31a464affd8944d2e5b4c545c7a12"
+              },
+              "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Yerga.gif"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "packet_receipts": [
+    {
+      "path": "/workspace/npc-r18-research/presentation/three-current-br-qualified-presentations.json",
+      "sha256": "bc5f15f4b6f8cd2f066276cc6c51514499a364fa94fa8c190a8f581fab7c704d",
+      "bytes": 24376
+    },
+    {
+      "path": "/workspace/npc-r18-research/presentation/toffee-current-br-qualified-presentation.json",
+      "sha256": "6f7bf3644e1e67f87f9df903beec13d84c30e8ef45eee017fde08fb70d977157",
+      "bytes": 8533
+    },
+    {
+      "path": "/workspace/npc-r18-research/presentation/gunther-current-br-qualified-presentation.json",
+      "sha256": "c3256e63ed73f62238c955a9d929156a4197c205fbd4a73464be60ef748456f8",
+      "bytes": 8556
+    },
+    {
+      "path": "/workspace/npc-r16-research/presentation/coco-current-appearance-correction.json",
+      "sha256": "6c5f9c23f04b11ce2488b1ec4901566c170d86286816bfb4fa462436b4abce85",
+      "bytes": 4591
+    },
+    {
+      "path": "/workspace/npc-r16-research/presentation/three-merchant-qualified-presentations.json",
+      "sha256": "f976d1abff103d0259df35712c0a7b993928653938e7f624d2e2aa285651d21a",
+      "bytes": 71524
+    },
+    {
+      "path": "/workspace/npc-r18-research/presentation/dakbugs-positive-walk-qualified.json",
+      "sha256": "9807f00ea9243372d6c3e23b261c71465eca9218368ef8bd25653914cdc2a974",
+      "bytes": 12684
+    },
+    {
+      "path": "/workspace/npc-r18-research/lane_c/toffee-zero-walk-proof.json",
+      "sha256": "26cdbaf6608f4ea089fa2fd013e8927ec23f0b9be9e7da1586ebe8581c2a65b7",
+      "bytes": 4833
+    },
+    {
+      "path": "/workspace/npc-r18-research/presentation/independent-current-dom-image-bindings.json",
+      "sha256": "5ae5792473e175080e97d9ceddcc47dd7e8c7133e8ae56690c3733e9fe4a29a2",
+      "bytes": 34074
+    },
+    {
+      "path": "/workspace/npc-r18-research/presentation/five-current-br-opaque-region-check.json",
+      "sha256": "1588a1d273e5c1d4b30e7cef427b975bdbeb3df3b843c8441a4f204044b43ef4",
+      "bytes": 7739
+    }
+  ],
+  "native_writes": 0,
+  "runtime_behavior_admission": false,
+  "dialogue_admission": false,
+  "service_admission": false,
+  "placement_admission": false,
+  "field_policy": "sourceunknownmountomitted; under30visible region retainsliteral sourcepalette; no currentimageinfer movement; actualsource GIF andDOManchors hashesverified; official15.30 membership andlayersqualify renders"
+}

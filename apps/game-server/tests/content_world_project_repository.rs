@@ -16,18 +16,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "722606d3d1ade6e912113c1f51e59b487a11ab3d0d8a15aa103b38092566f565",
+        427,
+        "d4969c33132d8dab8f6b98d2d507944e0583ab4f025a57016e21dad488437360",
     ),
     (
         "definitions/declarations.json",
-        17_061_212,
-        "f4e25dc633af56ecd9e38ea5cf8d84f47a12122dae17e988ed7ad344f53f199e",
+        17_072_472,
+        "4068e0abf18068b75b682d2d554c36e7a31d0aa306110a50e09de32c6cc0a1d3",
     ),
     (
         "definitions/reference.json",
-        22_544_973,
-        "d3b66ce0b06c6ff61e6bbdac586e57f0ecdede3e24ef4487820db0ed031f6956",
+        22_547_705,
+        "0b1a1af3ab3fb2b1cd187b557e59796039a9f350af5c0a902a8b1c6303497cb7",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_955,
-        "1f7037fd2198bff44398fb1fdf898aba9bd1a0f621a6feddbdb9779a647e40db",
+        1_958,
+        "70ab871f7494e8b388aabee56e2cb6257a4102e263339cb3cfc6c7de5797c806",
     ),
     (
         "presentations/bindings.json",
@@ -46,18 +46,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "8f1c4bb3218e95582d8a2375918c139e2585c0f7151f96e154c871a4134d3e5d",
+        411,
+        "b18524b97eb9768e494d98d7415f0bf1b8071e0655d4559fa84fad267222dc9d",
     ),
     (
         "provenance/imports.json",
-        36_194,
-        "3b431d5d1bc20de741f6be47237a77a67f136a85e53088e8f60dd2e1dc06d89d",
+        38_098,
+        "c015ab4c1ca66af80b14ca452982fde3319039dbd2013508cf6076a7bc59a9c6",
     ),
     (
         "provenance/sources.json",
-        1_333_981,
-        "72e1e32586bff1e89c3493869a94a1e1c087f1b276facc7b8b3aff11c48fe2b1",
+        1_342_271,
+        "e38622b1c1f906f3a751b46125d3e0825bfd878c259ba187fecc901f4c0e9177",
     ),
     (
         "worlds/world.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "693028679c0f902c98557dc651460b7bec63acc66880d02d8c6a8ccdb16f6740";
+const TREE_SHA256: &str = "e3cd78fc9002cd127e5066aaf379408bc118c884f23ece7d8bcafa91bfa7681c";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -125,11 +125,11 @@ const CREATURES: usize = 1503;
 const CREATURE_RECORDS: usize = 21069;
 const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1132;
-const NPC_RECORDS: usize = 2264;
-const NPC_DECLARATIONS: usize = 2215;
+const NPCS: usize = 1141;
+const NPC_RECORDS: usize = 2282;
+const NPC_DECLARATIONS: usize = 2224;
 const NPC_DIALOGUES: usize = 703;
-const NPC_BINDINGS: usize = 2430;
+const NPC_BINDINGS: usize = 2457;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -152,7 +152,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 17,
+        max_import_records: 20,
         max_reimport_states: ENCOUNTERS,
     }
 }
@@ -323,9 +323,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "g4-npc-qualified-summer-object-r16"
+        "g4-npc-qualified-nine-definitions-r17"
     );
-    assert_eq!(project.imports().len(), 17);
+    assert_eq!(project.imports().len(), 20);
     let import_for = |batch: &str| {
         project
             .imports()
@@ -571,7 +571,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 16);
+    assert_eq!(v2.sources.len(), 19);
     let source_for = |batch: &str| {
         v2.sources
             .iter()
@@ -951,6 +951,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                         "oteryn:source.canary_mixed_tfs",
                         "mixed_tfs/npc-source-file"
                     )
+                    | ("oteryn:source.happen", "happen/npc-source-file")
+                    | ("oteryn:source.fencore", "fencore/npc-source-file")
             ));
             npc_bindings += 1;
             continue;

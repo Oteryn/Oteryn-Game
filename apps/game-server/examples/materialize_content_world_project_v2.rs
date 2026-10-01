@@ -8,17 +8,18 @@ use oteryn_game_server::content::{
     CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
     CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_FULL_ITEM_REVISION,
     CandidateValue, CanonicalProjectDocuments, DefinitionIdentityDocument, ImportBatch,
-    ItemStackDocument, ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord,
-    ProjectV2AuthoringProfile, ProjectV2CandidateField, ProjectV2CandidateValue,
-    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
-    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
-    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
-    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
-    ProjectV2SourceIdentityDisposition, ProjectV2State, ProjectionDocument,
-    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
-    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
+    ItemStackDocument, ProjectDraft, ProjectEvidenceLimits, ProjectFilesystemLimits,
+    ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2CandidateField,
+    ProjectV2CandidateValue, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft,
+    ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity,
+    ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
+    ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
+    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
+    ProjectionDocument, R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField,
+    ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
+    capture_world_project,
     item_admission::apply_item_admission_v1,
     item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
     item_stats_promotion::apply_item_stats_promotion_v2,
@@ -133,6 +134,8 @@ const NPC_R5_NATIVE_REPAIRS: &[u8] = include_bytes!(
 const NPC_R5_NATIVE_REPAIRS_SHA256: &str =
     "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb";
 const NPC_R5_PROJECT_REVISION: &str = "g4-npc-source-repairs-r10";
+#[path = "npc_materializer/qualified_nine.rs"]
+mod npc_qualified_nine;
 #[path = "npc_materializer/qualified_playerbots.rs"]
 mod npc_qualified_playerbots;
 #[path = "npc_materializer/qualified_repairs.rs"]
@@ -193,23 +196,30 @@ fn limits() -> ProjectEvidenceLimits {
         max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES,
         max_locator_bytes: 160,
         max_locator_segments: 8,
-        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS + 44,
-        max_import_records: 17,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS + 62,
+        max_import_records: 20,
         max_reimport_states: ENCOUNTER_COUNT,
     }
 }
 
-fn output_root() -> Result<PathBuf, Box<dyn std::error::Error>> {
+fn authoring_roots() -> Result<(PathBuf, Option<PathBuf>), Box<dyn std::error::Error>> {
     let mut arguments = env::args_os().skip(1);
     let flag = arguments.next();
-    let Some(value) = arguments.next() else {
-        return Err("usage: materialize_content_world_project_v2 --output-root <path>".into());
-    };
-    if flag.as_deref() != Some(std::ffi::OsStr::new("--output-root")) || arguments.next().is_some()
-    {
-        return Err("usage: materialize_content_world_project_v2 --output-root <path>".into());
+    let value = arguments.next().ok_or("missing --output-root path")?;
+    if flag.as_deref() != Some(std::ffi::OsStr::new("--output-root")) {
+        return Err("expected --output-root <path> [--predecessor-root <path>]".into());
     }
-    Ok(PathBuf::from(value))
+    let predecessor = match arguments.next() {
+        None => None,
+        Some(flag) if flag == std::ffi::OsStr::new("--predecessor-root") => Some(PathBuf::from(
+            arguments.next().ok_or("missing predecessor path")?,
+        )),
+        Some(_) => return Err("unexpected authoring argument".into()),
+    };
+    if arguments.next().is_some() {
+        return Err("unexpected trailing authoring argument".into());
+    }
+    Ok((PathBuf::from(value), predecessor))
 }
 
 fn require_fresh_root(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
@@ -226,19 +236,59 @@ fn require_fresh_root(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn write_documents(
-    root: &Path,
-    documents: &CanonicalProjectDocuments,
-) -> Result<String, Box<dyn std::error::Error>> {
-    require_fresh_root(root)?;
-    fs::create_dir(root)?;
+fn document_tree_digest(documents: &CanonicalProjectDocuments) -> String {
     let mut tree = Sha256::new();
     for (locator, bytes) in documents.documents() {
         tree.update((locator.len() as u64).to_be_bytes());
         tree.update(locator.as_bytes());
         tree.update((bytes.len() as u64).to_be_bytes());
         tree.update(bytes);
+    }
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut value = String::with_capacity(64);
+    for byte in tree.finalize() {
+        value.push(char::from(HEX[usize::from(byte >> 4)]));
+        value.push(char::from(HEX[usize::from(byte & 0x0f)]));
+    }
+    value
+}
 
+fn materialize_from_predecessor(
+    source: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    require_fresh_root(output)?;
+    let parent = source.parent().ok_or("predecessor parent missing")?;
+    let name = source.file_name().ok_or("predecessor basename missing")?;
+    let filesystem = ProjectFilesystemLimits {
+        project: limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1,
+    };
+    let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    // Entire published c2f9 package, including worlds, editor, assets and provenance.
+    if document_tree_digest(&before)
+        != "693028679c0f902c98557dc651460b7bec63acc66880d02d8c6a8ccdb16f6740"
+    {
+        return Err("qualified predecessor package drifted".into());
+    }
+    let admitted = npc_qualified_nine::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "npc_r18_definitions={admitted} total_npcs=1141 total_dialogues=703 tree_sha256={tree_sha256} predecessor_mode=true"
+    );
+    Ok(())
+}
+
+fn write_documents(
+    root: &Path,
+    documents: &CanonicalProjectDocuments,
+) -> Result<String, Box<dyn std::error::Error>> {
+    require_fresh_root(root)?;
+    fs::create_dir(root)?;
+    for (locator, bytes) in documents.documents() {
         let destination = root.join(locator);
         let parent = destination
             .parent()
@@ -251,13 +301,7 @@ fn write_documents(
         file.write_all(bytes)?;
         file.sync_all()?;
     }
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let digest = tree.finalize();
-    let mut value = String::with_capacity(64);
-    for byte in digest {
-        value.push(char::from(HEX[usize::from(byte >> 4)]));
-        value.push(char::from(HEX[usize::from(byte & 0x0f)]));
-    }
+    let value = document_tree_digest(documents);
     Ok(value)
 }
 
@@ -1979,7 +2023,10 @@ fn apply_npc_r5_native_repairs(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = output_root()?;
+    let (root, predecessor) = authoring_roots()?;
+    if let Some(source) = predecessor {
+        return materialize_from_predecessor(&source, &root);
+    }
     let promoted = protected_r7_p04_gold_coin_item_family_import(
         B1_EVIDENCE,
         R7_P04_GOLD_COIN_EVIDENCE_PACKET,
@@ -2223,6 +2270,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut draft = snapshot.migrate_to_v2();
     let npc_r17_definitions = npc_qualified_summer_object::apply(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r18_definitions = npc_qualified_nine::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
@@ -2242,7 +2293,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("npc_r12_held_offers={npc_r12_held_offers}");
     println!("npc_r13_definitions={npc_r13_definitions} total_npcs=1122 total_dialogues=703");
     println!("npc_r16_definitions={npc_r16_definitions} intermediate_npcs=1127");
-    println!("npc_r17_definitions={npc_r17_definitions} total_npcs=1132 total_dialogues=703");
+    println!("npc_r17_definitions={npc_r17_definitions} intermediate_npcs=1132");
+    println!("npc_r18_definitions={npc_r18_definitions} total_npcs=1141 total_dialogues=703");
     Ok(())
 }
 
