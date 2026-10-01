@@ -110,30 +110,35 @@ A `readable` map object or item with authored text (a library book, a notice) sh
 
 The write is refused unless all hold (Canary `playerWriteItem`):
 
-- the item is writable, not stamped (MAIL-0), and its text is within `max_characters` under
-  MAIL-0's text rules;
+- the item is writable and not stamped (MAIL-0) (`NOT_WRITABLE`), and the **new** text is within
+  `max_characters` under MAIL-0's text rules (`TOO_LONG`, `REJECTED` for a control character);
 - the item is reachable: an entry of a container tree the character holds or has open (BAGS-0
   views, depot boxes while the depot view is open), an equipped slot, or a Ground item or map
-  object within one tile on the same floor (WORLD-INTERACTION-0 §3.2);
+  object within one tile on the same floor (WORLD-INTERACTION-0 §3.2); otherwise `NOT_REACHABLE`;
 - it is not inside another character's possession or a container offered in a trade, and not an
-  item with an owner other than the writer (a reward chest item);
+  item with an owner other than the writer (a reward chest item); otherwise `NOT_REACHABLE`;
 - on a house tile, the character is inside the house (HOUSE-RUNTIME-0); no further house right is
   checked, as in Canary.
 
 ### 5.2 Transaction
 
-- ItemInstance: MAIL-0 §4's transaction, with the fence of the item's location: the writer's
-  composition rule 2 fence and `character_root`, plus the §32 scope fence and the tile row `FOR
-  SHARE` for a Ground item, or HOUSE-CUSTODY-0's fence for a house item. Keyed by the command's
-  CommandRef; a retry returns the first result. An unchanged text writes nothing (Canary).
-- Map object: in the channel owner's turn, no transaction.
+- ItemInstance: MAIL-0 §4's transaction. It always takes the writer's composition rule 2 fence and
+  `character_root`, then the item row `FOR UPDATE` (serializing writes and moderation clears of one
+  item), and **in addition** the fence of the item's location when it is not the writer's own: the
+  §32 scope fence and the tile row `FOR SHARE` for a Ground item, HOUSE-CUSTODY-0's house fence for
+  a house item. Keyed by the command's CommandRef; a retry returns the first result.
+- **`text_revision`** (MAIL-0 §4) increases by one with every committed write that changes the text
+  (a clear included) and never otherwise; an unchanged text writes nothing and keeps it (Canary).
+- Map object: in the channel owner's turn, no transaction. Its volatile text carries a volatile
+  `text_revision` with the same rule, scoped to the channel scope ownership generation.
 - Rate: `MAIL0-RL-06` (2 writes per character per second) for both.
 
 ### 5.3 Write-once
 
 A `write_once` definition transforms to `write_once_to` in the same transaction as the write: one
 DUR-03 `TRANSFORM` line, `PRESERVE_INSTANCE` (§16.2; identity, location and text kept), under the
-closed cause `WriteOnceCause` keyed by the CommandRef, as MAIL-0's stamp does. The versioned
+closed cause `WriteOnceCause` keyed by the CommandRef, as MAIL-0's stamp does. As in Canary, every
+accepted write to a `write_once` item transforms it, even an unchanged or empty text. The versioned
 write-once rules are content (WRITE-CONTENT-1). The target is not writable. No value line. Amended:
 DUR-03 §39.3.
 
@@ -144,8 +149,12 @@ DUR-03 §39.3.
   `text_revision`, the text, the writer CharacterId and time. The snapshot lives in a restricted
   moderation store, readable only by the moderation role, kept for `WRITE0-RL-03`, never logged.
   A later rewrite does not change it.
-- **Removal.** A moderation **clear** deletes the text row (or the map object's volatile text) if
-  its `text_revision` still equals the reported one, else refuses as stale. It is an audited
+- **Removal.** A moderation **clear** deletes the text row if its `text_revision` still equals the
+  reported one, under the item row lock of §5.2, else refuses with `STALE` (the moderator sees the
+  newer text through a new report). For a map object the snapshot also records the channel scope
+  ownership generation; the clear applies only while that generation and the volatile
+  `text_revision` both still match, else `STALE` (after a restart the text is already gone). The
+  result set beyond `OK` and `STALE` belongs to the GM tools decision. It is an audited
   moderation action (actor, item, revision, reason; never the text) under the GM tools decision's
   authority and fences; WRITE-0 fixes only its shape.
 - Nothing is filtered automatically (Tibia has no text filter for books).
