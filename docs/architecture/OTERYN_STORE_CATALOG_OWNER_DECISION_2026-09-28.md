@@ -60,6 +60,12 @@ Item. How `storevalue` relates to catalog offer prices is a follow-up.
 1. Define the Game/Platform integration contract for coin balance reads and purchase
    debits (a `docs/contracts/` deliverable), before any Store offer can actually be
    purchased end to end.
+
+   **Amendment (pending on acceptance of MARKET-COINS-0;
+   `reviews/OTERYN_GAME_MARKET_COINS0_TIBIA_COINS_ON_THE_MARKET_DECISION_2026-09-30.md` §5).**
+   The first slice of that contract is the Market coin custody contract (hold, settle, release,
+   abort, status, balance read), written by MKTCOIN-CONTRACT-1 and accepted by Platform for
+   its Wallet. Store purchase debits remain open here.
 2. Resolve entitlement lifecycle (refunds, fraud, revocation) as a separate, explicitly
    scoped decision against the remaining open items in gap register §32.
 3. Reconcile the Item `storevalue` disposition with catalog offer prices.
