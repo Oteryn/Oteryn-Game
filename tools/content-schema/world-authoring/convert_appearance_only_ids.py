@@ -48,11 +48,7 @@ APPEARANCES_NAME = re.compile(r"^appearances-([0-9a-f]{64})\.dat$")
 CLASSES = ("ground", "border", "blocking", "decoration")
 # The provisional palette ids the pinned items.xml declares (the capture's `in_items_xml`
 # entries). Pinned here so the sample can be rebuilt without the source checkout.
-PINNED_DECLARED_PROVISIONAL = frozenset(
-    {2141, 34338, 35500, 44118, 44120, 45326, 51636, 53380, 53430, 53431, 53514, 53532}
-    | {53542, *range(53823, 53832), 53841, *range(53873, 53885), 53897, 54261}
-    | {*range(54390, 54395), 54515, 54613, 54614}
-)
+PINNED_DECLARED_PROVISIONAL = frozenset({2141, 35500, 53380, 54613, 54614})
 CLASS_RULE = [
     "bank flag: ground; the bank waypoints value is `speed`",
     "else clip flag: border",

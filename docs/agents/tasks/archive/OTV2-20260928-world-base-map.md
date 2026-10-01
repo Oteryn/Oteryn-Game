@@ -54,12 +54,12 @@ sha256-pinned and `OtsHypothesisOnly`.
   - A bound id (`imports/crystalserver/bindings/items.json`, `ots/item_server_id`) takes its
     binding target key, registry or named, with `provisional: false`.
   - Key order (architect ruling #162 Q1b, supersedes catalogue-first): the Item key of an id
-    with an Item record (19,989 entries, including the 7,576 Terrain and 7,699 WorldObject ids
+    with an Item record (20,029 entries after ITEM-ADD-1 #1383, including the 7,576 Terrain and 7,699 WorldObject ids
     that have records; the compiler follows `routed_to`), else the Terrain then the WorldObject
     catalogue key (0 today), else the provisional donor key. Regenerated with region files
     byte-identical.
   - Any other id takes `donor:crystalserver@00ce02a5:item/<id>` with `provisional: true`:
-    5,995 entries (5,949 appearance-only ids with a client appearance, id 99, 45 `items.xml`
+    5,955 entries (5,949 appearance-only ids with a client appearance, id 99, 5 `items.xml`
     ids).
   - This PR writes neither `content/world/terrain/` nor `content/world/objects/` (WO-2
     catalogues), nor `areas/{cities,regions}/`: City and Region are the AREAS-1 Area

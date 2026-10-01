@@ -332,12 +332,13 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   `index.json` only. The 22 MB of region files do not change. The capture summary counts palette
   entries and occurrences per family (`palette.families`: terrain, world_object, item) and the
   provisional ones, split into ids that `items.xml` declares at the pinned revision and
-  appearance-only ids. Current counts: 25,984 palette entries; 19,989 Item keys (24,168,528
-  occurrences; the 7,576 Terrain and 7,699 WorldObject ids that have Item records are here);
-  0 Terrain and 0 WorldObject catalogue keys; 5,995 provisional
-  (814,803 occurrences): 5,950 appearance-only (760,257; 5,949 with a client appearance plus id 99,
-  which neither `items.xml` nor the client declares) and 45 ids that `items.xml` declares
-  (54,546, 40 of them bound to an Item key without a definition).
+  appearance-only ids. Current counts: 25,984 palette entries; 20,029 Item keys (24,223,058
+  occurrences; the 7,576 Terrain and 7,699 WorldObject ids that have Item records are here, and
+  the 40 donor ids that ITEM-ADD-1 #1383 gave Item records);
+  0 Terrain and 0 WorldObject catalogue keys; 5,955 provisional
+  (760,273 occurrences): 5,950 appearance-only (760,257; 5,949 with a client appearance plus id 99,
+  which neither `items.xml` nor the client declares) and 5 ids that `items.xml` declares
+  (16 occurrences).
   `validate_world_base.py` requires every non-provisional key to follow that order: an Item
   binding target with an Item record, else the Terrain catalogue key, else the WorldObject
   catalogue key; a provisional id must have none of them. It also hashes the actual

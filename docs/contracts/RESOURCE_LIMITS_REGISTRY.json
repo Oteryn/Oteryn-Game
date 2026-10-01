@@ -5863,47 +5863,48 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
       "resource": "One exact OneItemTransactionV1 payload (event type 2, operation fee_burn) inside EventEnvelope.payload",
       "unit": "bytes",
-      "hard_maximum": 24181,
+      "hard_maximum": 25398,
       "configurable_range": {
-        "minimum": 24181,
-        "maximum": 24181
+        "minimum": 25398,
+        "maximum": 25398
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; ANL01-EVENT-PAYLOAD-BYTES (196,608 B) still applies on top.",
       "client_visible": false,
       "boundary_tests": [
-        "the measured worst case of the registered schema (20 whole burns, 512-byte revisions, the longest charm key, maximal integers) is exactly 24,181 B and accepted",
-        "24,182 bytes rejected before decode"
+        "the measured worst case of the registered schema (20 whole burns, two change MINTs of 99 coins, 512-byte revisions, the longest charm key, maximal integers) is exactly 25,398 B and accepted",
+        "25,399 bytes rejected before decode"
       ],
       "consumers": [
         "apps/game-server/src/durability/item_fee_burn_audit.rs",
         "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
     },
     {
       "id": "DUR03-RL-07-FEE-BURN-ENVELOPE-BYTES",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
       "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 2 operation fee_burn, including payload",
       "unit": "bytes",
-      "hard_maximum": 24495,
+      "hard_maximum": 25712,
       "configurable_range": {
-        "minimum": 24495,
-        "maximum": 24495
+        "minimum": 25712,
+        "maximum": 25712
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0023 admits a stored envelope above the one-item 9,216 B only for a fee event of the same transaction.",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0023 admits a stored envelope above the one-item 9,216 B only for a fee event of the same transaction; migration 0031 sets the stored ceiling to this row.",
       "client_visible": false,
       "boundary_tests": [
-        "the measured worst-case envelope (128-byte build id) is exactly 24,495 B and accepted",
-        "24,496 bytes rejected before decode"
+        "the measured worst-case envelope (128-byte build id) is exactly 25,712 B and accepted",
+        "25,713 bytes rejected before decode"
       ],
       "consumers": [
         "apps/game-server/src/durability/item_fee_burn_audit.rs",
         "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)",
-        "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)"
+        "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)",
+        "apps/game-server/migrations/0031_character_gold_fee_change_mint.sql (stored envelope ceiling, re-measured)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
     },
     {
       "id": "DUR03-AUDIT-RETENTION-S",
@@ -6992,6 +6993,95 @@
         "crates/protocol-oteryn/src/charm.rs MAX_CHARM_BALANCE"
       ],
       "notes": "Earned Charm Points are at most 1024 x 100. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHAT0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "Text of one chat intent or line",
+      "unit": "bytes of UTF-8 text",
+      "hard_maximum": 1020,
+      "configurable_range": {
+        "minimum": 1020,
+        "maximum": 1020
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses text above 1,020 bytes before copying it; an intent is at most 1,148 bytes (command type 13) and a line at most 1,194 bytes (domain 12 delta type 1).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1020: a say intent and a local line with 1,020 bytes of text round-trip at their byte bounds",
+        "max+1=1021: 1,021 bytes of text are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/chat.rs MAX_CHAT_TEXT_BYTES",
+        "apps/game-server/src/chat/mod.rs TEXT_MAX_BYTES"
+      ],
+      "notes": "CHAT-0 \u00a74 and \u00a78. The character bound of the same row is CHAT0-RL-01A. Registered by OTV2-20261001-chat-1b-1."
+    },
+    {
+      "id": "CHAT0-RL-01A",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "Unicode scalar values of one chat text after trimming",
+      "unit": "Unicode scalar values",
+      "hard_maximum": 255,
+      "configurable_range": {
+        "minimum": 255,
+        "maximum": 255
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked by the server after the wire's 1,020-byte bound (CHAT0-RL-01) and trimming; a longer text is refused with REJECTED and nothing is relayed.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=255: 255 four-byte scalars (1,020 bytes) are accepted",
+        "max+1=256: 256 scalars are refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/chat/mod.rs TEXT_MAX_CHARS"
+      ],
+      "notes": "CHAT-0 \u00a74 and \u00a78 (the character half of CHAT0-RL-01). Registered by OTV2-20261001-chat-1b-1."
+    },
+    {
+      "id": "CHAT1-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "A character name on the chat wire: a line's speaker or a private message's recipient",
+      "unit": "bytes of UTF-8 text",
+      "hard_maximum": 120,
+      "configurable_range": {
+        "minimum": 120,
+        "maximum": 120
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses a name above 120 bytes before copying it; it is part of the 1,148-byte intent and 1,194-byte line bounds.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=120: a private intent and a room line with a 120-byte name round-trip",
+        "max+1=121: a 121-byte name is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/chat.rs MAX_CHAT_NAME_BYTES"
+      ],
+      "notes": "The sender name bound of the CHAT-0 \u00a75 relay payload; revision 1 names are at most 29 ASCII letters (CHARACTER_AUTHORITY_PLATFORM_BOUNDARY \u00a76.1). Registered by OTV2-20261001-chat-1b-1."
+    },
+    {
+      "id": "CHAT0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "Chat rooms one session can have open",
+      "unit": "rooms per session",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The open-room set is a 4-bit mask in one varint (domain 12 snapshot type 1 and delta type 2, at most 4 bytes); any other bit is refused.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=4: the set of all four rooms round-trips",
+        "max+1: bit 4 (a fifth room) is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/chat.rs MAX_CHAT_OPEN_ROOMS, ChatRoomSet"
+      ],
+      "notes": "World, English, Help and Advertising (CHAT-0 \u00a75 and \u00a78). Registered by OTV2-20261001-chat-1b-1."
     }
   ]
 }

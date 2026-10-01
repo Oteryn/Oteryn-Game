@@ -22,8 +22,11 @@ WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enric
 CHARM_INDEX = "content/charms/index.json"
 # Proficiency likewise (tools/content-schema/proficiency-authoring, `proficiency_authoring.py content`).
 PROFICIENCY_INDEX = "content/proficiencies/index.json"
+PROFICIENCY_BINDINGS = "content/proficiencies/bindings.json"
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring, `reward_claim_authoring.py content`).
 REWARD_CLAIM_INDEX = "content/interactions/reward_claims/index.json"
+# StarterKit likewise (tools/content-schema/starter-kit-authoring, `starter_kit_authoring.py content`).
+STARTER_KIT_INDEX = "content/starter/index.json"
 # A12 (ITEM-ID-1): the staged packet is history naming retired Item keys; its targets are emitted
 # through the append-only alias table (content/items/aliases.json).
 ITEM_ALIASES = ROOT / "content" / "items" / "aliases.json"
@@ -59,6 +62,11 @@ def write(relative: str, value: Any) -> None:
     path = ROOT / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_bytes(value))
+
+def write_registry(relative: str, value: Any) -> None:
+    # One key per line, so PRs that register different families merge without a textual conflict.
+    text = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    (ROOT / relative).write_text(text, encoding="utf-8", newline="\n")
 
 def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
     return (target["family"], target["key"], target["revision"])
@@ -470,6 +478,10 @@ def main() -> int:
     if reward_claim_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or reward_claim_index.get("family") != "RewardClaim":
         raise RuntimeError("REWARD_CLAIM_INDEX_MISSING")
     reward_claim_count = reward_claim_index["record_count"]
+    starter_kit_index = load(ROOT / STARTER_KIT_INDEX)
+    if starter_kit_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or starter_kit_index.get("family") != "StarterKit":
+        raise RuntimeError("STARTER_KIT_INDEX_MISSING")
+    starter_kit_count = starter_kit_index["record_count"]
     creature_managed = [path for shards in creature_shards.values() for path in shards]
     creature_managed += [f"{node}index.json" for node, _ in CREATURE_FAMILIES.values()]
     service_managed = [path for shards in service_shards.values() for path in shards]
@@ -479,8 +491,9 @@ def main() -> int:
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",
                       *service_managed, CHARM_INDEX, *charm_index["shards"],
-                      PROFICIENCY_INDEX, *proficiency_index["shards"],
-                      REWARD_CLAIM_INDEX, *reward_claim_index["shards"], *outputs.keys()])
+                      PROFICIENCY_INDEX, *proficiency_index["shards"], PROFICIENCY_BINDINGS,
+                      REWARD_CLAIM_INDEX, *reward_claim_index["shards"],
+                      STARTER_KIT_INDEX, *starter_kit_index["shards"], *outputs.keys()])
     # A family that grows renames its last shard; drop the superseded shard files so every shard is managed.
     shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
     managed_set = set(managed)
@@ -489,7 +502,7 @@ def main() -> int:
             relative = stale.relative_to(ROOT).as_posix()
             if shard_name.search(stale.name) and relative not in managed_set:
                 stale.unlink()
-    write("content/manifest.json", {
+    write_registry("content/manifest.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
         "project_revision": REVISION,
         "admission_main": ADMISSION_MAIN,
@@ -500,6 +513,7 @@ def main() -> int:
             "Charm": {"records": charm_count, "index": CHARM_INDEX},
             "Proficiency": {"records": proficiency_count, "index": PROFICIENCY_INDEX},
             "RewardClaim": {"records": reward_claim_count, "index": REWARD_CLAIM_INDEX},
+            "StarterKit": {"records": starter_kit_count, "index": STARTER_KIT_INDEX},
             **{family: {"records": creature_counts[family], "index": f"{node}index.json"}
                for family, (node, _) in CREATURE_FAMILIES.items()},
             "NPC": {"records": len(npc_rows), "index": "content/npcs/definitions/index.json"},
@@ -510,7 +524,7 @@ def main() -> int:
         },
         "compatibility": {"legacy_root": "content/world", "legacy_mutated": False, "runtime_switch_authorized": False},
     })
-    write("content/content.lock.json", {
+    write_registry("content/content.lock.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
         "project_revision": REVISION,
         "admission_main": ADMISSION_MAIN,
@@ -524,7 +538,7 @@ def main() -> int:
         "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts,
                            "NPC": len(npc_rows), "Encounter": len(encounter_rows), "Dialogue": len(dialogue_rows),
                            **service_counts, "Charm": charm_count, "Proficiency": proficiency_count,
-                           "RewardClaim": reward_claim_count},
+                           "RewardClaim": reward_claim_count, "StarterKit": starter_kit_count},
         "item_authoring_counts": {"authoring": len(authoring_by_target), "taxonomy": len(taxonomy_rows), "relation_sources": len(relation_rows)},
         "source_binding_counts": {"Item": len(item_bindings), "Mount": len(mount_bindings), "Creature": len(creature_bindings),
                                    "NPC": len(npc_bindings), "Encounter": len(encounter_bindings)},
@@ -534,13 +548,13 @@ def main() -> int:
             "Mount": sum(row["target"]["family"] == "Mount" for row in editor["entries"]),
         },
     })
-    write("content/project.json", {
+    write_registry("content/project.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_PROJECT/v1",
         "project_revision": REVISION,
         "manifest": "content/manifest.json",
         "content_lock": "content/content.lock.json",
         "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Encounter", "Dialogue", "Service", "Charm",
-                             "Proficiency", "RewardClaim"],
+                             "Proficiency", "RewardClaim", "StarterKit"],
         "legacy_compatibility_root": "content/world",
         "runtime_source": "legacy_until_separately_qualified",
         "next_population_families": [

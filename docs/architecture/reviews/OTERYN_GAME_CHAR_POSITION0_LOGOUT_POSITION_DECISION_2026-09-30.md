@@ -102,8 +102,24 @@ chain, with no cause and no replay.
   - in an instance scope (`runtime_scope_kind = 2`): the row keeps the last position outside,
     which is the instance's entry side;
   - at channel transfer, which does not exist yet; its decision adds the write.
+
+  **Amendment (pending on acceptance of TRAVEL-0; `reviews/OTERYN_GAME_TRAVEL0_NPC_TRAVEL_DECISION_2026-09-30.md` §7.4).**
+  A pending arrival whose actor has already arrived is consumed by the arrival's follow-up
+  transaction, or else by the terminal release before its final write; its row then no longer
+  stops the last-position write.
 - **World reset.** Step 2's new scope ownership generation fences late writes out, so the last
   periodic row is used and re-checked by §3.3.
+
+**Amendment (pending on acceptance of HOUSE-RUNTIME-0; `reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md` §6.3).** In a house scope the write is not skipped: the row records the
+`HouseId` and the tile inside, in two new nullable columns. At admission, a row naming a house
+admits the character into that house scope through that decision's serialized admission commit
+when its access and the property state still hold, at the saved tile if still valid or else the
+§3.3 fallback's nearest free walkable tile of the same house; otherwise it places the character at
+the house's `entrance` if that tile is free and walkable, else by the §3.3 occupied-or-blocked
+fallback from it (nearest free walkable tile within 3, then step 4; that decision's §4.2 outside
+tile, never a refusal), and the admission
+transaction clears the house columns and writes the tile actually chosen. Every house exit and a
+house scope recovery fallback write the same resolved tile.
 
 ### 3.3 Admission
 

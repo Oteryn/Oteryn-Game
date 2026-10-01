@@ -137,12 +137,14 @@ def main():
     # Game version 15.30: monsters CrystalServer has at the pinned 15.30 commit and Canary lacks (crystal_batch.py).
     crystal_wiki_text = crystal_batch.WIKI.read_text(encoding='utf-8')
     crystal_official_text = official_library.CRYSTAL_SAMPLE.read_text(encoding='utf-8')
+    crystal_extra_text = official_library.CRYSTAL_EXTRA_SAMPLE.read_text(encoding='utf-8')
     crystal = crystal_batch.converter(args.canary, args.crystal)
     crystal.wiki = {m['monster']: m for m in json.loads(crystal_wiki_text)['monsters']}
-    crystal.official = {m['monster']: m for m in json.loads(crystal_official_text)['monsters']}
+    crystal.official = {m['monster']: m for text in (crystal_official_text, crystal_extra_text)
+                        for m in json.loads(text)['monsters']}
     crystal_files = crystal_batch.files(args.canary, args.crystal)
     for relative in crystal_files:
-        file = f'{crystal_batch.MONSTER_DIR}/{relative}'
+        file = f'{crystal_batch.MONSTER_ROOT}/{relative}'
         census(crystal, relative, file, {'source_key': 'oteryn:source.crystalserver', 'source_revision': crystal_batch.REVISION,
                                          'identity_namespace': 'crystalserver/monster-file', 'external_id': file + '.lua'},
                'crystal_')
@@ -156,11 +158,14 @@ def main():
                                           'sha256': hashlib.sha256(authored_text.encode('utf-8')).hexdigest()},
               'crystal': {'repository': crystal_batch.REPOSITORY, 'branch': crystal_batch.BRANCH, 'revision': crystal_batch.REVISION,
                           'monster_dir': crystal_batch.MONSTER_DIR, 'monster_files': len(crystal_files),
+                          'extra_monster_files': list(crystal_batch.EXTRA_MONSTERS),
                           'shared_sources': crystal_batch.shared_sources(args.crystal),
                           'wiki_reference': {'file': str(crystal_batch.WIKI.relative_to(ROOT)),
                                              'sha256': hashlib.sha256(crystal_wiki_text.encode('utf-8')).hexdigest()},
                           'official_library': {'file': str(official_library.CRYSTAL_SAMPLE.relative_to(ROOT)),
-                                               'sha256': hashlib.sha256(crystal_official_text.encode('utf-8')).hexdigest()}},
+                                               'sha256': hashlib.sha256(crystal_official_text.encode('utf-8')).hexdigest()},
+                          'official_library_extra': {'file': str(official_library.CRYSTAL_EXTRA_SAMPLE.relative_to(ROOT)),
+                                                     'sha256': hashlib.sha256(crystal_extra_text.encode('utf-8')).hexdigest()}},
               'scope': 'In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills '
                        'applied; structure validation '
                        'plus open manifest rows. Not runtime qualification.',

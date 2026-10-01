@@ -115,6 +115,12 @@ reinterpreting existing data under another ruleset.
   current for a world that holds allocations under an older revision.
 - V1 has one revision, so no migration exists yet. The first one lands with the first ruleset change.
 
+**Pointer (pending on acceptance of WHEEL-0 (`reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §4, §5.1, WHEEL0-RST-1; owner decision W2, #162 2026-09-30).** Each later revision is
+value-only (option 2 without a re-stamp write: allocations are kept, pinned to their revision, and
+count as current) or a Wheel reset (option 3, applied at the character's next admitted session under
+its own session fence, with one receipt naming the old and new revisions; until then the allocation
+fails closed as above). Option 1 and any offline migration writer are not used.
+
 ### 3.3 Change
 
 - One allocation change is one fenced Character event. It commits at once, as Crystal does on save.
@@ -165,6 +171,10 @@ left the Wheel undecided, and this candidate closes that gap.
   (promotion) runtime owners. Until both exist, no character is eligible and every revelation spell
   stays fail-closed.
 
+**Pointer (pending on acceptance of WHEEL-0 (`reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §6).** The "progression readiness" dependency of PREM-2 is #1143, completed.
+Under owner answer W1 a (#162 5917665342), the Premium requirement of promotion and of the Wheel is
+not applied until PREM-1 delivers `premium_current`.
+
 ## 4. Playable-first slice: what the spell gate needs first
 
 1. **W-1: state and derivation.** The durable `slot_points` and its load. `revelation_stage` and
@@ -184,6 +194,10 @@ Premium (PREM-1) and promotion (PREM-2).
 ## 5. Out of scope (explicit later items)
 
 - Gems, the Gem Atelier, fragments, mod grades and gem revelation bonuses.
+  **Amendment (pending on acceptance of WHEEL-GEM-0;
+  `reviews/OTERYN_GAME_WHEEL_GEM0_GEM_ATELIER_DECISION_2026-09-30.md` §5-§10).** Decided there:
+  revealed gems and mod grades as Character state written on CHAR-REV-SEQ-1, vessels in the Wheel
+  writer, and gem effects through the Wheel contribution.
 - Promotion scrolls and the monk quest extra points.
 - Dedication perks (health, mana, capacity and resistance per point), and conviction perks that are not
   spell augments.
@@ -194,6 +208,9 @@ Premium (PREM-1) and promotion (PREM-2).
 - The Wheel's effect on the Harmony multiplier (Ascetic) is a stage read, which is covered. Its value is
   in §A.2.
 
+**Pointer (pending on acceptance of WHEEL-0 (`reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §5).** Dedication perks, non-spell conviction perks and revelation passives are
+decided there (W-FX-1); gems, fragments, mod grades and presets go to WHEEL-GEM-0.
+
 ## 6. Delivery (each child needs its own #162 allocation)
 
 | Child | Scope | Depends on |
@@ -202,6 +219,10 @@ Premium (PREM-1) and promotion (PREM-2).
 | W-1 | Durable allocation, fence, load, derivation, spell-core input | W-R; Character progression storage and migration numbering; high-risk authority/recovery qualification; PREM-1 and PREM-2 before any stage can be above 0 |
 | W-2 | Allocation change intent and validation | W-1; protocol lane (registry lease) |
 | W-3 | Client Wheel window | W-2; client owner |
+
+**Pointer (pending on acceptance of WHEEL-0 (`reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §3, §4, §7).** SPELL-WHEEL-GATE-1 comes first: the reader admits Wheel-gated
+spells and a zero `WheelStages` input lets role B and C spells cast with their base behaviour. W-1's
+physical shape, its writer on CHAR-REV-SEQ-1, and W-2's full-replacement intent are fixed there.
 
 ## 7. Engine tests the children must provide
 

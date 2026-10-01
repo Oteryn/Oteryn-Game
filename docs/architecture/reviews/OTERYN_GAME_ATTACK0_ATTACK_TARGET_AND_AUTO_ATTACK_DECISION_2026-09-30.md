@@ -134,8 +134,21 @@ does a hit do?
   committed damage still resolves.
 - Damage stays visible through the target's health percentage in domain 1 (D85). A dedicated
   combat-effects view (numbers, animations) is a later wire decision.
+  **Amendment (pending on acceptance of SPELL-PRESENT-0; `OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md` §4,
+  §5).** That view is the `WORLD_PRESENTATION` domain: hit, block and armour effects and damage
+  numbers from each committed swing, emitted by COMBAT-PRESENT-1.
 - Limits (ATTACK-WIRE-1 registers them): `ATTACK0-RL-01` target changes per second,
   `ATTACK0-RL-02` fight-mode changes per second.
+
+**Amendment (pending on acceptance of PARTY-PVP-0;
+`reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md` §7, §8 and §11).** Once
+accepted, a character is a valid target where PARTY-PVP-0 §7 allows it: the World PvP type, level 8,
+no protection zone, post-login immunity, party and guild immunity, secure mode and the black skull
+rule, checked in the GAME-ABILITY-01 legality stage, with the refusal `PVP_REFUSED {reason}`;
+`secure` takes effect; `FIGHT_MODES_INTENT` gains `expert_mode` behind `PVP_V1`. The §4 logout block
+is joined by PARTY-PVP-0's PZ block and 15-minute kill block (§8.1); a PvP-sourced logout block is
+also written ahead durably and restored at admission, so a node crash does not end it. Until PVP-1, PVP-RT-1,
+PVP-DEATH-1 and PVP-WIRE-1 land, the first slice stays creatures only.
 
 ## 4. Runtime (ATTACK-1)
 

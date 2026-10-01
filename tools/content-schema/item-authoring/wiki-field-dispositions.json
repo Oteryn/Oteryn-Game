@@ -391,7 +391,7 @@
       "disposition": "ITEM_AUTHORING",
       "canonical_path": "proficiency.perks[1]",
       "allowed_destinations": [
-        "/item/proficiency/levels/*/perks/*"
+        "/item/proficiency/profile_binding"
       ]
     },
     {
@@ -399,7 +399,7 @@
       "disposition": "ITEM_AUTHORING",
       "canonical_path": "proficiency.perks[2]",
       "allowed_destinations": [
-        "/item/proficiency/levels/*/perks/*"
+        "/item/proficiency/profile_binding"
       ]
     },
     {
@@ -407,7 +407,7 @@
       "disposition": "ITEM_AUTHORING",
       "canonical_path": "proficiency.perks[3]",
       "allowed_destinations": [
-        "/item/proficiency/levels/*/perks/*"
+        "/item/proficiency/profile_binding"
       ]
     },
     {
@@ -415,7 +415,7 @@
       "disposition": "ITEM_AUTHORING",
       "canonical_path": "proficiency.perks[4]",
       "allowed_destinations": [
-        "/item/proficiency/levels/*/perks/*"
+        "/item/proficiency/profile_binding"
       ]
     },
     {
@@ -423,7 +423,7 @@
       "disposition": "ITEM_AUTHORING",
       "canonical_path": "proficiency.perks[5]",
       "allowed_destinations": [
-        "/item/proficiency/levels/*/perks/*"
+        "/item/proficiency/profile_binding"
       ]
     },
     {
@@ -431,7 +431,7 @@
       "disposition": "ITEM_AUTHORING",
       "canonical_path": "proficiency.perks[6]",
       "allowed_destinations": [
-        "/item/proficiency/levels/*/perks/*"
+        "/item/proficiency/profile_binding"
       ]
     },
     {
@@ -439,7 +439,7 @@
       "disposition": "ITEM_AUTHORING",
       "canonical_path": "proficiency.perks[7]",
       "allowed_destinations": [
-        "/item/proficiency/levels/*/perks/*"
+        "/item/proficiency/profile_binding"
       ]
     },
     {

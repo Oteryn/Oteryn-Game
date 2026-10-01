@@ -85,7 +85,8 @@ How does a character get, keep and lose an ordinary physical house?
   and `shop` of the active catalogue, created `VACANT`. Columns: state (`VACANT`, `AUCTION`,
   `OWNED`, `MOVE_OUT_PENDING`, `DISPOSITION`, `RETIRED`), owner CharacterId and AccountId, `paid_until`,
   `grace_until`, `move_out_at`, `revision`, `acl_revision`, `content_fence_operation`. Guildhalls
-  get no row.
+  get no row. Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §6): guildhalls get rows with `owner_kind` `GUILD` and an owner
+  guild, outside the slot.
 - **Tiles.** `game_house_tiles`: (World, house key, position), materialized from the active bundle
   and refreshed with it. A guard refuses a Ground location row on any house tile in any channel
   (the HOUSE-CUSTODY-0 §3.5 gate, §8).
@@ -178,6 +179,11 @@ How does a character get, keep and lose an ordinary physical house?
   declared difference, because the slot and the value are World-scoped.
 - A lapse of Premium changes nothing (EXP-HOUSES-01 §10.1).
 
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §10).** The
+owner admitted system letters (MAIL-0 Q1a): the step that sets `grace_until` also mints one stamped
+rent warning letter into the owner's Inbox, keyed by (house, period), as Tibia's "warning letter
+in inbox". The login warning stays until MAIL-SYSTEM-1 ships.
+
 ## 6. Moving out (HOUSE-1)
 
 - The owner sets a date 1 to 30 days ahead (`HOUSEOWN0-RL-10`); the state becomes
@@ -235,7 +241,13 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
   root for a command, FOR UPDATE; the bidders' roots FOR SHARE in CharacterId order for
   settlement); the property row; the auction and its bids by id; the slot rows by AccountId; the ban
   row; for a disposition step, the items by ItemInstanceId and the Inbox counters by CharacterId;
-  then the balance rows by `account_id`.
+  then the balance rows by `account_id`. Amendment (pending on acceptance of GUILD-0;
+  `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §4.1, `GUILD0-LO-01`): the
+  guild rows by `GuildId` come after the Character roots and before the property row (FOR SHARE
+  for the bidding guilds of a guildhall settlement or release, FOR UPDATE for the owner guild);
+  the guild member, invitation and leadership rows follow them; the guild ban follows the house
+  ban; the guild balance and disband claim rows by `GuildId` come after the Inbox counters and
+  before the balance rows by `account_id`. A job never locks a guild row after the property row.
 - **Fence.** Every `HOUSE_INTENT` command takes the composition decision rule 2 session fence
   (recovery fence, admission relations, the acting Character's session generation and guards) before
   the property row; World jobs take only the recovery fence and admission relations.
@@ -257,6 +269,17 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
 - **Conformance** (EXP-HOUSES-01 §25): HOUSE-1's tests cover scenarios 5-8, 10, 11, 19-21, 23-25,
   28, 34, 35, 40 and 43; the rest belong to the runtime, Residence and Bazaar decisions.
 
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §6, §10).** The
+rent step that sets `grace_until` and mints the rent warning letter (§5 amendment) is an Inbox
+delivery and takes MAIL-0 §6's recipient locks inside this section's order: after the operation
+occurrence, the `game_mail_system_letters` row (`HouseRentWarning`, (HouseId, rent period)); in
+the Character roots position, the owner's `character_root` `FOR SHARE`, checked as MAIL-0 §6 says
+(a failed check records `RECIPIENT_UNAVAILABLE` and mints nothing; the rent step still commits);
+after the ban row, the minted item by its ItemInstanceId and then the owner's Inbox counter row,
+which the step raises by one (`committed` = Inbox entries + reservations, MARKET-0 §5; never
+refused, MAIL-0 §10); then the balance rows. A rent step and a disposition step thus take the
+Inbox counter in the same position.
+
 ## 10. Access list (HOUSE-ACL-1)
 
 - `game_house_acl_entries`: (house, role `SUBOWNER` or `GUEST`, CharacterId) and (house, door
@@ -265,7 +288,9 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
   (EXP-HOUSES-01 §16.2). Each edit carries the expected `acl_revision`; a stale revision is
   `STALE_REVISION` and writes nothing.
 - Entries name characters of the same World only; at most `HOUSEOWN0-RL-12` (200) per list. Guild
-  and wildcard patterns wait for guilds.
+  and wildcard patterns wait for guilds. Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §10): a list entry may also be a guild
+  entry `{guild, match, level}` with `match` `EXACT` or `AT_LEAST`, or an exclusion of one
+  character; name wildcards stay deferred.
 - No spell edits the list (EXP-HOUSES-01 §17). Entry, door and kick checks belong to the house
   interior runtime, which reads the list at its revision.
 
@@ -282,6 +307,8 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
   `TOO_LOW`, `AUCTION_CLOSED`, `AUCTION_FULL`, `NOT_OWNER`, `STALE_REVISION`, plus the common
   results.
 - The panel works anywhere; it needs no position in the house.
+- **Amendment (pending on acceptance of HOUSE-RUNTIME-0; `reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md` §5.3, §5.5).** `HOUSE_INTENT` gains `kick {character}` (owner: anyone;
+  subowner: guests; the kicker inside the house or its owner) and `leave`.
 
 ## 12. Rows (registered by the children before implementation)
 
@@ -305,7 +332,7 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
 | Bid, raise or lower | 0 items, 2 value lines (reserve or release, escrow change), 1 event |
 | Settlement first step | 0 items, 4 value lines (escrow fall, price, rent, return), 1 event |
 | Rent charge | 0 items, 1 value line (`HOUSE_RENT`, its own burn line), 1 event |
-| Release step | 100 bids, 200 value lines (escrow fall and return per bid), 1 event |
+| Release step | 100 bids, 200 value lines (escrow fall and return per bid), 1 event. Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §6.2, `GUILD0-RL-14`): a guildhall release step holds at most 50 bids (4 value lines each, split escrow) |
 | Disposition step | 100 items, 200 location lines, 0 value lines, 1 event |
 
 ## 13. Rejected options

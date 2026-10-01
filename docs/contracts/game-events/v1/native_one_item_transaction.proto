@@ -43,9 +43,10 @@ package oteryn.events.v1;
 // amendment, decision CHARACTER-GOLD-FEE-BOUNDARY-V1 §4.5, D174-D178) burns up
 // to 20 coin stacks in direct entries of the equipped main backpack under the
 // closed FeeBurnCause, in the fee source's Character transaction. It has its
-// own rows DUR03-RL-01/-02/-06/-07-FEE-BURN (payload <= 24,181 B, EventEnvelope
-// <= 24,495 B). GOLD-FEE-1a admits gold coins only, so there is no change;
-// GOLD-FEE-1b adds the change MINT fields.
+// own rows DUR03-RL-01/-02/-06/-07-FEE-BURN (payload <= 25,398 B, EventEnvelope
+// <= 25,712 B). GOLD-FEE-1b adds platinum and crystal inputs and the additive
+// change fields 11-12 (at most a platinum and a gold change MINT); a GOLD-FEE-1a
+// event decodes with change 0 and no change line.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -56,7 +57,7 @@ message OneItemTransactionV1 {
     OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
     OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 only (see above)
     OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay only (see above)
-    OneItemFeeBurnV1 fee_burn = 6; // gold fee BURN only (see above)
+    OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
   }
 }
 
@@ -269,12 +270,19 @@ message OneItemFeeBurnLineV1 {
   uint64 placement_ordinal = 3; // the entry before the burn, non-zero
 }
 
-// Gold fee BURN transaction (GOLD-FEE-1a). Lines are in burn order: worth
+// One change MINT: a fresh coin stack that did not exist before, in a new
+// direct entry of the main backpack.
+message OneItemFeeChangeMintV1 {
+  OneItemStateV1 after = 1;     // LIVE, 1..99 platinum or gold coins
+  uint64 placement_ordinal = 2; // its new entry, non-zero
+}
+
+// Coin fee BURN transaction (GOLD-FEE-1a/1b). Lines are in burn order: worth
 // ascending, then display order (highest placement ordinal first).
 message OneItemFeeBurnV1 {
   OneItemFeeBurnCauseV1 cause = 1;
   uint64 fee_gold_units = 2;    // 1..20,000,000
-  uint64 burned_gold_units = 3; // conservation summary: equals the fee (no change in 1a)
+  uint64 burned_gold_units = 3; // conservation summary: fee + change
   bytes character_id = 4;       // 16-byte UUIDv7
   uint64 committed_character_revision = 5; // the fee source's committed revision (>= 2)
   bytes world_id = 6;
@@ -282,4 +290,8 @@ message OneItemFeeBurnV1 {
   uint64 runtime_scope_ownership_generation = 8; // non-zero
   bytes backpack_item_instance_id = 9; // parent of every line's entry
   repeated OneItemFeeBurnLineV1 lines = 10; // 1..20
+  uint64 change_gold_units = 11; // burned - fee, below the last line's coin worth
+  // change / 100 platinum, then change % 100 gold, each only when positive, in
+  // consecutive new entries after the burn lines.
+  repeated OneItemFeeChangeMintV1 change = 12; // 0..2
 }

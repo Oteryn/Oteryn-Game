@@ -13,6 +13,8 @@ SPELL_LIB = 'data/scripts/lib/register_spells.lua'
 ENGINE_DEFINITIONS = 'src/creatures/creatures_definitions.hpp'
 SCRIPT_DIRS = ('data/scripts', 'data-otservbr-global/scripts')
 SHARED_DIRS = ('data/scripts/spells/', 'data/scripts/runes/')
+# Monster spells of another pinned OTS checkout (crystal_batch.py); a Canary registration of the same name wins.
+EXTRA_SCRIPT_DIRS = ('data-global/scripts/spells/monster',)
 MAX_RANDOM_RANGE = 512
 
 LUA_SANDBOX = r'''
@@ -162,17 +164,26 @@ def area_constants(canary):
     return '\n'.join(re.findall(r'^[A-Z]\w* = \{.*?^\}', text, re.M | re.S))
 
 
-def index_spells(canary):
-    """name -> (kind, path) of every Spell registration, rune spells first (Spells::getSpellByName)."""
+def registrations(root, directories):
     found = {}
-    for directory in SCRIPT_DIRS:
-        for path in sorted((canary / directory).rglob('*.lua')):
+    for directory in directories:
+        for path in sorted((root / directory).rglob('*.lua')):
             text = path.read_text(encoding='utf-8', errors='replace')
             if 'Spell(' not in text:
                 continue
             for variable, kind in re.findall(r'(\w+)\s*=\s*Spell\(\s*"(\w+)"', text):
                 for name in re.findall(re.escape(variable) + r':name\(\s*"([^"]+)"\s*\)', text):
                     found.setdefault(name.lower(), []).append((kind.lower(), path))
+    return found
+
+
+def index_spells(canary, extra_roots=()):
+    """name -> (kind, path) of every Spell registration, rune spells first (Spells::getSpellByName). `extra_roots`
+    (checkouts with the EXTRA_SCRIPT_DIRS) only add names that Canary does not register."""
+    found = registrations(canary, SCRIPT_DIRS)
+    for root in extra_roots:
+        for name, entries in registrations(Path(root), EXTRA_SCRIPT_DIRS).items():
+            found.setdefault(name, entries)
     return {name: sorted(entries, key=lambda e: (e[0] != 'rune', str(e[1])))[0] for name, entries in found.items()}
 
 
@@ -191,7 +202,7 @@ def calls(obj):
 
 
 class SpellScripts:
-    def __init__(self, canary, player_chains=False, accepted_guards=None):
+    def __init__(self, canary, player_chains=False, accepted_guards=None, extra_roots=()):
         """player_chains (player spells): a caster-may-hit chain picker adds no filter, and the chain value callback,
         which reads the player caster and its Wheel, is not called; the caller supplies the chain parameters.
         accepted_guards (player spells): {spell name: {onCastSpell body}}. A script whose whitespace-collapsed body is
@@ -200,7 +211,8 @@ class SpellScripts:
         self.canary = Path(canary)
         self.player_chains = player_chains
         self.accepted_guards = accepted_guards or {}
-        self.index = index_spells(self.canary)
+        self.extra_roots = tuple(Path(r) for r in extra_roots)
+        self.index = index_spells(self.canary, self.extra_roots)
         self.areas = area_constants(self.canary)
         self.enums = engine_enums(self.canary)
         self.cache = {}
@@ -217,8 +229,11 @@ class SpellScripts:
     def _evaluate(self, key):
         from lupa.luajit21 import LuaRuntime
         kind, path = self.index[key]
-        relative = str(path.relative_to(self.canary))
+        root = next((r for r in self.extra_roots if r in path.parents), self.canary)
+        relative = str(path.relative_to(root))
         result = {'name': key, 'kind': kind, 'script': relative, 'shared': relative.startswith(SHARED_DIRS)}
+        if root != self.canary:
+            result['extra_root'] = True
         lua = LuaRuntime(unpack_returned_tuples=True)
         rec, cast, _ = lua.execute(LUA_SANDBOX)
         try:

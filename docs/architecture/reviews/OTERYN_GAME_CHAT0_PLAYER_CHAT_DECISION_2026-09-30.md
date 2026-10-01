@@ -13,7 +13,7 @@
   capability 3); CHAR-NAME (`0022`, one global name namespace); migrations `0001`-`0003` (session
   state, runtime scope assignment); PREMIUM-DELIVERY-0 (PR #1369, `premium_current`); owner rule
   5905825574 (Global parity)
-- Amends: nothing. SPELL-D1 stays as it is: a muted cast answers its existing
+- Amends: nothing. Amended by GUILD-0 §8 (§5 payload, pending on acceptance of GUILD-0). SPELL-D1 stays as it is: a muted cast answers its existing
   `SPELL_CAST_DISPOSITION_REJECTED` ("ineligible actor"), so no new disposition is needed (§6).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -78,6 +78,9 @@ How do players talk to each other: nearby, privately, and to the whole World?
   types and sends command 3 instead of a chat line, so the player experience matches Tibia.
   Showing a successful cast's words to spectators is left to a later spell presentation decision;
   until then spectators see the cast's effect only (`SpellBook::spoken` has no production caller).
+  **Amendment (pending on acceptance of SPELL-PRESENT-0; `OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md` §6).**
+  A successful cast's words reach players in the `say` range as a presentation event carrying the
+  spell index, not as a `CHAT` line; `SpellBook::spoken` keeps no production caller.
 - **NPC greeting.** When the speaker's client has capability 3, a `say` whose text contains, as a
   word, a greeting of an NPC within that NPC's talk range (`CHAT0-RL-08`, 4 tiles until NPC-0 fixes
   its own) also starts that NPC's conversation, as command 7 would. With several NPCs in range, the
@@ -132,8 +135,21 @@ How do players talk to each other: nearby, privately, and to the whole World?
   bytes. Sealed: `key_id` (1) + nonce (12) + ciphertext + tag (16): at most 1,216 bytes. The `NOTIFY`
   text is its standard base64: at most 1,624 bytes, under `CHAT0-RL-06` (2,048) and `NOTIFY`'s
   8,000. A line that would exceed it is `REJECTED` before sending, never truncated or split.
+  Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §8): a
+  guild-room line is its own kind whose destination is the sender's `GuildId` (16 bytes) and the
+  sender's rank level (1 byte), taken from its committed membership at send time and sealed with
+  the line: plaintext at most 1,188 bytes, sealed at most 1,217, base64 at most 1,624, still under
+  `CHAT0-RL-06`. A receiving node delivers it only to sessions whose character is a member of that
+  `GuildId` by a committed read at delivery, and drops it when that read fails; it never resolves
+  the sender's current guild.
 - **Privacy:** text is never written to a table or to ordinary logs (FND-02 §20); the per-session
   egress queue (§7) holds lines in memory only, and nothing is replayed from storage.
+
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §9).** The relay
+gains one payload kind, the mail notice: the recipient CharacterId, with no sender name and no
+text, sealed like every line. It is sent after a posting commits, at most once and best effort;
+the node holding the recipient's session shows "New mail has arrived." next to a depot locker. It
+does not use the sender's spam bucket, which MAIL-0's posting rate replaces.
 
 ## 6. Spam control and gates (CHAT-1; durable row CHAT-2)
 

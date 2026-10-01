@@ -102,6 +102,31 @@ the Bank row becomes "Game bank ledger (BANK-0); Account + World (owner answer 1
 5912593702); strong durable, immutable ledger; the same balance on all channels of the World,
 another World has its own; shared".
 
+**Amendment (pending on acceptance of PARTY-PVP-0;
+`reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md` §3-§9).** Party membership
+lives in Game tables per World (UUIDv7 PartyId), ordered by the party row, and survives a channel
+switch; shared experience, party loot and party buffs count only members on the same channel, and
+members on another channel are excluded, not failing participants. Combat lock is the logout
+block, the PZ block and the 15-minute kill block; their PvP deadlines and the white skull are
+written ahead durably in the PvP state row and restored at admission, so a crash or readmission
+never shortens them; the PvP damage ledger's contributors are written ahead the same way. Skull and frag state are the PvP state, unjustified point and revenge mark
+tables. The World PvP type is a
+ruleset field.
+
+**Amendment (pending on acceptance of VIP-0;
+`reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md` §4 and §8).** The VIP list is a Game
+table per Account + World, the same on every channel of the World. Its Presence use shows only
+online or offline on this World, from session rows and hints on the CHAT-0 World relay, and only
+after the watched character accepts the VIP invitation and while it does not hide its status; it
+never shows a channel.
+
+**Amendment (pending on acceptance of BOSS-RAID-0; `reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §3).**
+The boss and raid rows are declared: a raid firing is one durable World occurrence, run as one
+claimed run per targeted channel; an open-world boss spawn is channel-local with a durable spawn
+clock; a boss room is one activity instance per admitted group; boss cooldowns, anti-hopping
+eligibility and the reward chest are strong durable per Character and World; Bosstiary progress
+is Character progression.
+
 ## Required identity envelope
 
 Every runtime command, event and timer that can mutate or address gameplay state must carry enough identity to resolve its owner without process-global lookup.

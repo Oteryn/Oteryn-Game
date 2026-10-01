@@ -35,7 +35,7 @@ One record per House, validated by `house.schema.json` and `validate_houses.py`:
 | `identity.key` | `oteryn:content.house.<slug>`, allocated once from the official name (§2.1). |
 | `identity.revision` | Content revision of the record. |
 | `name` | Official client name, whitespace-normalized. Display text, never identity. |
-| `kind` | `private_house` and `shop` are ordinary physical houses (owner `CharacterId`, `EXP-HOUSES-01` §8; owner decision 2026-09-30): a shop takes the personal physical-house slot and follows the same auction, rent and ACL rules. `guildhall` is the Guildhouse class (owner `GuildId`, §9), whose lifecycle stays deferred. |
+| `kind` | `private_house` and `shop` are ordinary physical houses (owner `CharacterId`, `EXP-HOUSES-01` §8; owner decision 2026-09-30): a shop takes the personal physical-house slot and follows the same auction, rent and ACL rules. `guildhall` is the Guildhouse class (owner `GuildId`, §9), whose lifecycle stays deferred; pointer pending on acceptance of GUILD-0 (`OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §6-§7): guildhall lifecycle. |
 | `town` | `Area` reference `oteryn:content.area.city.<slug>`. |
 | `entrance` | The tile in front of the front door that a Character is placed on when leaving or being moved out (`EXP-HOUSES-01` §5.3 exit). |
 | `map_marker` | Official map marker position. Presentation only. |

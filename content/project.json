@@ -1,1 +1,35 @@
-{"content_lock":"content/content.lock.json","legacy_compatibility_root":"content/world","manifest":"content/manifest.json","migrated_families":["Item","Mount","Creature","Presentation","Behavior","Loot","Ability","Effect","Formula","NPC","Encounter","Dialogue","Service","Charm","Proficiency","RewardClaim"],"next_population_families":["Quest","Achievement","Outfit","Area","House","WorldObject"],"project_revision":"tree-npc-fan-wiki-parity-r1","runtime_source":"legacy_until_separately_qualified","schema":"OTERYN_GAME_CONTENT_TREE_PROJECT/v1"}
+{
+  "content_lock": "content/content.lock.json",
+  "legacy_compatibility_root": "content/world",
+  "manifest": "content/manifest.json",
+  "migrated_families": [
+    "Item",
+    "Mount",
+    "Creature",
+    "Presentation",
+    "Behavior",
+    "Loot",
+    "Ability",
+    "Effect",
+    "Formula",
+    "NPC",
+    "Encounter",
+    "Dialogue",
+    "Service",
+    "Charm",
+    "Proficiency",
+    "RewardClaim",
+    "StarterKit"
+  ],
+  "next_population_families": [
+    "Quest",
+    "Achievement",
+    "Outfit",
+    "Area",
+    "House",
+    "WorldObject"
+  ],
+  "project_revision": "tree-npc-fan-wiki-parity-r1",
+  "runtime_source": "legacy_until_separately_qualified",
+  "schema": "OTERYN_GAME_CONTENT_TREE_PROJECT/v1"
+}

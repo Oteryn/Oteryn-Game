@@ -108,6 +108,12 @@ decision exists (D196).
   root need a later decision.
 - **Exclusivity.** A live item is in exactly one location family (§3.3).
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §9).**
+BAGS-0 supplies the tree shape. Admitting containers with contents under a house root stays an
+explicit follow-up for HOUSE-RUNTIME-0: contents count against `HOUSEOWN0-RL-14`, and a disposition
+step moves whole trees.
+
 ### 3.2 Reclaim provenance
 
 - Every transaction that makes an item's location `HouseInterior` also writes
@@ -132,6 +138,9 @@ decision exists (D196).
 - Any later location family joins this guard in its own migration.
 
 ### 3.4 Writer, fence and transfer shapes (non-binding direction)
+
+**Pointer (pending on acceptance of HOUSE-RUNTIME-0; `reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md` §3, §6.1).** The house scope and the three shapes below become binding there;
+SCOPE-HANDOFF-1 builds the scope kind migration and HOUSE-RUNTIME-1 the shapes.
 
 This section is **non-binding direction** for the EXP-HOUSES-01 house interior runtime decision,
 which fixes the fence and scope schema. HOUSE-CUSTODY-1 builds none of it.
@@ -188,6 +197,7 @@ which fixes the fence and scope schema. HOUSE-CUSTODY-1 builds none of it.
 | HOUSE-CUSTODY-1 | One migration: `HouseInterior`, provenance, exclusivity guard, no runtime grants, `_postgres` tests | this decision |
 | MAP-OVERLAY-1 | Reset preflight, step-4 recheck, "reset touches only Ground" test (§3.6) | ADR-0021 accepted |
 | House interior runtime | Fence and scope schema (decided there; §3.4 is direction), a new migration altering the `0003`/`0006` tables, writer, transfer shapes | HOUSE-CUSTODY-1; EXP-HOUSES-01 runtime decision |
+| House interior runtime (pointer, pending on acceptance of HOUSE-RUNTIME-0; `reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md`) | SCOPE-HANDOFF-1, HOUSE-RUNTIME-1, HOUSE-VIEW-1, HOUSE-ITEM-WIRE-1 (the client item path, after its own wire decision) | HOUSE-CUSTODY-1 |
 | House ownership and ACL | Opens §3.5, decides the Ground-on-house-tiles gate | house interior runtime |
 
 > **Pointer (pending on acceptance of HOUSE-OWN-0, #162 5912405163).** When HOUSE-OWN-0

@@ -253,6 +253,12 @@ Two variants are added: `HousePrice {house, auction}` and `HouseRent {house, per
 paid only from the bank, never from coins, and are not `0023` fee records: their ledger entries
 reference a house operation (`OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md` §9).
 
+**Amendment (pending on acceptance of IMBUE-FORGE-0;
+`reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md` §6,
+§10).** Variants `Imbue`, `ImbueClear`, `ImbueScroll`, `ForgeFusion` and `ForgeTransfer`, paid
+from coins, then the bank (BANK-FEE-0), admitted by the owner at Global prices (owner answer I1
+a, 2026-09-30, D178); IMBUE-1 and FORGE-1 add them.
+
 ### 4.5 Audit evidence
 
 One event per logical transaction (`DUR03-RL-07-EVENTS` = 1), one closed aggregate with the §39

@@ -124,6 +124,23 @@ How do two players exchange items safely?
   before the session closes (bounded by the transaction timeout); a death is processed after the
   outcome, serialized on `character_root`. Either way the other side sees the outcome.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §9).**
+An offer may be a container tree of at most 100 items (BAGS-TRADE-1). The offer binds each item's
+id, definition, quantity, state, immediate parent and entry ordinal; any change, a reparent or
+reorder included, cancels, and the swap checks the binding under row locks. Every item of the tree, not only
+the root, must pass the `NOT_TRADEABLE` and binding checks, rechecked under the swap locks. The main backpack
+itself stays refused. Under `CONTAINER_TREE_V1` the §3 domain gives the recipient's session its
+own handles for each offered container and each container nested in it; they open read-only
+views only and become `STALE` on any offer change and when the trade ends. A swap with at least
+one tree uses the BAGS-0 §9 two-tree shape and its rows (`DUR03-RL-0x-TREE-TRADE`: 200 offered
+items, 2 participants, 4 location lines, both tree bindings in the receipt and event), which
+override the §6 two-item rows for that swap only. Its complete bound includes the destination
+validation under the swap locks: both destination main-backpack roots locked and up to 800 further
+destination-tree reads (no cached counts), so at most 1004 work units (204 for the offered trees
+plus 800) and 1000 items locked or read (200 plus 800), qualified by `BAGS0-RL-06-TRADE` (p99 at
+most 100 ms, else the shape returns for a new decision).
+
 ## 5. Swap (TRADE-1, persistence)
 
 - **One transaction** moves both items or neither:

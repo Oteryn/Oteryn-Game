@@ -309,6 +309,17 @@ GAME-ITEM-01 owns containment legality. DUR-03 requires:
 - destroy/replace of a container with live descendants is invalid unless the same bounded transaction explicitly gives every affected descendant a legal disposition;
 - no committed orphan/cycle.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §3, §4).**
+Containers with contents are admitted. Every entry is `Container {parent ItemInstanceId, ordinal}`
+and stores no owner; the owner is the root's location. A tree has depth at most 8 and at most 500
+items. Moving a container is one TRANSFER of the root; the descendants are locked `FOR SHARE` and
+checked, never moved, and the receipt binds their count and a hash. For these shapes only, it
+supersedes the §39.1 exclusion of nested containers and sets container expansion to 8 levels
+(`DUR03-RL-05-TREE`). §39.3 step 3 keeps its one-item `DECAY_RETIRE` shape for a Ground tree:
+one transaction per item, in post-order (every descendant before its parent, the root last), which
+extends the D3 order to depth 8. Every other obligation is unchanged.
+
 ## 11. Item lifecycle and identity transitions
 
 ### 11.1 Same concrete lifecycle preserves identity
@@ -385,6 +396,14 @@ Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBu
 gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC service amendment in
 §39.3, the closed `NpcTradeCause` of a SELL. Pending on acceptance of ITEM-USE-0, the item use
 amendment in §39.3 admits the closed `ItemUseCause`.
+
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
+The quest exchange amendment in §39.3 admits the closed `QuestExchangeCause`.
+
+**Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
+§15).** The rune and conjure amendment in §39.3 adds the variant `Rune` to `ItemUseCause` and
+admits the closed `ConjureCause` (a BURN of one reagent unit with a MINT of the conjured units).
+Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
 
 ## 16. Transform semantics
 
@@ -722,6 +741,16 @@ shapes only, it supersedes the §39.1 exclusions of non-item accounts, multiple 
 burn combined with other lines, and the §39.1 and §39.3 source and destination limits, within the
 MARKET-0 §9 rows (100 touched items, 3 value lines). Every other obligation is unchanged.
 
+**Amendment (pending on acceptance of MAIL-0; `reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §6).**
+The mail row is filled with no new custody family: a posting moves a letter or a parcel root
+from a main backpack entry into the recipient's `CharacterInbox` (`TRANSFER`) and stamps the same
+item (`TRANSFORM`, `PRESERVE_INSTANCE`, §16.2) in one transaction, under the closed `MailCause`.
+A parcel's children keep their `Container` location (§10). A child of an Inbox parcel leaves as a
+one-item `TRANSFER`; a system letter, if the owner admits it, is one `MINT` into the Inbox. No
+value lines. For those shapes only, it supersedes the §39.1 exclusions of transform combined with
+transfer and of multiple touched items, and the §39.1 and §39.3 source and destination limits,
+within the MAIL-0 §11 rows (11 touched items). Every other obligation is unchanged.
+
 ## 39. Mandatory durable evidence boundary
 
 ADR-0006 requires durable audit for security-relevant durable item/currency mutation. DUR-03 therefore requires ANL-compatible durable transaction evidence sufficient to reconcile every effect whose owning value/security policy declares mandatory audit.
@@ -801,6 +830,11 @@ a one-unit BURN, or a one-unit TRANSFORM into a flask stack or a fresh flask, un
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
+
+**Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
+§39.1).** The rune and conjure amendment in §39.3 also admits a one-unit BURN under
+`ItemUseCause::Rune`, and one reagent-unit BURN with one MINT of the conjured units into an
+existing stack or a fresh entry under `ConjureCause`.
 
 Each aggregate covers the complete applicable §39 semantic evidence. This includes
 typed item identity/lifecycle/type/quantity before and after; location/custody
@@ -1562,6 +1596,45 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
   event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
   use's effect, with its own suffixed resource rows.
+
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
+Once accepted, in its NPC-QUEST-1 child:
+
+- **Dialogue claim.** A `RewardClaim` MINT whose source cause is the confirming NPC talk occurrence
+  and the claim, beside the D40 `USE` child, with the same claim rules (D40-D42).
+- **Exchange.** One item-only transaction under the closed cause `QuestExchangeCause {npc, node,
+  exchange_key, occurrence}`: at most 8 BURN lines (§17) from direct entries of the main backpack
+  (§11.1, §11.5), the claim's MINT lines and its `RewardClaim` row (D42) when the node rewards, and
+  one quest obligation row. Every check precedes every write: it is refused with nothing written
+  when an item is missing, the claim is not allowed, or any QUEST-STATE-0 §4 validation of the
+  transition fails (`STAGE_MISMATCH`, `REVISION_MISMATCH`, `OUT_OF_RANGE`, `NOT_SUPPORTED`), or
+  the character already holds 64 pending quest obligations (`OBLIGATIONS_FULL`). An exchange always
+  names a transition.
+- **Gold hand-in** (owner Q1b). An exchange that takes gold is also a fee under the
+  `FeeBurnCause` variant `QuestExchange(QuestExchangeCause)`, an item-only fee source in the same
+  transaction: coins first, then the bank part of the bank fee amendment above (one `FEE_DEBIT`
+  value line, `DUR03-RL-03-FEE`), refused with nothing written on insufficient funds or a junior
+  payer whose coins are short.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn, of multiple touched items
+  and of a MINT committed with other lines: the rewarded exchange commits the claim's MINT lines
+  together with the BURN lines, the `RewardClaim` row and the quest obligation row in one
+  transaction, with one audit aggregate (one event, one cause record) covering all its lines. The
+  MINT admission is bounded to the named claim's declared items, and the lines are never
+  independent of the BURN lines. Every other §39 obligation is unchanged; its rows are suffixed
+  `-QUEST-EXCHANGE`.
+
+**Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
+§39.3).** `reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md` §5 and §10, once
+accepted, admit for these shapes only: (a) **rune use**, the item use burn shape above under a
+third `ItemUseCause` variant `Rune`, keyed by the using command's CommandRef and committed before
+the rune's effect (RUNE-1); (b) **conjure**, in one transaction under the closed `ConjureCause`
+keyed by the cast's CommandRef, one BURN line of one reagent unit (§11.1 or §11.5) and one MINT
+line (§14) of the conjured units into a compatible stack or a fresh entry planned in the
+reservation (§11.3), at most two items (RUNE-CONJ-1); its receipt and audit event record the
+conjure's mana and soul debit as the MINT source, and the runtime settles or releases the
+caster's holds only from that durable outcome (RUNE-USE-0 `RUNEUSE0-C2`). Both supersede the §39.1 exclusions of burn,
+mint into an existing stack and multiple touched items for these shapes only, with one audit
+event each and their own suffixed rows (`DUR03-RL-01-RUNE`, `DUR03-RL-01-CONJURE`).
 
 ## 40. Durable acknowledgement
 
