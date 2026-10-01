@@ -929,12 +929,7 @@ fn cleanse_immunity_refuses_its_key_until_the_exact_deadline() {
         ConditionSourceKind::SelfUse,
     ] {
         assert_eq!(
-            apply(
-                &mut store,
-                &poison,
-                kind,
-                &facts(11_100 * MS - 1, &root),
-            ),
+            apply(&mut store, &poison, kind, &facts(11_100 * MS - 1, &root),),
             Err(ConditionRefusal::Immune),
         );
         assert_eq!(store, committed);
