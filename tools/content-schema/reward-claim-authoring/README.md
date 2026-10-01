@@ -74,3 +74,15 @@ interaction and shared-registration changes, including stacked pull requests.
   an error.
 - A stale `waiting_item_semantics` is safe, because the MINT itself fails closed.
 - Rebuild with `content` to promote newly ready claims.
+
+The separate source variant packet preserves all105 non-plain claims and their
+UID/position witnesses, exact Item references, source arguments and typed grants.
+D277 ruling5933264015 marks key/text/random/cooldown formats COVERED. Container
+contents wait for a content child; Achievement requests carry exact references
+while runtime ownership remains deferred. Native lowering is waiting implementation.
+Medusa text carrier and actual charge/default discrepancies remain CONFLICT.
+
+```sh
+python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
+python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_migration.py
+```
