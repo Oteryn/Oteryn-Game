@@ -11,6 +11,7 @@ mod admission_journal;
 pub mod bestiary_progress;
 pub mod character_authority;
 pub mod character_authority_audit;
+pub mod character_build;
 pub mod character_death;
 pub mod character_progression;
 pub mod charm_state;
@@ -193,6 +194,31 @@ mod charm_state_linkage {
         let _ = DurabilityRoot::commit_charm_command::<NoFacts>;
         let _ = DurabilityRoot::reconcile_charm_command;
         let _ = DurabilityRoot::read_character_charm_state;
+    }
+}
+
+#[cfg(test)]
+mod character_build_linkage {
+    use super::DurabilityRoot;
+    use super::character_build::{
+        BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, CommittedBuildChange,
+        DurableBuildState, skill_tries_required,
+    };
+
+    #[test]
+    fn character_build_api_is_linked() {
+        let _ = std::mem::size_of::<BuildChangeRequest>();
+        let _ = std::mem::size_of::<BuildCommitOutcome>();
+        let _ = std::mem::size_of::<CommittedBuildChange>();
+        let _ = DurableBuildState::vocation;
+        let _ = DurableBuildState::magic;
+        let _ = DurableBuildState::skills;
+        let _ = BuildOccurrence::from_bytes;
+        let _ = BuildOccurrence::as_bytes;
+        let _ = skill_tries_required;
+        let _ = DurabilityRoot::commit_character_build;
+        let _ = DurabilityRoot::reconcile_character_build;
+        let _ = DurabilityRoot::read_character_build_state;
     }
 }
 
