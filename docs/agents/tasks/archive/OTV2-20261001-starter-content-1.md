@@ -4,15 +4,15 @@
 task_id: OTV2-20261001-starter-content-1
 title: STARTER-CONTENT-1 admissible main backpack and the StarterKit record
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/starter-content-1
 issue: 162
-pr: null
+pr: 1424
 base_sha: ea045059
 head_sha: null
-final_head_sha: null
+final_head_sha: null   # the frozen head is the FREEZE_SHA entry on #162
 final_head_frozen_at: null
 owner: worker session for control plane #162 (session_018szkUA14PiwXp5JWX1zdx4)
 created_at: 2026-10-01
@@ -27,7 +27,7 @@ owned_paths:
   - tools/content-schema/starter-kit-authoring/**
   - content/starter/** and content/{project,manifest,content.lock}.json (written by the tools only)
   - tools/content-migration/{world_project_v2_to_tree.py,validate_world_project_v2_to_tree.py,test_world_project_v2_to_tree.py}
-  - docs/agents/tasks/{active,archive}/OTV2-20261001-starter-content-1.md
+  - docs/agents/tasks/archive/OTV2-20261001-starter-content-1.md
 public_contracts:
   - STARTER-BACKPACK0-STARTER-GRANT-V1 §4, §4.2 (#1387)
   - D114 main-backpack shape (container capacity and one container-slot equipment pattern)
@@ -59,6 +59,18 @@ external_repositories: []
 - PROVEN (OTS hypothesis, agrees): Crystal `ff7ede59` and Canary `47dfd51f` `data/items/items.xml`
   (sha256 `c847293e…`, `1cf2992c…`, the digests the item-authoring tools already pin): id 2854
   `containersize` 20, moveevent `slot` backpack.
+
+## Closeout
+
+- PR #1424; merge commit/result: squash merge of #1424 (`git log --grep "(#1424)"`).
+- Validation before freeze: `item_admission` unit tests, `content_world_project_repository`,
+  the full `cargo test -p oteryn-game-server` (56 binaries ok), clippy `-D warnings`, fmt; the
+  starter-kit tool tests and `content --check`; tree generator, validator and test; charm,
+  proficiency and reward-claim `content --check`; `item_key_references.py`, ruff, governance,
+  repository policy core, `git diff --check`.
+- Failing on `main` as well (not this task): `validate_full_game_content_tree.py` and its test
+  (`SOURCE_ID_BOUNDARY_MISSING`), condition `content --check` (`content/conditions/` absent).
+- Review: control plane triggers Codex on the frozen head (D245).
 
 ## High-risk authority/recovery qualification
 
