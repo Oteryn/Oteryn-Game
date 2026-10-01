@@ -33,16 +33,17 @@ external_repositories: []
 
 ## Outcome
 
-- Up to 2 modification rows per track (slot 1 at level 3, slot 2 at Mastery), receipt cause
-  `perk_modification`.
-- Operations MODIFY, RANK_UP, ORB_RANK, RESHAPE_OFFER, RESHAPE_CHOOSE, CLEAR: one Character
-  transaction each; draws under `proficiency_shaping`; durable paid reshape offer; replay by
-  occurrence; the full revision set bound at reservation (`REVISION_CHANGED`).
-- Value shapes not admitted: `ProficiencyCause` is reserved; the value operations refuse
-  `NOT_ADMITTED` until a later DUR-03 amendment admits each composed shape with its evidence.
-- Migration lines carry the modification rows; no catalyst is admitted.
-- Fail-closed admission gate until costs, pools, odds and effects are evidenced; a gold cost needs an
-  owner answer (D178).
+- Narrowed at Codex round 5 (control-plane scope cut): state shape, reserved causes, closed operation
+  list and fail-closed gate only.
+- Table `game_character_proficiency_modifications`: PK (character, item key, slot), UNIQUE
+  (character, item key, level); slot 1 at level 3, slot 2 at Mastery; `MODIFIED_LEVEL`.
+- Shaping revisions retained while referenced; incompatible definition revisions clear the row in the
+  migration receipt.
+- Reserved `perk_modification` and `ProficiencyCause`; every operation and catalyst answers
+  `NOT_ADMITTED`.
+- PROFICIENCY-1B entry conditions: CommandId-derived occurrence, revision binding with a persisted
+  terminal refusal, receipt CHECKs, offers (rank frozen while pending), shaping-revision migration,
+  draws, composed shapes, measured wire bounds, values.
 - No owner question now.
 
 ## Validation
