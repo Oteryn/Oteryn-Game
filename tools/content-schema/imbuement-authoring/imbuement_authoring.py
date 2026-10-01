@@ -19,9 +19,9 @@ EVIDENCE_PINS = {
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-access.json": "29f43745a3d0ecc74c183f9a031456a3254f7ca9bb29acbe6323dfa7162ab25e",
     "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
-    "global-rules-evidence.json": "6167ec05f5ee0fc153203fb2372997a0ed9f29a17fae359fe7fccd25a95cc40a",
-    "imbuement-combat.json": "18c5cc3fe0b7087eff23faa393a453a11ae869630109e523dd5c88612824c7f9",
-    "crystal-imbuements-evidence.json": "3bc60e6c95f2e371530f9145d9fd6f382db373b08b80b34590471a2f822d5b4d",
+    "global-rules-evidence.json": "26de8e6af75165727e82d8b7f3bbdef36df973ab14cabbb3d22344c5eac0f96d",
+    "imbuement-combat.json": "2558d32beded7b8707ad521991bca609a0293d00d03a414efcf10b60de8e660a",
+    "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
     "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
     "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d",
 }
@@ -119,7 +119,8 @@ def schema():
         obj({"kind": {"const": "elemental_conversion"}, "element": element, "share_bps": percent}),
         obj({"kind": {"const": "protection"}, "element": element, "absorb_bps": percent}),
         obj({"kind": {"const": "leech"}, "resource": enum("health", "mana"), "share_bps": percent, "chance_bps": percent}),
-        obj({"kind": {"const": "critical"}, "extra_damage_bps": percent, "chance_bps": percent}),
+        obj({"kind": {"const": "critical"}, "extra_damage_bps": percent, "chance_bps": percent,
+             "value_semantics": {"const": "ADDITIVE_IMBUEMENT_MODIFIER"}}),
         obj({"kind": {"const": "skill_bonus"}, "skill": enum("axe", "sword", "club", "shielding", "distance", "magic_level", "fist"), "amount": integer()}),
         obj({"kind": {"const": "speed_bonus"}, "amount": integer()}),
         obj({"kind": {"const": "capacity_bonus"}, "increase_bps": percent}),
@@ -130,7 +131,7 @@ def schema():
     item_ref = obj({"family": {"const": "Item"},
                     "key": {"type": "string", "pattern": "^oteryn:item\\.tibia\\.i[0-9]+$"},
                     "revision": {"const": "definition-r1"}})
-    provenance = obj({"effect": {"const": "wiki_br"}, "materials": {"const": "wiki_br"},
+    provenance = obj({"effect": enum("wiki_br", "global-rules-evidence.json#strike_additive_modifiers"), "materials": {"const": "wiki_br"},
                       "duration": {"const": "manual"}, "access": {"const": "imbuement-access.json"},
                       "fees": {"const": "global-rules-evidence.json"}})
     tier = obj({"tier": integer(1, 3), "name": enum("Basic", "Intricate", "Powerful"),
@@ -195,6 +196,8 @@ def effect(name, numbers):
                         "extra_damage_bps" if kind == "critical" else "share_bps": value * 100}
         if kind == "leech":
             fields[kind]["resource"] = detail
+        else:
+            fields[kind]["value_semantics"] = "ADDITIVE_IMBUEMENT_MODIFIER"
     return {"kind": kind, **fields[kind]}
 
 
@@ -207,13 +210,19 @@ def build():
     bindings = packets["imbuement-bindings.json"]
     rules = {r["id"]: r for r in packets["global-rules-evidence.json"]["rules"]}
     fees = rules["apply_fee_gold"]["value"]
+    strike = rules["strike_additive_modifiers"]["value"]
+    if strike != {"chance_bps": 500, "extra_damage_bps_by_tier": [500, 1500, 4000],
+                  "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"}:
+        raise ValueError("Strike modifiers differ from the qualified post-2025 source values")
     definitions = []
     for record in sorted(wiki, key=lambda r: r["name"]):
         name = record["name"]
         tiers = []
         for i, tier_name in enumerate(("Basic", "Intricate", "Powerful")):
+            numbers = ([strike["extra_damage_bps_by_tier"][i] // 100, strike["chance_bps"] // 100]
+                       if name == "Strike" else record["tier_effect_numbers"][i])
             tiers.append({"tier": i + 1, "name": tier_name, "duration_ms": 72000000,
-                          "effect": effect(name, record["tier_effect_numbers"][i]),
+                          "effect": effect(name, numbers),
                           "materials": [{"source_name": m["name"], "count": m["count"],
                                          "item_binding": bindings["material_bindings"][m["name"]]["item_ref"]}
                                         for m in record["incremental_materials"][:i + 1]],
@@ -222,7 +231,9 @@ def build():
                           "access": {"premium_required": i > 0, "catalogue": "imbuement-access.json",
                                      "profile": name, "tier": tier_name.lower(),
                                      "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"},
-                          "provenance": {"effect": "wiki_br", "materials": "wiki_br", "duration": "manual",
+                          "provenance": {"effect": ("global-rules-evidence.json#strike_additive_modifiers"
+                                                    if name == "Strike" else "wiki_br"),
+                                         "materials": "wiki_br", "duration": "manual",
                                          "access": "imbuement-access.json", "fees": "global-rules-evidence.json"}})
         definitions.append({"candidate_key": key(name), "name": name, "category": category(name),
                             "parity": "AUDITED_WITH_EXPLICIT_GAPS",
@@ -250,8 +261,8 @@ def comparison():
                 differences.append({"name": name, "tier": tier, "field": field, "canary": a[field], "crystal": b[field]})
     return {"schema": "OTERYN_IMBUEMENT_SOURCE_COMPARISON/v1", "source_facts_sha256": FACTS_SHA256,
             "engine_comparison_key": ["name", "tier"], "differences": differences,
-            "comparison_scope": "Raw XML facts, not final engine outcomes. Crystal imbuements branch includes player baselines; use the qualified effective-strength comparison in its separate packet.",
-            "selection": "Wiki BR effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
+            "comparison_scope": "Raw XML facts, not final engine outcomes. Strike candidate values are additive modifiers; intrinsic character critical baseline is a separate Global rule. Crystal comparisons distinguish modifiers from effective totals.",
+            "selection": "Source-qualified post-2025 Strike additive modifiers; Wiki BR other effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
             "global_fee_conflict": {"candidate_architecture": [5000, 30000, 200000],
                                     "global_since_2025": [7500, 60000, 250000]},
             "supporting_catalogues": dict(sorted(EVIDENCE_PINS.items())),

@@ -4,11 +4,11 @@
   "target": "global-tibia-observable-2026-07-28-post-server-save",
   "source_facts_sha256": "7ee2221886abdc80d27ce5cd13e58bdecab8b3c5210a7e0e7a36efc52771070e",
   "supporting_catalogues": {
-    "crystal-imbuements-evidence.json": "3bc60e6c95f2e371530f9145d9fd6f382db373b08b80b34590471a2f822d5b4d",
-    "global-rules-evidence.json": "6167ec05f5ee0fc153203fb2372997a0ed9f29a17fae359fe7fccd25a95cc40a",
+    "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
+    "global-rules-evidence.json": "26de8e6af75165727e82d8b7f3bbdef36df973ab14cabbb3d22344c5eac0f96d",
     "imbuement-access.json": "29f43745a3d0ecc74c183f9a031456a3254f7ca9bb29acbe6323dfa7162ab25e",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-combat.json": "18c5cc3fe0b7087eff23faa393a453a11ae869630109e523dd5c88612824c7f9",
+    "imbuement-combat.json": "2558d32beded7b8707ad521991bca609a0293d00d03a414efcf10b60de8e660a",
     "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
     "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
     "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d"
@@ -3002,8 +3002,9 @@
           "duration_ms": 72000000,
           "effect": {
             "kind": "critical",
-            "chance_bps": 1000,
-            "extra_damage_bps": 1500
+            "chance_bps": 500,
+            "extra_damage_bps": 500,
+            "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
           },
           "materials": [
             {
@@ -3031,7 +3032,7 @@
             "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
-            "effect": "wiki_br",
+            "effect": "global-rules-evidence.json#strike_additive_modifiers",
             "materials": "wiki_br",
             "duration": "manual",
             "access": "imbuement-access.json",
@@ -3044,8 +3045,9 @@
           "duration_ms": 72000000,
           "effect": {
             "kind": "critical",
-            "chance_bps": 1000,
-            "extra_damage_bps": 2500
+            "chance_bps": 500,
+            "extra_damage_bps": 1500,
+            "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
           },
           "materials": [
             {
@@ -3082,7 +3084,7 @@
             "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
-            "effect": "wiki_br",
+            "effect": "global-rules-evidence.json#strike_additive_modifiers",
             "materials": "wiki_br",
             "duration": "manual",
             "access": "imbuement-access.json",
@@ -3095,8 +3097,9 @@
           "duration_ms": 72000000,
           "effect": {
             "kind": "critical",
-            "chance_bps": 1000,
-            "extra_damage_bps": 5000
+            "chance_bps": 500,
+            "extra_damage_bps": 4000,
+            "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
           },
           "materials": [
             {
@@ -3142,7 +3145,7 @@
             "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED"
           },
           "provenance": {
-            "effect": "wiki_br",
+            "effect": "global-rules-evidence.json#strike_additive_modifiers",
             "materials": "wiki_br",
             "duration": "manual",
             "access": "imbuement-access.json",

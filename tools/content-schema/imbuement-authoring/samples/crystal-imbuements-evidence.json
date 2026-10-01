@@ -2398,7 +2398,7 @@
         ]
       },
       "confidence": "OTS_SOURCE_CODE_ONLY",
-      "notes": "Combined isolated Strike values match selected Global. Importing XML alone gives wrong values. Baseline is added even without Strike; total gameplay includes other perks.",
+      "notes": "XML values are additive imbuement modifiers, separate from the intrinsic character baseline. Primary news8421 and revisioned post-release Fandom corroborate baseline5%/10% and additive Strike5%/5,15,40%. Combined isolated totals15,25,50% and chance10% are retained only as outcomes, never emitted as item modifiers. Other perks remain outside this comparison.",
       "anchors": [
         {
           "path": "data/XML/imbuements.xml",
@@ -4010,7 +4010,7 @@
   },
   "selected_catalogue_comparison": {
     "reference": "imbuements-candidate.json",
-    "effect_normalization": "Strike combines XML deltas with explicit universal player baseline; leech chance XML is percent, critical chance is basis points. Vibrancy chance numbers match, but XML deflection description does not implement the selected paralysis recovery sequence and its loader ignores this effect entirely.",
+    "effect_normalization": "Strike XML is an additive imbuement modifier: chance500bps and extra damage500/1500/4000bps. Intrinsic character baseline500bps chance/1000bps extra is stored separately, applied once, and combined isolated totals are explicitly not modifiers. Leech chance XML is percentage. Vibrancy numbers match but its deflection description differs from selected recovery sequence and the loader ignores the effect.",
     "records": [
       {
         "name": "Bash",
@@ -5254,13 +5254,15 @@
         "materials_match": true,
         "configured_normalized_effect": {
           "kind": "critical",
-          "chance_bps": 1000,
-          "extra_damage_bps": 1500
+          "chance_bps": 500,
+          "extra_damage_bps": 500,
+          "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
         },
         "selected_effect": {
           "kind": "critical",
-          "chance_bps": 1000,
-          "extra_damage_bps": 1500
+          "chance_bps": 500,
+          "extra_damage_bps": 500,
+          "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
         },
         "effect_configuration_matches": true,
         "strength_numbers_match": true,
@@ -5269,7 +5271,13 @@
         "selected_scroll_item_id": 53769,
         "apply_fee_matches": true,
         "clear_fee_matches": true,
-        "duration_matches": true
+        "duration_matches": true,
+        "configured_effective_total_with_intrinsic_baseline": {
+          "value_semantics": "ISOLATED_TOTAL_NOT_AN_IMBUEMENT_MODIFIER",
+          "chance_bps": 1000,
+          "extra_damage_bps": 1500,
+          "other_critical_sources": "EXCLUDED_FROM_THIS_COMPARISON"
+        }
       },
       {
         "name": "Strike",
@@ -5277,13 +5285,15 @@
         "materials_match": true,
         "configured_normalized_effect": {
           "kind": "critical",
-          "chance_bps": 1000,
-          "extra_damage_bps": 2500
+          "chance_bps": 500,
+          "extra_damage_bps": 1500,
+          "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
         },
         "selected_effect": {
           "kind": "critical",
-          "chance_bps": 1000,
-          "extra_damage_bps": 2500
+          "chance_bps": 500,
+          "extra_damage_bps": 1500,
+          "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
         },
         "effect_configuration_matches": true,
         "strength_numbers_match": true,
@@ -5292,7 +5302,13 @@
         "selected_scroll_item_id": 51742,
         "apply_fee_matches": true,
         "clear_fee_matches": true,
-        "duration_matches": true
+        "duration_matches": true,
+        "configured_effective_total_with_intrinsic_baseline": {
+          "value_semantics": "ISOLATED_TOTAL_NOT_AN_IMBUEMENT_MODIFIER",
+          "chance_bps": 1000,
+          "extra_damage_bps": 2500,
+          "other_critical_sources": "EXCLUDED_FROM_THIS_COMPARISON"
+        }
       },
       {
         "name": "Strike",
@@ -5300,13 +5316,15 @@
         "materials_match": true,
         "configured_normalized_effect": {
           "kind": "critical",
-          "chance_bps": 1000,
-          "extra_damage_bps": 5000
+          "chance_bps": 500,
+          "extra_damage_bps": 4000,
+          "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
         },
         "selected_effect": {
           "kind": "critical",
-          "chance_bps": 1000,
-          "extra_damage_bps": 5000
+          "chance_bps": 500,
+          "extra_damage_bps": 4000,
+          "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
         },
         "effect_configuration_matches": true,
         "strength_numbers_match": true,
@@ -5315,7 +5333,13 @@
         "selected_scroll_item_id": 51462,
         "apply_fee_matches": true,
         "clear_fee_matches": true,
-        "duration_matches": true
+        "duration_matches": true,
+        "configured_effective_total_with_intrinsic_baseline": {
+          "value_semantics": "ISOLATED_TOTAL_NOT_AN_IMBUEMENT_MODIFIER",
+          "chance_bps": 1000,
+          "extra_damage_bps": 5000,
+          "other_critical_sources": "EXCLUDED_FROM_THIS_COMPARISON"
+        }
       },
       {
         "name": "Swiftness",
@@ -5717,5 +5741,79 @@
     "No complete official behavior proof for Etcher consumption, equipped scroll targets, exact frozen-date item-type matrix or fine-grained timers.",
     "Branch has dormant Vibrancy and malformed quest-storage lookup; no blanket reuse can preserve correctness.",
     "Output insertion/consumption methods are not proven atomic; faithful runtime needs fenced, validated transactions rather than copying these failure paths."
-  ]
+  ],
+  "critical_modifier_public_evidence": {
+    "scope": "Field-specific public corroboration of intrinsic base and additive Strike; other engine facts remain OTS hypotheses. Current community revision is not an immutable target-save snapshot.",
+    "sources": {
+      "fandom_imbuing": {
+        "url": "https://tibia.fandom.com/wiki/Imbuing",
+        "revision": 1194750,
+        "role": "DERIVED_REVISIONED_COMMUNITY",
+        "observed_at": "2026-10-01T12:47:43.098Z",
+        "sha256": "e07d4be8d37844eeaf4f078ad7de1242047e18466cc999a6686c22c05657c82b",
+        "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
+        "access_status": "FULL_BROWSER_ARTICLE"
+      },
+      "fandom_critical_hit": {
+        "url": "https://tibia.fandom.com/wiki/Critical_Hit",
+        "revision": 1113308,
+        "role": "DERIVED_REVISIONED_COMMUNITY",
+        "observed_at": "2026-10-01T12:47:43.098Z",
+        "sha256": "6bb57a88e1a2abb8684d889ed3f1a2d76fbfc7b7847aaff671b3a03ae9f92cd6",
+        "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
+        "access_status": "FULL_BROWSER_ARTICLE"
+      },
+      "official_news_8421": {
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8421",
+        "revision": "newsarchive:8421",
+        "published_on": "2025-06-23",
+        "role": "OFFICIAL_PUBLIC_TEASER",
+        "observed_at": "2026-10-01T13:20:15.442Z",
+        "sha256": "2b67368139b0164daf8b0c595e7b041bf3d03dc3034f9260cf3e94c1a5b0894f",
+        "digest_scope": "Complete UTF-8 visible news area text from owned Chrome research tab",
+        "access_status": "FULL_BROWSER_NEWS"
+      }
+    },
+    "intrinsic_character_baseline": {
+      "chance_bps": 500,
+      "extra_damage_bps": 1000,
+      "value_semantics": "CHARACTER_BASELINE_APPLIED_ONCE",
+      "evidence": [
+        "official_news_8421",
+        "fandom_critical_hit"
+      ]
+    },
+    "strike_additive_modifiers": {
+      "chance_bps_by_tier": [
+        500,
+        500,
+        500
+      ],
+      "extra_damage_bps_by_tier": [
+        500,
+        1500,
+        4000
+      ],
+      "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER",
+      "evidence": [
+        "fandom_imbuing",
+        "official_news_8421"
+      ],
+      "evidence_scope": "Primary explicitly gives Powerful5%/40%; revisioned post-release Imbuing gives all three modifier tiers."
+    },
+    "isolated_totals_with_baseline": {
+      "chance_bps_by_tier": [
+        1000,
+        1000,
+        1000
+      ],
+      "extra_damage_bps_by_tier": [
+        1500,
+        2500,
+        5000
+      ],
+      "value_semantics": "ISOLATED_TOTAL_NOT_AN_IMBUEMENT_MODIFIER"
+    },
+    "original_wiki_br_capture": "Original source packet totals15/25/50 and chance10 are retained as effective outcome evidence; they must not be emitted as the additive item modifier."
+  }
 }

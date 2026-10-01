@@ -68,6 +68,65 @@ class CombatEvidenceTests(unittest.TestCase):
         self.mutation_rejected(lambda p: p["rules"][0].update(evidence=["invented_primary"]))
         self.mutation_rejected(lambda p: p.update(activation="READY"))
 
+    def test_live_release_removal_does_not_certify_current_reflection(self):
+        def release(packet):
+            return next(r for r in packet["rules"] if r["id"] == "vibrancy_reflection_removed_at_release")
+        self.mutation_rejected(lambda p: release(p)["value"].update(reflect_to_attacker=True))
+        self.mutation_rejected(lambda p: release(p)["value"].update(reflect_to_attacker=0))
+        self.mutation_rejected(lambda p: release(p)["value"].update(scope="CURRENT_GLOBAL"))
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "vibrancy_reflection_current").update(value=False))
+        self.mutation_rejected(lambda p: next(s for s in p["sources"]
+            if s["id"] == "official_vibrancy_release_4828").update(source_stage="TEASER"))
+
+    def test_mana_ceil_each_target_is_distinct_from_ceil_after_sum(self):
+        self.assertEqual(combat.mana_reference_example([101], 800), 9)
+        self.assertEqual(combat.mana_reference_example([100, 900], 800), 45)
+        self.assertNotEqual(combat.mana_reference_example([100, 900], 800), 44)
+        for damages in ([], [0], [-1], [True]):
+            with self.assertRaises(ValueError):
+                combat.mana_reference_example(damages, 800)
+
+    def test_mana_specific_values_cannot_become_life_or_generic_rules(self):
+        changes = {"scope": "ALL_LEECH", "rounding": "CEIL_AFTER_SUM",
+                   "critical_damage_included": False, "damage_prey_bonus_included": True,
+                   "overkill_damage_counts": False, "zero_damage_target_count": "INCLUDED"}
+        for key, value in changes.items():
+            with self.subTest(key=key):
+                self.mutation_rejected(lambda p, k=key, v=value: next(r for r in p["rules"]
+                    if r["id"] == "mana_leech_current_reference_formula")["value"].update({k: v}))
+
+    def test_post_target_community_formula_cannot_claim_july_global_certification(self):
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "mana_leech_current_reference_formula").update(target_time_status="TARGET_CERTIFIED"))
+        self.mutation_rejected(lambda p: next(s for s in p["sources"]
+            if s["id"] == "fandom_formulae_1205374").update(role="PRIMARY_OFFICIAL"))
+        self.mutation_rejected(lambda p: next(s for s in p["sources"]
+            if s["id"] == "fandom_formulae_1205374").update(revision=1197205))
+        self.mutation_rejected(lambda p: next(s for s in p["sources"]
+            if s["id"] == "fandom_formulae_1205374").update(revision_timestamp="2026-07-21T13:24:22Z"))
+
+    def test_pair_observations_cannot_grant_arbitrary_equipment_composition(self):
+        def pairs(packet):
+            return next(r for r in packet["rules"] if r["id"] == "leech_two_powerful_equipment_pairs")["value"]
+        self.mutation_rejected(lambda p: pairs(p).update(scope="ALL_EQUIPMENT"))
+        self.mutation_rejected(lambda p: pairs(p).update(other_equipment_composition="ADDITIVE"))
+        self.mutation_rejected(lambda p: pairs(p)["observed_pairs"][0].update(combined_share_bps=2000))
+        self.mutation_rejected(lambda p: pairs(p)["observed_pairs"][1].update(tier="basic"))
+
+    def test_source_identity_and_selected_claim_digest_are_checked(self):
+        self.mutation_rejected(lambda p: next(s for s in p["sources"]
+            if s["id"] == "fandom_formulae_1205374")["selected_claims"].update(scope="ALL_LEECH"))
+        self.mutation_rejected(lambda p: next(s for s in p["sources"]
+            if s["id"] == "tibiaqa_two_mana_2018").update(sha256="0" * 64))
+        self.mutation_rejected(lambda p: p["engine_combat_hypotheses"][0].update(status="GLOBAL_VERIFIED"))
+
+    def test_all_rules_preserve_target_time_qualification(self):
+        for rule in self.packet["rules"]:
+            with self.subTest(rule=rule["id"]):
+                self.mutation_rejected(lambda p, name=rule["id"]: next(r for r in p["rules"]
+                    if r["id"] == name).update(target_time_status="GLOBAL_TARGET_CERTIFIED"))
+
 
 if __name__ == "__main__":
     unittest.main()

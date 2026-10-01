@@ -25,13 +25,23 @@ class CrystalBranchEvidenceTests(unittest.TestCase):
                          [7500, 60000, 250000])
         self.assertEqual({r["tier"] for r in rows if not r["scroll_id_matches"]}, {1})
 
-    def test_strike_uses_combined_baseline(self):
+    def test_strike_modifier_is_separate_from_combined_baseline(self):
         rows = [r for r in self.packet["selected_catalogue_comparison"]["records"]
                 if r["name"] == "Strike"]
         self.assertEqual([r["configured_normalized_effect"]["extra_damage_bps"] for r in rows],
-                         [1500, 2500, 5000])
+                         [500, 1500, 4000])
         self.assertEqual([r["configured_normalized_effect"]["chance_bps"] for r in rows],
+                         [500, 500, 500])
+        self.assertTrue(all(r["configured_normalized_effect"]["value_semantics"]
+                            == "ADDITIVE_IMBUEMENT_MODIFIER" for r in rows))
+        self.assertEqual([r["configured_effective_total_with_intrinsic_baseline"]
+                          ["extra_damage_bps"] for r in rows], [1500, 2500, 5000])
+        self.assertEqual([r["configured_effective_total_with_intrinsic_baseline"]
+                          ["chance_bps"] for r in rows],
                          [1000, 1000, 1000])
+        self.assertTrue(all(r["configured_effective_total_with_intrinsic_baseline"]
+                            ["value_semantics"] == "ISOLATED_TOTAL_NOT_AN_IMBUEMENT_MODIFIER"
+                            for r in rows))
 
     def test_vibrancy_not_false_functionality(self):
         rows = self.packet["selected_catalogue_comparison"]["records"]
@@ -104,6 +114,21 @@ class CrystalBranchEvidenceTests(unittest.TestCase):
         self.mutation_rejected(lambda p: p["sources"]["data/XML/imbuements.xml"].update(blob_sha="0" * 40))
         self.mutation_rejected(lambda p: next(r for r in p["engine_facts"]
             if r["id"] == "strike_xml_delta_and_player_baseline")["value"].update(player_baseline_chance_bps=999))
+
+    def test_effective_strike_totals_cannot_be_reintroduced_as_item_modifiers(self):
+        def replace_modifier(packet):
+            row = next(r for r in packet["selected_catalogue_comparison"]["records"]
+                       if r["name"] == "Strike" and r["tier"] == 3)
+            # Changing both copied comparison sides must not fool recomputation.
+            for side in ("configured_normalized_effect", "selected_effect"):
+                row[side].update(chance_bps=1000, extra_damage_bps=5000)
+        self.mutation_rejected(replace_modifier)
+        self.mutation_rejected(lambda p: p["critical_modifier_public_evidence"]
+            ["strike_additive_modifiers"].update(extra_damage_bps_by_tier=[1500, 2500, 5000]))
+        facts = self.packet["critical_modifier_public_evidence"]
+        self.assertEqual(facts["intrinsic_character_baseline"]["value_semantics"],
+                         "CHARACTER_BASELINE_APPLIED_ONCE")
+        self.assertEqual(facts["sources"]["official_news_8421"]["role"], "OFFICIAL_PUBLIC_TEASER")
 
     def test_new_engine_paths_remain_separate_ots_hypotheses(self):
         facts = {r["id"]: r for r in self.packet["engine_facts"]}

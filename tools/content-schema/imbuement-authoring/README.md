@@ -45,16 +45,22 @@ The ruleset destination from the full-game tree remains
    [manual](https://www.tibia.com/gameguides?subtopic=manual&section=characters),
    [Tradeable Imbuements announcement](https://www.tibia.com/news?subtopic=newsarchive&id=8396),
    release news 8436 and Echo Wardens announcement 8834. Full manual extraction
-   succeeded; news snippets and a labelled news mirror cover unavailable news
-   extractions. Every digest states whether it hashes extracted markdown or an
-   indexed snippet; a snippet is never described as a full-page capture.
+   succeeded. Further research read the complete articles 4779, 4828, 8396,
+   8421 and 8436 through Remote Desktop + Chrome/CDP after normal access was
+   blocked. The 2018 release supersedes the Vibrancy reflection teaser; the
+   2025 live release supersedes the powerful-only scroll teaser. Each digest
+   identifies the captured bytes; selected excerpts remain short.
 3. **Community data.**
    [Wiki BR Imbuements, revision 427991](https://www.tibiawiki.com.br/index.php?title=Imbuements&oldid=427991),
    quest-specific guides, the twelve real item tables used by the Imbuement Tool,
    and 607 direct per-item [Tibiopedia](https://tibiopedia.pl/items) tables.
    Existing imported Fandom item observations add revisioned identity evidence.
-   Live Fandom root extraction failed; exact indexed results are labelled as such.
-   Recipe/effect corroboration remains community-derived.
+   Initial Fandom extraction failed. Remote Desktop + Chrome/CDP subsequently
+   read Imbuing revision 1194750 (2026-07-07), Critical Hit 1113308 (2025-07-24),
+   Vibrancy 1194726 (2026-07-06) and Formulae 1205374 (2026-09-07), with public
+   revision timestamps. Formulae is post-target community evidence. Archived
+   Formulae revision 1197205 required login and was not read. Recipe/effect
+   corroboration remains community-derived.
 4. **Engine hypotheses.**
    [Canary 04b83b512114bfd888000d6e1433ed8ecaec7c5b](https://github.com/opentibiabr/canary/tree/04b83b512114bfd888000d6e1433ed8ecaec7c5b)
    [Crystal summer-update 00ce02a57ca5a12e48f32a3476e37471167e4c3f](https://github.com/zimbadev/crystalserver/tree/00ce02a57ca5a12e48f32a3476e37471167e4c3f),
@@ -66,6 +72,9 @@ Research used the Tavily search/extract connector, with five independent agent
 lanes for rules, identities, per-item eligibility, quest predicates and the
 additional Crystal branch. After Tavily returned its plan usage limit, native
 public HTTP and existing captures were used; no further metered calls were made.
+Remote Desktop was used only for public browser research. Authoring, validation
+and publication use the ordinary workspace and GitHub API. Dated TibiaQA answers
+were read through normal public HTTP; the 2021 timer screenshot required Chrome.
 The evidence records extracted facts and short source excerpts. No third-party
 engine implementation, sprites or client asset bytes are redistributed.
 
@@ -76,8 +85,8 @@ engine implementation, sprites or client asset bytes are redistributed.
 | Apply fees | **7,500 / 60,000 / 250,000 gold** | Old XML and candidate Oteryn proposal give 5,000 / 30,000 / 200,000. |
 | Success / protection | **100%**, no protection add-on | Historical XML fields remain present but do not establish current Global behavior. |
 | Basic Punch | **25 Tarantula Eggs** | Canary Basic recipe uses 20 of item 9690; higher tiers use the wiki ingredients. |
-| Strike | **10% chance**, +15 / 25 / 50% damage | Crystal's raw XML values are deltas: its player baseline yields these final values. Comparing XML alone gives a false disagreement. |
-| Vibrancy | Recovery from existing paralysis on another paralysis attack; separate qualified PvP claims | Initial-condition admission probability alone does not describe the sourced sequence. The family page's PvP success qualifier is unresolved; Crystal's XML type is unrecognized by its loader. |
+| Strike | **Additive +5% chance, +5 / 15 / 40% damage** | Intrinsic character base is separately 5% chance and +10% damage. Prior draft stored the resulting totals as modifiers and could double-count the base. |
+| Vibrancy | Recovery from existing paralysis on another paralysis attack; equipped timer in dated community UI; reflection removed at the 2018 live release | Initial-condition admission probability alone does not describe the sequence. Current PvP success-state lifetime remains unresolved; Crystal's XML type is unrecognized by its loader. |
 | Scroll inventory | **All 72 scrolls** are bound, including Basic | Basic scrolls were missing from the first candidate. |
 | Scroll inscription | Official sources describe **Intricate and Powerful** | Basic loot-scroll presence does not prove Basic shrine crafting. |
 | Powerful unlock | Boss completion **plus the applicable reward claim** | Generic boss-only prerequisites omit required steps. |
@@ -182,8 +191,16 @@ basis points (`100 = 1%`), skill/speed bonuses use points, and duration is
 invented Item references, unsupported parity claims, wrong tier/category sets,
 noncumulative recipes and old fee values. The 20 exclusion categories belong to
 the proposed authoring model. The community same-bonus restriction does not
-independently prove the shared category restriction across different elemental
-conversion types; that compatibility rule remains a named Global evidence gap.
+alone establish shared-category restrictions. Revisioned Fandom Imbuing explicitly
+states mutual exclusion across the five elemental conversions; this is selected
+as community evidence with a continuity qualification, not an official allow list.
+
+Critical effects explicitly carry `ADDITIVE_IMBUEMENT_MODIFIER` semantics. The
+`critical_intrinsic_baseline` rule lives separately in the Global ledger; adding
+it once produces isolated totals of 10% chance and +15/25/50% damage. Other
+equipment, proficiency and combat interactions are not implied by this example.
+The post-target Formulae page supplies a mana-specific per-target ceiling and
+overkill formula. It does not close life-leech rounding or prove the July target.
 
 Runtime activation stays `DRAFT_NOT_RUNTIME_READY`. Implementing the proposed
 persistence table, timers/checkpoints, ability effects, protocol/UI, quest-state

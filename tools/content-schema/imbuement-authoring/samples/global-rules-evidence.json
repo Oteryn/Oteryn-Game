@@ -28,33 +28,51 @@
     },
     "official_news_8396_fees": {
       "role": "OFFICIAL_PUBLIC",
-      "url": "https://www.tibia.com/news?subtopic=newsarchive&id=8396",
-      "revision": "newsarchive:8396",
+      "url": "https://www.tibia.com/news/?id=8396&subtopic=newsarchive",
+      "revision": null,
       "published_date": "2025-06-12",
       "accessed_date": "2026-10-01",
-      "sha256": "4b6b73b5491818ac13ad3384e35fc99aaa47304537e436e8967b447af4da4cb1",
-      "digest_scope": "Exact UTF-8 indexed search snippet from official domain; full primary extraction failed",
-      "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+      "sha256": "613fc0d0a0ef64f54c9dda302ca41a495db681fb1a8d76e92cf85875a17ea2a5",
+      "digest_scope": "Exact complete UTF-8 browser-extracted visible text in more-browser-full-evidence.json official_sources text; includes page chrome; no raw HTML capture claimed",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "previous_capture": {
+        "sha256": "4b6b73b5491818ac13ad3384e35fc99aaa47304537e436e8967b447af4da4cb1",
+        "access_status": "INDEXED_SEARCH_SNIPPET_ONLY",
+        "digest_scope": "Exact UTF-8 indexed search snippet from official domain; full primary extraction failed"
+      }
     },
     "official_news_8396_scrolls": {
       "role": "OFFICIAL_PUBLIC",
-      "url": "https://www.tibia.com/news?subtopic=newsarchive&id=8396",
-      "revision": "newsarchive:8396",
+      "url": "https://www.tibia.com/news/?id=8396&subtopic=newsarchive",
+      "revision": null,
       "published_date": "2025-06-12",
       "accessed_date": "2026-10-01",
-      "sha256": "66f392ea6339f4dad1efd879bf71313a595758da7a06f6cb9ba802c683d47ca2",
-      "digest_scope": "Exact UTF-8 indexed search snippet from official domain; full primary extraction failed",
-      "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+      "sha256": "613fc0d0a0ef64f54c9dda302ca41a495db681fb1a8d76e92cf85875a17ea2a5",
+      "digest_scope": "Exact complete UTF-8 browser-extracted visible text in more-browser-full-evidence.json official_sources text; includes page chrome; no raw HTML capture claimed",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "previous_capture": {
+        "sha256": "66f392ea6339f4dad1efd879bf71313a595758da7a06f6cb9ba802c683d47ca2",
+        "access_status": "INDEXED_SEARCH_SNIPPET_ONLY",
+        "digest_scope": "Exact UTF-8 indexed search snippet from official domain; full primary extraction failed"
+      }
     },
     "official_news_8396_success": {
       "role": "OFFICIAL_PUBLIC",
-      "url": "https://www.tibia.com/news?subtopic=newsarchive&id=8396",
-      "revision": "newsarchive:8396",
+      "url": "https://www.tibia.com/news/?id=8396&subtopic=newsarchive",
+      "revision": null,
       "published_date": "2025-06-12",
       "accessed_date": "2026-10-01",
-      "sha256": "5b11bfd4b05cb318942e973b66a51dbfbda7aa94826056ea0ddcca777194c668",
-      "digest_scope": "Exact UTF-8 indexed search snippet from official domain; full primary extraction failed",
-      "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+      "sha256": "613fc0d0a0ef64f54c9dda302ca41a495db681fb1a8d76e92cf85875a17ea2a5",
+      "digest_scope": "Exact complete UTF-8 browser-extracted visible text in more-browser-full-evidence.json official_sources text; includes page chrome; no raw HTML capture claimed",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "previous_capture": {
+        "sha256": "5b11bfd4b05cb318942e973b66a51dbfbda7aa94826056ea0ddcca777194c668",
+        "access_status": "INDEXED_SEARCH_SNIPPET_ONLY",
+        "digest_scope": "Exact UTF-8 indexed search snippet from official domain; full primary extraction failed"
+      }
     },
     "news_8396_mirror": {
       "role": "DERIVED_OFFICIAL_NEWS_MIRROR",
@@ -111,13 +129,19 @@
     },
     "official_news_8436_release": {
       "role": "OFFICIAL_PUBLIC",
-      "url": "https://www.tibia.com/news?subtopic=newsarchive&id=8436",
-      "revision": "newsarchive:8436",
-      "published_date": null,
+      "url": "https://www.tibia.com/news/?id=8436&subtopic=newsarchive",
+      "revision": null,
+      "published_date": "2025-07-21",
       "accessed_date": "2026-10-01",
-      "sha256": "b238ed486181f01459eb1aeffed49cb6be8909c5697e4708dba9beb627ce37ee",
-      "digest_scope": "Exact UTF-8 indexed search snippet; primary full extraction failed",
-      "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+      "sha256": "2f9fb70c817f3fc32611ab74d62f52b571e344bca6eccfb1cbaf559d406ac34c",
+      "digest_scope": "Exact complete UTF-8 browser-extracted visible text in more-browser-full-evidence.json official_sources text; includes page chrome; no raw HTML capture claimed",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "previous_capture": {
+        "sha256": "b238ed486181f01459eb1aeffed49cb6be8909c5697e4708dba9beb627ce37ee",
+        "access_status": "INDEXED_SEARCH_SNIPPET_ONLY",
+        "digest_scope": "Exact UTF-8 indexed search snippet; primary full extraction failed"
+      }
     },
     "official_news_8834_basic_scrolls": {
       "role": "OFFICIAL_PUBLIC",
@@ -288,6 +312,101 @@
       "sha256": "2d0c69af997dabb6d8a570b546cbc6704d98837a69c8a87e7ef5440b62a563d0",
       "digest_scope": "Exact UTF-8 indexed search snippet in combat_vibrancy_final.json results content; no full page or revision available",
       "access_status": "INDEXED_SEARCH_SNIPPET_ONLY"
+    },
+    "official_news_8421_full": {
+      "role": "OFFICIAL_PUBLIC",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8421",
+      "revision": null,
+      "published_date": "2025-06-23",
+      "accessed_date": "2026-10-01",
+      "sha256": "2b67368139b0164daf8b0c595e7b041bf3d03dc3034f9260cf3e94c1a5b0894f",
+      "digest_scope": "Exact complete UTF-8 browser-extracted visible text in more-browser-full-evidence.json official_sources text; includes page chrome; no raw HTML capture claimed",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP"
+    },
+    "official_news_4828_full": {
+      "role": "OFFICIAL_PUBLIC",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=4828",
+      "revision": null,
+      "published_date": "2018-12-03",
+      "accessed_date": "2026-10-01",
+      "sha256": "65d3a5344a42fd18a319d99a49d3c6ef004e1d42ae8946cf2b5981f071c023ee",
+      "digest_scope": "Exact complete UTF-8 browser-extracted visible text in more-browser-full-evidence.json official_sources text; includes page chrome; no raw HTML capture claimed",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP"
+    },
+    "fandom_imbuing_full": {
+      "role": "DERIVED_COMMUNITY",
+      "url": "https://tibia.fandom.com/wiki/Imbuing",
+      "revision": "1194750",
+      "revision_timestamp": "2026-07-07T01:22:16Z",
+      "published_date": "2026-07-07",
+      "accessed_date": "2026-10-01",
+      "sha256": "e07d4be8d37844eeaf4f078ad7de1242047e18466cc999a6686c22c05657c82b",
+      "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "revision_url": "https://tibia.fandom.com/wiki/Imbuing?oldid=1194750"
+    },
+    "fandom_critical_full": {
+      "role": "DERIVED_COMMUNITY",
+      "url": "https://tibia.fandom.com/wiki/Critical_Hit",
+      "revision": "1113308",
+      "revision_timestamp": "2025-07-24T17:19:22Z",
+      "published_date": "2025-07-24",
+      "accessed_date": "2026-10-01",
+      "sha256": "6bb57a88e1a2abb8684d889ed3f1a2d76fbfc7b7847aaff671b3a03ae9f92cd6",
+      "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "revision_url": "https://tibia.fandom.com/wiki/Critical_Hit?oldid=1113308"
+    },
+    "tibiaqa_utility_timers_2021": {
+      "role": "DERIVED_COMMUNITY",
+      "url": "https://www.tibiaqa.com/23884/do-i-have-to-unequip-imbued-items-not-to-waste-my-imbuements",
+      "revision": null,
+      "published_date": "2021-02-04",
+      "accessed_date": "2026-10-01",
+      "sha256": "0ff5a3ae0701d836e998eae530041a6ef1dce580ff87388fafcf9b4f8302e8bc",
+      "digest_scope": "Exact native public HTML bytes extra-public-final-0.html; dated accepted community answer with linked client-description screenshot",
+      "access_status": "EXTRACTED",
+      "method": "ORDINARY_PUBLIC_HTTP"
+    },
+    "tibiaqa_utility_timer_screenshot": {
+      "role": "DERIVED_COMMUNITY_SCREENSHOT",
+      "url": "https://www.tibiaqa.com/?qa=blob&qa_blobid=13736061676032373212",
+      "revision": null,
+      "published_date": null,
+      "accessed_date": "2026-10-01",
+      "sha256": "4354a35b8ff1ea73f82b1eb0eb24967b776f17907404170264b19b5fb68e9210",
+      "digest_scope": "Exact public PNG image bytes retrieved by root browser; linked from dated2021 accepted answer; screenshot alone is not official server telemetry",
+      "access_status": "PUBLIC_IMAGE_READ_BY_PARENT",
+      "method": "Remote Desktop + Chrome/CDP"
+    },
+    "fandom_formulae_full": {
+      "role": "DERIVED_COMMUNITY",
+      "url": "https://tibia.fandom.com/wiki/Formulae",
+      "revision": "1205374",
+      "revision_timestamp": "2026-09-07T17:28:39Z",
+      "published_date": "2026-09-07",
+      "accessed_date": "2026-10-01",
+      "sha256": "7781dc9afe6ef4fe3eb1bdc40862e81bd42c33a1a77d30b79ed0cffe5dff7ad5",
+      "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "revision_url": "https://tibia.fandom.com/wiki/Formulae?oldid=1205374"
+    },
+    "tibiaqa_pz_residual_combat_2025": {
+      "role": "DERIVED_COMMUNITY_ANECDOTAL",
+      "url": "https://www.tibiaqa.com/36422/what-conditions-are-necessary-to-tick-down-imbuements",
+      "revision": null,
+      "published_date": "2025-04-07",
+      "comment_date": "2025-04-13",
+      "accessed_date": "2026-10-01",
+      "sha256": "5ae8e21b09ac5d3320d4273f1ed49550b7e14cdf80b99a241b58c9cbc684e48b",
+      "digest_scope": "Exact native public HTML bytes extra-public-qa-next-0.html; dated player/guild test assertion without underlying reproducible test record",
+      "access_status": "EXTRACTED",
+      "method": "ORDINARY_PUBLIC_HTTP"
     }
   },
   "rules": [
@@ -302,11 +421,12 @@
         "official_news_8396_fees",
         "news_8396_mirror",
         "wiki_br_imbuements",
-        "fandom_imbuing_fees"
+        "fandom_imbuing_fees",
+        "official_news_8436_release"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION",
-      "notes": "Flat fee plus cumulative ingredients, not legacy base cost plus success protection. Official primary fee snippet is directly available."
+      "notes": "Flat fee plus cumulative ingredients. Full official12June2025 browser text supplies7500/60000/250000;21July2025 live release and current community sources corroborate rollout."
     },
     {
       "id": "apply_success_percent",
@@ -314,11 +434,12 @@
       "evidence": [
         "official_news_8396_success",
         "news_8396_mirror",
-        "wiki_br_imbuements"
+        "wiki_br_imbuements",
+        "official_news_8436_release"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION",
-      "notes": "Official indexed2025 announcement confirms100% and removes success boost; current BR corroborates. Full primary article extraction failed."
+      "notes": "Full official12June2025 article confirms100% and removes success-rate boost;21July2025 release and current BR corroborate the rollout."
     },
     {
       "id": "protection_fee_gold",
@@ -326,7 +447,8 @@
       "evidence": [
         "official_news_8396_success",
         "news_8396_mirror",
-        "wiki_br_imbuements"
+        "wiki_br_imbuements",
+        "official_news_8436_release"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION",
@@ -432,7 +554,7 @@
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
       "target_time_status": "RELEASE_PRIMARY_SNIPPET_WITH_CURRENT_MANUAL",
-      "notes": "Final release/current manual support Intricate and Powerful. Teaser8396 only described Powerful; Basic loot scroll presence does not grant Basic inscription."
+      "notes": "Full official21July2025 live release explicitly names Intricate and Powerful scroll creation. Basic loot scroll existence does not authorize Basic inscription."
     },
     {
       "id": "scroll_inscription_requires_premium",
@@ -552,7 +674,8 @@
       "evidence": [
         "news_8396_mirror",
         "wiki_br_etcher",
-        "tibiopedia_etcher"
+        "tibiopedia_etcher",
+        "official_news_8396_scrolls"
       ],
       "parity_status": "DERIVED_CORROBORATED",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION"
@@ -573,7 +696,8 @@
       "evidence": [
         "news_8396_mirror",
         "wiki_br_etcher",
-        "tibiopedia_etcher"
+        "tibiopedia_etcher",
+        "official_news_8396_scrolls"
       ],
       "parity_status": "DERIVED_CORROBORATED",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION"
@@ -635,11 +759,13 @@
       "id": "timer_swiftness_ticks_outside_combat",
       "value": true,
       "evidence": [
-        "fandom_swiftness"
+        "fandom_swiftness",
+        "fandom_imbuing_full",
+        "tibiaqa_utility_timers_2021"
       ],
-      "parity_status": "DERIVED_SEARCH_SNIPPET_ONLY",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
-      "notes": "Full20h equipped online; the retrieved snippet truncates the remaining PZ clause, so PZ behavior is not confirmed."
+      "parity_status": "DERIVED_DATED_COMMUNITY_CORROBORATED",
+      "target_time_status": "PRE_TARGET_COMMUNITY_REVISION_NOT_COMPLETE_TIMER_OBSERVATION",
+      "notes": "Original indexed Swiftness excerpt truncated the PZ clause. Full Imbuing revision7July2026 confirms equipped noncombat speed timers; accepted2021 answer explicitly names Walking Speed while equipped+online regardless of combat sign. Exact PZ, tick and logout-state behavior remains separately unqualified."
     },
     {
       "id": "elemental_conversion_percent_by_tier",
@@ -685,10 +811,15 @@
       "id": "strike_chance_percent",
       "value": 10,
       "evidence": [
-        "wiki_br_imbuements"
+        "official_news_8421_full",
+        "official_news_8436_release",
+        "fandom_critical_full",
+        "fandom_imbuing_full"
       ],
-      "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "parity_status": "DERIVED_CALCULATED_FROM_QUALIFIED_BASELINE_AND_MODIFIERS",
+      "target_time_status": "ISOLATED_TOTAL_CALCULATED_FROM_PRE_TARGET_SOURCES",
+      "value_semantics": "ISOLATED_EFFECTIVE_TOTAL_INCLUDING_INTRINSIC_BASELINE",
+      "notes": "Legacy stable rule id retained as arithmetic isolated effective total: intrinsic baseline plus one Strike modifier, excluding other gear, wheel, proficiency and charms. Author additive imbuement data from strike_additive_modifiers, not this total."
     },
     {
       "id": "strike_extra_damage_percent_by_tier",
@@ -698,10 +829,15 @@
         50
       ],
       "evidence": [
-        "wiki_br_imbuements"
+        "official_news_8421_full",
+        "official_news_8436_release",
+        "fandom_critical_full",
+        "fandom_imbuing_full"
       ],
-      "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "parity_status": "DERIVED_CALCULATED_FROM_QUALIFIED_BASELINE_AND_MODIFIERS",
+      "target_time_status": "ISOLATED_TOTAL_CALCULATED_FROM_PRE_TARGET_SOURCES",
+      "value_semantics": "ISOLATED_EFFECTIVE_TOTAL_INCLUDING_INTRINSIC_BASELINE",
+      "notes": "Legacy stable rule id retained as arithmetic isolated effective total: intrinsic baseline plus one Strike modifier, excluding other gear, wheel, proficiency and charms. Author additive imbuement data from strike_additive_modifiers, not this total."
     },
     {
       "id": "vampirism_leech_percent_by_tier",
@@ -742,11 +878,14 @@
       "id": "leech_overkill_counts",
       "value": true,
       "evidence": [
-        "fandom_leech_formulae"
+        "fandom_leech_formulae",
+        "fandom_formulae_full"
       ],
-      "parity_status": "DERIVED_SEARCH_SNIPPET_ONLY",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
-      "notes": "Indexed Formulae page reports overkill counts and damage prey does not increase leech while critical hits do; require exact pipeline qualification."
+      "parity_status": "DERIVED_CURRENT_COMMUNITY_MANA_SCOPE_ONLY",
+      "target_time_status": "REVISION_2026_09_07_POST_TARGET_NOT_TARGET_CERTIFICATION",
+      "notes": "Legacy indexed claim had no retrieved revision/date. Full current Formulae revision1205374 explicitly states overkill counts within the Mana Leech section; that revision is7September2026, after the frozen target. Preserve it as a community mana claim only, not proof of life-leech rounding/basis or historical target parity. Exact ordering remains in the combat profile; Crystal actual-health-removed behavior conflicts and is not used to override this community statement.",
+      "scope": "MANA_LEECH_COMMUNITY_CLAIM_ONLY",
+      "runtime_semantics_profile": "imbuement-combat.json"
     },
     {
       "id": "featherweight_capacity_percent_by_tier",
@@ -961,14 +1100,26 @@
     },
     {
       "id": "transaction_payment_sources",
-      "value": null,
+      "value": {
+        "scope": "NORMAL_SHRINE_IMBUING",
+        "material_source_priority": [
+          "inventory",
+          "stash"
+        ],
+        "gold_source_priority": [
+          "inventory",
+          "bank"
+        ],
+        "exact_inventory_container_search_order": null,
+        "exact_debit_order_between_gold_and_materials": null,
+        "other_transaction_routes": null
+      },
       "evidence": [
-        "official_manual",
-        "news_8396_mirror"
+        "fandom_imbuing_full"
       ],
-      "parity_status": "PARITY_PENDING",
-      "target_time_status": "NO_EXPLICIT_GLOBAL_PAYMENT_SOURCE_PROOF",
-      "notes": "Retrieved public sources specify a gold fee but do not settle backpack gold versus equipped purses, bank balance, depot balances, ordering or currency-debit fallback. Engine payment methods do not establish Global transactions."
+      "parity_status": "DERIVED_COMMUNITY_REVISION_EXPLICIT_BOUNDED",
+      "target_time_status": "REVISION_2026_07_07_PRE_TARGET_NOT_SERVER_OBSERVATION",
+      "notes": "Full Fandom Imbuing states inventory creature products and gold are consumed first, then missing resources draw from Stash or bank. This establishes normal-shrine source preference only; it does not establish exact container searches, inter-resource debit sequencing, rollback or NPC/Etcher/scroll routes."
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
@@ -1009,7 +1160,8 @@
       "value": true,
       "evidence": [
         "official_manual",
-        "news_8396_mirror"
+        "news_8396_mirror",
+        "official_news_8396_scrolls"
       ],
       "parity_status": "OFFICIAL_PUBLIC_WITH_DERIVED_DETAIL",
       "target_time_status": "CURRENT_MANUAL_WITH_HISTORICAL_MIRROR_CORROBORATION",
@@ -1027,12 +1179,13 @@
       },
       "evidence": [
         "news_8396_mirror",
-        "official_manual"
+        "official_manual",
+        "official_news_8396_scrolls"
       ],
-      "parity_status": "DERIVED_OFFICIAL_NEWS_MIRROR_CORROBORATED",
+      "parity_status": "OFFICIAL_PUBLIC_WITH_CURRENT_MANUAL_CORROBORATION",
       "target_time_status": "HISTORICAL_CHANGE_WITH_CURRENT_CORROBORATION",
       "access_profile": "imbuement-access.json#predicate_definitions.worthy_character",
-      "notes": "The mirror uses the former name cleansing scroll. Current manual independently names the final Etcher and worthy sales gate. No current-temple-open recheck or Premium gate is inferred."
+      "notes": "Full official12June2025 text describes completed world construction and five submitted tomes for the then-named cleansing scroll. Current manual identifies final Etcher and worthy sales gate. No current-temple-open recheck or Premium gate is inferred."
     },
     {
       "id": "etcher_npc_purchase_requires_premium",
@@ -1049,14 +1202,23 @@
     },
     {
       "id": "shared_category_compatibility",
-      "value": null,
+      "value": {
+        "category": "elemental_damage",
+        "mutually_exclusive_types": [
+          "Scorch",
+          "Venom",
+          "Frost",
+          "Electrify",
+          "Reap"
+        ],
+        "scope": "DISTINCT_ELEMENTAL_DAMAGE_IMBUEMENTS_ON_ONE_ITEM"
+      },
       "evidence": [
-        "wiki_br_imbuements",
-        "crystal_imbuements_player_impl"
+        "fandom_imbuing_full"
       ],
-      "parity_status": "PARITY_PENDING",
-      "target_time_status": "NO_GLOBAL_DISTINCT_CONVERSION_COMPATIBILITY_PROOF",
-      "notes": "BR prohibits two identical bonuses but does not establish mutual exclusion of different elemental conversions. The generated elemental_damage category combines Scorch, Venom, Frost, Electrify and Reap following the architecture candidate and OTS grouping. Neither grouping nor OTS category checks prove Global acceptance or rejection of these distinct conversions together.",
+      "parity_status": "DERIVED_COMMUNITY_REVISION_EXPLICIT",
+      "target_time_status": "REVISION_2026_07_07_PRE_TARGET_NOT_SERVER_OBSERVATION",
+      "notes": "Full Fandom Imbuing expressly excludes every other elemental-damage imbuement alongside Basic Electrify, giving Reap and Venom as examples and applying across tiers. This supplies independent community support for the five-type conversion group; it does not certify all20 generated category exclusions or official runtime behavior. The BR identical-bonus rule remains separate.",
       "hypotheses": [
         {
           "value": {
@@ -1081,6 +1243,78 @@
         "path": "docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
         "status": "CANDIDATE_NOT_ACCEPTED"
       }
+    },
+    {
+      "id": "critical_intrinsic_baseline",
+      "value": {
+        "chance_bps": 500,
+        "extra_damage_bps": 1000
+      },
+      "evidence": [
+        "official_news_8421_full",
+        "official_news_8436_release",
+        "fandom_critical_full",
+        "fandom_imbuing_full"
+      ],
+      "parity_status": "OFFICIAL_PUBLIC_WITH_DATED_COMMUNITY_CORROBORATION",
+      "target_time_status": "2025_ANNOUNCEMENT_AND_LIVE_RELEASE_WITH_PRE_TARGET_REVISIONS",
+      "notes": "Official23June2025 announces every character has5% intrinsic critical chance and10% critical extra damage.21July2025 release confirms Weapon Proficiency rollout; post-release Critical Hit revision24July2025 explicitly identifies these intrinsic values. Imbuing revision7July2026 provides later pre-target corroboration. This is bounded dated-source continuity, not complete target-server observation."
+    },
+    {
+      "id": "strike_additive_modifiers",
+      "value": {
+        "chance_bps": 500,
+        "extra_damage_bps_by_tier": [
+          500,
+          1500,
+          4000
+        ],
+        "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
+      },
+      "evidence": [
+        "official_news_8421_full",
+        "official_news_8436_release",
+        "fandom_critical_full",
+        "fandom_imbuing_full"
+      ],
+      "parity_status": "DERIVED_DATED_COMMUNITY_WITH_OFFICIAL_POWERFUL_EXAMPLE",
+      "target_time_status": "2025_LIVE_RELEASE_AND_2026_07_07_COMMUNITY_REVISION_PRE_TARGET",
+      "notes": "Fandom Imbuing revision1194750 explicitly labels Extra Chance5% and Critical Damage increased by5/15/40%. Official8421 independently states Powerful Strike now adds5% chance and40% damage, on top of intrinsic5%/10%. Basic/Intricate modifier values are community explicit. Do not put isolated totals10% chance or15/25/50% damage into the additive imbuement field."
+    },
+    {
+      "id": "timer_vibrancy_equipped_online_outside_combat",
+      "value": {
+        "requires_equipped": true,
+        "requires_online": true,
+        "combat_required": false
+      },
+      "evidence": [
+        "tibiaqa_utility_timers_2021",
+        "tibiaqa_utility_timer_screenshot"
+      ],
+      "parity_status": "DERIVED_DATED_COMMUNITY_WITH_CLIENT_SCREENSHOT",
+      "target_time_status": "PRE_TARGET_COMMUNITY_ANSWER_NOT_COMPLETE_TARGET_TIMER_OBSERVATION",
+      "notes": "Accepted answer4February2021 expressly names Paralysis Removal, Walking Speed and Capacity as timers running while equipped with or without a combat sign. Screenshot is public supporting community evidence. This does not settle exact PZ, tick rounding, logout/save/restore, transfer or timer-state boundaries."
+    },
+    {
+      "id": "vibrancy_reflection_at_live_introduction",
+      "value": false,
+      "evidence": [
+        "official_news_4828_full"
+      ],
+      "parity_status": "OFFICIAL_PUBLIC_RELEASE_CONFIRMED",
+      "target_time_status": "2018_12_03_LIVE_RELEASE_NOT_COMPLETE_CURRENT_STATE_PROOF",
+      "notes": "Official Winter Update2018 release explicitly removed the reflection component from the earlier Vibrancy teaser. This rejects implementation from news4779 reflection prose; exact present PvP success-state/reset still belongs to the separately unqualified combat profile."
+    },
+    {
+      "id": "hidden_logout_block_does_not_prove_out_of_combat",
+      "value": true,
+      "evidence": [
+        "fandom_imbuing_full"
+      ],
+      "parity_status": "DERIVED_COMMUNITY_REVISION_EXPLICIT",
+      "target_time_status": "REVISION_2026_07_07_PRE_TARGET_NOT_SERVER_OBSERVATION",
+      "notes": "Current full Imbuing says Protection Zones hide the Logout Block, so its absence does not indicate outofcombat. This is a bounded combat-state/icon distinction; it does not select aggressive timer ticking for all PZ states or an exact deadline."
     }
   ],
   "conflicts": [
@@ -1155,6 +1389,48 @@
         "fandom_powerful_vibrancy_gate"
       ],
       "resolution": "Preserve unresolved qualification; shorter indexed item snippets cannot establish absence of a success-state gate."
+    },
+    {
+      "id": "strike_total_vs_additive_modifier",
+      "field": "Strike effect value semantics",
+      "candidate_proposal_value": {
+        "chance_bps": 1000,
+        "extra_damage_bps_by_tier": [
+          1500,
+          2500,
+          5000
+        ]
+      },
+      "architecture_status": "CANDIDATE_NOT_ACCEPTED",
+      "global_value": {
+        "intrinsic_baseline": {
+          "chance_bps": 500,
+          "extra_damage_bps": 1000
+        },
+        "additive_imbuement": {
+          "chance_bps": 500,
+          "extra_damage_bps_by_tier": [
+            500,
+            1500,
+            4000
+          ]
+        }
+      },
+      "resolution": "Legacy candidate values are isolated effective totals. Additive authoring must separate character baseline from the Strike modifier to prevent double counting."
+    },
+    {
+      "id": "combat_timer_pz_residual_state_source_conflict",
+      "field": "aggressive timer while residual combat state remains in PZ",
+      "community_sources": [
+        "wiki_br_imbuements",
+        "fandom_imbuing_full",
+        "tibiaqa_pz_residual_combat_2025"
+      ],
+      "general_br_claim": "PZ pauses imbuement timers except backpack capacity",
+      "fandom_bounded_claim": "Hidden Logout Block in PZ does not mean outofcombat",
+      "anecdotal_2025_claim": "Player/guild test assertion says battle-sign residual state may keep timers ticking inPZ/depot until one-minute expiry",
+      "selected_runtime_pz_timer_policy": null,
+      "resolution": "Record this bounded community counterclaim, not verified telemetry. Neither recipe-page shorthand nor anecdotal one-minute observation can certify universal PZ/timer boundaries; fine-grained timing remains unqualified."
     }
   ],
   "unresolved": [
@@ -1172,7 +1448,7 @@
     },
     {
       "id": "fine_grained_timers",
-      "reason": "Combat deadline, PZ entry timing, offline restoration, Swiftness/Vibrancy PZ behavior and tick rounding require observable Global qualification. Independently fetched Tibiopedia guide supplies only general equipped-combat wording; no explicit exception/PvP qualification."
+      "reason": "Dated2021 community answer names equipped+online utility timers including Vibrancy; current Fandom warns hiddenLogoutBlock inPZ does not mean outofcombat. Exact PZ/combat deadline, tick rounding, offline restore and transfer boundaries remain unqualified; community claims and OTS implementation may conflict."
     },
     {
       "id": "combat_pipeline",
@@ -1190,7 +1466,7 @@
     },
     {
       "id": "transaction_payment_sources",
-      "reason": "Exact gold sources and debit/fallback order require Global transaction evidence; stated fees do not identify balances."
+      "reason": "Normal-shrine inventory-first then Stash/bank preference is now community-qualified. Exact inventory-container search, inter-resource debit order, other transaction routes and failure behavior remain unqualified."
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
@@ -1207,17 +1483,6 @@
     {
       "id": "etcher_npc_purchase_requires_premium",
       "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved."
-    },
-    {
-      "id": "shared_category_compatibility",
-      "reason": "Observe Global compatibility for distinct elemental conversions sharing the generated elemental_damage category. The sourced identical-bonus maximum is insufficient to certify broader exclusion.",
-      "affected_types": [
-        "Scorch",
-        "Venom",
-        "Frost",
-        "Electrify",
-        "Reap"
-      ]
     }
   ],
   "rejected_sources": [
@@ -1231,8 +1496,9 @@
     },
     {
       "url": "https://tibiopedia.pl/articles/3,Imbuing-nasycenia",
-      "usage_scope": "NOT_USED_FOR_EFFECT_STRENGTHS",
-      "reason": "Guide says PowerfulSwiftness20 instead of BR+Canary30; embedded IntricateStrike scroll table says5% chance/15% extra rather than BR10%/25%. Individual item eligibility tables are independently assessed in their own evidence packet."
+      "usage_scope": "NOT_USED_AS_GENERAL_EFFECT_STRENGTH_AUTHORITY",
+      "reason": "Guide Powerful Swiftness says20 rather than30. Main Basic Strike text combines5% chance with10% extra damage, which does not match the qualified additive modifier5% chance/5% extra damage. Its tables mix value semantics, so the whole guide is not a general effect-strength authority. Individual item eligibility is assessed separately.",
+      "corroborating_subset": "Embedded Intricate Strike scroll values5% chance/15% extra damage correctly describe additive imbuement modifiers. Comparing those modifiers against isolated totals10% chance/25% extra damage was a semantic error, not a source conflict."
     }
   ],
   "additional_public_access_attempts": [
@@ -1258,6 +1524,13 @@
         "tibiopedia_echo_raids"
       ],
       "resolution": "11June2026 teaser and13July2026 client15.30 release precede frozen target; dated mirror/community confidence retained."
+    },
+    {
+      "id": "shared_category_compatibility",
+      "evidence": [
+        "fandom_imbuing_full"
+      ],
+      "resolution": "Five elemental conversions mutually exclude across tiers under explicit community revision1194750 dated7July2026. Qualified community compatibility only; no blanket official parity or all20 category proof."
     }
   ],
   "research_attempts": [
@@ -1396,6 +1669,71 @@
         "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7"
       ],
       "outcome": "BR equipment tips explicitly prohibit equal bonuses. Native guide explicitly states above-required-level effects inactive while combat timer decreases; known stale strengths remain excluded. Manual and mirror confirm worthy Etcher purchase and historical construction/tome handovers, but not an Etcher Premium gate. Exact payment, rollback, native composition and transferred-duration claims not found; named requirements remain unqualified."
+    },
+    {
+      "id": "parent_browser_full_primary_and_revision_qualification",
+      "method": "READ_SAVED_PARENT_BROWSER_CAPTURES_AND_NATIVE_PUBLIC_QA",
+      "urls": [
+        "https://www.tibia.com/news/?id=4779&subtopic=newsarchive",
+        "https://www.tibia.com/news/?id=8396&subtopic=newsarchive",
+        "https://www.tibia.com/news/?id=8436&subtopic=newsarchive",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=4828",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8421",
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "https://tibia.fandom.com/wiki/Critical_Hit",
+        "https://www.tibiaqa.com/23884/do-i-have-to-unequip-imbued-items-not-to-waste-my-imbuements"
+      ],
+      "outcome": "Parent retrieved full primary8396/8436/8421/4828 text and dated pre-target community revisions. Added bounded critical baseline/modifiers, utility timer, normal-shrine inventory-first preference and explicit conversion exclusion. Existing failedHTTP/snippet attempts remain historical records; no invented exact transaction, frozen snapshot or video claims."
+    },
+    {
+      "scope": "Bounded transaction follow-up after ordinary HTTP403",
+      "method": "Remote Desktop + Chrome/CDP",
+      "accessed_date": "2026-10-01",
+      "etcher_search": {
+        "url": "https://www.tibiaqa.com/?qa=search&q=etcher",
+        "title": "No results found for etcher - TibiaQA",
+        "result": "PUBLIC_BROWSER_NO_RESULTS"
+      },
+      "captures": [
+        {
+          "url": "https://www.tibiaqa.com/?qa=search&q=imbuement%20scroll",
+          "title": "Search results for imbuement scroll - TibiaQA",
+          "method": "Remote Desktop + Chrome/CDP",
+          "sha256": "72d61643c301d3d16660a7aecbfe8d43d0ea47268a459a5fcb6ee217cc2cc4fe",
+          "digest_scope": "Complete UTF-8 document.body.innerText in owned research tab"
+        },
+        {
+          "url": "https://www.tibiaqa.com/?qa=search&q=imbuement%20trade",
+          "title": "Search results for imbuement trade - TibiaQA",
+          "method": "Remote Desktop + Chrome/CDP",
+          "sha256": "f4830faef070b45c4f0d674e228dc0cbc7b07dfd8ebbeed495f36fc4c7e3d2cb",
+          "digest_scope": "Complete UTF-8 document.body.innerText in owned research tab"
+        },
+        {
+          "url": "https://www.tibiaqa.com/?qa=search&q=remove%20imbuement",
+          "title": "Search results for remove imbuement - TibiaQA",
+          "method": "Remote Desktop + Chrome/CDP",
+          "sha256": "4d63b01ca3923951414aba5842425cc218e27cdb013dc590b33804c2f1df6f2b",
+          "digest_scope": "Complete UTF-8 document.body.innerText in owned research tab"
+        },
+        {
+          "url": "https://www.tibiaqa.com/2746/can-you-remove-an-active-imbuement-from-an-item",
+          "title": "Can you remove an active imbuement from an item? - TibiaQA",
+          "method": "Remote Desktop + Chrome/CDP",
+          "sha256": "cbe3f2b8def347f930203c806328be8d53c878d82f8aaaeaad1276fe85402373",
+          "digest_scope": "Complete UTF-8 document.body.innerText in owned research tab"
+        },
+        {
+          "url": "https://www.tibiaqa.com/2668/how-to-safely-trade-extremely-expensive-items",
+          "title": "How to safely trade extremely expensive items? - TibiaQA",
+          "method": "Remote Desktop + Chrome/CDP",
+          "sha256": "67a1acd15f975690c4b8de2a3b365d3f0cc7dc1c07a86224fe911856e0f6035d",
+          "digest_scope": "Complete UTF-8 document.body.innerText in owned research tab"
+        }
+      ],
+      "used_for_values": false,
+      "conclusion": "Public Chrome read succeeded. Search results and two old question pages do not prove Etcher unit consumption, equipped scroll acceptance, payment failure rollback or timer preservation across transfers. The2019 removal answer corroborates only the already selected shrine clear fee; generic trade safety is outside the missing duration proof.",
+      "id": "transaction_browser_followup_after_http403"
     }
   ],
   "delegated_profiles": [

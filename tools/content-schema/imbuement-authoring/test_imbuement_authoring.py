@@ -40,10 +40,23 @@ class ImbuementAuthoringTests(unittest.TestCase):
         for name in ("Scorch", "Venom", "Frost", "Electrify", "Reap"):
             self.assertEqual(self.definition(name)["category"], "elemental_damage")
 
-    def test_strike_uses_final_strengths_instead_of_raw_xml_deltas(self):
+    def test_strike_separates_modifier_from_intrinsic_character_baseline(self):
         tiers = self.definition("Strike")["tiers"]
-        self.assertEqual([t["effect"]["chance_bps"] for t in tiers], [1000] * 3)
-        self.assertEqual([t["effect"]["extra_damage_bps"] for t in tiers], [1500, 2500, 5000])
+        self.assertEqual([t["effect"]["chance_bps"] for t in tiers], [500] * 3)
+        self.assertEqual([t["effect"]["extra_damage_bps"] for t in tiers], [500, 1500, 4000])
+        rules = {r["id"]: r for r in authoring.supporting()["global-rules-evidence.json"]["rules"]}
+        baseline = rules["critical_intrinsic_baseline"]["value"]
+        self.assertEqual([baseline["chance_bps"] + t["effect"]["chance_bps"] for t in tiers], [1000] * 3)
+        self.assertEqual([baseline["extra_damage_bps"] + t["effect"]["extra_damage_bps"] for t in tiers], [1500, 2500, 5000])
+        for tier in tiers:
+            self.assertEqual(tier["effect"]["value_semantics"], "ADDITIVE_IMBUEMENT_MODIFIER")
+            self.assertEqual(tier["provenance"]["effect"], "global-rules-evidence.json#strike_additive_modifiers")
+
+    def test_reject_critical_totals_as_additive_modifiers(self):
+        self.rejects(lambda c: self.definition("Strike", c)["tiers"][2]["effect"].update(
+            chance_bps=1000, extra_damage_bps=5000))
+        self.rejects(lambda c: self.definition("Strike", c)["tiers"][0]["effect"].pop("value_semantics"))
+        self.rejects(lambda c: self.definition("Strike", c)["tiers"][0]["provenance"].update(effect="wiki_br"))
 
     def test_vibrancy_is_recovery_on_an_additional_attack(self):
         tiers = self.definition("Vibrancy")["tiers"]
@@ -115,7 +128,7 @@ class ImbuementAuthoringTests(unittest.TestCase):
 
     def test_reject_silent_recipe_or_effect_change(self):
         self.rejects(lambda c: c["definitions"][0]["tiers"][0]["materials"][0].__setitem__("count", 21))
-        self.rejects(lambda c: self.definition("Strike", c)["tiers"][0]["effect"].__setitem__("chance_bps", 500))
+        self.rejects(lambda c: self.definition("Strike", c)["tiers"][0]["effect"].__setitem__("chance_bps", 1000))
 
     def test_reject_invented_binding_and_runtime_admission(self):
         self.rejects(lambda c: c.__setitem__("activation", "READY"))

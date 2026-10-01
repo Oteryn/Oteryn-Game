@@ -334,12 +334,16 @@
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 10000
+                        },
+                        "value_semantics": {
+                          "const": "ADDITIVE_IMBUEMENT_MODIFIER"
                         }
                       },
                       "required": [
                         "kind",
                         "extra_damage_bps",
-                        "chance_bps"
+                        "chance_bps",
+                        "value_semantics"
                       ],
                       "additionalProperties": false
                     },
@@ -570,7 +574,10 @@
                   "type": "object",
                   "properties": {
                     "effect": {
-                      "const": "wiki_br"
+                      "enum": [
+                        "wiki_br",
+                        "global-rules-evidence.json#strike_additive_modifiers"
+                      ]
                     },
                     "materials": {
                       "const": "wiki_br"

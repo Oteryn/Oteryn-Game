@@ -110,6 +110,103 @@
         "Guide contains recipes and categories, but no explicit same-effect equipment composition formula"
       ],
       "limits": "Guide has stale Strike and Swiftness strength values; these are rejected elsewhere. Absence of composition wording does not select a formula."
+    },
+    {
+      "id": "official_vibrancy_release_4828",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=4828",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PRIMARY_BROWSER_TEXT",
+      "sha256": "65d3a5344a42fd18a319d99a49d3c6ef004e1d42ae8946cf2b5981f071c023ee",
+      "digest_scope": "Complete UTF-8 document body innerText from parent-owned public Chrome research; dynamic header included",
+      "published_on": "2018-12-03",
+      "source_stage": "LIVE_RELEASE",
+      "role": "PRIMARY_OFFICIAL",
+      "observed_facts": [
+        "Winter Update2018 is released; Vibrancy can remove existing paralysis upon a paralysis attack; reflection component removed"
+      ],
+      "selected_claims": {
+        "release_published_on": "2018-12-03",
+        "verbatim": "There is a new imbuement called Vibrancy that can remove existing paralyse effects with a certain chance whenever a paralyse attack is launched at the wearer of the imbuement. In addition, the cooldown of the paralyse rune was raised to six seconds. Due to raised concerns, we have removed a reflection component from the imbuement.",
+        "reflect_to_attacker_at_release": false,
+        "current_continuity": "UNQUALIFIED"
+      },
+      "selected_claims_sha256": "eb363da80719feac1f235d7f14e0f44a7c5a1f41a9ea0e1d3783aede9820a3ac"
+    },
+    {
+      "id": "fandom_formulae_1205374",
+      "url": "https://tibia.fandom.com/wiki/Formulae",
+      "revision": 1205374,
+      "revision_url": "https://tibia.fandom.com/wiki/Formulae?oldid=1205374",
+      "revision_timestamp": "2026-09-07T17:28:39Z",
+      "revision_timestamp_method": "Remote Desktop + Chrome/CDP, public MediaWiki API",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_REVISIONED_COMMUNITY_BROWSER_TEXT",
+      "sha256": "7781dc9afe6ef4fe3eb1bdc40862e81bd42c33a1a77d30b79ed0cffe5dff7ad5",
+      "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "observed_facts": [
+        "Mana leech is computed separately for each target, rounded up before sum; critical damage included, damage prey excluded, overkill counts"
+      ],
+      "selected_claims": {
+        "scope": "MANA_LEECH_ONLY",
+        "verbatim": "\nImbuing\nMana Leech\n\nWhen one of the Void imbuements is triggered by area attacks, the mana leeched is not the same as it would be for one creature multiplied by the number of creatures, otherwise this imbuement would be too powerful. There are a few ways to calculate the actual mana gained. One way of looking at it is to consider that 100% of the leech is applied to one creature, and 10% of it to the other creatures, though this does not allow for an accurate calculation when different resistances are involved.\n\nIn reality, for each creature the mana leeched is the following:\n\n𝑀\n𝑎\n𝑛\n𝑎\n𝐿\n𝑒\n𝑒\n𝑐\nℎ\n𝑒\n𝑑\n=\n𝐷\n𝑚\n𝑔\n×\n𝐿\n𝑒\n𝑒\n𝑐\nℎ\n×\n(\n0.1\n𝑁\n+\n0.9\n)\n𝑁\n,\n\nwhere N is the number of creatures attacked and Leech is the Leech % depending on the level of the imbuement (Basic, Intricate or Powerful). Furthermore, the result is always rounded up. For N = 1, this simplifies to:\n\n𝑀\n𝑎\n𝑛\n𝑎\n𝐿\n𝑒\n𝑒\n𝑐\nℎ\n𝑒\n𝑑\n=\n𝐷\n𝑚\n𝑔\n×\n𝐿\n𝑒\n𝑒\n𝑐\nℎ\n,\n\nas one would expect.\n\nNotes:\n\nSince the value is always calculated independently for each creature and rounded up, simply multiplying the first formula by N and consider the total damage dealt does not result in the total mana leeched and will underestimate the real value.\nDamage preys do not influence the mana/health leech amount, but Critical Hits do increase the leech.\n\"Overkill\" damage dealt above maximum health/current health of a monster still counts for leech.",
+        "revision": 1205374,
+        "revision_timestamp": "2026-09-07T17:28:39Z",
+        "historical_pre_target_revision_access": {
+          "requested_url": "https://tibia.fandom.com/wiki/Formulae?oldid=1197205",
+          "revision_timestamp": "2026-07-21T13:24:22Z",
+          "status": "ACCESS_RESTRICTED_REQUIRES_LOGIN",
+          "text_read": false,
+          "qualification": "Revision ID/timestamp is public metadata; archived contents were not accessible without login. No login or alternative access attempted."
+        }
+      },
+      "selected_claims_sha256": "fd6e6a3941e83cde102501cf63647ab7a0d021d417f699027c09ea769ec852a4"
+    },
+    {
+      "id": "tibiaqa_two_mana_2018",
+      "url": "https://www.tibiaqa.com/676/is-double-mana-leech-imbuement-worth-it",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "7569a6bd815eaf6b2ddce5a9094b741117234917982de91c2e2afdba359ab331",
+      "digest_scope": "Exact native public HTML bytes",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "published_on": "2018-09-27",
+      "observed_facts": [
+        "Two Powerful Void instances add percentages:2*8%=16%"
+      ],
+      "selected_claims": {
+        "dated_on": "2018-09-27",
+        "verbatim": [
+          "2*8% gives us 16% (of damage dealt) mana back."
+        ],
+        "limitations": [
+          "Does not give per-hit integer rounding, overkill or prey behavior."
+        ]
+      },
+      "selected_claims_sha256": "5e33dbc95b68e21e216dd652d83d8445c89aa159e4c94cd9b11976a9429b28b3"
+    },
+    {
+      "id": "tibiaqa_two_leech_pairs_2021",
+      "url": "https://www.tibiaqa.com/18345/how-does-the-mana-leech-imbuement-work-for-knights",
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_PUBLIC_HTML_OR_SCRIPT",
+      "sha256": "5b19e5b23ac43808947ec7eee5e275a933910e1603224beacb2d42821ea55243",
+      "digest_scope": "Exact native public HTML bytes",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "published_on": "2021-05-27",
+      "observed_facts": [
+        "Two25%life instances give50%; two8%mana instances give16%"
+      ],
+      "selected_claims": {
+        "dated_on": "2021-05-27",
+        "verbatim": [
+          "I was really referring to life leech, considering 2 imbuements 25% leech each. If you want to do the calculation with mana leech, just put your mana leech % on the eequation. Powerful mana imbuements provide 8% each, so if you have two of them just put 16% and find out."
+        ],
+        "limitations": [
+          "No per-target integer rounding, prey or overkill qualifications."
+        ]
+      },
+      "selected_claims_sha256": "337103c6eb0b2aa4dd7007641d8ac0ee20f124ff1e69c9e6144648b023c793d6"
     }
   ],
   "rules": [
@@ -177,9 +274,10 @@
       "value": null,
       "status": "PUBLIC_EVIDENCE_UNRESOLVED",
       "evidence": [
-        "tibiapal_leech_calculator"
+        "tibiapal_leech_calculator",
+        "fandom_formulae_1205374"
       ],
-      "notes": "Ceiling used by an external calculator is not an observed Global server rounding rule. Keep this separate from exact coefficients.",
+      "notes": "General and Life Leech rounding remain unqualified. The separately scoped post-target mana reference explicitly gives per-target ceiling; calculator display ceiling does not justify universal leech rounding.",
       "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
     },
     {
@@ -188,9 +286,10 @@
       "status": "PUBLIC_EVIDENCE_UNRESOLVED",
       "evidence": [
         "tibiapal_leech",
-        "tibiapal_leech_calculator"
+        "tibiapal_leech_calculator",
+        "fandom_formulae_1205374"
       ],
-      "notes": "Equal-hit formula cannot establish per-target averaging, damage clipping to remaining health, per-target rounding or ordering of charm/proficiency contributions.",
+      "notes": "The dedicated post-target mana reference provides per-target scaling, ceiling and overkill inclusion. General Life Leech, July28continuity, zero-damage target counting, charm/proficiency contribution ordering and generic combat pipelines remain unqualified.",
       "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
     },
     {
@@ -199,9 +298,10 @@
       "status": "PUBLIC_EVIDENCE_UNRESOLVED",
       "evidence": [
         "vibrancy_2018_teaser_mirror",
-        "fandom_vibrancy"
+        "fandom_vibrancy",
+        "official_vibrancy_release_4828"
       ],
-      "notes": "Do not implement reflected paralysis solely from the historical teaser; current pages describe deflection. Source disagreement/history requires qualification.",
+      "notes": "The historical teaser proposed reflection; the full Dec3,2018 release explicitly removed it. Releasefalse is recorded separately. Exact present continuity and PvP additional-attack deflection lifecycle remain unqualified; do not select current reflection solely from old announcements.",
       "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
     },
     {
@@ -220,9 +320,11 @@
       "status": "PUBLIC_EVIDENCE_UNRESOLVED",
       "evidence": [
         "tibiapal_leech",
-        "tibiopedia_general_guide"
+        "tibiopedia_general_guide",
+        "tibiaqa_two_mana_2018",
+        "tibiaqa_two_leech_pairs_2021"
       ],
-      "notes": "A single-percent calculator input does not prove additive stacking across equipment. Native guide has no explicit formula; FandomResistanceHTTP402/BRProtectionHTTP403/TibiaTools403, Tavilyplanusage432. Keep an equipment-composition claim unselected.",
+      "notes": "Two specific Powerful Void and Vampirism equipment pairs are separately populated from dated public statements. Arbitrary mixed tiers, more than twoitems, Wheel/proficiency contributions and generic equipment composition remain unqualified.",
       "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
     },
     {
@@ -233,7 +335,7 @@
         "tibiapal_leech",
         "tibiopedia_general_guide"
       ],
-      "notes": "Accepted architecture says absorbs are summed, whereas Crystal applies each equipped slot sequentially with ceil. No independent public Global composition statement was retrieved; reconcile against real observations before implementing either as certified parity.",
+      "notes": "Candidate architecture says absorbs are summed, whereas Crystal applies each equipped slot sequentially with ceil. No independent public Global composition statement was retrieved; reconcile against real observations before implementing either as certified parity.",
       "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
     },
     {
@@ -247,6 +349,89 @@
       ],
       "notes": "Family excerpt explicitly includes if initially successful; tier excerpts state always deflects PvP paralysis upon additional attacks. The exact success-state predicate and transition are not established by these snippets. Historical teaser cannot resolve a present state gate.",
       "target_time_status": "CURRENT_INDEXED_SOURCE_CONFLICT_NO_EXACT_TARGET_CERTIFICATION"
+    },
+    {
+      "id": "vibrancy_reflection_removed_at_release",
+      "value": {
+        "reflect_to_attacker": false,
+        "scope": "LIVE_RELEASE_2018_12_03_ONLY"
+      },
+      "status": "PRIMARY_OFFICIAL_HISTORICAL_RELEASE",
+      "evidence": [
+        "official_vibrancy_release_4828"
+      ],
+      "notes": "The full Dec3,2018 live-release announcement explicitly removes reflection proposed in Nov5 teaser4779. This selects release behavior only; later current PvP deflection lifecycle and continuity still require independent qualification.",
+      "target_time_status": "HISTORICAL_RELEASE_CONFIRMED_CURRENT_CONTINUITY_UNQUALIFIED"
+    },
+    {
+      "id": "mana_leech_current_reference_formula",
+      "value": {
+        "scope": "MANA_LEECH_ONLY",
+        "formula": "sum(ceil(Dmg_i * leech_share * (0.1 * N + 0.9) / N))",
+        "rounding": "CEIL_EACH_TARGET_BEFORE_SUM",
+        "critical_damage_included": true,
+        "damage_prey_bonus_included": false,
+        "overkill_damage_counts": true,
+        "zero_damage_target_count": null,
+        "damage_basis": "reported_damage_including_overkill",
+        "examples": [
+          {
+            "damage_by_target": [
+              101
+            ],
+            "leech_share_bps": 800,
+            "total_mana": 9
+          },
+          {
+            "damage_by_target": [
+              100,
+              900
+            ],
+            "leech_share_bps": 800,
+            "total_mana": 45
+          }
+        ]
+      },
+      "status": "POST_TARGET_COMMUNITY_EXPLICIT_MANA_ONLY",
+      "evidence": [
+        "fandom_formulae_1205374"
+      ],
+      "notes": "Full Formulae mana section explicitly rounds each target up before summing, includes critical and overkill damage, excludes damage prey. RevisionSept7,2026 is later than July28target. Public metadata identifies July21revision1197205 but its content requireslogin and was not read. Do not infer historical continuity or apply mana rounding to Life Leech. Positive-hit examples do not settle zero-damage target counting or all combat extensions.",
+      "target_time_status": "POST_TARGET_COMMUNITY_REVISION_NOT_TARGET_CERTIFIED"
+    },
+    {
+      "id": "leech_two_powerful_equipment_pairs",
+      "value": {
+        "scope": "ONLY_TWO_POWERFUL_VOID_OR_TWO_POWERFUL_VAMPIRISM_INSTANCES",
+        "observed_pairs": [
+          {
+            "family": "Void",
+            "tier": "powerful",
+            "instance_share_bps": [
+              800,
+              800
+            ],
+            "combined_share_bps": 1600
+          },
+          {
+            "family": "Vampirism",
+            "tier": "powerful",
+            "instance_share_bps": [
+              2500,
+              2500
+            ],
+            "combined_share_bps": 5000
+          }
+        ],
+        "other_equipment_composition": null
+      },
+      "status": "DATED_COMMUNITY_EXPLICIT_BOUNDED_PAIRS",
+      "evidence": [
+        "tibiaqa_two_mana_2018",
+        "tibiaqa_two_leech_pairs_2021"
+      ],
+      "notes": "Dated public2018answer gives2*8%=16%;2021comment explicitly two25%life leech instances and two8%mana instances. These two Powerful pairs support bounded stacking observations, not arbitrary tier mixtures, moreitems, proficiency or Wheel contributions, Life Leech rounding or general composition.",
+      "target_time_status": "DATED_PRE_TARGET_COMMUNITY_NOT_EXACT_TARGET_OBSERVATION"
     }
   ],
   "excluded_test_server_changes": [
@@ -288,6 +473,10 @@
     {
       "tool": "Tavily search",
       "result": "HTTP432 plan usage limit after bounded research; no more metered calls made. Native public sources and recorded hypotheses complete available research."
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Formulae?oldid=1197205",
+      "result": "Public revisionmetadataJuly21,2026 exists but archivedcontentrequireslogin; textnotread, noalternativeaccessattempted."
     }
   ],
   "engine_combat_hypotheses": [
@@ -460,9 +649,9 @@
   "source_conflicts": [
     {
       "field": "leech overkill basis",
-      "global_reference": "global-rules-evidence.json#leech_overkill_counts, derived Fandom indexed statement: overkill counts",
+      "global_reference": "mana_leech_current_reference_formula: post-target Formulae1205374 explicit overkill counts for mana; generic or target-date lifecycle remains unknown",
       "crystal_imbuements": "actual health removed; damage is clamped to remaining target health",
-      "resolution": "Do not use the engine to override the community Global claim; exact target pipeline remains unqualified."
+      "resolution": "Preserve this post-target community mana observation separately from the Crystal hypothesis; do not substitute remainingHP clipping or claim July28continuity."
     },
     {
       "field": "elemental protection composition",
@@ -475,6 +664,12 @@
       "family_page_claim": "It always deflects additional paralysis attacks if initially successful",
       "tier_page_claim": "Always deflects PvP paralysis upon additional paralyse attacks; qualification omitted from the retrieved excerpts",
       "resolution": "Preserve both indexed claims; success-state predicate remains unqualified; no unconditional selected boolean."
+    },
+    {
+      "field": "mana leech per-target integer rounding",
+      "current_community_reference": "Formulae1205374: each target ceiling before sum",
+      "crystal_imbuements": "nearest integer lround with clamp to realDamage",
+      "resolution": "Current public community statement is not a July28runtime observation; preserve discrepancy and Life Leech uncertainty."
     }
   ]
 }

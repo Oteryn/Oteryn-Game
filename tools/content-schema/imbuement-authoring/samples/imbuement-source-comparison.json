@@ -557,8 +557,8 @@
       "crystal": []
     }
   ],
-  "comparison_scope": "Raw XML facts, not final engine outcomes. Crystal imbuements branch includes player baselines; use the qualified effective-strength comparison in its separate packet.",
-  "selection": "Wiki BR effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
+  "comparison_scope": "Raw XML facts, not final engine outcomes. Strike candidate values are additive modifiers; intrinsic character critical baseline is a separate Global rule. Crystal comparisons distinguish modifiers from effective totals.",
+  "selection": "Source-qualified post-2025 Strike additive modifiers; Wiki BR other effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
   "global_fee_conflict": {
     "candidate_architecture": [
       5000,
@@ -572,11 +572,11 @@
     ]
   },
   "supporting_catalogues": {
-    "crystal-imbuements-evidence.json": "3bc60e6c95f2e371530f9145d9fd6f382db373b08b80b34590471a2f822d5b4d",
-    "global-rules-evidence.json": "6167ec05f5ee0fc153203fb2372997a0ed9f29a17fae359fe7fccd25a95cc40a",
+    "crystal-imbuements-evidence.json": "cf5a8f87a20764637fdb82c0437a7ff882e57d28ec4526c9e469f60810962d34",
+    "global-rules-evidence.json": "26de8e6af75165727e82d8b7f3bbdef36df973ab14cabbb3d22344c5eac0f96d",
     "imbuement-access.json": "29f43745a3d0ecc74c183f9a031456a3254f7ca9bb29acbe6323dfa7162ab25e",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-combat.json": "18c5cc3fe0b7087eff23faa393a453a11ae869630109e523dd5c88612824c7f9",
+    "imbuement-combat.json": "2558d32beded7b8707ad521991bca609a0293d00d03a414efcf10b60de8e660a",
     "imbuement-eligibility.json": "3b0debbcb32d604464af9381c6f2bd14fa802d57d12dea6f72c64d3e926fddcf",
     "missing-item-definitions.json": "f9d676c2e671d171f6a503e19466bebcd6d000bf9a5cd5fc2cc85889829d04c8",
     "missing-item-source-facts.json": "4dc218e74a559d7b92d3ca7915fc02d57a2dac3f980d11e734f45ee6c9edbf1d"
@@ -592,8 +592,8 @@
     "validated_missing_item_proposals": 2,
     "source_defined_shrine_routes": 72,
     "completed_scroll_loot_records": 48,
-    "global_rules": 58,
-    "combat_rule_profiles": 9,
+    "global_rules": 63,
+    "combat_rule_profiles": 12,
     "crystal_imbuements_revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
     "gold_token_exchange_bundles": 9
   },
@@ -612,7 +612,7 @@
     },
     {
       "id": "fine_grained_timers",
-      "reason": "Combat deadline, PZ entry timing, offline restoration, Swiftness/Vibrancy PZ behavior and tick rounding require observable Global qualification. Independently fetched Tibiopedia guide supplies only general equipped-combat wording; no explicit exception/PvP qualification."
+      "reason": "Dated2021 community answer names equipped+online utility timers including Vibrancy; current Fandom warns hiddenLogoutBlock inPZ does not mean outofcombat. Exact PZ/combat deadline, tick rounding, offline restore and transfer boundaries remain unqualified; community claims and OTS implementation may conflict."
     },
     {
       "id": "combat_pipeline",
@@ -630,7 +630,7 @@
     },
     {
       "id": "transaction_payment_sources",
-      "reason": "Exact gold sources and debit/fallback order require Global transaction evidence; stated fees do not identify balances."
+      "reason": "Normal-shrine inventory-first then Stash/bank preference is now community-qualified. Exact inventory-container search, inter-resource debit order, other transaction routes and failure behavior remain unqualified."
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
@@ -647,17 +647,6 @@
     {
       "id": "etcher_npc_purchase_requires_premium",
       "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved."
-    },
-    {
-      "id": "shared_category_compatibility",
-      "reason": "Observe Global compatibility for distinct elemental conversions sharing the generated elemental_damage category. The sourced identical-bonus maximum is insufficient to certify broader exclusion.",
-      "affected_types": [
-        "Scorch",
-        "Venom",
-        "Frost",
-        "Electrify",
-        "Reap"
-      ]
     }
   ],
   "blocked": [

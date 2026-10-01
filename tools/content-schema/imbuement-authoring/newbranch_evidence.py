@@ -15,8 +15,9 @@ REVISION = "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1"
 CAPTURE_PINS = {
     "xml": "225d72971dc5ee7bcc71d13db37cc3444c18051903a7a117c1a16abbb280975d",
     "sources": "127e4a203109696f7f9980a398dfe064c2df0a9abcbebb2a3a1f7306ad8a7ebb",
-    "engine_facts": "11824628bc4c2af05fa0dcd21428c996cef056b84891baf2c559fcbd76564996",
+    "engine_facts": "111b65be2f04c3dcfffa80e9c0a25e77fad0cfc9255dc25d66ecc4b39a949f6a",
     "custom_assistant_packages": "75f3b64e5fd444f5e8eb1e8039e277a8d1b1605ef38e20e1baf8dccbd1a28d16",
+    "critical_modifier_public_evidence": "9729138159844ba79bed21a94b1b912243e1ea3fe4c01a3bc6b623e3ff19dee8",
 }
 
 
@@ -48,9 +49,11 @@ def configured_effect(record):
     if kind == "vibrancy":
         return {"kind": "paralysis_deflection", "chance_bps": int(effect["chance"]) * 100}
     if effect["value"] == "critical":
-        # These are pinned implementation baselines, not unconditional Global rules.
-        return {"kind": "critical", "chance_bps": int(effect["chance"]) + 500,
-                "extra_damage_bps": int(effect["bonus"]) + 1000}
+        # The intrinsic character baseline belongs to the combat profile. An
+        # item modifier must never include it, or runtime would apply it twice.
+        return {"kind": "critical", "chance_bps": int(effect["chance"]),
+                "extra_damage_bps": int(effect["bonus"]),
+                "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"}
     if effect["value"] in ("lifeleech", "manaleech"):
         return {"kind": "leech", "chance_bps": int(effect["chance"]) * 100,
                 "share_bps": int(effect["bonus"]),
@@ -74,7 +77,14 @@ def expected_comparison(xml):
     for record in xml["records"]:
         name, tier = record["name"], record["tier"]
         definition = wiki[name]
-        selected = authoring.effect(name, definition["tier_effect_numbers"][tier - 1])
+        if name == "Strike":
+            # The original Wiki BR capture records isolated combined totals.
+            # Revised primary/Fandom evidence supplies pure additive modifiers.
+            selected = {"kind": "critical", "chance_bps": 500,
+                        "extra_damage_bps": (500, 1500, 4000)[tier - 1],
+                        "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"}
+        else:
+            selected = authoring.effect(name, definition["tier_effect_numbers"][tier - 1])
         observed = configured_effect(record)
         materials = [{"source_item_id": int(bindings["material_bindings"][m["name"]]
                        ["item_ref"]["key"].split(".i")[-1]), "count": m["count"]}
@@ -93,6 +103,13 @@ def expected_comparison(xml):
                      "apply_fee_matches": int(bases[tier]["price"]) == (7500, 60000, 250000)[tier - 1],
                      "clear_fee_matches": int(bases[tier]["removecost"]) == 15000,
                      "duration_matches": int(bases[tier]["duration"]) * 1000 == 72000000})
+        if name == "Strike":
+            rows[-1]["configured_effective_total_with_intrinsic_baseline"] = {
+                "value_semantics": "ISOLATED_TOTAL_NOT_AN_IMBUEMENT_MODIFIER",
+                "chance_bps": observed["chance_bps"] + 500,
+                "extra_damage_bps": observed["extra_damage_bps"] + 1000,
+                "other_critical_sources": "EXCLUDED_FROM_THIS_COMPARISON",
+            }
     summary = {"records": len(rows)}
     for count, field in (("recipes_matching", "materials_match"),
                          ("effects_config_matching", "effect_configuration_matches"),

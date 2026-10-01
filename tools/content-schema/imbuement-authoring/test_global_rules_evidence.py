@@ -128,19 +128,19 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertTrue(rule["parity_status"].startswith("DERIVED"))
         self.assertIn("does not prove exclusion", rule["notes"])
 
-    def test_shared_conversion_category_is_not_global_duplicate_bonus_proof(self):
+    def test_shared_conversion_exclusion_uses_independent_pre_target_community_revision(self):
         rule = self.rules["shared_category_compatibility"]
-        self.assertIsNone(rule["value"])
-        self.assertEqual(rule["parity_status"], "PARITY_PENDING")
-        self.assertIn("shared_category_compatibility",
-                      {r["id"] for r in self.packet["unresolved"]})
-        self.assertEqual(rule["architecture_reference"]["status"], "CANDIDATE_NOT_ACCEPTED")
-        hypothesis = rule["hypotheses"][0]
-        self.assertEqual(hypothesis["status"], "OTS_HYPOTHESIS_ONLY")
-        self.assertFalse(hypothesis["selected_as_global"])
-        self.assertEqual(set(hypothesis["value"]["mutually_exclusive_types"]),
+        self.assertEqual(rule["parity_status"], "DERIVED_COMMUNITY_REVISION_EXPLICIT")
+        self.assertEqual(rule["evidence"], ["fandom_imbuing_full"])
+        self.assertEqual(set(rule["value"]["mutually_exclusive_types"]),
                          {"Scorch", "Venom", "Frost", "Electrify", "Reap"})
+        self.assertNotIn("shared_category_compatibility",
+                         {r["id"] for r in self.packet["unresolved"]})
+        self.assertEqual(rule["architecture_reference"]["status"], "CANDIDATE_NOT_ACCEPTED")
+        self.assertFalse(rule["hypotheses"][0]["selected_as_global"])
         self.assertEqual(self.rules["same_imbuement_type_maximum_per_item"]["value"], 1)
+        self.assertEqual(self.sources["fandom_imbuing_full"]["revision"], "1194750")
+        self.assertLess(self.sources["fandom_imbuing_full"]["published_date"], "2026-07-28")
 
     def test_higher_required_level_is_scoped_community_evidence(self):
         rule = self.rules["equipment_above_character_level_imbuement_behavior"]
@@ -154,12 +154,78 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
 
     def test_complete_transaction_composition_and_transfer_scope_stays_unqualified(self):
         pending = {r["id"] for r in self.packet["unresolved"]}
-        for key in ("transaction_payment_sources", "failed_transaction_consumption_and_rollback",
+        for key in ("failed_transaction_consumption_and_rollback",
                     "native_effect_composition",
                     "transfer_preserves_imbuement_state_and_remaining_duration"):
             self.assertIn(key, pending)
             self.assertIsNone(self.rules[key]["value"])
             self.assertEqual(self.rules[key]["parity_status"], "PARITY_PENDING")
+
+    def test_bounded_payment_preference_does_not_invent_transaction_order(self):
+        rule = self.rules["transaction_payment_sources"]
+        self.assertTrue(rule["parity_status"].startswith("DERIVED"))
+        self.assertEqual(rule["value"]["scope"], "NORMAL_SHRINE_IMBUING")
+        self.assertEqual(rule["value"]["material_source_priority"], ["inventory", "stash"])
+        self.assertEqual(rule["value"]["gold_source_priority"], ["inventory", "bank"])
+        for field in ("exact_inventory_container_search_order",
+                      "exact_debit_order_between_gold_and_materials", "other_transaction_routes"):
+            self.assertIsNone(rule["value"][field])
+        self.assertIn("transaction_payment_sources", {r["id"] for r in self.packet["unresolved"]})
+
+    def test_guide_intricate_strike_modifiers_are_not_rejected_as_effective_totals(self):
+        source = next(r for r in self.packet["rejected_sources"]
+                      if r["url"] == "https://tibiopedia.pl/articles/3,Imbuing-nasycenia")
+        self.assertIn("correctly describe additive imbuement modifiers", source["corroborating_subset"])
+        self.assertIn("Main Basic Strike", source["reason"])
+        self.assertIn("Swiftness says20 rather than30", source["reason"])
+
+    def test_intrinsic_critical_baseline_is_separate_from_additive_strike(self):
+        baseline = self.rules["critical_intrinsic_baseline"]["value"]
+        modifier = self.rules["strike_additive_modifiers"]["value"]
+        self.assertEqual(baseline, {"chance_bps": 500, "extra_damage_bps": 1000})
+        self.assertEqual(modifier, {"chance_bps": 500,
+                                   "extra_damage_bps_by_tier": [500, 1500, 4000],
+                                   "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"})
+        self.assertEqual(self.rules["strike_chance_percent"]["value"] * 100,
+                         baseline["chance_bps"] + modifier["chance_bps"])
+        self.assertEqual([v * 100 for v in self.rules["strike_extra_damage_percent_by_tier"]["value"]],
+                         [baseline["extra_damage_bps"] + v for v in modifier["extra_damage_bps_by_tier"]])
+        for key in ("strike_chance_percent", "strike_extra_damage_percent_by_tier"):
+            self.assertEqual(self.rules[key]["value_semantics"],
+                             "ISOLATED_EFFECTIVE_TOTAL_INCLUDING_INTRINSIC_BASELINE")
+        self.assertEqual(self.sources["fandom_critical_full"]["published_date"], "2025-07-24")
+        self.assertEqual(self.sources["official_news_8436_release"]["published_date"], "2025-07-21")
+
+    def test_new_full_primary_captures_preserve_honest_method_and_prior_snippet_provenance(self):
+        for key in ("official_news_8396_fees", "official_news_8396_success",
+                    "official_news_8396_scrolls", "official_news_8436_release"):
+            source = self.sources[key]
+            self.assertEqual(source["access_status"], "FULL_BROWSER_TEXT_EXTRACTED")
+            self.assertEqual(source["method"], "Remote Desktop + Chrome/CDP")
+            self.assertEqual(source["previous_capture"]["access_status"], "INDEXED_SEARCH_SNIPPET_ONLY")
+            self.assertRegex(source["previous_capture"]["sha256"], r"^[0-9a-f]{64}$")
+        self.assertFalse(self.rules["vibrancy_reflection_at_live_introduction"]["value"])
+        self.assertEqual(self.rules["vibrancy_reflection_at_live_introduction"]["evidence"],
+                         ["official_news_4828_full"])
+
+    def test_vibrancy_utility_timer_and_pz_state_counterclaim_do_not_certify_deadlines(self):
+        rule = self.rules["timer_vibrancy_equipped_online_outside_combat"]
+        self.assertEqual(rule["value"], {"requires_equipped": True,
+                                       "requires_online": True, "combat_required": False})
+        self.assertTrue(rule["parity_status"].startswith("DERIVED"))
+        self.assertEqual(self.sources["tibiaqa_utility_timers_2021"]["published_date"], "2021-02-04")
+        self.assertTrue(self.rules["hidden_logout_block_does_not_prove_out_of_combat"]["value"])
+        conflict = next(c for c in self.packet["conflicts"]
+                        if c["id"] == "combat_timer_pz_residual_state_source_conflict")
+        self.assertIsNone(conflict["selected_runtime_pz_timer_policy"])
+        self.assertIn("fine_grained_timers", {r["id"] for r in self.packet["unresolved"]})
+
+    def test_post_target_mana_overkill_claim_does_not_establish_life_or_target_pipeline(self):
+        rule = self.rules["leech_overkill_counts"]
+        self.assertEqual(rule["scope"], "MANA_LEECH_COMMUNITY_CLAIM_ONLY")
+        self.assertTrue(rule["parity_status"].startswith("DERIVED"))
+        self.assertGreater(self.sources["fandom_formulae_full"]["published_date"], "2026-07-28")
+        self.assertIn("combat_pipeline", {r["id"] for r in self.packet["unresolved"]})
 
     def test_etcher_purchase_gate_is_separate_from_free_application(self):
         self.assertTrue(self.rules["etcher_usable_by_free_account"]["value"])
