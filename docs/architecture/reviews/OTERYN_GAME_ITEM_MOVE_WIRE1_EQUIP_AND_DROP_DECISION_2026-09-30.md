@@ -102,6 +102,13 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   unknown `equipment` semantics, a hands conflict (refused, not resolved, as in Canary), and any
   item with `container` semantics (a quiver or a bag), whose entries would need a second
   container location.
+
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §3).** Once
+  accepted (QUIVER-1): a quiver (content flag `quiver`) is admitted in the left hand for its
+  vocation, as a container with contents whose entries are keyed to it like the main backpack's,
+  and only for a session that negotiated the BAGS-0 container capability (else `SLOT_MISMATCH`).
+  The `ammo` slot is the manual's Extra slot: it admits any whole item without `container`
+  semantics, and nothing in it is ever shot.
 - **Requirements.** Level and vocation are checked inside the transaction under the
   `character_root` lock. Premium is read from PROD-ENTITLEMENTS-01 §6 evidence at commit and fails
   closed when stale or unavailable. An item stays equipped when the level drops or Premium ends; a

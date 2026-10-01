@@ -171,6 +171,9 @@ PVP-DEATH-1 and PVP-WIRE-1 land, the first slice stays creatures only.
 - **Weapon.** First slice: fists, and melee weapons once ITEM-MOVE-WIRE-1 admits equipping. A
   distance weapon, throwing weapon, wand or rod in the hand is treated as no weapon for
   auto-attack until its own decision (see the brief).
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §4).** Once
+  accepted, distance, throwing and wand swings are variants of this `AutoAttack` with range-based
+  validity, and `chase` takes effect (RANGED-0 §8).
 - **Skills.** Until CHAR-BUILD-1 and SKILLS-0 ship, every character fights with the starting
   skill 10. Once they ship, the attack reads the live skill and reports one try per swing to the
   build-state training of SKILLS-0.

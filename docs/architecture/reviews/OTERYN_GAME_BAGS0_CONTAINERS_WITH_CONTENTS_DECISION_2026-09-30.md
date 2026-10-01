@@ -228,6 +228,9 @@ drop it whole, with every item still in exactly one location?
   destination whose child admits it (Ground, a depot box); the character then has no main backpack.
 - **Unequip into a nested bag.** ITEM-MOVE-WIRE-1's unequip may target `CONTAINER {handle}`.
 - Containers stay refused in the nine other slots (the quiver waits).
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §3.1).** Once
+  accepted, the quiver is the one exception: a container with contents in the left hand, its tree
+  bounded as §3, its entries keyed to it, and only ammunition admitted into it.
 
 ## 7. Capacity and weight
 
