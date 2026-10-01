@@ -31,7 +31,10 @@
 
 Tests: one fight replayed from its seed gives the same rule order, draws and outcomes; a trigger
 loop over `ENCRT0-RL-01`, or an inline re-entry over `ENCRT0-RL-08`/`-RL-09`, faults the instance
-without an outcome; a stalled host fires every due timer, in order; a crash loses the fight and
+without an outcome, and a root hit at the inline bound that would kill a reward boss produces no
+death, no death composition and no reward; a timer backlog over `ENCRT0-RL-12` faults; a period
+below `ENCRT0-RL-11` is rejected by content validation; each `InstanceRetire` step of an instance
+retires its own item; a stalled host fires every due timer, in order; a crash loses the fight and
 refunds nothing, but a reward-boss death committed before it keeps its rewards; an encounter-bound
 creature never exists without its live encounter instance; retirement after a crash fences the
 departed runtime first.
@@ -167,11 +170,13 @@ Their other actions run inline too, in order; any occurrence they raise goes to 
 `reflect_damage`, `convert_damage_to_heal`, `shared_life` propagation) enters the damage applier
 again and may fire inline hooks again, as Canary's recursion does. Each **root hit** (the health
 change that entered the first inline hook) carries a depth counter and a work counter: at most
-`ENCRT0-RL-08` nested inline levels and `ENCRT0-RL-09` inline rule steps per root hit. Reaching
-either bound is a content loop with a fixed outcome: the hook that would exceed it does not run,
-the health changes already applied stay, the root hit completes without further encounter effects,
-and the instance faults (§3.3) at the end of that hit. The bound and the outcome are the same on
-every replay.
+`ENCRT0-RL-08` nested inline levels and `ENCRT0-RL-09` inline rule steps per root hit.
+**Staging.** Every effect of a root hit and its inline chain (health changes, deaths, spawns,
+overlay changes, outcomes) is staged in owner memory and applied only when the root hit completes;
+death processing (the death composition, rewards, outcomes) starts only after that. Reaching either
+bound is a content loop with a fixed outcome: the **whole root hit is discarded** (no health change,
+no death, no death composition, no reward, no outcome) and the instance faults (§3.3) before any
+death is processed. The bound and the outcome are the same on every replay.
 Encounter modifiers that last (a `damage_modifier` with a duration, `shared_life`) are held by the
 instance and applied at the same encounter stage.
 
@@ -186,7 +191,11 @@ instance and applied at the same encounter stage.
   window; a host stall delays when windows run, not which entries are due in them. A repeating
   timer therefore fires once per period, each firing with its own occurrence, in due order. If more
   than `ENCRT0-RL-10` timer firings of one instance are due in one window, the rest carry forward
-  to the next windows in due order (bounded carry-forward), never coalesced. CREATURE-AI-0's
+  to the next windows in due order, never coalesced. The carry-forward is bounded: content
+  validation rejects a repeating timer whose period is below `ENCRT0-RL-11` (250 ms) and a
+  `delay_ms` below one window, so a timer is due at most once per window; and if more than
+  `ENCRT0-RL-12` firings are carried at once, the instance faults (§3.3). Both bounds are in owner
+  semantic time, so the same on every replay. CREATURE-AI-0's
   `SKIP_TO_LATEST` stays for creature thinks only.
 - At most `ENCRT0-RL-02` pending entries per instance; an action that would exceed it faults the
   instance.
@@ -314,7 +323,8 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
   counter at most `ENCRT0-RL-06`.
 - **Retirement.** When the instance ends (reset, time limit, last player gone, or found dead after a
   crash), every live Ground root of it and its contents are retired by a new closed cause
-  **`InstanceRetire`**, keyed by `(WorldId, InstanceId)`, on the shared retirement tables as the
+  **`InstanceRetire`**, each step keyed by `(WorldId, InstanceId, ItemInstanceId)` as `WorldReset`
+  keys its steps by item, on the shared retirement tables as the
   `WorldReset` amendment does: one-item steps, resumable from durable state. Progress lives in two
   places only: BOSS-RAID-0's instance allocation row gains the states `RETIRING` and `RETIRED`
   (from `ACTIVE`; `RETIRED` only when no live Ground item of the instance remains), and each item's
@@ -357,6 +367,8 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
 | `ENCRT0-RL-08` nested inline levels per root hit | 4 | above it, the fixed outcome of §4.2 |
 | `ENCRT0-RL-09` inline rule steps per root hit | 128 | above it, the fixed outcome of §4.2 |
 | `ENCRT0-RL-10` timer firings per instance per window | 64 | the rest carry forward (§4.3) |
+| `ENCRT0-RL-11` minimum repeating timer period | 250 ms | content validation |
+| `ENCRT0-RL-12` carried-forward timer firings per instance | 256 | above it, fault (§4.3) |
 
 Each with max and max+1 tests. `ENC-PARITY-1` measures a 15-player Ferumbras-sized fight against
 `RL-03`; a measured p99 above it needs a new decision, never a silent raise.

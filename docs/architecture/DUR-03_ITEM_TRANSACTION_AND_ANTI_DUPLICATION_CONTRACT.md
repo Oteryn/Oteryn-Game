@@ -1613,7 +1613,8 @@ admits, in its ITEM-USE-1 child and for these shapes only:
 accepted: in its ENC-OUTCOME-1 child, a one-item MINT into Ground custody of the encounter's scope
 under the closed cause `EncounterDropCause`, keyed by `(encounter instance, occurrence sequence,
 action index)`, in the D3 loot MINT shape with the tile limits and §32; and in its
-INSTANCE-GROUND-1 child, a third retirement cause `InstanceRetire` keyed by `(WorldId, InstanceId)`
+INSTANCE-GROUND-1 child, a third retirement cause `InstanceRetire`, each step keyed by
+`(WorldId, InstanceId, ItemInstanceId)`
 on `game_item_decay_retire_reservations` and `game_item_decay_retire_receipts` (discriminator CHECK
 as for `WorldReset`), one-item steps, resumable, for every live Ground root of an ended instance and
 its contents. Supersession, for these shapes only: the §39.1 MINT cause and Ground-scope limits.
