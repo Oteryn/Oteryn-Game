@@ -32,8 +32,9 @@ mod activation;
 mod artifact;
 #[allow(
     dead_code,
-    reason = "closed effect lowering awaits the separately allocated canonical Charm decoder"
+    reason = "immutable Charm source projection awaits a separately qualified owning consumer"
 )]
+pub(crate) mod charm_source;
 pub(crate) mod charm_source_effect;
 pub(crate) mod charm_source_json;
 mod compiler;
