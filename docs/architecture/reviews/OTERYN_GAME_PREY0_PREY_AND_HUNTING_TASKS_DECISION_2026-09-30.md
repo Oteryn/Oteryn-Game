@@ -3,8 +3,8 @@
 - Decision: `PREY0-PREY-AND-HUNTING-TASKS-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   economy, combat and protocol) and protected integration. R1-R4 (§14) are architect rulings;
-  owner questions Y1-Y3 (§15) are answered (Y1 a, Y2 c, Y3 a; owner, 2026-09-30, #162) and
-  binding.
+  owner questions Y1-Y3 (§15) are answered and binding: Y1 a and Y3 a (owner, 2026-09-30, #162);
+  Y2 c, Account-wide (owner, 2026-10-01, D251).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner direction of 2026-09-30 (build Prey and Hunting Tasks now, full Tibia Global
   parity). It is the owning semantic gate DUR-02 names for "Hunting Task/Prey state" (persistence
@@ -31,7 +31,7 @@
 | PREY-1 | hard, persistence review | prey slot state, the resource balance, the Account wildcard balance, ledger, event and unlock facts, prey commands and receipts, list and bonus draws, hunting-time checkpoints, expiry with auto reroll and lock (§4-§6) | CHAR-REV-SEQ-1; PREY-CONTENT-1 |
 | PREY-FEE-1 | hard, persistence and economy review | the gold list reroll as `FeeBurnCause::PreyListReroll` (§5.3) | PREY-1; GOLD-FEE-1b |
 | PREY-EFFECT-1 | combat lane, combat review | damage and reduction contributions, the XP multiplier, the extra loot roll, the hunting clock (§7) | PREY-1; the XP lane (D118); SPELL-TARGET-1 (ATTACK-0) |
-| TASKBOARD-1 | hard, persistence review | Bounty and Weekly kill tasks, task kill receipts in the death chain, token and point balances, the weekly settlement (§8, §9) | PREY-1; CHAR-REV-SEQ-1 |
+| TASKBOARD-1 | hard, persistence review | Bounty and Weekly kill tasks, task kill receipts in the death chain, token and point balances, the task XP obligations, the weekly settlement (§8, §9). Declared obligations, fixed in TASKBOARD-1 before implementation and reviewed with it: (a) the online weekly reset settles the finished week under the same barrier, before weekly initialization (§8.4); (b) a replay-stable overflow policy for Bounty Points and Hunting Task Points at the `PREY0-RL-14` cap that neither overflows, clamps silently nor makes a completed task unclaimable (§12) | PREY-1; CHAR-REV-SEQ-1 |
 | TASKBOARD-DELIVERY-1 | hard, persistence and economy review | Weekly delivery tasks: the `TaskDeliveryCause` BURN and its DUR-03 amendment (§8.3) | TASKBOARD-1; ITEM-USE-1 (item selection) |
 | TASKSHOP-1 | hard, persistence and economy review | the Hunting Task Shop: point debit with an item MINT, a D47 unlock or promotion points (§8.4) | TASKBOARD-1 |
 | PREY-WIRE-1 | impl, protocol review | capability `PREY_V1`: the Prey and Task Board domains and intents (§11) | PREY-1; TASKBOARD-1 |
@@ -52,7 +52,9 @@ admitted as value sources only by the owner?
 
 - DUR-02 persistence baseline §13: Hunting Task and Prey state use dedicated typed relations; a
   generic JSON, KV or blob escape hatch is forbidden. GAME-CHAR-01 Stage B: permanent Prey and
-  Hunting Task slots and Hunting Task Points are character-specific product state.
+  Hunting Task slots and Hunting Task Points are character-specific product state. The owner's
+  later Y2 answer (§15, D251) makes the permanent unlocks Account-wide; Hunting Task Points stay
+  per Character.
 - CHARM-0: Bestiary facts sit on Creature definitions (`authoring.profile.bestiary`, 686 records,
   difficulty in stars); kill credit is the 5-minute damage window (answer 6); wire names come from
   the client content export and indices follow SPELL-D1 (answers 8 and 11). `0019` keeps per
@@ -340,7 +342,22 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
   the same reset day is never written. **Offline catch-up grants at most one token**: only the
   current reset day's occurrence is written, and missed days never accumulate.
 - `claim` on completion credits Bounty Points and tokens in its receipt; its XP is an XP award
-  descendant with the XP source `TaskReward`, keyed by the claim.
+  descendant with the XP source `TaskReward`, delivered through a durable obligation (below).
+- **Task XP obligation (the QUEST-STATE-0 §5.4 pattern, fail-closed).** A claim or
+  settlement never awards XP in its own transaction. The claim transaction (and the weekly settlement, §8.4)
+  writes, with its receipt, one `game_character_task_xp_obligations` row: (CharacterId, source
+  occurrence: `TaskClaim {occurrence}` or `TaskSettlement {week}`) -> the XP amount frozen at the
+  claim, state `PENDING`. The runtime then requests the XP award (D118, source `TaskReward`) with
+  that obligation as its cause, on CHAR-REV-SEQ-1 under the session fence; the committing award
+  deletes the row in its own transaction, and a guard allows that delete only together with the
+  XP receipt that names the obligation. A replay of the award returns that receipt and awards
+  nothing twice. A validation refusal sets the row to `REFUSED` (terminal, with its result code,
+  kept for audit); a transient failure (revision mismatch, fence loss, crash) leaves it `PENDING`.
+  Pending obligations are requested again at every admission and after a failed attempt within
+  the session (backoff, at most once a minute), until each is terminal. A claim that would make
+  more than `PREY0-RL-17` pending obligations is refused `OBLIGATIONS_FULL` and writes nothing; a
+  settlement waits, unwritten, until one drains. No XP is ever awarded without its obligation
+  row, and no committed claim can lose its XP to a crash.
 
 ### 8.2 Weekly kill tasks
 
@@ -368,7 +385,10 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 
 - At the first admission after a weekly reset, one server-originated write keyed by (CharacterId,
   week) settles the finished week: Hunting Task Points (25 per kill task, 75 per delivery task,
-  times the multiplier of §2), 1 Soulseal per task, and an XP award descendant (`TaskReward`).
+  times the multiplier of §2), 1 Soulseal per task, and its XP as a task XP obligation (§8.1)
+  delivered by an XP award descendant (`TaskReward`). Settlement for a session online across the
+  reset, under the same barrier and before weekly initialization, is a declared TASKBOARD-1
+  obligation (brief).
 - **Shop (TASKSHOP-1):** `buy {offer}` debits Hunting Task Points in the Character receipt and
   delivers in the same transaction: an item as a DUR-03 MINT (cause `TaskShopPurchase {offer,
   occurrence}`) into the main backpack or `CharacterInbox`; an outfit or mount as a D47 account
@@ -403,7 +423,8 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 | Weekly task initialization | Character receipt | `WeeklyTaskInit {week}` (§8.2) | +1 |
 | Task kill credit | Character receipt | `TaskKill {death key}` | +1 |
 | Delivery | receipt + BURN | `TaskDeliveryCause` (Y3) | +1 |
-| Settlement, bounty XP | receipt, then XP award | `TaskSettlement {week}`, `TaskReward` | +1 each |
+| Settlement, Bounty claim | receipt + `PENDING` task XP obligation row (§8.1) | `TaskSettlement {week}`, `TaskBoardCommand {occurrence}` | +1 |
+| Task XP award | XP receipt; deletes its obligation row | `TaskReward` naming the obligation | +1 |
 | Shop purchase | receipt + MINT or D47 unlock | `TaskShopPurchase` (Y3) | +1 |
 
 - No gold is minted anywhere. The only gold change is the Y1 fee.
@@ -429,7 +450,7 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
   client content export (CHARM-0 answer 8).
 - **`PREY_INTENT`** (§5.2, each command with its `slot`) and **`TASK_BOARD_INTENT`** (§8).
   Results: `OK`, `NOT_ELIGIBLE`, `INVALID_SLOT`, `SLOT_LOCKED`, `DUPLICATE`, `NOT_ENOUGH_WILDCARDS`, `FREE_REROLL_NOT_READY`,
-  `INSUFFICIENT_FUNDS`, `NOT_ENOUGH_POINTS`, `NO_ROOM`, plus the common results.
+  `INSUFFICIENT_FUNDS`, `NOT_ENOUGH_POINTS`, `NO_ROOM`, `OBLIGATIONS_FULL`, plus the common results.
 
 ## 12. Rows (registered by each child before implementation)
 
@@ -448,9 +469,10 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 | `PREY0-RL-11` weekly tasks | 6 kill and 6 delivery; +3/+3 with the expansion |
 | `PREY0-RL-12` Hunting Task Points per task; multipliers | 25, 75; x2, x3, x5, x8 at 4, 8, 12, 16 |
 | `PREY0-RL-13` preferred list | 32 Creatures (`PARITY_PENDING`) |
-| `PREY0-RL-14` balances | u32 each, 0 floor; points 10,000,000 cap (`PARITY_PENDING`) |
+| `PREY0-RL-14` balances | u32 each, 0 floor; points 10,000,000 cap (`PARITY_PENDING`); the reward overflow policy at the cap is a declared TASKBOARD-1 obligation (brief) |
 | `PREY0-RL-15` delivery lines | at most 20 input stacks per delivery |
 | `PREY0-RL-16` preyable Creature loot table | at most 7 entries, 14 RNG draws per roll; two rolls and the improved-loot trigger draw at most 29 of D77's 32 draws and 14 of its 16 entries |
+| `PREY0-RL-17` pending task XP obligations per character | 8 |
 | Prey command | 0 items, 1 receipt, 1 event; at most 1 wildcard entry |
 | Gold list reroll | at most 20 inputs and 2 change outputs (D178) |
 | Shop purchase | at most 1 MINT item, 1 receipt, 1 event |
@@ -461,8 +483,8 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 - **A revision per hunting minute.** It multiplies Character writes by the number of hunters; the
   checkpoint bounds both the write rate and the crash loss.
 - **Wildcards as items.** Global wildcards are an untradable character balance.
-- **Wildcards and unlocks per character (Global).** The owner chose Account sharing (Y2 c); a
-  declared Reference difference, as BANK-0 answer 1b is for the bank.
+- **Wildcards and unlocks per character (Global).** The owner chose Account sharing (Y2 c, D251);
+  a declared Reference difference, as BANK-0 answer 1b is for the bank.
 - **Wildcards and unlocks across Worlds.** Worlds are separate economies (ADR-0010 §6).
 - **Platform writing the balance.** Platform is commercial authority, not Game truth; Game credits
   a Platform delivery by an idempotent claim.
@@ -506,9 +528,12 @@ the Store delivery contract exists; until then they have no production source, a
 that need them stay unused (recommended: no new Game value source, Global's character binding
 kept); b) as a), plus a free Game ration of wildcards (for example 5 a week) until the Store
 exists: a new value source; c) wildcards as an account balance shared by the account's characters.
-Owner answer (2026-09-30, #162): 14c — Prey Wildcards, the permanent Prey slot and the Weekly Task
-Expansion are shared across the Account; every character of the Account can use them. Until the
-Store delivery contract exists they still have no production source.
+Owner answer (2026-10-01, D251): 14c (Account-wide) — Prey Wildcards, the permanent Prey slot and
+the Weekly Task Expansion form an Account-wide balance shared by all the Account's characters (on
+each World, §4.2). Until the Store delivery contract exists they have no production source. This is
+a declared difference from Tibia, where all three are per-character Store products (Prey Wildcard,
+at most 52 owned; "Unlock additional character prey slot"; "+3 Kill Tasks and +3 Delivery Tasks for
+character": `docs/reference/tibia-manual/products.md` §Useful Things, capture 2026-09-28).
 
 **Y3. Admit the Task Board rewards as value sources?** (blocks TASKBOARD-1 rewards,
 TASKBOARD-DELIVERY-1 and TASKSHOP-1; D208) a) Yes, at Global parity: task XP, Bounty Points,
@@ -522,7 +547,8 @@ value sources at Global parity (D208).
 
 - **Must decide now:** YES. The owner asked for Prey and tasks now; DUR-02 requires a semantic
   gate before any Prey or task table.
-- **Minimum sufficient:** five Character tables, one balance row, three Account tables (Y2), the
+- **Minimum sufficient:** five Character tables, one balance row, the task XP obligation table
+  (§8.1, the QUEST-STATE-0 §5.4 pattern), three Account tables (Y2), the
   existing sequencer, gold fee path, XP writer, loot plan and ability stages; one capability; no
   new location family.
 - **Superseding evidence:** captured Global values for grades, bands, task tables and the shop;
@@ -537,8 +563,9 @@ value sources at Global parity (D208).
    §39.3; TASKBOARD-DELIVERY-1 and TASKSHOP-1 amend DUR-03 for their causes.
 2. **Serialization:** every write on CHAR-REV-SEQ-1; the death chain order of §9; the §10 lock
    order; one receipt per occurrence.
-3. **Restart:** slots, balances, tasks and unlocks are durable; the runtime copy is rebuilt at
-   admission; at most `PREY0-RL-07` of hunting time is lost.
+3. **Restart:** slots, balances, tasks, unlocks and task XP obligations are durable; the runtime
+   copy is rebuilt, and pending task XP obligations re-requested, at admission; at most
+   `PREY0-RL-07` of hunting time is lost.
 4. **Typed references:** CharacterId, AccountId, WorldId, Creature and item keys, slot,
    `slot_epoch`, week, death key, CommandRef, the Store delivery id, GameSessionId with
    `checkpoint_seq`, reset day.
