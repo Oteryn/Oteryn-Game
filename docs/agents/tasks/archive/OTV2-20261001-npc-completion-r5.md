@@ -11,7 +11,7 @@ branch: codex/npc-source-audit-r4
 issue: 162
 pr: 1433
 jira: KAN-16
-base_sha: ab83bcae5b4331ee82dfe346f56177a13f9f83dd
+base_sha: fafc51efd71e9f0e23e7725b75c1e0e86fe5f281
 owner: codex-root-npc-completion-r5
 created_at: 2026-10-01
 updated_at: 2026-10-01
@@ -55,6 +55,10 @@ Exact-head publication, CI, review and any protected integration remain live PR 
 
 ## Local validation
 
-130 authoring tests, 51 NPC migration tests, 45 native canonical-project/import/guard tests and seven native NPC admission tests pass. Two original materializer runs produce identical eleven-document packages, tree SHA `bdf3d42d43cde152d93a7871f917566b9fda5193a6045c36841d34e46d70dd08`. Promotion validates 1,112 candidates; immutable R4 custody/root validation, successor-tree roundtrip, all 97 materialized directories, governance, changed-Python Ruff and workspace formatting pass. Strict package Clippy is recorded in the evidence validation after completion.
+130 authoring tests, 59 NPC migration tests, 45 native canonical-project/import/guard tests and seven native NPC admission tests pass. Two original materializer runs produce identical eleven-document packages, tree SHA `e0fa562bc63e74535d15424a19fdc65d38493b183a285c5cc4ec589f59cc97c2`. Promotion validates 1,112 candidates; immutable R4 custody/root validation, successor-tree roundtrip, all 97 materialized directories, governance, changed-Python Ruff and workspace formatting pass. Strict package Clippy is recorded in the evidence validation after completion.
 
 Independent packet review found an arbitrary supplied-plan family bypass; its repair rejects Item/Quest operations, identity drift, unsupported fields and matcher/action changes before output. Source observations remain evidence and runtime eligibility false. The final exact head is the PR freeze entry; integration and CI must be read from the live PR.
+
+## Draft handoff
+
+The owner requested an updated draft PR and a ZIP checkpoint before continuing in a new chat. CI follow-up resolves 67 held source Item references through protected exact aliases while preserving raw R4 custody. An ordinary merge of accepted main `fafc51ef` (#1170) reconciles the world converter/workflow context. The handoff ZIP includes the exact committed source snapshot, draft PR state, audit report, test logs, recovery bundles and remaining qualification gaps. Runtime/global completeness stays false; continuing work must start from the remote exact head and current live checks.

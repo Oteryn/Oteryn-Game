@@ -1,10 +1,12 @@
 {
-  "canonical_tree_sha256": "bdf3d42d43cde152d93a7871f917566b9fda5193a6045c36841d34e46d70dd08",
+  "canonical_tree_sha256": "e0fa562bc63e74535d15424a19fdc65d38493b183a285c5cc4ec589f59cc97c2",
   "checks": {
     "cargo_clippy_game_server_all_targets_D_warnings": "PASS",
     "cargo_fmt_all": "PASS",
     "changed_python_ruff": "PASS",
+    "crystal_bindings_regeneration": "PASS",
     "governance": "PASS",
+    "item_key_references": "PASS",
     "materialized_tree_directories": 97,
     "native_corrective_guard_tests": 7,
     "native_cw2_import_tests": 16,
@@ -14,15 +16,24 @@
     "native_project_v2_tests": 18,
     "native_repository_tests": 4,
     "promotion_candidates": 1112,
+    "protected_alias_history": "PASS",
     "python_authoring_tests": 130,
-    "python_npc_migration_tests": 51,
+    "python_npc_migration_tests": 59,
     "r4_roots_reverified": 20872,
-    "successor_tree_roundtrip": "PASS"
+    "source_item_alias_tests": 8,
+    "source_item_fields_normalized": 67,
+    "successor_tree_roundtrip": "PASS",
+    "world_metadata_merge_context": "PASS"
   },
   "ci": "PENDING_LIVE_PR_EXACT_HEAD",
+  "ci_followup": {
+    "retired_item_source_keys": "protected exact alias qualification with immutable R4 custody",
+    "superseded_head": "f4d5047fb6b1ce99106db6d4c6d6e1fe02e8d441",
+    "world_workflow": "ordinary merge accepted main fafc51efd71e9f0e23e7725b75c1e0e86fe5f281; head has converter and workflow"
+  },
   "global_complete": false,
   "independent_finding": "Arbitrary supplied plans could mutate Item/Quest records; fixed with preflight family, identity and per-kind operation guards and negative tests.",
-  "native_repair_packet_sha256": "f8c377b9c997e733922c69200b3445eb700dc9ad18f5b6ecae27581742c1d117",
+  "native_repair_packet_sha256": "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb",
   "qualification_phase": "LOCAL_AUTHORING_CHECKS",
   "runtime_qualified": false,
   "schema": "oteryn.npc-corrective-validation.v1"

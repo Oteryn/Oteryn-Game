@@ -15,6 +15,8 @@ import json
 import re
 from pathlib import Path
 
+from npc_source_item_references import load_protected_normalizer
+
 
 class OverlayError(ValueError):
     pass
@@ -151,7 +153,15 @@ def validate_operation(row):
 
 
 def build_plan(
-    baseline, r4, trade, transport, inventory, static, quest=None, custody=None
+    baseline,
+    r4,
+    trade,
+    transport,
+    inventory,
+    static,
+    quest=None,
+    custody=None,
+    source_item_normalizer=None,
 ):
     """Prepare a reviewable before/after plan from the qualified correction inputs."""
     custody = custody or {}
@@ -325,6 +335,15 @@ def build_plan(
                     )
                 ],
             )
+    # Keep R4 custody raw and immutable; canonicalize only the emitted source fields.
+    # Executable offers, routes and unrelated declarations never enter this pass.
+    if source_item_normalizer is not None:
+        for key, record in target.items():
+            if record["kind"] == "Service":
+                record["fields"] = [
+                    source_item_normalizer.normalize(key, entry)
+                    for entry in record["fields"]
+                ]
     planned = []
     for key in sorted(target):
         before, after = original[key], target[key]
@@ -441,6 +460,7 @@ def main():
     ):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--baseline-sha256", required=True)
+    repo = Path(__file__).resolve().parents[2]
     parser.add_argument("--quest", type=Path)
     parser.add_argument(
         "--evidence-root",
@@ -465,7 +485,10 @@ def main():
             else args.evidence_root.rstrip("/") + "/" + path.name
         )
         custody[name] = {"sha256": digest(raw), "locator": locator}
-    plan = build_plan(baseline, **inputs, custody=custody)
+    normalizer = load_protected_normalizer(repo, inputs["r4"], custody["r4"])
+    plan = build_plan(
+        baseline, **inputs, custody=custody, source_item_normalizer=normalizer
+    )
     result = apply_plan(json.loads(args.input.read_bytes()), plan)
     baseline_index = index(baseline["records"])
     original_targets = {

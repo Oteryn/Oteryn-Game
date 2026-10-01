@@ -2,6 +2,7 @@
   "active_content_modified": true,
   "counts": {
     "bound_quest_item_occurrences": 311,
+    "canonicalized_held_source_item_references": 67,
     "corrected_base_fares": 8,
     "corrected_declarations": 433,
     "corrected_speech_values": 5,
@@ -22,9 +23,9 @@
   },
   "files": [
     {
-      "bytes": 5020,
+      "bytes": 5640,
       "path": "README.md",
-      "sha256": "b7564b6abd78b17524ed149467f13359e83afae1e3e02f94aa1e6867273ba063"
+      "sha256": "778c72c6e8c8c7697a2a9b08bc09a343f4e4ddf954e9a063baaddb331bac50b8"
     },
     {
       "bytes": 708324,
@@ -32,9 +33,9 @@
       "sha256": "c412610f2665633b8d65f2fcf288bd01824c1a1597d31157d8f2be73382799c6"
     },
     {
-      "bytes": 2466579,
+      "bytes": 2541204,
       "path": "corrective-plan.json",
-      "sha256": "7a9ea653668454d83c39ef4630f5e8047bf01c704f5a80752b6efead975f1381"
+      "sha256": "efcd9e6c0cc0b1c649af075e4a8530ef2fe1c88e6691b71c8e3c5771a96f18ec"
     },
     {
       "bytes": 727448,
@@ -47,9 +48,14 @@
       "sha256": "2d9b5b9dcc38b44f1796a7bd613c22b23056f3315beb5afa9e359f7a80987400"
     },
     {
-      "bytes": 2865196,
+      "bytes": 2939821,
       "path": "native-repairs.json",
-      "sha256": "f8c377b9c997e733922c69200b3445eb700dc9ad18f5b6ecae27581742c1d117"
+      "sha256": "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb"
+    },
+    {
+      "bytes": 1925,
+      "path": "normalization-report.json",
+      "sha256": "2ae3b3b7c4826d470ec65dc4ffc66ce1e2e3d3c876c4ea467ee9d94844c4f2c0"
     },
     {
       "bytes": 78934,
@@ -87,9 +93,9 @@
       "sha256": "2f3b24522db072c248b62ca85f9c9f4f14aa00b5de69624a40cd98879833820d"
     },
     {
-      "bytes": 1221,
+      "bytes": 1774,
       "path": "validation.json",
-      "sha256": "d16e261241dff628fde74ad8eb81d8c4c3d8bd39b6bef19a0ec4353f386d4235"
+      "sha256": "6b69280a53f1d8c2cc919c1e32c9e66a4953840666773ee7d9cd38986d766780"
     }
   ],
   "global_complete": false,
@@ -108,11 +114,15 @@
   "tools": [
     {
       "path": "tools/content-migration/npc_corrective_overlay.py",
-      "sha256": "f6d790bda8ca19583e607c0ab46b2941f39d8bd7d2d88ae6e674c88eb9d0e419"
+      "sha256": "1d25d07f938cfa21bd144a679d4feafa52072f8d1182ab47de455de2d8c28ab0"
+    },
+    {
+      "path": "tools/content-migration/npc_source_item_references.py",
+      "sha256": "212f738a296f75b6ae6cc9fa679f9cf1499d31b27d97e713da7201f26f3c8ffe"
     },
     {
       "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
-      "sha256": "04fff0b1a9f7bee165ffc02393bd7eabd489c21693b3a48c34aa6f51181e9298"
+      "sha256": "a07f4ae4535c0b3d3de2b44bf3cfe67043a82c021ae8bd99d1045cc442b178b8"
     }
   ]
 }

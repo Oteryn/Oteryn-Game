@@ -131,7 +131,7 @@ const NPC_R5_NATIVE_REPAIRS: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/native-repairs.json"
 );
 const NPC_R5_NATIVE_REPAIRS_SHA256: &str =
-    "f8c377b9c997e733922c69200b3445eb700dc9ad18f5b6ecae27581742c1d117";
+    "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb";
 const NPC_R5_PROJECT_REVISION: &str = "g4-npc-source-repairs-r10";
 const NPC_STAGE_TOOL_SHA256: &str =
     "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff";
