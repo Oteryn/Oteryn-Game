@@ -3678,10 +3678,10 @@
           "const": true
         },
         "revealed_gem_limit": {
-          "const": 250
+          "const": 225
         },
         "revealed_gem_limit_evidence": {
-          "const": "PARITY_PENDING: WHEEL-GEM-0 WHEELGEM0-RL-02"
+          "const": "PARITY_CONFIRMED_REFERENCE: merged WHEEL-GEM-0A section 3; English TibiaWiki r1151969; runtime admission remains separate"
         },
         "grade_min": {
           "const": 0
@@ -4066,15 +4066,20 @@
                   "archfoe"
                 ]
               },
-              "independent_trials": {
+              "maximum_trials": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 1,
+                "maximum": 2
+              },
+              "stop_on_first_failure": {
+                "const": true
               }
             },
             "required": [
               "quality",
               "chance_by_category",
-              "independent_trials"
+              "maximum_trials",
+              "stop_on_first_failure"
             ]
           },
           "minItems": 3,

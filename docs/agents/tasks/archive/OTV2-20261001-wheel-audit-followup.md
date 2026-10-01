@@ -106,3 +106,16 @@ bindings/report/evidence/test. Shared Spell source now selects60% and preserves
 prior40% as superseded; source date applies only to this row. Added a cross-source
 value/unit check so updating a file digest cannot hide the old40% from Wheel
 qualification. New frozen-head packet supersedes5940115691.
+
+## Final audit repair
+
+Owner-directed AUTHORING from07466202, notice5940467174. Same sole writer;
+merged current main e225b3f7 with no conflict before applying merged#1472
+reference cap225 / Supreme Grade III12.5M. No runtime or architecture write.
+Replaced misleading independent_trials with maximum_trials + mandatory
+stop_on_first_failure. Independent Atelier qualification checks costs, cap and
+full OTS loot table; regressions reject legacy trials and disabled termination,
+prior cap/cost, and capture-derived self-consistency as a substitute for sources.
+Requalified18Item metadata references: no drift. Definition and shard hashes
+are different measures; the audit's stale-evidence inference is withdrawn.
+Updated delivery report and limitations. New freeze/checks supersede priorhead.

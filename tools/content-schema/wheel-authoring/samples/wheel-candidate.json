@@ -26,7 +26,7 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "0aac1804fdf597ae05faed914dd54edc22f87d7c0bcad60fc43782de92d089f1"
+    "source-parameters.json": "bc6b07ee52651ea1545578295f3ce29682f36607194fb4fff8712316052abf73"
   },
   "progression": {
     "minimum_level": 51,
@@ -22816,7 +22816,7 @@
           "fragments": 15
         },
         "supreme": {
-          "gold": 12000000,
+          "gold": 12500000,
           "fragments": 15
         }
       },
@@ -22940,8 +22940,8 @@
         "vessel_without_resonance_allowed": true,
         "initial_gems_once_per_character": true,
         "initial_gems_revealed": true,
-        "revealed_gem_limit": 250,
-        "revealed_gem_limit_evidence": "PARITY_PENDING: WHEEL-GEM-0 WHEELGEM0-RL-02",
+        "revealed_gem_limit": 225,
+        "revealed_gem_limit_evidence": "PARITY_CONFIRMED_REFERENCE: merged WHEEL-GEM-0A section 3; English TibiaWiki r1151969; runtime admission remains separate",
         "grade_min": 0,
         "grade_max": 3,
         "grade_decrease_allowed": false,
@@ -23011,7 +23011,8 @@
             "fiendish": 3000,
             "archfoe": 0
           },
-          "independent_trials": 2
+          "maximum_trials": 2,
+          "stop_on_first_failure": true
         },
         {
           "quality": "regular",
@@ -23020,7 +23021,8 @@
             "fiendish": 3000,
             "archfoe": 9000
           },
-          "independent_trials": 2
+          "maximum_trials": 2,
+          "stop_on_first_failure": true
         },
         {
           "quality": "greater",
@@ -23029,7 +23031,8 @@
             "fiendish": 9000,
             "archfoe": 3000
           },
-          "independent_trials": 1
+          "maximum_trials": 1,
+          "stop_on_first_failure": true
         }
       ]
     },

@@ -1,6 +1,6 @@
 # Wheel / Gem authoring and native delivery boundary
 
-Audited main: `aad17f99d86abea01bd50b9d559e69eaa5549d88`, 2026-10-01.
+Audited main: `e225b3f76e152d195f75cb757b3d639a3ff5577a`, 2026-10-01.
 Source evidence is separate from runtime admission. Owner-directed follow-up:
 [#162](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5936424268).
 
@@ -85,9 +85,9 @@ Remote Desktop controlled/read only a browser; project work ran in the cloud.
 
 ## Remaining owners
 
-Architect: amendment for reference cap 225 / Supreme III 12.5M; exact positional catalogue
+Architect: merged #1472 selects cap225 / Supreme III12.5M, now applied in reference authoring; exact positional catalogue
 qualification before GEM-R admission; Guiding+33 arithmetic/rounding/self-copy under
-FORMULA. Candidate 250 / 12M stays until amendment. Historical Mystic II40 selection used English
+FORMULA. Former candidate250 /12M is superseded in reference authoring. Historical Mystic II40 selection used English
 r1206174; Task Shop 50 / Grade IV 69 remain OUT_OF_SCOPE. No new owner value gate is inferred.
 
 Coordinator/workers: catalogue admission; fenced allocation/reset/reconciliation;
@@ -106,3 +106,35 @@ The original source capture preserves contradictory text. A separate independent
 official-perk reference qualifies typed values for all five vocations; new negative
 regressions cover the prior failures. Runtime delivery and control-plane ownership
 remain separate from this authoring correction.
+
+## Final audit disposition and repair
+
+Return AUTHORING from07466202 under direct owner instruction; notice5940467174.
+The full final sweep compared current main with Canary04b83b51, pinned99902524,
+Crystal main96d13eff and summer00ce02a5. All384 saved drop/reveal source hashes
+were requalified and public upstream heads freshly confirmed via normal HTTPS.
+EnglishWiki r1151969 and current official manual were reread via research-only
+Chrome/CDP after HTTP402/403; browser closed. Wiki confirms225/12.5M but uses
+older fragment yields; the manual supports the selected smaller yields and
+locked/in-vessel/last-domain dismantle refusals. Do not copy missing OTS guards.
+
+PROVEN EVIDENCE_GAP repaired: independent_trials misdescribed the upstream
+stop-on-first-failure loop. Candidate/schema/semantic checks now use maximum_trials
+and mandatory stop_on_first_failure; independent selected-reference qualification
+also checks the full drop table and225/12.5M grade/cap facts. No native drop
+implementation existed to change. Absolute Global rates remain unproved; OTS
+weights are the owner's retained reference, not a new request for a decision.
+
+Item evidence requalification passes all18 current definitions. Its
+native_definition_sha256 hashes the canonical definition, not the entire shard;
+shard hashes are in input_digests. An audit comparison of those distinct hashes
+was incorrect and is withdrawn; no stale Item evidence was found. All18 still
+have materializable:false/Unknown stack class, so Item delivery remains open.
+
+Unchanged worker scope: native W-R/GEM-R admission, fenced durable Wheel/Gem/grade/
+vessel/initial-grant state, atomic fees/item writes and receipt/replay, effects,
+crusher/drop/trade, protocol, client UI/icons and PostgreSQL/restart/race/E2E.
+Guiding+33 arithmetic remains architect scope. Native reveal main-backpack-direct
+is a declared contract difference; upstream searches nested inventory+StoreInbox
+without stash/depot/postalInbox. No source proves Global's exact search scope.
+AmberCrusher, presets and vocation change are outside the admitted V1 scope.

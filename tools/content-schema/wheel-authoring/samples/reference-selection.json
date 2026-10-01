@@ -105,7 +105,7 @@
   },
   "great_fire_wave_i": "Both +15 critical extra damage and +10 critical chance selected from the existing project spell capture.",
   "flurry_of_blows_i": "Select AREA_GREATER_FLURRY_OF_BLOWS. Planner range +1 is preserved as an unselected cast-range hypothesis.",
-  "accepted_atelier_parameters": "WHEEL-GEM-0 already selects candidate fees/grades and a PARITY_PENDING 250 cap. No new owner decision is needed to populate authoring.",
+  "accepted_atelier_parameters": "Merged #1472 WHEEL-GEM-0A selects cap225 and Supreme Grade III12.5M; applied to reference authoring. No runtime admission.",
   "dedication_reconciliation": "Reference capture selects mitigation +0.075 percentage points per point. Older resistance wording belongs to WHEEL-0 owner reconciliation before runtime admission.",
   "browser_research": "samples/browser-source-audit.json",
   "unique_conviction_selections": {
@@ -115,20 +115,21 @@
     "runic_mastery": "Fandom:1206174 explicitly applies the percentage bonus to base magic level, for that specific rune effect only."
   },
   "atelier_conflicts": {
-    "selected_project": 12000000,
+    "selected_project": 12500000,
     "fandom_1151969": 12500000,
-    "state": "CANDIDATE_12M_RETAINED_UNTIL_ARCHITECT_WHEEL_GEM0_AMENDMENT; REFERENCE_SELECTION_12_5M"
+    "superseded_project": 12000000,
+    "state": "MERGED_WHEEL_GEM0A_REFERENCE_APPLIED_RUNTIME_UNADMITTED"
   },
   "architect_ruling": {
     "reference": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015",
     "formula_precedence": "Historical5933264015: official > EnglishWiki > pinnedCanary. Owner-directed Oct1 authoring repair recognizes Tibia.com planner as an official source; no native architecture admission is inferred.",
-    "gem_price_cap_application": "DEFERRED_BY_COORDINATOR_STATE_5897165704_PENDING_ARCHITECT_WHEEL_GEM0_AMENDMENT; 225/12.5M are architect reference selections, candidate250/12M unchanged",
+    "gem_price_cap_application": "MERGED_1472_REFERENCE_APPLIED; runtime admission remains separate",
     "task_shop_and_grade_iv_maximum": "OUT_OF_SCOPE_REFERENCE_ONLY; no accepted runtime value",
-    "deferred_reference_values": {
+    "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704",
+    "applied_reference_values": {
       "revealed_gem_limit": 225,
       "supreme_grade_iii_gold": 12500000
-    },
-    "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704"
+    }
   },
   "basic_mod_position_2": {
     "classification": "PROVEN_UPSTREAM_DISAGREEMENT_WITH_ENGLISH_WIKI_PROSE_CORROBORATION",
@@ -175,5 +176,12 @@
   "official_perk_audit": {
     "file": "samples/official-perk-reference.json",
     "sha256": "26424e2fd7825db78353c78b391a5cd180011ca7c36f87e6619a98e7c8967b6b"
+  },
+  "atelier_reference_audit": {
+    "file": "verify_atelier_reference.py",
+    "wiki_revision": 1151969,
+    "decision_pr": "https://github.com/Oteryn/Oteryn-Game/pull/1472",
+    "method": "Normal HTTPS verified upstream blobs; English Wiki read via research-only Chrome/CDP after HTTP402; reference-only selection",
+    "runtime_admitted": false
   }
 }

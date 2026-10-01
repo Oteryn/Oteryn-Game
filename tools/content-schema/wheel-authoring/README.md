@@ -25,6 +25,7 @@ python build_report.py --check
 python verify_item_assets.py --check
 python verify_item_delivery_reference.py --check
 python client_icons.py --check
+python verify_atelier_reference.py
 python verify_official_perks.py
 node verify_planner.cjs /path/to/pinned/TibiaPal
 ```
@@ -177,9 +178,9 @@ Official manual yields override the conflicting OTS yields. Fees remain labelled
 first eligible initial-gem grant, current-revision vessel placement anywhere,
 vocation-catalogue grading, tradeability, locking, last-domain
 and in-vessel refusals, initial-gem lifetime, placement constraints, grade limits,
-crusher charges and existing vendor prices. The 250 revealed-gem limit remains
+crusher charges and existing vendor prices. The former 250 revealed-gem limit remains only historical conflict evidence; the selected limit is 225. It was
 `PARITY_PENDING` under the owning decision. Crystal loot probabilities are retained
-as `OTS_HYPOTHESIS_ONLY`, with its exact independent-trial count and category
+as `OTS_HYPOTHESIS_ONLY`, with its maximum trials, stop-on-first-failure policy and category
 precedence; this reference does not allocate Forge/fiendish integration.
 This tool does not perform
 economy transactions, revelation RNG, grade writes, vessel writes or loot changes.
@@ -200,6 +201,7 @@ including a custom candidate's supplied serialized bytes. No PNG or proprietary
 client implementation is included, and public availability does not grant runtime
 redistribution rights. Qualify locally supplied source bytes with
 `python client_icons.py --check
+python verify_atelier_reference.py
 python verify_official_perks.py --assets-dir /path/to/reference-sheets` and/or
 `--originals-dir /path/to/original-sheets`; each directory uses `dedication.png`,
 `conviction.png`, `revelation.png`, `basic_mod.png` and `supreme_mod.png`.
@@ -260,9 +262,9 @@ ruleset revision/migration behaviour before admitting it to a world.
 
 The official manual freshly confirms the listed eligibility, operation/refusal,
 fragment-yield and grade-chain facts in `samples/live-source-audit.json`. It does
-not newly establish exact fees, the 250-gem cap,
-initial gem count, grade costs or quest/scroll point counts. Existing
-OTS/PARITY_PENDING classifications for those values remain.
+not establish exact fees, the revealed-gem cap, initial gem count, grade costs
+or quest/scroll point counts. Cap225 and Supreme Grade III12.5M are selected
+separately from Wiki under merged WHEEL-GEM-0A; other bounded classifications remain.
 
 The BR wiki corroborates both selected -4 s cooldowns. Lord of Destruction II
 gets additional derived corroboration: the wiki's combined 52.5% minus Master of
@@ -283,10 +285,9 @@ The browser continuation corroborates mitigation 0.075% in official 8833 and bot
 cooldown selections in original official 8944. It confirms Fandom Conviction
 1206174 selects Mystic Repulse II +40%, while BR 443774 says +15% and the planner
 +60%. Fandom overview 1151969 lists 225 revealed gems and Supreme Grade III
-12,500,000 gold; accepted project values remain 250 and 12,000,000. These conflicts
-remain explicit evidence. Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)
+12,500,000 gold; those values are now selected under merged WHEEL-GEM-0A. Historical OTS values 250 and 12,000,000 remain conflict evidence. Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)
 selects wiki values 225/12,500,000 under FORMULA, while current coordinator
-STATE defers changing this candidate until the WHEEL-GEM-0 amendment.
+the merged #1472 amendment now supplies the reference selection applied by this repair.
 The former selected +40% Mystic row is superseded by the owner-directed official-planner repair;
 it did not account for the exposed official +60% value. Task Shop +50 and the
 catalogue-derived 69 Grade-IV maximum remain OUT_OF_SCOPE references only;
@@ -325,3 +326,28 @@ Access: official planner resources via normal HTTPS200; official 8833/8872/8944
 via research-only Chrome/CDP after HTTP403. Browser closed. These source facts
 do not prove native execution, UI integration or full Global parity. The Basic
 slot2 lists and Gem numeric catalogue also match the current official planner.
+
+## Final Atelier reference repair (2026-10-01)
+
+Merged #1472 WHEEL-GEM-0A supplies cap225 and Supreme Grade III12.5M. Both
+are applied to this non-runtime candidate, schema, report and source selection.
+The candidate is not a runtime admission or a migration of paid gem rows.
+
+The old loot field independent_trials was misleading. Lesser/Regular allow up
+to two successes but stop on the first failure; Greater allows one trial.
+maximum_trials and stop_on_first_failure now state that policy explicitly.
+For p9%, P0/P1/P2 are91%/8.19%/0.81%, so the chance of any gem is9%,
+not17.19%. Each quality is separate, and the family draw is uniform over five
+professions. A drop remains an unrevealed item; it never contains revealed mods.
+The independent verify_atelier_reference.py binds selected cap, full grade costs,
+chances, category priority and trial termination to separate reference facts;
+changing a capture and rebuilding cannot silently source-qualify changed values.
+Semantic numeric tuning remains possible without claiming source qualification.
+
+Fresh main e225b3f7 and all18 item metadata references were rechecked; the
+existing verifier passes. All18 remain materializable:false; crusher charges10
+are known, while materialization/use/stack admission is still Item worker scope.
+The metadata stores a definition hash separately from file input_digests.
+Native reveal scope remains the accepted main-backpack-direct policy, a declared
+difference from upstream nested carried containers/StoreInbox; Global scope is
+not proven. Official manual fragment yields override the older Wiki/OTS table.
