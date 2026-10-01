@@ -137,8 +137,9 @@ It runs after authentication and only against the current scope generation's set
   predecessor's (a new scope generation or a transfer added a capability), reconciliation uses a
   replacement snapshot (FND-02 §16), never replay, so no newly selected domain receives deltas
   without a baseline.
-- **Transfers into a channel scope:** the same predicate, selection and replacement snapshot before
-  the transfer commits (§3.2).
+- **Transfers into a channel scope:** only the predicate and the selection are checked before the
+  transfer commits; the acknowledgement and the replacement snapshot are emitted after commit, and
+  a selection-changing transfer stays refused until FND-04B defines that acknowledgement (§3.2).
 - The check reads declared support only. Support is a claim, not trust: the server still sends and
   enforces everything; the rule guarantees only that the client said it can render what can hurt
   or block it.
