@@ -537,7 +537,8 @@ def test_committed_catalogue_matches_the_census_sample():
         shards = sorted(
             path
             for path in (build_catalogue.ROOT / directory).glob(f"{prefix}-*.json")
-            if path not in build_catalogue.donor_shards()
+            if path
+            not in (build_catalogue.donor_shards() | build_catalogue.official_shards())
         )
         count = 0
         previous = 0

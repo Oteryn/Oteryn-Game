@@ -258,7 +258,7 @@ def donor_outputs(sources, donor_source, existing_keys, base_counts):
     return files, world_objects.canonical_bytes(census) + b"\n", records
 
 
-def outputs(sources, donor_source=None):
+def outputs(sources, donor_source=None, include_official=False):
     """Return ({relative path: bytes} for both catalogues, census bytes)."""
     records = {family: [] for family in CATALOGUES}
     result = world_objects.build_census(
@@ -303,6 +303,27 @@ def outputs(sources, donor_source=None):
             files[index_path] = (
                 json.dumps(index, indent=2, ensure_ascii=False) + "\n"
             ).encode("utf-8")
+    if include_official:
+        import official_corpses
+
+        prior = [
+            row
+            for path, data in files.items()
+            if path.startswith("content/world/")
+            for row in json.loads(data).get("records", [])
+        ]
+        existing = {row["provenance"]["item_pointer"]["key"] for row in prior}
+        count = sum(row["identity"]["family"] == "WorldObject" for row in prior)
+        files.update(official_corpses.outputs(existing, count))
+        index_path = "content/world/objects/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += (
+            f" Additionally 40 qualified official client 15.30 corpse records; "
+            f"total {count + 40} WorldObject records."
+        )
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
     return files, world_objects.census_document_bytes(result)
 
 
@@ -318,13 +339,34 @@ def donor_shards():
     baseline = json.loads(world_objects.DEFAULT_SAMPLE.read_bytes())["records"][
         "by_family"
     ]
+    reviewed = qualified_donor_routes()["records"]
+    limits = {
+        family: baseline[family] + sum(row["owner"] == family for row in reviewed)
+        for family in CATALOGUES
+    }
     return {
         path
         for family, (directory, prefix, _notes) in CATALOGUES.items()
         for path in (ROOT / directory).glob(f"{prefix}-*.json")
         if path.stem.split("-")[1].isdigit()
-        and int(path.stem.split("-")[1]) >= baseline[family]
+        and baseline[family] <= int(path.stem.split("-")[1]) < limits[family]
     }
+
+
+def official_shards():
+    import official_corpses
+
+    baseline = json.loads(world_objects.DEFAULT_SAMPLE.read_bytes())["records"][
+        "by_family"
+    ]
+    start = baseline["WorldObject"] + sum(
+        row["owner"] == "WorldObject" for row in qualified_donor_routes()["records"]
+    )
+    path = (
+        ROOT
+        / f"content/world/objects/objects-{start:05d}-{start + len(official_corpses.IDS) - 1:05d}.json"
+    )
+    return {path} if path.exists() else set()
 
 
 def main(argv=None):
@@ -340,6 +382,11 @@ def main(argv=None):
         action="store_true",
         help="rebuild in memory and fail on any difference from the committed files",
     )
+    parser.add_argument(
+        "--official-client",
+        action="store_true",
+        help="include the closed 40-record official client 15.30 corpse corpus",
+    )
     args = parser.parse_args(argv)
 
     if args.donor_source is None and (donor_shards() or DONOR_CENSUS.exists()):
@@ -347,7 +394,15 @@ def main(argv=None):
             "--donor-source is required for the supplemental donor catalogue"
         )
     sources = world_objects.engine_items.load_engine_sources("crystal", args.source)
-    files, census = outputs(sources, args.donor_source)
+    import official_corpses
+
+    if (
+        official_corpses.CENSUS.exists() or official_shards()
+    ) and not args.official_client:
+        raise SystemExit(
+            "--official-client is required for the official corpse catalogue"
+        )
+    files, census = outputs(sources, args.donor_source, args.official_client)
     census_path = world_objects.DEFAULT_SAMPLE
     if args.check:
         drift = sorted(

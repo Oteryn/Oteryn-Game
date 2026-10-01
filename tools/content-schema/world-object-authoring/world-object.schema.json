@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:oteryn:world-object-authoring:candidate:1",
-  "title": "Oteryn WorldObject definition (WO-0 §4.3)",
+  "title": "Oteryn WorldObject definition (WO-0 \u00a74.3)",
   "description": "One static WorldObject catalog record per D93 family key: what an object is. The stateful placement behaviour stays with the runtime LocalObject overlay. Facts use the KNOWN/UNKNOWN wrapper; an unknown fact is never defaulted.",
   "type": "object",
   "additionalProperties": false,
@@ -236,5 +236,44 @@
     "knownSourceRef": {
       "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/knownSourceRef"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "provenance": {
+            "properties": {
+              "source": {
+                "properties": {
+                  "engine": {
+                    "const": "official_client"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": {
+              "state": "KNOWN",
+              "value": "corpse"
+            }
+          },
+          "provenance": {
+            "properties": {
+              "route": {
+                "const": {
+                  "owner": "WorldObject",
+                  "reason": "corpse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
