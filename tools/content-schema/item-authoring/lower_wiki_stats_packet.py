@@ -12,7 +12,9 @@ value; disagreement and unparseable values go to the report, never into a row. O
 ids that are Items in content (`content/items/index.json`) get rows.
 
 Fields (2b-1): attack, defense, defense modifier, armor, range, weapon type, elemental
-attacks, imbuement slots, equipment patterns and weight. Equipment requires an explicit
+attacks, imbuement slots, equipment patterns, weight, positive charge counts and explicit
+durations. Charges/durations require a single-ID source page, preserve known conflicts
+and blocked states, and do not admit behavior or materialization. Equipment requires an explicit
 wiki slot; absent requirements remain UNKNOWN and unsupported vocations/hand claims
 hold the complete pattern. Weight is in hundredths of an ounce, as in Tibia
 (owner decision 2026-09-30: 41.00 oz = 4100).
@@ -28,6 +30,7 @@ import json
 import re
 import sys
 from collections import Counter, defaultdict
+from fractions import Fraction
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -177,6 +180,53 @@ def weight(raw):
     return int(match.group(1)) * 100 + int(match.group(2)) if match else None
 
 
+def duration(raw):
+    match = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?) (minute|hour|day)s?", raw)
+    if not match:
+        return None
+    value = (
+        Fraction(match[1])
+        * {"minute": 60000, "hour": 3600000, "day": 86400000}[match[2]]
+    )
+    return int(value) if value.denominator == 1 and 1 <= value <= 2**64 - 1 else None
+
+
+def positive_count(raw):
+    value = unsigned(raw, 2**32 - 1)
+    return value if value is not None and value > 0 else None
+
+
+QUALIFIED_PHYSICAL_FIELDS = {"charges.count", "temporal.duration"}
+
+
+def physical_field_inputs():
+    definitions, routed = {}, set()
+    for shard in json.loads(ITEM_INDEX.read_text())["shards"]:
+        for row in json.loads((ROOT / shard).read_text())["records"]:
+            definition = row["definition"]
+            definitions[definition["identity"]["key"]] = definition
+    for family in ("terrain", "objects"):
+        for path in (ROOT / f"content/world/{family}").glob("*.json"):
+            for row in json.loads(path.read_text()).get("records", []):
+                pointer = row.get("provenance", {}).get("item_pointer")
+                if pointer:
+                    routed.add(pointer["key"])
+    return definitions, routed
+
+
+def field_precondition(definition, field_path, value):
+    group, member = field_path.split(".")
+    source = definition.get("semantics", {}).get(group, {"state": "UNKNOWN"})
+    if source.get("state") in {"CONFLICT", "NOT_APPLICABLE"}:
+        return "BLOCKED_EVIDENCE_STATE"
+    leaf = source.get("value", {}).get(member, {"state": "UNKNOWN"})
+    if leaf.get("state") in {"CONFLICT", "NOT_APPLICABLE"}:
+        return "BLOCKED_EVIDENCE_STATE"
+    if leaf.get("state") == "KNOWN" and leaf["value"] != value:
+        return "KNOWN_FIELD_CONFLICT"
+    return None
+
+
 def scalar(parameter, kind, parse):
     """Field lowering from one wiki parameter to one typed value."""
 
@@ -221,6 +271,8 @@ def elemental(fields):
 
 
 FIELDS = {
+    "charges.count": scalar("charges", "COUNT_U32", positive_count),
+    "temporal.duration": scalar("duration", "DURATION_MS", duration),
     "equipment.patterns": equipment,
     "weapon.attack": scalar("attack", "SIGNED_POINTS", signed),
     "weapon.defense": scalar("defense", "SIGNED_POINTS", signed),
@@ -243,7 +295,7 @@ def content_item_ids():
     semantics UNKNOWN, so it takes no TibiaWiki stats.
     """
     bindings = json.loads(SOURCE_BINDINGS.read_text(encoding="utf-8"))["bindings"]
-    bound = {row["target"]["key"] for row in bindings}
+    bound = {row["target"]["key"] for row in bindings if row["disposition"] == "EXACT"}
     index = json.loads(ITEM_INDEX.read_text(encoding="utf-8"))
     ids = set()
     for shard in index["shards"]:
@@ -255,14 +307,21 @@ def content_item_ids():
     return ids
 
 
-def build(snapshot, item_ids):
+def build(snapshot, item_ids, definitions=None, routed_keys=()):
     rows = []
+    definitions = definitions or {}
+    # Every retained page ID participates, including retired and unbound source IDs.
+    page_ids = defaultdict(set)
+    for record in snapshot["records"].values():
+        for observation in record["observations"]:
+            page_ids[observation["page_id"]].add(record["item_id"])
     report = {
         "conflict": Counter(),
         "malformed": Counter(),
         "unsupported": Counter(),
         "examples": defaultdict(list),
         "equipment_holds": [],
+        "physical_field_holds": [],
     }
     # Records are keyed by Item key or, without an Item record, by the bare Tibia id (#1325).
     for record in sorted(
@@ -283,6 +342,46 @@ def build(snapshot, item_ids):
             ]
             if not present:
                 continue
+            if field_path in QUALIFIED_PHYSICAL_FIELDS:
+                key = ITEM_KEY.format(record["item_id"])
+                typed = [result[1] for _obs, result in present]
+                reason = None
+                if key not in definitions or "semantics" not in definitions[key]:
+                    reason = "NO_CANONICAL_ITEM_SEMANTICS"
+                elif key in routed_keys:
+                    reason = "EXISTING_MAP_OWNER"
+                elif any(len(page_ids[obs["page_id"]]) != 1 for obs, _ in present):
+                    reason = "SHARED_PAGE_VARIANT_UNQUALIFIED"
+                elif any(value == "MALFORMED" for value in typed):
+                    reason = "MALFORMED_WIKI_VALUE"
+                elif any(value != typed[0] for value in typed):
+                    reason = "WIKI_PAGE_DISAGREEMENT"
+                else:
+                    reason = field_precondition(
+                        definitions[key], field_path, typed[0]["value"]
+                    )
+                if reason:
+                    report["physical_field_holds"].append(
+                        {
+                            "item_key": key,
+                            "field_path": field_path,
+                            "reason": reason,
+                            "classification": "CONFLICT"
+                            if reason
+                            in {"KNOWN_FIELD_CONFLICT", "WIKI_PAGE_DISAGREEMENT"}
+                            else "UNKNOWN",
+                            "sources": [
+                                {
+                                    "page_id": obs["page_id"],
+                                    "revision_id": obs["revision_id"],
+                                    "values": result[0],
+                                    "page_item_ids": sorted(page_ids[obs["page_id"]]),
+                                }
+                                for obs, result in present
+                            ],
+                        }
+                    )
+                    continue
             if field_path == "equipment.patterns" and any(
                 "Rune" in obs["fields"].get("primarytype", "")
                 or obs["fields"].get("primarytype") == "Ammunition"
@@ -371,6 +470,15 @@ def build(snapshot, item_ids):
                             "revision_id": obs["revision_id"],
                             "values": res[0],
                         }
+                        | (
+                            {
+                                name: obs[name]
+                                for name in ("content_sha256", "url")
+                                if name in obs
+                            }
+                            if field_path in QUALIFIED_PHYSICAL_FIELDS
+                            else {}
+                        )
                         for obs, res in present
                     ],
                     "typed_value": typed[0],
@@ -384,7 +492,17 @@ def build(snapshot, item_ids):
 
 
 def packet_bytes(snapshot, item_ids, compiler_sha256):
-    rows, report, counts = build(snapshot, item_ids)
+    records_digest = hashlib.sha256(
+        json.dumps(
+            snapshot["records"],
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    if records_digest != snapshot["snapshot_sha256"]:
+        raise ValueError("wiki snapshot digest mismatch")
+    rows, report, counts = build(snapshot, item_ids, *physical_field_inputs())
     packet = {
         "compiler": {"path": COMPILER_PATH, "sha256": compiler_sha256},
         "counts": {
@@ -400,6 +518,7 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
         "promotions": rows,
         "report": {
             "equipment_holds": report["equipment_holds"],
+            "physical_field_holds": report["physical_field_holds"],
             "conflict": dict(sorted(report["conflict"].items())),
             "malformed": dict(sorted(report["malformed"].items())),
             "unsupported": dict(sorted(report["unsupported"].items())),
@@ -410,6 +529,15 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
             "batch_id": snapshot["batch_id"],
             "path": "imports/tibiawiki/facts/items-stats.json",
             "snapshot_sha256": snapshot["snapshot_sha256"],
+            "bindings_path": str(SOURCE_BINDINGS.relative_to(ROOT)),
+            "bindings_sha256": hashlib.sha256(SOURCE_BINDINGS.read_bytes()).hexdigest(),
+            "map_owner_inputs": {
+                str(path.relative_to(ROOT)): hashlib.sha256(
+                    path.read_bytes()
+                ).hexdigest()
+                for family in ("terrain", "objects")
+                for path in sorted((ROOT / f"content/world/{family}").glob("*.json"))
+            },
         },
     }
     return (

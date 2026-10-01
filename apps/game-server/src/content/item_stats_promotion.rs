@@ -8,16 +8,18 @@
 //! put there. A field the wiki is silent on is left as it is.
 //! Equipment rows contain one source-qualified pattern; absent restrictions remain Unknown.
 //! They do not grant materialization or a legal destination, and the main backpack retains
-//! its separately qualified starter admission.
+//! its separately qualified starter admission. Declared charges and duration do not infer
+//! consumption, decay, activation, materialization or any other temporal behavior.
 //!
 //! Every row is decoded strictly (exact shape, bounds and closed enums), must name an existing
 //! Item record, and a field may appear once per item; anything else fails closed.
 
 use super::{
     ProjectReferenceRecord, ProjectV2Draft, ReferenceCells, ReferenceElementalAttack,
-    ReferenceEquipmentPattern, ReferenceEquipmentSlot, ReferenceItemEquipment, ReferenceItemField,
-    ReferenceItemImbuement, ReferenceItemPhysical, ReferenceItemProtection, ReferenceItemSemantics,
-    ReferenceItemWeapon, ReferenceSignedPoints, ReferenceWeaponElement, ReferenceWeaponType,
+    ReferenceEquipmentPattern, ReferenceEquipmentSlot, ReferenceItemCharges,
+    ReferenceItemEquipment, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPhysical,
+    ReferenceItemProtection, ReferenceItemSemantics, ReferenceItemTemporal, ReferenceItemWeapon,
+    ReferenceMilliseconds, ReferenceSignedPoints, ReferenceWeaponElement, ReferenceWeaponType,
     world_project_sha256,
 };
 use serde::Deserialize;
@@ -27,8 +29,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
 pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
-    "85a900853641fe1cb8a7b37e7635221af0b5f7ef8cb282eb323f71ae68c8f795";
-pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 12_286;
+    "043d453bab5df6077ae0579e325965e0a589a93dfedebc37c10a5e78c6060ee1";
+pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 12_482;
 pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_530;
 const SCHEMA: &str = "OTERYN_ITEM_STATS_PROMOTION/v2";
 
@@ -109,6 +111,8 @@ enum TypedValue {
     WeaponType(ReferenceWeaponType),
     ElementalAttacks(Vec<ElementalAttack>),
     CountU8(u8),
+    CountU32(u32),
+    DurationMs(u64),
     WeightCentiOz(u32),
 }
 
@@ -219,6 +223,26 @@ fn set<T: PartialEq>(field: &mut ReferenceItemField<T>, value: T) -> bool {
     replaced
 }
 
+// Declared count/time values only fill unknowns or repeat the same known value.
+// A blocked leaf must not become known just because its containing group is known.
+fn set_declared<T: PartialEq>(
+    field: &mut ReferenceItemField<T>,
+    value: T,
+    row: &Row,
+) -> Result<bool, ItemStatsPromotionError> {
+    match field {
+        ReferenceItemField::Unknown => {
+            *field = ReferenceItemField::Known(value);
+            Ok(false)
+        }
+        ReferenceItemField::Known(old) if *old == value => Ok(false),
+        _ => Err(row_error(
+            row,
+            "declared field is blocked or has a conflicting known value",
+        )),
+    }
+}
+
 fn set_field(
     semantics: &mut ReferenceItemSemantics,
     row: &Row,
@@ -282,6 +306,33 @@ fn set_field(
         }
         ("physical.weight", TypedValue::WeightCentiOz(weight)) => {
             set(&mut physical(semantics, row)?.weight, *weight)
+        }
+        ("charges.count", TypedValue::CountU32(count)) => {
+            let charges = group(
+                &mut semantics.charges,
+                || ReferenceItemCharges {
+                    count: ReferenceItemField::Unknown,
+                },
+                row,
+            )?;
+            set_declared(&mut charges.count, *count, row)?
+        }
+        ("temporal.duration", TypedValue::DurationMs(milliseconds)) => {
+            let temporal = group(
+                &mut semantics.temporal,
+                || ReferenceItemTemporal {
+                    consumption_mode: ReferenceItemField::Unknown,
+                    duration: ReferenceItemField::Unknown,
+                    stop_duration: ReferenceItemField::Unknown,
+                    decay_target: ReferenceItemField::Unknown,
+                },
+                row,
+            )?;
+            set_declared(
+                &mut temporal.duration,
+                ReferenceMilliseconds(*milliseconds),
+                row,
+            )?
         }
         _ => return Err(wrong()),
     })
@@ -539,6 +590,134 @@ mod tests {
             let mut invalid = pattern.clone();
             invalid[field] = bad;
             assert!(apply_pattern(invalid).is_err(), "{field}");
+        }
+    }
+
+    #[test]
+    fn declared_count_and_milliseconds_preserve_unknowns_and_are_idempotent() {
+        let rows = format!(
+            "{},{}",
+            row(KEY, "charges.count", r#"{"kind":"COUNT_U32","value":100}"#),
+            row(
+                KEY,
+                "temporal.duration",
+                r#"{"kind":"DURATION_MS","value":450000}"#
+            )
+        );
+        let bytes = packet(&rows, 2, 1);
+        let mut semantics = ReferenceItemSemantics::default();
+        for _ in 0..2 {
+            assert_eq!(
+                apply(&bytes, &mut semantics)
+                    .expect("declared values")
+                    .replaced,
+                0
+            );
+        }
+        let expected = ReferenceItemSemantics {
+            charges: ReferenceItemField::Known(ReferenceItemCharges {
+                count: ReferenceItemField::Known(100),
+            }),
+            temporal: ReferenceItemField::Known(ReferenceItemTemporal {
+                consumption_mode: ReferenceItemField::Unknown,
+                duration: ReferenceItemField::Known(ReferenceMilliseconds(450000)),
+                stop_duration: ReferenceItemField::Unknown,
+                decay_target: ReferenceItemField::Unknown,
+            }),
+            ..ReferenceItemSemantics::default()
+        };
+        assert_eq!(semantics, expected);
+    }
+
+    #[test]
+    fn declared_values_reject_wrong_tags_and_numeric_bounds_without_mutation() {
+        for (path, typed) in [
+            ("charges.count", r#"{"kind":"COUNT_U8","value":100}"#),
+            (
+                "temporal.duration",
+                r#"{"kind":"COUNT_U32","value":450000}"#,
+            ),
+            (
+                "charges.count",
+                r#"{"kind":"COUNT_U32","value":4294967296}"#,
+            ),
+            ("temporal.duration", r#"{"kind":"DURATION_MS","value":-1}"#),
+            (
+                "temporal.duration",
+                r#"{"kind":"DURATION_SECONDS","value":450}"#,
+            ),
+        ] {
+            let mut semantics = ReferenceItemSemantics::default();
+            assert!(apply(&packet(&row(KEY, path, typed), 1, 1), &mut semantics).is_err());
+            assert!(semantics.is_all_unknown());
+        }
+    }
+
+    #[test]
+    fn declared_fields_hold_blocked_groups_leaves_and_conflicting_known_values() {
+        let charge = packet(
+            &row(KEY, "charges.count", r#"{"kind":"COUNT_U32","value":100}"#),
+            1,
+            1,
+        );
+        let duration = packet(
+            &row(
+                KEY,
+                "temporal.duration",
+                r#"{"kind":"DURATION_MS","value":450000}"#,
+            ),
+            1,
+            1,
+        );
+        for blocked in [
+            ReferenceItemField::Conflict,
+            ReferenceItemField::NotApplicable,
+            ReferenceItemField::Known(99),
+        ] {
+            let mut semantics = ReferenceItemSemantics {
+                charges: ReferenceItemField::Known(ReferenceItemCharges { count: blocked }),
+                ..ReferenceItemSemantics::default()
+            };
+            let before = semantics.clone();
+            assert!(apply(&charge, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+        for blocked in [
+            ReferenceItemField::Conflict,
+            ReferenceItemField::NotApplicable,
+            ReferenceItemField::Known(ReferenceMilliseconds(449999)),
+        ] {
+            let mut semantics = ReferenceItemSemantics {
+                temporal: ReferenceItemField::Known(ReferenceItemTemporal {
+                    consumption_mode: ReferenceItemField::Unknown,
+                    duration: blocked,
+                    stop_duration: ReferenceItemField::Known(true),
+                    decay_target: ReferenceItemField::Unknown,
+                }),
+                ..ReferenceItemSemantics::default()
+            };
+            let before = semantics.clone();
+            assert!(apply(&duration, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+        for in_conflict in [false, true] {
+            let mut semantics = ReferenceItemSemantics {
+                charges: if in_conflict {
+                    ReferenceItemField::Conflict
+                } else {
+                    ReferenceItemField::NotApplicable
+                },
+                temporal: if in_conflict {
+                    ReferenceItemField::Conflict
+                } else {
+                    ReferenceItemField::NotApplicable
+                },
+                ..ReferenceItemSemantics::default()
+            };
+            let before = semantics.clone();
+            assert!(apply(&charge, &mut semantics).is_err());
+            assert!(apply(&duration, &mut semantics).is_err());
+            assert_eq!(semantics, before);
         }
     }
 

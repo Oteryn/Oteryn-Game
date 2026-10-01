@@ -179,10 +179,107 @@ def test_equipment_requirements_and_holds():
         assert not report["equipment_holds"]
 
 
+def test_charges_and_duration_qualification():
+    key = "oteryn:item.tibia.i1"
+    definition = {
+        "semantics": {"charges": {"state": "UNKNOWN"}, "temporal": {"state": "UNKNOWN"}}
+    }
+    snap = snapshot({1: [(1, {"charges": "250", "duration": "7.5 minutes"})]})
+    rows, report, _ = lower.build(snap, {1}, {key: definition})
+    got = rows_by(rows)
+    assert got[(key, "charges.count")] == {"kind": "COUNT_U32", "value": 250}
+    assert got[(key, "temporal.duration")] == {"kind": "DURATION_MS", "value": 450000}
+    assert not report["physical_field_holds"]
+    assert lower.duration("1 hour") == lower.duration("60 minutes") == 3600000
+    assert lower.duration("19 days") == 1641600000
+    for raw in (
+        "unknown",
+        "1 second",
+        "0 minutes",
+        "1/2 hours",
+        "0.000001 minutes",
+        "999999999999999999999 days",
+    ):
+        assert lower.duration(raw) is None
+    for raw in ("0", "-1", "4294967296", "unknown"):
+        assert lower.positive_count(raw) is None
+    assert lower.positive_count("4294967295") == 4294967295
+    try:
+        lower.packet_bytes(snap, {1}, "0" * 64)
+    except ValueError as error:
+        assert "wiki snapshot digest mismatch" in str(error)
+    else:
+        raise AssertionError("modified snapshot records kept a stale source digest")
+    assert lower.build(snapshot({1: [(1, {})]}), {1}, {key: definition})[0] == []
+    for field, member, raw in (
+        ("charges", "count", "250"),
+        ("duration", "duration", "10 minutes"),
+    ):
+        group = "charges" if field == "charges" else "temporal"
+        for state in ("CONFLICT", "NOT_APPLICABLE"):
+            blocked = {"semantics": {group: {"state": state}}}
+            _, held, _ = lower.build(
+                snapshot({1: [(1, {field: raw})]}), {1}, {key: blocked}
+            )
+            assert held["physical_field_holds"][0]["reason"] == "BLOCKED_EVIDENCE_STATE"
+            blocked["semantics"][group] = {
+                "state": "KNOWN",
+                "value": {member: {"state": state}},
+            }
+            _, held, _ = lower.build(
+                snapshot({1: [(1, {field: raw})]}), {1}, {key: blocked}
+            )
+            assert held["physical_field_holds"][0]["reason"] == "BLOCKED_EVIDENCE_STATE"
+        for value, reason in (
+            (1, "KNOWN_FIELD_CONFLICT"),
+            (250 if field == "charges" else 600000, None),
+        ):
+            known = {
+                "semantics": {
+                    group: {"state": "KNOWN", "value": {member: lower.known(value)}}
+                }
+            }
+            rows, held, _ = lower.build(
+                snapshot({1: [(1, {field: raw})]}), {1}, {key: known}
+            )
+            assert bool(rows) == (reason is None)
+            if reason:
+                assert held["physical_field_holds"][0]["reason"] == reason
+    for pages, reason in (
+        (
+            [(1, {"duration": "10 minutes"}), (2, {"duration": "20 minutes"})],
+            "WIKI_PAGE_DISAGREEMENT",
+        ),
+        ([(1, {"duration": "unknown"})], "MALFORMED_WIKI_VALUE"),
+    ):
+        rows, held, _ = lower.build(snapshot({1: pages}), {1}, {key: definition})
+        assert not rows and held["physical_field_holds"][0]["reason"] == reason
+    agreed = snapshot(
+        {1: [(1, {"duration": "1 hour"}), (2, {"duration": "60 minutes"})]}
+    )
+    rows, held, _ = lower.build(agreed, {1}, {key: definition})
+    assert rows_by(rows)[(key, "temporal.duration")]["value"] == 3600000
+    assert not held["physical_field_holds"]
+    # A source ID outside the candidate and binding sets still makes a page shared.
+    shared = snapshot({1: [(1, {"duration": "10 minutes"})], 999: [(1, {})]})
+    rows, held, _ = lower.build(shared, {1}, {key: definition})
+    assert not rows and held["physical_field_holds"][0]["sources"][0][
+        "page_item_ids"
+    ] == [1, 999]
+    assert (
+        held["physical_field_holds"][0]["reason"] == "SHARED_PAGE_VARIANT_UNQUALIFIED"
+    )
+    rows, held, _ = lower.build(snap, {1}, {key: definition}, {key})
+    assert not rows and {row["reason"] for row in held["physical_field_holds"]} == {
+        "EXISTING_MAP_OWNER"
+    }
+
+
 def main():
     test_lowering_types_values()
     test_disagreement_malformed_and_non_items()
     test_equipment_requirements_and_holds()
+    test_charges_and_duration_qualification()
     counts = test_committed_packet_rebuilds()
     print(
         f"lower_wiki_stats_packet tests: PASS fields={counts['fields']} items={counts['items']}"
