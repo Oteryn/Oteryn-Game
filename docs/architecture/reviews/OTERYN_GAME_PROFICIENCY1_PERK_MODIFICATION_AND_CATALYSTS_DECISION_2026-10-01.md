@@ -81,7 +81,8 @@ Table `game_character_proficiency_modifications`, at most 2 rows per track:
   level's selection is refused `MODIFIED_LEVEL` until the modification is cleared. Amended:
   PROFICIENCY-0 §4.4's result codes.
 - **Receipts.** PROFICIENCY-0's receipt chain gains the cause `perk_modification`, with the
-  operation (§4) and exactly one line, which carries the track's modification row before and after
+  operation (§4) and exactly one line (zero only for the `REVISION_CHANGED` terminal receipt, §4),
+  which carries the track's modification row before and after
   next to the unchanged progress and selections. The line CHECKs for `perk_modification`:
   - progress, selections and the definition key and revision are unchanged;
   - exactly one slot's row changes: absent to present (`MODIFY`: rank 1, no offer), present to
@@ -123,6 +124,15 @@ is the `character_root`, the track row and its modification rows, the forge dust
   changed when the transaction commits, the operation is refused `REVISION_CHANGED`, terminal for
   that occurrence; the client starts again with a new occurrence, as in the forge (IMBUE-FORGE-0
   §10).
+- **`REVISION_CHANGED` is persisted (as IMBUE-FORGE-0 §10).** The refusal is the occurrence's
+  terminal receipt: a `perk_modification` receipt with the outcome `REJECTED {REVISION_CHANGED}`, the
+  bound set, **zero lines** and no value line, in a receipt-only Character transaction that advances
+  one CharacterRevision like every receipt (DUR-02 rule 2). The line-count CHECK admits zero lines
+  for this outcome only, and every other `perk_modification` receipt still has exactly one line.
+  Every later replay of that occurrence, under any CommandId, returns the same rejection, even if the
+  active set later equals the bound set again. If the terminal write's outcome is unknown, the
+  occurrence stays refused until reconciliation reads the receipt; it is never evaluated meanwhile.
+  The receipt counts against `PROF1-RL-04`.
 - **Value: not admitted here.** The value-spending operations (`MODIFY`, `RANK_UP`, `ORB_RANK`,
   `RESHAPE_OFFER`) need composed DUR-03 §39.3 shapes: the proficiency receipt together with a forge
   dust burn or a one-unit orb burn, with resource, evidence and audit bounds. This decision does not
@@ -135,10 +145,10 @@ is the `character_root`, the track row and its modification rows, the forge dust
   an owner answer before the operation is admitted. This decision admits no gold cost.
 - **Refusals** (nothing written): `NOT_IN_PROTECTION_ZONE`, `SLOT_LOCKED`, `SLOT_OCCUPIED`,
   `NO_SELECTION`, `NO_MODIFICATION`, `RANK_MAX`, `NO_PENDING_OFFER`, `OFFER_PENDING`,
-  `REVISION_CHANGED`,
   `INSUFFICIENT_DUST`, `NO_ORB`, `POOL_TOO_SMALL` (no other entry to offer), `MODIFIED_LEVEL` (a
   selection change at a modified level, §3), `STALE_REVISION` (the client's expected track revision differs),
-  `NOT_ADMITTED` (§5).
+  `NOT_ADMITTED` (§5). `REVISION_CHANGED` is the one refusal that writes its terminal receipt
+  (above).
 - **Replay.** Each command carries an occurrence id; a retry with the same occurrence returns the
   first receipt by key, before any write (PROFICIENCY-0 §4.3). A different occurrence on a changed
   track is refused `STALE_REVISION`.
@@ -177,7 +187,7 @@ their state.
 | `PROF1-RL-01` modification slots per track | 2 |
 | `PROF1-RL-02` rank | 1..10 |
 | `PROF1-RL-03` reshape options | 3 |
-| `PROF1-RL-04` modification receipts per character per minute | 30 (anti-spam; a refusal writes nothing) |
+| `PROF1-RL-04` modification receipts per character per minute | 30 (anti-spam; a refusal other than `REVISION_CHANGED` writes nothing) |
 
 Each with max and max+1 tests.
 
@@ -217,6 +227,10 @@ None now. A gold cost, or a value that evidence never settles, comes back to the
   slots have no state, cause or transaction.
 - **Minimum sufficient:** one table, one receipt cause, six operations with their refusals, replay
   and revision binding, a reserved cause name and a fail-closed gate; no value shape is admitted yet.
+- **Harder later:** the modification table, the `perk_modification` cause and its line CHECKs join
+  the Character chain, so a later change to them needs a migration of stored receipts and rows; the
+  durable reshape offer means changing to free redraws later would orphan stored offers; the six
+  command shapes join capability 2's compatibility surface once PROF-SHAPE-WIRE-1 ships.
 - **Superseding evidence:** official or owner-verified costs, pools, odds and catalyst effects.
 - **Deliberately not decided:** values (§2 UNKNOWN), gold costs, the Test Proficiency Catalyst's
   Global status.
