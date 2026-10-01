@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import copy
 import json
+from collections import Counter
 
 import reward_claim_authoring as rca
 
@@ -167,11 +168,62 @@ def test_duplicate_key_and_shared_chest_fail() -> None:
     assert any("bound by another claim" in e for e in errors), errors
 
 
+def test_stack_count_at_proven_maximum_and_above() -> None:
+    known = items()
+    known[COIN]["semantics"] = {"stack": {"state": "KNOWN", "value": {
+        "stack_max": {"state": "KNOWN", "value": 5}}}}
+    for count, ready in [(5, True), (6, False)]:
+        claim = pilot_claim("stack", "canary:item/3031", count)
+        records, checks = rca.build_records([claim], manifest_for(claim), known)
+        assert (records[0]["definition"]["readiness"] == "ready") == ready
+        assert bool(checks) == (not ready)
+        assert rca.validate(records, known, checks) == []
+        if not ready:
+            records[0]["definition"]["readiness"] = "ready"
+            assert any("marked ready" in e for e in rca.validate(records, known, checks))
+
+
+def test_stack_default_maximum_and_invalid_proven_maximum() -> None:
+    assert rca.stack_problem(items()[COIN], 100) is None
+    assert "stack maximum" in rca.stack_problem(items()[COIN], 101)
+    for maximum in [0, 101, True]:
+        coin = copy.deepcopy(items()[COIN])
+        coin["semantics"] = {"stack": {"state": "KNOWN", "value": {
+            "stack_max": {"state": "KNOWN", "value": maximum}}}}
+        assert "unsupported stack maximum" in rca.stack_problem(coin, 1)
+
+
+def test_legacy_uid_collision_is_server_scoped_and_must_be_reported() -> None:
+    claims = [pilot_claim("a", "canary:item/3031", 1, x=1),
+              pilot_claim("b", "canary:item/3031", 1, x=2)]
+    manifest = manifest_for(*claims)
+    for entry in manifest["entries"]:
+        entry["sources"][0]["uid"] = 6117
+    records, checks = rca.build_records(claims, manifest, items())
+    assert checks[0]["reason"] == "duplicate legacy unique id"
+    assert checks[0]["unique_id"] == 6117
+    assert len(checks[0]["bindings"]) == 2
+    assert any("duplicate legacy unique id" in e for e in rca.validate(records, items()))
+    assert rca.validate(records, items(), checks) == []
+    assert any("missing or stale" in e for e in rca.validate(records, items(), []))
+    stale = copy.deepcopy(checks)
+    stale[0]["bindings"].pop()
+    assert any("missing or stale" in e for e in rca.validate(records, items(), stale))
+    manifest["entries"][1]["sources"][0]["source"] = "crystalserver"
+    records, checks = rca.build_records(claims, manifest, items())
+    assert checks == []
+    assert rca.validate(records, items()) == []
+
+
 def test_committed_content_is_valid() -> None:
     assert rca.committed_errors() == []
     index = json.loads((rca.ROOT / rca.INDEX_PATH).read_text(encoding="utf-8"))
     assert index["record_count"] == 231
-    assert index["readiness"] == {"ready": 27, "waiting_item_semantics": 204}
+    records = [r["definition"] for p in index["shards"]
+               for r in json.loads((rca.ROOT / p).read_text())["records"]]
+    assert index["readiness"] == dict(Counter(r["readiness"] for r in records))
+    collisions = [c for c in index["source_checks"] if c.get("reason") == "duplicate legacy unique id"]
+    assert any(c["server"] == "canary" and c["unique_id"] == 6117 for c in collisions)
 
 
 if __name__ == "__main__":

@@ -32,7 +32,10 @@ texts, random choices and achievements are later children.
   class and the count fits it. Otherwise it is `waiting_item_semantics`: the MINT fails closed
   on it (D82) until ITEM-SEM covers the Item.
 - **Source checks.** A count that contradicts a known stack class is listed in the index under
-  `source_checks`. It is not guessed.
+  `source_checks`. StackCapable counts must fit a proven `semantics.stack.value.stack_max`,
+  or D82's maximum of 100 when no smaller maximum is known. Unsupported maxima never become ready.
+  Duplicate legacy unique ids are server-scoped and recorded with every claim/position;
+  validation rejects missing or stale collision diagnostics. Position bindings remain authoritative.
 
 ```sh
 cd tools/content-schema/reward-claim-authoring
@@ -40,6 +43,9 @@ python reward_claim_authoring.py content          # rebuild after the pilot or c
 python reward_claim_authoring.py content --check  # CI
 python test_reward_claim_authoring.py
 ```
+
+The RewardClaim Authoring workflow runs both commands on tool, chest-source, Item,
+interaction and shared-registration changes, including stacked pull requests.
 
 **A change to `content/items`,** for example ITEM-SEM adding stack facts:
 - It never breaks this family. Only a claim marked `ready` that its Items no longer support is

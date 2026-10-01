@@ -122,7 +122,36 @@ def stack_problem(definition: dict | None, count: int) -> str | None:
         return "waiting"
     if definition["stack_class"] == "NonStackable" and count != 1:
         return "NonStackable reward with count > 1"
+    if definition["stack_class"] == "StackCapable":
+        # D82 admits 100 when no smaller maximum is proven. Keep portable
+        # ReferenceItemField encoding in sync with validate_reward_claim_count.
+        stack = definition.get("semantics", {}).get("stack", {})
+        maximum = stack.get("value", {}).get("stack_max", {}) if stack.get("state") == "KNOWN" else {}
+        limit = maximum.get("value") if maximum.get("state") == "KNOWN" else 100
+        if type(limit) is not int or not 1 <= limit <= 100:
+            return "StackCapable Item has unsupported stack maximum"
+        if count > limit:
+            return f"StackCapable reward with count > stack maximum ({limit})"
     return None
+
+
+def legacy_uid_checks(records: list) -> list[dict]:
+    """A legacy UID is server-scoped; positions disambiguate known collisions."""
+    bindings = {}
+    for row in records:
+        claim = row["definition"]
+        for placement in claim["placements"]:
+            source = placement["source_binding"]
+            position = source["project_position"]
+            where = (claim["identity"]["key"], position["x"], position["y"], position["z"])
+            for ref in source["legacy_unique_ids"]:
+                bindings.setdefault((ref["server"], ref["unique_id"]), set()).add(where)
+    return [
+        {"reason": "duplicate legacy unique id", "server": server, "unique_id": uid,
+         "bindings": [{"claim": claim, "project_position": {"x": x, "y": y, "z": z}}
+                      for claim, x, y, z in sorted(places)]}
+        for (server, uid), places in sorted(bindings.items()) if len(places) > 1
+    ]
 
 
 def build_records(claims: list, manifest: dict, items: dict) -> tuple[list, list]:
@@ -187,6 +216,7 @@ def build_records(claims: list, manifest: dict, items: dict) -> tuple[list, list
         if claim.get("quest"):
             record["quest"] = claim["quest"]
         records.append({"definition": record})
+    source_checks.extend(legacy_uid_checks(records))
     return records, source_checks
 
 
@@ -263,7 +293,7 @@ def registered(
     return project, manifest, lock
 
 
-def validate(records: list, items: dict) -> list[str]:
+def validate(records: list, items: dict, source_checks: list | None = None) -> list[str]:
     """Rules on the generated records; each error names the claim."""
     errors = []
     keys, bindings = set(), set()
@@ -322,6 +352,14 @@ def validate(records: list, items: dict) -> list[str]:
             errors.append(f"{key}: marked ready but an Item cannot be minted as given")
         elif record["readiness"] not in ("ready", "waiting_item_semantics"):
             errors.append(f"{key}: unknown readiness {record['readiness']}")
+    collisions = legacy_uid_checks(records)
+    if source_checks is None:
+        for collision in collisions:
+            errors.append(f"duplicate legacy unique id {collision['server']}:{collision['unique_id']}")
+    else:
+        recorded = [check for check in source_checks if check.get("reason") == "duplicate legacy unique id"]
+        if recorded != collisions:
+            errors.append("legacy unique id collisions are missing or stale in source_checks")
     return errors
 
 
@@ -331,7 +369,7 @@ def committed_errors() -> list[str]:
     records = [
         row for shard in index["shards"] for row in load_json(ROOT / shard)["records"]
     ]
-    errors = validate(records, load_items())
+    errors = validate(records, load_items(), index["source_checks"])
     if len(records) != index["record_count"]:
         errors.append(
             f"index record_count {index['record_count']} != {len(records)} records"
@@ -347,7 +385,7 @@ def generate() -> dict[str, str]:
     records, source_checks = build_records(
         claims, load_json(ROOT / MANIFEST_REL), items
     )
-    errors = validate(records, items)
+    errors = validate(records, items, source_checks)
     if errors:
         raise ValueError("\n".join(errors))
     outputs = content_files(claims_bytes, records, source_checks)
