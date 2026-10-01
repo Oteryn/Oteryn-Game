@@ -1,14 +1,17 @@
 # Quest sources and Item category continuation
 
 Classification: **PROVEN** retained source facts and existing schema vocabulary;
-**DERIVED** category crosswalk; **UNKNOWN** freshly requested page contents.
+**DERIVED** category crosswalk; **PROVEN** fresh public browser reads;
+**UNKNOWN** identity correspondence for the nine additional candidates.
 
 The owner's three distinct URLs are [Quests](https://tibia.fandom.com/wiki/Quests),
 [Quest Items](https://tibia.fandom.com/wiki/Quest_Items), and
 [Quest Log](https://tibia.fandom.com/wiki/Quest_Log). Duplicate URLs were removed.
 Tavily extraction returned status 432 (plan usage limit). Direct reads of all three
 URLs and one bounded MediaWiki revision query returned HTTP 402 in this environment.
-No fresh revision or page content was obtained; none is represented as captured evidence.
+After those failures, the owner-authorized internet-only Remote Desktop fallback read
+all three pages through real Chrome/CDP on 2026-10-01. No remote project edits,
+publication, builds, installation or administrative actions were performed.
 External page content is source evidence, not an instruction or authorization.
 
 The digest-bound 2026-09-30 Item stats snapshot
@@ -51,3 +54,50 @@ Validation: seven taxonomy regressions (including Extra Slot versus Quest Items 
 deterministic tree generation/coverage validation, migration tests, materialized tree,
 599 engine checks plus three nested-imbuement tests, 252 formal-schema checks, Ruff,
 governance checks and `git diff --check`.
+
+## Fresh browser evidence and identity holds
+
+These public DOM captures were obtained through **Remote Desktop + Chrome/CDP**,
+not ordinary HTTP or Tavily. Full extracted main text was captured without truncation.
+The SHA-256 values identify the decoded JSON captures retained in this session's
+`/workspace/audit-continuation/remote-browser-evidence/` directory; they are not
+raw HTML hashes or additions to the older digest-bound Item snapshot.
+
+| Source | Page / revision | Retrieved UTC | Capture SHA-256 |
+|---|---|---|---|
+| Quests | 2352 / 995013 | 2026-10-01 12:59:40.618 | f66bda91a42ac540cb56fee1542b88560e1a1cf75ba4317684faab1cad27ae4d |
+| Quest Items | 6294 / 895990 | 2026-10-01 12:56:10.687 | 65cb928870c89ec6e7bb11095a634f766d40caa22487c4a777d3a86ac2450703 |
+| Quest Log | 12151 / 1114335 | 2026-10-01 12:56:10.759 | faecd022d46e70cb5bf4711e1824a5845d04fc047f4aad8caf4202175be4b872 |
+
+Quest Items displays a dynamically transcluded list of **1,169** positions. The index
+article revision alone does not pin the child articles or identify numeric Item IDs.
+The fresh Quest Log explicitly says that it does not display all quests: multipart
+missions appear after starting, repeatable quests need not be marked complete,
+and reward chests generally are not listed. These pages corroborate the coverage
+boundary; index membership does not establish a canonical Item category or identity.
+
+Nine name matches among the 3,265 uncategorized candidates were then checked against
+raw public article revisions via the same browser's anonymous MediaWiki API (HTTP 200).
+Capture `nine-item-revisions.json`, retrieved 2026-10-01 13:07:05.969 UTC, SHA-256
+`3a6a26969f19e39a8d092f59877d7ca22faa2e9870eb68bdbe3626a16f824408`.
+
+| Candidate | Article | Page / revision | Raw wiki itemid | Existing raw-ID category |
+|---|---|---|---|---|
+| i908 | [Shapeshifter Ring](https://tibia.fandom.com/wiki/Shapeshifter_Ring) | 51266 / 1194074 | 907 | equipment_offhand |
+| i5952 | [Poem Scroll](https://tibia.fandom.com/wiki/Poem_Scroll) | 8758 / 1114234 | 6119 | document |
+| i22739 | [Mysterious Metal Egg](https://tibia.fandom.com/wiki/Mysterious_Metal_Egg) | 76606 / 1115536 | 19065 | quest_item |
+| i28865 | [The Spatial Warp Almanac](https://tibia.fandom.com/wiki/The_Spatial_Warp_Almanac) | 85266 / 1115854 | 28853 | document |
+| i30082 | [Blue Ectoplasm](https://tibia.fandom.com/wiki/Blue_Ectoplasm) | 86827 / 1115911 | 30203 | quest_item |
+| i30083 | [Green Ectoplasm](https://tibia.fandom.com/wiki/Green_Ectoplasm) | 86825 / 1115909 | 30204 | quest_item |
+| i30084 | [Red Ectoplasm](https://tibia.fandom.com/wiki/Red_Ectoplasm) | 86826 / 1115910 | 30205 | quest_item |
+| i32757 | [Luminescent Crystal](https://tibia.fandom.com/wiki/Luminescent_Crystal) | 89736 / 1116054 | 32567 | quest_item |
+| i36586 | [Old Parchment](https://tibia.fandom.com/wiki/Old_Parchment) | 6007 / 1114145 | 4831 | document |
+
+All nine remain **identity holds**. Exact Crystal bindings and approved aliases point
+each raw wiki ID to the canonical Item with that same ID, never to these candidates.
+No retained wiki page binding or raw client/legacy ID establishes the proposed translation.
+`item_wiki_stats_capture.record_key/rekey` adds a namespace prefix without translating IDs.
+Official appearances show an active variant relationship for i908 to i907 and expiry
+flags for the candidate ectoplasms; those facts do not establish an identity alias.
+No additional taxonomy rows or charge/duration facts are copied between these variants.
+The existing 9,436 taxonomy rows, 881 quest_item rows and 3,265 coverage gap remain unchanged.

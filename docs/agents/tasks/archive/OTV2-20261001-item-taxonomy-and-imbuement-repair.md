@@ -34,9 +34,12 @@ depends_on: []
   market/clothing agreements and 18 Extra Slot equipment categories using the existing
   profile catalog. Contradictory or otherwise unadmitted newer wiki categories remain held;
   3,265 current Items have neither taxonomy nor an existing map owner.
-- UNKNOWN: fresh contents of the owner's Quests/Quest Items/Quest Log URLs. Tavily returned
-  432 (usage limit); direct HTTP and MediaWiki reads returned 402. Retained snapshots supply
-  the category facts. i40522/i44432/i44433 identity holds and i2984 wiki conflict remain held.
+- PROVEN: fresh Quests/Quest Items/Quest Log pages were read through owner-authorized
+  Remote Desktop + Chrome/CDP after Tavily 432 and direct HTTP 402 failures. Quest Items
+  lists 1,169 dynamic positions; Quest Log explicitly has incomplete coverage. Nine fresh
+  article ID checks do not match the uncategorized candidate IDs and remain identity holds.
+  Captures, revisions and hashes are in the quest evidence record. Retained snapshots supply
+  the generated category facts; i40522/i44432/i44433 and i2984 remain held.
   The quest-category follow-up creates no new Quest identities or runtime relations.
 - PROVEN: all 656 positive imbuement-slot definitions have their relation; 582 missing edges
   repaired, total 729 relation sources / 803 edges. Forge/enchanting evidence remains retained.

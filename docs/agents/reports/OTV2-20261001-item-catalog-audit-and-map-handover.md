@@ -320,8 +320,13 @@ migration suite pass after the client and quest-category supplements.
 The owner supplied three distinct Fandom source pages: [Quests](https://tibia.fandom.com/wiki/Quests),
 [Quest Items](https://tibia.fandom.com/wiki/Quest_Items) and [Quest Log](https://tibia.fandom.com/wiki/Quest_Log).
 Tavily returned status 432 (usage limit); direct reads and a bounded MediaWiki query returned
-HTTP 402 in this environment. No fresh page contents or revisions were obtained. The
-digest-bound retained snapshot remains the evidence source.
+HTTP 402 in this environment. The later owner-authorized Remote Desktop + real Chrome/CDP
+fallback successfully read all three public pages and nine individual article revisions.
+Quest Items displayed 1,169 dynamic positions; Quest Log explicitly describes incomplete
+coverage. All nine additional name matches have different raw Item IDs and remain identity
+holds. Capture timestamps, revisions, hashes and the identity table are recorded in the
+linked evidence below. The retained snapshot remains the category-generation source;
+these fresh index reads do not change its digest or authorize cross-ID fact transfers.
 
 The existing profile catalog already lists Extra Slot under equipment_offhand. Admitting
 that exact value in the shared crosswalk qualifies 18 existing, exact-bound, non-map-owned
