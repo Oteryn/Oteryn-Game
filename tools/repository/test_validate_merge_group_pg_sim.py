@@ -20,7 +20,13 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "9e7f083a7e2a58a1d03910d90a9423dd7ec5478c"
+_PIN_SPEC = importlib.util.spec_from_file_location(
+    "queue_pin_policy_core", Path(__file__).with_name("validate_repository_policy_core.py")
+)
+assert _PIN_SPEC is not None and _PIN_SPEC.loader is not None
+_PIN_CORE = importlib.util.module_from_spec(_PIN_SPEC)
+_PIN_SPEC.loader.exec_module(_PIN_CORE)
+APPROVED = _PIN_CORE.CONTROL_CONTRACT_PINS["merge-group"][3]
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),

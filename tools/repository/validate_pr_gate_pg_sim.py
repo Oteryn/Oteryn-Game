@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import re
 from pathlib import Path
 
@@ -18,10 +19,16 @@ POSTGRES_IMAGE = (
     "postgres:17.6-bookworm@"
     "sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3"
 )
-# Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
+# Reuse the single candidate-side pin registry; protected-base approval is separate.
+_CORE_SPEC = importlib.util.spec_from_file_location(
+    "pr_evidence_policy_core", Path(__file__).with_name("validate_repository_policy_core.py")
+)
+assert _CORE_SPEC is not None and _CORE_SPEC.loader is not None
+_CORE = importlib.util.module_from_spec(_CORE_SPEC)
+_CORE_SPEC.loader.exec_module(_CORE)
 EXPECTED_EVIDENCE_JOB_SHA256 = {
-    "rust_linux": "dd8325e8c111f61bd8fa230c34e104124621d7f39ba779d6b8fa7025ca26c184",
-    "rust_windows": "f28b0844ae3779d164cb85f5d8ef5bb4532b78baa2cd55e20cdff9e67c47f1d4",
+    job: _CORE.CONTROL_CONTRACT_PINS[f"pr/{job}"][3]
+    for job in ("rust_linux", "rust_windows")
 }
 
 

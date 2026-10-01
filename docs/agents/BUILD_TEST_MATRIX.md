@@ -86,6 +86,31 @@ Selected jobs must succeed. Only genuinely unselected jobs may be `skipped`; mis
 
 A PR-head PASS does not prove integration. Require the real `merge_group` aggregate `game-gate` SUCCESS and protected-main readback.
 
+## CI build cache
+
+The Linux, Windows and registered PostgreSQL jobs use the same Rust 1.94.0
+toolchain and CI-only `dev`/`test` debug setting `line-tables-only`. Assertions,
+overflow checks, optimization levels, release configuration and all existing
+test commands retain their Cargo settings. Incremental compilation is disabled
+for these disposable runners.
+
+The immutable upstream `Swatinem/rust-cache` action caches dependencies, excludes
+workspace artifacts and incremental state, and keys compiler, Cargo manifests,
+lockfiles and compiler environment. Linux and Windows use separate shared keys.
+Only successful protected-main **push** Linux/Windows jobs publish; PR, Merge
+Queue, PostgreSQL and manual-dispatch jobs restore only. A miss remains a normal
+full build. Existing whole-`target/` entries are not restored by the new namespace.
+
+Each selected protected-main Linux, Windows or PostgreSQL push lane cancels its
+superseded build. A push with unselected heavy lanes does not cancel an earlier
+selected job; manual runs are independent. PR and synthetic Merge Queue
+identity/qualification are unchanged.
+
+`test_ci_build_cache.py` guards publication, profiles and cancellation boundaries.
+After integration, compare cold/warm restore time, cache bytes and build/test time
+against the prior queue runs before claiming a measured improvement. No timing
+target or PostgreSQL test consolidation is established by this configuration.
+
 ## Focused validation
 
 | Change | Focused implementation checks | Frozen-head PR evidence |

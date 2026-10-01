@@ -86,125 +86,17 @@ def classify(module, paths, *, consumers=None):
 
 
 def test_routing_matrix(module):
-    server = "apps/game-server/src/lib.rs"
-    client = "apps/client/src/lib.rs"
-    foundation = "crates/foundation/src/lib.rs"
-
-    result = classify(module, [server])
-    assert result == {
-        "rust": True,
-        "windows": False,
-        "surface": "server",
-        "reason": "server-only-exact-consumer-closure",
-    }, result
-
-    result = classify(module, [client])
-    assert result["rust"] is True and result["windows"] is True, result
-    assert result["surface"] == "client", result
-
-    result = classify(module, [foundation])
-    assert result["rust"] is True and result["windows"] is True, result
-
-    for path in (
-        "Cargo.lock",
-        "apps/game-server/Cargo.toml",
-        ".cargo/config.toml",
-        ".github/workflows/merge-gate.yml",
-        ".github/workflows/merge-group-gate.yml",
-        ".github/workflows/rust.yml",
-        ".github/actions/custom/action.yml",
-        "tools/repository/classify_pr_test_lanes.py",
-        "docs/migration/input.json",
-    ):
-        result = classify(module, [path])
-        assert result["rust"] is True and result["windows"] is True, (path, result)
-
-    auxiliary = (
-        "README.md",
-        "AGENTS.md",
-        "docs/architecture/example.md",
-        "docs/agents/PROJECT_LANES.json",
-        "docs/agents/tasks/active/task.md",
-        "docs/agents/evidence/unconsumed.json",
-        "tools/agents/probe.py",
-        "tools/reference-world-corridor-census/offline.py",
-        ".github/workflows/content-census.yml",
+    spec = importlib.util.spec_from_file_location(
+        "routing_contract", MODULE.with_name("validate_pr_routing_contract.py")
     )
-    for path in auxiliary:
-        result = classify(module, [path])
-        assert result["rust"] is False and result["windows"] is False, (path, result)
-        assert result["reason"] == "unconsumed-auxiliary-inputs", (path, result)
-
-    incident = [
-        ".github/workflows/item-wiki-first-census.yml",
-        "docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json",
-        "docs/agents/tasks/active/OTV2-20260923-item-wiki-first-census.md",
-        "tools/reference-world-corridor-census/item_wiki_first_census.py",
-        "tools/reference-world-corridor-census/item_wiki_first_census_self_test.py",
-    ]
-    result = classify(module, incident)
-    assert result["rust"] is False and result["windows"] is False, result
-    assert result["reason"] == "unconsumed-auxiliary-inputs", result
-
-    evidence = "docs/agents/evidence/runtime.json"
-    result = classify(module, [evidence], consumers={evidence: {"oteryn-game-server"}})
-    assert result["rust"] is True and result["windows"] is False, result
-    assert result["reason"] == "server-only-exact-consumer-closure", result
-
-    dynamic = "docs/runtime/generated/item.json"
-    result = classify(module, [dynamic], consumers={dynamic: {"oteryn-game-server"}})
-    assert result["rust"] is True and result["windows"] is False, result
-
-    helper = "tools/content/helper.py"
-    result = classify(module, [helper], consumers={helper: {module.CONTROL_CONSUMER}})
-    assert result["rust"] is True and result["windows"] is True, result
-    assert result["reason"] == "canonical-control-consumer-affected", result
-
-    governance = "AGENTS.md"
-    result = classify(module, [governance], consumers={governance: {"oteryn-client"}})
-    assert result["rust"] is True and result["windows"] is True, result
-
-    mixed_consumers = {server: set(), evidence: set()}
-    result = classify(module, [server, evidence], consumers=mixed_consumers)
-    assert result["rust"] is True and result["windows"] is False, result
-
-    unknown = "unowned/runtime-input.bin"
-    result = classify(module, [unknown], consumers={unknown: set()})
-    assert result["rust"] is True and result["windows"] is True, result
-    assert result["reason"] == "unmodelled-input", result
-
-    result = classify(module, [unknown], consumers={unknown: {"oteryn-game-server"}})
-    assert result["rust"] is True and result["windows"] is False, result
-
-    cross = [{
-        "filename": "docs/agents/tasks/archive/task.md",
-        "status": "renamed",
-        "previous_filename": server,
-    }]
-    result = classify(module, cross)
-    assert result["rust"] is True and result["windows"] is True, result
-    assert result["reason"] == "cross-surface-rename", result
-
-    atlas = sorted(module.ATLAS_FULLWORLD_PATHS)[0]
-    result = classify(module, [atlas])
-    assert result == {
-        "rust": False,
-        "windows": False,
-        "surface": "atlas-fullworld",
-        "reason": "audited-atlas-fullworld-source",
-    }, result
-
-    for path in (
-        "tools/game-atlas-fullworld-source/animated.py",
-        "tools/game-atlas-creatures/export.py",
-    ):
-        result = classify(module, [path])
-        assert result["rust"] is True and result["windows"] is True, (path, result)
-
+    assert spec is not None and spec.loader is not None
+    contract = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(contract)
+    contract.verify_classifier_matrix(module, fixture())
     assert module.routing_health(module.full("classifier-input-failure")) == "degraded"
     assert module.routing_health(module.full("unmodelled-input")) == "unmodelled"
-    assert module.routing_health(result) == "modelled"
-    print("Routing matrix PASS: product, auxiliary, exact consumers, controls, Atlas and fail-closed cases")
+    assert module.routing_health(module.full("windows-consumer-affected")) == "modelled"
+    print("Shared routing matrix PASS: product, auxiliary, exact consumers, controls, Atlas and fail-closed cases")
 
 
 def git(root, *args):
