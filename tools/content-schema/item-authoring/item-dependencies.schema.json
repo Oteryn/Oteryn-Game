@@ -230,6 +230,49 @@
           "additionalProperties": false,
           "properties": {
             "source_profile": {
+              "const": "cipsoft_client_15_30_proficiencies_v1"
+            },
+            "repository": {
+              "const": "Oteryn/Oteryn-Game"
+            },
+            "revision": {
+              "const": "client-15.30"
+            },
+            "path": {
+              "const": "content/assets/files/proficiencies-7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015.json"
+            },
+            "digest_sha256": {
+              "const": "7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015"
+            },
+            "external_id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "source_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "target": {
+              "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/ProficiencyRef"
+            }
+          },
+          "required": [
+            "source_profile",
+            "repository",
+            "revision",
+            "path",
+            "digest_sha256",
+            "external_id",
+            "source_version",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source_profile": {
               "const": "canary_47dfd51_item_definition_v1"
             },
             "repository": {
@@ -312,7 +355,7 @@
           ]
         }
       ],
-      "description": "Pinned Canary or Crystal source-ID to admitted canonical Proficiency mapping; numeric IDs never become ContentKeys."
+      "description": "Pinned 15.30 client (required for a profile_binding), Canary or Crystal source-ID to admitted canonical Proficiency mapping; numeric IDs never become ContentKeys."
     }
   }
 }

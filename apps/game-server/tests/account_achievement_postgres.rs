@@ -25,6 +25,14 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
+// The runtime Achievement catalogue of the display read, with the narrow
+// `content` shim it names (as `character_authority_postgres` includes them).
+#[allow(dead_code, unused_imports)]
+#[path = "../src/achievement_catalogue.rs"]
+pub mod achievement_catalogue;
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_shim.rs"]
+pub mod content;
 
 #[allow(dead_code)]
 #[path = "support/bestiary_postgres_harness.rs"]

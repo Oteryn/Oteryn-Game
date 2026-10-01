@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "385bf34e92c50e33e75d030554056a3df94d68d08d8c118152c4f334c3b9aef6",
+        "67f08b3425c668112041b2f10e86631b367216f38a8df7d19fdf0c5bffd2398d",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        22_219_898,
-        "5448eec873d68366d1a97ec33720b2b30632712f596ffcc77349218f862452b5",
+        22_411_134,
+        "99736ee23439c6e23fc463ed5774e8e879ed0d337b80a33d2495d1ffc9aaea7e",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1937,
-        "861640a68f9f3416d6d611ee22fc7c9ed267e01463d294005698f61b6c647fb3",
+        1_937,
+        "6fa860198d75bdc5d4524a5051640b96e5189ad07ec77238665f9a6d81fe0bfa",
     ),
     (
         "presentations/bindings.json",
@@ -47,12 +47,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "e2c6d7695e617391b4af605f9018cb757921aacf47338125ed0b535d7afbc79c",
+        "e00268113747db10e92831a6cb950454d894fa71446bed2c000ea51caf20251d",
     ),
     (
         "provenance/imports.json",
-        32_476,
-        "e8d3445d7493c31b8f87087d8e5926aa407ab2ad85a4150f537b0f681a15fb80",
+        33_077,
+        "c3bf5ddb1b2bb9ded4d022423baef0395e9075b6e81b378a517822e0b1d88eaf",
     ),
     (
         "provenance/sources.json",
@@ -81,6 +81,20 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
+/// Successor family shards (written by `tools/content-schema/world-authoring`) are likewise
+/// never WorldProject locators. They sit only in a successor directory that holds no legacy
+/// locator, so legacy locator lookups scan no additional directory entries.
+fn is_successor_shard(locator: &str) -> bool {
+    SUCCESSOR_TREE_MARKERS.iter().any(|marker| {
+        let directory = marker.trim_end_matches("index.json");
+        locator
+            .strip_prefix(directory)
+            .is_some_and(|name| !name.contains('/') && name.ends_with(".json"))
+            && !DOCUMENTS
+                .iter()
+                .any(|(document, _, _)| document.starts_with(directory))
+    })
+}
 /// WO-2 and Area catalogue shards beside the legacy package: `(directory, shard prefix)`.
 /// Their bytes are pinned by `build_catalogue.py --check` and `build_areas.py build --check`,
 /// not by this package inventory.
@@ -93,9 +107,10 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "147e6c56071bf9c4a8664df33ae30bc905ee2a6f4ab01823c2ece94b0aa990c6";
-/// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
-const ITEMS: usize = 33_567;
+const TREE_SHA256: &str = "9fb3b6e30718169e761dd777da280c3f119bf474ae1102357936a8b8c8234fda";
+/// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
+/// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
+const ITEMS: usize = 34_031;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -130,7 +145,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 11,
+        max_import_records: 12,
         max_reimport_states: ENCOUNTERS,
     }
 }
@@ -255,9 +270,13 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
             "{directory} catalogue is populated"
         );
     }
-    let (mut markers, mut actual): (Vec<_>, Vec<_>) = files
+    let (successors, mut actual): (Vec<_>, Vec<_>) = files.into_iter().partition(|locator| {
+        SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()) || is_successor_shard(locator)
+    });
+    let mut markers: Vec<_> = successors
         .into_iter()
-        .partition(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()));
+        .filter(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()))
+        .collect();
     markers.sort();
     actual.sort();
     assert_eq!(markers, SUCCESSOR_TREE_MARKERS);
@@ -301,8 +320,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     )
     .expect("capture tracked canonical package");
     assert_eq!(project.project_revision(), "g4-npc-wave-a-r9");
-    assert_eq!(project.imports().len(), 11);
-    let provenance = &project.imports()[0];
+    assert_eq!(project.imports().len(), 12);
+    let provenance = &project.imports()[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
     assert_eq!(
@@ -315,7 +334,28 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert!(provenance.candidates.is_empty());
     assert!(provenance.reimport_states.is_empty());
-    let creature_import = &project.imports()[1];
+    // ITEM-ADD-1: the donor identity epoch 2 batch, from its pinned donor items.xml.
+    let donor_provenance = &project.imports()[0];
+    assert_eq!(
+        donor_provenance.batch_id,
+        "cw2-b1-donor-identity-epoch-2-r1"
+    );
+    assert_eq!(donor_provenance.source_repository, "zimbadev/crystalserver");
+    assert_eq!(
+        donor_provenance.source_revision,
+        CW2_B1_DONOR_EPOCH2_SOURCE_REVISION
+    );
+    assert_eq!(
+        donor_provenance.source_artifact_sha256,
+        CW2_B1_DONOR_EPOCH2_ITEMS_XML_SHA256
+    );
+    assert_eq!(
+        donor_provenance.mapper_sha256,
+        CW2_B1_DONOR_EPOCH2_CROSSWALK_SHA256
+    );
+    assert!(donor_provenance.candidates.is_empty());
+    assert!(donor_provenance.reimport_states.is_empty());
+    let creature_import = &project.imports()[2];
     assert_eq!(creature_import.batch_id, "g4-creature-canary-wave-a-r1");
     assert_eq!(creature_import.source_repository, "opentibiabr/canary");
     assert_eq!(
@@ -333,7 +373,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             && state.local == state.baseline
             && state.decision == ReimportDecision::Unchanged
     }));
-    let creature_crystal_import = &project.imports()[2];
+    let creature_crystal_import = &project.imports()[3];
     assert_eq!(
         creature_crystal_import.batch_id,
         "g4-creature-crystal-1530-r1"
@@ -347,14 +387,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
     );
     assert!(creature_crystal_import.candidates.is_empty());
-    let wiki = &project.imports()[3];
+    let wiki = &project.imports()[4];
     assert_eq!(wiki.batch_id, "g4-item-exact-165-tibiawiki-r1");
     assert_eq!(
         wiki.source_artifact_sha256,
         "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
     );
     assert!(wiki.candidates.is_empty());
-    let wave1_import = &project.imports()[4];
+    let wave1_import = &project.imports()[5];
     assert_eq!(wave1_import.batch_id, "g4-item-wave1-tibiawiki-r1");
     assert_eq!(
         wave1_import.source_artifact_sha256,
@@ -365,7 +405,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "tibiawiki-item-wave1-snapshot:5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
     );
     assert!(wave1_import.candidates.is_empty());
-    let mount_import = &project.imports()[5];
+    let mount_import = &project.imports()[6];
     assert_eq!(mount_import.batch_id, "g4-mount-252-tibiawiki-r1");
     assert_eq!(
         mount_import.source_revision,
@@ -556,7 +596,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[7].sha256, mount_import.source_artifact_sha256);
     assert_eq!(v2.sources[7].evidence, ProjectV2EvidenceClass::Derived);
     // D12: offer prices both wikis agree on also come from the committed TibiaWiki BR facts.
-    let npc_br_import = &project.imports()[7];
+    let npc_br_import = &project.imports()[8];
     assert_eq!(npc_br_import.batch_id, "g4-npc-prices-tibiawiki-br-r1");
     assert_eq!(npc_br_import.source_repository, "tibiawiki.com.br");
     assert_eq!(
@@ -570,7 +610,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[4].sha256, npc_br_import.source_artifact_sha256);
     assert_eq!(v2.sources[4].evidence, ProjectV2EvidenceClass::Derived);
     // D14: NPC files Crystal added after its pinned revision come from the pinned summer-update commit.
-    let npc_supplement_import = &project.imports()[6];
+    let npc_supplement_import = &project.imports()[7];
     assert_eq!(
         npc_supplement_import.batch_id,
         "g4-npc-crystal-summer-supplement-r1"
@@ -598,7 +638,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         npc_supplement_import.source_artifact_sha256
     );
     // D13: offer prices two of three wikis agree on also come from the committed Tibiopedia facts.
-    let npc_tibiopedia_import = &project.imports()[8];
+    let npc_tibiopedia_import = &project.imports()[9];
     assert_eq!(
         npc_tibiopedia_import.batch_id,
         "g4-npc-prices-tibiopedia-r1"
@@ -623,7 +663,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         npc_tibiopedia_import.source_artifact_sha256
     );
     assert_eq!(v2.sources[10].evidence, ProjectV2EvidenceClass::Derived);
-    let npc_import = &project.imports()[9];
+    let npc_import = &project.imports()[10];
     assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r9");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[8].key, v2.sources[5].key);
@@ -631,7 +671,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[8].revision, npc_import.source_revision);
     assert_eq!(v2.sources[8].evidence, ProjectV2EvidenceClass::Derived);
     // D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki.
-    let wiki_creature_import = &project.imports()[10];
+    let wiki_creature_import = &project.imports()[11];
     assert_eq!(
         wiki_creature_import.batch_id,
         "g4-wiki-authored-creature-d44-r1"
@@ -854,6 +894,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
     assert!(!keys.contains(R7_P04_UNRELATED_REGISTRY_KEY));
     assert!(keys.contains("oteryn:item.tibia.i3147"));
+    // ITEM-ADD-1: a donor epoch-2 id and an appearance-only id are Items; 48296 (no admitted
+    // CipSoft appearance) stays out.
+    assert!(keys.contains("oteryn:item.tibia.i54335"));
+    assert!(keys.contains("oteryn:item.tibia.i21887"));
+    assert!(!keys.contains(concat!("oteryn:item.tibia.", "i48296")));
     let gold_coin = linked
         .definitions
         .iter()
@@ -922,12 +967,13 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         });
     // The 201 D149 records carried 204 promoted atoms; they left content with their records
     // (ITEM-ID-1b) and are kept in the tombstone archive.
-    assert_eq!(promoted_items, 12_301 - 201);
+    // ITEM-ADD-1: 23 donor epoch-2 Items carry 39 TibiaWiki atoms on these paths.
+    assert_eq!(promoted_items, 12_301 - 201 + 23);
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -941,9 +987,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             (items + usize::from(atoms > 0), fields + atoms)
         });
     // Wave 1 promoted 290 atoms on 164 items; ITEM-SEM-2b adds TibiaWiki weapon types and
-    // imbuement slot counts on the same paths for 1,269 more atoms (995 more items).
-    assert_eq!(wave1_items, 164 + 995);
-    assert_eq!(wave1_fields, 290 + 1_269);
+    // imbuement slot counts on the same paths for 1,269 more atoms (995 more items), and
+    // ITEM-ADD-1 49 more on 27 donor epoch-2 Items.
+    assert_eq!(wave1_items, 164 + 995 + 27);
+    assert_eq!(wave1_fields, 290 + 1_269 + 49);
 }
 
 #[test]
@@ -979,6 +1026,23 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         let payload: serde_json::Value =
             serde_json::from_slice(&fs::read(&marker).expect("read world tree marker"))
                 .expect("world tree marker is JSON");
+        world_markers.push(format!("{locator}index.json"));
+        if payload["schema"] == "OTERYN_FAMILY_INDEX/v1" {
+            // A populated successor family: shards stay in this directory, which holds no
+            // legacy locator (see `is_successor_shard`).
+            assert_eq!(payload["population_state"], "POPULATED", "{path}");
+            let shards = payload["shards"].as_array().expect("family index shards");
+            assert!(!shards.is_empty(), "{path}");
+            for shard in shards {
+                let shard = shard.as_str().expect("family shard path");
+                let shard_locator = shard
+                    .strip_prefix("content/world/")
+                    .unwrap_or_else(|| panic!("{shard}"));
+                assert!(shard_locator.starts_with(locator), "{shard}");
+                assert!(is_successor_shard(shard_locator), "{shard}");
+            }
+            continue;
+        }
         assert_eq!(payload["schema"], "OTERYN_GAME_TREE_DIRECTORY/v1", "{path}");
         assert_eq!(payload["path"], path);
         assert_eq!(payload["kind"], node["kind"], "{path}");
@@ -994,7 +1058,6 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
             },
             "{path}"
         );
-        world_markers.push(format!("{locator}index.json"));
     }
     world_markers.sort();
     assert_eq!(world_markers, SUCCESSOR_TREE_MARKERS);

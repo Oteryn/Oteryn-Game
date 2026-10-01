@@ -1,1 +1,57 @@
-{"admission_main":"ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c","authoring_profile_counts":{"Ability":5902,"Behavior":2589,"Creature":1479,"Effect":4502,"Encounter":61,"Formula":4820,"Loot":23,"Presentation":2589},"editor_entry_counts":{"Item":165,"Mount":252},"family_counts":{"Ability":5902,"Behavior":2589,"Charm":25,"Creature":1479,"Dialogue":694,"Effect":4502,"Encounter":61,"Formula":4820,"Item":33567,"Loot":1032,"Mount":252,"NPC":1110,"Presentation":2589,"Proficiency":443,"RewardClaim":231,"Service.Trade":324,"Service.Travel":56},"item_authoring_counts":{"authoring":164,"relation_sources":147,"taxonomy":164},"legacy_blobs":{"declarations":"04c52da2e1ebbc96c8bf39cde3094b21ea2dc764","editor":"ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7","imports":"9c39f1313d663505a97e37732becf89f7106586a","reference":"dde4fc16d5c285f53d456d84c5d8149250d02dd1","sources":"454e5932f2b2a2bf8c09e4184ae9125daa4d5bfd"},"project_revision":"tree-npc-reviewed-definitions-r1","schema":"OTERYN_GAME_CONTENT_TREE_LOCK/v1","source_binding_counts":{"Creature":1479,"Encounter":61,"Item":165,"Mount":252,"NPC":2376}}
+{
+  "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
+  "authoring_profile_counts": {
+    "Ability": 5902,
+    "Behavior": 2589,
+    "Creature": 1479,
+    "Effect": 4502,
+    "Encounter": 61,
+    "Formula": 4820,
+    "Loot": 23,
+    "Presentation": 2589
+  },
+  "editor_entry_counts": {
+    "Item": 165,
+    "Mount": 252
+  },
+  "family_counts": {
+    "Ability": 5902,
+    "Behavior": 2589,
+    "Charm": 25,
+    "Creature": 1479,
+    "Dialogue": 694,
+    "Effect": 4502,
+    "Encounter": 61,
+    "Formula": 4820,
+    "Item": 34031,
+    "Loot": 1032,
+    "Mount": 252,
+    "NPC": 1110,
+    "Presentation": 2589,
+    "Proficiency": 443,
+    "RewardClaim": 231,
+    "Service.Trade": 324,
+    "Service.Travel": 56
+  },
+  "item_authoring_counts": {
+    "authoring": 164,
+    "relation_sources": 147,
+    "taxonomy": 164
+  },
+  "legacy_blobs": {
+    "declarations": "04c52da2e1ebbc96c8bf39cde3094b21ea2dc764",
+    "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
+    "imports": "ff679cfeb7ac65310271d6fe99e0fc1f79af3dad",
+    "reference": "0906f6727ebe13b06bd94cab0efc95035d3c93ea",
+    "sources": "454e5932f2b2a2bf8c09e4184ae9125daa4d5bfd"
+  },
+  "project_revision": "tree-npc-reviewed-definitions-r1",
+  "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
+  "source_binding_counts": {
+    "Creature": 1479,
+    "Encounter": 61,
+    "Item": 165,
+    "Mount": 252,
+    "NPC": 2376
+  }
+}

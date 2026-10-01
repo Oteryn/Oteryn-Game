@@ -142,6 +142,11 @@ How does a fee fall back to the bank when the carried coins are not enough?
   paragraph also covers `FEE_DEBIT` entries.
 - **D178** is not touched: no new fee source, no new sink.
 
+**Amendment (pending on acceptance of HOUSE-OWN-0, #1368).** The house auction price and rent
+(owner decision D238) are bank-only, as Tibia takes them: they are not fees of §3 and never use coins
+first; their ledger entries reference a house operation, not a fee record
+(`OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md` §9).
+
 ## 7. Rejected options
 
 - **Bank first, then coins.** Tibia and Canary take coins first.
@@ -151,6 +156,10 @@ How does a fee fall back to the bank when the carried coins are not enough?
 - **A new fee cause for the bank part.** It is the same fee; its cause keys both parts.
 - **A funds field in the NPC trade window now.** The server decides; a later wire decision can add
   the two balances as the Tibia client shows them.
+
+**Amendment (pending on acceptance of MARKET-0 (#1367)).** The Market placing fee (owner decision D238) is taken from the bank
+only, as Tibia does: a declared exception to §3's coins-first rule. It is one `FEE_DEBIT` ledger
+entry that references a Market operation instead of a fee record (`OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §4, §8).
 
 ## 8. Decision test
 

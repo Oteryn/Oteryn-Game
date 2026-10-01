@@ -8,17 +8,19 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import textwrap
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "82b0d53592db4b030c65915a12f29ff3da718ad1"
+APPROVED = "9e7f083a7e2a58a1d03910d90a9423dd7ec5478c"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -76,6 +78,69 @@ def _powershell_native_canaries() -> None:
         assert markers[position + 1 :] == [False] * (3 - position), (position, markers)
 
 
+def _queue_lane_routing_canaries(candidate: str) -> None:
+    """Execute the workflow's consumer-routing block, including fallback cases."""
+    start = candidate.index("          if result['surface'] == 'full'")
+    end = candidate.index("          with open(os.environ['GITHUB_OUTPUT']", start)
+    source = textwrap.dedent(candidate[start:end])
+    server = dict(
+        rust=True, windows=False, surface="server",
+        reason="server-only-exact-consumer-closure",
+    )
+    cases = (
+        (server, ("true", "false", "server")),
+        (dict(server, surface="durability"), ("true", "false", "durability")),
+        (dict(rust=False, windows=False, surface="auxiliary"), ("false", "false", "auxiliary")),
+        (dict(server, windows=True), ("true", "true", "full")),
+        (dict(server, rust=False, windows=True), ("true", "true", "full")),
+        (dict(server, reason="unmodelled-input"), ("true", "true", "full")),
+        (dict(server, reason="server-only-exact-consumer-closure-plus-atlas-fullworld"), ("true", "true", "full")),
+        (dict(server, surface="shared"), ("true", "true", "full")),
+        (dict(server, surface="server\nwindows=false"), ("true", "true", "full")),
+        (dict(server, rust="true"), ("true", "true", "full")),
+        (dict(server, windows="false"), ("true", "true", "full")),
+        (dict(server, rust=1), ("true", "true", "full")),
+        (dict(server, windows=0), ("true", "true", "full")),
+        ({}, ("true", "true", "full")),
+        (None, ("true", "true", "full")),
+    )
+    records = [{"filename": "docs/contracts/server-input.md"}]
+    head = "a" * 40
+    with tempfile.TemporaryDirectory() as directory:
+        metadata_path = Path(directory) / "queue-metadata.json"
+        metadata_path.write_text('{"packages": []}', encoding="utf-8")
+        for routed, expected in cases:
+            classify_calls = []
+
+            def classify(*args, **kwargs):
+                classify_calls.append((args, kwargs))
+                assert args == (records, 1, {"packages": []})
+                assert kwargs == dict(candidate_modes_verified=True, candidate_sha=head)
+                return routed
+
+            namespace = dict(
+                os=os, json=json, re=re, records=records, head=head,
+                module=SimpleNamespace(classify=classify, candidate_modes_safe=lambda sha: sha == head),
+                result=dict(rust="true", windows="true", surface="full"),
+            )
+            with patch.dict(os.environ, RUNNER_TEMP=directory):
+                exec(compile(source, "<queue consumer routing>", "exec"), namespace)
+            actual = namespace["result"]
+            assert tuple(actual[key] for key in ("rust", "windows", "surface")) == expected, (routed, actual)
+            assert len(classify_calls) == 1
+
+        # Unreadable/malformed metadata never deselects Windows.
+        for metadata in (None, "not json"):
+            if metadata is None:
+                metadata_path.unlink()
+            else:
+                metadata_path.write_text(metadata, encoding="utf-8")
+            namespace["result"] = dict(rust="true", windows="true", surface="full")
+            with patch.dict(os.environ, RUNNER_TEMP=directory):
+                exec(compile(source, "<queue consumer routing>", "exec"), namespace)
+            assert namespace["result"] == dict(rust="true", windows="true", surface="full")
+
+
 def main() -> int:
     spec = importlib.util.spec_from_file_location(
         "queue_policy_core", Path(__file__).with_name("validate_repository_policy_core.py")
@@ -89,6 +154,7 @@ def main() -> int:
 
     candidate = core.indented_yaml_mapping_block(original, "candidate", 2)
     assert candidate is not None
+    _queue_lane_routing_canaries(candidate)
     assert LIFECYCLE_COMMAND in candidate, "required MQ candidate does not execute lifecycle discovery"
     for fragment in (
         "      rust: ${{ steps.lanes.outputs.rust }}",
@@ -307,6 +373,20 @@ def main() -> int:
         SERVER_SEAM="skipped",
     )
     assert subprocess.run(["bash", "-c", script], env=docs_env, check=False).returncode == 0
+    server_env = dict(env, RUST_REQUIRED="true", WINDOWS_REQUIRED="false", RUST_WINDOWS="skipped")
+    assert subprocess.run(["bash", "-c", script], env=server_env, check=False).returncode == 0
+    for predicate in predicates:
+        failures = ("failure", "cancelled", "") if predicate == "RUST_WINDOWS" else ("failure", "skipped", "cancelled", "")
+        for failure in failures:
+            assert subprocess.run(
+                ["bash", "-c", script], env=dict(server_env, **{predicate: failure}), check=False
+            ).returncode != 0, ("server-only", predicate, failure)
+    # Missing or malformed flags cannot turn a required lane into an optional one.
+    for flag in ("RUST_REQUIRED", "WINDOWS_REQUIRED"):
+        for value in ("", "invalid", "False", "0"):
+            assert subprocess.run(
+                ["bash", "-c", script], env=dict(server_env, **{flag: value}), check=False
+            ).returncode != 0, (flag, value)
     # Physical qualifications fail closed unless explicitly deselected.
     for predicate in ("NODE_BOOT", "SERVER_SEAM"):
         for required in ("true", ""):
@@ -331,7 +411,7 @@ def main() -> int:
     ).returncode != 0
 
     print(
-        "Queue credibility regressions PASS: approved blob, protected-base docs classifier, "
+        "Queue credibility regressions PASS: approved blob, protected-base exact-consumer routing, "
         f"4 native failure positions, {mutations} workflow mutations, full fan-in failures, "
         "docs-only skipped-lane success and fail-closed docs negatives"
     )

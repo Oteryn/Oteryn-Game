@@ -1,12 +1,14 @@
-//! Charm view, unlock and assign typed payloads (CHARM-5; **proposed**, not registered).
+//! Charm view, unlock and assign typed payloads (CHARM-5).
 //!
-//! Wire proposal: `docs/contracts/protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md` §3.2 to
-//! §3.4, following CHARM-0 §4.2 and the owner answers of CHARM-0 §7: only unlocks and assignments
-//! are stored and the balances are derived (answer 2a). This proposal has **no unassign command**:
-//! D170 plans unassign and reset as CHARM-6, which proposes its own command types and gates the
-//! player-facing charm release. The command-type, state-domain and payload-type IDs below are proposals
-//! for the protocol owner. They are not in `PROTOCOL_OTERYN_V1_REGISTRY.json`, and no session or
-//! server sends or accepts them until that owner registers them.
+//! Schema: `docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto`, from
+//! `docs/contracts/protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md` §3.2 to §3.4,
+//! following CHARM-0 §4.2 and the owner answers of CHARM-0 §7: only unlocks and assignments are
+//! stored and the balances are derived (answer 2a). There is **no unassign command**: D170 plans
+//! unassign and reset as CHARM-6, which proposes its own command types and gates the player-facing
+//! charm release. The command types, state domain and resource limits below are registered in
+//! `PROTOCOL_OTERYN_V1_REGISTRY.json` and `RESOURCE_LIMITS_REGISTRY.json` under capability 1
+//! `BESTIARY_CHARMS_V1` (Sol ruling, #162 comment 5907282001). The server does not offer that
+//! capability before CHARM-6 ships (D170).
 //!
 //! One `CharmViewV1` serves both the snapshot and the delta: the view is small (at most
 //! [`MAX_CHARM_VIEW_BYTES`]), so every delta replaces it whole. Command results report an outcome,
@@ -15,8 +17,9 @@
 //! Decoding is strict, and encoding refuses the same values as a server fault before any byte is
 //! emitted: zero or unknown enum values, a charm or race index of zero or above its bound, charms
 //! out of ascending order or repeated, a stage above 3, an assignment on a locked charm, a next
-//! stage cost that is zero before the final stage or non-zero at it, a cost, balance or slot limit
-//! above its bound, and an unlock that expects the final stage all fail closed.
+//! stage cost that is zero before the final stage or non-zero at it, an `effect_active` other than
+//! 0 or 1, a cost, balance or slot limit above its bound, and an unlock that expects the final
+//! stage all fail closed.
 
 use std::num::NonZeroU32;
 
@@ -27,29 +30,33 @@ use crate::charm_wire::{
     read_result_enum, read_uint32, read_uint32_fields, read_varint, set_once,
 };
 
-/// Proposed command type `CHARM_UNLOCK_STAGE_INTENT` (proposal §2).
+/// Registered capability `BESTIARY_CHARMS_V1`: command types 4 and 5, state domains 4 and 5. Not
+/// offered before CHARM-6 ships (D170).
+pub const CAPABILITY_BESTIARY_CHARMS_V1: u32 = 1;
+/// Registered command type `CHARM_UNLOCK_STAGE_INTENT` (capability 1).
 pub const COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT: u32 = 4;
-/// Proposed command type `CHARM_ASSIGN_INTENT` (proposal §2).
+/// Registered command type `CHARM_ASSIGN_INTENT` (capability 1).
 pub const COMMAND_TYPE_CHARM_ASSIGN_INTENT: u32 = 5;
-/// Proposed state domain `CHARACTER_CHARMS` (proposal §2).
+/// Registered state domain `CHARACTER_CHARMS` (capability 1).
 pub const STATE_DOMAIN_CHARACTER_CHARMS: u32 = 5;
 pub const DELTA_TYPE_CHARACTER_CHARMS_V1: u32 = 1;
 pub const SNAPSHOT_TYPE_CHARACTER_CHARMS_V1: u32 = 1;
 
-/// Proposed `CHARM5-RL-03`: charms in one view. The candidate catalogue has 25 (CHARM-0 §2).
+/// `CHARM5-RL-03`: charms in one view. The candidate catalogue has 25 (CHARM-0 §2).
 pub const MAX_CHARMS: usize = 32;
 /// A charm index is 1-based into a charm list of at most [`MAX_CHARMS`] charms.
 pub const MAX_CHARM: u32 = 32;
 /// Charm stages are 0 (locked) to 3 (fully unlocked).
 pub const MAX_CHARM_STAGE: u8 = 3;
-/// Proposed `CHARM5-RL-04`: the largest single stage cost, in Charm Points or Minor Charm Echoes.
+/// `CHARM5-RL-04`: the largest single stage cost, in Charm Points or Minor Charm Echoes.
 pub const MAX_CHARM_STAGE_COST: u32 = 100_000;
-/// Proposed `CHARM5-RL-05`: the largest available balance of either currency.
+/// `CHARM5-RL-05`: the largest available balance of either currency.
 pub const MAX_CHARM_BALANCE: u32 = 1_000_000;
-/// Worst case per entry: charm 1 + 1, kind 1 + 1, stage 1 + 1, race 1 + 2, cost 1 + 3, plus the
-/// entry's own tag and length = 15 bytes; 32 entries = 480, two balances of 1 + 3 and the slot
-/// limit of 1 + 1 = 490 bytes.
-pub const MAX_CHARM_VIEW_BYTES: usize = 490;
+/// Worst case per entry: charm 1 + 1, kind 1 + 1, stage 1 + 1, race 1 + 2, cost 1 + 3,
+/// `effect_active` 1 + 1, plus the entry's own tag and length = 17 bytes; 32 entries = 544, two
+/// balances of 1 + 3 and the slot limit of 1 + 1 = 554 bytes. Sol acknowledged 490 without
+/// `effect_active` and ruled the field in (#162 comment 5913269950); its 2 bytes per entry make 554.
+pub const MAX_CHARM_VIEW_BYTES: usize = 554;
 /// Canonical worst case 4 bytes (charm 1 + 1, expected stage 1 + 1), with slack for explicit
 /// defaults.
 pub const MAX_CHARM_UNLOCK_STAGE_INTENT_BYTES: usize = 8;
@@ -79,6 +86,10 @@ pub struct CharmState {
     pub assigned_race: Option<NonZeroU32>,
     /// The cost of the next stage in the kind's currency; 0 exactly at the final stage.
     pub next_stage_cost: u32,
+    /// Whether the server applies this charm's effect today: `false` while the runtime system the
+    /// effect needs does not exist (CHARM-4 `CharmMissingSystem`), shown as not yet active. The
+    /// server derives it from the charm's definition (Sol ruling, #162 comment 5913269950).
+    pub effect_active: bool,
 }
 
 impl CharmState {
@@ -145,7 +156,7 @@ fn check_view(view: &CharmView) -> WireResult<()> {
 pub fn encode_charm_view(view: &CharmView) -> WireResult<Vec<u8>> {
     check_view(view)?;
     let mut output = Vec::with_capacity(MAX_CHARM_VIEW_BYTES);
-    let mut entry = Vec::with_capacity(13);
+    let mut entry = Vec::with_capacity(15);
     for charm in &view.charms {
         entry.clear();
         push_varint_field(&mut entry, 1, u64::from(charm.charm.get()));
@@ -157,6 +168,7 @@ pub fn encode_charm_view(view: &CharmView) -> WireResult<Vec<u8>> {
             u64::from(charm.assigned_race.map_or(0, NonZeroU32::get)),
         );
         push_nonzero_varint_field(&mut entry, 5, u64::from(charm.next_stage_cost));
+        push_nonzero_varint_field(&mut entry, 6, u64::from(charm.effect_active));
         push_message_field(&mut output, 1, &entry);
     }
     push_nonzero_varint_field(&mut output, 2, u64::from(view.charm_points_available));
@@ -170,8 +182,14 @@ pub fn encode_charm_view(view: &CharmView) -> WireResult<Vec<u8>> {
 }
 
 fn decode_charm_state(input: &[u8]) -> WireResult<CharmState> {
-    let [charm, kind, unlocked_stage, assigned_race, next_stage_cost] =
-        read_uint32_fields::<5>(input)?;
+    let [
+        charm,
+        kind,
+        unlocked_stage,
+        assigned_race,
+        next_stage_cost,
+        effect_active,
+    ] = read_uint32_fields::<6>(input)?;
     let kind = match kind {
         1 => CharmKind::Major,
         2 => CharmKind::Minor,
@@ -183,6 +201,11 @@ fn decode_charm_state(input: &[u8]) -> WireResult<CharmState> {
         unlocked_stage: u8::try_from(unlocked_stage).map_err(|_| CyclopediaWireError::Malformed)?,
         assigned_race: NonZeroU32::new(assigned_race),
         next_stage_cost,
+        effect_active: match effect_active {
+            0 => false,
+            1 => true,
+            _ => return Err(CyclopediaWireError::Malformed),
+        },
     })
 }
 
@@ -289,7 +312,7 @@ impl CharmAssignIntent {
     }
 }
 
-/// `ClientCommand.payload` of the proposed command type 4. An intent the decoder would refuse
+/// `ClientCommand.payload` of the registered command type 4. An intent the decoder would refuse
 /// (a charm above its bound, or expecting the final stage) is refused before any byte is emitted.
 pub fn encode_charm_unlock_stage_intent(intent: &CharmUnlockStageIntent) -> WireResult<Vec<u8>> {
     intent.check()?;
@@ -312,7 +335,7 @@ pub fn decode_charm_unlock_stage_intent(payload: &[u8]) -> WireResult<CharmUnloc
     Ok(intent)
 }
 
-/// `ClientCommand.payload` of the proposed command type 5. An index above its bound is refused
+/// `ClientCommand.payload` of the registered command type 5. An index above its bound is refused
 /// before any byte is emitted.
 pub fn encode_charm_assign_intent(intent: &CharmAssignIntent) -> WireResult<Vec<u8>> {
     intent.check()?;
@@ -379,13 +402,19 @@ pub fn decode_charm_assign_result(payload: &[u8]) -> WireResult<CharmAssignDispo
 mod tests {
     use super::*;
     use crate::bestiary::{
-        MAX_BESTIARY_VIEW_BYTES, SNAPSHOT_TYPE_CHARACTER_BESTIARY_V1,
+        DELTA_TYPE_CHARACTER_BESTIARY_V1, MAX_BESTIARY_KILL_THRESHOLD, MAX_BESTIARY_VIEW_BYTES,
+        MAX_BESTIARY_VIEW_ENTRIES, SNAPSHOT_TYPE_CHARACTER_BESTIARY_V1,
         STATE_DOMAIN_CHARACTER_BESTIARY,
     };
+    use serde_json::Value;
 
-    const PROPOSAL: &str = include_str!(
-        "../../../docs/contracts/protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md"
-    );
+    const PROTOCOL_REGISTRY: &str =
+        include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+    const RESOURCE_REGISTRY: &str =
+        include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+    const SCHEMA_PATH: &str = "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto";
+    const SCHEMA: &str =
+        include_str!("../../../docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto");
 
     fn index(value: u32) -> NonZeroU32 {
         NonZeroU32::new(value).expect("non-zero index")
@@ -404,7 +433,13 @@ mod tests {
             unlocked_stage,
             assigned_race: race.map(index),
             next_stage_cost,
+            effect_active: false,
         }
+    }
+
+    fn active(mut value: CharmState) -> CharmState {
+        value.effect_active = true;
+        value
     }
 
     fn view(charms: Vec<CharmState>, points: u32, echoes: u32) -> CharmView {
@@ -434,16 +469,17 @@ mod tests {
             (CharmView::default(), vec![]),
             // Echoes only: 18 64.
             (view(vec![], 0, 100), vec![0x18, 0x64]),
-            // A locked major charm costing 100 (stage and race omitted); a minor charm at stage 1
-            // on race 5, next cost 150 = 96 01; charm 25 = 0x19 complete on race 300 = AC 02
-            // (cost omitted); 480 points = E0 03, no echoes; 6 slots (Premium) = 20 06.
+            // A locked major charm costing 100 (stage and race omitted) whose effect is active
+            // (30 01); a minor charm at stage 1 on race 5, next cost 150 = 96 01, effect not
+            // active (omitted); charm 25 = 0x19 complete on race 300 = AC 02 (cost omitted),
+            // active; 480 points = E0 03, no echoes; 6 slots (Premium) = 20 06.
             (
                 limited(
                     view(
                         vec![
-                            state(1, CharmKind::Major, 0, None, 100),
+                            active(state(1, CharmKind::Major, 0, None, 100)),
                             state(2, CharmKind::Minor, 1, Some(5), 150),
-                            state(25, CharmKind::Major, 3, Some(300), 0),
+                            active(state(25, CharmKind::Major, 3, Some(300), 0)),
                         ],
                         480,
                         0,
@@ -451,11 +487,13 @@ mod tests {
                     6,
                 ),
                 [
-                    entry(&[0x08, 0x01, 0x10, 0x01, 0x28, 0x64]),
+                    entry(&[0x08, 0x01, 0x10, 0x01, 0x28, 0x64, 0x30, 0x01]),
                     entry(&[
                         0x08, 0x02, 0x10, 0x02, 0x18, 0x01, 0x20, 0x05, 0x28, 0x96, 0x01,
                     ]),
-                    entry(&[0x08, 0x19, 0x10, 0x01, 0x18, 0x03, 0x20, 0xac, 0x02]),
+                    entry(&[
+                        0x08, 0x19, 0x10, 0x01, 0x18, 0x03, 0x20, 0xac, 0x02, 0x30, 0x01,
+                    ]),
                     vec![0x10, 0xe0, 0x03, 0x20, 0x06],
                 ]
                 .concat(),
@@ -469,12 +507,12 @@ mod tests {
             assert_eq!(encode_charm_view(&value), Ok(bytes.clone()), "{value:?}");
             assert_eq!(decode_charm_view(&bytes), Ok(value), "{bytes:02x?}");
         }
-        // Balances before entries and explicit defaults (an explicit 0 slot limit is no limit)
-        // decode as the canonical form.
+        // Balances before entries and explicit defaults (an explicit 0 slot limit is no limit,
+        // an explicit false effect_active is inactive) decode as the canonical form.
         assert_eq!(
             decode_charm_view(&[
-                0x20, 0x00, 0x18, 0x00, 0x10, 0x05, 0x0a, 0x08, 0x28, 0x64, 0x18, 0x00, 0x10, 0x01,
-                0x08, 0x01
+                0x20, 0x00, 0x18, 0x00, 0x10, 0x05, 0x0a, 0x0a, 0x30, 0x00, 0x28, 0x64, 0x18, 0x00,
+                0x10, 0x01, 0x08, 0x01
             ]),
             Ok(view(vec![state(1, CharmKind::Major, 0, None, 100)], 5, 0))
         );
@@ -483,7 +521,15 @@ mod tests {
     #[test]
     fn the_full_view_at_its_bounds_is_exactly_the_byte_bound() {
         let charms: Vec<_> = (1..=MAX_CHARM)
-            .map(|charm| state(charm, CharmKind::Minor, 2, Some(1024), MAX_CHARM_STAGE_COST))
+            .map(|charm| {
+                active(state(
+                    charm,
+                    CharmKind::Minor,
+                    2,
+                    Some(1024),
+                    MAX_CHARM_STAGE_COST,
+                ))
+            })
             .collect();
         assert_eq!(charms.len(), MAX_CHARMS);
         let value = limited(
@@ -493,12 +539,12 @@ mod tests {
         let bytes = encode_charm_view(&value).expect("view at its bounds");
         assert_eq!(bytes.len(), MAX_CHARM_VIEW_BYTES);
         // The last entry, the balances and the slot limit by hand: race 1024 = 80 08,
-        // 100000 = A0 8D 06, 1000000 = C0 84 3D, 32 slots = 20 20.
+        // 100000 = A0 8D 06, effect active = 30 01, 1000000 = C0 84 3D, 32 slots = 20 20.
         assert_eq!(
-            bytes[bytes.len() - 25..],
+            bytes[bytes.len() - 27..],
             [
-                0x0a, 0x0d, 0x08, 0x20, 0x10, 0x02, 0x18, 0x02, 0x20, 0x80, 0x08, 0x28, 0xa0, 0x8d,
-                0x06, 0x10, 0xc0, 0x84, 0x3d, 0x18, 0xc0, 0x84, 0x3d, 0x20, 0x20
+                0x0a, 0x0f, 0x08, 0x20, 0x10, 0x02, 0x18, 0x02, 0x20, 0x80, 0x08, 0x28, 0xa0, 0x8d,
+                0x06, 0x30, 0x01, 0x10, 0xc0, 0x84, 0x3d, 0x18, 0xc0, 0x84, 0x3d, 0x20, 0x20
             ]
         );
         assert_eq!(decode_charm_view(&bytes), Ok(value));
@@ -630,8 +676,18 @@ mod tests {
                 ],
             ),
             (
-                "entry field 6",
-                &[0x0a, 0x08, 0x08, 0x01, 0x10, 0x01, 0x28, 0x64, 0x30, 0x01],
+                "effect_active 2",
+                &[0x0a, 0x08, 0x08, 0x01, 0x10, 0x01, 0x28, 0x64, 0x30, 0x02],
+            ),
+            (
+                "effect_active repeated",
+                &[
+                    0x0a, 0x0a, 0x08, 0x01, 0x10, 0x01, 0x28, 0x64, 0x30, 0x01, 0x30, 0x01,
+                ],
+            ),
+            (
+                "entry field 7",
+                &[0x0a, 0x08, 0x08, 0x01, 0x10, 0x01, 0x28, 0x64, 0x38, 0x01],
             ),
             (
                 "entry field repeated",
@@ -875,24 +931,115 @@ mod tests {
         );
     }
 
-    /// The proposal names every ID, message and byte bound the codecs implement. Whether the IDs
-    /// are free is the registry acceptance PR's check, not this proposal's (proposal §8).
+    /// The IDs are registered exactly once, under these names, with the codecs' bounds: an ID
+    /// taken by another entry or a bound that drifts fails here (proposal §8 step 1).
     #[test]
-    fn the_proposal_names_the_implemented_ids_messages_and_bounds() {
-        for (id, name) in [
+    fn registries_bind_the_charm_wire_ids_and_limits() {
+        let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
+        let only = |section: &str, id: u32| {
+            let matches: Vec<&Value> = protocol[section]
+                .as_array()
+                .expect(section)
+                .iter()
+                .filter(|entry| entry["id"] == id)
+                .collect();
+            assert_eq!(matches.len(), 1, "{section} {id} registered once");
+            matches[0].clone()
+        };
+
+        let capability = only("capabilities", CAPABILITY_BESTIARY_CHARMS_V1);
+        assert_eq!(capability["name"], "BESTIARY_CHARMS_V1");
+        assert_eq!(capability["owner"], "Character Authority");
+        assert_eq!(
+            capability["offered"], false,
+            "not offered before CHARM-6 (D170)"
+        );
+        assert_eq!(
+            capability["command_types"],
+            serde_json::json!([
+                COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
+                COMMAND_TYPE_CHARM_ASSIGN_INTENT
+            ])
+        );
+        assert_eq!(
+            capability["state_domains"],
+            serde_json::json!([
+                STATE_DOMAIN_CHARACTER_BESTIARY,
+                STATE_DOMAIN_CHARACTER_CHARMS
+            ])
+        );
+
+        for (id, name, payload, result, max_payload) in [
             (
                 COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
                 "CHARM_UNLOCK_STAGE_INTENT",
+                "CharmUnlockStageIntentV1",
+                "CharmUnlockStageResultV1",
+                MAX_CHARM_UNLOCK_STAGE_INTENT_BYTES,
             ),
-            (COMMAND_TYPE_CHARM_ASSIGN_INTENT, "CHARM_ASSIGN_INTENT"),
-            (STATE_DOMAIN_CHARACTER_BESTIARY, "CHARACTER_BESTIARY"),
-            (STATE_DOMAIN_CHARACTER_CHARMS, "CHARACTER_CHARMS"),
+            (
+                COMMAND_TYPE_CHARM_ASSIGN_INTENT,
+                "CHARM_ASSIGN_INTENT",
+                "CharmAssignIntentV1",
+                "CharmAssignResultV1",
+                MAX_CHARM_ASSIGN_INTENT_BYTES,
+            ),
         ] {
-            assert!(PROPOSAL.contains(&format!("| {id} | `{name}` |")), "{name}");
+            let command = only("command_types", id);
+            assert_eq!(command["name"], name);
+            assert_eq!(command["capability"], CAPABILITY_BESTIARY_CHARMS_V1);
+            assert_eq!(
+                command["payload_schema"],
+                format!("{SCHEMA_PATH}#{payload}")
+            );
+            assert_eq!(command["result_schema"], format!("{SCHEMA_PATH}#{result}"));
+            assert_eq!(command["max_payload_bytes"], max_payload as u64);
+            assert_eq!(
+                command["max_result_payload_bytes"],
+                MAX_CHARM_RESULT_BYTES as u64
+            );
         }
-        assert_eq!(SNAPSHOT_TYPE_CHARACTER_BESTIARY_V1, 1);
-        assert_eq!(SNAPSHOT_TYPE_CHARACTER_CHARMS_V1, 1);
-        assert_eq!(DELTA_TYPE_CHARACTER_CHARMS_V1, 1);
+
+        for (id, name, message, bound, delta, snapshot) in [
+            (
+                STATE_DOMAIN_CHARACTER_BESTIARY,
+                "CHARACTER_BESTIARY",
+                "BestiaryViewV1",
+                MAX_BESTIARY_VIEW_BYTES,
+                DELTA_TYPE_CHARACTER_BESTIARY_V1,
+                SNAPSHOT_TYPE_CHARACTER_BESTIARY_V1,
+            ),
+            (
+                STATE_DOMAIN_CHARACTER_CHARMS,
+                "CHARACTER_CHARMS",
+                "CharmViewV1",
+                MAX_CHARM_VIEW_BYTES,
+                DELTA_TYPE_CHARACTER_CHARMS_V1,
+                SNAPSHOT_TYPE_CHARACTER_CHARMS_V1,
+            ),
+        ] {
+            let domain = only("state_domains", id);
+            assert_eq!(domain["name"], name);
+            assert_eq!(domain["owner"], "Character Authority");
+            assert_eq!(domain["capability"], CAPABILITY_BESTIARY_CHARMS_V1);
+            for (types, type_id, suffix) in [
+                ("delta_types", delta, "DELTA_V1"),
+                ("snapshot_types", snapshot, "SNAPSHOT_V1"),
+            ] {
+                let entries = domain[types].as_array().expect(types);
+                assert_eq!(entries.len(), 1, "{name} {types}");
+                assert_eq!(entries[0]["id"], type_id);
+                assert_eq!(entries[0]["name"], format!("{name}_{suffix}"));
+                assert_eq!(
+                    entries[0]["payload_schema"],
+                    format!("{SCHEMA_PATH}#{message}")
+                );
+                assert_eq!(entries[0]["max_payload_bytes"], bound as u64);
+            }
+        }
+
+        // Every registered schema anchor names a message of the proto file, which states the
+        // same byte bounds; unassign is CHARM-6's own proposal (D170).
         for message in [
             "BestiaryRaceProgressV1",
             "BestiaryViewV1",
@@ -904,7 +1051,7 @@ mod tests {
             "CharmAssignResultV1",
         ] {
             assert!(
-                PROPOSAL.contains(&format!("message {message} {{")),
+                SCHEMA.contains(&format!("message {message} {{")),
                 "{message}"
             );
         }
@@ -916,11 +1063,32 @@ mod tests {
             MAX_CHARM_RESULT_BYTES,
         ] {
             assert!(
-                PROPOSAL.contains(&format!("At most {bound} bytes")),
+                SCHEMA.contains(&format!("At most {bound} bytes")),
                 "{bound}"
             );
         }
-        // Unassign is CHARM-6's own proposal (D170), not this one's.
-        assert!(!PROPOSAL.contains("message CharmUnassign"));
+        assert!(SCHEMA.contains("bool effect_active = 6;"));
+        assert!(!SCHEMA.contains("message CharmUnassign"));
+
+        let resources: Value = serde_json::from_str(RESOURCE_REGISTRY).expect("resource registry");
+        let entries = resources["entries"].as_array().expect("entries");
+        let limit = |id: &str| {
+            let matches: Vec<&Value> = entries.iter().filter(|entry| entry["id"] == id).collect();
+            assert_eq!(matches.len(), 1, "{id} registered once");
+            matches[0]["hard_maximum"].as_u64()
+        };
+        assert_eq!(
+            limit("CHARM5-RL-01"),
+            Some(MAX_BESTIARY_VIEW_ENTRIES as u64)
+        );
+        assert_eq!(limit("CHARM5-RL-01"), Some(u64::from(MAX_BESTIARY_RACE)));
+        assert_eq!(
+            limit("CHARM5-RL-02"),
+            Some(u64::from(MAX_BESTIARY_KILL_THRESHOLD))
+        );
+        assert_eq!(limit("CHARM5-RL-03"), Some(MAX_CHARMS as u64));
+        assert_eq!(limit("CHARM5-RL-03"), Some(u64::from(MAX_CHARM)));
+        assert_eq!(limit("CHARM5-RL-04"), Some(u64::from(MAX_CHARM_STAGE_COST)));
+        assert_eq!(limit("CHARM5-RL-05"), Some(u64::from(MAX_CHARM_BALANCE)));
     }
 }

@@ -3,10 +3,9 @@
 from copy import deepcopy
 
 from proficiency_profiles import (
-    BERSERK_REF,
     CANARY_PROFICIENCY_SOURCE,
+    CLIENT_PROFICIENCY_SOURCE,
     CRYSTAL_PROFICIENCY_SOURCE,
-    INTENSE_WOUND_CLEANSING_REF,
     MAGIC_SWORD_PROFICIENCY_REF,
     magic_sword_proficiency,
     proficiency_crosswalk,
@@ -583,12 +582,9 @@ def build_real_item_examples():
             "item": item,
             "dependencies": dependencies(
                 3288,
-                definitions=[
-                    MAGIC_SWORD_PROFICIENCY_REF,
-                    INTENSE_WOUND_CLEANSING_REF,
-                    BERSERK_REF,
-                ],
+                definitions=[MAGIC_SWORD_PROFICIENCY_REF],
                 proficiency_crosswalks=[
+                    proficiency_crosswalk(CLIENT_PROFICIENCY_SOURCE),
                     proficiency_crosswalk(CANARY_PROFICIENCY_SOURCE),
                     proficiency_crosswalk(CRYSTAL_PROFICIENCY_SOURCE),
                 ],

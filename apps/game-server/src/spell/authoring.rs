@@ -13,7 +13,10 @@ use super::chain::{ChainShape, ChainSpec};
 use super::formula::{Binary, Expression, Extremum, Formula, Input, MAX_EXPRESSION_DEPTH, Unary};
 use super::party::{PartyBuffSpec, PartyMana};
 use super::target::AllowedTargets;
-use super::{Carrier, CooldownGroup, Execution, ManaCost, SpellDefinition, SpellEffect, Vocation};
+use super::{
+    Carrier, CooldownGroup, Execution, HarmonyRole, ManaCost, SpellDefinition, SpellEffect,
+    Vocation,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct AuthoringError(pub(crate) String);
@@ -87,10 +90,15 @@ pub(crate) fn spell_from_bundle(
     if requirements.get("wheel_unlock").is_some() && flag(requirements, "wheel_unlock")? {
         return fail("the spell is unlocked by the Wheel of Destiny, which has no owner yet");
     }
-    // S26: a monk Harmony builder or spender needs the Harmony resource, which has no owner yet (fails closed).
-    if spell.get("harmony_role").is_some() {
-        return fail("the spell builds or spends monk Harmony, which has no owner yet");
-    }
+    // S26: the monk Harmony role; the runtime actor's `MonkState` owns Harmony (SPELL-D8 §8.2).
+    let harmony_role = match spell.get("harmony_role") {
+        None => None,
+        Some(_) => Some(match text(spell, "harmony_role")? {
+            "builder" => HarmonyRole::Builder,
+            "spender" => HarmonyRole::Spender,
+            other => return fail(format!("unknown harmony_role {other}")),
+        }),
+    };
     let costs = field(spell, "costs")?;
     let targeting = field(spell, "targeting")?;
     // S20: a cast at a chosen position needs a position cast intent, which the cast wire does not carry yet.
@@ -124,6 +132,14 @@ pub(crate) fn spell_from_bundle(
                 .ok_or_else(|| AuthoringError(format!("unknown vocation {v}")))
         })
         .collect::<Result<BTreeSet<_>, _>>()?;
+    // Harmony exists for monks only (§8.2), so only a monk-only spell may build or spend it.
+    if harmony_role.is_some()
+        && vocations
+            .iter()
+            .any(|vocation| !matches!(vocation, Vocation::Monk | Vocation::ExaltedMonk))
+    {
+        return fail("a spell with a harmony_role must be castable by monks only");
+    }
     let mana = match (costs.get("mana"), costs.get("mana_percent")) {
         (Some(_), None) => ManaCost::Fixed(number(costs, "mana")?),
         (None, Some(_)) => ManaCost::PercentOfMaximum(number(costs, "mana_percent")?),
@@ -243,6 +259,7 @@ pub(crate) fn spell_from_bundle(
         base_power,
         execution,
         chain,
+        harmony_role,
     })
 }
 

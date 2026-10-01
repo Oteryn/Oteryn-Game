@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::Error;
-use crate::sector::{self, Budget, Tile, TileLimits};
+use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
 
 pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v1";
 pub const VERSION: u16 = 1;
@@ -149,6 +149,9 @@ pub struct Manifest {
     pub palette: Vec<PaletteEntry>,
     pub draft_areas: Vec<String>,
     pub skipped_provisional_keys: Vec<String>,
+    /// Placement keys of the top-level entries whose zero-destination teleport attribute was
+    /// dropped (ADR-0021 §4.5); they are never materialized (§4.4). Ascending and unique.
+    pub dropped_teleports: Vec<u64>,
 }
 
 impl Manifest {
@@ -185,6 +188,31 @@ pub fn placement_key(floor: i8, x: u16, y: u16, ordinal: u8) -> Option<u64> {
             | u64::from(floor.unsigned_abs()) << 8
             | u64::from(ordinal),
     )
+}
+
+/// Whether `key` names a top-level entry of `sectors` (ascending by `(floor, sy, sx)`).
+fn names_entry(sectors: &[Sector], key: u64) -> bool {
+    let (x, y) = ((key >> 32) as u16, (key >> 16) as u16);
+    let (floor, ordinal) = (-(((key >> 8) & 0xFF) as i16), (key & 0xFF) as usize);
+    if key >> 48 != 0 || floor < -15 || ordinal >= MAX_TILE_BASE_ENTRIES {
+        return false;
+    }
+    let at = (floor as i8, y / SECTOR_SIZE, x / SECTOR_SIZE);
+    let Ok(sector) = sectors.binary_search_by_key(&at, order) else {
+        return false;
+    };
+    // Tiles of a sector are ascending by `(y, x)` (§5), so each key costs two binary searches.
+    let tiles = &sectors[sector].tiles;
+    tiles
+        .binary_search_by_key(&(y, x), |tile| (tile.y, tile.x))
+        .is_ok_and(|at| {
+            tiles[at]
+                .items
+                .iter()
+                .filter(|item| item.depth == 0)
+                .count()
+                > ordinal
+        })
 }
 
 fn limit(ok: bool, what: &str) -> Result<(), Error> {
@@ -236,6 +264,10 @@ fn validate_manifest(m: &Manifest) -> Result<(), Error> {
             "manifest key list is not sorted and unique",
         )?;
     }
+    check(
+        m.dropped_teleports.windows(2).all(|p| p[0] < p[1]),
+        "dropped teleports are not ascending and unique",
+    )?;
     if m.is_production() {
         check(
             m.draft_areas.is_empty(),
@@ -319,6 +351,12 @@ pub fn write(manifest: &Manifest, sectors: &[Sector]) -> Result<Vec<u8>, Error> 
         frames.push((raw.len(), frame));
     }
     limit(total_raw <= MAX_TOTAL_RAW_BYTES, "bundle payload too large")?;
+    for key in &manifest.dropped_teleports {
+        check(
+            names_entry(sectors, *key),
+            "dropped teleport key names no top-level entry",
+        )?;
+    }
     let mut out = Vec::new();
     out.extend_from_slice(MAGIC);
     out.extend_from_slice(&VERSION.to_le_bytes());
@@ -484,6 +522,12 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
         expected += length;
     }
     check(expected == body.len(), "bytes after the last sector frame")?;
+    for key in &manifest.dropped_teleports {
+        check(
+            names_entry(&sectors, *key),
+            "dropped teleport key names no top-level entry",
+        )?;
+    }
     Ok(Bundle {
         manifest,
         sectors,

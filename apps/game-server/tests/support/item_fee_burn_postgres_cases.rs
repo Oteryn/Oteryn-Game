@@ -1,4 +1,4 @@
-// Shared GOLD-FEE-1a cases (migration 0023). Any wrapper that provides the same path-loaded crate
+// Shared GOLD-FEE-1a/1b cases (migrations 0023 and 0031). Any wrapper that provides the same path-loaded crate
 // root as `item_fee_burn_postgres.rs` can include this file.
 //
 // The fee source of CHARM-6 does not exist yet, so the composed Character change is the exact SQL
@@ -7,14 +7,19 @@
 // coin stacks) is seeded by the migration owner with the guards off, as other item cases do.
 
 use crate::domain::charm::CharmKey;
+use crate::domain::currency::Coin;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::charm_state::CharmCommandOccurrence;
 use crate::durability::item_fee_burn::{
-    BurnedCoinStack, FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest,
-    burn_fee_in_transaction,
+    BurnedCoinStack, FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest, FeeChangeFacts,
+    MintedCoinStack, burn_fee_in_transaction,
 };
-use crate::durability::item_fee_burn_audit::decode_fee_burn_envelope;
+use crate::durability::item_fee_burn_audit::{
+    FEE_RL07_ENVELOPE_BYTES_MAX, decode_fee_burn_envelope,
+};
+use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
 use crate::foundation::{
     ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration,
     WorldId,
@@ -30,6 +35,8 @@ const CHANNEL: u8 = 43;
 const BACKPACK: u8 = 50;
 const GOLD: &str = "oteryn:item.tibia.i3031";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
+const CRYSTAL: &str = "oteryn:item.tibia.i3043";
+const BACKPACK_KEY: &str = "oteryn:item.tibia.i2854";
 const OCCURRED_AT: i64 = 1_790_000_000_000;
 
 fn id(seed: u8) -> [u8; 16] {
@@ -147,7 +154,7 @@ impl Harness {
                 character = uuid(CHARACTER),
                 account = uuid(ACCOUNT),
                 world = uuid(WORLD),
-                backpack = item(BACKPACK, "oteryn:item.tibia.i2854", "rev-1", 1),
+                backpack = item(BACKPACK, BACKPACK_KEY, "rev-1", 1),
                 backpack_id = uuid(BACKPACK),
                 placed = uuid(BACKPACK + 1),
             ))
@@ -239,7 +246,16 @@ fn fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> {
     })
 }
 
-/// A `CharmUnassign` fee of occurrence `occurrence` with TransactionId `occurrence + 100`.
+fn definition(key: &str) -> TypedDefinitionRef {
+    TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: key.into(),
+        revision_ref: "rev-1".into(),
+    }
+}
+
+/// A `CharmUnassign` fee of occurrence `occurrence` with TransactionId `occurrence + 100` and
+/// change slots `occurrence + 150` (platinum) and `occurrence + 170` (gold).
 fn request(occurrence: u8, fee: u64) -> TestResult<FeeBurnRequest> {
     Ok(FeeBurnRequest {
         cause: FeeBurnCause::CharmUnassign {
@@ -251,6 +267,18 @@ fn request(occurrence: u8, fee: u64) -> TestResult<FeeBurnRequest> {
         event_id: id(occurrence + 130),
         occurred_at_unix_ms: OCCURRED_AT,
         server_build_id: "fee-test-build".into(),
+        change: FeeChangeFacts {
+            item_instance_ids: [id(occurrence + 150), id(occurrence + 170)],
+            platinum: definition(PLATINUM),
+            gold: definition(GOLD),
+            crystal: definition(CRYSTAL),
+            backpack: ItemDefinitionFacts {
+                definition: definition(BACKPACK_KEY),
+                stack: ItemStackClass::NonStackable,
+                container_capacity: Some(20),
+                container_slot_equip_pattern: true,
+            },
+        },
     })
 }
 
@@ -357,6 +385,7 @@ async fn quantities(pool: &PgPool) -> TestResult<Vec<(i64, i16, bool)>> {
                          WHERE e.item_instance_id = i.item_instance_id) \
            FROM game_item_instances i \
           WHERE i.definition_production_key <> 'oteryn:item.tibia.i2854' \
+            AND i.minted_transaction_id NOT IN (SELECT transaction_id FROM game_item_fee_burns) \
           ORDER BY i.item_instance_id",
     )
     .fetch_all(pool)
@@ -364,8 +393,13 @@ async fn quantities(pool: &PgPool) -> TestResult<Vec<(i64, i16, bool)>> {
 }
 
 fn line(seed: u8, ordinal: u64, before: u32, after: u32) -> BurnedCoinStack {
+    coin_line(Coin::Gold, seed, ordinal, before, after)
+}
+
+fn coin_line(coin: Coin, seed: u8, ordinal: u64, before: u32, after: u32) -> BurnedCoinStack {
     BurnedCoinStack {
         item_instance_id: id(seed),
+        coin,
         placement_ordinal: ordinal,
         quantity_before: before,
         quantity_after: after,
@@ -379,7 +413,8 @@ fn a_fee_burns_whole_stacks_then_part_of_the_last_with_the_character_change() ->
         harness.stack(100, GOLD, 30, 1).await?;
         harness.stack(110, GOLD, 50, 2).await?;
         harness.stack(120, GOLD, 40, 3).await?;
-        // Not admitted in GOLD-FEE-1a, and not a coin: both stay untouched.
+        // Platinum comes after the gold in plan order and is not needed; not a coin: both stay
+        // untouched.
         harness.stack(130, PLATINUM, 5, 4).await?;
         harness.stack(140, "oteryn:item.tibia.i2853", 1, 5).await?;
 
@@ -468,9 +503,9 @@ fn refusals_leave_the_source_transaction_to_roll_back_and_write_nothing() -> Tes
         harness.stack(110, PLATINUM, 5, 2).await?;
         let before = snapshot(&harness.pool).await?;
 
-        // 31 gold units exceed the gold; platinum pays only from GOLD-FEE-1b on.
+        // 531 gold units exceed the 30 gold and 5 platinum.
         let cases: [RefusalCase; 4] = [
-            ("insufficient gold", request(61, 31)?, 1, |error| {
+            ("insufficient coins", request(61, 531)?, 1, |error| {
                 matches!(error, FeeBurnError::InsufficientFunds)
             }),
             ("zero fee", request(62, 0)?, 1, |error| {
@@ -559,13 +594,19 @@ fn twenty_whole_burns_at_the_longest_revision_commit_one_fee_sized_event() -> Te
                 .await?;
         }
         let before = snapshot(&harness.pool).await?;
-        match compose(&harness, 1, &request(61, 2_001)?, true).await? {
+        // The source supplies the gold revision the stacks are at.
+        let at_revision = |occurrence, fee| -> TestResult<FeeBurnRequest> {
+            let mut request = request(occurrence, fee)?;
+            request.change.gold.revision_ref = revision.clone();
+            Ok(request)
+        };
+        match compose(&harness, 1, &at_revision(61, 2_001)?, true).await? {
             Composed::Refused(FeeBurnError::InsufficientFunds) => {}
             other => return Err(format!("expected insufficient funds, got {other:?}").into()),
         }
         assert_eq!(snapshot(&harness.pool).await?, before);
 
-        let request = request(62, 2_000)?;
+        let request = at_revision(62, 2_000)?;
         match compose(&harness, 1, &request, true).await? {
             Composed::Committed(FeeBurnOutcome::Burned(burned)) => {
                 assert_eq!(burned.lines.len(), 20);
@@ -583,7 +624,8 @@ fn twenty_whole_burns_at_the_longest_revision_commit_one_fee_sized_event() -> Te
         .await?;
         assert_eq!(entries, 0);
         // Above the one-item 9,216 B, within the fee row.
-        assert!(envelope > 9_216 && envelope <= 24_495, "{envelope}");
+        let ceiling = i32::try_from(FEE_RL07_ENVELOPE_BYTES_MAX)?;
+        assert!(envelope > 9_216 && envelope <= ceiling, "{envelope}");
         harness.cleanup().await
     })
 }
@@ -786,6 +828,312 @@ fn the_database_binds_every_burn_to_its_plan_evidence_and_character_change() -> 
                 Some("42501")
             );
         }
+        harness.cleanup().await
+    })
+}
+
+/// (key, quantity, ordinal, lifecycle) of every live or retired coin, by placement then item.
+async fn coins(pool: &PgPool) -> TestResult<Vec<(String, i64, Option<String>, i16)>> {
+    Ok(sqlx::query_as(
+        "SELECT i.definition_production_key, i.quantity, e.placement_ordinal::text, i.lifecycle \
+           FROM game_item_instances i \
+           LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
+          WHERE i.definition_production_key IN ('oteryn:item.tibia.i3031', \
+                  'oteryn:item.tibia.i3035', 'oteryn:item.tibia.i3043') \
+          ORDER BY e.placement_ordinal NULLS FIRST, i.item_instance_id",
+    )
+    .fetch_all(pool)
+    .await?)
+}
+
+fn coin(
+    key: &str,
+    quantity: i64,
+    ordinal: Option<u64>,
+    lifecycle: i16,
+) -> (String, i64, Option<String>, i16) {
+    (
+        key.into(),
+        quantity,
+        ordinal.map(|o| o.to_string()),
+        lifecycle,
+    )
+}
+
+#[test]
+fn change_is_minted_back_as_platinum_then_gold_after_the_burn_lines() -> TestResult {
+    run(async |admin| {
+        let harness = Harness::create(admin, "change").await?;
+        harness.stack(100, GOLD, 10, 1).await?;
+        harness.stack(110, CRYSTAL, 1, 2).await?;
+        harness.stack(120, "oteryn:item.tibia.i2853", 1, 3).await?;
+
+        // The decision §8 example: 2,350 burns the gold and the crystal and mints 7,660 back.
+        let paid = request(61, 2_350)?;
+        let Composed::Committed(FeeBurnOutcome::Burned(burned)) =
+            compose(&harness, 1, &paid, true).await?
+        else {
+            return Err("the fee did not commit".into());
+        };
+        assert_eq!(
+            burned.lines,
+            vec![line(100, 1, 10, 0), coin_line(Coin::Crystal, 110, 2, 1, 0)]
+        );
+        assert_eq!(burned.change_gold_units, 7_660);
+        let minted =
+            |seed: u8, coin: Coin, quantity: u32, placement_ordinal: u64| MintedCoinStack {
+                item_instance_id: id(seed),
+                coin,
+                quantity,
+                placement_ordinal,
+            };
+        // After the highest ordinal before the burn (3): platinum at 4, gold at 5.
+        assert_eq!(
+            burned.change,
+            vec![
+                minted(211, Coin::Platinum, 76, 4),
+                minted(231, Coin::Gold, 60, 5)
+            ]
+        );
+        assert_eq!(
+            coins(&harness.pool).await?,
+            vec![
+                coin(GOLD, 0, None, 2),
+                coin(CRYSTAL, 0, None, 2),
+                coin(PLATINUM, 76, Some(4), 1),
+                coin(GOLD, 60, Some(5), 1),
+            ]
+        );
+        let (burned_units, change): (i64, i64) =
+            sqlx::query_as("SELECT burned_gold_units, change_gold_units FROM game_item_fee_burns")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!((burned_units, change), (10_010, 7_660));
+        let envelope: Vec<u8> = sqlx::query_scalar(
+            "SELECT envelope FROM game_item_audit_outbox \
+              WHERE event_id = encode($1,'hex')::uuid",
+        )
+        .bind(paid.event_id.as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        let (_, event) = decode_fee_burn_envelope(&envelope).map_err(debug)?;
+        assert_eq!((event.change_gold_units, event.change.len()), (7_660, 2));
+
+        // Replay returns the first outcome, change included, and writes nothing.
+        let before = snapshot(&harness.pool).await?;
+        let mut tx = harness.runtime.begin().await?;
+        let replay = burn_fee_in_transaction(&mut tx, &fence(1)?, &paid).await;
+        tx.rollback().await?;
+        match replay {
+            Ok(FeeBurnOutcome::AlreadyBurned(first)) => assert_eq!(first, burned),
+            other => return Err(format!("expected the retained outcome, got {other:?}").into()),
+        }
+        assert_eq!(snapshot(&harness.pool).await?, before);
+
+        // The minted change is an ordinary input of a later fee: gold first, partly.
+        match compose(&harness, 2, &request(62, 50)?, true).await? {
+            Composed::Committed(FeeBurnOutcome::Burned(burned)) => {
+                assert_eq!(burned.lines, vec![line(231, 5, 60, 10)]);
+                assert!(burned.change.is_empty());
+            }
+            other => return Err(format!("expected a commit, got {other:?}").into()),
+        }
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn change_that_does_not_fit_the_backpack_is_refused_and_writes_nothing() -> TestResult {
+    run(async |admin| {
+        let harness = Harness::create(admin, "fit").await?;
+        harness.stack(100, CRYSTAL, 2, 1).await?;
+        harness.stack(110, "oteryn:item.tibia.i2853", 1, 2).await?;
+        let before = snapshot(&harness.pool).await?;
+
+        // A partly burned crystal frees no entry; two outputs need two free entries.
+        let mut small = request(61, 2_350)?;
+        small.change.backpack.container_capacity = Some(3);
+        let mut other = request(62, 2_350)?;
+        other.change.backpack.definition.revision_ref = "rev-2".into();
+        // A coin stack at a revision other than the compatible one is not burned.
+        let mut stale = request(64, 2_350)?;
+        stale.change.crystal.revision_ref = "rev-2".into();
+        for (case, request, expected) in [
+            ("one free entry", small, "ChangeDoesNotFit"),
+            ("another backpack definition", other, "InvalidInput"),
+            (
+                "a crystal stack at an incompatible revision",
+                stale,
+                "InvalidInput",
+            ),
+        ] {
+            match compose(&harness, 1, &request, true).await? {
+                Composed::Refused(error) if format!("{error:?}") == expected => {}
+                other => return Err(format!("{case}: unexpected {other:?}").into()),
+            }
+            assert_eq!(snapshot(&harness.pool).await?, before, "{case}");
+        }
+
+        let mut fits = request(63, 2_350)?;
+        fits.change.backpack.container_capacity = Some(4);
+        match compose(&harness, 1, &fits, true).await? {
+            Composed::Committed(FeeBurnOutcome::Burned(burned)) => {
+                assert_eq!(burned.lines, vec![coin_line(Coin::Crystal, 100, 1, 2, 1)]);
+                assert_eq!(burned.change.len(), 2);
+            }
+            other => return Err(format!("expected a commit, got {other:?}").into()),
+        }
+        harness.cleanup().await
+    })
+}
+
+/// A hand-written fee of one platinum line burning `before - after` coins of item 120 at
+/// ordinal 3, with `outputs` (slot seed, key, quantity, ordinal) minted under slots 211/231.
+fn sql_change_fee(
+    occurrence: u8,
+    before: u32,
+    after: u32,
+    fee: u32,
+    change: u32,
+    first_ordinal: u64,
+    outputs: &[(u8, &str, u32, u64)],
+) -> String {
+    let transaction = uuid(occurrence + 100);
+    let event = uuid(occurrence + 130);
+    let minted: String = outputs
+        .iter()
+        .map(|(slot, key, quantity, ordinal)| {
+            format!(
+                "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
+                   definition_production_key, definition_revision_ref, quantity, lifecycle, \
+                   minted_transaction_id) \
+                 VALUES ({item}, {world}, 'Item', '{key}', 'rev-1', {quantity}, 1, \
+                   {transaction}); \
+                 INSERT INTO game_item_container_entries(item_instance_id, world_id, \
+                   character_id, parent_item_instance_id, placement_ordinal, \
+                   placed_transaction_id) \
+                 VALUES ({item}, {world}, {character}, {backpack}, {ordinal}, {transaction});",
+                item = uuid(*slot),
+                world = uuid(WORLD),
+                character = uuid(CHARACTER),
+                backpack = uuid(BACKPACK),
+            )
+        })
+        .collect();
+    format!(
+        "{character_change}\
+         INSERT INTO game_item_fee_burns(transaction_id, event_id, cause_kind, \
+           cause_occurrence_id, charm_key, request_binding, character_id, world_id, channel_id, \
+           runtime_scope_ownership_generation, committed_character_revision, \
+           backpack_item_instance_id, fee_gold_units, burned_gold_units, change_gold_units, \
+           line_count, occurred_at, envelope_sha256, committed_at, \
+           change_platinum_item_instance_id, change_gold_item_instance_id, \
+           change_placement_ordinal) \
+         VALUES ({transaction}, {event}, 1, {occurrence_id}, 'oteryn:charm.c{occurrence}', \
+           '\\x{binding}'::bytea, {character}, {world}, {channel}, 1, 2, {backpack}, {fee}, \
+           {burned}, {change}, 1, {OCCURRED_AT}, sha256('\\x0102'::bytea), 1, {platinum}, \
+           {gold}, {first_ordinal}); \
+         INSERT INTO game_item_fee_burn_lines(transaction_id, line_ordinal, item_instance_id, \
+           placement_ordinal, coin_worth, quantity_before, quantity_after) \
+         VALUES ({transaction}, 1, {item}, 3, 100, {before}, {after}); \
+         UPDATE game_item_instances SET quantity = {after}, lifecycle = 1, \
+           last_transaction_id = {transaction} WHERE item_instance_id = {item}; \
+         {minted} \
+         INSERT INTO game_item_audit_outbox(event_id, transaction_id, transaction_ordinal, \
+           transaction_count, event_type_id, schema_revision, retention_profile_id, \
+           item_instance_id, occurred_at, expires_at, envelope, envelope_sha256, \
+           publication_state) \
+         VALUES ({event}, {transaction}, 1, 1, 2, 1, 'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', \
+           {item}, {OCCURRED_AT}, {OCCURRED_AT} + 7776000000, '\\x0102'::bytea, \
+           sha256('\\x0102'::bytea), 1);",
+        character_change = character_change(occurrence, 1),
+        occurrence_id = uuid(occurrence),
+        binding = hex(&[occurrence; 32]),
+        character = uuid(CHARACTER),
+        world = uuid(WORLD),
+        channel = uuid(CHANNEL),
+        backpack = uuid(BACKPACK),
+        item = uuid(120),
+        burned = (before - after) * 100,
+        platinum = uuid(211),
+        gold = uuid(231),
+    )
+}
+
+/// The exact statements of a change fee, as the runtime role, with one change invariant broken
+/// per case.
+#[test]
+fn the_database_binds_the_change_mint_to_the_plan() -> TestResult {
+    run(async |admin| {
+        let harness = Harness::create(admin, "mintguard").await?;
+        harness.stack(110, "oteryn:item.tibia.i2853", 1, 2).await?;
+        harness.stack(120, PLATINUM, 5, 3).await?;
+        let gold = |quantity, ordinal| (231, GOLD, quantity, ordinal);
+        let cases = [
+            (
+                "a change quantity other than the record's",
+                sql_change_fee(61, 5, 4, 58, 42, 4, &[gold(41, 4)]),
+            ),
+            (
+                "change not placed right after the burn lines",
+                sql_change_fee(62, 5, 4, 58, 42, 5, &[gold(42, 5)]),
+            ),
+            (
+                "the unused platinum slot minted too",
+                sql_change_fee(63, 5, 4, 58, 42, 4, &[gold(42, 4), (211, PLATINUM, 1, 5)]),
+            ),
+            (
+                "a unit burned beyond the plan",
+                sql_change_fee(64, 5, 3, 58, 142, 4, &[(211, PLATINUM, 1, 4), gold(42, 5)]),
+            ),
+            ("no change MINT", sql_change_fee(65, 5, 4, 58, 42, 4, &[])),
+            (
+                "a change item outside the record's slots",
+                sql_change_fee(66, 5, 4, 58, 42, 4, &[(240, GOLD, 42, 4)]),
+            ),
+        ];
+        for (case, script) in &cases {
+            expect_rejected(&harness, case, script).await?;
+        }
+        // The same statements with every invariant kept commit.
+        let mut tx = harness.runtime.begin().await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(sql_change_fee(
+            67,
+            5,
+            4,
+            58,
+            42,
+            4,
+            &[gold(42, 4)],
+        )))
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        assert_eq!(
+            coins(&harness.pool).await?,
+            vec![coin(PLATINUM, 4, Some(3), 1), coin(GOLD, 42, Some(4), 1)]
+        );
+        // A later MINT under the committed fee's TransactionId is never a change output.
+        expect_rejected(
+            &harness,
+            "a mint reusing a committed fee's TransactionId",
+            &format!(
+                "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
+                   definition_production_key, definition_revision_ref, quantity, lifecycle, \
+                   minted_transaction_id) \
+                 VALUES ({slot}, {world}, 'Item', '{CRYSTAL}', 'rev-1', 1, 1, {transaction}); \
+                 INSERT INTO game_item_container_entries(item_instance_id, world_id, \
+                   character_id, parent_item_instance_id, placement_ordinal, \
+                   placed_transaction_id) \
+                 VALUES ({slot}, {world}, {character}, {backpack}, 9, {transaction});",
+                slot = uuid(241),
+                world = uuid(WORLD),
+                transaction = uuid(167),
+                character = uuid(CHARACTER),
+                backpack = uuid(BACKPACK),
+            ),
+        )
+        .await?;
         harness.cleanup().await
     })
 }

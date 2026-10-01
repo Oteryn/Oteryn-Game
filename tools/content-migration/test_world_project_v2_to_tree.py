@@ -17,7 +17,7 @@ assert manifest["compatibility"] == {
     "runtime_switch_authorized": False,
 }
 assert lock["family_counts"] == {
-    "Item": 33567, "Mount": 252,
+    "Item": 34031, "Mount": 252,
     "Creature": 1479, "Presentation": 2589, "Behavior": 2589, "Loot": 1032, "Ability": 5902, "Effect": 4502, "Formula": 4820,
     "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
     "Proficiency": 443, "RewardClaim": 231,
@@ -32,7 +32,7 @@ for directory in {(ROOT / path).parent for path in paths if shard_name.search(pa
     stale = sorted(file.relative_to(ROOT).as_posix() for file in directory.glob("*.json")
                    if shard_name.search(file.name) and file.relative_to(ROOT).as_posix() not in paths)
     assert not stale, stale
-assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 68
+assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 69
 assert any(path.startswith("content/cosmetics/mounts/mounts-") for path in paths)
 assert any(path.startswith("content/creatures/definitions/creatures-") for path in paths)
 assert any(path.startswith("content/npcs/definitions/npcs-") for path in paths)
@@ -54,7 +54,7 @@ assert any(path.startswith("content/charms/charms-") for path in paths) and "con
 assert manifest["families"]["Proficiency"] == {"records": 443, "index": "content/proficiencies/index.json"}
 assert "Proficiency" in project["migrated_families"] and "Proficiency" not in project["next_population_families"]
 assert sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
-assert "content/proficiencies/index.json" in paths
+assert "content/proficiencies/index.json" in paths and "content/proficiencies/bindings.json" in paths
 assert manifest["families"]["RewardClaim"] == {"records": 231, "index": "content/interactions/reward_claims/index.json"}
 assert "RewardClaim" in project["migrated_families"]
 assert sum(path.startswith("content/interactions/reward_claims/reward-claims-") for path in paths) == 3
@@ -67,4 +67,4 @@ reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
 for script in ("test_reward_claim_authoring.py",):
     subprocess.run([sys.executable, script], cwd=reward_claim_tool, check=True)
 
-print(f"PASS managed_files={len(paths)} item_shards=68")
+print(f"PASS managed_files={len(paths)} item_shards=69")

@@ -53,3 +53,64 @@ message WorldSpatialSnapshotV1 {
   bytes content_generation = 1;
   ActorPositionV1 actor_position = 2;
 }
+
+// ---------------------------------------------------------------------------------------------
+// VIS-2 (MOVE-RL-11-VISIBILITY-V1, D84-D87): the second schema revision of domain 1, snapshot type
+// 2 and delta type 2, gated by the optional capability 6 WORLD_SPATIAL_ENTITIES. A session that
+// did not select the capability receives only the v1 types above (own actor). Payloads are at
+// most 33,792 bytes (256 entries x 128 B + 1,024 B header). Unknown, repeated and kind-
+// inconsistent fields, duplicate identities and zero or unknown enum values fail closed.
+// ---------------------------------------------------------------------------------------------
+
+enum EntityKind {
+  ENTITY_KIND_UNSPECIFIED = 0;
+  ENTITY_KIND_PLAYER = 1;
+  ENTITY_KIND_CREATURE = 2;
+  ENTITY_KIND_CORPSE = 3;
+  ENTITY_KIND_GROUND_ITEM = 4;
+}
+
+// Identity of an entity that leaves. Same field numbers as the identity fields of the entry.
+message EntityRefV1 {
+  // The 16-byte interest index identity.
+  bytes identity = 1;
+  // The actor generation; absent (0) for corpses and ground items.
+  uint64 generation = 2;
+}
+
+// At most 128 encoded bytes. Players and creatures carry fields 5-7 and no fields 8-9; corpses and
+// ground items carry fields 8-9 and no fields 3, 5-7.
+message WorldSpatialEntityV1 {
+  EntityKind kind = 1;
+  bytes identity = 2;
+  uint64 generation = 3;
+  ActorPositionV1 position = 4;
+  // Required for actors: NORTH..WEST.
+  StepDirection direction = 5;
+  uint32 appearance_ref = 6;
+  // 0..=100.
+  uint32 health_percent = 7;
+  // Required for objects, non-zero.
+  uint32 item_definition_ref = 8;
+  // Required for objects, at least 1.
+  uint32 quantity = 9;
+}
+
+// StateDomainSnapshot.payload of domain 1, snapshot type 2. At most 256 entities (MOVE-RL-11),
+// which include the own player: kind PLAYER, identity == own_identity, position == actor_position.
+message WorldSpatialEntitiesSnapshotV2 {
+  bytes content_generation = 1;
+  ActorPositionV1 actor_position = 2;
+  bytes own_identity = 3;
+  repeated WorldSpatialEntityV1 entities = 4;
+}
+
+// StateDelta.payload of domain 1, delta type 2. enter + update + leave is at most 256 (MOVE-RL-08);
+// a larger change is sent as a snapshot. An identity appears at most once across the three lists.
+message WorldSpatialEntitiesDeltaV2 {
+  bytes content_generation = 1;
+  ActorPositionV1 actor_position = 2;
+  repeated WorldSpatialEntityV1 enter = 3;
+  repeated WorldSpatialEntityV1 update = 4;
+  repeated EntityRefV1 leave = 5;
+}
