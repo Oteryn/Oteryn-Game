@@ -70,6 +70,7 @@ use crate::foundation::CommandRef;
 use crate::interaction::{
     ChildOccurrenceRef, InteractionError, RootSourceOccurrenceRef, SemanticRevisionContext,
 };
+use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 /// §5.5 typed edge of a player `USE` on a placed object.
 pub(crate) const USE_EDGE: &str = "USE";
@@ -332,6 +333,211 @@ pub(crate) async fn settle_chest_use(
         .commit_reward_claim_mint(session.authority, session.node, fence, &mut candidate)
         .await?;
     Ok(ChestUseOutcome { child, mint })
+}
+
+/// C2 (#162 5914960502 Q2a): the native entry room's one reward chest. Its placement, its
+/// RewardClaim and the Item definitions of the chest, the reward and the main backpack are
+/// injected at Channel activation into a clone of the activated entry-room Content, the same way
+/// `world_runtime::bind_native_entry_door` injects the door placement. The compiled native
+/// Content and its digests stay unchanged: this clone is never hashed, pinned or projected to a
+/// client; only the chest `USE` reads it.
+pub(crate) mod entry_chest {
+    /// The chest placement the client names in `USE_INTENT` field 1.
+    pub(crate) const PLACEMENT: &str = "oteryn:placement/entry-chest";
+    pub(crate) const CHEST_ITEM: &str = "oteryn:item/entry-chest";
+    pub(crate) const REWARD_ITEM: &str = "oteryn:item/entry-reward-coin";
+    pub(crate) const REWARD_COUNT: u32 = 10;
+    /// The main backpack definition the chest's MINT resolves. Until STARTER-BACKPACK provisions
+    /// one, no production Character has a main backpack and the chest refuses `NoMainBackpack`.
+    pub(crate) const BACKPACK_ITEM: &str = "oteryn:item/entry-backpack";
+    pub(crate) const BACKPACK_CAPACITY: u16 = 20;
+    pub(crate) const CLAIM: &str = "oteryn:reward-claim/entry-chest";
+    pub(crate) const DEFINITION_REVISION: &str = "oteryn:rev/entry-chest-r1";
+    /// Must equal `content::accepted::REVISIONS[1]` (the entry room's map revision).
+    pub(crate) const MAP_REVISION: &str = "oteryn:map/entry-r1";
+    /// The entry room's non-walkable `entry-north` cell (`content::accepted::CELLS[2]`): one step
+    /// from the start cell and from the door, so the chest never stands on a walkable cell.
+    pub(crate) const CELL: (i32, i32, i32) = (0, -1, 0);
+    /// The revisions a chest `USE` is bound to: the entry room's content, ruleset and sim
+    /// revisions (`content::accepted::REVISIONS[0]`, `[2]` and `[6]`).
+    pub(crate) const CONTENT_REVISION: &str = "oteryn:content/entry-r1";
+    pub(crate) const RULESET_REVISION: &str = "oteryn:ruleset/entry-r1";
+    pub(crate) const SIM_REVISION: &str = "oteryn:sim/entry-r1";
+}
+
+/// `base` with the entry chest injected: the chest, reward and backpack Item definitions, the
+/// chest's `once` RewardClaim and the chest as the only placement. Data only; writes nothing.
+pub(crate) fn with_entry_chest(
+    base: &CanonicalReferencePlayableContent,
+) -> Result<CanonicalReferencePlayableContent, crate::content::ContentError> {
+    use crate::content::{
+        ClientProjectionClass, DefinitionRevisionRef, EvidenceBindingRef, EvidenceDisposition,
+        FootprintCell, FootprintRelation, LogicalCell, MapRevisionRef, ProductionAtom,
+        ProductionKey, ReferenceDefinition, ReferenceEquipmentPattern, ReferenceEquipmentSlot,
+        ReferenceItemContainer, ReferenceItemDefinition, ReferenceItemDestination,
+        ReferenceItemEquipment,
+        ReferenceItemField::{Known, Unknown},
+        ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStack,
+        ReferenceItemStackClass, ReferenceRewardClaimDefinition, RewardClaimItem,
+        RewardClaimPlacement, SpatialAddress,
+    };
+    use std::collections::BTreeMap;
+    let typed = |family, key: &str| -> Result<ContentDefinitionRef, crate::content::ContentError> {
+        Ok(ContentDefinitionRef::new(
+            family,
+            ProductionKey::new(key)?,
+            DefinitionRevisionRef::new(entry_chest::DEFINITION_REVISION)?,
+        ))
+    };
+    let item = |key: &str, stack_class, semantics| -> Result<_, crate::content::ContentError> {
+        Ok(ReferenceDefinition {
+            definition: typed(DefinitionFamily::Item, key)?,
+            kind: ReferenceDefinitionKind::Item(ReferenceItemDefinition {
+                physical_class: ReferenceItemPhysicalClass::Physical,
+                materializable: true,
+                stack_class,
+                legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
+                semantics,
+            }),
+            client_projection: ClientProjectionClass::ClientSafe,
+        })
+    };
+    let chest = item(
+        entry_chest::CHEST_ITEM,
+        ReferenceItemStackClass::NonStackable,
+        ReferenceItemSemantics::default(),
+    )?;
+    // D82: a known stack class with a proven maximum, so the MINT admits the reward.
+    let reward = item(
+        entry_chest::REWARD_ITEM,
+        ReferenceItemStackClass::StackCapable,
+        ReferenceItemSemantics {
+            stack: Known(ReferenceItemStack {
+                stackable: Known(true),
+                stack_max: Known(100),
+            }),
+            ..ReferenceItemSemantics::default()
+        },
+    )?;
+    // D114 shape: a container with a known capacity and a complete container-slot pattern.
+    let backpack = item(
+        entry_chest::BACKPACK_ITEM,
+        ReferenceItemStackClass::NonStackable,
+        ReferenceItemSemantics {
+            container: Known(ReferenceItemContainer {
+                capacity: Known(entry_chest::BACKPACK_CAPACITY),
+            }),
+            equipment: Known(ReferenceItemEquipment {
+                patterns: Known(vec![ReferenceEquipmentPattern {
+                    pattern_id: 1,
+                    primary_slot: Known(ReferenceEquipmentSlot::Container),
+                    additional_reserved_slots: Unknown,
+                    mutually_exclusive_groups: Unknown,
+                    vocations: Unknown,
+                    level: Unknown,
+                    compatibility_rule: Unknown,
+                }]),
+            }),
+            ..ReferenceItemSemantics::default()
+        },
+    )?;
+    let placement_key = PlacementKey::new(entry_chest::PLACEMENT)?;
+    let claim = ReferenceDefinition {
+        definition: typed(DefinitionFamily::RewardClaim, entry_chest::CLAIM)?,
+        kind: ReferenceDefinitionKind::RewardClaim(ReferenceRewardClaimDefinition {
+            placements: vec![RewardClaimPlacement {
+                placement: placement_key.clone(),
+                items: vec![RewardClaimItem {
+                    item: typed(DefinitionFamily::Item, entry_chest::REWARD_ITEM)?,
+                    count: entry_chest::REWARD_COUNT,
+                }],
+                achievement: None,
+            }],
+        }),
+        client_projection: ClientProjectionClass::ServerOnly,
+    };
+    // Synthetic and non-promotable, like the door's: its evidence disposition is Unknown.
+    let evidence = EvidenceBindingRef::new(
+        ProductionAtom::new("native entry chest manifest revision", "manifest-r0")?,
+        ProductionKey::new("oteryn:c2.native-entry-chest-placement")?,
+        EvidenceDisposition::Unknown,
+    );
+    let members = vec![FootprintCell {
+        dx: 0,
+        dy: 0,
+        dz: 0,
+    }];
+    let (x, y, z) = entry_chest::CELL;
+    let placement = PlacementRef {
+        key: placement_key,
+        map_revision: MapRevisionRef::new(entry_chest::MAP_REVISION)?,
+        definition: typed(DefinitionFamily::Item, entry_chest::CHEST_ITEM)?,
+        address: SpatialAddress {
+            world_id: base.world_id,
+            coordinate_frame: base.coordinate_frame.clone(),
+            cell: LogicalCell { x, y, z },
+            evidence: evidence.clone(),
+        },
+        presentation_footprint: FootprintRelation::Qualified {
+            members: members.clone(),
+            evidence: evidence.clone(),
+        },
+        collision_footprint: FootprintRelation::Qualified { members, evidence },
+        local_object_initial_state: None,
+        local_object_state_attributes: BTreeMap::new(),
+        local_object_revert_after_ms: BTreeMap::new(),
+        local_object_event_transitions: BTreeMap::new(),
+    };
+    let mut content = base.clone();
+    content.definitions.extend([chest, reward, backpack, claim]);
+    content.placements = vec![placement];
+    Ok(content)
+}
+
+/// Attempts of one chest `USE` whose DUR-03 outcome was not proven: each replays the same
+/// request, which reconciles the pending reservation (§17) instead of allocating a new one.
+const CHEST_USE_ATTEMPTS: usize = 3;
+
+/// The dispatch of one `USE_INTENT` on a placed chest (C2, USE-WIRE-V1 field 1): settle it and
+/// map the result to the wire `UseDisposition`, with no new wire field. A MINT (first or replayed)
+/// is `Committed` with no overlay delta; a claim this Character already took is `NothingToUse`;
+/// every other refusal, a missing fence and an unproven outcome are `Rejected`, and nothing was
+/// written unless DUR-03 committed. Production refuses `NoMainBackpack` until STARTER-BACKPACK.
+pub(crate) async fn use_chest(
+    session: &DurabilitySession<'_, '_, '_>,
+    content: &CanonicalReferencePlayableContent,
+    achievements: &AchievementCatalogue,
+    fence: Option<CurrentCharacterItemFence>,
+    request: ChestUseRequest,
+) -> (UseDisposition, Option<ChestUseError>) {
+    let Some(fence) = fence else {
+        return (UseDisposition::Rejected, None);
+    };
+    let mut last = None;
+    for _ in 0..CHEST_USE_ATTEMPTS {
+        let outcome =
+            settle_chest_use(session, content, achievements, fence, request.clone()).await;
+        match outcome {
+            Ok(_) => return (UseDisposition::Committed, None),
+            Err(ChestUseError::Mint(RewardClaimMintError::Unavailable(error))) => {
+                last = Some(ChestUseError::Mint(RewardClaimMintError::Unavailable(
+                    error,
+                )));
+            }
+            Err(error) => return (chest_use_disposition(&error), Some(error)),
+        }
+    }
+    (UseDisposition::Rejected, last)
+}
+
+/// The wire disposition of a chest `USE` that did not mint.
+pub(crate) fn chest_use_disposition(error: &ChestUseError) -> UseDisposition {
+    match error {
+        ChestUseError::Mint(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)) => {
+            UseDisposition::NothingToUse
+        }
+        _ => UseDisposition::Rejected,
+    }
 }
 
 #[cfg(test)]

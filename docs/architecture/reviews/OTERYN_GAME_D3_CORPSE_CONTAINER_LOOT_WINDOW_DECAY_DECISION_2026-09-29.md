@@ -383,6 +383,15 @@ correct.
 - **Rejected: durable per-hit attribution ledger.** Disproportionate to a 10 s cosmetic-priority
   feature; see §4.3.
 
+**Amendment (pending on acceptance of PARTY-PVP-0;
+`reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md` §5.3).** Once accepted, this
+fills D112's party part (D121): the corpse receipt also captures `top_damage_party_id`, the
+top-damage character's PartyId at death, read from that character's `game_party_members` row FOR
+SHARE in the corpse receipt's transaction, never from a runtime view (no party is recorded when
+that read cannot be made), and the window's gate also admits a character that is a
+current member of that party, read from `game_party_members` FOR SHARE in the pickup transaction.
+Player corpses stay exempt.
+
 ### 4.5 D134 — Pickup: a new TRANSFER source family, and the corpse item's own exclusion
 
 B3-1's TRANSFER admits only a `Ground` source (migration 0011). This decision adds

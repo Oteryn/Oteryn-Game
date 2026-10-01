@@ -270,7 +270,8 @@
     {"code": 1032, "name": "SNAPSHOT_ASSEMBLY_INVALID", "category": "INVALID_INPUT", "default_disposition": "RESYNC_REQUIRED"},
     {"code": 1033, "name": "SNAPSHOT_LIMIT_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "SESSION_FATAL"},
     {"code": 1040, "name": "BOOTSTRAP_LIMIT_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "SESSION_FATAL"},
-    {"code": 1041, "name": "INVALID_CAPABILITY_SET", "category": "INVALID_INPUT", "default_disposition": "SESSION_FATAL"}
+    {"code": 1041, "name": "INVALID_CAPABILITY_SET", "category": "INVALID_INPUT", "default_disposition": "SESSION_FATAL"},
+    {"code": 1050, "name": "ACCOUNT_DATA_INTEGRITY", "category": "INTERNAL_UNAVAILABLE", "default_disposition": "OPERATION_TERMINAL"}
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},

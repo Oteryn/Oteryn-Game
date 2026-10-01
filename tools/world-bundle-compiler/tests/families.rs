@@ -4,8 +4,12 @@
 use std::error::Error as StdError;
 
 use oteryn_world_bundle_compiler::Error;
-use oteryn_world_bundle_compiler::bundle::{self, BuildClass, Extent, Family, Identity};
-use oteryn_world_bundle_compiler::compile::{Input, KeyResolver, Resolution, compile, parity};
+use oteryn_world_bundle_compiler::bundle::{
+    self, BuildClass, Extent, Family, Identity, PaletteEntry,
+};
+use oteryn_world_bundle_compiler::compile::{
+    Equivalence, Input, KeyResolver, Resolution, compile, equivalence, parity,
+};
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
 
@@ -18,6 +22,7 @@ impl KeyResolver for Resolver {
         match key {
             "item:teleport" => Resolution::Resolved(Family::Item, 1),
             "item:bag" => Resolution::Resolved(Family::Item, 2),
+            "item:extra" => Resolution::Resolved(Family::Item, 3),
             "donor:99" => Resolution::Provisional,
             _ => Resolution::Unknown,
         }
@@ -73,22 +78,46 @@ fn build(
 ) -> Result<oteryn_world_bundle_compiler::compile::Compiled, Error> {
     let regions = [region(tiles).map_err(|e| Error::Format(e.to_string()))?];
     let palette = keys();
-    let input = Input {
-        regions: &regions,
-        palette: &palette,
+    compile(&input(&regions, &palette, families, &world()), &Resolver)
+}
+
+fn input<'a>(
+    regions: &'a [Vec<u8>],
+    palette: &'a [String],
+    families: &'a Families,
+    world: &Extent,
+) -> Input<'a> {
+    Input {
+        regions,
+        palette,
         identity: Identity::default(),
-        world: Extent {
-            min_x: 0,
-            min_y: 0,
-            max_x: 256,
-            max_y: 256,
-            floors: vec![-7, -6],
-        },
+        world: world.clone(),
         build_class: BuildClass::NonProduction,
         draft_areas: Vec::new(),
         families,
-    };
-    compile(&input, &Resolver)
+    }
+}
+
+/// [`equivalence`] against the input of [`build`] with these parts replaced.
+fn prove(
+    regions: &[Vec<u8>],
+    palette: &[String],
+    resolver: &dyn KeyResolver,
+    families: &Families,
+    world: &Extent,
+    bundle: &[u8],
+) -> Result<Equivalence, Error> {
+    equivalence(&input(regions, palette, families, world), resolver, bundle)
+}
+
+fn world() -> Extent {
+    Extent {
+        min_x: 0,
+        min_y: 0,
+        max_x: 256,
+        max_y: 256,
+        floors: vec![-7, -6],
+    }
 }
 
 fn families() -> Families {
@@ -163,6 +192,12 @@ fn teleports_and_houses_disagreeing_with_their_families_fail() -> TestResult {
     let mut unused = families();
     unused.teleports.insert((7, 7, 7), (9, 9, 6));
     assert!(family(build(map(), &unused)));
+    // A (0,0,0) attribute on a tile that has a Transition record is a mismatch, not a drop.
+    let zero_on_record = vec![tile(3, 1, 0, vec![item(0, 0, Some((0, 0, 0)))])];
+    assert!(family(build(zero_on_record.clone(), &families())));
+    let report = parity(&[region(zero_on_record)?], &families())?;
+    assert!(report.zero_destination.is_empty());
+    assert_eq!(report.mismatched, [((3, 1, 7), (0, 0, 0))]);
     // A house id the House family does not have.
     let mut no_house = families();
     no_house.houses.clear();
@@ -221,5 +256,208 @@ fn family_shards_load_in_the_native_frame_and_fail_closed() -> TestResult {
         r#"{"source":{"minimap_draft":{"areas":[{"name":"nargor"},{"name":"nargor"}]}}}"#,
     )?;
     assert!(project::draft_areas(&twice).is_err());
+    Ok(())
+}
+
+#[test]
+fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
+    let regions = [region(map())?];
+    let compiled = build(map(), &families())?;
+    let proof = prove(
+        &regions,
+        &keys(),
+        &Resolver,
+        &families(),
+        &world(),
+        &compiled.bytes,
+    )?;
+    // The provisional entry and its content, a dropped teleport, are left out.
+    assert_eq!((proof.tiles, proof.dropped_teleports), (4, 2));
+    assert_eq!((proof.entries, proof.skipped_entries), (5, 2));
+    // Another source, or a palette that names other keys, is not equivalent.
+    let mut other = map();
+    other[0].flags = 1;
+    assert!(
+        prove(
+            &[region(other)?],
+            &keys(),
+            &Resolver,
+            &families(),
+            &world(),
+            &compiled.bytes
+        )
+        .is_err()
+    );
+    let swapped: Vec<String> = ["item:bag", "item:teleport", "donor:99"]
+        .map(String::from)
+        .to_vec();
+    assert!(
+        prove(
+            &regions,
+            &swapped,
+            &Resolver,
+            &families(),
+            &world(),
+            &compiled.bytes
+        )
+        .is_err()
+    );
+    let mut fewer = map();
+    fewer.pop();
+    assert!(
+        prove(
+            &[region(fewer)?],
+            &keys(),
+            &Resolver,
+            &families(),
+            &world(),
+            &compiled.bytes
+        )
+        .is_err()
+    );
+    // A resolution other than the manifest's, or a provisional set the source does not give,
+    // is not equivalent either: the proof reads the resolver, not the bundle's claims.
+    struct Other;
+    impl KeyResolver for Other {
+        fn resolve(&self, key: &str) -> Resolution {
+            match Resolver.resolve(key) {
+                Resolution::Resolved(family, id) => Resolution::Resolved(family, id + 10),
+                other => other,
+            }
+        }
+    }
+    assert!(
+        prove(
+            &regions,
+            &keys(),
+            &Other,
+            &families(),
+            &world(),
+            &compiled.bytes
+        )
+        .is_err()
+    );
+    let read = bundle::read(&compiled.bytes)?;
+    let mut manifest = read.manifest.clone();
+    manifest.skipped_provisional_keys.push("donor:x".into());
+    let claimed = bundle::write(&manifest, &read.sectors)?;
+    assert!(
+        prove(
+            &regions,
+            &keys(),
+            &Resolver,
+            &families(),
+            &world(),
+            &claimed
+        )
+        .is_err()
+    );
+    // A manifest that omits a dropped teleport key is not equivalent: its entry would be
+    // materialized.
+    let mut manifest = read.manifest.clone();
+    manifest.dropped_teleports.pop();
+    let omitted = bundle::write(&manifest, &read.sectors)?;
+    assert!(
+        prove(
+            &regions,
+            &keys(),
+            &Resolver,
+            &families(),
+            &world(),
+            &omitted
+        )
+        .is_err()
+    );
+    // The Transition rule is checked again from the families: a record to elsewhere, a
+    // record on a (0,0,0) tile, a missing record and an unmet record all fail.
+    let mut elsewhere = families();
+    elsewhere.teleports.insert((3, 1, 7), (9, 8, 6));
+    let mut on_zero = families();
+    on_zero.teleports.insert((1, 1, 7), (0, 0, 0));
+    let mut missing = families();
+    missing.teleports.clear();
+    let mut unmet = families();
+    unmet.teleports.insert((7, 7, 7), (9, 9, 6));
+    for wrong in [elsewhere, on_zero, missing, unmet] {
+        assert!(
+            prove(
+                &regions,
+                &keys(),
+                &Resolver,
+                &wrong,
+                &world(),
+                &compiled.bytes
+            )
+            .is_err()
+        );
+    }
+    let fails = |result: Result<_, Error>, why: &str| matches!(result, Err(Error::Format(what)) if what.contains(why));
+    // A house id is checked again against the House family.
+    let mut no_house = families();
+    no_house.houses.clear();
+    assert!(fails(
+        prove(
+            &regions,
+            &keys(),
+            &Resolver,
+            &no_house,
+            &world(),
+            &compiled.bytes
+        ),
+        "not in the House family"
+    ));
+    // The manifest World must be the World record.
+    let mut wider = world();
+    wider.max_x = 512;
+    assert!(fails(
+        prove(
+            &regions,
+            &keys(),
+            &Resolver,
+            &families(),
+            &wider,
+            &compiled.bytes
+        ),
+        "manifest world is not"
+    ));
+    // A key that resolves nowhere fails even as a descendant of a skipped provisional entry.
+    let mut hidden = map();
+    hidden[3].items[1].palette = 3;
+    let mut unknown = keys();
+    unknown.push("item:none".into());
+    assert!(fails(
+        prove(
+            &[region(hidden)?],
+            &unknown,
+            &Resolver,
+            &families(),
+            &world(),
+            &compiled.bytes
+        ),
+        "unresolved palette entry"
+    ));
+    // The whole manifest is derived from the input: another identity or other draft areas
+    // than the compiler input, or a palette entry no kept source entry uses, is not equivalent.
+    let fails_manifest = |input: &Input, bytes: &[u8], field: &str| {
+        let why = format!("manifest {field} is not");
+        fails(equivalence(input, &Resolver, bytes), &why)
+    };
+    let (palette, families) = (keys(), families());
+    let mut other = input(&regions, &palette, &families, &world());
+    other.identity.content_revision = "content-r2".into();
+    assert!(fails_manifest(&other, &compiled.bytes, "identity"));
+    let mut drafted = input(&regions, &palette, &families, &world());
+    drafted.draft_areas = vec!["area:north".into()];
+    assert!(fails_manifest(&drafted, &compiled.bytes, "draft_areas"));
+    let mut manifest = read.manifest.clone();
+    manifest.palette.push(PaletteEntry {
+        key: "item:extra".into(),
+        family: Family::Item,
+        id: 3,
+    });
+    let unused = bundle::write(&manifest, &read.sectors)?;
+    let exact = input(&regions, &palette, &families, &world());
+    assert!(fails_manifest(&exact, &unused, "palette"));
+    equivalence(&exact, &Resolver, &compiled.bytes)?;
     Ok(())
 }

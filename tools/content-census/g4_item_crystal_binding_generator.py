@@ -69,6 +69,7 @@ TIBIAWIKI_BINDINGS = ROOT / "imports/tibiawiki/bindings/items.json"
 OUTPUT = ROOT / "imports/crystalserver/bindings/items.json"
 ALIAS_TABLE = ROOT / "content/items/aliases.json"
 TIBIA_KEY_PREFIX = "oteryn:item.tibia.i"
+TIBIA_KEY = re.compile(r"oteryn:item\.tibia\.i([1-9][0-9]*)")
 
 ITEM_AUTHORING = ROOT / "tools/content-schema/item-authoring"
 DONOR_CENSUS = (
@@ -296,6 +297,32 @@ def load_definition_keys() -> set[str]:
             if identity.get("family") != "Item":
                 raise GeneratorError(f"UNEXPECTED_RECORD_FAMILY:{path.name}")
             keys.add(identity["key"])
+    return keys
+
+
+def current_appearance_ids() -> set[int]:
+    """Ids of the newest admitted CipSoft appearance manifest (A12 section 4.1)."""
+    sys.path.insert(0, str(ROOT / "tools/content-schema/item-authoring"))
+    from appearance_membership import load_admitted
+
+    index, manifests = load_admitted()
+    return {entry[0] for entry in manifests[index["newest"]]["entries"]}
+
+
+def rule_only_definition_keys(
+    definition_keys: set[str], crystal_ids: set[str], current_ids: set[int]
+) -> set[str]:
+    """Tibia keys of current CipSoft ids that no Crystal row names: records keyed by the
+    section 4.1 rule alone, with no Crystal binding (ITEM-ADD-1 owner decision 2a)."""
+    keys = set()
+    for key in definition_keys:
+        match = TIBIA_KEY.fullmatch(key)
+        if (
+            match
+            and match.group(1) not in crystal_ids
+            and int(match.group(1)) in current_ids
+        ):
+            keys.add(key)
     return keys
 
 
@@ -901,11 +928,18 @@ def generate() -> tuple[dict[str, Any], bytes]:
     bound_epoch2, unbound_epoch2 = requalify(epoch2, aliases)
     if unbound != EXPECTED_D149_UNBOUND or unbound_epoch2:
         raise GeneratorError(f"D149_UNBOUND_COUNT:{unbound}:{unbound_epoch2}")
-    # Epoch-2 and the other current ids without an Item record may be bound before a record
-    # is authored; every epoch-1 target is exactly the definition key set.
+    # Every epoch-1 target is exactly the definition key set less the epoch-2 targets and the
+    # keys of current CipSoft ids no Crystal row names (ITEM-ADD-1, A12 section 4.1).
+    definition_keys = load_definition_keys()
+    epoch2_targets = {row["target"]["key"] for row in bound_epoch2}
+    rule_only = rule_only_definition_keys(
+        definition_keys - epoch2_targets,
+        {row["external_id"] for row in epoch1 + epoch2},
+        current_appearance_ids(),
+    )
     verify_allocations(
         [(int(row["external_id"]), row["target"]["key"]) for row in bound_epoch1],
-        load_definition_keys(),
+        definition_keys - epoch2_targets - rule_only,
         load_tibiawiki_targets(),
     )
     bindings = sorted(bound_epoch1 + bound_epoch2, key=canonical_bytes)

@@ -201,11 +201,18 @@ fn names_entry(sectors: &[Sector], key: u64) -> bool {
     let Ok(sector) = sectors.binary_search_by_key(&at, order) else {
         return false;
     };
-    sectors[sector]
-        .tiles
-        .iter()
-        .find(|tile| (tile.x, tile.y) == (x, y))
-        .is_some_and(|tile| tile.items.iter().filter(|item| item.depth == 0).count() > ordinal)
+    // Tiles of a sector are ascending by `(y, x)` (§5), so each key costs two binary searches.
+    let tiles = &sectors[sector].tiles;
+    tiles
+        .binary_search_by_key(&(y, x), |tile| (tile.y, tile.x))
+        .is_ok_and(|at| {
+            tiles[at]
+                .items
+                .iter()
+                .filter(|item| item.depth == 0)
+                .count()
+                > ordinal
+        })
 }
 
 fn limit(ok: bool, what: &str) -> Result<(), Error> {
