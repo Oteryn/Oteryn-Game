@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/charm-exact-source-json-20261001
-pr: null
+pr: 1508
 issue: 162
 base_sha: e225b3f76e152d195f75cb757b3d639a3ff5577a
 head_sha: null
@@ -56,5 +56,5 @@ Clippy PASS on the final source; exact frozen identity is recorded in the extern
 The canonical Charm decoder and accepted qualified-generation attachment remain unfinished;
 source evidence does not prove current Content authority. The original full nine-row parent
 remains IMPLEMENTING. Root publishes guarded actual Git identity. Exact frozen head, independent
-review and CI belong to the external packet. This archive reaches main only if this PR merges;
+review and CI belong to the external packet. This archive reaches main only if PR1508 merges;
 a commit cannot contain its own final SHA.
