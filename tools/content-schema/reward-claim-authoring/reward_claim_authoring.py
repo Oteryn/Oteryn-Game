@@ -159,6 +159,37 @@ def stack_problem(definition: dict | None, count: int) -> str | None:
     return None
 
 
+def source_subtype_problem(definition: dict | None) -> str | None:
+    """A source non-stackable charge subtype cannot be lowered to quantity-only MINT.
+
+    This is a claim admission hold, independent of Item materializability. The
+    two-argument OTS addItem helper uses its count as per-instance charges,
+    which the accepted RewardClaim contract cannot preserve. Stackable runes
+    use quantity instead, so their definition charges do not trigger this hold.
+    """
+    if not definition or definition.get("stack_class") != "NonStackable":
+        return None
+    semantics = definition.get("semantics", {})
+    if not isinstance(semantics, dict):
+        return None
+    charges = semantics.get("charges", {})
+    if not isinstance(charges, dict) or charges.get("state") != "KNOWN":
+        return None
+    value = charges.get("value")
+    if not isinstance(value, dict):
+        return "Source charged reward has unsupported charge fields"
+    count = value.get("count", {})
+    if not isinstance(count, dict):
+        return "Source charged reward has unsupported charge fields"
+    if count.get("state") == "KNOWN":
+        maximum = count.get("value")
+        if type(maximum) is not int or maximum < 0:
+            return "Source charged reward has unsupported charge fields"
+        if maximum > 0:
+            return "Source charge subtype requires explicit native lowering"
+    return None
+
+
 def legacy_uid_checks(records: list) -> list[dict]:
     """A legacy UID is server-scoped; positions disambiguate known collisions."""
     bindings = {}
@@ -199,7 +230,9 @@ def build_records(claims: list, manifest: dict, items: dict) -> tuple[list, list
             rewards = []
             for reward in placement["reward"]["items"]:
                 key = a12(reward["item"])
-                problem = stack_problem(items.get(key), reward["count"])
+                problem = source_subtype_problem(items.get(key)) or stack_problem(
+                    items.get(key), reward["count"]
+                )
                 if problem and problem != "waiting":
                     source_checks.append(
                         {
@@ -366,7 +399,8 @@ def validate(records: list, items: dict, source_checks: list | None = None) -> l
                 if reward["count"] < 1:
                     errors.append(f"{key}: reward count must be positive")
                 ready &= (
-                    stack_problem(items.get(reward["item"]["key"]), reward["count"])
+                    (source_subtype_problem(items.get(reward["item"]["key"]))
+                     or stack_problem(items.get(reward["item"]["key"]), reward["count"]))
                     is None
                 )
         # Only a false `ready` is unsafe. A stale `waiting_item_semantics` (ITEM-SEM has since

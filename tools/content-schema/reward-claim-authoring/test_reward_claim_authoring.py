@@ -246,6 +246,32 @@ def test_known_stack_payload_is_closed_and_class_consistent() -> None:
         assert "unsupported" in rca.stack_problem(coin, 1)
 
 
+def test_nonstack_charge_subtype_is_held_in_build_and_validate() -> None:
+    admitted = items()
+    admitted[STONE]["semantics"] = {
+        "charges": {"state": "KNOWN", "value": {
+            "count": {"state": "KNOWN", "value": 20}}}}
+    claim = pilot_claim("charged/one", "canary:item/1781", 1)
+    records, checks = rca.build_records([claim], manifest_for(claim), admitted)
+    assert records[0]["definition"]["readiness"] == "waiting_item_semantics"
+    assert any("charge subtype" in check["reason"] for check in checks)
+    assert rca.validate(records, admitted, checks) == []
+    records[0]["definition"]["readiness"] = "ready"
+    assert any("marked ready" in error for error in rca.validate(records, admitted, checks))
+
+
+def test_stackable_charge_definition_does_not_turn_quantity_into_subtype() -> None:
+    coin = copy.deepcopy(items()[COIN])
+    coin["semantics"] = {"charges": {"state": "KNOWN", "value": {
+        "count": {"state": "KNOWN", "value": 3}}}}
+    assert rca.source_subtype_problem(coin) is None
+    assert rca.stack_problem(coin, 3) is None
+    stone = copy.deepcopy(items()[STONE])
+    stone["semantics"] = {"charges": {"state": "KNOWN", "value": {
+        "count": {"state": "KNOWN", "value": 1}}}}
+    assert rca.source_subtype_problem(stone) is not None
+
+
 def test_committed_content_is_valid() -> None:
     assert rca.committed_errors() == []
     index = json.loads((rca.ROOT / rca.INDEX_PATH).read_text(encoding="utf-8"))
