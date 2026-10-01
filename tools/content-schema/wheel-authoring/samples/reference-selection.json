@@ -1,0 +1,98 @@
+{
+  "schema": "OTERYN_WHEEL_REFERENCE_SELECTION/v1",
+  "target_date": "2026-09-27",
+  "runtime_admitted": false,
+  "live_global_parity_confirmed": false,
+  "spell_input_sha256": "fc1680a45bf0d28a71b7f16b700146a4e804119f39a771cf9cf8af93addf673c",
+  "primary_sources": {
+    "official_news": {
+      "8783": {
+        "date": "2026-05-05",
+        "note": "Vocation Adjustments, TEST SERVER stage 1, not final",
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8783"
+      },
+      "8833": {
+        "date": "2026-06-02",
+        "note": "Vocation Adjustments release state (live 2026-06-16)",
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8833"
+      },
+      "8872": {
+        "date": "2026-07-07",
+        "note": "Vocation Adjustments Changes (balancing)",
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8872"
+      },
+      "8944": {
+        "date": "2026-09-01",
+        "note": "Monk Adjustments",
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8944"
+      },
+      "input_file": "news-spell-changes.json (rows with field=wheel_augment; the file uses 'field', not 'wheel_augment' as a column)"
+    },
+    "fandom": {
+      "Wheel of Destiny/Conviction Perks": {
+        "revid": 1206174,
+        "timestamp": "2026-09-14T01:41:28Z",
+        "use": "augment tables per vocation (primary Fandom source)"
+      },
+      "Wheel of Destiny/Revelation Perks": {
+        "revid": 1204680,
+        "timestamp": "2026-09-01T12:08:10Z",
+        "use": "revelation perks"
+      },
+      "Wheel of Destiny": {
+        "revid": 1151969,
+        "timestamp": "2025-12-24T09:16:57Z",
+        "use": "overview only, no augment values"
+      },
+      "Augments": {
+        "revid": 1059668,
+        "timestamp": "2024-05-20T08:01:59Z",
+        "use": "generic augment types only, no values"
+      },
+      "query": "rvdir=older&rvstart=2026-09-27T23:59:59Z"
+    },
+    "canary": {
+      "repo": "opentibiabr/canary",
+      "commit": "99902524e052f37574194466c2949c576e4ab269",
+      "commit_date": "2026-07-28",
+      "files": [
+        "src/io/io_wheel.cpp",
+        "src/creatures/players/components/wheel/player_wheel.cpp",
+        "data/scripts/spells/**"
+      ],
+      "status": "hypothesis only; snapshot predates 8944 (2026-09-01)",
+      "canary_groups": {
+        "Forked Spells": [
+          "Forked Glacier",
+          "Forked Thorns"
+        ],
+        "Special Spells": [
+          "Lightning",
+          "Strong Energy Strike",
+          "Strong Flame Strike"
+        ],
+        "Any_Focus_Mage_Spell": [
+          "Eternal Winter",
+          "Hell's Core",
+          "Rage of the Skies",
+          "Wrath of Nature"
+        ]
+      }
+    }
+  },
+  "selection_policy": "Existing project snapshot: released official news > captured Fandom at target date > Canary hypothesis. BR wiki is separately dated secondary corroboration. This is not an Oct 1 Global parity claim.",
+  "mystic_repulse_ii": {
+    "selected_percent": 40,
+    "primary_revision": 1206174,
+    "primary_timestamp": "2026-09-14T01:41:28Z",
+    "secondary_br_percent": 15,
+    "secondary_br_revision": 443774,
+    "secondary_br_approved_on": "2026-09-02",
+    "planner_percent": 60,
+    "decision": "Retain 40 for the existing Sept 27 project snapshot; Sept 2 secondary observation does not supersede Sept 14 primary capture. Current live Global value remains unconfirmed."
+  },
+  "great_fire_wave_i": "Both +15 critical extra damage and +10 critical chance selected from the existing project spell capture.",
+  "flurry_of_blows_i": "Select AREA_GREATER_FLURRY_OF_BLOWS. Planner range +1 is preserved as an unselected cast-range hypothesis.",
+  "accepted_atelier_parameters": "WHEEL-GEM-0 already selects candidate fees/grades and a PARITY_PENDING 250 cap. No new owner decision is needed to populate authoring.",
+  "dedication_reconciliation": "Reference capture selects mitigation +0.075 percentage points per point. Older resistance wording belongs to WHEEL-0 owner reconciliation before runtime admission."
+}

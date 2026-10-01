@@ -1666,14 +1666,12 @@
       "cell_count": 16,
       "visual_inspection": true
     },
-    "unavailable_sprite_categories": [
-      "dedication",
-      "conviction",
-      "basic_mod",
-      "supreme_mod"
-    ],
-    "client_asset_crosswalk": "NOT_IMPLEMENTED",
-    "live_asset_fetch": "HTTP_403_ON_ORIGINAL_CDN_2026_10_01"
+    "unavailable_sprite_categories": [],
+    "client_asset_crosswalk": "REFERENCE_MANIFEST_COMPLETE; RUNTIME_ASSET_ADMISSION_PENDING",
+    "live_asset_fetch": "HTTP_403_ON_ORIGINAL_CDN_2026_10_01",
+    "reference_sheet_observations": "samples/source-icon-reference.json",
+    "reference_sheet_sha256": "4a49c4b3e2ab60531e4e5677c0b81600ac21014a9a77e02d27b6af451d1f1a4e",
+    "appearance_scope": "ALL_FIVE_REFERENCE_STRIPS_VISUALLY_INSPECTED; CURRENT_GLOBAL_APPEARANCE_NOT_CONFIRMED"
   },
   "revelation_behaviors": {
     "gift_of_life": [

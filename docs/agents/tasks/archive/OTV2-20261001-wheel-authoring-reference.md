@@ -34,7 +34,7 @@ The owner's direct request prepares a complete reference authoring schema for th
 five vocations and gems, with a populated candidate, offline rebuild, semantic
 validator, allocation/gem checks and an interactive standalone comparison.
 This is a separate authoring delivery, not a W-R/GEM-R runtime allocation or an
-amendment of the programme's close-out mode. The branch and the two owned paths
+amendment of the programme's close-out mode. The branch and the three owned paths
 have one writer. Publication uses the proven guarded local Git route from the
 bound META policy, never sequential Contents API commits.
 
@@ -224,3 +224,48 @@ validation/36 tests, repository policy validation and content/post-merge/PR rout
 regressions pass. The broader merge-group and canonical PR PG/SIM scripts reach
 native PowerShell canaries and stop because `pwsh` is absent in this workspace;
 those unchanged native checks remain for repository CI. No check is weakened.
+
+
+## Completed authoring handoff (2026-10-01)
+
+The owner's instruction to complete all owned work returns the task to AUTHORING,
+superseding frozen `126fa467b3b82a9e6e2e8fcced9ecdf0d64ca432`. The same branch,
+sole writer and three owned paths are retained. This section supersedes historical
+statements that the four reference sheets or reference client crosswalk are missing.
+
+- [x] Five hash-pinned reference sheets inspected; immutable URLs, dimensions,
+  205 explicit crops and all 520 candidate bindings supplied. Older client layout
+  differences are recorded and cannot silently overwrite current planner IDs.
+- [x] Reference manifest and source selection are bound into default exact-file
+  validation, deterministic regeneration and CI. Reference source bytes can be
+  independently hash/dimension-checked without committing proprietary files.
+- [x] All 205 icons have a browser catalogue; five-vocation comparison uses the
+  crop manifest and preserves a readable ID fallback when reference images fail.
+- [x] Existing spell snapshot date/source precedence fixed explicitly. Mystic
+  Repulse +40% is selected for Sept 27; Great Fire Wave includes both critical
+  effects; Flurry selects enlarged area with cast-range hypothesis unselected.
+- [x] Existing WHEEL-GEM-0 fee/grade/cap decisions represented completely. Global
+  parity uncertainty is preserved and is not an incomplete authoring field.
+
+The complete review input is PR #1435 at the final frozen SHA in its description:
+closed schemas, populated candidate, deterministic source/evidence bindings,
+planner replay, asset references, browser comparison and regression results.
+Review attention: source precedence; all icon crops/IDs (including the documented
+older Focus Mastery difference); full augment effect sets; finite JSON; revision
+chaining; Atelier invariants; no runtime admission or proprietary redistribution.
+
+The authoring delivery is complete. Independent review dispatch and protected
+integration remain with the active programme control plane. WHEEL-0 dedication
+wording reconciliation and native runtime effect/asset admission belong to their
+accepted owners; the evidence and complete reference bindings are provided here.
+No worker paid-review trigger, merge, protocol or runtime mutation is performed.
+
+
+Completion qualification: deterministic schema/candidate/report/manifest checks;
+85 authoring cases; source bytes of all five PNG references hash/dimension-checked;
+205 browser crops loaded and bounds/offsets checked across five vocations; offline
+ID fallback checked; complete pinned planner replay; 18 item appearances; governance
+validator/36 cases; repository policy validator, three routing suites/6 unittest
+cases; whitespace and owned-path checks. No local PowerShell result is newly claimed.
+The final frozen SHA, exact-head check results and review packet are recorded in
+PR #1435 after publication, with no tracked writes after freeze.

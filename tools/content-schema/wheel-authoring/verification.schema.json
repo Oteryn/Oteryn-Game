@@ -207,8 +207,7 @@
             "minLength": 1,
             "maxLength": 20000
           },
-          "minItems": 4,
-          "maxItems": 4
+          "minItems": 0
         },
         "client_asset_crosswalk": {
           "type": "string",
@@ -216,6 +215,21 @@
           "maxLength": 20000
         },
         "live_asset_fetch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "reference_sheet_observations": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "reference_sheet_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "appearance_scope": {
           "type": "string",
           "minLength": 1,
           "maxLength": 20000
@@ -231,7 +245,10 @@
         "revelation_asset",
         "unavailable_sprite_categories",
         "client_asset_crosswalk",
-        "live_asset_fetch"
+        "live_asset_fetch",
+        "reference_sheet_observations",
+        "reference_sheet_sha256",
+        "appearance_scope"
       ]
     },
     "source_conflicts": {
@@ -412,8 +429,7 @@
             "minLength": 1,
             "maxLength": 20000
           },
-          "minItems": 4,
-          "maxItems": 4
+          "minItems": 0
         }
       },
       "required": [
@@ -481,6 +497,46 @@
         "file",
         "sha256"
       ]
+    },
+    "client_icon_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "file",
+        "sha256"
+      ]
+    },
+    "reference_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "file",
+        "sha256"
+      ]
     }
   },
   "required": [
@@ -496,7 +552,9 @@
     "resolved_capture_limitations",
     "candidate_sha256",
     "live_source_audit",
-    "item_asset_reference"
+    "item_asset_reference",
+    "client_icon_manifest",
+    "reference_selection"
   ],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Wheel reference verification evidence"

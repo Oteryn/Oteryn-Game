@@ -16,12 +16,13 @@ python wheel_authoring.py validate
 python -m unittest discover -s . -q
 python build_report.py --check
 python verify_item_assets.py --check
+python client_icons.py --check
 node verify_planner.cjs /path/to/pinned/TibiaPal
 ```
 
 Open `wheel-comparison.html` for a standalone offline comparison by vocation and
-search. It displays the candidate's structured data offline. Optional icon previews load
-directly from the original Tibia CDN; blocked or missing images show their IDs.
+search. It displays the candidate's structured data offline. Optional icon previews load revision-pinned reference sheets using the complete
+client crop manifest; blocked or missing images show their IDs.
 The viewer includes perk and gem icons without redistributing source image bytes.
 `build` without `--check` writes `samples/wheel-candidate.json`. Validation never
 writes files. Rebuilding needs only the committed source captures, without the
@@ -48,6 +49,12 @@ difference. Non-finite numbers are rejected when reading and validating JSON.
 - `samples/live-source-audit.json`: live Tavily source revisions/content hashes, HTTP
   observations, bounded official facts and per-conflict outcomes. No original
   manual, upstream module or sprite bytes are redistributed.
+- `client_icons.py` and `samples/client-icon-manifest.json`: reproducible complete
+  reference crop bindings, without redistributing assets.
+- `samples/source-icon-reference.json`: five inspected, hash-pinned sheets and
+  the older-client layout comparison.
+- `samples/reference-selection.json`: target date, primary-source precedence and
+  explicit reconciliation of the remaining source differences.
 - `samples/item-asset-reference.json`: 18 Gem item appearances, sprite IDs and
   atlas files from the existing digest-verified 15.30 assets, reproduced by
   `verify_item_assets.py`. It does not assign icons to Wheel perks or admit assets.
@@ -145,14 +152,27 @@ precedence; this reference does not allocate Forge/fiendish integration.
 This tool does not perform
 economy transactions, revelation RNG, grade writes, vessel writes or loot changes.
 
-Icons include the sprite URL, horizontal-square-cell layout and source index.
-Renderer source confirms horizontal-square cells for all five sprite categories.
-The bundled Revelation sheet was visually inspected: 544×34 pixels, 16 cells,
-SHA-256 recorded in `icon_evidence`, and every Revelation ID fits those cells.
-The other four sheets are absent from the upstream bundle. Fresh requests to all
-five original CDN URLs returned HTTP 403; the cause is not established. The
-missing four categories remain visually unverified. No client asset crosswalk is
-implemented by reference tooling.
+Icons bind the current planner's category/index to an explicit crop manifest:
+205 distinct crops and 520 candidate JSON-pointer bindings, across five sheets.
+Each sheet records its immutable reference URL, dimensions, byte count and SHA-256.
+All five reference strips were visually inspected; Revelation's RGBA pixels equal
+the pinned TibiaPal sheet. The older reference client's slot layout differs in
+13 Conviction assignments and is not used for current bindings. The other four
+strips have no successful original-CDN comparison, so current Global appearance
+parity remains unconfirmed. Original CDN requests still return HTTP 403.
+The manifest and snapshot-selection files are digest-bound by default validation.
+No PNG or proprietary client implementation is included, and public availability
+does not grant runtime redistribution rights. To qualify locally supplied source
+bytes, use `python client_icons.py --check --assets-dir /path/to/reference-sheets`
+with files named `dedication.png`, `conviction.png`, `revelation.png`,
+`basic_mod.png` and `supreme_mod.png`.
+
+`samples/reference-selection.json` fixes the spell/augment authoring snapshot at
+2026-09-27 and binds the existing project spell input by SHA-256. Released official
+news precedes captured Fandom, then Canary hypotheses; BR wiki is separately dated
+secondary evidence. Mystic Repulse II retains +40% from the Sept 14 primary
+capture rather than treating Sept 2 BR +15% as a newer observation. This completes
+the authoring selection; current live Global parity remains an external claim.
 
 ## Revisions and admission
 
