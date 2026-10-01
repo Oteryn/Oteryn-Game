@@ -1,4 +1,4 @@
-//! Native CHARM-2/3 reader. Content indices belong to the supplied revision binding; durable
+//! Native CHARM-2/3 port. Content indices belong to the supplied revision binding; durable
 //! authority remains in DurabilityRoot. This module does not advertise or activate capability 1.
 
 use std::collections::BTreeMap;
@@ -9,24 +9,31 @@ use oteryn_protocol_oteryn::bestiary::{
     encode_bestiary_view,
 };
 use oteryn_protocol_oteryn::charm::{
-    CharmKind, CharmState, CharmView, MAX_CHARM_BALANCE, MAX_CHARM_STAGE_COST, MAX_CHARMS,
-    encode_charm_view,
+    COMMAND_TYPE_CHARM_ASSIGN_INTENT, COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
+    CharmAssignDisposition, CharmAssignIntent, CharmKind, CharmState, CharmUnlockDisposition,
+    CharmUnlockStageIntent, CharmView, MAX_CHARM_BALANCE, MAX_CHARM_STAGE_COST, MAX_CHARMS,
+    encode_charm_assign_result, encode_charm_unlock_stage_result, encode_charm_view,
 };
 
-use super::CharmPortUnavailable;
+use super::{
+    CharmCommandIdentity, CharmCommandReply, CharmPortUnavailable, CharmProgressionPort,
+    dispatch_charm_command,
+};
 use crate::combat::charm_effects::{
     CharmCatalogueRead, CharmCategory as EffectCategory, CharmDefinition as EffectDefinition,
 };
 use crate::domain::CharacterRevision;
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::charm::{
-    BestiaryRaceKey, CharmCatalogue, CharmCategory, CharmCurrency, CharmKey,
+    BestiaryRaceKey, CharmCatalogue, CharmCategory, CharmCurrency, CharmKey, CharmRuleError,
 };
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::charm_state::{
-    CharacterCharmProgressionSnapshot, CharmFacts, CharmProgressionReadRequest,
+    CharacterCharmProgressionSnapshot, CharmCommand, CharmCommandEffect, CharmCommandOccurrence,
+    CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmProgressionReadRequest,
+    CharmStateError, CommittedCharmCommand,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 
@@ -232,6 +239,10 @@ fn wire_balance(value: i128) -> Result<u32, CharmPortUnavailable> {
         .ok_or(CharmPortUnavailable)
 }
 
+fn indexed<T>(entries: &[T], index: NonZeroU32) -> Option<&T> {
+    entries.get(usize::try_from(index.get() - 1).ok()?)
+}
+
 /// Both snapshots have the same durable revision, ready for connection domain envelopes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CharmConnectionViews {
@@ -240,8 +251,8 @@ pub(crate) struct CharmConnectionViews {
     pub(crate) charms: CharmView,
 }
 
-/// The runtime independently supplies live session/lease/scope evidence. Only the expected
-/// CharacterRevision can be refreshed from storage; an intent or old receipt cannot supply it.
+/// The runtime independently supplies live session/lease/scope evidence. Expected revision is
+/// read for a fresh command or taken from a receipt solely for its original semantic binding.
 #[cfg_attr(test, allow(dead_code))] // Constructed by the standalone PostgreSQL suites.
 pub(crate) struct NativeCharmProgressionPort<'a, 'f, 's, F> {
     root: &'a DurabilityRoot,
@@ -310,6 +321,260 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
     pub(crate) async fn views(&self) -> Result<CharmConnectionViews, CharmPortUnavailable> {
         let snapshot = self.snapshot(self.current_fence().await?).await?;
         self.content.project(snapshot)
+    }
+
+    /// Dispatch only the bound runtime session's identity. This prepares the registered adapter;
+    /// the connection owner still gates routing and capability advertisement.
+    pub(crate) async fn dispatch(
+        &mut self,
+        identity: CharmCommandIdentity,
+        command_type: u32,
+        payload: &[u8],
+    ) -> Option<CharmCommandReply> {
+        if identity.game_session_id != self.fence.game_session_id {
+            let result_payload = match command_type {
+                COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT => {
+                    encode_charm_unlock_stage_result(CharmUnlockDisposition::Rejected)
+                }
+                COMMAND_TYPE_CHARM_ASSIGN_INTENT => {
+                    encode_charm_assign_result(CharmAssignDisposition::Rejected)
+                }
+                _ => return None,
+            };
+            return Some(CharmCommandReply {
+                rejected: true,
+                result_payload,
+            });
+        }
+        dispatch_charm_command(self, identity, command_type, payload).await
+    }
+
+    async fn retained(
+        &self,
+        occurrence: CharmCommandOccurrence,
+    ) -> Result<Option<CommittedCharmCommand>, CharmPortUnavailable> {
+        self.root
+            .reconcile_charm_command(self.authority, occurrence)
+            .await
+            .map_err(|_| CharmPortUnavailable)
+    }
+
+    async fn commit(
+        &self,
+        occurrence: CharmCommandOccurrence,
+        command: CharmCommand,
+        revision: CharacterRevision,
+        expected_stage: Option<u8>,
+    ) -> Result<CharmCommandOutcome, CharmStateError> {
+        let request = CharmCommandRequest {
+            occurrence,
+            command,
+            catalogue_revision: self.content.revision.clone(),
+            catalogue: self.content.catalogue.clone(),
+        };
+        let fence = CurrentCharacterGameplayFence {
+            expected_character_revision: revision,
+            ..self.fence
+        };
+        let result = self
+            .root
+            .commit_charm_command(
+                self.authority,
+                self.node,
+                fence,
+                request.clone(),
+                self.facts.clone(),
+            )
+            .await;
+        // A same-occurrence commit can race the first reconciliation/read. Retry once with
+        // its original semantic revision. Never copy live authority fields from the receipt.
+        if matches!(
+            result,
+            Err(CharmStateError::ConflictingOccurrence | CharmStateError::CharacterRevisionMismatch)
+        ) && let Some(receipt) = self
+            .root
+            .reconcile_charm_command(self.authority, occurrence)
+            .await?
+        {
+            if expected_stage.is_some_and(|expected| !receipt_stage_matches(&receipt, expected)) {
+                return Err(CharmStateError::ConflictingOccurrence);
+            }
+            let fence = CurrentCharacterGameplayFence {
+                expected_character_revision: receipt.original_character_revision,
+                ..self.fence
+            };
+            return self
+                .root
+                .commit_charm_command(
+                    self.authority,
+                    self.node,
+                    fence,
+                    request,
+                    self.facts.clone(),
+                )
+                .await;
+        }
+        result
+    }
+}
+
+fn receipt_stage_matches(receipt: &CommittedCharmCommand, expected: u8) -> bool {
+    matches!(receipt.effect, CharmCommandEffect::Unlocked { stage_before, .. } if stage_before == expected)
+}
+
+impl<F: CharmFacts + Clone> CharmProgressionPort for NativeCharmProgressionPort<'_, '_, '_, F> {
+    async fn bestiary(&self) -> Result<Vec<BestiaryRaceProgress>, CharmPortUnavailable> {
+        Ok(self.views().await?.bestiary)
+    }
+
+    async fn charms(&self) -> Result<CharmView, CharmPortUnavailable> {
+        Ok(self.views().await?.charms)
+    }
+
+    async fn unlock_next_stage(
+        &mut self,
+        occurrence: CharmCommandOccurrence,
+        intent: CharmUnlockStageIntent,
+    ) -> CharmUnlockDisposition {
+        let Some(key) = indexed(&self.content.charms, intent.charm).cloned() else {
+            return CharmUnlockDisposition::UnknownCharm;
+        };
+        let retained = match self.retained(occurrence).await {
+            Ok(receipt) => receipt,
+            Err(_) => return CharmUnlockDisposition::Rejected,
+        };
+        let revision = if let Some(receipt) = retained {
+            if !receipt_stage_matches(&receipt, intent.expected_stage) {
+                return CharmUnlockDisposition::Rejected;
+            }
+            receipt.original_character_revision
+        } else {
+            let snapshot = match self.current_fence().await {
+                Ok(fence) => self.snapshot(fence).await,
+                Err(error) => Err(error),
+            };
+            match snapshot {
+                Ok(snapshot)
+                    if snapshot
+                        .state
+                        .unlocks
+                        .get(&key)
+                        .map_or(0, |stage| stage.get())
+                        == intent.expected_stage =>
+                {
+                    snapshot.character_revision
+                }
+                refusal => {
+                    // A concurrent identical unlock may have just advanced the stage/revision.
+                    match self.retained(occurrence).await {
+                        Ok(Some(receipt))
+                            if receipt_stage_matches(&receipt, intent.expected_stage) =>
+                        {
+                            receipt.original_character_revision
+                        }
+                        Ok(None) if refusal.is_ok() => {
+                            return CharmUnlockDisposition::StageMismatch;
+                        }
+                        _ => return CharmUnlockDisposition::Rejected,
+                    }
+                }
+            }
+        };
+        let category = match self.content.catalogue.get(&key) {
+            Ok(definition) => definition.category,
+            Err(_) => return CharmUnlockDisposition::UnknownCharm,
+        };
+        unlock_disposition(
+            self.commit(
+                occurrence,
+                CharmCommand::UnlockNextStage { charm: key },
+                revision,
+                Some(intent.expected_stage),
+            )
+            .await,
+            category,
+        )
+    }
+
+    async fn assign(
+        &mut self,
+        occurrence: CharmCommandOccurrence,
+        intent: CharmAssignIntent,
+    ) -> CharmAssignDisposition {
+        let Some(charm) = indexed(&self.content.charms, intent.charm).cloned() else {
+            return CharmAssignDisposition::UnknownCharm;
+        };
+        let Some((race, _)) = indexed(&self.content.races, intent.race) else {
+            return CharmAssignDisposition::UnknownRace;
+        };
+        let revision = match self.retained(occurrence).await {
+            Ok(Some(receipt)) => receipt.original_character_revision,
+            Ok(None) => match self.current_fence().await {
+                Ok(fence) => fence.expected_character_revision,
+                Err(_) => return CharmAssignDisposition::Rejected,
+            },
+            Err(_) => return CharmAssignDisposition::Rejected,
+        };
+        assign_disposition(
+            self.commit(
+                occurrence,
+                CharmCommand::Assign {
+                    charm,
+                    race: race.clone(),
+                },
+                revision,
+                None,
+            )
+            .await,
+        )
+    }
+}
+
+fn unlock_disposition(
+    result: Result<CharmCommandOutcome, CharmStateError>,
+    category: CharmCategory,
+) -> CharmUnlockDisposition {
+    match result {
+        Ok(
+            CharmCommandOutcome::Committed(receipt)
+            | CharmCommandOutcome::AlreadyCommitted(receipt),
+        ) if matches!(receipt.effect, CharmCommandEffect::Unlocked { .. }) => {
+            CharmUnlockDisposition::Unlocked
+        }
+        Err(CharmStateError::Rule(CharmRuleError::UnknownCharm)) => {
+            CharmUnlockDisposition::UnknownCharm
+        }
+        Err(CharmStateError::Rule(CharmRuleError::FinalStageReached)) => {
+            CharmUnlockDisposition::StageMismatch
+        }
+        Err(CharmStateError::Rule(CharmRuleError::InsufficientBalance)) => match category {
+            CharmCategory::Major => CharmUnlockDisposition::NotEnoughCharmPoints,
+            CharmCategory::Minor => CharmUnlockDisposition::NotEnoughMinorCharmEchoes,
+        },
+        _ => CharmUnlockDisposition::Rejected,
+    }
+}
+
+fn assign_disposition(
+    result: Result<CharmCommandOutcome, CharmStateError>,
+) -> CharmAssignDisposition {
+    match result {
+        Ok(
+            CharmCommandOutcome::Committed(receipt)
+            | CharmCommandOutcome::AlreadyCommitted(receipt),
+        ) if matches!(receipt.effect, CharmCommandEffect::Assigned { .. }) => {
+            CharmAssignDisposition::Assigned
+        }
+        Err(CharmStateError::Rule(rule)) => match rule {
+            CharmRuleError::UnknownCharm => CharmAssignDisposition::UnknownCharm,
+            CharmRuleError::CharmLocked => CharmAssignDisposition::CharmLocked,
+            CharmRuleError::CharmAlreadyAssigned => CharmAssignDisposition::AlreadyAssigned,
+            CharmRuleError::BestiaryStageTooLow => CharmAssignDisposition::RaceStageTooLow,
+            CharmRuleError::RaceCapacityReached => CharmAssignDisposition::RaceCharmLimit,
+            CharmRuleError::AssignmentSlotsFull => CharmAssignDisposition::AssignmentSlotsFull,
+            _ => CharmAssignDisposition::Rejected,
+        },
+        _ => CharmAssignDisposition::Rejected,
     }
 }
 
