@@ -573,6 +573,48 @@ fn origins(carrier: &ChannelActorCarrier) -> Vec<Option<DamageOrigin>> {
         .collect()
 }
 
+fn charm_child(parent: &EffectPlan, generated: i64) -> EffectPlan {
+    EffectPlan::ordered_sequential(
+        parent.occurrence().clone(),
+        parent.intent().clone(),
+        vec![
+            parent.effects()[0].clone(),
+            Effect::damage(parent.effects()[0].target().as_str(), generated).expect("generated"),
+        ],
+        vec![CalculationStage::new("charm:generated").expect("stage")],
+        parent.commit_group().owner_scope(),
+        parent.commit_group().group_id(),
+    )
+    .expect("declared child entries")
+}
+
+fn charm_magnitudes(plan: &EffectPlan) -> Vec<i64> {
+    plan.effects().iter().map(Effect::magnitude).collect()
+}
+
+#[test]
+fn charm_native_declared_child_order_preserves_canonical_constructor() {
+    let parent = plan(occurrence("charm:order", "rules:1"), "target:one", 3);
+    let ordered = charm_child(&parent, 9);
+    let canonical = EffectPlan::new(
+        ordered.occurrence().clone(),
+        ordered.intent().clone(),
+        ordered.effects().to_vec(),
+        vec![],
+        ordered.commit_group().clone(),
+    )
+    .expect("legacy constructor");
+    assert_eq!(charm_magnitudes(&ordered), [3, 9]);
+    assert_eq!(charm_magnitudes(&canonical), [9, 3]);
+    assert_eq!(
+        ordered
+            .sub_occurrence(1)
+            .expect("real child index")
+            .ordinal(),
+        1
+    );
+}
+
 #[test]
 fn receipt_and_sub_ordinal_bounds_match_the_registered_rows() {
     assert_eq!(COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, 16);
