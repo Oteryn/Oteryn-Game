@@ -92,6 +92,14 @@ input, the conversion check and the normalized-progress check (the sibling sweep
 promotion `after` values are also caller values). Both checks have a red run with the check
 removed. Replay, reconcile, fence and reload paths are unchanged and pass.
 
+## Repair (Codex P1 on `7902e6ac`)
+
+The frozen `7902e6ac` accepted an `after` at or beyond a family's first unreachable level, because
+the normalized check looked only at `level + 1`. Codex P1 (#1411, `character_build.rs:324`) is
+accepted: training from sword 12 to (1000, 0) committed. The check now also requires every level
+from the family floor through the current level to be reachable under the formula. The unit test
+and the writer test each have a red run with the check removed.
+
 ## Acceptance criteria
 
 - [ ] Exact frozen head with passing CI.
@@ -110,8 +118,8 @@ removed. Replay, reconcile, fence and reload paths are unchanged and pass.
 - PostgreSQL 17.6 (docker `postgres:17.6-bookworm`): `character_authority_postgres` 908 passed;
   `--lib` 1196 passed; the full crate run is in the PR body.
 - Mutations (each restored): `verify_character_build_chain` death arm set to `WHERE false` turns
-  `build_grants_and_admission_verifier` red; removing the conversion check or the normalized
-  check turns `build_writer_is_fenced_replayed_and_reconciled` red.
+  `build_grants_and_admission_verifier` red; removing the conversion check, the normalized
+  check or its reachability part turns `build_writer_is_fenced_replayed_and_reconciled` red.
 - `python3 tools/agents/validate_governance.py`; `python3 tools/repository/validate_repository_policy.py`;
   `git diff --check`.
 

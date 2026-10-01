@@ -1130,6 +1130,16 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
                 )?,
                 "sword tries that pay for level 13",
             ),
+            (
+                change(
+                    63,
+                    BuildCause::Training,
+                    &trained,
+                    &state("knight", (1, 20), (1000, 0))?,
+                    None,
+                )?,
+                "a sword level past the first unreachable one",
+            ),
         ] {
             let outcome = root
                 .commit_character_build(&authority, node, fence(4)?, request, &TABLE)

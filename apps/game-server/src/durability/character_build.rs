@@ -310,18 +310,19 @@ pub fn convert_vocation(
     DurableBuildState::new(vocation, families[0], skills)
 }
 
-/// Progress is held within the current level (SKILLS-0 §3.1): no family has paid for its next
-/// reachable level without advancing.
+/// Every level up to the current one is reachable, and progress is held within the current level
+/// (SKILLS-0 §3.1): no family has paid for its next reachable level without advancing.
 fn normalized(formula: &dyn BuildFormula, state: &DurableBuildState) -> bool {
     state
         .families()
         .into_iter()
         .enumerate()
         .all(|(family, (level, progress))| {
-            level >= MAX_BUILD_LEVEL
-                || formula
-                    .required(&state.vocation, family, level + 1)
-                    .is_none_or(|required| progress < required)
+            let floor = if family == 0 { 0 } else { MIN_SKILL_LEVEL };
+            let required = |level| formula.required(&state.vocation, family, level);
+            (floor.saturating_add(1)..=level).all(|level| required(level).is_some())
+                && (level >= MAX_BUILD_LEVEL
+                    || required(level + 1).is_none_or(|required| progress < required))
         })
 }
 
@@ -827,6 +828,9 @@ mod tests {
         skills[2] = (10, 50);
         let unpaid = DurableBuildState::new("knight", (0, 0), skills).unwrap_or_default();
         assert!(!normalized(&Table, &unpaid), "50 tries pay for level 11");
+        skills[2] = (1000, 0);
+        let unreachable = DurableBuildState::new("none", (0, 0), skills).unwrap_or_default();
+        assert!(!normalized(&Table, &unreachable), "req(69) is unreachable");
     }
 
     #[test]
