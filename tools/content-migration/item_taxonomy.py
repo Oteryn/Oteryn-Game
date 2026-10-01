@@ -14,6 +14,7 @@ from engine_items import (
     qualified_navigation_supplement,
     resolve_wiki_family_value,
 )
+from item_official_navigation import build_official_navigation
 
 SNAPSHOT = "imports/tibiawiki/facts/items-stats.json"
 # The census omitted this BR navigation label; both the weapons and schema already
@@ -185,6 +186,18 @@ def build_taxonomy(
                 "family_profile": entry["profile"],
                 "source_evidence": entry["source_evidence"],
             }
+    direct_official = build_official_navigation(
+        {key[1]: definition for key, definition in definitions.items()},
+        snapshot,
+        client or {},
+        routed_keys | {key[1] for key in rows},
+        bound_keys,
+        MARKET_PROFILES,
+        MARKET_CLOTHES_SLOT,
+    )
+    for row in direct_official:
+        key = tuple(row["target"][field] for field in ("family", "key", "revision"))
+        rows[key] = row
     return [rows[key] for key in sorted(rows)]
 
 
