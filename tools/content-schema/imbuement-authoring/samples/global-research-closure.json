@@ -384,13 +384,14 @@
       },
       "revision": null,
       "captured_text_scope": "Literal visible overlay and look/success text transcribed from named dated public video frames; visual equipment-slot sequence is described separately",
-      "original_digest": "cc88bfdbe37c0724784a07742f4126b89387f065aa89f1b3d3d25c93d730a14e",
+      "original_digest": "778cd455d57abbecbbf2104e004a09659b6d9ac1f0130919cb3e39cf1c89e25d",
       "original_digest_scope": "Canonical compact sorted public recording transcription receipt with browser-frame SHA256identities",
       "captured_text": "Carry the imbuement scroll with you and when your imbuement runs out you can use the scroll on your equipment and imbue it that way.\nYou see 2powerful vampirism scrolls.\nThey weigh 5.00 oz.\nYou see a ghost chestplate (Arm:17, distance fighting +2, protection physical +3%).\nImbuements: (Powerful vampirism 20:00h, Empty Slot).\nYou have successfully imbued the object.",
       "captured_text_sha256": "ef3a0167b28526073cdedad8ffeb8f8264bd142aaf50704e1403a690fee44465",
       "limits": [
         "Public tutorial dated2025-07-24, read2026-10-01; character/account/server properties not independently measured. No controlled gameplay by this task.",
-        "Named success and equipped placement only; no explicit final scroll-stack count, rejection, Free purchase or all-tier proof."
+        "Named success and equipped placement only; no explicit final scroll-stack count, rejection, Free purchase or all-tier proof.",
+        "Before/after equipped placement supports a bounded permission inference; originalplayer-time receipts were not decoder-frame timestamps. No exact Vampirism application instant is identified."
       ],
       "frames": [
         {
@@ -421,7 +422,7 @@
           "timestamp_seconds": 121.0,
           "capture_filename": "minerva-sequence.jpg",
           "sha256": "8cadeabc75beab08bd57978d2659240854341b1dc63104f87009f0399d36a500",
-          "visible_scope": "First7panels sample public playback at121.000,122.350,123.364,124.359,125.351,126.350,127.360seconds. GhostChestplate remains in torso slot throughout these panels, including disappearance of the lower scroll icon betweenfirsttwo. Remainingpanels are laterplayback/adandexcluded from evidence."
+          "visible_scope": "First7panels are sampled player-time receipts121.000–127.360showing torso placement and a lower-icon change121.000–122.350. The change is not attributed to the namedVampirism application; later ad/next-playback panels are excluded. Player-time stamps are not decoder-frame timestamps."
         }
       ]
     },
@@ -1130,14 +1131,15 @@
       "id": "powerful_vampirism_scroll_equipped_ghost_chestplate",
       "group": "scroll_application_equipped_target",
       "value": {
-        "accepted": true,
         "family": "Vampirism",
         "tier": "Powerful",
         "target": "Ghost Chestplate",
-        "target_remained_equipped": true,
-        "result_display": "20:00h"
+        "result_display": "20:00h",
+        "target_shown_equipped_before_and_after": true,
+        "equipped_application_permission_inference": true,
+        "equipment_state_at_application_instant_directly_observed": false
       },
-      "qualification": "DATED_PUBLIC_RECORDING_NAMED_SUCCESS_2025_07_24",
+      "qualification": "DATED_PUBLIC_BEFORE_AFTER_NAMED_RESULT_WITH_EXPLICIT_PERMISSION_INFERENCE",
       "quote_refs": [
         {
           "source_id": "minerva_public_scroll_use_2025",
@@ -1149,9 +1151,9 @@
         }
       ],
       "limits": [
-        "Observed video frames118.797–132.710show the same armor in the equipped slot before/after application. Named case, corroborated by all3engine paths; no blanket certification of every tier or failure case.",
-        "2025publication is historical source provenance, not a new2026controlled server observation.",
-        "Sampled playback121.000–127.360keeps the torso item equipped through the observed scroll-icon change interval121.000–122.350. No unseen frames, hidden cuts or arbitrary scroll tiers are certified."
+        "Named successful result and equipped torso placement before/after are visible in the dated tutorial. Equipped application is a bounded inference consistent with all3pinned engine paths, not a directly observed application-instant state.",
+        "The earlier scroll-icon change is not identified as the Vampirism application. At122.570the look text says2PowerfulVampirism scrolls, after that icon change; neither a pre-debit count nor exact consumption is inferred.",
+        "No universal tier/family permission or new2026controlled gameplay observation is certified."
       ]
     },
     {
@@ -1299,7 +1301,7 @@
       "known_scope": [
         "Scroll account/quest exemptions, compatibility, empty-slot requirement and Powerful location-anywhere statement are sourced.",
         "All3 references explicitly update stats for target parent==player, showing equipped acceptance in inspected paths; action-ID coverage is separately48/48/72.",
-        "Public Minerva tutorial shows successfulPowerfulVampirism20:00h onGhostChestplate while the armor remains equipped, dated2025-07-24. The named-case evidence criterion is satisfied."
+        "PublicMinerva tutorial dated2025-07-24showsPowerfulVampirism20:00h/success andGhostChestplate equipped before/after. Equipped application is recorded as a bounded inference; exact application-instant equipment state is not directly proved."
       ],
       "remaining_public_fields": [],
       "runtime_contract": {
@@ -1695,7 +1697,7 @@
       "known_scope": [
         "Blank inscription1 is an independently sourced operation; completed-scroll account/quest exemptions and compatibility are filled.",
         "All3 executable references request1 filled scroll on successful normal application and0 before named ordinary validation rejections; actual-pointer versus matching-type removal and48/48/72 action coverage are recorded.",
-        "The public video visibly reports2powerful vampirism scrolls before successful application; a scroll icon disappears, but no explicit final stack quantity is shown. Exact success units remain unselected."
+        "A dated video look atplayer time122.570says2PowerfulVampirism scrolls, after an earlier unidentified icon change. No reliable pre/post quantity pair or exact consumed units follows."
       ],
       "remaining_public_fields": [
         {
@@ -1788,7 +1790,7 @@
       "method": "REMOTE_DESKTOP_CHROME_CDP_AFTER_ORDINARY_HTTP403",
       "metadata_read": true,
       "gameplay_observed": true,
-      "limitation": "Fresh browser profile loaded public media at4K. Named equippedGhostChestplate/PowerfulVampirism success observed; no explicit final scroll-stack counter. No player-controlled gameplay performed.",
+      "limitation": "Dated named20:00h/success result and equipped before/after placement observed. Application-instant equipped state is a bounded inference, not direct frame proof; no exact final scroll stack counter. Later decoder-timestamp capture did not produce usable event evidence and was not incorporated.",
       "frame_refs": [
         {
           "timestamp_seconds": 118.796991,
@@ -1818,7 +1820,7 @@
           "timestamp_seconds": 121.0,
           "capture_filename": "minerva-sequence.jpg",
           "sha256": "8cadeabc75beab08bd57978d2659240854341b1dc63104f87009f0399d36a500",
-          "visible_scope": "First7panels sample public playback at121.000,122.350,123.364,124.359,125.351,126.350,127.360seconds. GhostChestplate remains in torso slot throughout these panels, including disappearance of the lower scroll icon betweenfirsttwo. Remainingpanels are laterplayback/adandexcluded from evidence."
+          "visible_scope": "First7panels are sampled player-time receipts121.000–127.360showing torso placement and a lower-icon change121.000–122.350. The change is not attributed to the namedVampirism application; later ad/next-playback panels are excluded. Player-time stamps are not decoder-frame timestamps."
         }
       ]
     },

@@ -278,7 +278,7 @@ children. The architecture/coordinator packet is on
 
 ## Validation
 
-The current package has213 offline test cases and nine replay/schema commands,
+The current package has 218 offline test cases and nine replay/schema commands,
 plus a reparse of all three pinned engine XMLs. Both missing Item proposals pass
 the owning Item validator with zero errors and warnings. The current behavior
 packet additionally pins67 full source files, with224 exact line-range quotes

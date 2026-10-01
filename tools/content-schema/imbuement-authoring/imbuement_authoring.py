@@ -16,7 +16,7 @@ CATALOGUE = HERE / "samples/imbuements-candidate.json"
 REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
-    "global-research-closure.json": "15bea4441feec5a90381dbfc9ea888a3e4fdf5d3abfa16a10d25171a4b6d2f0f",
+    "global-research-closure.json": "203f19e1d2e3dd31a0de56ce884c9af6a2133c607e1615c5878344d449384b5d",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
     "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
     "imbuement-eligibility.json": "c26be2542ce0b048258f1a4bcc2604145608af6cb669e20dbeb75f0ee76c062e",

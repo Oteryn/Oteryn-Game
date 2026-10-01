@@ -87,3 +87,5 @@ The pinned audit in `audit-report.md` identifies unpopulated canonical indices,
 UNKNOWN Item type/tier lists and absent execution paths. Passing authoring
 checks does not complete those implementation children or their restart,
 transaction-failure, transfer, combat and client integration tests.
+
+Video-event qualification: the121.000–122.350icon change is not identified as the namedVampirism application. Equipped permission is a bounded inference from before/after torso placement and the named20:00h/success result, corroborated by the pinned engines; direct equipment state at the application instant is unproved. No exact consumption value is selected.

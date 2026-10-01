@@ -47,3 +47,5 @@ are not11 wholly missing data sets. Published public statements suffice for
 literal scoped authoring facts; the27 unperformed captures are supplemental.
 This correction does not establish full Global parity or resolve unsourced
 consumption, Premium-purchase and numerical-transfer fields.
+
+Video-event qualification: the121.000–122.350icon change is not identified as the namedVampirism application. Equipped permission is a bounded inference from before/after torso placement and the named20:00h/success result, corroborated by the pinned engines; direct equipment state at the application instant is unproved. No exact consumption value is selected.
