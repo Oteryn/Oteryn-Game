@@ -79260,7 +79260,7 @@
             {
               "when": {
                 "quest_stage": {
-                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
+                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
                   "op": "<",
                   "value": 1
                 },
@@ -79286,7 +79286,7 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
+                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
                           "to": 1
                         },
                         {
@@ -116326,7 +116326,7 @@
                       },
                       {
                         "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                          "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
                           "op": "<",
                           "value": 5
                         },
@@ -116370,7 +116370,7 @@
                                 {
                                   "when": {
                                     "quest_stage": {
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
                                       "op": "==",
                                       "value": -1
                                     },
@@ -116380,7 +116380,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
                                       "to": 1
                                     }
                                   ]
@@ -116390,7 +116390,7 @@
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                  "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
                                   "value_source_line": 54
                                 }
                               ]
@@ -116704,7 +116704,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
+                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
                                       "to": 5
                                     }
                                   ]
@@ -117293,7 +117293,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
+                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
                                       "to": 5
                                     }
                                   ]
@@ -117556,7 +117556,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
+                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
                                       "to": 5
                                     }
                                   ]

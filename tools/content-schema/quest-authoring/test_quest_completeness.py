@@ -35,6 +35,16 @@ def manifest(inter):
 
 
 class CompletenessTests(unittest.TestCase):
+    def test_npc_presence_keeps_explicit_coverage_hold(self):
+        check = {'quest': 'q', 'npc_source': 'npc/example.lua', 'coverage_gap': 'item effects pending'}
+        doc = {'source_checks': {'npc_only_quests': [check]}}
+        self.assertEqual(readiness.quest_coverage_holds(doc, {'q'}), {'q': 1})
+        with self.assertRaises(ValueError):
+            readiness.quest_coverage_holds(doc, set())
+        doc['source_checks']['npc_only_quests'].append(copy.deepcopy(check))
+        with self.assertRaises(ValueError):
+            readiness.quest_coverage_holds(doc, {'q'})
+
     def test_named_directory_survives_cross_quest_outfit_reward(self):
         qs = [quest('feaster_of_souls_quest'), quest('poltergeist_outfits_quest')]
         progress = [{'key': TRACK, 'start_of': [], 'auxiliary_of': [qs[1]['identity']['key']]}]

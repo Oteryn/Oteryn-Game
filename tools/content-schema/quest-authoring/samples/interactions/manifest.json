@@ -41,12 +41,11 @@
     "unresolved_lines": 1929,
     "unresolved_conditions": 1775,
     "by_status": {
-      "mapped": 202,
-      "unresolved_semantics": 1019
+      "mapped": 204,
+      "unresolved_semantics": 1017
     }
   },
   "undeclared_progress_tracks": [
-    "canary:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
     "canary:quest-progress/storage/775558"
   ],
   "entries": [
@@ -1447,7 +1446,7 @@
     },
     {
       "destination": "crystalserver:interaction/blood_brothers_quest/movements_castle_entrace",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -4052,7 +4051,7 @@
     },
     {
       "destination": "canary:interaction/dreamers_challenge_quest/movement_sacrifice_teleport",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -21201,12 +21200,6 @@
     },
     {
       "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/tinder_box_quest_chyllfroest/actions_ursagrodon"
-    },
-    {
-      "field": "condition.quest_stage.progress",
       "key": "canary:quest-progress/quest/u10_50/dark_trails/mission04",
       "reason": "progress track not declared",
       "record": "canary:interaction/dark_trails/movements_necrometer_tile_access"
@@ -21399,12 +21392,6 @@
     },
     {
       "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_24/the_annihilator/reward",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_annihilator/door"
-    },
-    {
-      "field": "condition.quest_stage.progress",
       "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/ashmunrah_switches_global_storage",
       "reason": "progress track not declared",
       "record": "canary:interaction/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done"
@@ -21450,36 +21437,6 @@
       "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet04",
       "reason": "progress track not declared",
       "record": "canary:interaction/hunter_outfits_quest/action_all_hymn_piano_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/the_ice_islands_quest/actions_paint"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/dreamers_challenge_quest/actions_documents"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/dreamers_challenge_quest/movement_sacrifice_teleport"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_9/nightmare_outfits/outfits",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/dreamers_challenge_quest/actions_documents"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u7_9/nightmare_outfits/outfits",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/dreamers_challenge_quest/movement_sacrifice_teleport"
     },
     {
       "field": "condition.quest_stage.progress",
@@ -21645,21 +21602,9 @@
     },
     {
       "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/quest/u12_40/the_order_of_the_lion/access_eastern_side",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/the_order_of_lion_quest/moveevent_castle"
-    },
-    {
-      "field": "condition.quest_stage.progress",
       "key": "crystalserver:quest-progress/quest/u15_24/targuna/burning_heart/turnips_reward",
       "reason": "progress track not declared",
       "record": "crystalserver:interaction/targuna/actions_reliable_ram"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "crystalserver:quest-progress/quest/u8_4/blood_brothers/castle_hidden_entrance",
-      "reason": "progress track not declared",
-      "record": "crystalserver:interaction/blood_brothers_quest/movements_castle_entrace"
     },
     {
       "field": "condition.quest_stage.progress",

@@ -373,7 +373,7 @@ class Script:
     def track(self, storage):
         """The catalogue's progress track for a storage, whichever server declared it (D33), else this server's."""
         path = track_of(storage)
-        return self.declared.get(norm(path), f'{self.namespace}:quest-progress/{path}')
+        return self.declared.get(path, f'{self.namespace}:quest-progress/{path}')
 
     def immutable(self, name):
         return static_name_is_immutable(self.lines, name)
@@ -996,10 +996,24 @@ def unused_overrides(used):
         raise SystemExit(f'interaction overrides without a matching unresolved line: {stale}')
 
 
+def declared_progress_paths(progress):
+    """Explicit same-path aliases retain the mission track identity regardless of row order."""
+    keys = {row['key'] for row in progress}
+    result = {}
+    for row in progress:
+        path = row['key'].split('/', 1)[1]
+        target = row.get('alias_of', row['key'])
+        if target not in keys or target.split('/', 1)[1] != path:
+            raise ValueError('progress alias has no declared exact-path target')
+        if path in result and result[path] != target:
+            raise ValueError('progress path has conflicting identities without an explicit alias')
+        result[path] = target
+    return result
+
+
 def build(repos, scripts, questlog_dir):
     keys = transition_keys(questlog_dir)
-    declared_by_path = {norm(t['key'].split('/', 1)[1]): t['key']
-                        for t in json.loads((questlog_dir / 'progress.json').read_text())['progress']}
+    declared_by_path = declared_progress_paths(json.loads((questlog_dir / 'progress.json').read_text())['progress'])
     by_script = {}
     for name, repo in repos.items():
         pack = SOURCES[name]['datapack']

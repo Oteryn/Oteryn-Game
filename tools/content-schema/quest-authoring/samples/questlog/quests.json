@@ -783,6 +783,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/barbarian_test",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Barbarian Test Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Barbarian Test Quest",
+        "pageid": 16981,
+        "revid": 1101865
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/battle_axe_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -5804,8 +5827,7 @@
               "from": null,
               "to": 2,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
@@ -5820,8 +5842,7 @@
               "from": null,
               "to": 1,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
@@ -5838,8 +5859,7 @@
               "from": null,
               "to": 3,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
@@ -5856,8 +5876,7 @@
               "from": null,
               "to": 4,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
@@ -5906,8 +5925,7 @@
               "from": null,
               "to": 1,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
@@ -5924,8 +5942,7 @@
               "from": null,
               "to": 2,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
@@ -6000,8 +6017,7 @@
               "from": null,
               "to": 1,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
@@ -6018,8 +6034,7 @@
               "from": null,
               "to": 3,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
@@ -6068,33 +6083,13 @@
               "from": null,
               "to": 1,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/julius",
                 "keywords": [],
                 "topics": [
                   12
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  13
                 ]
               }
             }
@@ -6143,84 +6138,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  19
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  21
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  25
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  26
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_06_a_black_history",
@@ -6249,46 +6167,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  27
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  28
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_07_boreth",
@@ -6317,46 +6196,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  28
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  30
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_08_lersatio",
@@ -6385,46 +6225,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  30
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  31
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_09_marziel",
@@ -6453,46 +6254,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  31
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  32
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_10_arthei",
@@ -6521,46 +6283,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  32
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/julius",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  33
-                ]
-              }
-            }
-          ]
+          "transitions": []
         }
       ],
       "claims": [],
@@ -6636,6 +6359,29 @@
       },
       "requirements": {
         "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/brotherhood_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Brotherhood Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Brotherhood Outfits Quest",
+        "pageid": 19797,
+        "revid": 842661
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
         "min_level": 0
       }
     },
@@ -10359,7 +10105,18 @@
         "pageid": 2496,
         "revid": 1103387
       },
-      "claims": [],
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/desert1",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/desert2",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        }
+      ],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "20"
@@ -12254,8 +12011,7 @@
               },
               "to": 1,
               "servers": [
-                "canary",
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
                 "npc": "canary:npc/jack_springer",
@@ -12355,25 +12111,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "02_the_grave_in_the_dark_cathedral",
@@ -12402,25 +12140,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "03_the_grave_in_ghostlands",
@@ -12449,25 +12169,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "04_the_grave_in_cormaya",
@@ -12496,25 +12198,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "05_the_grave_in_the_femor_hills",
@@ -12543,25 +12227,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "06_the_grave_on_an_isle_ne_of_ankrahmun",
@@ -12590,25 +12256,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "07_the_grave_in_kilmaresh",
@@ -12637,25 +12285,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "08_the_grave_in_vengoth",
@@ -12684,25 +12314,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "09_the_grave_in_darashia",
@@ -12731,25 +12343,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "10_the_grave_in_the_old_thais_temple",
@@ -12778,25 +12372,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "11_the_grave_at_the_orclands_entrance",
@@ -12825,25 +12401,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "12_the_grave_on_the_southern_ice_islands",
@@ -12872,25 +12430,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/jack_springer",
-                "keywords": [
-                  "late"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "the_order_of_the_cobra",
@@ -20434,6 +19974,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/lions_rock",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Lion's Rock Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Lion's Rock Quest",
+        "pageid": 69459,
+        "revid": 846852
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/liquid_black_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -20742,6 +20305,29 @@
       },
       "requirements": {
         "premium": false
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/nightmare_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Nightmare Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Nightmare Outfits Quest",
+        "pageid": 19796,
+        "revid": 842861
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -23959,86 +23545,6 @@
               "key": "npc_1",
               "owner": "npc",
               "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/duncan",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/duncan",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  3
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/duncan",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/duncan",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  5
-                ]
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
               "from": {
                 "op": "==",
                 "value": 4,
@@ -24861,46 +24367,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  3
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_2_in_a_state_of_dispair",
@@ -24941,46 +24408,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  5
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_3_bushwhacking",
@@ -25021,44 +24449,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  7
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "daily_task_lucky_loop",
@@ -25087,46 +24478,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  9
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  10
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "daily_task_handyman",
@@ -25167,46 +24519,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  11
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  12
-                ]
-              }
-            }
-          ]
+          "transitions": []
         }
       ],
       "claims": [],
@@ -27568,42 +26881,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_02_a_vital_part",
@@ -27632,42 +26910,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_03_the_core_problem",
@@ -27696,42 +26939,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_04_gathering_golem_parts",
@@ -27760,42 +26968,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_05_charged_to_charge",
@@ -27862,42 +27035,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_06_out_of_the_blue",
@@ -27926,42 +27064,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_07_powering_up",
@@ -27990,42 +27093,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_08_getting_things_stable",
@@ -28054,42 +27122,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_09_researching_the_ritual",
@@ -28140,44 +27173,6 @@
               "servers": [
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -28240,42 +27235,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_11_take_a_shower",
@@ -28326,46 +27286,6 @@
               "servers": [
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
             }
           ]
         },
@@ -28396,44 +27316,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_13_fruits_of_success",
@@ -28462,42 +27345,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         }
       ],
       "claims": [
@@ -31337,36 +30185,25 @@
     },
     {
       "identity": {
-        "key": "canary:quest/the_desert_dungeon_quest",
+        "key": "canary:quest/the_cursed_crystal",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
-      "display_name": "The Desert Dungeon Quest",
-      "kind": "reward_only",
-      "shown_in_quest_log": true,
+      "display_name": "The Cursed Crystal Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
       "wiki": {
-        "title": "The Desert Dungeon Quest",
-        "pageid": 2496,
-        "revid": 1103387
+        "title": "The Cursed Crystal Quest",
+        "pageid": 69489,
+        "revid": 846958
       },
-      "claims": [
-        {
-          "family": "RewardClaim",
-          "key": "canary:reward-claim/kv/desert1",
-          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "canary:reward-claim/kv/desert2",
-          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-        }
-      ],
+      "claims": [],
       "requirements_from_wiki": {
-        "premium": "no",
-        "lvl": "20"
+        "premium": "yes",
+        "lvl": "0"
       },
       "requirements": {
-        "premium": false,
-        "min_level": 20
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -36064,6 +34901,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/the_hunt_for_the_sea_serpent",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Hunt for the Sea Serpent Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Hunt for the Sea Serpent Quest",
+        "pageid": 25541,
+        "revid": 843261
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "61"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 61
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/the_ice_islands_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -38861,42 +37721,7 @@
               "placeholders": []
             }
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_01_just_a_fishing_trip",
@@ -38925,46 +37750,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  8
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  9
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_02_a_potent_fuel",
@@ -38993,44 +37779,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  10
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_03_something_sweet",
@@ -39059,44 +37808,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  11
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_04_the_technomancer_s_machine",
@@ -39163,78 +37875,6 @@
               "servers": [
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 5,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  12
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/scutty",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/scutty",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
             }
           ]
         },
@@ -39290,42 +37930,6 @@
                 ],
                 "topics": []
               }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  13
-                ]
-              }
             }
           ]
         },
@@ -39356,48 +37960,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio_boat",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  8
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_07_the_master_of_evil",
@@ -39474,40 +38037,6 @@
                     "length": 24,
                     "placeholders": []
                   }
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio_isle_of_evil",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/rapanaio_isle_of_evil",
-                "keywords": [
-                  "mission"
                 ],
                 "topics": []
               }
@@ -39612,44 +38141,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -39696,82 +38187,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/melfar",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/melfar",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_03_strangers_in_the_night",
@@ -39808,64 +38224,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/lazaran",
-                "keywords": [
-                  "peace"
-                ],
-                "topics": [
-                  10
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_04_the_mine_is_mine",
@@ -39894,44 +38253,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_05_getting_things_busy",
@@ -39960,63 +38282,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "increment": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/mortimer",
-                "keywords": [
-                  "bluff"
-                ],
-                "topics": [
-                  30
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_5_support_of_kazordoon_s_worm_tamer",
@@ -40050,22 +38316,18 @@
               "key": "npc_1",
               "owner": "npc",
               "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 3,
+              "from": null,
+              "to": 1,
               "servers": [
-                "canary"
+                "crystalserver"
               ],
               "requested_by": {
-                "npc": "canary:npc/humgolf",
+                "npc": "crystal:npc/humgolf",
                 "keywords": [
-                  "flatter"
+                  "yes"
                 ],
                 "topics": [
-                  1
+                  2
                 ]
               }
             },
@@ -40074,7 +38336,7 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 1,
+              "to": 2,
               "servers": [
                 "crystalserver"
               ],
@@ -40090,67 +38352,6 @@
             },
             {
               "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/humgolf",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/humgolf",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/humgolf",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_6",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40171,24 +38372,6 @@
                 "topics": [
                   1
                 ]
-              }
-            },
-            {
-              "key": "npc_7",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
               }
             }
           ]
@@ -40228,15 +38411,16 @@
               "from": null,
               "to": 1,
               "servers": [
-                "canary",
                 "crystalserver"
               ],
               "requested_by": {
-                "npc": "canary:npc/ongulf",
+                "npc": "crystal:npc/wyrdin",
                 "keywords": [
-                  "mission"
+                  "yes"
                 ],
-                "topics": []
+                "topics": [
+                  4
+                ]
               }
             },
             {
@@ -40244,7 +38428,7 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 1,
+              "to": 2,
               "servers": [
                 "crystalserver"
               ],
@@ -40263,80 +38447,23 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 2,
+              "to": 3,
               "servers": [
                 "crystalserver"
               ],
               "requested_by": {
                 "npc": "crystal:npc/wyrdin",
                 "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/wyrdin",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  3
-                ]
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/wyrdin",
-                "keywords": [
+                  "flatter",
+                  "threaten",
+                  "bluff",
+                  "impress",
+                  "reason",
                   "plea"
                 ],
                 "topics": [
                   2
                 ]
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/wyrdin",
-                "keywords": [],
-                "topics": []
               }
             }
           ]
@@ -40373,30 +38500,6 @@
               "key": "npc_1",
               "owner": "npc",
               "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/angus",
-                "keywords": [
-                  "bluff"
-                ],
-                "topics": [
-                  1,
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
               "from": null,
               "to": 1,
               "servers": [
@@ -40413,7 +38516,7 @@
               }
             },
             {
-              "key": "npc_3",
+              "key": "npc_2",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40432,7 +38535,7 @@
               }
             },
             {
-              "key": "npc_4",
+              "key": "npc_3",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40453,132 +38556,6 @@
                 "topics": [
                   37
                 ]
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/angus",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  35
-                ]
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/angus",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_7",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/mortimer",
-                "keywords": [
-                  "bluff"
-                ],
-                "topics": [
-                  1,
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_8",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/mortimer",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  35
-                ]
-              }
-            },
-            {
-              "key": "npc_9",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/mortimer",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_10",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
               }
             }
           ]
@@ -40618,15 +38595,16 @@
               "from": null,
               "to": 1,
               "servers": [
-                "canary",
                 "crystalserver"
               ],
               "requested_by": {
-                "npc": "canary:npc/ongulf",
+                "npc": "crystal:npc/telas",
                 "keywords": [
-                  "mission"
+                  "yes"
                 ],
-                "topics": []
+                "topics": [
+                  2
+                ]
               }
             },
             {
@@ -40634,20 +38612,17 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 3,
+              "to": 2,
               "servers": [
-                "canary",
                 "crystalserver"
               ],
               "requested_by": {
-                "npc": "canary:npc/telas",
+                "npc": "crystal:npc/telas",
                 "keywords": [
-                  "reason",
-                  "flatter",
-                  "reason"
+                  "yes"
                 ],
                 "topics": [
-                  1
+                  2
                 ]
               }
             },
@@ -40655,79 +38630,23 @@
               "key": "npc_3",
               "owner": "npc",
               "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/telas",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/telas",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
               "from": null,
-              "to": 1,
+              "to": 3,
               "servers": [
                 "crystalserver"
               ],
               "requested_by": {
                 "npc": "crystal:npc/telas",
                 "keywords": [
-                  "yes"
+                  "flatter",
+                  "threaten",
+                  "bluff",
+                  "impress",
+                  "reason",
+                  "plea"
                 ],
                 "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
+                  1
                 ]
               }
             }
@@ -40766,18 +38685,17 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 3,
+              "to": 1,
               "servers": [
-                "canary",
                 "crystalserver"
               ],
               "requested_by": {
-                "npc": "canary:npc/king_tibianus",
+                "npc": "crystal:npc/king_tibianus",
                 "keywords": [
-                  "flatter"
+                  "yes"
                 ],
                 "topics": [
-                  10
+                  8
                 ]
               }
             },
@@ -40786,7 +38704,7 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 1,
+              "to": 2,
               "servers": [
                 "crystalserver"
               ],
@@ -40805,78 +38723,23 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 2,
+              "to": 3,
               "servers": [
                 "crystalserver"
               ],
               "requested_by": {
                 "npc": "crystal:npc/king_tibianus",
                 "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  8
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/king_tibianus",
-                "keywords": [
-                  "yes"
+                  "flatter",
+                  "threaten",
+                  "bluff",
+                  "impress",
+                  "reason",
+                  "plea"
                 ],
                 "topics": [
                   6
                 ]
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/king_tibianus",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
               }
             }
           ]
@@ -40914,48 +38777,6 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/leeland",
-                "keywords": [
-                  "impress",
-                  "plea"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/leeland",
-                "keywords": [
-                  "impress",
-                  "plea"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
               "to": 1,
               "servers": [
                 "crystalserver"
@@ -40971,20 +38792,16 @@
               }
             },
             {
-              "key": "npc_4",
+              "key": "npc_2",
               "owner": "npc",
               "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
+              "from": null,
+              "to": 2,
               "servers": [
-                "canary"
+                "crystalserver"
               ],
               "requested_by": {
-                "npc": "canary:npc/leeland",
+                "npc": "crystal:npc/leeland",
                 "keywords": [
                   "yes"
                 ],
@@ -40994,40 +38811,27 @@
               }
             },
             {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/leeland",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_6",
+              "key": "npc_3",
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 1,
+              "to": 3,
               "servers": [
-                "canary",
                 "crystalserver"
               ],
               "requested_by": {
-                "npc": "canary:npc/ongulf",
+                "npc": "crystal:npc/leeland",
                 "keywords": [
-                  "mission"
+                  "flatter",
+                  "threaten",
+                  "bluff",
+                  "impress",
+                  "reason",
+                  "plea"
                 ],
-                "topics": []
+                "topics": [
+                  1
+                ]
               }
             }
           ]
@@ -41085,80 +38889,6 @@
           },
           "transitions": [
             {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/curos",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/curos",
-                "keywords": [
-                  "test"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 5,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
               "key": "other_1",
               "owner": "other",
               "callback": null,
@@ -41213,24 +38943,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -41276,26 +38988,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ztiss",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
             }
           ]
         },
@@ -41371,44 +39063,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/chrak",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ztiss",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
             }
           ]
         },
@@ -41439,44 +39093,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/chrak",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "tome_of_knowledge_counter",
@@ -41585,46 +39202,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/cael",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "increment": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/cael",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         }
       ],
       "claims": [
@@ -42920,60 +40498,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "<",
-                "value": 1,
-                "exact": true
-              },
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/riddler",
-                "keywords": [
-                  "yes",
-                  "green"
-                ],
-                "topics": [
-                  1,
-                  11
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/riddler",
-                "keywords": [
-                  "yes",
-                  "1"
-                ],
-                "topics": [
-                  1,
-                  13
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "the_secret_of_mathemagics",
@@ -43024,32 +40549,6 @@
                 ],
                 "topics": [
                   8
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/riddler",
-                "keywords": [
-                  "yes",
-                  "1"
-                ],
-                "topics": [
-                  1,
-                  13
                 ]
               }
             }
@@ -54540,224 +52039,7 @@
               ]
             },
             {
-              "key": "movement_2",
-              "owner": "movement",
-              "callback": "onStepIn",
-              "from": {
-                "op": "==",
-                "value": 13,
-                "exact": true
-              },
-              "to": 14,
-              "servers": [
-                "canary"
-              ]
-            },
-            {
               "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 15,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/a_swan",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 12,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/a_swan",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ahmet",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  5
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 16,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/alkestios",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/alkestios",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/alkestios",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_7",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 10,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ghostly_wolf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_8",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 6,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ghostly_wolf",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_9",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 11,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ikassis",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_10",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 5,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ikassis",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_11",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 8,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/irmana",
-                "keywords": [],
-                "topics": [
-                  8
-                ]
-              }
-            },
-            {
-              "key": "npc_12",
               "owner": "npc",
               "callback": null,
               "from": {
@@ -54866,178 +52148,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "creature_event_1",
-              "owner": "creature_event",
-              "callback": "onDeath",
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 1,
-              "servers": [
-                "canary"
-              ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  3
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 5,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  5
-                ]
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 6,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  6
-                ]
-              }
-            },
-            {
-              "key": "npc_7",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 7,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  7
-                ]
-              }
-            },
-            {
-              "key": "npc_8",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 8,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  8
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "an_unlikely_couple",
@@ -55082,92 +52193,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "action_1",
-              "owner": "action",
-              "callback": "onUse",
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary"
-              ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/aurita",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/taegen",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/taegen",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/taegen",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "the_fairy_treasure",
@@ -57340,101 +54366,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "movement_1",
-              "owner": "movement",
-              "callback": "onStepOut",
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/corym_ratter",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/corym_servant",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/corym_servant",
-                "keywords": [
-                  "defy"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 5,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/corym_servant",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "to_outfox_a_fox",
@@ -57897,6 +54829,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/too_hot_to_handle_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Too Hot to Handle Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Too Hot to Handle Quest",
+        "pageid": 94741,
+        "revid": 1107074
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/tower_defence_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -58048,48 +55003,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/lazaran",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/lazaran",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_2_all_around_the_world",
@@ -58217,50 +55131,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/lazaran",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  3
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 12,
-                "exact": false
-              },
-              "to": 13,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/lazaran",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
             }
           ]
         },
@@ -58313,26 +55183,6 @@
             },
             {
               "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/lazaran",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  5
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -58548,44 +55398,6 @@
           "transitions": [
             {
               "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/lazaran",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/lazaran",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  6
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -61094,61 +57906,6 @@
               "servers": [
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": ">=",
-                "value": 1,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/morla",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/sterling",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/sterling",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -61204,73 +57961,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "movement_1",
-              "owner": "movement",
-              "callback": "onStepIn",
-              "from": {
-                "op": "<",
-                "value": 1,
-                "exact": true
-              },
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/camilla",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/lizzie",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/lizzie",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "burning_heat",
@@ -61351,57 +58042,6 @@
               "servers": [
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/emiliana",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/emiliana",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/emiliana",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -61476,27 +58116,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/adrian",
-                "keywords": [],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "stash_an_item",
@@ -61613,23 +58233,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/adrian",
-                "keywords": [],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         }
       ],
       "claims": [

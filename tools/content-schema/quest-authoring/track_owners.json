@@ -1,479 +1,554 @@
 {
- "about": "Owners of progress tracks that quest scripts write outside any mission, where neither a mission track prefix nor the script directory names the quest. quest: catalogue key; wiki_quest: a wiki quest not yet in the catalogue; note: why no quest owns it. Xnames and checked by sampling. Assigned from track and script names and the script code, checked by sampling.",
- "tracks": {
-  "banuta_secret_tunnel/deeper_banuta_shortcut": {
-   "quest": "canary:quest/blood_brothers_quest"
-  },
-  "chayenne_key_time": {
-   "note": "chayenne realm timer/reward"
-  },
-  "chayenne_reward": {
-   "note": "chayenne realm timer/reward"
-  },
-  "crystal_server/quests/cobra_bastion/questline": {
-   "note": "crystal server feature"
-  },
-  "deepling_bosses/deepling_status": {
-   "wiki_quest": "Liquid Black Quest"
-  },
-  "deeplings_world_change/crystal": {
-   "wiki_quest": "Deeplings World Change"
-  },
-  "dragonfetish": {
-   "quest": "canary:quest/draconia_quest"
-  },
-  "edron_rope_quest": {
-   "note": "edron rope quest world feature"
-  },
-  "fountain_of_life": {
-   "quest": "canary:quest/the_pits_of_inferno_quest"
-  },
-  "grave_danger/cobra_bastion/questline": {
-   "quest": "canary:quest/grave_danger_quest"
-  },
-  "kilmaresh/eleven/basin": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/fifth/memories": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/fifth/memories_shards": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/fourteen/remains": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/nine/owl": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/second/investigating": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/set/ritual": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/sixth/blessed_statues": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/sixth/favor": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/sixth/four_masks": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/tem/bleeds": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/thirteen/lyre": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/thirteen/presente": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/treze/presente": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/twelve/bragrumol": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/twelve/mozradek": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "kilmaresh/twelve/xogixath": {
-   "wiki_quest": "Kilmaresh Quest"
-  },
-  "quest/example_quest/example": {
-   "note": "template or example quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/bookcase": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission06": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission09": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission12": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission15": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission19": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission20": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission24": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission25": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission28": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission29": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission32": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission40": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission46": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission47": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission48": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission53": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission54": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission55": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission56": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission57": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission60": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission68": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_10/the_gravedigger_of_drefia/mission75": {
-   "wiki_quest": "The Gravedigger of Drefia Quest"
-  },
-  "quest/u10_30/roshamuul_quest/roshamuul_mortar_thrown": {
-   "wiki_quest": "Roshamuul Quest"
-  },
-  "quest/u10_37/tinder_box_quest_chyllfroest/reward": {
-   "wiki_quest": "Tinder Box Quest"
-  },
-  "quest/u10_90/ferumbras_ascension/basin_counter": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/bone": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/bone_flute": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/bone_flute_wall": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/color_lever": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/crystals/all_crystals": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/elements/active": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/elements/done": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/elements/first": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/elements/four": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/elements/second": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/elements/third": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/ferumbras_essence": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/first_door": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/flower": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/flower_puzzle_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/fount": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/all_habitats": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/corrupted": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/desert": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/dimension": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/grass": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/ice": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/mushroom": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/roshamuul": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats/venom": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/habitats_access": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/mazoran_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/monster_door": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/plagirath_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/ragiaz_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/razzagorn_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/reward": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/rift_runner": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/ring2": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/shulgrax_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/statue": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/tarbaz_notes": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/tarbaz_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/the_shatterer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/the_shatterer_lever": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/the_shatterer_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/vampire": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/zamulosh_teleports": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u10_90/ferumbras_ascension/zamulosh_timer": {
-   "quest": "canary:quest/ferumbras_ascension_quest"
-  },
-  "quest/u12_30/poltergeist_outfits/received": {
-   "wiki_quest": "Poltergeist Outfits Quest"
-  },
-  "quest/u12_60/apirates_tail/ratmiral_killed": {
-   "wiki_quest": "A Pirate's Tail Quest"
-  },
-  "quest/u12_60/apirates_tail/tentugly_killed": {
-   "wiki_quest": "A Pirate's Tail Quest"
-  },
-  "quest/u12_90/primal_ordeal/bosses/magma_bubble_killed": {
-   "wiki_quest": "Primal Ordeal Quest"
-  },
-  "quest/u12_90/primal_ordeal/bosses/the_primal_menace_killed": {
-   "wiki_quest": "Primal Ordeal Quest"
-  },
-  "quest/u14_15/the_way_of_the_monk/shrines_count": {
-   "quest": "canary:quest/the_way_of_the_monk_quest"
-  },
-  "quest/u15_12/newhaven_citizen": {
-   "wiki_quest": "Newhaven Quest"
-  },
-  "quest/u15_12/newhaven_new_loot_the_corruptor": {
-   "wiki_quest": "Newhaven Quest"
-  },
-  "quest/u15_12/newhaven_tutorial_hunting": {
-   "wiki_quest": "Newhaven Quest"
-  },
-  "quest/u7_8/the_pits_of_inferno/levers": {
-   "quest": "canary:quest/the_pits_of_inferno_quest"
-  },
-  "quest/u7_8/the_pits_of_inferno/shortcut_hub_door": {
-   "quest": "canary:quest/the_pits_of_inferno_quest"
-  },
-  "quest/u7_9/dreamers_challenge/lever_brotherhood1": {
-   "quest": "canary:quest/dreamer_s_challenge_quest"
-  },
-  "quest/u7_9/dreamers_challenge/lever_brotherhood2": {
-   "quest": "canary:quest/dreamer_s_challenge_quest"
-  },
-  "quest/u7_9/dreamers_challenge/lever_brotherhood3": {
-   "quest": "canary:quest/dreamer_s_challenge_quest"
-  },
-  "quest/u7_9/dreamers_challenge/lever_nightmare1": {
-   "quest": "canary:quest/dreamer_s_challenge_quest"
-  },
-  "quest/u7_9/dreamers_challenge/lever_nightmare3": {
-   "quest": "canary:quest/dreamer_s_challenge_quest"
-  },
-  "quest/u7_9/the_pits_of_inferno/shortcut_hub_door": {
-   "quest": "canary:quest/the_pits_of_inferno_quest"
-  },
-  "quest/u8_0/the_inquisition_quest/enter_teleport": {
-   "quest": "canary:quest/the_inquisition_quest"
-  },
-  "quest/u8_0/the_inquisition_quest/mission07": {
-   "quest": "canary:quest/the_inquisition_quest"
-  },
-  "quest/u8_0/the_inquisition_quest/questline": {
-   "quest": "canary:quest/the_inquisition_quest"
-  },
-  "quest/u8_0/the_inquisition_quest/reward": {
-   "quest": "canary:quest/the_inquisition_quest"
-  },
-  "quest/u8_0/the_inquisition_quest/reward_room_text": {
-   "quest": "canary:quest/the_inquisition_quest"
-  },
-  "quest/u8_1/koshei_the_deathless/reward_door": {
-   "quest": "canary:quest/koshei_the_deathless_quest"
-  },
-  "quest/u8_1/to_blind_the_enemy/questline": {
-   "quest": "canary:quest/to_blind_the_enemy_quest"
-  },
-  "quest/u8_1/tower_defence_quest/questline": {
-   "wiki_quest": "Tower Defence Quest"
-  },
-  "quest/u8_2/elemental_spheres/boss_room": {
-   "wiki_quest": "Elemental Spheres Quest"
-  },
-  "quest/u8_2/elemental_spheres/machine_gem_count": {
-   "wiki_quest": "Elemental Spheres Quest"
-  },
-  "quest/u8_2/the_demon_oak/done": {
-   "wiki_quest": "The Demon Oak Quest"
-  },
-  "quest/u8_2/the_demon_oak/progress": {
-   "wiki_quest": "The Demon Oak Quest"
-  },
-  "quest/u8_2/the_demon_oak/squares": {
-   "wiki_quest": "The Demon Oak Quest"
-  },
-  "quest/u8_2/troll_sabotage_quest/jump_timer": {
-   "wiki_quest": "Troll Sabotage Quest"
-  },
-  "quest/u8_54/an_uneasy_alliance/quest_door": {
-   "wiki_quest": "An Uneasy Alliance Quest"
-  },
-  "quest/u8_54/an_uneasy_alliance/questline": {
-   "wiki_quest": "An Uneasy Alliance Quest"
-  },
-  "quest/u9_4/liquid_black_quest/visitor": {
-   "wiki_quest": "Liquid Black Quest"
-  },
-  "storage/1": {
-   "quest": "canary:quest/grave_danger_quest"
-  },
-  "storage/10126": {
-   "wiki_quest": "Rotten Blood Quest"
-  },
-  "storage/14320": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/14321": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/14322": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/14323": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/14324": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/14334": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/14335": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/14336": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/14337": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/199990": {
-   "wiki_quest": "Grimvale Mini World Change"
-  },
-  "storage/199991": {
-   "wiki_quest": "Grimvale Mini World Change"
-  },
-  "storage/2": {
-   "quest": "canary:quest/grave_danger_quest"
-  },
-  "storage/24850": {
-   "wiki_quest": "Hero of Rathleton Quest"
-  },
-  "storage/3": {
-   "quest": "canary:quest/grave_danger_quest"
-  },
-  "storage/58001": {
-   "wiki_quest": "Grimvale Mini World Change"
-  },
-  "storage/58002": {
-   "wiki_quest": "Grimvale Mini World Change"
-  },
-  "storage/58103": {
-   "note": "storage key, purpose unclear"
-  },
-  "storage/58104": {
-   "quest": "canary:quest/blood_brothers_quest"
-  },
-  "storage/60814": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/60828": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/60835": {
-   "wiki_quest": "Heart of Destruction Quest"
-  },
-  "storage/673004": {
-   "note": "storage key, purpose unclear"
-  },
-  "storage/775559": {
-   "note": "storage key, purpose unclear"
+  "about": "Owners of progress tracks that quest scripts write outside any mission, where neither a mission track prefix nor the script directory names the quest. quest: catalogue key; wiki_quest: a wiki quest not yet in the catalogue; note: why no quest owns it. Xnames and checked by sampling. Assigned from track and script names and the script code, checked by sampling.",
+  "tracks": {
+    "banuta_secret_tunnel/deeper_banuta_shortcut": {
+      "quest": "canary:quest/blood_brothers_quest"
+    },
+    "chayenne_key_time": {
+      "note": "chayenne realm timer/reward"
+    },
+    "chayenne_reward": {
+      "note": "chayenne realm timer/reward"
+    },
+    "crystal_server/quests/cobra_bastion/questline": {
+      "note": "crystal server feature"
+    },
+    "deepling_bosses/deepling_status": {
+      "wiki_quest": "Liquid Black Quest"
+    },
+    "deeplings_world_change/crystal": {
+      "wiki_quest": "Deeplings World Change"
+    },
+    "dragonfetish": {
+      "quest": "canary:quest/draconia_quest"
+    },
+    "edron_rope_quest": {
+      "note": "edron rope quest world feature"
+    },
+    "fountain_of_life": {
+      "quest": "canary:quest/the_pits_of_inferno_quest"
+    },
+    "grave_danger/cobra_bastion/questline": {
+      "quest": "canary:quest/grave_danger_quest"
+    },
+    "kilmaresh/eleven/basin": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/fifth/memories": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/fifth/memories_shards": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/fourteen/remains": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/nine/owl": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/second/investigating": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/set/ritual": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/sixth/blessed_statues": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/sixth/favor": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/sixth/four_masks": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/tem/bleeds": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/thirteen/lyre": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/thirteen/presente": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/treze/presente": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/twelve/bragrumol": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/twelve/mozradek": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "kilmaresh/twelve/xogixath": {
+      "wiki_quest": "Kilmaresh Quest"
+    },
+    "quest/example_quest/example": {
+      "note": "template or example quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/bookcase": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission06": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission09": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission12": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission15": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission19": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission20": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission24": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission25": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission28": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission29": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission32": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission40": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission46": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission47": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission48": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission53": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission54": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission55": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission56": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission57": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission60": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission68": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_10/the_gravedigger_of_drefia/mission75": {
+      "wiki_quest": "The Gravedigger of Drefia Quest"
+    },
+    "quest/u10_30/roshamuul_quest/roshamuul_mortar_thrown": {
+      "wiki_quest": "Roshamuul Quest"
+    },
+    "quest/u10_37/tinder_box_quest_chyllfroest/reward": {
+      "wiki_quest": "Tinder Box Quest"
+    },
+    "quest/u10_90/ferumbras_ascension/basin_counter": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/bone": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/bone_flute": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/bone_flute_wall": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/color_lever": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/crystals/all_crystals": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/elements/active": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/elements/done": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/elements/first": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/elements/four": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/elements/second": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/elements/third": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/ferumbras_essence": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/first_door": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/flower": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/flower_puzzle_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/fount": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/all_habitats": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/corrupted": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/desert": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/dimension": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/grass": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/ice": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/mushroom": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/roshamuul": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats/venom": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/habitats_access": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/mazoran_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/monster_door": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/plagirath_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/ragiaz_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/razzagorn_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/reward": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/rift_runner": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/ring2": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/shulgrax_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/statue": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/tarbaz_notes": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/tarbaz_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/the_shatterer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/the_shatterer_lever": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/the_shatterer_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/vampire": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/zamulosh_teleports": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u10_90/ferumbras_ascension/zamulosh_timer": {
+      "quest": "canary:quest/ferumbras_ascension_quest"
+    },
+    "quest/u12_30/poltergeist_outfits/received": {
+      "wiki_quest": "Poltergeist Outfits Quest"
+    },
+    "quest/u12_60/apirates_tail/ratmiral_killed": {
+      "wiki_quest": "A Pirate's Tail Quest"
+    },
+    "quest/u12_60/apirates_tail/tentugly_killed": {
+      "wiki_quest": "A Pirate's Tail Quest"
+    },
+    "quest/u12_90/primal_ordeal/bosses/magma_bubble_killed": {
+      "wiki_quest": "Primal Ordeal Quest"
+    },
+    "quest/u12_90/primal_ordeal/bosses/the_primal_menace_killed": {
+      "wiki_quest": "Primal Ordeal Quest"
+    },
+    "quest/u15_12/newhaven_citizen": {
+      "wiki_quest": "Newhaven Quest"
+    },
+    "quest/u15_12/newhaven_new_loot_the_corruptor": {
+      "wiki_quest": "Newhaven Quest"
+    },
+    "quest/u15_12/newhaven_tutorial_hunting": {
+      "wiki_quest": "Newhaven Quest"
+    },
+    "quest/u7_8/the_pits_of_inferno/levers": {
+      "quest": "canary:quest/the_pits_of_inferno_quest"
+    },
+    "quest/u7_8/the_pits_of_inferno/shortcut_hub_door": {
+      "quest": "canary:quest/the_pits_of_inferno_quest"
+    },
+    "quest/u7_9/dreamers_challenge/lever_brotherhood1": {
+      "quest": "canary:quest/dreamer_s_challenge_quest"
+    },
+    "quest/u7_9/dreamers_challenge/lever_brotherhood2": {
+      "quest": "canary:quest/dreamer_s_challenge_quest"
+    },
+    "quest/u7_9/dreamers_challenge/lever_brotherhood3": {
+      "quest": "canary:quest/dreamer_s_challenge_quest"
+    },
+    "quest/u7_9/dreamers_challenge/lever_nightmare1": {
+      "quest": "canary:quest/dreamer_s_challenge_quest"
+    },
+    "quest/u7_9/dreamers_challenge/lever_nightmare3": {
+      "quest": "canary:quest/dreamer_s_challenge_quest"
+    },
+    "quest/u7_9/the_pits_of_inferno/shortcut_hub_door": {
+      "quest": "canary:quest/the_pits_of_inferno_quest"
+    },
+    "quest/u8_0/the_inquisition_quest/mission07": {
+      "quest": "canary:quest/the_inquisition_quest"
+    },
+    "quest/u8_0/the_inquisition_quest/questline": {
+      "quest": "canary:quest/the_inquisition_quest"
+    },
+    "quest/u8_0/the_inquisition_quest/reward": {
+      "quest": "canary:quest/the_inquisition_quest"
+    },
+    "quest/u8_0/the_inquisition_quest/reward_room_text": {
+      "quest": "canary:quest/the_inquisition_quest"
+    },
+    "quest/u8_1/koshei_the_deathless/reward_door": {
+      "quest": "canary:quest/koshei_the_deathless_quest"
+    },
+    "quest/u8_1/to_blind_the_enemy/questline": {
+      "quest": "canary:quest/to_blind_the_enemy_quest"
+    },
+    "quest/u8_1/tower_defence_quest/questline": {
+      "wiki_quest": "Tower Defence Quest"
+    },
+    "quest/u8_2/elemental_spheres/boss_room": {
+      "wiki_quest": "Elemental Spheres Quest"
+    },
+    "quest/u8_2/elemental_spheres/machine_gem_count": {
+      "wiki_quest": "Elemental Spheres Quest"
+    },
+    "quest/u8_2/the_demon_oak/done": {
+      "wiki_quest": "The Demon Oak Quest"
+    },
+    "quest/u8_2/the_demon_oak/progress": {
+      "wiki_quest": "The Demon Oak Quest"
+    },
+    "quest/u8_2/the_demon_oak/squares": {
+      "wiki_quest": "The Demon Oak Quest"
+    },
+    "quest/u8_2/troll_sabotage_quest/jump_timer": {
+      "wiki_quest": "Troll Sabotage Quest"
+    },
+    "quest/u8_54/an_uneasy_alliance/quest_door": {
+      "wiki_quest": "An Uneasy Alliance Quest"
+    },
+    "quest/u9_4/liquid_black_quest/visitor": {
+      "wiki_quest": "Liquid Black Quest"
+    },
+    "storage/1": {
+      "quest": "canary:quest/grave_danger_quest"
+    },
+    "storage/10126": {
+      "wiki_quest": "Rotten Blood Quest"
+    },
+    "storage/14320": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/14321": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/14322": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/14323": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/14324": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/14334": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/14335": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/14336": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/14337": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/199990": {
+      "wiki_quest": "Grimvale Mini World Change"
+    },
+    "storage/199991": {
+      "wiki_quest": "Grimvale Mini World Change"
+    },
+    "storage/2": {
+      "quest": "canary:quest/grave_danger_quest"
+    },
+    "storage/24850": {
+      "wiki_quest": "Hero of Rathleton Quest"
+    },
+    "storage/3": {
+      "quest": "canary:quest/grave_danger_quest"
+    },
+    "storage/58001": {
+      "wiki_quest": "Grimvale Mini World Change"
+    },
+    "storage/58002": {
+      "wiki_quest": "Grimvale Mini World Change"
+    },
+    "storage/58103": {
+      "note": "storage key, purpose unclear"
+    },
+    "storage/58104": {
+      "quest": "canary:quest/blood_brothers_quest"
+    },
+    "storage/60814": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/60828": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/60835": {
+      "wiki_quest": "Heart of Destruction Quest"
+    },
+    "storage/673004": {
+      "note": "storage key, purpose unclear"
+    },
+    "storage/775559": {
+      "note": "storage key, purpose unclear"
+    },
+    "quest/u10_37/tinder_box_quest_chyllfroest/obedience": {
+      "wiki_quest": "Tinder Box Quest",
+      "note": "Storage44502, config.storageKey in Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:7,53 grants Ursagrodon mount38; same named quest namespace as Reward44501. OTS source ownership only; seasonal/random mount conditions remain unresolved."
+    },
+    "hero_rathleton/access_door": {
+      "quest": "canary:quest/hero_of_rathleton_quest",
+      "note": "Exact quest-named Storage namespace at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/lib/core/storages.lua:142; same uniquely curated catalogue quest. Gate reader declares track even if no writer was found; no initial/bounds inferred."
+    },
+    "quest/u12_60/apirates_tail/tentugly_door": {
+      "quest": "canary:quest/a_pirates_tail",
+      "note": "Exact quest-named Storage namespace at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/lib/core/storages.lua:2920; same uniquely curated catalogue quest. Gate reader declares track even if no writer was found; no initial/bounds inferred."
+    },
+    "quest/u13_10/cradle_of_monsters/access/lower_ingol": {
+      "quest": "canary:quest/cradle_of_monsters",
+      "note": "Exact quest-named Storage namespace at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/lib/core/storages.lua:2948; same uniquely curated catalogue quest. Gate reader declares track even if no writer was found; no initial/bounds inferred."
+    },
+    "quest/u13_10/cradle_of_monsters/access/monster": {
+      "quest": "canary:quest/cradle_of_monsters",
+      "note": "Exact quest-named Storage namespace at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/lib/core/storages.lua:2949; same uniquely curated catalogue quest. Gate reader declares track even if no writer was found; no initial/bounds inferred."
+    },
+    "quest/u13_10/cradle_of_monsters/access/mutated_abomination": {
+      "quest": "canary:quest/cradle_of_monsters",
+      "note": "Exact quest-named Storage namespace at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/lib/core/storages.lua:2950; same uniquely curated catalogue quest. Gate reader declares track even if no writer was found; no initial/bounds inferred."
+    },
+    "quest/u7_9/nightmare_outfits/outfits": {
+      "wiki_quest": "Nightmare Outfits Quest",
+      "npc_source": "npc/the_dream_master.lua",
+      "note": "Exclusive the_dream_master named Storage.Quest.U7_9.nightmare_outfits source writes in pinned Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b and Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d; source-presence ownership only. Shared Knightwatch track intentionally excluded."
+    },
+    "quest/u7_9/nightmare_outfits/door": {
+      "wiki_quest": "Nightmare Outfits Quest",
+      "npc_source": "npc/the_dream_master.lua",
+      "note": "Exclusive the_dream_master named Storage.Quest.U7_9.nightmare_outfits source writes in pinned Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b and Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d; source-presence ownership only. Shared Knightwatch track intentionally excluded."
+    },
+    "quest/u7_9/brotherhood_outfits/outfits": {
+      "wiki_quest": "Brotherhood Outfits Quest",
+      "npc_source": "npc/the_bone_master.lua",
+      "note": "Exclusive the_bone_master named Storage.Quest.U7_9.brotherhood_outfits source writes in pinned Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b and Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d; source-presence ownership only. Shared Knightwatch track intentionally excluded."
+    },
+    "quest/u7_9/brotherhood_outfits/door": {
+      "wiki_quest": "Brotherhood Outfits Quest",
+      "npc_source": "npc/the_bone_master.lua",
+      "note": "Exclusive the_bone_master named Storage.Quest.U7_9.brotherhood_outfits source writes in pinned Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b and Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d; source-presence ownership only. Shared Knightwatch track intentionally excluded."
+    },
+    "quest/u7_9/nightmare_outfits/knightwatch_tower_door": {
+      "shared_npc_gate": true,
+      "npc_sources": [
+        "npc/the_bone_master.lua",
+        "npc/the_dream_master.lua"
+      ],
+      "note": "Shared KnightwatchTowerDoor41014 is written by both Nightmare DreamMaster and Brotherhood BoneMaster source branches (Canary NPC writerL124/L128 and CrystalL94/L99). Distinct BR/Fandom quest pages; unique quest owner UNKNOWN. No collapse into Nightmare merely from Storage namespace."
+    }
+  },
+  "deferred_tracks": {
+    "quest/u14_15/the_way_of_the_monk/shrines_count": {
+      "owner_evidence": {
+        "quest": "canary:quest/the_way_of_the_monk_quest"
+      },
+      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+    },
+    "quest/u8_0/the_inquisition_quest/enter_teleport": {
+      "owner_evidence": {
+        "quest": "canary:quest/the_inquisition_quest"
+      },
+      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+    },
+    "quest/u8_54/an_uneasy_alliance/questline": {
+      "owner_evidence": {
+        "wiki_quest": "An Uneasy Alliance Quest"
+      },
+      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+    },
+    "storage/673003": {
+      "owner_evidence": {
+        "note": "Unknown quest owner: literal yielothaxKillStorage=673003 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:4; setStorageValue receiver/effects retained. Shared/global versus character scope needs an owning contract; no initial/bounds inferred."
+      },
+      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+    },
+    "storage/775558": {
+      "owner_evidence": {
+        "note": "Unknown quest owner: literal playerDoubleMageKill=775558 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:3, writerL10; source callback/value retained, no initial/bounds inferred."
+      },
+      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+    }
   }
- }
 }

@@ -3455,7 +3455,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "canary:quest/the_cradle_of_monsters_quest",
+        "key": "canary:quest/cradle_of_monsters",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
@@ -3540,7 +3540,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "canary:quest/the_cradle_of_monsters_quest",
+        "key": "canary:quest/cradle_of_monsters",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
@@ -3569,7 +3569,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "canary:quest/the_cradle_of_monsters_quest",
+        "key": "canary:quest/cradle_of_monsters",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
@@ -5155,12 +5155,8 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
-      "quest": {
-        "family": "Quest",
-        "key": "canary:quest/nightmare_outfits_quest",
-        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-      },
-      "quest_link_basis": "storage_key",
+      "quest": null,
+      "quest_link_basis": null,
       "condition": {
         "kind": "quest_progress",
         "progress": "canary:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",

@@ -387,48 +387,48 @@
       "per_stage": 468,
       "fixed": 38
     },
-    "progress_tracks": 1001,
-    "tracks_written_by_both_servers": 704,
-    "tracks_without_a_writer": 109,
-    "transitions": 1832,
+    "progress_tracks": 1114,
+    "tracks_written_by_both_servers": 748,
+    "tracks_without_a_writer": 206,
+    "transitions": 1645,
     "transitions_by_owner": {
-      "action": 182,
-      "creature_event": 31,
+      "action": 181,
+      "creature_event": 30,
       "event_callback": 3,
       "library": 40,
-      "movement": 78,
-      "npc": 1442,
+      "movement": 75,
+      "npc": 1260,
       "other": 56
     },
     "transitions_by_effect": {
       "computed": 42,
-      "increment": 63,
-      "to": 1727
+      "increment": 61,
+      "to": 1542
     },
-    "transitions_with_known_from": 441,
+    "transitions_with_known_from": 408,
     "npc_transitions": {
-      "total": 1442,
-      "with_keywords": 1240,
-      "with_topics": 739,
-      "npc_in_npc_census": 1442
+      "total": 1260,
+      "with_keywords": 1069,
+      "with_topics": 654,
+      "npc_in_npc_census": 1260
     },
-    "transitions_in_both_servers": 1371,
+    "transitions_in_both_servers": 1306,
     "storyline_quests_linked_to_wiki": 52,
-    "reward_only_quests_absorbed": 24,
-    "script_only_quests": 35,
-    "catalogue_quests": 204,
+    "reward_only_quests_absorbed": 25,
+    "script_only_quests": 42,
+    "catalogue_quests": 210,
     "by_status": {
       "mapped": 529
     },
     "requirements_parsed": {
-      "quests_with_wiki_requirements": 198,
+      "quests_with_wiki_requirements": 204,
       "premium": {
-        "parsed": 196,
+        "parsed": 202,
         "partial": 2
       },
       "min_level": {
         "note": 4,
-        "parsed": 184,
+        "parsed": 190,
         "range": 5,
         "uncertain": 3,
         "varies": 1
@@ -439,6 +439,7 @@
     "canary:quest/children_of_the_revolution_quest",
     "canary:quest/cults_of_tibia_quest",
     "canary:quest/dawnport_quest",
+    "canary:quest/desert_dungeon_quest",
     "canary:quest/forgotten_knowledge_quest",
     "canary:quest/secret_service_quest",
     "canary:quest/shadows_of_yalahar_quest",
@@ -461,6 +462,61 @@
     "canary:quest/wrath_of_the_emperor_quest",
     "crystalserver:quest/targuna_quest"
   ],
+  "quest_source_aliases": [],
+  "source_checks": {
+    "progress_track_unknowns": [
+      {
+        "key": "canary:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+        "owner": "UNKNOWN: Shared KnightwatchTowerDoor41014 is written by both Nightmare DreamMaster and Brotherhood BoneMaster source branches (Canary NPC writerL124/L128 and CrystalL94/L99). Distinct BR/Fandom quest pages; unique quest owner UNKNOWN. No collapse into Nightmare merely from Storage namespace."
+      }
+    ],
+    "deferred_track_owners": {
+      "quest/u14_15/the_way_of_the_monk/shrines_count": {
+        "owner_evidence": {
+          "quest": "canary:quest/the_way_of_the_monk_quest"
+        },
+        "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+      },
+      "quest/u8_0/the_inquisition_quest/enter_teleport": {
+        "owner_evidence": {
+          "quest": "canary:quest/the_inquisition_quest"
+        },
+        "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+      },
+      "quest/u8_54/an_uneasy_alliance/questline": {
+        "owner_evidence": {
+          "wiki_quest": "An Uneasy Alliance Quest"
+        },
+        "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+      },
+      "storage/673003": {
+        "owner_evidence": {
+          "note": "Unknown quest owner: literal yielothaxKillStorage=673003 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:4; setStorageValue receiver/effects retained. Shared/global versus character scope needs an owning contract; no initial/bounds inferred."
+        },
+        "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+      },
+      "storage/775558": {
+        "owner_evidence": {
+          "note": "Unknown quest owner: literal playerDoubleMageKill=775558 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:3, writerL10; source callback/value retained, no initial/bounds inferred."
+        },
+        "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+      }
+    },
+    "npc_only_quests": [
+      {
+        "quest": "canary:quest/brotherhood_outfits_quest",
+        "npc_source": "npc/the_bone_master.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/nightmare_outfits_quest",
+        "npc_source": "npc/the_dream_master.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      }
+    ]
+  },
   "entries": [
     {
       "quest": "canary:quest/grave_danger_quest",

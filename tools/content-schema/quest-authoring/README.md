@@ -52,6 +52,8 @@ python validate_quest_content.py samples/chests/claims.json samples/questlog/que
   --interactions samples/interactions/interactions.json --interactions-manifest samples/interactions/manifest.json
 python test_quest_completeness.py
 python test_converter_enrichment.py
+python test_progress_enrichment.py
+python test_quest_identity.py
 python refresh_quest_source_checks.py --check
 ```
 

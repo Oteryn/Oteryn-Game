@@ -163,6 +163,7 @@ def mission_transitions(found):
 
 TRACK_OWNERS = {norm(track): owner for track, owner in json.loads((ROOT / 'track_owners.json').read_text())['tracks'].items()}
 SCRIPT_QUESTS = json.loads((ROOT / 'script_quests.json').read_text())['quests']
+DEFERRED_TRACKS = json.loads((ROOT / 'track_owners.json').read_text()).get('deferred_tracks', {})
 
 
 def script_only_quests(coverage):
@@ -189,6 +190,58 @@ def script_only_quests(coverage):
     return quests
 
 
+def storage_declarations(repos):
+    """Read exact Storage declarations; a numeric ID is qualified by its repository."""
+    declarations = {}
+    for server, repo in repos.items():
+        packs = [SOURCES[server]['datapack']] + (['data-crystal'] if server == 'crystalserver' else [])
+        for pack in packs:
+            path = f"{pack}/lib/core/storages.lua"
+            table = lua_tables.assignments((Path(repo) / path).read_text(), {'Storage'})['Storage']
+            def walk(node, parts):
+                for field in node.get('fields', []):
+                    names = parts + [str(field['key'])]
+                    value = field['value']
+                    if isinstance(value, dict) and 'fields' in value:
+                        walk(value, names)
+                    elif isinstance(value, int):
+                        key = f"{server}:quest-progress/" + '/'.join(slug(n) for n in names)
+                        declaration = {'repository': SOURCES[server]['repository'],
+                                       'revision': SOURCES[server]['revision'], 'path': path,
+                                       'line': field['line'], 'storage_id': value,
+                                       'expression': 'Storage.' + '.'.join(names)}
+                        previous = declarations.get(key)
+                        if previous and previous.get('state') == 'CONFLICT':
+                            previous['candidates'].append(declaration)
+                        elif previous and previous['storage_id'] != value:
+                            declarations[key] = {'state': 'CONFLICT', 'candidates': [previous, declaration]}
+                        elif previous is None:
+                            declarations[key] = declaration
+            walk(table, [])
+    return declarations
+
+
+def storage_evidence(declarations, key, required):
+    if not required:
+        return {}
+    if key not in declarations:
+        return {'source_checks': {'storage_declaration': f'UNKNOWN: no exact Storage declaration for {key}'}}
+    declaration = declarations[key]
+    if declaration.get('state') == 'CONFLICT':
+        return {'source_checks': {'storage_declaration': f'CONFLICT: incompatible source Storage declarations for {key}'},
+                'source_storage_candidates': declaration['candidates']}
+    return {'source_storage': declaration}
+
+
+def merge_source_checks(owner, evidence):
+    """Preserve independent ownership and declaration gaps on the same track."""
+    merged = {**owner, **evidence}
+    checks = {**owner.get('source_checks', {}), **evidence.get('source_checks', {})}
+    if checks:
+        merged['source_checks'] = checks
+    return merged
+
+
 def auxiliary_tracks(index, progress, catalogue, gates, repos):
     """Declare every track a quest script writes outside the missions (D35): seal doors, counters, cooldowns.
 
@@ -196,6 +249,12 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
     directory whose scripts write the missions of one quest, else from `track_owners.json`.
     """
     declared = {norm(t['key'].split('/', 1)[1]) for t in progress}
+    gate_tracks = defaultdict(list)
+    for gate in gates:
+        if gate['condition'].get('progress'):
+            gate_tracks[norm(gate['condition']['progress'].split('/', 1)[1])].append(gate)
+    source_storage = storage_declarations(repos)
+    catalogue_keys = {q['identity']['key'] for q in catalogue}
     by_title = {q['display_name']: q['identity']['key'] for q in catalogue}
     prefixes, directories = defaultdict(set), defaultdict(set)
     for quest in catalogue:
@@ -208,14 +267,32 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
                 if t['script'].startswith('scripts/quests/'):
                     directories[t['script'].split('/')[2]].add(quest['identity']['key'])
     out, used, missing = [], set(), []
-    for key_norm, found in sorted(index.items()):
+    for key_norm in sorted(set(index) | set(gate_tracks)):
+        found = index.get(key_norm, {'count': Counter(), 'transitions': {}, 'paths': set()})
         scripts = sorted({t['script'] for t in found['transitions'].values() if t['script'].startswith('scripts/quests/')})
-        if key_norm in declared or not scripts:
+        recorded_npc = TRACK_OWNERS.get(key_norm, {}).get('npc_source')
+        npc_owned = (recorded_npc and {t['script'] for t in found['transitions'].values()} == {recorded_npc}
+                     and all(t['owner'] == 'npc' for t in found['transitions'].values()))
+        if key_norm in declared or (not scripts and key_norm not in gate_tracks and not npc_owned):
             continue
         owner = {}
         prefix = max((p for p in prefixes if key_norm.startswith(p) and len(prefixes[p]) == 1), key=len, default=None)
         by_directory = set().union(*(directories.get(s.split('/')[2], set()) for s in scripts))
-        if prefix:
+        gate_owners = {g['quest']['key'] for g in gate_tracks.get(key_norm, [])
+                       if g.get('quest') and g['quest']['key'] in catalogue_keys}
+        if key_norm in TRACK_OWNERS and key_norm in gate_tracks:
+            used.add(key_norm)
+        shared_gate = TRACK_OWNERS.get(key_norm, {})
+        if shared_gate.get('shared_npc_gate'):
+            actual_npcs = {t['script'] for t in found['transitions'].values() if t['owner'] == 'npc'}
+            if actual_npcs != set(shared_gate['npc_sources']):
+                raise SystemExit(f'shared NPC gate curation is stale for {key_norm}')
+            used.add(key_norm)
+            owner = {'auxiliary_of': [], 'owner_basis': 'UNKNOWN',
+                     'source_checks': {'owner': 'UNKNOWN: ' + shared_gate['note']}}
+        elif len(gate_owners) == 1:
+            owner = {'auxiliary_of': sorted(gate_owners), 'owner_basis': 'gate catalogue link'}
+        elif prefix:
             owner = {'auxiliary_of': sorted(prefixes[prefix]), 'owner_basis': 'mission track prefix'}
         elif len(by_directory) == 1:
             owner = {'auxiliary_of': sorted(by_directory), 'owner_basis': 'script directory'}
@@ -225,24 +302,69 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
             quest = recorded.get('quest') or by_title.get(recorded.get('wiki_quest'))
             owner = {'auxiliary_of': [quest] if quest else [], 'owner_basis': 'track_owners.json',
                      **({'wiki_quest': recorded['wiki_quest']} if not quest and recorded.get('wiki_quest') else {}),
-                     **({'note': recorded['note']} if recorded.get('note') else {})}
+                     **({'note': recorded['note']} if recorded.get('note') else {}),
+                     **({'source_checks': {'owner': 'UNKNOWN: ' + recorded['note']}}
+                        if recorded.get('note', '').startswith('Unknown quest owner:') else {})}
+        elif key_norm in gate_tracks:
+            owner = {'auxiliary_of': [], 'owner_basis': 'UNKNOWN',
+                     'source_checks': {'owner': 'UNKNOWN; gate/source declaration does not establish a unique catalogue owner'}}
         else:
             missing.append(key_norm)
             continue
         server = 'canary' if found['count']['canary'] else 'crystalserver'
-        path = sorted(p for n, p in found['paths'] if n == server)[0]
+        paths = sorted(p for n, p in found['paths'] if n == server)
+        if not paths:
+            server, path = gate_tracks[key_norm][0]['condition']['progress'].split(':quest-progress/')
+        else:
+            path = paths[0]
         out.append({'key': f'{server}:quest-progress/{path}', 'missions': [], 'start_of': [],
                     'read_by_gates': sorted(g['identity']['key'] for g in gates if g['condition'].get('progress')
                                             and norm(g['condition']['progress'].split('/', 1)[1]) == key_norm),
-                    **owner, 'writes': {n: found['count'][n] for n in repos},
+                    **merge_source_checks(owner, storage_evidence(source_storage, f'{server}:quest-progress/{path}', key_norm in gate_tracks)), 'writes': {n: found['count'][n] for n in repos},
                     'transitions': [{'key': t['key'], 'script': t['_entry']['script'], 'sources': t['_entry']['sources']}
                                     for t in mission_transitions(found)]})
+    # Gates retain their exact source-qualified track keys. A matching path under
+    # another namespace is an explicit alias of the transcription, not numeric-ID equality.
+    for group in gate_tracks.values():
+        for gate in group:
+            key = gate['condition']['progress']
+            all_tracks = {t['key']: t for t in progress + out}
+            if key in all_tracks:
+                continue
+            source_path = key.split(':quest-progress/', 1)[1]
+            matches = [t for t in all_tracks.values() if t['key'].split(':quest-progress/', 1)[1] == source_path
+                       and 'alias_of' not in t]
+            if len(matches) != 1:
+                raise SystemExit(f'gate progress {key} has no unique declared path')
+            original = matches[0]
+            alias_owners = sorted(set(original.get('auxiliary_of', []))
+                                  | set(original.get('start_of', []))
+                                  | {mission.split('#', 1)[0] for mission in original.get('missions', [])})
+            alias_owner = {'auxiliary_of': alias_owners, 'owner_basis': 'exact source-path alias'}
+            if not alias_owners:
+                alias_owner['source_checks'] = {'owner': original.get('source_checks', {}).get(
+                    'owner', 'UNKNOWN: aliased track has no explicit mission/start/auxiliary owner')}
+            out.append({'key': key, 'missions': [], 'start_of': [],
+                        'read_by_gates': sorted(g['identity']['key'] for g in group
+                                                if g['condition']['progress'] == key),
+                        'alias_of': original['key'],
+                        **merge_source_checks(alias_owner, storage_evidence(source_storage, key, True)),
+                        'writes': original['writes'], 'transitions': original['transitions']})
     if missing:
         raise SystemExit(f'no owner for the progress tracks {missing}; record them in track_owners.json')
     stale = sorted(set(TRACK_OWNERS) - used)
     if stale:
         raise SystemExit(f'track_owners.json names tracks that need no record: {stale}')
     return out
+
+
+def reward_script_owner(quest, by_key, by_page):
+    """Only exact curator key or a unique wiki-page identity joins the two slices."""
+    key = quest['identity']['key']
+    if key in by_key:
+        return by_key[key]
+    matches = by_page.get((quest.get('wiki') or {}).get('pageid'), [])
+    return matches[0] if len(matches) == 1 else None
 
 
 def build(repos, chests_dir, doors_dir, coverage):
@@ -349,6 +471,10 @@ def build(repos, chests_dir, doors_dir, coverage):
     catalogue = list(storyline.values())
     script_only = script_only_quests(coverage)
     script_only_by_key = {q['identity']['key']: q for q in script_only}
+    script_only_by_page = defaultdict(list)
+    for q in script_only:
+        script_only_by_page[q['wiki']['pageid']].append(q)
+    source_aliases = []
     absorbed = []
     for key, quest in sorted(reward_only.items()):
         if key in storyline:
@@ -358,6 +484,16 @@ def build(repos, chests_dir, doors_dir, coverage):
             # already curated from its script directory: the script owns the identity, the chest its claims
             absorbed.append(key)
             script_only_by_key[key]['claims'].extend(quest['claims'])
+        elif reward_script_owner(quest, script_only_by_key, script_only_by_page):
+            # The same immutable wiki page identifies the chest and script slices.
+            # Keep the curated script key and every RewardClaim reference; the parent
+            # chest converter applies this source alias to its reciprocal owner refs.
+            primary = reward_script_owner(quest, script_only_by_key, script_only_by_page)
+            absorbed.append(key)
+            primary['claims'].extend(quest['claims'])
+            source_aliases.append({'source': key, 'target': primary['identity']['key'],
+                                   'wiki_pageid': quest['wiki']['pageid'],
+                                   'basis': 'same source wiki page; script identity retained'})
         else:
             catalogue.append(quest)
     for quest in script_only:
@@ -414,6 +550,16 @@ def build(repos, chests_dir, doors_dir, coverage):
             'requirements_parsed': requirements_counts(catalogue),
         },
         'reward_only_absorbed': absorbed,
+        'quest_source_aliases': source_aliases,
+        'source_checks': {'progress_track_unknowns': [
+            {'key': p['key'], **p['source_checks']} for p in progress if p.get('source_checks')],
+            'deferred_track_owners': DEFERRED_TRACKS,
+            'npc_only_quests': [
+                {'quest': q['identity']['key'], 'npc_source': entry['npc_source'],
+                 'coverage_gap': 'NPC item/achievement/dialogue side effects have not been transcribed as quest interactions',
+                 'classification': 'UNKNOWN'}
+                for q in catalogue for entry in SCRIPT_QUESTS
+                if entry.get('npc_source') and entry['title'] == q['display_name']]},
         'entries': sorted(manifest_entries, key=lambda e: json.dumps(e, sort_keys=True)),
     }
     return {'quests.json': {'quests': catalogue}, 'progress.json': {'progress': progress}, 'manifest.json': manifest}

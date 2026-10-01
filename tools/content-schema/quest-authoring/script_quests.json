@@ -1,75 +1,190 @@
 {
-  "about": "Wiki quests confidently matched to a script directory of both servers and/or the wiki_quest of auxiliary progress tracks (track_owners.json), where the source has no quest-log entry (kind script_only, §6.2/§6.5 gap). title must exact-match samples/quest-coverage-2026-09-27.json; key overrides the default identity slug (slug(title)) only where the wiki spelling and the script directory diverge (apostrophe, article, typo, plural), so the readiness join (script directory name, normalised) still finds the quest. ots_questlog.py fails on a title missing from the coverage sample or a key colliding with an existing quest.",
+  "about": "Wiki quests confidently matched to a script directory of both servers and/or the wiki_quest of auxiliary progress tracks (track_owners.json), where the source has no quest-log entry (kind script_only, \u00a76.2/\u00a76.5 gap). title must exact-match samples/quest-coverage-2026-09-27.json; key overrides the default identity slug (slug(title)) only where the wiki spelling and the script directory diverge (apostrophe, article, typo, plural), so the readiness join (script directory name, normalised) still finds the quest. ots_questlog.py fails on a title missing from the coverage sample or a key colliding with an existing quest.",
   "quests": [
-    {"title": "Soul War Quest",
-     "basis": "wiki title and script directory scripts/quests/soul_war match exactly (normalised); no quest-log entry in either server"},
-    {"title": "Kilmaresh Quest",
-     "basis": "wiki title matches scripts/quests/kilmaresh (crystalserver) and kilmaresh_quest (canary) once normalised; also the wiki_quest of 17 auxiliary progress tracks"},
-    {"title": "The Gravedigger of Drefia Quest",
-     "basis": "wiki title and script directory scripts/quests/the_gravedigger_of_drefia match exactly; also the wiki_quest of 24 auxiliary progress tracks"},
-    {"title": "Heart of Destruction Quest",
-     "basis": "wiki title and script directory scripts/quests/heart_of_destruction match exactly; also the wiki_quest of 12 auxiliary progress tracks"},
-    {"title": "Rotten Blood Quest",
-     "basis": "wiki title and script directory scripts/quests/rotten_blood_quest match once normalised; also the wiki_quest of 1 auxiliary progress track"},
-    {"title": "A Pirate's Tail Quest", "key": "a_pirates_tail",
-     "basis": "wiki title (apostrophe) vs script directories scripts/quests/a_pirates_tail (canary) and a_pirates_tail_quest (crystalserver); also the wiki_quest of 2 auxiliary progress tracks"},
-    {"title": "Hero of Rathleton Quest",
-     "basis": "wiki title and script directory scripts/quests/hero_of_rathleton match exactly; also the wiki_quest of 1 auxiliary progress track"},
-    {"title": "Elemental Spheres Quest",
-     "basis": "wiki title and script directory scripts/quests/elemental_spheres match exactly; also the wiki_quest of 2 auxiliary progress tracks"},
-    {"title": "Grimvale Quest",
-     "basis": "wiki title and script directory scripts/quests/grimvale match exactly (distinct wiki page from Grimvale Mini World Change)"},
-    {"title": "Feaster of Souls Quest",
-     "basis": "wiki title and script directory scripts/quests/feaster_of_souls match exactly; no quest-log entry in either server"},
-    {"title": "Roshamuul Quest",
-     "basis": "wiki title and script directory scripts/quests/roshamuul_quest match once normalised; also the wiki_quest of 1 auxiliary progress track"},
-    {"title": "Adventures of Galthen Quest",
-     "basis": "wiki title and script directory scripts/quests/adventures_of_galthen match exactly"},
-    {"title": "Deeplings World Change", "key": "deeplings_worldchange",
-     "basis": "wiki title vs script directory scripts/quests/deeplings_worldchange (no separating underscore); also the wiki_quest of 1 auxiliary progress track"},
-    {"title": "Liquid Black Quest",
-     "basis": "wiki title and script directory scripts/quests/liquid_black match exactly; also the wiki_quest of 2 auxiliary progress tracks"},
-    {"title": "Primal Ordeal Quest",
-     "basis": "wiki title and script directory scripts/quests/primal_ordeal_quest match once normalised; also the wiki_quest of 2 auxiliary progress tracks (a second, legacy directory scripts/quests/the_primal_ordeal keeps its own identity and stays unlinked)"},
-    {"title": "Newhaven Quest",
-     "basis": "wiki title and script directory scripts/quests/newhaven match exactly; crystalserver only (canary is ABSENT in the coverage sample); also the wiki_quest of 3 auxiliary progress tracks"},
-    {"title": "Their Master's Voice World Change", "key": "their_masters_voice",
-     "basis": "wiki title (apostrophe) vs script directory scripts/quests/their_masters_voice"},
-    {"title": "Tinder Box Quest", "key": "tinder_box_quest_chyllfroest",
-     "basis": "wiki title vs script directory scripts/quests/tinder_box_quest_chyllfroest (the location is part of the directory name); also the wiki_quest of 1 auxiliary progress track"},
-    {"title": "Grimvale Mini World Change",
-     "basis": "no dedicated script directory found; the wiki_quest of 4 auxiliary progress tracks (storage/58001, storage/58002, storage/199990, storage/199991)"},
-    {"title": "Thais Lighthouse Quest",
-     "basis": "wiki title and script directory scripts/quests/thais_lighthouse match exactly"},
-    {"title": "25 Years of Tibia Quest",
-     "basis": "wiki title and script directory scripts/quests/25_years_of_tibia_quest match once normalised; crystalserver only (canary is ABSENT in the coverage sample)"},
-    {"title": "A Piece of Cake",
-     "basis": "wiki title and script directory scripts/quests/a_piece_of_cake match exactly; crystalserver only (canary is ABSENT in the coverage sample)"},
-    {"title": "An Uneasy Alliance Quest",
-     "basis": "wiki title and script directory scripts/quests/an_uneasy_alliance match exactly; also the wiki_quest of 2 auxiliary progress tracks"},
-    {"title": "Giant Smithhammer Quest",
-     "basis": "wiki title and script directory scripts/quests/giant_smithhammer match exactly"},
-    {"title": "Krailos Quest",
-     "basis": "wiki title and script directory scripts/quests/krailos match exactly"},
-    {"title": "Between the Lines Quest",
-     "basis": "wiki title and script directory scripts/quests/between_the_lines match exactly; crystalserver only (canary is ABSENT in the coverage sample)"},
-    {"title": "Formorgar Mines Hoist Quest", "key": "formogar_mine_hoist",
-     "basis": "wiki title vs script directory scripts/quests/formogar_mine_hoist (source spells the area name and the plural differently)"},
-    {"title": "The Desert Dungeon Quest", "key": "desert_dungeon_quest",
-     "basis": "wiki title (leading article) vs script directory scripts/quests/desert_dungeon_quest"},
-    {"title": "Assassin Outfits Quest", "key": "assassin_outfit",
-     "basis": "wiki title (plural) vs script directory scripts/quests/assassin_outfit"},
-    {"title": "The Tainted Souls Quest", "key": "the_tainted_soul",
-     "basis": "wiki title (plural) vs script directory scripts/quests/the_tainted_soul"},
-    {"title": "The Cradle of Monsters Quest", "key": "cradle_of_monsters",
-     "basis": "wiki title (leading article) vs script directory scripts/quests/cradle_of_monsters"},
-    {"title": "Tower Defence Quest",
-     "basis": "wiki title and script directory scripts/quests/tower_defence_quest match once normalised; also the wiki_quest of 1 auxiliary progress track"},
-    {"title": "Troll Sabotage Quest",
-     "basis": "wiki title and script directory scripts/quests/troll_sabotage match exactly; also the wiki_quest of 1 auxiliary progress track"},
-    {"title": "The Demon Oak Quest", "key": "demon_oak",
-     "basis": "wiki title (leading article) vs script directory scripts/quests/demon_oak; also the wiki_quest of 3 auxiliary progress tracks"},
-    {"title": "Poltergeist Outfits Quest",
-     "basis": "no dedicated script directory found; the wiki_quest of 1 auxiliary progress track (quest/u12_30/poltergeist_outfits/received)"}
+    {
+      "title": "Soul War Quest",
+      "basis": "wiki title and script directory scripts/quests/soul_war match exactly (normalised); no quest-log entry in either server"
+    },
+    {
+      "title": "Kilmaresh Quest",
+      "basis": "wiki title matches scripts/quests/kilmaresh (crystalserver) and kilmaresh_quest (canary) once normalised; also the wiki_quest of 17 auxiliary progress tracks"
+    },
+    {
+      "title": "The Gravedigger of Drefia Quest",
+      "basis": "wiki title and script directory scripts/quests/the_gravedigger_of_drefia match exactly; also the wiki_quest of 24 auxiliary progress tracks"
+    },
+    {
+      "title": "Heart of Destruction Quest",
+      "basis": "wiki title and script directory scripts/quests/heart_of_destruction match exactly; also the wiki_quest of 12 auxiliary progress tracks"
+    },
+    {
+      "title": "Rotten Blood Quest",
+      "basis": "wiki title and script directory scripts/quests/rotten_blood_quest match once normalised; also the wiki_quest of 1 auxiliary progress track"
+    },
+    {
+      "title": "A Pirate's Tail Quest",
+      "key": "a_pirates_tail",
+      "basis": "wiki title (apostrophe) vs script directories scripts/quests/a_pirates_tail (canary) and a_pirates_tail_quest (crystalserver); also the wiki_quest of 2 auxiliary progress tracks"
+    },
+    {
+      "title": "Hero of Rathleton Quest",
+      "basis": "wiki title and script directory scripts/quests/hero_of_rathleton match exactly; also the wiki_quest of 1 auxiliary progress track"
+    },
+    {
+      "title": "Elemental Spheres Quest",
+      "basis": "wiki title and script directory scripts/quests/elemental_spheres match exactly; also the wiki_quest of 2 auxiliary progress tracks"
+    },
+    {
+      "title": "Grimvale Quest",
+      "basis": "wiki title and script directory scripts/quests/grimvale match exactly (distinct wiki page from Grimvale Mini World Change)"
+    },
+    {
+      "title": "Feaster of Souls Quest",
+      "basis": "wiki title and script directory scripts/quests/feaster_of_souls match exactly; no quest-log entry in either server"
+    },
+    {
+      "title": "Roshamuul Quest",
+      "basis": "wiki title and script directory scripts/quests/roshamuul_quest match once normalised; also the wiki_quest of 1 auxiliary progress track"
+    },
+    {
+      "title": "Adventures of Galthen Quest",
+      "basis": "wiki title and script directory scripts/quests/adventures_of_galthen match exactly"
+    },
+    {
+      "title": "Deeplings World Change",
+      "key": "deeplings_worldchange",
+      "basis": "wiki title vs script directory scripts/quests/deeplings_worldchange (no separating underscore); also the wiki_quest of 1 auxiliary progress track"
+    },
+    {
+      "title": "Liquid Black Quest",
+      "basis": "wiki title and script directory scripts/quests/liquid_black match exactly; also the wiki_quest of 2 auxiliary progress tracks"
+    },
+    {
+      "title": "Primal Ordeal Quest",
+      "basis": "wiki title and script directory scripts/quests/primal_ordeal_quest match once normalised; also the wiki_quest of 2 auxiliary progress tracks (a second, legacy directory scripts/quests/the_primal_ordeal keeps its own identity and stays unlinked)"
+    },
+    {
+      "title": "Newhaven Quest",
+      "basis": "wiki title and script directory scripts/quests/newhaven match exactly; crystalserver only (canary is ABSENT in the coverage sample); also the wiki_quest of 3 auxiliary progress tracks"
+    },
+    {
+      "title": "Their Master's Voice World Change",
+      "key": "their_masters_voice",
+      "basis": "wiki title (apostrophe) vs script directory scripts/quests/their_masters_voice"
+    },
+    {
+      "title": "Tinder Box Quest",
+      "key": "tinder_box_quest_chyllfroest",
+      "basis": "wiki title vs script directory scripts/quests/tinder_box_quest_chyllfroest (the location is part of the directory name); also the wiki_quest of 1 auxiliary progress track"
+    },
+    {
+      "title": "Grimvale Mini World Change",
+      "basis": "no dedicated script directory found; the wiki_quest of 4 auxiliary progress tracks (storage/58001, storage/58002, storage/199990, storage/199991)"
+    },
+    {
+      "title": "Thais Lighthouse Quest",
+      "basis": "wiki title and script directory scripts/quests/thais_lighthouse match exactly"
+    },
+    {
+      "title": "25 Years of Tibia Quest",
+      "basis": "wiki title and script directory scripts/quests/25_years_of_tibia_quest match once normalised; crystalserver only (canary is ABSENT in the coverage sample)"
+    },
+    {
+      "title": "A Piece of Cake",
+      "basis": "wiki title and script directory scripts/quests/a_piece_of_cake match exactly; crystalserver only (canary is ABSENT in the coverage sample)"
+    },
+    {
+      "title": "An Uneasy Alliance Quest",
+      "basis": "wiki title and script directory scripts/quests/an_uneasy_alliance match exactly; also the wiki_quest of 2 auxiliary progress tracks"
+    },
+    {
+      "title": "Giant Smithhammer Quest",
+      "basis": "wiki title and script directory scripts/quests/giant_smithhammer match exactly"
+    },
+    {
+      "title": "Krailos Quest",
+      "basis": "wiki title and script directory scripts/quests/krailos match exactly"
+    },
+    {
+      "title": "Between the Lines Quest",
+      "basis": "wiki title and script directory scripts/quests/between_the_lines match exactly; crystalserver only (canary is ABSENT in the coverage sample)"
+    },
+    {
+      "title": "Formorgar Mines Hoist Quest",
+      "key": "formogar_mine_hoist",
+      "basis": "wiki title vs script directory scripts/quests/formogar_mine_hoist (source spells the area name and the plural differently)"
+    },
+    {
+      "title": "The Desert Dungeon Quest",
+      "key": "desert_dungeon_quest",
+      "basis": "wiki title (leading article) vs script directory scripts/quests/desert_dungeon_quest"
+    },
+    {
+      "title": "Assassin Outfits Quest",
+      "key": "assassin_outfit",
+      "basis": "wiki title (plural) vs script directory scripts/quests/assassin_outfit"
+    },
+    {
+      "title": "The Tainted Souls Quest",
+      "key": "the_tainted_soul",
+      "basis": "wiki title (plural) vs script directory scripts/quests/the_tainted_soul"
+    },
+    {
+      "title": "The Cradle of Monsters Quest",
+      "key": "cradle_of_monsters",
+      "basis": "wiki title (leading article) vs script directory scripts/quests/cradle_of_monsters"
+    },
+    {
+      "title": "Tower Defence Quest",
+      "basis": "wiki title and script directory scripts/quests/tower_defence_quest match once normalised; also the wiki_quest of 1 auxiliary progress track"
+    },
+    {
+      "title": "Troll Sabotage Quest",
+      "basis": "wiki title and script directory scripts/quests/troll_sabotage match exactly; also the wiki_quest of 1 auxiliary progress track"
+    },
+    {
+      "title": "The Demon Oak Quest",
+      "key": "demon_oak",
+      "basis": "wiki title (leading article) vs script directory scripts/quests/demon_oak; also the wiki_quest of 3 auxiliary progress tracks"
+    },
+    {
+      "title": "Poltergeist Outfits Quest",
+      "basis": "no dedicated script directory found; the wiki_quest of 1 auxiliary progress track (quest/u12_30/poltergeist_outfits/received)"
+    },
+    {
+      "title": "Barbarian Test Quest",
+      "key": "barbarian_test",
+      "basis": "Exact normalized wiki title to non-stub scripts/quests/barbarian_test; callbacks/registrations and quest storage or configured boss lever inspected at Canary04b83b51/Crystal9f5a72c6. No donor quest-log entry; reference wiki log flag preserved separately."
+    },
+    {
+      "title": "Lion's Rock Quest",
+      "key": "lions_rock",
+      "basis": "Exact normalized wiki title to non-stub scripts/quests/lions_rock; callbacks/registrations and quest storage or configured boss lever inspected at Canary04b83b51/Crystal9f5a72c6. No donor quest-log entry; reference wiki log flag preserved separately."
+    },
+    {
+      "title": "The Cursed Crystal Quest",
+      "key": "the_cursed_crystal",
+      "basis": "Exact normalized wiki title to non-stub scripts/quests/the_cursed_crystal; callbacks/registrations and quest storage or configured boss lever inspected at Canary04b83b51/Crystal9f5a72c6. No donor quest-log entry; reference wiki log flag preserved separately."
+    },
+    {
+      "title": "The Hunt for the Sea Serpent Quest",
+      "key": "the_hunt_for_the_sea_serpent",
+      "basis": "Exact normalized wiki title to non-stub scripts/quests/the_hunt_for_the_sea_serpent; callbacks/registrations and quest storage or configured boss lever inspected at Canary04b83b51/Crystal9f5a72c6. No donor quest-log entry; reference wiki log flag preserved separately."
+    },
+    {
+      "title": "Too Hot to Handle Quest",
+      "key": "too_hot_to_handle_quest",
+      "basis": "Exact normalized wiki title to non-stub scripts/quests/too_hot_to_handle_quest; callbacks/registrations and quest storage or configured boss lever inspected at Canary04b83b51/Crystal9f5a72c6. No donor quest-log entry; reference wiki log flag preserved separately."
+    },
+    {
+      "title": "Nightmare Outfits Quest",
+      "basis": "Distinct Fandom page19796/rev842861 and BR page861/rev408832; Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/npc/the_dream_master.lua is named Nightmare outfit source, with outfit-progress storage writes and KnightwatchTowerDoor writerL124; Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d equivalentNPC writerL94. NPC-only source presence; full playability is not proven, shared Knightwatch gate ownership unresolved.",
+      "npc_source": "npc/the_dream_master.lua"
+    },
+    {
+      "title": "Brotherhood Outfits Quest",
+      "basis": "Distinct Fandom page19797/rev842661 and BR page850/rev408809; Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/npc/the_bone_master.lua is named Brotherhood outfit source, with outfit-progress storage writes and KnightwatchTowerDoor writerL128; Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d equivalentNPC writerL99. NPC-only source presence; full playability is not proven, shared Knightwatch gate ownership unresolved.",
+      "npc_source": "npc/the_bone_master.lua"
+    }
   ]
 }

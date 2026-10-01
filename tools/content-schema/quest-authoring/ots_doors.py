@@ -132,6 +132,20 @@ def gate_key(condition):
     return 'progress/' + condition['progress'].split('/', 1)[1]
 
 
+def link_gate_quest(gate, match_quest, owners):
+    path = gate['condition']['progress'].split('/', 1)[1]
+    shared = owners.get(path, {})
+    if shared.get('shared_npc_gate'):
+        gate['quest'], gate['quest_link_basis'] = None, None
+        return 'Shared NPC gate: unique quest owner UNKNOWN; ' + shared['note']
+    storage_quest = re.match(r'[a-z]+:quest-progress/quest/u[0-9_]+/([a-z0-9_]+)', gate['condition']['progress'])
+    basis, wiki = next(((b, w) for b, w in ((b, match_quest(t)) for b, t in (
+        ('storage_key', storage_quest.group(1) if storage_quest else None), ('label', gate['label']))) if w), (None, None))
+    if wiki:
+        gate['quest'], gate['quest_link_basis'] = ref('Quest', quest_key(wiki)), basis
+    return None
+
+
 def build(repos, chests_dir, coverage):
     claims = json.loads((chests_dir / 'claims.json').read_text())['claims']
     claims_by_marker, claims_by_key = {}, defaultdict(list)
@@ -255,14 +269,15 @@ def build(repos, chests_dir, coverage):
                                  'sources': [{'source': n, 'action_key': key_text(r['key']),
                                               'source_lines': [r['line']]} for n, r in pair.items()]})
 
+    owners = json.loads((ROOT / 'track_owners.json').read_text())['tracks']
     for gate in gates.values():
         if gate['condition']['kind'] != 'quest_progress':
             continue
-        storage_quest = re.match(r'[a-z]+:quest-progress/quest/u[0-9_]+/([a-z0-9_]+)', gate['condition']['progress'])
-        basis, wiki = next(((b, w) for b, w in ((b, match_quest(t)) for b, t in (
-            ('storage_key', storage_quest.group(1) if storage_quest else None), ('label', gate['label']))) if w), (None, None))
-        if wiki:
-            gate['quest'], gate['quest_link_basis'] = ref('Quest', quest_key(wiki)), basis
+        hold = link_gate_quest(gate, match_quest, owners)
+        if hold:
+            for entry in manifest_entries:
+                if entry.get('destination') == gate['identity']['key']:
+                    entry['status'], entry['resolution'] = 'unresolved_semantics', hold
 
     gate_list = sorted(gates.values(), key=lambda g: g['identity']['key'])
     counts = Counter(e['status'] for e in manifest_entries)

@@ -181,6 +181,18 @@ def join_interactions(quests, progress, interactions):
     return joined
 
 
+def quest_coverage_holds(manifest, quest_keys):
+    """NPC source presence does not imply its non-storage effects were converted."""
+    holds, seen = collections.Counter(), set()
+    for check in manifest.get('source_checks', {}).get('npc_only_quests', []):
+        identity = (check['quest'], check['npc_source'])
+        if check['quest'] not in quest_keys or identity in seen or not check.get('coverage_gap'):
+            raise ValueError('stale, duplicate or unexplained NPC quest coverage hold')
+        seen.add(identity)
+        holds[check['quest']] += 1
+    return holds
+
+
 def main():
     quests = load('questlog/quests.json', 'quests')
     progress = load('questlog/progress.json', 'progress')
@@ -191,6 +203,9 @@ def main():
     info = {q['identity']['key']: {'kind': q['kind'], 'features': set(), 'interactions': [],
                                    'unresolved': 0, 'interactions_with_gaps': 0}
             for q in quests}
+    manifest = json.loads((SAMPLES / 'questlog/manifest.json').read_text())
+    for key, count in quest_coverage_holds(manifest, set(info)).items():
+        info[key]['unresolved'] += count
 
     track_quests = collections.defaultdict(set)
     for q in quests:

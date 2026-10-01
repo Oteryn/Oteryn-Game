@@ -26,45 +26,45 @@
   "scheduler": "owner for delayed callbacks (none yet)"
  },
  "counts": {
-  "quests": 204,
+  "quests": 210,
   "by_kind": {
-   "reward_only": 111,
-   "script_only": 35,
+   "reward_only": 110,
+   "script_only": 42,
    "storyline": 58
   },
   "quests_needing_feature": {
-   "achievement": 24,
+   "achievement": 28,
    "boss_cooldown": 10,
-   "condition": 19,
+   "condition": 21,
    "creature_removal": 17,
-   "door_progress": 52,
+   "door_progress": 53,
    "experience": 2,
-   "item_consume": 58,
-   "item_hand_out": 46,
+   "item_consume": 62,
+   "item_hand_out": 48,
    "kv_state": 8,
    "mount": 4,
-   "npc_dialogue": 67,
+   "npc_dialogue": 76,
    "outfit": 6,
-   "quest_state": 98,
+   "quest_state": 105,
    "reward_claim": 135,
-   "scheduler": 46,
+   "scheduler": 49,
    "summon": 36,
-   "teleport": 78,
-   "trigger_kill": 49,
-   "trigger_step": 77,
-   "trigger_use": 189,
-   "world_object": 81
+   "teleport": 83,
+   "trigger_kill": 50,
+   "trigger_step": 82,
+   "trigger_use": 194,
+   "world_object": 85
   },
-  "quests_without_data_gaps": 95,
-  "interactions_joined": 1192,
-  "interactions_unlinked": 29
+  "quests_without_data_gaps": 104,
+  "interactions_joined": 1173,
+  "interactions_unlinked": 48
  },
  "unlock_order": [
   {
    "feature": "trigger_use",
    "owner": "GAME-INTERACTION-01 USE edge",
-   "quests_complete_on_engine_side": 0,
-   "of_which_without_data_gaps": 0
+   "quests_complete_on_engine_side": 1,
+   "of_which_without_data_gaps": 1
   },
   {
    "feature": "reward_claim",
@@ -97,94 +97,94 @@
    "of_which_without_data_gaps": 87
   },
   {
-   "feature": "trigger_kill",
-   "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 104,
-   "of_which_without_data_gaps": 88
-  },
-  {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 105,
-   "of_which_without_data_gaps": 88
+   "quests_complete_on_engine_side": 103,
+   "of_which_without_data_gaps": 87
   },
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 116,
-   "of_which_without_data_gaps": 94
+   "quests_complete_on_engine_side": 115,
+   "of_which_without_data_gaps": 93
   },
   {
    "feature": "door_progress",
    "owner": "door gate: quest progress",
-   "quests_complete_on_engine_side": 129,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 126,
+   "of_which_without_data_gaps": 102
+  },
+  {
+   "feature": "trigger_kill",
+   "owner": "GAME-INTERACTION-01 death/kill edges",
+   "quests_complete_on_engine_side": 131,
+   "of_which_without_data_gaps": 103
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
-   "quests_complete_on_engine_side": 135,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 137,
+   "of_which_without_data_gaps": 103
   },
   {
    "feature": "item_hand_out",
    "owner": "DUR-03 inventory mint",
-   "quests_complete_on_engine_side": 144,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 147,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "summon",
    "owner": "GAME-AI-01 spawn",
-   "quests_complete_on_engine_side": 154,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 156,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "achievement",
    "owner": "Achievement owner",
-   "quests_complete_on_engine_side": 160,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 164,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "condition",
    "owner": "owner for player conditions (none yet)",
-   "quests_complete_on_engine_side": 171,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 177,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "creature_removal",
    "owner": "owner for creature removal (none yet)",
-   "quests_complete_on_engine_side": 177,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 183,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "boss_cooldown",
    "owner": "boss cooldown owner (none yet)",
-   "quests_complete_on_engine_side": 187,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 193,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "kv_state",
    "owner": "owner for key-value writes (none yet)",
-   "quests_complete_on_engine_side": 194,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 200,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "outfit",
    "owner": "Outfit grant owner",
-   "quests_complete_on_engine_side": 198,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 204,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "mount",
    "owner": "Mount grant owner",
-   "quests_complete_on_engine_side": 202,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 208,
+   "of_which_without_data_gaps": 104
   },
   {
    "feature": "experience",
    "owner": "Character XP award from an interaction",
-   "quests_complete_on_engine_side": 204,
-   "of_which_without_data_gaps": 95
+   "quests_complete_on_engine_side": 210,
+   "of_which_without_data_gaps": 104
   }
  ],
  "quests": [
@@ -273,7 +273,7 @@
    "interactions": 8,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 18
+    "unresolved_items": 17
    }
   },
   {
@@ -296,6 +296,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "trigger_use"
@@ -303,7 +304,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -311,7 +312,6 @@
    "kind": "script_only",
    "features": [
     "door_progress",
-    "npc_dialogue",
     "quest_state",
     "scheduler",
     "trigger_kill",
@@ -341,15 +341,22 @@
    "quest": "canary:quest/barbarian_arena_quest",
    "kind": "reward_only",
    "features": [
+    "achievement",
+    "condition",
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
-    "trigger_use"
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
    ],
-   "interactions": 0,
+   "interactions": 4,
    "data_gaps": {
-    "interactions_with_gaps": 0,
-    "unresolved_items": 0
+    "interactions_with_gaps": 3,
+    "unresolved_items": 23
    }
   },
   {
@@ -363,6 +370,23 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/barbarian_test",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "condition",
+    "quest_state",
+    "scheduler",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 7
    }
   },
   {
@@ -396,6 +420,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "trigger_use"
@@ -403,7 +428,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -491,8 +516,8 @@
    ],
    "interactions": 13,
    "data_gaps": {
-    "interactions_with_gaps": 11,
-    "unresolved_items": 60
+    "interactions_with_gaps": 10,
+    "unresolved_items": 54
    }
   },
   {
@@ -506,6 +531,23 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/brotherhood_outfits_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 12
    }
   },
   {
@@ -573,6 +615,8 @@
    "quest": "canary:quest/cradle_of_monsters",
    "kind": "script_only",
    "features": [
+    "door_progress",
+    "quest_state",
     "trigger_kill",
     "trigger_step",
     "world_object"
@@ -633,7 +677,7 @@
    "interactions": 38,
    "data_gaps": {
     "interactions_with_gaps": 32,
-    "unresolved_items": 223
+    "unresolved_items": 215
    }
   },
   {
@@ -692,6 +736,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "scheduler",
@@ -705,7 +750,7 @@
    "interactions": 6,
    "data_gaps": {
     "interactions_with_gaps": 5,
-    "unresolved_items": 20
+    "unresolved_items": 18
    }
   },
   {
@@ -825,6 +870,7 @@
    "quest": "canary:quest/desert_dungeon_quest",
    "kind": "script_only",
    "features": [
+    "reward_claim",
     "teleport",
     "trigger_use",
     "world_object"
@@ -924,19 +970,16 @@
    "quest": "canary:quest/dreamer_s_challenge_quest",
    "kind": "reward_only",
    "features": [
-    "item_consume",
     "quest_state",
     "reward_claim",
     "scheduler",
-    "teleport",
-    "trigger_step",
     "trigger_use",
     "world_object"
    ],
-   "interactions": 22,
+   "interactions": 2,
    "data_gaps": {
-    "interactions_with_gaps": 20,
-    "unresolved_items": 105
+    "interactions_with_gaps": 2,
+    "unresolved_items": 30
    }
   },
   {
@@ -944,6 +987,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "trigger_use",
@@ -952,7 +996,7 @@
    "interactions": 1,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -1097,7 +1141,7 @@
    "interactions": 61,
    "data_gaps": {
     "interactions_with_gaps": 55,
-    "unresolved_items": 207
+    "unresolved_items": 206
    }
   },
   {
@@ -1248,10 +1292,10 @@
     "trigger_use",
     "world_object"
    ],
-   "interactions": 46,
+   "interactions": 42,
    "data_gaps": {
     "interactions_with_gaps": 29,
-    "unresolved_items": 95
+    "unresolved_items": 94
    }
   },
   {
@@ -1304,7 +1348,7 @@
    "interactions": 11,
    "data_gaps": {
     "interactions_with_gaps": 7,
-    "unresolved_items": 44
+    "unresolved_items": 43
    }
   },
   {
@@ -1351,6 +1395,7 @@
     "item_consume",
     "item_hand_out",
     "mount",
+    "npc_dialogue",
     "quest_state",
     "scheduler",
     "teleport",
@@ -1382,7 +1427,7 @@
    "interactions": 4,
    "data_gaps": {
     "interactions_with_gaps": 4,
-    "unresolved_items": 24
+    "unresolved_items": 19
    }
   },
   {
@@ -1397,7 +1442,7 @@
    "interactions": 2,
    "data_gaps": {
     "interactions_with_gaps": 2,
-    "unresolved_items": 5
+    "unresolved_items": 4
    }
   },
   {
@@ -1438,7 +1483,7 @@
    "interactions": 19,
    "data_gaps": {
     "interactions_with_gaps": 16,
-    "unresolved_items": 52
+    "unresolved_items": 43
    }
   },
   {
@@ -1555,7 +1600,7 @@
    "interactions": 69,
    "data_gaps": {
     "interactions_with_gaps": 36,
-    "unresolved_items": 124
+    "unresolved_items": 119
    }
   },
   {
@@ -1563,6 +1608,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "trigger_use"
@@ -1570,7 +1616,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -1629,6 +1675,26 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/lions_rock",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 8,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 13
    }
   },
   {
@@ -1770,6 +1836,23 @@
    }
   },
   {
+   "quest": "canary:quest/nightmare_outfits_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 12
+   }
+  },
+  {
    "quest": "canary:quest/nightmare_teddy_quest",
    "kind": "reward_only",
    "features": [
@@ -1835,7 +1918,7 @@
    "interactions": 8,
    "data_gaps": {
     "interactions_with_gaps": 7,
-    "unresolved_items": 21
+    "unresolved_items": 19
    }
   },
   {
@@ -1869,6 +1952,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "trigger_use"
@@ -1876,7 +1960,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -2106,7 +2190,6 @@
     "creature_removal",
     "item_consume",
     "kv_state",
-    "npc_dialogue",
     "quest_state",
     "scheduler",
     "summon",
@@ -2132,7 +2215,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -2212,7 +2295,6 @@
     "item_consume",
     "item_hand_out",
     "kv_state",
-    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "summon",
@@ -2224,7 +2306,7 @@
    "interactions": 14,
    "data_gaps": {
     "interactions_with_gaps": 13,
-    "unresolved_items": 52
+    "unresolved_items": 42
    }
   },
   {
@@ -2457,6 +2539,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "summon",
@@ -2467,7 +2550,7 @@
    "interactions": 2,
    "data_gaps": {
     "interactions_with_gaps": 2,
-    "unresolved_items": 11
+    "unresolved_items": 9
    }
   },
   {
@@ -2488,7 +2571,7 @@
    "interactions": 5,
    "data_gaps": {
     "interactions_with_gaps": 3,
-    "unresolved_items": 18
+    "unresolved_items": 14
    }
   },
   {
@@ -2505,16 +2588,22 @@
    }
   },
   {
-   "quest": "canary:quest/the_desert_dungeon_quest",
-   "kind": "reward_only",
+   "quest": "canary:quest/the_cursed_crystal",
+   "kind": "script_only",
    "features": [
-    "reward_claim",
-    "trigger_use"
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
    ],
-   "interactions": 0,
+   "interactions": 5,
    "data_gaps": {
-    "interactions_with_gaps": 0,
-    "unresolved_items": 0
+    "interactions_with_gaps": 5,
+    "unresolved_items": 23
    }
   },
   {
@@ -2568,7 +2657,7 @@
    "interactions": 57,
    "data_gaps": {
     "interactions_with_gaps": 53,
-    "unresolved_items": 175
+    "unresolved_items": 170
    }
   },
   {
@@ -2589,7 +2678,7 @@
    "interactions": 12,
    "data_gaps": {
     "interactions_with_gaps": 5,
-    "unresolved_items": 27
+    "unresolved_items": 17
    }
   },
   {
@@ -2656,7 +2745,23 @@
    "interactions": 13,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 64
+    "unresolved_items": 61
+   }
+  },
+  {
+   "quest": "canary:quest/the_hunt_for_the_sea_serpent",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "quest_state",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 15
    }
   },
   {
@@ -2680,8 +2785,8 @@
    ],
    "interactions": 10,
    "data_gaps": {
-    "interactions_with_gaps": 9,
-    "unresolved_items": 25
+    "interactions_with_gaps": 8,
+    "unresolved_items": 22
    }
   },
   {
@@ -2707,7 +2812,7 @@
    "interactions": 10,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 37
+    "unresolved_items": 36
    }
   },
   {
@@ -2728,7 +2833,7 @@
    "interactions": 6,
    "data_gaps": {
     "interactions_with_gaps": 4,
-    "unresolved_items": 14
+    "unresolved_items": 11
    }
   },
   {
@@ -2754,7 +2859,7 @@
    "interactions": 16,
    "data_gaps": {
     "interactions_with_gaps": 12,
-    "unresolved_items": 36
+    "unresolved_items": 33
    }
   },
   {
@@ -2777,7 +2882,7 @@
    "interactions": 21,
    "data_gaps": {
     "interactions_with_gaps": 14,
-    "unresolved_items": 68
+    "unresolved_items": 63
    }
   },
   {
@@ -2835,7 +2940,7 @@
    "interactions": 27,
    "data_gaps": {
     "interactions_with_gaps": 26,
-    "unresolved_items": 69
+    "unresolved_items": 68
    }
   },
   {
@@ -2853,7 +2958,7 @@
    "interactions": 3,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -2874,7 +2979,7 @@
    "interactions": 20,
    "data_gaps": {
     "interactions_with_gaps": 11,
-    "unresolved_items": 34
+    "unresolved_items": 33
    }
   },
   {
@@ -2899,7 +3004,7 @@
    "interactions": 48,
    "data_gaps": {
     "interactions_with_gaps": 38,
-    "unresolved_items": 106
+    "unresolved_items": 103
    }
   },
   {
@@ -2931,6 +3036,7 @@
    "quest": "canary:quest/the_shattered_isles_quest",
    "kind": "storyline",
    "features": [
+    "achievement",
     "door_progress",
     "item_consume",
     "item_hand_out",
@@ -2944,10 +3050,10 @@
     "trigger_use",
     "world_object"
    ],
-   "interactions": 5,
+   "interactions": 6,
    "data_gaps": {
     "interactions_with_gaps": 5,
-    "unresolved_items": 28
+    "unresolved_items": 26
    }
   },
   {
@@ -2984,7 +3090,7 @@
    "interactions": 8,
    "data_gaps": {
     "interactions_with_gaps": 5,
-    "unresolved_items": 9
+    "unresolved_items": 7
    }
   },
   {
@@ -3016,10 +3122,10 @@
     "trigger_step",
     "world_object"
    ],
-   "interactions": 5,
+   "interactions": 2,
    "data_gaps": {
-    "interactions_with_gaps": 4,
-    "unresolved_items": 29
+    "interactions_with_gaps": 2,
+    "unresolved_items": 17
    }
   },
   {
@@ -3054,7 +3160,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -3125,10 +3231,10 @@
     "trigger_use",
     "world_object"
    ],
-   "interactions": 20,
+   "interactions": 18,
    "data_gaps": {
-    "interactions_with_gaps": 13,
-    "unresolved_items": 65
+    "interactions_with_gaps": 11,
+    "unresolved_items": 57
    }
   },
   {
@@ -3161,7 +3267,7 @@
    "interactions": 4,
    "data_gaps": {
     "interactions_with_gaps": 3,
-    "unresolved_items": 7
+    "unresolved_items": 5
    }
   },
   {
@@ -3187,6 +3293,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "trigger_use"
@@ -3194,7 +3301,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -3204,6 +3311,16 @@
     "reward_claim",
     "trigger_use"
    ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/too_hot_to_handle_quest",
+   "kind": "script_only",
+   "features": [],
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
@@ -3222,7 +3339,7 @@
    "interactions": 1,
    "data_gaps": {
     "interactions_with_gaps": 1,
-    "unresolved_items": 2
+    "unresolved_items": 1
    }
   },
   {
@@ -3287,6 +3404,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "trigger_use"
@@ -3294,7 +3412,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 0
    }
   },
   {
@@ -3358,7 +3476,7 @@
    "interactions": 8,
    "data_gaps": {
     "interactions_with_gaps": 4,
-    "unresolved_items": 9
+    "unresolved_items": 8
    }
   },
   {
@@ -3519,7 +3637,6 @@
     "achievement",
     "item_consume",
     "item_hand_out",
-    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "teleport",
@@ -3540,6 +3657,24 @@
   "canary:interaction/chayenne_realm/actions_lever",
   "canary:interaction/chayenne_realm/actions_reward",
   "canary:interaction/chayenne_realm/movements_enter_realm",
+  "canary:interaction/dreamers_challenge_quest/actions_stone_teleport",
+  "canary:interaction/dreamers_challenge_quest/actions_tic_tac",
+  "canary:interaction/dreamers_challenge_quest/actions_tic_tac_teleport",
+  "canary:interaction/dreamers_challenge_quest/actions_walls",
+  "canary:interaction/dreamers_challenge_quest/movement_carrot",
+  "canary:interaction/dreamers_challenge_quest/movement_clock_tile",
+  "canary:interaction/dreamers_challenge_quest/movement_court_teleport",
+  "canary:interaction/dreamers_challenge_quest/movement_death_ring",
+  "canary:interaction/dreamers_challenge_quest/movement_death_ring_teleport",
+  "canary:interaction/dreamers_challenge_quest/movement_fire_bug_teleport",
+  "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle",
+  "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle_2",
+  "canary:interaction/dreamers_challenge_quest/movement_riddle_teleport",
+  "canary:interaction/dreamers_challenge_quest/movement_stone_teleport",
+  "canary:interaction/dreamers_challenge_quest/movement_teleport",
+  "canary:interaction/dreamers_challenge_quest/movement_tic_teleport",
+  "canary:interaction/dreamers_challenge_quest/movement_tower",
+  "canary:interaction/dreamers_challenge_quest/movement_wall_teleport",
   "canary:interaction/edron_rope/movements_rope",
   "canary:interaction/extension_mota/movements_extension_mota",
   "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
@@ -3563,6 +3698,7 @@
   "canary:interaction/soulpit/exalted_core",
   "canary:interaction/soulpit/soul_prism",
   "canary:interaction/soulpit/soulpit_fight",
+  "canary:interaction/svargrond_arena/movements_arena_trophy",
   "canary:interaction/thais_quest/actions_life_ring_lever",
   "canary:interaction/white_pearl/movements_white_pearl"
  ]
