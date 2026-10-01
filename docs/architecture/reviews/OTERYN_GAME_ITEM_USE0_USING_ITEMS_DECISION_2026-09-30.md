@@ -137,10 +137,6 @@ variant, `Rune`: a one-unit burn of the used rune stack with the same audit oper
 before the rune's frozen cast applies. Runes use their own in-flight slot, beside this decision's
 (RUNE-USE-0 §7).
 
-**Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_TIMED_AND_CHARGED_ITEMS_DECISION_2026-10-01.md` §5.3).** A fourth variant, `Transform`: using a torch
-turns the whole non-stackable item into its lit or unlit definition, one `TRANSFORM` line
-(`PRESERVE_INSTANCE`), in this decision's item slot with its reservation and cooldown rules.
-
 ### 4.3 Supersession
 
 For these shapes only, this decision supersedes the §39.1 exclusions of burn, transform, mint

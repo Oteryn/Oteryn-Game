@@ -124,12 +124,9 @@ exists per conflict key.
   40) + b_max]`; the delta is target − base, fixed when applied; a paralysis target is at least 40,
   and a paralysis on an actor whose base speed is below 40 leaves its speed unchanged (delta 0).
 - Later families (drunk, invisible, outfit, skill boosts, fear, root) come with their own decisions.
-- **Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_TIMED_AND_CHARGED_ITEMS_DECISION_2026-10-01.md` §4).** A new family `EQUIPMENT_REGENERATION` (health and
-  mana gain per interval, no duration); an instance applied by an active item has a conflict key
-  that carries its source `Equipment {slot}`, for this family and for `MANA_SHIELD`, so it coexists
-  with a spell's instance and ends when the item stops being active. An active item's `SUPPRESS`
-  refuses admission of the named family and removes an existing instance. Skill boosts from
-  equipment are derived reads (EQUIP-0 §3), not a condition family.
+- **Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_DECISION_2026-10-01.md` §4).** An active item's `SUPPRESS` refuses admission of an
+  instance with the named conflict key and removes an existing one. Skill boosts from equipment are
+  derived reads (EQUIP-0 §3), not a condition family.
 
 ### 3.1 Damage over time
 
