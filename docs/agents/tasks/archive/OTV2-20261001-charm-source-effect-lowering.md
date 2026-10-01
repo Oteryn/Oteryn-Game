@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: codex/charm-exact-source-json-20261001
 branch: codex/charm-source-effect-lowering-20261001
-pr: null
+pr: 1515
 issue: 162
 base_sha: 59befa58e730a9251eb2bacaf1bce2bdd95bf7f2
 head_sha: null
@@ -59,5 +59,5 @@ both coherent batches reviewable. Complete738-line source draft is preserved; no
 were dropped or minified. Qualified Content generation attachment and native battle composition
 remain unfinished. The original nine-row parent remains IMPLEMENTING. Root publishes guarded
 actual Git identity. Stack CI requires base main; CP owns retarget/requalification after PR1508
-integration. This archive reaches main only if its PR merges; a commit cannot contain its own
+integration. This archive reaches main only if PR1515 merges; a commit cannot contain its own
 final frozen SHA.
