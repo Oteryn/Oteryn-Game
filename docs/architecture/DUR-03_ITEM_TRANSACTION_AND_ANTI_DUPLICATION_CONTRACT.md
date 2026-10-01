@@ -755,6 +755,12 @@ value lines. For those shapes only, it supersedes the §39.1 exclusions of trans
 transfer and of multiple touched items, and the §39.1 and §39.3 source and destination limits,
 within the MAIL-0 §11 rows (11 touched items). Every other obligation is unchanged.
 
+**Amendment (pending on acceptance of WRITE-0; `reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md` §5.3).** A write to a
+`write_once` item adds one `TRANSFORM` line (`PRESERVE_INSTANCE`, §16.2) of that one item to its
+versioned `write_once_to` definition, under the closed `WriteOnceCause` keyed by the CommandRef, in
+the same transaction as the text write. One touched item, no value line, the one-item rows. For this
+shape only, it supersedes the §39.1 exclusion of transform.
+
 ## 39. Mandatory durable evidence boundary
 
 ADR-0006 requires durable audit for security-relevant durable item/currency mutation. DUR-03 therefore requires ANL-compatible durable transaction evidence sufficient to reconcile every effect whose owning value/security policy declares mandatory audit.
