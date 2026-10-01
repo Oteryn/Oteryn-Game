@@ -96,6 +96,8 @@ How does a player equip and unequip items, and drop and pick up items on the gro
 - New results: `SLOT_MISMATCH` (wrong slot, a hands conflict, a container, or unknown
   equipment semantics), `REQUIREMENT_NOT_MET`, `BLOCKED` (the tile does not accept the item, no
   line of sight, or a limit is reached). The result stays at most 4 bytes.
+  **Amendment (pending on acceptance of TIMED-ITEM-0, §6).** A swap refused `SWAP_TIMED_BOTH` answers
+  `BLOCKED`; no new result code.
 - Durable slot rows use the GAME-ITEM-01 §6.1 semantic slot keys, never the proto enum values.
 
 ## 4. Equip and unequip (ITEM-MOVE-2a)
@@ -182,8 +184,12 @@ exactly the change, under the tile and counter row lock.
 transform performs the `PRESERVE_INSTANCE` transform in the same move transaction (DUR-03 §33 as
 amended), on the item the move already touches; the runtime checkpoints a live item's value before
 it leaves its slot. A swap in which both items need such a transform (a ring for a ring) is refused
-`SWAP_TIMED_BOTH`, writing nothing; the client unequips first. A swap needing one keeps the swap's 2
-touched items and adds that transform and row line.
+`SWAP_TIMED_BOTH`, writing nothing, answered on the wire as the existing `BLOCKED` (§3; no new
+code); the client unequips first. A swap needing one keeps the swap's 2 touched items and adds that
+transform and row line. Ceilings (§6.3 as amended): equip or unequip with a timed transform 1 item,
+2 location lines, transform 1 / 1, 1 timed row line, 1 / 5 work units; swap with one 2 items, 4
+location lines, transform 1 / 1, 1 timed row line, 2 / 8; each timed line at most 64 bytes inside
+`DUR03-RL-07`, measured by ITEM-MOVE-2a with TIMED-1 (max and max+1 tests).
 
 ### 6.1 Supersessions (as B3 §4.6)
 

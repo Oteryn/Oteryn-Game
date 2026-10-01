@@ -1406,7 +1406,7 @@ authority, conservation) is unchanged.
   and, inside an equip move or swap, one `EquipForm` transform and row line on an already-touched
   item (a swap needing two is refused). For these shapes only they supersede the §39.1 exclusions of
   burn and transform. No timed value is written by a move: the runtime checkpoints a live item before
-  it leaves its slot. Every MINT of an admitted timed definition creates the row and every
+  it leaves its slot. Every MINT of an active admitted timed definition creates the row (an inactive form gets one only at its first equip or by an unequip) and every
   retirement deletes it, in the same transaction (TIMED-ITEM-0 §4).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.

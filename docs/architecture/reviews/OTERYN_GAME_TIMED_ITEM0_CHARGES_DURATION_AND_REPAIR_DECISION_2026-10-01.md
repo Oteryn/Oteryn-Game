@@ -96,16 +96,18 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
 | `remaining_ms` | the active-time budget left, 0..`TIMEDITEM0-RL-02`, or NULL without `temporal` |
 | `state_revision` | uint64, +1 per write |
 
-- **Creation.** The row is created by **every** MINT that creates such an item (loot, rewards, NPC
-  BUY, any later source), with charges and duration from the definition, or the NPC offer's `count`
+- **Creation (one rule).** Only an **active** admitted timed definition is created with a row: every
+  MINT of such an item (loot, rewards, NPC BUY, any later source), the backfill and a transform into
+  it create the row, with charges and duration from the definition, or the NPC offer's `count`
   for charges (NPC-0 §5; content validation refuses an offer whose `count` exceeds the definition's
   charges), and by a transform into such a definition. A transform out of it (other than into its
   own inactive form) and every retirement of the item deletes it in the same transaction. A new
   row is always frozen: no clock runs until the item is equipped.
 - **Paired forms keep the row.** The row belongs to the item, not to the form. An unequip transform
   into the inactive form keeps `remaining_ms`; the next equip continues from it. An inactive form
-  minted new has no row, which means the full duration of its active form; the first equip creates
-  the row.
+  gets a row **only** by an unequip from its active form (which keeps the row) and never at MINT,
+  backfill or repair: an inactive form without a row means the full values of its paired active
+  form, and its first equip transform creates the row, seeded from that paired active definition.
 - **Writes.** Every write is a DUR-03 `STATE_MUTATION` (§11.1) or part of a `TRANSFORM`
   (`PRESERVE_INSTANCE`), in a one-item transaction (or as the one timed line of an equip move, §6),
   under the item writer's fence and the holder's `character_root` lock, under a closed
@@ -116,7 +118,8 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
   `charges` and `temporal`, and that they never exceed that definition's values.
 - **Backfill.** TIMED-1 ships with timed behaviour off and the guard not yet enabled. Its migration
   runs, resumably, one admitted one-item `STATE_MUTATION` per live item without a row, under
-  `TimedItemCause::BackfillRow`, from the definition; a replay finds the row and writes nothing. A
+  `TimedItemCause::BackfillRow`, from the definition, for active admitted definitions only (inactive
+  forms get no row, as above); a replay finds the row and writes nothing. A
   preflight then confirms every such item has its row, and only then are the guard and timed
   behaviour enabled. A row needs no location class, so a move during the backfill cannot invalidate
   the preflight. No multi-item migration shape exists.
@@ -177,6 +180,18 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
   ring for a ring) is refused `SWAP_TIMED_BOTH`, writing nothing; the client unequips first. A swap
   in which one item needs one carries that one transition on its already-touched item, within the
   swap's 2 touched items. Amended: DUR-03 §33, ITEM-MOVE-WIRE-1 §6.
+- **Wire result.** `SWAP_TIMED_BOTH` adds no result code: the move answers the existing `BLOCKED`
+  (ITEM-MOVE-WIRE-1 §3), and the server's reason is logged, not sent. Amended: ITEM-MOVE-WIRE-1 §3.
+- **Ceilings (DUR-03 §28), registered by ITEM-MOVE-2a with TIMED-1, with max and max+1 tests:**
+
+  | Shape | Touched items | Location lines | Transform I/O | Timed row lines | Participants / work units |
+  |---|---|---|---|---|---|
+  | equip or unequip with a timed transform | 1 | 2 | 1 / 1 | 1 | 1 / 5 |
+  | swap with one timed transform | 2 | 4 | 1 / 1 | 1 | 2 / 8 |
+
+  Each timed row line is fixed-size, at most 64 bytes, inside the existing `DUR03-RL-07` envelope
+  and payload ceilings; the child measures the encoded worst case of both shapes and fails the build
+  above them.
 - A transform never resets the time; only a repair (§7) or a new item does.
 
 ## 7. Repair (TIMED-REPAIR-1; owner answer 1a)
@@ -193,10 +208,10 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
     occurrence}`;
   - one `TRANSFORM` (`PRESERVE_INSTANCE`) of one live, non-equipped item of `from_item` in the
     player's backpack or its containers (the first in inventory order, as NPC-0 SELL finds its item),
-    into `to_item`. The old timed row is deleted and a fresh one is created with full charges and
-    full duration from `to_item`'s definition, or, when `to_item` is an inactive form (unworn soft
-    boots), from its paired active form's definition, as the §4 guard reads it. Nothing carries over
-    from the worn item.
+    into `to_item`. The old timed row is deleted. When `to_item` is an active timed definition a fresh
+    row is created from it; when it is an inactive form (unworn soft boots, the v1 case) no row is
+    created, so its first equip seeds full charges and duration from the paired active definition
+    (§4). Nothing carries over from the worn item.
   - The gold fee plan is admitted with at most **19** coin inputs here (not 20), so the 19 inputs,
     at most 2 change stacks and the repaired item stay within the fee shape's 22 touched items and
     64 work units (DUR-03 §39.3). 10,000 gold fits in one crystal coin, so this only refuses a
@@ -278,8 +293,9 @@ replayed or stale `Expire` writes nothing; a ring without a decay target is burn
 event; unequipping 59 s after the last checkpoint stores the live value, so re-equipping never adds
 time; a ring-for-ring swap is refused `SWAP_TIMED_BOTH` and a ring onto an empty or a non-timed slot
 works; a death drop writes no timed line and the dropped ring keeps its checkpointed time; lighting a
-torch is refused `NOT_ADMITTED`; repairing worn soft boots into unworn ones gives the row the active
-form's full duration; a repair paid from 19 coin stacks commits and from 20 is refused; a life
+torch is refused `NOT_ADMITTED`; repairing worn soft boots into unworn ones leaves no row, and the first equip
+seeds the active form's full duration; a newly minted unworn ring has no row until equipped; a
+ring-for-ring swap answers `BLOCKED`; a repair paid from 19 coin stacks commits and from 20 is refused; a life
 ring's regeneration ticks alongside food regeneration; the energy ring's shield stays while mana is
 0 and ends at unequip; a charge-only item at 0 charges with a `transform {trigger: decay}`
 transforms, and is burned only without any decay target; the guard is enabled only after the
