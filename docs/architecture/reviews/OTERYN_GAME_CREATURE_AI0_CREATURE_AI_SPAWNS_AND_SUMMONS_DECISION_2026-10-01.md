@@ -388,11 +388,11 @@ decisions; until then the factor is 1.
   beyond them stay due and run in the next windows in deadline order, then `ExactActorRef`. Think
   timers keep `SKIP_TO_LATEST` (first slice §4.2): a late think runs once, never a burst.
 - A think over `RL-06` work units ends idle for that think with zero mutation (bootstrap §7).
-- **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §4).** NPC thinks (walk, voices) run on the same scheduling
-  with their own row `NPCBEH0-RL-02` (256 per window per channel), after creature thinks.
 - Control, fencing, admission and player input never wait for AI work: AI budgets are separate and
   bounded (GAME-AI-01 §20). Player-visible creatures get no priority: the order is deterministic
   (SIM-DETERMINISM-01), so an overload shows as later thinks, the same on every replay.
+- **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §4).** NPC thinks (walk, voices) run on the same scheduling
+  with their own row `NPCBEH0-RL-02` (256 per window per channel), after creature thinks.
 - `RL-17` measures the cost. If the p99 is above it, `RL-05` and `RL-09` fall by a new decision;
   they are never raised to hide it.
 
