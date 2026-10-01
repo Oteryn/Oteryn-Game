@@ -74,6 +74,10 @@ progression=literal_shape(parameters['progression'])
 operation_policy=literal_shape(parameters['gems']['operation_policy'])
 # These accepted WHEEL-GEM-0 invariants cannot be changed by editing a capture.
 operation_contract={'revealed_tradeable':False,'reveal_requires_matching_vocation':True,
+    'atelier_actions_require_wheel_eligibility':True,'atelier_commands_require_initial_gem_grant':True,
+    'vessel_requires_character_owned_gem':True,'vessel_requires_current_gem_ruleset':True,
+    'rejected_operations_write_nothing':True,'non_current_gem_and_grade_effects_zero':True,
+    'replay_requires_matching_request_binding':True,
     'grade_min':0,'grade_max':3,'grade_decrease_allowed':False,
     'vessel_requires_matching_domain':True,'gem_can_occupy_only_one_vessel':True,
     'initial_gems_once_per_character':True,'initial_gems_revealed':True}

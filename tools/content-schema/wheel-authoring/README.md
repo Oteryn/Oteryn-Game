@@ -30,7 +30,9 @@ original JavaScript/WASM module or network access.
 The default `validate` and `build --check` qualify the candidate's exact file hash,
 coverage, corrections and evidence digests. Custom `--file` authoring validates
 semantics only; supply `--evidence` to qualify that exact file. The CLI labels the
-difference. Non-finite numbers are rejected when reading and validating JSON.
+difference. Non-finite numbers are rejected when reading and validating JSON. The reader
+rejects duplicate object keys, including nested and Unicode-equivalent keys,
+rather than choosing one conflicting value.
 
 ## Data and evidence
 
@@ -105,7 +107,8 @@ Conviction includes source identities, categories, full-slice values, typed
 augment stages and all nine unique perk definitions. Unique conditions, affected
 skills/spells and numbers are encoded separately, including Battle Instinct,
 Positional Tactics, Runic/Focus/Ballistic Mastery, Healing Link, Battle Healing,
-Guiding Presence and Sanctuary. Official 8833 binds Battle Healing's shield
+Guiding Presence and Sanctuary. Runic Mastery uses base magic level for the
+single rune effect, as explicitly stated by Fandom r1206174. Official 8833 binds Battle Healing's shield
 multiplier to 3, Focus Mastery to a 2-second focus-spell group reduction, and
 Guiding Presence to 100% shared mantra. Official 8944 adds the raw 33% party-bonus
 increase. That raw percent has unit `source_percent`: its native arithmetic,
@@ -142,20 +145,25 @@ Effective grades follow the preceding mods in the same gem: take the minimum of
 self and preceding present mod grades. Grades belong to a character's mod type;
 a type at Grade IV adds one promotion point. Cooldown supreme mods retain their
 base cooldown reduction across grades and add Momentum chance at higher grades.
+The fresh official manual says grading does not reduce cooldowns *further*;
+repository manual notes were corrected to preserve that distinction. The browser
+audit records the old wording and correction; the candidate's fixed reduction is correct.
 
 Progression includes Global eligibility, the level-minus-50 point formula,
 temple removal, five promotion scrolls, the Monk quest bonus and Grade IV points.
 The current Fandom reference additionally lists up to 50 Hunting Task Shop points;
 that unadmitted reference is recorded without introducing a runtime point grant.
-Its 69-point Grade IV maximum also remains an owner reconciliation with the
-project's catalogue policy.
+The 69-point Grade IV maximum is corroborated by all five candidate vocation
+catalogues: 46 eligible basic types plus 23 supreme types, each worth one point.
 The reference values do not activate those features in Game: WHEEL-0's Premium
 activation and extra-point dependencies remain explicit.
 
 Atelier data includes clockwise domains (green/red/purple/blue), reveal/switch
 fees, fragments, grade costs, initial eight gems and revealed/unrevealed yields.
 Official manual yields override the conflicting OTS yields. Fees remain labelled
-`OTS_HYPOTHESIS_ONLY` candidate values, as in WHEEL-GEM-0. Operation policy records reveal eligibility, tradeability, locking, last-domain
+`OTS_HYPOTHESIS_ONLY` candidate values, as in WHEEL-GEM-0. Operation policy records all-action Wheel eligibility, reveal inventory scope,
+first eligible initial-gem grant, current-revision vessel placement anywhere,
+vocation-catalogue grading, tradeability, locking, last-domain
 and in-vessel refusals, initial-gem lifetime, placement constraints, grade limits,
 crusher charges and existing vendor prices. The 250 revealed-gem limit remains
 `PARITY_PENDING` under the owning decision. Crystal loot probabilities are retained
@@ -258,3 +266,9 @@ it is recorded as a source anomaly rather than selected over native conditions.
 The manual's fixed repository path, actual file digest and reviewed-result status,
 plus the browser audit digest and complete seven-page observations, are now
 validated; changing the manual also triggers authoring CI.
+
+Wiki coverage qualifies only canonical HTTPS URLs on the exact Fandom authority,
+with the recorded Gem Atelier redirect explicitly allowed. Each requested page
+needs a matching observed page, successful Chrome/CDP read, positive content
+length, Fandom revision and SHA-256; foreign-host lookalikes and empty captures
+are refused. Browser audit schema and false admission/parity flags are enforced.

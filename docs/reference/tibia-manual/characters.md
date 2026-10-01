@@ -102,7 +102,7 @@
 - [server] Fragment yield depends on gem quality and reveal state: Lesser unrevealed 1–2, Lesser revealed 1–3 (lesser fragments); Regular unrevealed 2–4, Regular revealed 2–5 (lesser fragments); Greater unrevealed 1–2, Greater revealed 1–3 (greater fragments). Source: crushing unrevealed gems or dismantling revealed ones.
 - [server] Fragments are tradeable and purchasable from jewelry NPCs.
 - [server] Basic mods cost lesser fragments; supreme mods cost greater fragments.
-- [server] Cooldown-augmentation mods don't reduce cooldowns directly — they add a chance to gain "Momentum" instead.
+- [server] Enhancing cooldown-augmentation mods does not reduce spell cooldowns further; higher grades add a chance to gain "Momentum" instead. The existing base cooldown reduction is retained.
 - [server] Fully enhancing any mod to Grade IV grants +1 permanent promotion point (once per fully-enhanced mod across the whole wheel).
 - [server] Mod grade is shared per mod-type across all of a character's gems, capped by the lowest grade of any "preceding" mod on that gem chain (UI shows a limiter icon/tooltip when capped).
 - **Presets / Planner**

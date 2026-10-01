@@ -110,14 +110,47 @@ class FollowupTests(unittest.TestCase):
         for kind in ('declared_compatible', 'staged_migration'):
             candidate = self.successor()
             if kind == 'declared_compatible':
-                candidate['gems']['atelier']['fees']['reveal']['lesser'] += 1
+                candidate['gems']['grade_costs'][0]['basic']['gold'] += 1
             else:
                 candidate['gems']['basic_mods'][0]['effects'][0]['values_by_vocation']['knight'][0] += 1
             with tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 self.write_declaration(root, candidate, kind)
                 with patch.object(gem_revisions, 'ROOT', root):
-                    gem_revisions.validate_gem_revision(candidate, self.candidate)
+                    wheel.validate(candidate, self.candidate)
+
+    def test_duplicate_json_fields_are_rejected_at_every_depth(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'candidate.json'
+            for payload in ('{"runtime_admitted":true,"runtime_admitted":false}',
+                            '{"release":{"kind":"initial","kind":"wheel_reset"}}',
+                            '{"value":1,"v\\u0061lue":2}'):
+                path.write_text(payload)
+                with self.subTest(payload=payload), self.assertRaisesRegex(ValueError,'DUPLICATE_JSON_KEY'):
+                    wheel.read(path)
+
+    def test_wiki_proof_requires_the_actual_host_and_real_capture(self):
+        original_read=wheel.read
+        original=original_read(wheel.ROOT/'samples/browser-source-audit.json')
+        def wrong_url(browser,url):
+            for observation in browser['observations']:
+                if observation['url'].startswith('https://tibia.fandom.com/'):
+                    observation['url']=url+'/wiki/'+observation['url'].split('/wiki/')[1]
+        mutations=[(lambda b,u=u:wrong_url(b,u),'EVIDENCE_BROWSER_WIKI_OBSERVATIONS') for u in
+            ('https://evil.example/tibia.fandom.com','https://tibia.fandom.com.evil.example',
+             'https://tibia.fandom.com@evil.example','http://tibia.fandom.com')]
+        index=next(i for i,o in enumerate(original['observations']) if o['url'].startswith('https://tibia.fandom.com/'))
+        mutations += [(lambda b:b['observations'][index].update(requested_url='https://evil.example/wiki/Lesser_Gem'),'EVIDENCE_BROWSER_WIKI_REQUEST'),
+            (lambda b:b['observations'][index].update(characters=0),'EVIDENCE_BROWSER_WIKI_CAPTURE'),
+            (lambda b:b['observations'][index].update(revision='NOT_EXPOSED'),'EVIDENCE_BROWSER_WIKI_CAPTURE'),
+            (lambda b:b['observations'][index].update(sha256='unverified'),'EVIDENCE_BROWSER_WIKI_CAPTURE'),
+            (lambda b:b['observations'][index].update(status='FAILED'),'EVIDENCE_BROWSER_WIKI_READ'),
+            (lambda b:b['observations'].clear(),'EVIDENCE_BROWSER_WIKI_OBSERVATIONS')]
+        for mutate,code in mutations:
+            browser=copy.deepcopy(original);mutate(browser)
+            def supplied(path):return browser if path.name=='browser-source-audit.json' else original_read(path)
+            with self.subTest(code=code), patch.object(wheel,'read',side_effect=supplied), self.assertRaisesRegex(ValueError,code):
+                wheel.validate_evidence(self.candidate,(wheel.ROOT/'samples/wheel-candidate.json').read_bytes())
 
     def test_compatible_declaration_cannot_reinterpret_paid_mods(self):
         candidate = self.successor()

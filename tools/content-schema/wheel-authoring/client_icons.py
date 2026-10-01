@@ -4,7 +4,7 @@ import json
 import sys
 import struct
 from pathlib import Path
-from wheel_authoring import ROOT, read
+from wheel_authoring import ROOT, read, decode_json
 
 
 def digest(path):
@@ -30,8 +30,8 @@ def build_manifest(candidate=None, candidate_bytes=None):
         candidate = read(ROOT / 'samples/wheel-candidate.json')
     elif candidate_bytes is None:
         stored = (ROOT / 'samples/wheel-candidate.json').read_bytes()
-        candidate_bytes = stored if candidate == json.loads(stored) else json.dumps(candidate, sort_keys=True, allow_nan=False).encode()
-    if candidate != json.loads(candidate_bytes):
+        candidate_bytes = stored if candidate == decode_json(stored) else json.dumps(candidate, sort_keys=True, allow_nan=False).encode()
+    if candidate != decode_json(candidate_bytes):
         raise ValueError('ICON_CANDIDATE_CONTENT')
     source = read(ROOT / 'samples/source-icon-reference.json')
     if candidate['icon_evidence']['reference_sheet_sha256'] != digest(ROOT / 'samples/source-icon-reference.json'):

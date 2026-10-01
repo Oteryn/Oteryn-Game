@@ -26,7 +26,7 @@
   "input_digests": {
     "source-wheel-reference.json": "afb5045f554bed5514658d6837b743cd73547e7164ff0c36afd4b6754fa22275",
     "source-graph.json": "8c2b26af02379807cd7b6d3d32b46c84694afe6143a9335c92995b544301ffe4",
-    "source-parameters.json": "c38f724006b5905ac0b790adb52e51203ed6b66e1e14b5d40c968ecc06bc1384"
+    "source-parameters.json": "e84bef69c54ed1b39c1b893aa0d4855cf49ac87147953d638b2fb24762d1cbc5"
   },
   "progression": {
     "minimum_level": 51,
@@ -5784,7 +5784,8 @@
                 }
               ],
               "behaviors": [
-                "rune_bonus_uses_vocation_can_create_rule"
+                "rune_bonus_uses_vocation_can_create_rule",
+                "magic_level_bonus_uses_base_magic_level"
               ],
               "targets": []
             },
@@ -9907,7 +9908,8 @@
                 }
               ],
               "behaviors": [
-                "rune_bonus_uses_vocation_can_create_rule"
+                "rune_bonus_uses_vocation_can_create_rule",
+                "magic_level_bonus_uses_base_magic_level"
               ],
               "targets": []
             },
@@ -22922,7 +22924,8 @@
           "locked",
           "in_vessel",
           "last_gem_of_domain",
-          "non_current_ruleset"
+          "non_current_ruleset",
+          "no_room"
         ],
         "switch_domain_refusals": [
           "locked",
@@ -22955,7 +22958,40 @@
           "lesser": 2500,
           "regular": 5000,
           "greater": 10000
-        }
+        },
+        "atelier_actions_require_wheel_eligibility": true,
+        "atelier_commands_require_initial_gem_grant": true,
+        "rejected_operations_write_nothing": true,
+        "replay_policy": "receipt_first_match_request_binding_no_new_ruleset_validation_or_random_draw",
+        "reveal_refusals": [
+          "not_eligible",
+          "no_gem",
+          "atelier_full",
+          "not_enough_gold",
+          "stale_revision"
+        ],
+        "grade_up_refusals": [
+          "max_grade",
+          "stale_grade",
+          "not_enough_fragments",
+          "not_enough_gold",
+          "non_current_ruleset"
+        ],
+        "vessel_requires_character_owned_gem": true,
+        "non_current_gem_and_grade_effects_zero": true,
+        "non_current_grade_rows_effective_grade": 0,
+        "non_current_vessel_gems_remain_placed": true,
+        "crush_gem_units_per_use": 1,
+        "crush_charges_per_use": 1,
+        "crush_transaction_scope": "item_only_no_character_revision",
+        "vessel_changes_require_temple": false,
+        "vessel_requires_current_gem_ruleset": true,
+        "grade_up_catalogue_scope": "vocation_mod_catalogue",
+        "initial_gem_grant_trigger": "first_eligible_admission_or_before_first_atelier_use",
+        "initial_gem_domains_are_fixed": true,
+        "reveal_input_scope": "main_backpack_direct_entries_in_b3_order",
+        "reveal_input_scope_evidence": "PARITY_PENDING: WHEEL-GEM-0 section 6; Global inventory search scope not established",
+        "replay_requires_matching_request_binding": true
       }
     },
     "loot_reference": {

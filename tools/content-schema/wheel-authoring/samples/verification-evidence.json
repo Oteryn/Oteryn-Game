@@ -25,9 +25,9 @@
     ]
   },
   "official_manual_notes": {
-    "capture": "2026-09-28 owner capture",
+    "capture": "2026-09-28 owner notes; cooldown summary corrected against 2026-10-01 Chrome/CDP manual",
     "reference": "docs/reference/tibia-manual/characters.md#517-wheel-of-destiny",
-    "notes_sha256": "e01d04c6d8933a829e9c8e6dad08dd50a0e7a8308361e74948284794bbf11df8",
+    "notes_sha256": "f3f89885a0850493e737b109e658c35b9a47186c0e1656da64df907b118d5a79",
     "result": "REVIEWED_OWNER_CAPTURE_AND_REMOTE_CHROME_FOR_LISTED_FACTS"
   },
   "icon_evidence": {
@@ -98,7 +98,7 @@
   ],
   "classification": {
     "numerical_planner_reference": "CONFIRMED_PINNED_SOURCE",
-    "unique_conviction_reference": "OFFICIAL_8833_AND_8944_CORRECTIONS_BOUND_TO_BROWSER_AUDIT",
+    "unique_conviction_reference": "OFFICIAL_8833_8944_AND_FANDOM_1206174_RULES_BOUND_TO_BROWSER_AUDIT",
     "official_atelier_behavior": "LIVE_OFFICIAL_MANUAL_CONFIRMED_WITHIN_AUDIT_FACTS",
     "fees_and_extra_points": "PROJECT_DECISIONS_RETAINED; WIKI_CORROBORATION_AND_CAP_GRADE_PRICE_CONFLICTS_IN_BROWSER_AUDIT",
     "loot_probabilities": "OTS_HYPOTHESIS_ONLY",
@@ -134,7 +134,7 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "5d5f77f9c33f744f9bcdfc14d0abf42e6f4e094e614c3d0472010b46311eead5",
+  "candidate_sha256": "e0ab2dc206021b56e7e0388194113d53b7e4a4da23a7c13c7625666c246cab83",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
     "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
@@ -145,14 +145,14 @@
   },
   "client_icon_manifest": {
     "file": "samples/client-icon-manifest.json",
-    "sha256": "3b317d5f0b5bbd875de2df42271186445475ac6d7ecbc8386dd321af9787e5aa"
+    "sha256": "c8b411e49b928125dfe4a00fc1feb8d2ad25104637041318fc75f6a4a04e6362"
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "95919f1ee82b300f9e09c52bf623061edaf2c2ede04416c60d95eeb246b4a9d6"
+    "sha256": "1cfbef85e327f7a99dc2aa0b58e2010011bda2bd5a9119e05c567465b8f67af5"
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",
-    "sha256": "a3b5ce1521980877571d24c4957241f43ca59ea2ce70dac78a39474a601aeaee"
+    "sha256": "c2a35edf1ed89c9aac9028acf936ef6ed17ac73f29d8af366e1b355e4e1ad456"
   }
 }

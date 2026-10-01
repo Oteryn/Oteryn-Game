@@ -177,8 +177,7 @@
       "state": "KEEP_ACCEPTED_PROJECT_GRADE_TABLE; GLOBAL_PRICE_UNCONFIRMED"
     },
     "guiding_presence_interpretation": "Literal +33% captured; relative versus points, rounding and own-Serene application remain native owner Q5. No invented resolved semantics.",
-    "hunting_task_shop_points": "Fandom overview states up to 50 points: recorded as an unadmitted reference; no new Task Shop dependency or runtime point grant is allocated.",
-    "grade_iv_maximum": "Fandom overview states up to 69 points; accepted any-catalogue grading remains PARITY_PENDING. Runtime owner must reconcile admitted catalogue eligibility before projecting points."
+    "hunting_task_shop_points": "Fandom overview states up to 50 points: recorded as an unadmitted reference; no new Task Shop dependency or runtime point grant is allocated."
   },
   "manual_scope": "Fresh official manual corroborates operation/fragment/effective-grade facts; it does not state the numeric gem cap or grade prices in the read text.",
   "ignored_pages": [
@@ -467,5 +466,26 @@
       ],
       "pixel_comparison_pipeline": "SAME_CHROME_CANVAS_RGBA"
     }
-  ]
+  ],
+  "catalogue_corroboration": {
+    "grade_iv_points_per_mod_type": 1,
+    "eligible_basic_types_per_vocation": 46,
+    "eligible_supreme_types_per_vocation": 23,
+    "maximum_grade_iv_points_per_vocation": {
+      "knight": 69,
+      "paladin": 69,
+      "sorcerer": 69,
+      "druid": 69,
+      "monk": 69
+    },
+    "evidence": "FANDOM_1151969 states up to 69; candidate vocation catalogue unions independently derive 46 + 23 = 69. No catalogue-policy conflict exists; runtime point grants remain unadmitted."
+  },
+  "manual_notes_correction": {
+    "reference": "docs/reference/tibia-manual/characters.md:105",
+    "notes_wording": "Cooldown-augmentation mods do not reduce cooldowns directly",
+    "actual_official_wording": "Enhancing mods to a higher grade generally improves their specific bonuses. Note that cooldown augmentation mods don't reduce spell cooldowns further but add a chance to gain Momentum.",
+    "interpretation": "Grade enhancements add Momentum instead of increasing the fixed Grade-I cooldown reduction. The candidate already implements that distinction.",
+    "evidence": "official characters manual read through REMOTE_DESKTOP_CHROME_CDP on 2026-10-01; body sha256 bea47bda1adf1042f1248a0ef7f0c7c909b96e4a413ea2f19eaafd9e5d1b471f",
+    "manual_file_changed": true
+  }
 }

@@ -7,6 +7,7 @@ import json
 import math
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 from jsonschema import Draft202012Validator
 ROOT = Path(__file__).resolve().parent
 VOCATIONS = ('knight', 'paladin', 'sorcerer', 'druid', 'monk')
@@ -30,11 +31,18 @@ def finite_json(value):
         for child in value.values():finite_json(child)
     elif isinstance(value,list):
         for child in value:finite_json(child)
-def read(path):
+def decode_json(serialized):
     def reject_constant(value):raise ValueError('NON_FINITE_NUMBER: '+value)
-    value=json.loads(Path(path).read_text(),parse_constant=reject_constant)
+    def unique_object(pairs):
+        result={}
+        for key,value in pairs:
+            if key in result:raise ValueError('DUPLICATE_JSON_KEY: '+key)
+            result[key]=value
+        return result
+    value=json.loads(serialized,parse_constant=reject_constant,object_pairs_hook=unique_object)
     finite_json(value)
     return value
+def read(path):return decode_json(Path(path).read_text())
 def clean(text): return html.unescape(re.sub(r'<[^>]*>', ' ', text)).strip()
 def name(text): return clean(text).split('|')[0]
 def slug(text): return re.sub(r'[^a-z0-9]+','_', name(text).lower()).strip('_')
@@ -200,7 +208,12 @@ def validate(candidate, previous=None):
     release=candidate['release']
     if release['kind']=='initial':require(previous is None,'INITIAL_WITH_PREDECESSOR')
     else:
-        require(previous is not None,'PREDECESSOR_REQUIRED');require(release['predecessor']==previous['revision'] and candidate['revision']!=previous['revision'],'REVISION_CHAIN')
+        require(previous is not None,'PREDECESSOR_REQUIRED')
+        finite_json(previous)
+        require(isinstance(previous,dict) and previous.get('schema')=='OTERYN_WHEEL_AUTHORING_CANDIDATE/v1' and
+            previous.get('runtime_admitted') is False and isinstance(previous.get('revision'),str) and
+            1<=len(previous['revision'])<=128,'PREDECESSOR_ENVELOPE')
+        require(release['predecessor']==previous['revision'] and candidate['revision']!=previous['revision'],'REVISION_CHAIN')
         if release['kind']=='value_only':require(structure(candidate)==structure(previous),'VALUE_ONLY_STRUCTURE_CHANGED')
         from gem_revisions import validate_gem_revision
         validate_gem_revision(candidate,previous)
@@ -306,10 +319,14 @@ def validate_evidence(candidate, candidate_bytes, evidence_path=None):
     def require(condition, code):
         if not condition:raise ValueError(code)
     require(evidence['candidate_sha256']==hashlib.sha256(candidate_bytes).hexdigest(),'EVIDENCE_CANDIDATE_DIGEST')
-    require(candidate==json.loads(candidate_bytes),'EVIDENCE_CANDIDATE_CONTENT')
+    require(candidate==decode_json(candidate_bytes),'EVIDENCE_CANDIDATE_CONTENT')
     require(evidence['source_conflicts']==candidate['gems']['reference_corrections'],'EVIDENCE_CORRECTIONS')
     require(evidence['icon_evidence']==candidate['icon_evidence'],'EVIDENCE_ICONS')
     require(evidence['planner_replay']['source_commit']==candidate['sources'][0]['commit'],'EVIDENCE_SOURCE_REVISION')
+    require(evidence['planner_replay']['result']=='PASS','EVIDENCE_REPLAY_RESULT')
+    live=evidence['live_verification']
+    require(live['tibiapal']==candidate['verification']['live_website_verified'] and
+        live['fandom']==candidate['verification']['wiki_verified'],'EVIDENCE_LIVE_FLAGS')
     counts=evidence['counts']
     actual={'vocations':len(candidate['vocations']),
         'slots':sum(len(v['slots']) for v in candidate['vocations'].values()),
@@ -331,14 +348,38 @@ def validate_evidence(candidate, candidate_bytes, evidence_path=None):
     require(browser_binding['file']=='samples/browser-source-audit.json','EVIDENCE_BROWSER_PATH')
     require(browser_binding['sha256']==hashlib.sha256((ROOT/browser_binding['file']).read_bytes()).hexdigest(),'EVIDENCE_BROWSER_DIGEST')
     browser=read(ROOT/browser_binding['file'])
-    require(not browser['runtime_admitted'] and not browser['live_global_parity_confirmed'],'EVIDENCE_BROWSER_ADMISSION')
+    require(browser['schema']=='OTERYN_WHEEL_BROWSER_SOURCE_AUDIT/v1','EVIDENCE_BROWSER_SCHEMA')
+    require(browser['runtime_admitted'] is False and browser['live_global_parity_confirmed'] is False,'EVIDENCE_BROWSER_ADMISSION')
+    originals=[sheet['original_cdn'] for sheet in read(ROOT/'samples/source-icon-reference.json')['sheets']]
+    require(browser['original_sheets']==originals,'EVIDENCE_ORIGINAL_SHEET_OBSERVATIONS')
+    unread=[category for category in ('dedication','conviction','revelation','basic_mod','supreme_mod')
+        if not any(sheet['url']==icon(category,0)['asset_url'] and
+            sheet['method']=='REMOTE_DESKTOP_CHROME_CDP' and sheet['visual_inspection'] is True
+            for sheet in browser['original_sheets'])]
+    require(live['static_sprite_sheets']==(not unread) and
+        set(live['remaining_sprite_categories'])==set(unread),'EVIDENCE_SPRITE_COVERAGE')
     if candidate['verification']['wiki_verified']:
         required={'Wheel_of_Destiny','Wheel_of_Destiny/Conviction_Perks','Wheel_of_Destiny/Dedication_Perks',
             'Wheel_of_Destiny/Revelation_Perks','Lesser_Gem','Regular_Gem','Greater_Gem'}
         require(required<=set(browser['requested_fandom_coverage']),'EVIDENCE_BROWSER_WIKI_COVERAGE')
-        observed={o['url'].split('/wiki/')[-1].split('#')[0] for o in browser['observations'] if 'tibia.fandom.com/wiki/' in o['url']}
+        def fandom_page(url):
+            parsed=urlsplit(url)
+            if parsed.scheme=='https' and parsed.netloc=='tibia.fandom.com' and not parsed.query and parsed.path.startswith('/wiki/'):
+                page=parsed.path.removeprefix('/wiki/')
+                # The recorded public Gem Atelier redirect leads to Wheel#Gem_Atelier.
+                return 'Wheel_of_Destiny' if page=='Gem_Atelier' else page
+            return None
+        observed=set()
+        for observation in browser['observations']:
+            page=fandom_page(observation['url'])
+            if page in required:
+                require(fandom_page(observation['requested_url'])==page,'EVIDENCE_BROWSER_WIKI_REQUEST')
+                require(observation['status']=='READ' and observation['method']=='REMOTE_DESKTOP_CHROME_CDP','EVIDENCE_BROWSER_WIKI_READ')
+                require(type(observation['characters']) is int and observation['characters']>0 and
+                    re.fullmatch(r'[a-f0-9]{64}',observation['sha256']) and
+                    re.fullmatch(r'[1-9][0-9]*',observation['revision']),'EVIDENCE_BROWSER_WIKI_CAPTURE')
+                observed.add(page)
         require(required<=observed,'EVIDENCE_BROWSER_WIKI_OBSERVATIONS')
-        require(all(o['status']=='READ' and o['method']=='REMOTE_DESKTOP_CHROME_CDP' for o in browser['observations'] if 'tibia.fandom.com' in o['url']),'EVIDENCE_BROWSER_WIKI_READ')
     item_binding=evidence['item_asset_reference']
     require(item_binding['file']=='samples/item-asset-reference.json','EVIDENCE_ITEM_ASSET_PATH')
     require(item_binding['sha256']==hashlib.sha256((ROOT/item_binding['file']).read_bytes()).hexdigest(),'EVIDENCE_ITEM_ASSET_DIGEST')

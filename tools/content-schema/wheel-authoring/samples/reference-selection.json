@@ -99,7 +99,8 @@
   "unique_conviction_selections": {
     "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
     "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
-    "guiding_presence": "official:8833 selects sharing 100% of mantra; official:8944 and Fandom:1206174 add party bonuses +33%. source_percent preserves wording; relative/points, rounding and own-Serene-copy semantics remain Q5 with the runtime owner."
+    "guiding_presence": "official:8833 selects sharing 100% of mantra; official:8944 and Fandom:1206174 add party bonuses +33%. source_percent preserves wording; relative/points, rounding and own-Serene-copy semantics remain Q5 with the runtime owner.",
+    "runic_mastery": "Fandom:1206174 explicitly applies the percentage bonus to base magic level, for that specific rune effect only."
   },
   "atelier_conflicts": {
     "selected_project": 12000000,
