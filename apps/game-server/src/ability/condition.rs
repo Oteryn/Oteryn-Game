@@ -618,6 +618,11 @@ impl<S: Clone> ConditionStore<S> {
 }
 
 /// §3.4: merges each actor's due ticks into the channel order `(due, actor, sequence)`.
+///
+/// `COND0-RL-03` bounds each actor on its own: the order covers the ticks that run in this
+/// simulation tick. An actor's capped ticks do not hold back other actors' keys; they run in the
+/// actor's next simulation ticks, keeping their original `due`, so they sort ahead of anything
+/// newly due there.
 pub(crate) fn channel_tick_order<A: Ord + Copy, S>(
     per_actor: impl IntoIterator<Item = (A, Vec<ConditionTick<S>>)>,
 ) -> Vec<(A, ConditionTick<S>)> {

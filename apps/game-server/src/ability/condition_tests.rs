@@ -764,3 +764,61 @@ fn the_frozen_provenance_names_the_admitted_definition() {
     assert_eq!(ticks[0].provenance.definition_key, "cond.poison.strong");
     assert_eq!(ticks[0].provenance.definition_revision, 7);
 }
+
+#[test]
+fn a_capped_actor_does_not_hold_back_the_channel_and_its_carried_tick_leads_the_next_one() {
+    let root = root();
+    let mut first_actor = ConditionStore::new();
+    for element in [
+        DotElement::Poison,
+        DotElement::Fire,
+        DotElement::Energy,
+        DotElement::Bleeding,
+        DotElement::Cursed,
+    ] {
+        apply(
+            &mut first_actor,
+            &dot(element, 30, 30, false),
+            ConditionSourceKind::Creature,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    let mut second_actor = ConditionStore::new();
+    let poison = dot(DotElement::Poison, 30, 30, false);
+    apply(
+        &mut second_actor,
+        &poison,
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let keys = |order: Vec<(u32, ConditionTick<u32>)>| -> Vec<(u64, u32, u32)> {
+        order.iter().map(|(a, t)| (t.due, *a, t.sequence)).collect()
+    };
+
+    // Actor 1 is capped at COND0-RL-03; actor 2's tick at the same `due` still runs now.
+    let now = channel_tick_order([
+        (1_u32, first_actor.take_due(0, TickFacts::default())),
+        (2, second_actor.take_due(0, TickFacts::default())),
+    ]);
+    assert_eq!(
+        keys(now),
+        [(0, 1, 0), (0, 1, 1), (0, 1, 2), (0, 1, 3), (0, 2, 0)]
+    );
+
+    // Next simulation tick: the carried tick keeps `due` 0 and leads what is newly due.
+    let fire = dot(DotElement::Fire, 30, 30, false);
+    apply(
+        &mut second_actor,
+        &fire,
+        ConditionSourceKind::Creature,
+        &facts(50 * MS, &root),
+    )
+    .unwrap();
+    let next = channel_tick_order([
+        (1_u32, first_actor.take_due(50 * MS, TickFacts::default())),
+        (2, second_actor.take_due(50 * MS, TickFacts::default())),
+    ]);
+    assert_eq!(keys(next), [(0, 1, 4), (50 * MS, 2, 1)]);
+}
