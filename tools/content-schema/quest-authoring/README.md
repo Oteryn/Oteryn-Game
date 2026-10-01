@@ -26,6 +26,9 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | `validate_quest_content.py` | Schema plus semantic checks: unique keys and positions, non-empty rewards, text on a handed-out item, claim/quest links in both directions, gate conditions against the claims (progress marker, key source), one identity per quest, mission ranges and stages against the progress tracks, catalog and manifest coverage; for interactions: anchors, blocked reasons, named transitions against the missions, undeclared progress tracks, manifest status. |
 | `verify_quest_schema.py` | Focused positive/negative cases on synthetic fixtures (`--verbose` prints each case's first error). |
 | `refresh_quest_source_checks.py` | Refreshes exact inventories of missing gate/condition references after conversion; unresolved and blocked definitions never become `mapped` merely because their JSON shape is valid. `--check` verifies reproducibility. |
+| `quest_tree_authoring.py` | Populates `content/quests/definitions/` with the accepted first reward-only batch, resolving existing canonical claims through exact source identity/revision. Also emits the full source catalogue packet. |
+| `quest_tree.schema.json` | Strict definition/shard schema; `definition_ready` describes known definition fields, while overall quest completeness and runtime readiness remain unassessed. |
+| `quest_source_packet.schema.json` | Typed packet for every source quest kind, reusing the existing source Quest schema through an offline registry. |
 | `test_quest_completeness.py` | Regression cases for quest ownership, blocked children, missing reads/gates and stale diagnostic inventories. |
 | `samples/quest-coverage-2026-09-27.json` | The 373 wiki quests (facts only) with their status in each server. |
 | `samples/chests/` | `claims.json`, `quests.json`, `catalog.json`, `manifest.json`, `empty_containers.json`. |
@@ -54,9 +57,18 @@ python test_quest_completeness.py
 python test_converter_enrichment.py
 python test_progress_enrichment.py
 python test_quest_identity.py
+python test_quest_tree_authoring.py
+python quest_tree_authoring.py content --source-packet samples/migration/quest-source-packet.json
+python quest_tree_authoring.py content --check --source-packet samples/migration/quest-source-packet.json
 python refresh_quest_source_checks.py --check
 ```
 
 The coverage sample was built from the Fandom API (Template:Infobox Quest, retrieved 2026-09-27)
 and a search of both servers' Lua sources; its `method` field records how, including the verdicts
 corrected by hand.
+
+The canonical tree currently includes the 110 distinct reward-only quests after
+Desert Dungeon deduplication. The migration packet preserves all 210 source quests,
+including 58 storylines and 42 script-only quests. It hashes the supporting progress,
+interaction, gate, chest and manifest inputs. These are separate scopes: a populated
+tree or complete source inventory does not establish complete gameplay definitions.
