@@ -24,7 +24,7 @@
     },
     "blocked_children": {
       "Movement": 294,
-      "WorldObject": 193
+      "WorldObject": 192
     },
     "relocation_children": {
       "anchor": 304,
@@ -32,18 +32,18 @@
     },
     "overlay_operations": {
       "CREATE": 30,
-      "REMOVE": 133,
+      "REMOVE": 134,
       "RETAG": 39,
       "TRANSFORM": 479
     },
     "overlay_operations_with_revert_after": 0,
     "quest_children_naming_a_transition": 205,
-    "unresolved_lines": 2017,
-    "unresolved_conditions": 1759,
+    "unresolved_lines": 2002,
+    "unresolved_conditions": 1758,
     "by_status": {
       "conflict": 1,
-      "mapped": 246,
-      "unresolved_semantics": 974
+      "mapped": 247,
+      "unresolved_semantics": 973
     }
   },
   "undeclared_progress_tracks": [],
@@ -10008,7 +10008,7 @@
     },
     {
       "destination": "canary:interaction/mintwallin_quest/actions_devil_helmet_lever",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {

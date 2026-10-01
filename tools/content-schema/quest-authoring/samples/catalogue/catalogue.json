@@ -13,7 +13,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "494e2f8e738abb6d99e6802b4e12bdaac3e847fb5a19b7ef00e6a390b60b4c3d"
+      "sha256": "36d22e469f85cbb7370e860fc6018f5ee698872bdcc3387374cd13a6c266c377"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -52583,7 +52583,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 34,
-              "unresolved_items": 149
+              "unresolved_items": 141
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -58627,7 +58627,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 29,
-              "unresolved_items": 103
+              "unresolved_items": 99
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -72296,7 +72296,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 38,
-              "unresolved_items": 113
+              "unresolved_items": 105
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -84934,8 +84934,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 1,
-              "unresolved_items": 1
+              "interactions_with_gaps": 0,
+              "unresolved_items": 0
             },
             "runtime_readiness": "UNKNOWN"
           }

@@ -55,7 +55,7 @@
    "trigger_use": 195,
    "world_object": 86
   },
-  "quests_without_data_gaps": 105,
+  "quests_without_data_gaps": 106,
   "interactions_joined": 1174,
   "interactions_unlinked": 47
  },
@@ -94,97 +94,97 @@
    "feature": "item_consume",
    "owner": "DUR-03 consumption",
    "quests_complete_on_engine_side": 150,
-   "of_which_without_data_gaps": 88
+   "of_which_without_data_gaps": 89
   },
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
    "quests_complete_on_engine_side": 153,
-   "of_which_without_data_gaps": 89
+   "of_which_without_data_gaps": 90
   },
   {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
    "quests_complete_on_engine_side": 154,
-   "of_which_without_data_gaps": 89
+   "of_which_without_data_gaps": 90
   },
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
    "quests_complete_on_engine_side": 177,
-   "of_which_without_data_gaps": 95
+   "of_which_without_data_gaps": 96
   },
   {
    "feature": "door_progress",
    "owner": "door gate: quest progress",
    "quests_complete_on_engine_side": 191,
-   "of_which_without_data_gaps": 104
+   "of_which_without_data_gaps": 105
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
    "quests_complete_on_engine_side": 197,
-   "of_which_without_data_gaps": 104
+   "of_which_without_data_gaps": 105
   },
   {
    "feature": "item_hand_out",
    "owner": "DUR-03 inventory mint",
    "quests_complete_on_engine_side": 208,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "summon",
    "owner": "GAME-AI-01 spawn",
    "quests_complete_on_engine_side": 217,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "condition",
    "owner": "owner for player conditions (none yet)",
    "quests_complete_on_engine_side": 225,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "achievement",
    "owner": "Achievement owner",
    "quests_complete_on_engine_side": 237,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "creature_removal",
    "owner": "owner for creature removal (none yet)",
    "quests_complete_on_engine_side": 243,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "boss_cooldown",
    "owner": "boss cooldown owner (none yet)",
    "quests_complete_on_engine_side": 253,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "kv_state",
    "owner": "owner for key-value writes (none yet)",
    "quests_complete_on_engine_side": 260,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "outfit",
    "owner": "Outfit grant owner",
    "quests_complete_on_engine_side": 263,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "mount",
    "owner": "Mount grant owner",
    "quests_complete_on_engine_side": 266,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   },
   {
    "feature": "experience",
    "owner": "Character XP award from an interaction",
    "quests_complete_on_engine_side": 268,
-   "of_which_without_data_gaps": 105
+   "of_which_without_data_gaps": 106
   }
  ],
  "quests": [
@@ -1370,7 +1370,7 @@
    "interactions": 39,
    "data_gaps": {
     "interactions_with_gaps": 34,
-    "unresolved_items": 149
+    "unresolved_items": 141
    }
   },
   {
@@ -1508,7 +1508,7 @@
    "interactions": 42,
    "data_gaps": {
     "interactions_with_gaps": 29,
-    "unresolved_items": 103
+    "unresolved_items": 99
    }
   },
   {
@@ -1845,7 +1845,7 @@
    "interactions": 69,
    "data_gaps": {
     "interactions_with_gaps": 38,
-    "unresolved_items": 113
+    "unresolved_items": 105
    }
   },
   {
@@ -2073,8 +2073,8 @@
    ],
    "interactions": 1,
    "data_gaps": {
-    "interactions_with_gaps": 1,
-    "unresolved_items": 1
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
    }
   },
   {

@@ -219,6 +219,54 @@ def split_args(text):
     return [text[a + 1:b].strip() for a, b in zip(bounds, bounds[1:])] if text.strip() else []
 
 
+def multiline_conditions(commentless, masked):
+    """Fold only a complete if/elseif header, retaining every physical line index.
+
+    A top-level trailing `then` ends the header. Unsupported expressions still
+    reach condition(), while control statements or unbalanced brackets prevent
+    folding. Never consume a callback body when a source header is incomplete.
+    """
+    output, headers = list(masked), {}
+    for start, code in enumerate(masked):
+        if not re.match(r'^\s*(?:if|elseif)\b', code) or re.search(r'\bthen\b', code):
+            continue
+        chunks, stack, complete = [], [], False
+        for index in range(start, min(start + 64, len(masked))):
+            raw = commentless[index].strip()
+            indent = len(commentless[index]) - len(commentless[index].lstrip())
+            visible = masked[index][indent:].rstrip()
+            if re.search(r'[\"\']', visible):
+                break  # a quote left by the lexer is not a complete literal
+            if re.search(r'\b(?:setStorageValue|createItem|createMonster|addItem|removeItem|addItemEx|addAchievement|addOutfit|addOutfitAddon|addMount|addExperience|teleportTo|sendTextMessage|say|addCondition|removeCondition|setBossCooldown|addEvent|remove|transform)\s*\(', visible):
+                break  # effectful predicates require their own source evidence
+            if index > start and re.search(r'\b(?:if|elseif|else|end|for|while|repeat|until|function|return|local|break)\b', visible):
+                break
+            terminal = None
+            for offset, character in enumerate(visible):
+                if character in '([{':
+                    stack.append(character)
+                elif character in ')]}':
+                    if not stack or stack.pop() != {')': '(', ']': '[', '}': '{'}[character]:
+                        break
+                elif not stack and re.match(r'\bthen\b', visible[offset:]) and (offset == 0 or not re.match(r'\w', visible[offset - 1])):
+                    terminal = offset
+                    break
+            else:
+                chunks.append(raw)
+                if sum(map(len, chunks)) <= 8192:
+                    continue
+                break
+            if terminal is not None and not visible[terminal + 4:].strip():
+                chunks.append(raw[:terminal] + 'then')
+                complete = True
+            break
+        if complete:
+            headers[start + 1] = ' '.join(chunks)
+            output[start] = mask_code(headers[start + 1])
+            output[start + 1:index + 1] = [''] * (index - start)
+    return output, headers
+
+
 class LiteralParser(lua_tables.Parser):
     """Only Position's literal constructor is added to the existing table subset."""
     def value(self):
@@ -280,6 +328,49 @@ CHAIN_STEP = re.compile(r'\.([A-Za-z_]\w*)|\[(\d+)\]|\[([A-Za-z_]\w*)\]')
 VALUE_ALIAS = re.compile(r'^local\s+(\w+)\s*=\s*((?:\w+:getStorageValue|Game\.getStorageValue)\([^()]*\))$')
 
 
+def typed_tile_item_removal(script, raw, number, in_loop=False):
+    # Existing library proof rejects direct constructor calls as escapes.
+    # Normalize only lexical bare calls for that proof; declarations, shadows
+    # and escaped root values remain visible and still fail closed.
+    code = mask_code('\n'.join(script.lines))
+    if re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadfile|dofile)\b', code):
+        return None
+    proof = re.sub(r'\bTile\s*(?=\()', 'Tile.__constructor__', code)
+    if not builtin_binding_is_pristine(proof.splitlines(), 'Tile'):
+        return None
+    statement = strip_code(raw).strip()
+    match = re.fullmatch(r'Tile\(([^()]*)\):getItemById\(([^()]*)\):remove\(\)\s*;?', statement)
+    if not match:
+        return None
+    args = [arg.strip() for arg in match[1].split(',')]
+    if len(args) != 3:
+        return None
+    item_id = script.literal(match[2], before=number)
+    if type(item_id) is not int or item_id <= 0:
+        return None
+    coordinates = [script.literal(arg, before=number) for arg in args]
+    ranges = [(value, value) if type(value) is int else None for value in coordinates]
+    if any(value is None for value in ranges):
+        # The sole nonliteral position component may be a proven finite numeric
+        # loop counter. This narrow three-line loop has no mutation or control
+        # flow hidden between its header and its one statement.
+        if not in_loop or number < 2 or number >= len(script.lines):
+            return None
+        header = strip_code(script.lines[number - 2]).strip()
+        loop = re.fullmatch(r'for\s+([A-Za-z_]\w*)\s*=\s*([^,]+),\s*([^,]+)\s+do', header)
+        if not loop or strip_code(script.lines[number]).strip() != 'end':
+            return None
+        bounds = [script.literal(loop[i], before=number - 1) for i in (2, 3)]
+        if any(type(value) is not int for value in bounds) or not 0 <= bounds[0] <= bounds[1] <= 65535:
+            return None
+        unresolved = [i for i, value in enumerate(coordinates) if type(value) is not int]
+        if len(unresolved) != 1 or args[unresolved[0]] != loop[1]:
+            return None
+        ranges[unresolved[0]] = tuple(bounds)
+    if any(not 0 <= low <= high <= limit for (low, high), limit in zip(ranges, (65535, 65535, 15))):
+        return None
+    return {'owner': 'WorldObject', 'operation': 'REMOVE', 'value_source_line': number}
+
 class Script:
     def __init__(self, server, repo, path, transitions, name):
         self.server, self.path, self.name = server, path, name
@@ -290,6 +381,7 @@ class Script:
         self.lines = (Path(repo) / path).read_text(errors='replace').split('\n')
         self.commentless_lines = mask_code('\n'.join(self.lines), literals=False, long_literals=True).split('\n')
         self.code_lines = mask_code('\n'.join(self.lines)).split('\n')
+        self.block_lines, self.condition_headers = multiline_conditions(self.commentless_lines, self.code_lines)
         self.builtin_proofs = {root: builtin_binding_is_pristine(self.lines, root) for root in ('Game', 'table')}
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
@@ -326,7 +418,7 @@ class Script:
         # No shadowing or mutation: only one declaration in the file, before this use,
         # either before all functions or in this callback. Branch-selected values stay unknown.
         prefix = unconditional_prefix(self.lines)
-        body_nodes = lua_blocks.parse(self.code_lines, lua_blocks.function_body(self.code_lines, number))
+        body_nodes = lua_blocks.parse(self.block_lines, lua_blocks.function_body(self.block_lines, number))
         # A branch local is visible only in its branch and descendants, never siblings.
         self.line_scopes = {}
         def index_scope(nodes, scope=()):
@@ -788,6 +880,7 @@ class Script:
         # hold one nested call (`removeItem(ids[math.random(#ids)], 1)`).
         removal = REMOVE_METHOD.search(code) and lexical_search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(((?:[^()]|\([^()]*\))*)\)', raw)
         consumed = removal and self.consumed(removal, number)
+        tile_removal = typed_tile_item_removal(self, raw, number, in_loop) if code.startswith("Tile(") else None
         if consumed:
             found.append(consumed)
         elif removal and removal.group(1) in self.player_aliases and not self.proven_player(removal.group(1), number):
@@ -796,6 +889,8 @@ class Script:
         elif removal and self.creature(removal.group(1), number):
             self.unresolved.append({'line': number, 'reason': 'creature removal without an accepted owner'})
             return found
+        elif tile_removal:
+            found.append(tile_removal)
         elif removal:
             receiver = removal.group(1)
             literal_pos = POSITION.fullmatch(receiver) if '(' in receiver else None
@@ -1023,7 +1118,8 @@ class Script:
                           if re.search(r'\baddEvent\(', self.raw(node[1][0])) else 'function literal outside the transcribed vocabulary')
                 self.unresolved.append({'line': node[1][0], 'reason': reason})
             elif node[0] == 'if':
-                branches = [{'when': self.condition(re.sub(r'^(else)?if\s+|\s+then.*$', '', self.raw(line)), line),
+                branches = [{'when': self.condition(re.sub(r'^(else)?if\s+|\s+then.*$', '',
+                             expand_aliases(self.condition_headers.get(line, self.raw(line)), self.aliases)), line),
                              'then': self.convert(body)} for _, line, body in node[1]]
                 otherwise = self.convert(node[2])
                 out.append({'branch': branches, **({'otherwise': otherwise} if otherwise else {})})
@@ -1042,7 +1138,7 @@ class Script:
                                     if (r := REGISTRATION.match(line)) and r.group(1) == m.group(1)})
             self.anchors, self.unresolved = [], []
             self.bind(number, m.group(2))
-            nodes = lua_blocks.parse(self.code_lines, lua_blocks.function_body(self.code_lines, number))
+            nodes = lua_blocks.parse(self.block_lines, lua_blocks.function_body(self.block_lines, number))
             rules = self.convert(nodes)
             strip_internal(rules)
             # several callbacks in one file are told apart by their script object, which both servers share even when

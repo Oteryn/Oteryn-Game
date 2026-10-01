@@ -40047,9 +40047,56 @@
                                   "branch": [
                                     {
                                       "when": {
-                                        "unresolved": {
-                                          "line": 88
-                                        }
+                                        "all": [
+                                          {
+                                            "quest_stage": {
+                                              "progress": "canary:quest-progress/quest/u11_02/forgotten_knowledge/lady_tenebris_killed",
+                                              "op": ">=",
+                                              "value": 1
+                                            },
+                                            "negate": false
+                                          },
+                                          {
+                                            "quest_stage": {
+                                              "progress": "canary:quest-progress/quest/u11_02/forgotten_knowledge/lloyd_killed",
+                                              "op": ">=",
+                                              "value": 1
+                                            },
+                                            "negate": false
+                                          },
+                                          {
+                                            "quest_stage": {
+                                              "progress": "canary:quest-progress/quest/u11_02/forgotten_knowledge/thorn_knight_killed",
+                                              "op": ">=",
+                                              "value": 1
+                                            },
+                                            "negate": false
+                                          },
+                                          {
+                                            "quest_stage": {
+                                              "progress": "canary:quest-progress/quest/u11_02/forgotten_knowledge/dragonking_killed",
+                                              "op": ">=",
+                                              "value": 1
+                                            },
+                                            "negate": false
+                                          },
+                                          {
+                                            "quest_stage": {
+                                              "progress": "canary:quest-progress/quest/u11_02/forgotten_knowledge/horror_killed",
+                                              "op": ">=",
+                                              "value": 1
+                                            },
+                                            "negate": false
+                                          },
+                                          {
+                                            "quest_stage": {
+                                              "progress": "canary:quest-progress/quest/u11_02/forgotten_knowledge/time_guardian_killed",
+                                              "op": ">=",
+                                              "value": 1
+                                            },
+                                            "negate": false
+                                          }
+                                        ]
                                       },
                                       "then": [
                                         {
@@ -40172,34 +40219,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 89,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 90,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 91,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 92,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 93,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 94,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 95,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 113,
           "reason": "statement outside the transcribed vocabulary"
@@ -52494,22 +52513,6 @@
         {
           "line": 94,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 97,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 98,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 99,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 100,
-          "reason": "statement outside the transcribed vocabulary"
         }
       ]
     },
@@ -54870,22 +54873,6 @@
       "unresolved": [
         {
           "line": 94,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 97,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 98,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 99,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 100,
           "reason": "statement outside the transcribed vocabulary"
         }
       ]
@@ -58818,9 +58805,8 @@
         },
         {
           "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-          "source_line": 13,
+          "operation": "REMOVE",
+          "value_source_line": 13,
           "repeated": true
         }
       ],

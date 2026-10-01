@@ -64,18 +64,18 @@
   ]
  },
  "counts": {
-  "unresolved_lines": 2017,
-  "unresolved_conditions": 1759,
-  "blocked_children": 487,
+  "unresolved_lines": 2002,
+  "unresolved_conditions": 1758,
+  "blocked_children": 486,
   "reference_gaps": 1,
-  "total_unresolved_items": 4264,
+  "total_unresolved_items": 4247,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3652
+   "bespoke": 3635
   },
   "quests_triaged": 268,
-  "quests_with_bespoke_work": 105,
+  "quests_with_bespoke_work": 104,
   "quests_fully_covered_by_owners_and_mechanisms": 1,
   "interactions_unlinked_to_a_quest": 47
  },
@@ -1281,7 +1281,7 @@
    "counts": {
     "owner_pending": 24,
     "shared_mechanism": 7,
-    "bespoke": 136
+    "bespoke": 128
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1298,7 +1298,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:136"
+    "bespoke:128"
    ]
   },
   {
@@ -1419,7 +1419,7 @@
    "counts": {
     "owner_pending": 8,
     "shared_mechanism": 1,
-    "bespoke": 96
+    "bespoke": 92
    },
    "owners_needed": [
     "condition",
@@ -1432,7 +1432,7 @@
     "owner:condition",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:96"
+    "bespoke:92"
    ]
   },
   {
@@ -1740,7 +1740,7 @@
    "counts": {
     "owner_pending": 2,
     "shared_mechanism": 26,
-    "bespoke": 79
+    "bespoke": 71
    },
    "owners_needed": [
     "boss_cooldown"
@@ -1753,7 +1753,7 @@
     "owner:boss_cooldown",
     "mechanism:boss_portal_spectator_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:79"
+    "bespoke:71"
    ]
   },
   {
@@ -1959,13 +1959,11 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 1
+    "bespoke": 0
    },
    "owners_needed": [],
    "mechanisms_needed": [],
-   "to_finish": [
-    "bespoke:1"
-   ]
+   "to_finish": []
   },
   {
    "quest": "canary:quest/naginata_quest",

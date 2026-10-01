@@ -196,3 +196,11 @@ have no proven named declaration or complete writer inventory; they are never
 joined to named Storage paths by number. The unresolved FastWay getter names
 Storage while the declaration names GlobalStorage. Native field readiness43/67
 and185 quests with source gaps are preserved; graph closure is a separate scope.
+
+### Bounded SOURCE conditions and Tile item removal
+
+Complete bounded multiline `if`/`elseif` headers retain their physical source
+lines; incomplete or unproven predicates remain UNKNOWN. The exact unshadowed
+`Tile(...):getItemById(literal):remove()` chain retains SOURCE REMOVE only when
+its coordinates and finite loop bounds are proven. These rules do not establish
+Native placement identity or playable quest completeness.
