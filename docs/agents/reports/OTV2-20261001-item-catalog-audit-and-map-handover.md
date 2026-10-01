@@ -149,9 +149,11 @@ and `tools/content-schema/world-object-authoring/README.md`.
 - Catalogue source Crystal: `ff7ede593c69d4c658b382c97443e8155926924a`.
 - Canary main examined: `04b83b512114bfd888000d6e1433ed8ecaec7c5b`.
 - OTS data is **OtsHypothesisOnly**, not an automatic authority over contradictory wiki evidence.
-- Live Fandom, Wiki BR and Tibiopedia requests were blocked by the network route.
+- The original direct Fandom, Wiki BR and Tibiopedia requests were blocked by the network route.
   Retained Fandom data covers 13,826 records / 9,318 pages; BR has 164 imported item captures.
   Tibiopedia evidence covers NPC/trade data, not a full item-stat inventory.
+  The bounded Tavily continuation below adds retrieved item observations; it does not change
+  the original snapshot's coverage or prove a complete live census.
 - The supplied 15.33 asset manifest differs from admitted 15.30. The repo's binary
   appearances/catalog/proficiencies were verified against 15.30.
   The 15.33 appearances binary is unverified; the uploaded ZIP exceeds the file-download limit.
@@ -173,7 +175,75 @@ load; map overlay and wire integration; full-world cutover; production data clos
 Independent item work remains: taxonomy, imbuement restrictions/relations, equipment requirements,
 modifiers and the admitted model gaps.
 
-The next session should open this draft and the ZIP's `README_CONTINUATION.md`, refresh its
-branch head and current `main`, then select one bounded owner-approved work package before
-implementation. Preserve exact evidence, held identities and source conflicts. The draft and ZIP
-are a handover of audit work; they do not claim those remaining features have been implemented.
+Before implementation, refresh this draft's branch head and current `main`, then select one
+bounded owner-approved work package. Preserve exact evidence, held identities and source
+conflicts. The draft and ZIP are a handover of audit work; they do not claim those remaining
+features have been implemented.
+
+## Tavily source continuation — 2026-10-01
+
+Scope: corroborate representative item facts and unresolved source conflicts through the
+requested Tavily plugin. No content admission, identity resolution or runtime implementation
+is part of this continuation. Attached handover instructions remain historical evidence.
+
+Before authoring, live GitHub showed #1437 OPEN/DRAFT at
+`60df567f8010b374e762a06f13692b89ff32c62a`, unchanged `main` at
+`fafc51efd71e9f0e23e7725b75c1e0e86fe5f281`, and successful `game-gate` and governance
+checks on that draft head. This is predecessor evidence; it does not qualify a successor head.
+All 51 entries in the uploaded package's manifest matched their SHA-256 and byte count.
+
+### Retrieved observations and limits
+
+Tavily returned eight distinct Wiki BR item pages and its Imbuing overview, plus a
+query-focused Tibiopedia Soulcrusher extract. Fandom returned an exact Soulcrusher search
+snippet but no successful targeted full-page extracts. Some Tibiopedia reads failed,
+including later full-page attempts for Soulcrusher. Success on one extraction is not proof
+of stable site access. Search hits mentioning another item are not evidence for its fields.
+
+**PROVEN** below means the returned page explicitly states the value, not that the value
+has been accepted as Oteryn truth or verified in the current Tibia client. Page URLs may
+serve published/cached revisions. Only explicitly returned revision labels are recorded;
+retrieval date does not establish the original audit's 2026-09-27 historical cutoff.
+
+| Item / source | Returned facts | Audit consequence |
+|---|---|---|
+| [Soulcrusher, Wiki BR rev. 436761](https://www.tibiawiki.com.br/index.php?title=Soulcrusher&oldid=436761) | Attack 6 + 46 ice; defense 33 +3; one hand; Knight level 400; two imbuement slots; class 4; weight 41 oz. Displayed bonuses: club +5, life leech +5%, mana leech +3%. | **PROVEN** corroboration of requirements, hands, weight and slot count; displayed modifier values disagree with the retained Fandom baseline. |
+| [Soulcrusher, Tibiopedia](https://tibiopedia.pl/items/Soulcrusher) | Same attack, defense, hands, vocation, level, weight, class and slots. Bonuses: club +4, life leech +2%, mana leech +1%. Lists Life Leech, Mana Leech, Critical Hit and Club Fighting with `lvl 3`. | **PROVEN** retrieved corroboration of retained Fandom modifiers. The four listed family/level pairs are useful evidence for I7, not proof that lower levels are forbidden or that the list is an exhaustive admission rule. No source revision was returned. |
+| [Backpack, Wiki BR](https://www.tibiawiki.com.br/wiki/Backpack) | Volume 20, one imbuement slot, weight 18 oz; full extraction reports rev. 432220. | **PROVEN** agreement with the retained Fandom facts and content capacity 20. This positive control does not resolve the 27 capacity conflicts. |
+| [Glooth Spear, Wiki BR](https://www.tibiawiki.com.br/wiki/Glooth_Spear) | Range 3, attack 55, defense 0, level 60, one hand, weight 26 oz; full extraction reports rev. 426329. | **PROVEN** agreement on these fields. Stackability is not explicit in the extracted item facts; the retained BR false / Fandom yes conflict remains **CONFLICT**. |
+| [Demon Helmet, Wiki BR](https://www.tibiawiki.com.br/wiki/Demon_Helmet) | Armor 10, two imbuement slots, class 2, weight 29.50 oz. | **PROVEN** agreement with the corresponding retained Fandom values. No minimum level or vocation is inferred from their absence. |
+| [Magic Plate Armor, Wiki BR](https://www.tibiawiki.com.br/wiki/Magic_Plate_Armor) | Armor 17; Knights and Paladins; two imbuement slots; class 2; weight 85 oz. | **PROVEN** corroboration of a vocation requirement covered by I5. |
+| [Magic Sword, Wiki BR](https://www.tibiawiki.com.br/wiki/Magic_Sword) | Attack 48, defense 35 +3, level 80, one hand, two imbuement slots, class 2, weight 42 oz. | **PROVEN** agreement on these fields with the retained two-source fixture; this does not certify its entire profile. |
+| [Fireball Rune, Wiki BR](https://www.tibiawiki.com.br/wiki/Fireball_Rune) | Use level 27, magic level 4, weight 0.42 oz; creation lists Sorcerer level 27+, mana 460, soul 3 and five charges. | **PROVEN** corroboration of use requirements. Creation mana, profession and yield must remain distinct from use requirements and stackability, with Ability/Interaction ownership. |
+| [Wooden Bookcase, Wiki BR](https://www.tibiawiki.com.br/wiki/Wooden_Bookcase) | Movable, rewrappable household fixture; retrieved item facts do not state volume. | Capacity remains **UNKNOWN** in this extraction. It cannot adjudicate Fandom volume 18 versus content capacity 8 for IDs 31194/31195 or establish both variant identities. |
+
+**CONFLICT:** Soulcrusher's displayed BR modifiers differ from the retained Fandom rev.
+1148388, the exact Fandom search snippet, and the retrieved Tibiopedia item facts.
+**DERIVED:** the differences (+1 club, +3 percentage points life leech, +2 percentage
+points mana leech) exactly match perks separately listed on the BR proficiency table.
+This suggests a baseline-versus-proficiency presentation issue; it does not prove how BR
+computes its displayed stats. Keep base modifiers and proficiency effects separate until
+versioned authoritative evidence resolves the discrepancy. Do not promote BR's totals as
+unconditional base stats or automatically mark the retained baseline obsolete.
+
+### Evidence identity and bounded remainder
+
+Tavily request IDs: focused extraction `9a01d6e1-aac4-44db-9536-fe1f10a00362`;
+advanced extraction `61150889-790d-4d9c-9fbf-40c9300f3985`;
+six-page BR extraction `cffa9fe1-2572-493f-876e-c29031100896`;
+explicit BR Soulcrusher revision read `2a95522c-de8f-4319-a31f-9fc9bcad418d`;
+exact Fandom Soulcrusher search `ef1547a4-eec1-415d-bd35-e4dc47e52550`.
+SHA-256 hashes bind returned UTF-8 `raw_content`, not MediaWiki wikitext or wiki revision SHA1:
+
+| Extract | SHA-256 |
+|---|---|
+| BR Soulcrusher explicit rev. 436761 | `136643db7af0f0f2da4db7d5e8e2bf4220e21fa83bd0f6df8fdf8364330e9705` |
+| Tibiopedia Soulcrusher focused extract | `e3bf4e3de81d6583d8d5c234fdaaed19f1825a31227d431af0e18aca6df1f212` |
+| BR Glooth Spear advanced extract | `017cf40c5a2fddfe78939df01f6fd0b0fcbe0cb06489eaf898caf3f901a19296` |
+| BR Backpack advanced extract | `bb1aafc033d5188b7e82d0119fe34d791f85c2a2cba135b145639395b37f4e6b` |
+
+This sample improves source access and corroboration, not catalogue completeness. I1–I10,
+the 582 missing imbuement relations, nested restriction loss, 27 capacity disagreements,
+held map identities and unverified 15.33 appearances remain open within their original
+evidence scopes. Your Inbox / Your Store Inbox capacities were not requalified. No missing
+field was turned into false or zero; OTS remains `OtsHypothesisOnly`.
