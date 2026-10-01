@@ -1,0 +1,216 @@
+# PROFICIENCY-1 Perk modification, the Lunar Ascension Orb and catalysts
+
+- Decision: `PROFICIENCY1-PERK-MODIFICATION-AND-CATALYSTS-V1`
+- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
+  economy, determinism) and protected integration.
+- Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
+- Answers: PROFICIENCY-0 §4.5 ("Perk modification (reroll, rank, reshape), the Lunar Ascension Orb and
+  catalysts spend value ... They get their own decision (PROFICIENCY-1)"); the Weapon Proficiency
+  packet #162 5936420312 (architect item 2: typed mutation causes, transaction, refusal and replay);
+  owner answer 5b (D281) opening Weapon Proficiency runtime work.
+- Builds on: PROFICIENCY-0 §4.1-§4.5 (definitions, the track row, the receipt chain, the writer);
+  PROF-WIRE-0 (capability 2; later commands join it); IMBUE-FORGE-0 §9-§10 (forge dust is a
+  Character balance, `game_character_forge_dust`, with a ledger; `ForgeCause`); DUR-03 §15 and §18
+  (burn sinks, non-item assets); the composition decision rules 1-4; ITEM-USE-0 (item use);
+  SIM-DETERMINISM-01 (named RNG purposes); the gold fee decision (D178: a new gold fee source needs
+  the owner); the FORMULA rule; owner rule 5905825574.
+- Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
+- `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
+
+## Implementation brief
+
+| Child | Worker | Builds | Depends on |
+|---|---|---|---|
+| PROF-SHAPE-CONTENT-1 | content lane | the modification pool per definition and level, rank values, costs per operation, reshape and reroll draw tables, catalyst and orb item facts, each with its evidence class (§2, §6) | PROF-CONTENT-1 |
+| PROF-SHAPE-1 | hard (persistence, economy), persistence, economy and determinism review | the modification rows, the receipt cause and its lines, the operations of §4, the dust and item lines, replay, the admission gate (§3-§5, §7) | PROF-1; FORGE-1 (the dust balance); ITEM-USE-1 |
+| PROF-SHAPE-WIRE-1 | impl, protocol review | the commands of §8 under capability 2 | PROF-WIRE-1; PROF-SHAPE-1 |
+
+## 1. Question
+
+How are a weapon's perks modified, ranked, reshaped and cleared, what do the Lunar Ascension Orb and
+the catalysts do, and how are they paid for, stored and replayed?
+
+## 2. Facts
+
+**PROVEN** (Tibia manual `combat.md` §5.3.4, CipSoft official)
+
+- Modification is done only in a protection zone, rerolls the current perk to a new random one, and
+  costs dust.
+- At most 2 perks per weapon can be modified: the first slot unlocks at proficiency level 3, the
+  second at Mastery.
+- A modified perk has a rank 1-10. A rank rises one step for dust, or straight to 10 with a Lunar
+  Ascension Orb.
+- Reshaping a modified perk offers 3 new perks at the same rank; the player may decline and keep the
+  current one.
+- Clearing a modified perk restores the unmodified perk and allows a different modification later.
+- Catalysts (Proficiency Catalyst, Greater Proficiency Catalyst) accelerate progress gain.
+- IMBUE-FORGE-0 §9: forge dust is a per-Character capped balance with a ledger.
+- Item facts (TibiaWiki): Lunar Ascension Orb `i53695`. TibiaWiki also lists a Test Proficiency
+  Catalyst, which the manual does not name; whether it exists on Global servers is UNKNOWN.
+
+**UNKNOWN** (hard parity gates, PROFICIENCY-0 §4.5)
+
+- Dust costs of each operation and rank step; whether any operation also costs gold.
+- The modification pool, the reroll and reshape odds, and the value of a perk per rank.
+- What exactly a catalyst does (amount, duration, stacking) and how it is consumed.
+
+Canary leaves the shaping opcodes as no-ops; Crystal's reset and apply are empty. Neither is
+evidence for these values (packet 5936420312).
+
+## 3. State (PROF-SHAPE-1)
+
+Table `game_character_proficiency_modifications`, at most 2 rows per track:
+
+| Column | Meaning |
+|---|---|
+| `character_id`, `item_key` | the track (PROFICIENCY-0 §4.2) |
+| `slot` | 1 or 2 |
+| `level` | the proficiency level whose perk is modified |
+| `modified_perk` | a typed perk from the definition's modification pool: pool revision and entry index |
+| `rank` | 1..10 |
+| `pending_offer` | NULL, or the 3 reshape options drawn and paid for (pool entries), at the current rank |
+
+- A slot is **unlocked** while the derived level is at least 3 (slot 1) or the track has Mastery
+  (slot 2). `MODIFY` needs an unlocked slot. A modified level must have a selection (PROFICIENCY-0
+  `selections`). While a modification is active, the modified perk replaces that level's selected
+  perk.
+- When a raised threshold makes the level inactive, or the slot locks again, the modification stays
+  stored but inactive, and only `CLEAR` (and `RESHAPE_CHOOSE` of a pending offer) is allowed on it.
+  It becomes active again when the level and the slot are unlocked again.
+- A level with a modification keeps its selection: a `perk_selection` that changes or clears that
+  level's selection is refused `MODIFIED_LEVEL` until the modification is cleared. Amended:
+  PROFICIENCY-0 §4.4's result codes.
+- **Receipts.** PROFICIENCY-0's receipt chain gains the cause `perk_modification`, with the
+  operation (§4) and exactly one line, which carries the track's modification row before and after
+  next to the unchanged progress and selections. The line CHECKs for `perk_modification`:
+  - progress, selections and the definition key and revision are unchanged;
+  - exactly one slot's row changes: absent to present (`MODIFY`: rank 1, no offer), present to
+    absent (`CLEAR`), or present to present with the same slot and level;
+  - by operation: `RANK_UP` raises the rank by exactly 1; `ORB_RANK` sets it to 10 from below 10;
+    `RESHAPE_OFFER` sets a NULL `pending_offer` and changes nothing else; `RESHAPE_CHOOSE` clears
+    the offer and either keeps `modified_perk` or sets it to one of the offer's entries, with the
+    rank unchanged.
+
+  The per-track check of PROFICIENCY-0 §4.2 extends to the rows; the shared chain guard and `verify_character_integrity` count the new cause.
+- **Revisions.** A compatible definition revision keeps the modifications. An incompatible one
+  whose migration changes a modified level clears that modification in its `migration` receipt
+  (PROFICIENCY-0 §4.1) with no refund (`PARITY_PENDING`).
+
+## 4. Operations (PROF-SHAPE-1)
+
+Each operation is one Character transaction: one `perk_modification` receipt that advances one
+CharacterRevision, plus its value lines, under the composition decision rules 1-4. The lock order
+is the `character_root`, the track row and its modification rows, the forge dust row, then any item.
+
+| Operation | Needs | Value lines | Result |
+|---|---|---|---|
+| `MODIFY {level, slot}` | protection zone; slot unlocked and empty; the level has a selection | dust BURN | a modification at rank 1 with a perk drawn from the pool |
+| `RANK_UP {slot}` | rank < 10 | dust BURN | rank + 1 |
+| `ORB_RANK {slot}` | rank < 10; a Lunar Ascension Orb as a direct entry of the main backpack (the first in B3 order, as NPC-0 SELL finds its item) | one-unit item BURN of the orb | rank 10 |
+| `RESHAPE_OFFER {slot}` | protection zone; no pending offer; the pool holds at least one entry besides the current perk | dust BURN | `pending_offer` = `min(3, pool size − 1)` distinct perks drawn from the pool, excluding the current one |
+| `RESHAPE_CHOOSE {slot, choice 0..2 or keep}` | protection zone; a pending offer | none | the chosen perk replaces the modified one at the same rank, or the current one stays; the offer is cleared |
+| `CLEAR {slot}` | protection zone | none | the modification is removed; the level's selected perk applies again |
+
+- **Draws.** Every draw uses the SIM-DETERMINISM-01 purpose `proficiency_shaping`, bound to the
+  operation's occurrence, so a retry never draws again. The reshape offer is durable and paid when
+  drawn, so asking again cannot fish for better options.
+- **Value.** Dust is burned from the forge dust balance as a DUR-03 §18 value line under the new
+  closed `ProficiencyCause {track, slot, operation, occurrence}`; the orb as a one-item BURN under the
+  same cause. Amended: DUR-03 §15 and §18, IMBUE-FORGE-0 §9 (a second dust sink).
+- **Gold.** If evidence shows an operation also costs gold, that is a new fee source (D178): it needs
+  an owner answer before the operation is admitted. This decision admits no gold cost.
+- **Refusals** (nothing written): `NOT_IN_PROTECTION_ZONE`, `SLOT_LOCKED`, `SLOT_OCCUPIED`,
+  `NO_SELECTION`, `NO_MODIFICATION`, `RANK_MAX`, `NO_PENDING_OFFER`, `OFFER_PENDING`,
+  `INSUFFICIENT_DUST`, `NO_ORB`, `POOL_TOO_SMALL` (no other entry to offer), `MODIFIED_LEVEL` (a
+  selection change at a modified level, §3), `STALE_REVISION` (the client's expected track revision differs),
+  `NOT_ADMITTED` (§5).
+- **Replay.** Each command carries an occurrence id; a retry with the same occurrence returns the
+  first receipt by key, before any write (PROFICIENCY-0 §4.3). A different occurrence on a changed
+  track is refused `STALE_REVISION`.
+
+## 5. Admission gate (fail closed)
+
+An operation is admitted only when its cost row, and for `MODIFY` and `RESHAPE_OFFER` the pool, the
+odds and the rank values, are `PARITY_CONFIRMED` in content (official, owner-verified TibiaPal or
+tibiatools.io, then English TibiaWiki; OTS sources are not evidence here). Until then the server
+refuses it with `NOT_ADMITTED` and writes nothing. If evidence never appears for some value, the
+architect puts a declared difference to the owner in one batch; nothing is invented meanwhile.
+`CLEAR` and `RESHAPE_CHOOSE` cost nothing and are admitted together with the operations that create
+their state.
+
+## 6. Catalysts (PROF-SHAPE-1)
+
+- A catalyst is used through ITEM-USE-0 on a held item: a one-unit BURN under `ProficiencyCause
+  {catalyst, occurrence}`. Its effect is a typed content record whose kind is fixed only by evidence:
+  for example a progress multiplier for a duration, or a flat progress grant to one track. The effect
+  kind and its values are a hard parity gate: until they are evidenced the use is refused
+  `NOT_ADMITTED`, and the catalyst stays a tradeable item.
+- A progress multiplier would apply at PROFICIENCY-0 §4.3 accrual, before the checkpoint, and its
+  remaining time would follow TIMED-ITEM-0's held-clock rules if it is an item state, or
+  CONDITIONS-0 if it is an actor condition. The admitting content revision states which.
+- The two catalysts the manual names (Proficiency Catalyst, Greater Proficiency Catalyst) are the
+  ones this section admits once their effects are evidenced. The Test Proficiency Catalyst
+  (TibiaWiki only) is gated separately: it stays not admitted until evidence shows it exists on
+  Global servers, whatever the other two's status.
+
+## 7. Rows
+
+| Row | Value |
+|---|---|
+| `PROF1-RL-01` modification slots per track | 2 |
+| `PROF1-RL-02` rank | 1..10 |
+| `PROF1-RL-03` reshape options | 3 |
+| `PROF1-RL-04` modification receipts per character per minute | 30 (anti-spam; a refusal writes nothing) |
+
+Each with max and max+1 tests.
+
+## 8. Wire (PROF-SHAPE-WIRE-1)
+
+The six operations are commands that join capability 2 (PROF-WIRE-0 §5), with type numbers reserved
+on #162 at their allocation; each carries the item key, the slot, its operation fields, the expected
+track revision and the occurrence, at most 32 bytes. `ACTOR_PROFICIENCY` snapshots and deltas carry
+the modification rows (slot, level, pool entry, rank, pending offer); PROF-WIRE-0's RL-01 snapshot
+bound is re-measured by PROF-SHAPE-WIRE-1 before the commands ship.
+
+## 9. Rejected options
+
+- **Copying Canary or Crystal.** Their shaping is a no-op or empty; using it would invent Global
+  behaviour.
+- **An undurable reshape offer.** A redraw on every request would let players fish for options.
+- **Dust as an item.** IMBUE-FORGE-0 keeps it a capped Character balance.
+- **Guessing costs.** The admission gate keeps the operations closed until evidence or an owner
+  decision exists.
+
+## 10. Architect rulings (owner rule 5905825574)
+
+- **R1. Unknown costs and odds.** a) Build the operations and keep them closed until evidence
+  (recommended); b) admit with OTS values. **Ruled a).**
+- **R2. Reshape offer.** a) Durable, paid at offer (recommended); b) free redraws. **Ruled a).**
+- **R3. Incompatible revision.** a) Clear the affected modification without refund
+  (`PARITY_PENDING`); b) keep it unchanged. **Ruled a)**, because a modification of a perk that no
+  longer exists has no meaning.
+
+## 11. Owner questions
+
+None now. A gold cost, or a value that evidence never settles, comes back to the owner in one batch.
+
+## 12. Decision test
+
+- **Must decide now:** YES. PROF-1 and PROF-2 are allocated (D281); without this the modification
+  slots have no state, cause or transaction.
+- **Minimum sufficient:** one table, one receipt cause, six operations, one cause for dust and items,
+  and a fail-closed admission gate.
+- **Superseding evidence:** official or owner-verified costs, pools, odds and catalyst effects.
+- **Deliberately not decided:** values (§2 UNKNOWN), gold costs, the Test Proficiency Catalyst's
+  Global status.
+
+## 13. Before-freeze checklist
+
+1. **Contract amendments:** PROFICIENCY-0 §4.2 and §4.5 (modification rows and cause); DUR-03 §15 and
+   §18 (`ProficiencyCause`); IMBUE-FORGE-0 §9 (a dust sink). Applied in this PR.
+2. **Serialization:** one Character transaction per operation, PROFICIENCY-0's writer and chain;
+   lock order root, track, dust, item.
+3. **Restart:** all state is durable; a pending offer survives restart.
+4. **Typed references:** track (CharacterId, item key), pool revision and entry, occurrences.
+5. **Wire:** six commands under capability 2, later.
+6. **Split work:** none.

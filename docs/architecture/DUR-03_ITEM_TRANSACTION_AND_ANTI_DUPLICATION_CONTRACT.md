@@ -409,6 +409,10 @@ Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
 `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
 The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition, Throwing}`.
 
+**Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §4, §6).** The closed `ProficiencyCause {track, slot, operation,
+occurrence}` (and `{catalyst, occurrence}`) is a sink for forge dust value lines (§18) and for
+one-unit item burns of the Lunar Ascension Orb and catalysts.
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy
