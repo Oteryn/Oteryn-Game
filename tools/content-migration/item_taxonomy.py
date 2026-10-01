@@ -22,6 +22,7 @@ SNAPSHOT = "imports/tibiawiki/facts/items-stats.json"
 CLIENT_DIGEST = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 CLIENT_PATH = f"content/assets/files/appearances-{CLIENT_DIGEST}.dat"
 FALLBACK_PATH = "imports/tibiawiki/facts/items-family-fallback.json"
+BULK_FALLBACK_PATH = "imports/tibiawiki/facts/items-family-fallback-bulk-20261001.json"
 # Only semantic clothing slots are admitted; hand slots do not identify a family.
 MARKET_PROFILES = {
     1: "equipment_armor",
@@ -130,7 +131,7 @@ def build_taxonomy(
                 },
                 "family_profile": entry["profile"],
                 "source_evidence": {
-                    "snapshot": FALLBACK_PATH,
+                    "snapshot": entry.get("snapshot_path", FALLBACK_PATH),
                     "snapshot_sha256": entry["snapshot_sha256"],
                     "qualified_fallback": evidence,
                 },
@@ -201,6 +202,41 @@ def build_taxonomy(
     return [rows[key] for key in sorted(rows)]
 
 
+def load_taxonomy_fallback(root, identity_index, bound_keys, routed_keys, snapshot):
+    """Join the separate reviewed family corpus without changing retained evidence."""
+    fallback_path = root / FALLBACK_PATH
+    fallback_digest = json.loads(fallback_path.read_text())["snapshot_sha256"]
+    fallback = load_wiki_family_fallback(fallback_path, identity_index)
+    for entry in fallback.values():
+        entry["snapshot_sha256"] = fallback_digest
+
+    bulk_path = root / BULK_FALLBACK_PATH
+    bulk_digest = json.loads(bulk_path.read_text())["snapshot_sha256"]
+    bulk = load_wiki_family_fallback(bulk_path, identity_index)
+    if fallback.keys() & bulk.keys():
+        raise ValueError("TAXONOMY_BULK_RETAINED_FALLBACK_OVERLAP")
+    primary_keys = {
+        identity_index[row["item_id"]][0]
+        for row in snapshot["records"].values()
+        if row["item_id"] in identity_index
+        and any(
+            "primarytype" in observation["fields"]
+            for observation in row["observations"]
+        )
+    }
+    for key, entry in bulk.items():
+        if key not in bound_keys:
+            raise ValueError("TAXONOMY_BULK_EXACT_BINDING_REQUIRED")
+        if key in routed_keys:
+            raise ValueError("TAXONOMY_BULK_WORLD_OWNER_PRECEDENCE")
+        if key in primary_keys:
+            raise ValueError("TAXONOMY_BULK_RETAINED_PRIMARY_PRECEDENCE")
+        entry["snapshot_sha256"] = bulk_digest
+        entry["snapshot_path"] = BULK_FALLBACK_PATH
+    fallback.update(bulk)
+    return fallback
+
+
 def taxonomy_inputs(root=ROOT):
     snapshot = json.loads((root / SNAPSHOT).read_text(encoding="utf-8"))
     digest = hashlib.sha256(
@@ -224,11 +260,9 @@ def taxonomy_inputs(root=ROOT):
                 pointer = row.get("provenance", {}).get("item_pointer", {})
                 if pointer:
                     routed_keys.add(pointer["key"])
-    fallback_path = root / FALLBACK_PATH
-    fallback_digest = json.loads(fallback_path.read_text())["snapshot_sha256"]
-    fallback = load_wiki_family_fallback(fallback_path, build_identity_index())
-    for entry in fallback.values():
-        entry["snapshot_sha256"] = fallback_digest
+    fallback = load_taxonomy_fallback(
+        root, build_identity_index(), bound_keys, routed_keys, snapshot
+    )
     client_bytes = (root / CLIENT_PATH).read_bytes()
     if hashlib.sha256(client_bytes).hexdigest() != CLIENT_DIGEST:
         raise ValueError("TAXONOMY_CLIENT_DIGEST")

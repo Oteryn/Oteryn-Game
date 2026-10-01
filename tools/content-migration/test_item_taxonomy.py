@@ -1,10 +1,18 @@
 """Source agreement, identity boundaries and post-Wave-1 relation regressions."""
 
+import hashlib
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
-from item_taxonomy import build_taxonomy, legacy_profile
+from item_taxonomy import (
+    BULK_FALLBACK_PATH,
+    FALLBACK_PATH,
+    build_taxonomy,
+    legacy_profile,
+    load_taxonomy_fallback,
+)
 from world_project_v2_to_tree import capability_relations
 
 
@@ -149,6 +157,102 @@ class TaxonomyTests(unittest.TestCase):
             "state": "UNKNOWN"
         }
         self.assertEqual(capability_relations(definition, None), [])
+
+    def test_bulk_fallback_uses_own_source_path_and_retains_old_path(self):
+        key = "oteryn:item.tibia.i34086"
+        entry = {
+            "profile": "quest_item",
+            "snapshot_sha256": "c" * 64,
+            "evidence": {
+                "resolution": "direct",
+                "field": "primarytype",
+                "value": "Quest Items",
+            },
+        }
+        old = self.rows([], fallback={key: entry})[0]
+        self.assertEqual(old["source_evidence"]["snapshot"], FALLBACK_PATH)
+        entry["snapshot_path"] = BULK_FALLBACK_PATH
+        new = self.rows([], fallback={key: entry})[0]
+        self.assertEqual(new["source_evidence"]["snapshot"], BULK_FALLBACK_PATH)
+        self.assertEqual(new["source_evidence"]["snapshot_sha256"], "c" * 64)
+        self.assertEqual(self.rows([], fallback={key: entry}, routed=True), [])
+        self.assertEqual(self.rows(["Unknown category"], fallback={key: entry}), [])
+
+    def test_separate_snapshot_rejects_overlap_owner_binding_and_primary_replacement(
+        self,
+    ):
+        key = "oteryn:item.tibia.i34086"
+        record = {
+            "registry_key": key,
+            "matched_names": ["soulcrusher"],
+            "resolution": "direct",
+            "match_basis": "title",
+            "field": "primarytype",
+            "value": "Quest Items",
+            "wiki_title": "Soulcrusher",
+            "page_id": 1,
+            "revision_id": 2,
+            "revision_timestamp": "2026-09-27T00:00:00Z",
+            "url": "https://tibia.fandom.com/wiki/Soulcrusher",
+            "revision_sha1": "a" * 40,
+            "content_sha256": "b" * 64,
+            "captured_at": "2026-10-01T00:00:00Z",
+        }
+
+        def write_snapshot(root, path, records):
+            digest = hashlib.sha256(
+                json.dumps(
+                    records, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                ).encode()
+            ).hexdigest()
+            target = root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(
+                json.dumps(
+                    {
+                        "schema": "OTERYN_ITEM_FAMILY_FALLBACK_SNAPSHOT/v1",
+                        "batch_id": "test",
+                        "family": "Item",
+                        "source": {},
+                        "captured_at": "2026-10-01T00:00:00Z",
+                        "records": records,
+                        "snapshot_sha256": digest,
+                    }
+                )
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_snapshot(root, FALLBACK_PATH, {})
+            write_snapshot(root, BULK_FALLBACK_PATH, {key: record})
+            identity = {34086: (key, "crystal_exact_binding")}
+            snapshot = {"records": {}}
+            entry = load_taxonomy_fallback(root, identity, {key}, set(), snapshot)[key]
+            self.assertEqual(entry["snapshot_path"], BULK_FALLBACK_PATH)
+            for bound, owners, observed, expected in (
+                (set(), set(), snapshot, "EXACT_BINDING_REQUIRED"),
+                ({key}, {key}, snapshot, "WORLD_OWNER_PRECEDENCE"),
+                (
+                    {key},
+                    set(),
+                    {
+                        "records": {
+                            "34086": {
+                                "item_id": 34086,
+                                "observations": [
+                                    {"fields": {"primarytype": "Unknown"}}
+                                ],
+                            }
+                        }
+                    },
+                    "RETAINED_PRIMARY_PRECEDENCE",
+                ),
+            ):
+                with self.assertRaisesRegex(ValueError, expected):
+                    load_taxonomy_fallback(root, identity, bound, owners, observed)
+            write_snapshot(root, FALLBACK_PATH, {key: record})
+            with self.assertRaisesRegex(ValueError, "RETAINED_FALLBACK_OVERLAP"):
+                load_taxonomy_fallback(root, identity, {key}, set(), snapshot)
 
     def test_owner_decision_is_reached_without_engine_family_and_respects_owner(self):
         target = {

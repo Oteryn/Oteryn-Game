@@ -14,6 +14,7 @@ on:
       - imports/crystalserver/bindings/items.json
       - imports/crystalserver/facts/**
       - imports/tibiawiki/facts/items-family-fallback.json
+      - imports/tibiawiki/facts/items-family-fallback-bulk-20261001.json
       - imports/tibiawiki/facts/items-stats.json
       - imports/tibiawiki/batches.json
       - imports/tibiawiki/sources.json
