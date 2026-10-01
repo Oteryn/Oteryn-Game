@@ -166,6 +166,9 @@ disagree, §13 R6).
 - **Kinds and links.** A spawned creature links to its spawn point (§6); a raid creature to its
   raid run (BOSS-RAID-0 §4.4); an encounter creature to its encounter, whose rules override this
   decision where they say so; a summon to its owner's `ExactActorRef` (§8).
+  **Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §3, §6.2).**
+  The encounter link is to one encounter instance of the same scope owner; its overrides
+  (`attribute`, `move_lock`, encounter-stage modifiers) end with the creature or the instance.
 - **Representation.** A typed state machine in Rust over the creature's content profile (the
   existing `ai_think`), dispatching on data, never on a creature's identity. No scripts. Custom
   behaviour enters only through Ability `native_behavior` keys.
@@ -185,6 +188,8 @@ disagree, §13 R6).
   query examines for the moved player or player summon, from its own position (at most
   `MOVE-RL-09`, 1,024 each), so a summon away from its owner still wakes the creatures it
   reaches.
+  **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §4).** The wake set also
+  includes NPCs among those candidates (at most one pending think each, `RL-11`).
 - A summon is never idle while its owner is on the channel.
 
 ### 4.2 Perception
@@ -388,9 +393,14 @@ decisions; until then the factor is 1.
   beyond them stay due and run in the next windows in deadline order, then `ExactActorRef`. Think
   timers keep `SKIP_TO_LATEST` (first slice §4.2): a late think runs once, never a burst.
 - A think over `RL-06` work units ends idle for that think with zero mutation (bootstrap §7).
+- **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8).** Player chase
+  searches use the same path profile with their own row `RANGED0-RL-03` (64 per window per channel),
+  served in actor-id order after creature searches.
 - Control, fencing, admission and player input never wait for AI work: AI budgets are separate and
   bounded (GAME-AI-01 §20). Player-visible creatures get no priority: the order is deterministic
   (SIM-DETERMINISM-01), so an overload shows as later thinks, the same on every replay.
+- **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §4).** NPC thinks (walk, voices) run on the same scheduling
+  with their own row `NPCBEH0-RL-02` (256 per window per channel), after creature thinks.
 - `RL-17` measures the cost. If the p99 is above it, `RL-05` and `RL-09` fall by a new decision;
   they are never raised to hide it.
 

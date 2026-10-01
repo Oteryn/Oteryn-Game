@@ -1,0 +1,171 @@
+{
+  "schema": "OTERYN_WHEEL_ICON_SHEET_OBSERVATIONS/v1",
+  "observed_on": "2026-10-01",
+  "runtime_admitted": false,
+  "redistribution_authorized": false,
+  "source_use": "REFERENCE_ONLY; public availability does not grant redistribution rights",
+  "sheets": [
+    {
+      "category": "dedication",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-smallperks.png",
+      "sha256": "5b1004c3be13fac0fc3c5fc4d111366e71b4d63dcefd9ad7f0b11616b28a3a0e",
+      "width": 208,
+      "height": 16,
+      "bytes": 2450,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-smallperks.png",
+      "visual_inspection": true
+    },
+    {
+      "category": "conviction",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-mediumperks.png",
+      "sha256": "78db38ddab2a1465c233f2e9f5a5b2d7214741875396097d7caa07d0ef9bd516",
+      "width": 1470,
+      "height": 30,
+      "bytes": 71690,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-mediumperks.png",
+      "visual_inspection": true
+    },
+    {
+      "category": "revelation",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-largeperks.png",
+      "sha256": "9dc356f838518438aa909f4742489c955b9f135d24a89833b1840802224e0509",
+      "width": 544,
+      "height": 34,
+      "bytes": 28010,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-largeperks.png",
+      "visual_inspection": true
+    },
+    {
+      "category": "basic_mod",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-basicmods.png",
+      "sha256": "53f580f00b908497643806c3ac123e18748f52adde35af1e5f0d5ac3ff89bc77",
+      "width": 1470,
+      "height": 30,
+      "bytes": 39109,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-basicmods.png",
+      "visual_inspection": true
+    },
+    {
+      "category": "supreme_mod",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-suprememods.png",
+      "sha256": "86f334d16d6b25f0a20ff02e3461bf167b74c953c6a8ed9bed2761b870879b84",
+      "width": 3290,
+      "height": 35,
+      "bytes": 88061,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-suprememods.png",
+      "visual_inspection": true
+    }
+  ],
+  "revelation_rgba_pixels_equal_pinned_tibiapal": true,
+  "older_client_layout": {
+    "file": "modules/game_wheel/icons.lua",
+    "sha256": "4091977087962ed870be9740d6bb149a7173b774c4f89d0b7aa91448afbc86e0",
+    "dedication_slots_matched": 180,
+    "conviction_slots_matched": 167,
+    "conviction_slot_differences": [
+      {
+        "vocation": "knight",
+        "slot": 8,
+        "key": "augmented_shield_slam",
+        "current_planner_id": 14,
+        "older_client_slot_id": 13
+      },
+      {
+        "vocation": "knight",
+        "slot": 11,
+        "key": "augmented_groundshaker",
+        "current_planner_id": 13,
+        "older_client_slot_id": 14
+      },
+      {
+        "vocation": "knight",
+        "slot": 24,
+        "key": "augmented_shield_slam",
+        "current_planner_id": 14,
+        "older_client_slot_id": 13
+      },
+      {
+        "vocation": "knight",
+        "slot": 26,
+        "key": "augmented_groundshaker",
+        "current_planner_id": 13,
+        "older_client_slot_id": 14
+      },
+      {
+        "vocation": "sorcerer",
+        "slot": 8,
+        "key": "augmented_special_spells",
+        "current_planner_id": 26,
+        "older_client_slot_id": 36
+      },
+      {
+        "vocation": "sorcerer",
+        "slot": 11,
+        "key": "augmented_death_echo",
+        "current_planner_id": 36,
+        "older_client_slot_id": 26
+      },
+      {
+        "vocation": "sorcerer",
+        "slot": 24,
+        "key": "augmented_special_spells",
+        "current_planner_id": 26,
+        "older_client_slot_id": 36
+      },
+      {
+        "vocation": "sorcerer",
+        "slot": 26,
+        "key": "augmented_death_echo",
+        "current_planner_id": 36,
+        "older_client_slot_id": 26
+      },
+      {
+        "vocation": "sorcerer",
+        "slot": 36,
+        "key": "focus_mastery",
+        "current_planner_id": 23,
+        "older_client_slot_id": 27
+      },
+      {
+        "vocation": "druid",
+        "slot": 6,
+        "key": "augmented_forked_spells",
+        "current_planner_id": 29,
+        "older_client_slot_id": 31
+      },
+      {
+        "vocation": "druid",
+        "slot": 16,
+        "key": "augmented_strong_ice_wave",
+        "current_planner_id": 31,
+        "older_client_slot_id": 29
+      },
+      {
+        "vocation": "druid",
+        "slot": 21,
+        "key": "augmented_forked_spells",
+        "current_planner_id": 29,
+        "older_client_slot_id": 31
+      },
+      {
+        "vocation": "druid",
+        "slot": 31,
+        "key": "augmented_strong_ice_wave",
+        "current_planner_id": 31,
+        "older_client_slot_id": 29
+      }
+    ],
+    "used_for_current_bindings": false
+  },
+  "appearance_limit": "All five strips visually inspected; other four lack original-CDN pixel comparison. Focus Mastery source ID is retained without claiming current Global appearance parity."
+}

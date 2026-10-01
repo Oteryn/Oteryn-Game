@@ -265,6 +265,12 @@ Consequence: Platform source availability and latency are on the admission path,
   - `offer_revision`.
 
   Each must satisfy the FND-04 grant profile §11 token grammar.
+- **Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3).** The D1 configuration also declares, per channel
+  scope, `required_gameplay_capabilities` (a sorted, unique list of at most 16 registered ids, possibly
+  empty) beside `world_policy_revision`; boot computes its closure under the registry `requires` and
+  fails closed on an unregistered, cyclic or unoffered id, or when the closure lacks a member of
+  ADMIT-0's mandatory floor (the WORLD-INTERACTION-0 capabilities this build offers), for every
+  channel scope. The Platform needs only the token.
 - **Fixed by the build:** `protocol_major` and `transport_profile`.
 - **From the #415 assignment:** `ownership_generation`.
 - **Why declared rather than measured.** No Content activation authority lane exists yet (`content/activation.rs` requires one), and this slice serves no gameplay content after admission. Declared revisions are therefore acceptable only while post-admission input stays fail-closed.

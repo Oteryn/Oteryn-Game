@@ -405,6 +405,10 @@ The quest exchange amendment in §39.3 admits the closed `QuestExchangeCause`.
 admits the closed `ConjureCause` (a BURN of one reagent unit with a MINT of the conjured units).
 Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
 
+**Amendment (pending on acceptance of RANGED-0;
+`reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
+The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition, Throwing}`.
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy
@@ -645,6 +649,10 @@ Stale former runtime owner cannot commit after authority moved. NodeId alone is 
 
 Future world-shared spatial owner uses separately typed location/authority family, not channel-local disguise.
 
+**Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §8).** Ground custody
+admits an InstanceRuntime scope: the Ground location row carries the `InstanceId` scope ref, fenced by
+the instance's ownership, with the tile limit and a per-instance counter (`ENCRT0-RL-06`).
+
 ## 33. Equipment atomicity
 
 GAME-ITEM owns equip legality. DUR-03 requires all old location/claims, complete new occupancy, legal displacement result and required receipt/audit to commit all-or-none.
@@ -751,6 +759,12 @@ value lines. For those shapes only, it supersedes the §39.1 exclusions of trans
 transfer and of multiple touched items, and the §39.1 and §39.3 source and destination limits,
 within the MAIL-0 §11 rows (11 touched items). Every other obligation is unchanged.
 
+**Amendment (pending on acceptance of WRITE-0; `reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md` §5.3).** A write to a
+`write_once` item adds one `TRANSFORM` line (`PRESERVE_INSTANCE`, §16.2) of that one item to its
+versioned `write_once_to` definition, under the closed `WriteOnceCause` keyed by the CommandRef, in
+the same transaction as the text write. One touched item, no value line, the one-item rows. For this
+shape only, it supersedes the §39.1 exclusion of transform.
+
 ## 39. Mandatory durable evidence boundary
 
 ADR-0006 requires durable audit for security-relevant durable item/currency mutation. DUR-03 therefore requires ANL-compatible durable transaction evidence sufficient to reconcile every effect whose owning value/security policy declares mandatory audit.
@@ -835,6 +849,11 @@ Content definition or a production quantity ceiling.
 §39.1).** The rune and conjure amendment in §39.3 also admits a one-unit BURN under
 `ItemUseCause::Rune`, and one reagent-unit BURN with one MINT of the conjured units into an
 existing stack or a fresh entry under `ConjureCause`.
+
+**Amendment (pending on acceptance of RANGED-0;
+`reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
+The weapon use amendment in §39.3 also admits a one-unit BURN, or a one-unit split, merge into a
+dropped Ground stack, or whole-item TRANSFER to Ground, under `WeaponUseCause`.
 
 **Amendment (pending on acceptance of WORLD-INTERACTION-0;
 `reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`
@@ -1605,6 +1624,16 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
   use's effect, with its own suffixed resource rows.
 
+**Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §6.5, §8).** Once
+accepted: in its ENC-OUTCOME-1 child, a one-item MINT into Ground custody of the encounter's scope
+under the closed cause `EncounterDropCause`, keyed by `(encounter instance, occurrence sequence,
+action index)`, in the D3 loot MINT shape with the tile limits and §32; and in its
+INSTANCE-GROUND-1 child, a third retirement cause `InstanceRetire`, each step keyed by
+`(WorldId, InstanceId, ItemInstanceId)`
+on `game_item_decay_retire_reservations` and `game_item_decay_retire_receipts` (discriminator CHECK
+as for `WorldReset`), one-item steps, resumable, for every live Ground root of an ended instance and
+its contents. Supersession, for these shapes only: the §39.1 MINT cause and Ground-scope limits.
+
 **Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
 Once accepted, in its NPC-QUEST-1 child:
 
@@ -1643,6 +1672,38 @@ conjure's mana and soul debit as the MINT source, and the runtime settles or rel
 caster's holds only from that durable outcome (RUNE-USE-0 `RUNEUSE0-C2`). Both supersede the §39.1 exclusions of burn,
 mint into an existing stack and multiple touched items for these shapes only, with one audit
 event each and their own suffixed rows (`DUR03-RL-01-RUNE`, `DUR03-RL-01-CONJURE`).
+
+**Amendment (pending on acceptance of RANGED-0;
+`reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md`
+§6).** Once accepted, in its RANGED-1 child and for these shapes only, under the closed cause
+`WeaponUseCause {Ammunition, Throwing}` keyed by the swing `(WorldId, ChannelId, scope ownership
+generation, runtime actor id, actor generation, swing sequence, CharacterId)`, fenced by the
+composition decision's server-originated variant (the actor's current admitted session's
+`CurrentCharacterItemFence`, no CommandRef) and, for a Ground drop, the §32 scope fence; one
+transaction per swing, with the shot unit reserved under §7.1 at PREPARE and committed before the
+swing's effect:
+
+- **Ammunition burn.** One BURN line (§17) of exactly one unit from the shot direct entry of the
+  equipped quiver, which keeps its identity (§11.1) or retires at zero (§11.5).
+- **Throwing burn.** The same one-unit BURN from the right-hand stack when the frozen break draw
+  breaks it or the drop was refused at PREPARE.
+- **Throwing drop.** One unit of the right-hand stack to the landing tile's Ground: a §13 quantity
+  transfer into the tile's top Ground item (highest database-assigned Ground ordinal, RANGED-0
+  §6.1.2) when it is an unreserved compatible stack with room, reserved under §7.1 at PREPARE and
+  rechecked at commit under the tile row `FOR SHARE` (the hand stack
+  shrinks or retires at zero, the receiver grows and keeps its identity); otherwise a new item at the
+  top of the tile, by a §12 split into a planned identity (§11.3), or a whole TRANSFER from the
+  right-hand slot when it is the last unit, under the ITEM-MOVE-WIRE-1 §5 Ground rules (tile and
+  channel limits, house tiles refused, the tile row lock and counter). Every Ground write takes the
+  ITEM-MOVE-WIRE-1 §6.2 scope fence; D191 reset retirement applies. A database refusal is a refused
+  commit under the same TransactionId (§23).
+- **Supersession.** For these shapes only, as ITEM-MOVE-WIRE-1 §6.1 did for its own: the §39.1
+  exclusions of burn, multiple touched items (at most 2), quantity redistribution (the split, and the
+  merge into a live dropped Ground stack), nested containers (an entry of the equipped quiver, depth
+  1), the source custodies (the right-hand slot and quiver entries as BURN, split or merge sources),
+  Ground insertion by split, and a whole TRANSFER from a slot to Ground under `WeaponUseCause`. Every other §39 obligation is unchanged. One audit event per swing
+  consequence (a `OneItemTransactionV1` operation assigned by RANGED-1); rows `DUR03-RL-0x-WEAPON` as
+  RANGED-0 §6.3 (one participant per touched item).
 
 ## 40. Durable acknowledgement
 
