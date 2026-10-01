@@ -2,6 +2,8 @@
 // root as `charm_state_postgres.rs` can include this file.
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
+use crate::charm_transport::CharmPortUnavailable;
+use crate::charm_transport::native::{CharmConnectionContent, NativeCharmProgressionPort};
 use crate::domain::charm::{
     BestiaryRaceKey, BestiaryStage, CharmCatalogue, CharmCategory, CharmCurrency, CharmDefinition,
     CharmKey, CharmRuleError, CharmSlotEntitlement, CharmStage, derive_balance,
@@ -497,6 +499,40 @@ fn catalogue() -> CharmCatalogue {
         minor("bless"),
     ])
     .expect("catalogue")
+}
+
+// Validated provider fixtures exercise native binding; they do not claim production Content.
+fn native_content(
+    races: Vec<crate::domain::bestiary::BestiaryRace>,
+) -> TestResult<CharmConnectionContent> {
+    use crate::combat::charm_effects::{
+        CharmCatalogueRead, CharmCategory as EffectCategory, CharmDefinition as EffectDefinition,
+        CharmEffect, CharmPercent, CharmStageValue,
+    };
+    struct Effects(BTreeMap<String, EffectDefinition>);
+    impl CharmCatalogueRead for Effects {
+        fn charm(&self, key: &str) -> Option<&EffectDefinition> {
+            self.0.get(key)
+        }
+    }
+    let catalogue = catalogue();
+    let mut effects = Effects(BTreeMap::new());
+    for definition in catalogue.definitions() {
+        let category = match definition.category {
+            CharmCategory::Major => EffectCategory::Major,
+            CharmCategory::Minor => EffectCategory::Minor,
+        };
+        let effect = EffectDefinition::new(
+            definition.key.as_str(),
+            category,
+            CharmStageValue::TriggerChancePercent,
+            [100, 200, 300].map(|value| CharmPercent::from_hundredths(value).expect("percent")),
+            CharmEffect::DodgeAttack,
+        )
+        .map_err(debug)?;
+        effects.0.insert(definition.key.as_str().to_owned(), effect);
+    }
+    CharmConnectionContent::new("content-1".into(), catalogue, races, &effects).map_err(debug)
 }
 
 fn occurrence(tag: u8) -> CharmCommandOccurrence {
@@ -1039,6 +1075,62 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
         assert_eq!(view.balance.available(CharmCurrency::CharmPoints), 60);
         assert_eq!(view.balance.available(CharmCurrency::MinorCharmEchoes), 50);
         assert_eq!(view.slot_entitlement, CharmSlotEntitlement::Free);
+        let content = native_content(vec![bestiary_race("wolf")?, bestiary_race("rat")?])?;
+        let port = NativeCharmProgressionPort::bind(
+            &harness.root,
+            &authority,
+            &harness.node,
+            fence(8)?,
+            &content,
+            facts.clone(),
+        )
+        .await
+        .map_err(debug)?;
+        let native_view = port.views().await.map_err(debug)?;
+        assert_eq!(native_view.revision.get(), 8);
+        assert_eq!(
+            native_view
+                .bestiary
+                .iter()
+                .map(|race| (race.race.get(), race.kill_count))
+                .collect::<Vec<_>>(),
+            [(1, 3), (2, 2)]
+        );
+        assert_eq!(native_view.charms.charm_points_available, 60);
+        assert_eq!(native_view.charms.minor_charm_echoes_available, 50);
+        let wound = &native_view.charms.charms[3];
+        assert_eq!(
+            (
+                wound.charm.get(),
+                wound.unlocked_stage,
+                wound.assigned_race.map(std::num::NonZeroU32::get)
+            ),
+            (4, 1, Some(1))
+        );
+        assert!(
+            native_view
+                .charms
+                .charms
+                .iter()
+                .all(|charm| !charm.effect_active)
+        );
+        let mut mismatched_session = fence(8)?;
+        mismatched_session.game_session_id =
+            crate::foundation::GameSessionId::decode(&id(51)).map_err(debug)?;
+        for refused_fence in [mismatched_session, fence(7)?] {
+            assert!(matches!(
+                NativeCharmProgressionPort::bind(
+                    &harness.root,
+                    &authority,
+                    &harness.node,
+                    refused_fence,
+                    &content,
+                    facts.clone(),
+                )
+                .await,
+                Err(CharmPortUnavailable)
+            ));
+        }
         let mut maximal = read_request();
         maximal
             .races
@@ -1205,6 +1297,13 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
         drop(restart_authority);
         drop(restart_seal);
         drop(restarted);
+        // Independently replace the live connection generation. The already-bound port must
+        // reject its old evidence rather than reconstructing current authority from storage.
+        let replaced = sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation = 2 WHERE game_session_id = encode($1,'hex')::uuid")
+            .bind(id(50).as_slice()).execute(&harness.pool).await?;
+        assert_eq!(replaced.rows_affected(), 1);
+        assert_eq!(port.views().await, Err(CharmPortUnavailable));
+        drop(port);
         drop(authority);
         drop(seal);
         harness.cleanup().await

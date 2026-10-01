@@ -25,6 +25,12 @@ pub mod foundation;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
+#[path = "../src/gameplay_transport/charm.rs"]
+mod charm_transport;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/combat.rs"]
+pub mod combat;
+
 // Standalone target for local focused runs. The cases need only the path-loaded crate root
 // above, so a protected PostgreSQL wrapper can include the same file.
 #[path = "support/charm_state_postgres_cases.rs"]

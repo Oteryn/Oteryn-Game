@@ -29,6 +29,9 @@ use sha2::{Digest, Sha256};
 use crate::durability::charm_state::CharmCommandOccurrence;
 use crate::foundation::GameSessionId;
 
+#[path = "charm_native.rs"]
+pub(crate) mod native;
+
 /// The port cannot produce a view now (no fenced character, storage unavailable).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct CharmPortUnavailable;
@@ -41,8 +44,8 @@ pub(crate) trait CharmProgressionPort {
         &self,
     ) -> impl Future<Output = Result<Vec<BestiaryRaceProgress>, CharmPortUnavailable>> + Send;
     /// The character's charms, derived available balances and slot limit (CHARM-3), in any order.
-    /// Each entry's `effect_active` is `CharmDefinition::effect_active` of that charm, derived from
-    /// CHARM-4's `CharmMissingSystem` and never stored (Sol ruling, #162 comment 5913269950).
+    /// Effect availability is derived and never stored. A calculation-ready CHARM-4 definition
+    /// still requires a qualified, connected production consumer before advertising activation.
     fn charms(&self) -> impl Future<Output = Result<CharmView, CharmPortUnavailable>> + Send;
     /// One CHARM-3 `commit_charm_command` of `UnlockNextStage` under `occurrence`. The port
     /// answers `STAGE_MISMATCH` when the charm's stored stage is not `intent.expected_stage`
