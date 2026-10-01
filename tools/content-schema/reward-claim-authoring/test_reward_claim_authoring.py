@@ -254,7 +254,7 @@ def test_nonstack_charge_subtype_is_held_in_build_and_validate() -> None:
     claim = pilot_claim("charged/one", "canary:item/1781", 1)
     records, checks = rca.build_records([claim], manifest_for(claim), admitted)
     assert records[0]["definition"]["readiness"] == "waiting_item_semantics"
-    assert any("charge subtype" in check["reason"] for check in checks)
+    assert any("SOURCE_CHARGE_ARGUMENT_UNKNOWN" == check["reason"] for check in checks)
     assert rca.validate(records, admitted, checks) == []
     records[0]["definition"]["readiness"] = "ready"
     assert any("marked ready" in error for error in rca.validate(records, admitted, checks))
@@ -270,6 +270,109 @@ def test_stackable_charge_definition_does_not_turn_quantity_into_subtype() -> No
     stone["semantics"] = {"charges": {"state": "KNOWN", "value": {
         "count": {"state": "KNOWN", "value": 1}}}}
     assert rca.source_subtype_problem(stone) is not None
+
+
+AMULET='oteryn:item.tibia.i3081'
+
+def charged_fixture(raw=5,default=5):
+    claim=pilot_claim('charged/proved','canary:item/3081',raw)
+    admitted=items();admitted[AMULET]={'materializable':True,'stack_class':'NonStackable','semantics':{'charges':{'state':'KNOWN','value':{'count':{'state':'KNOWN','value':default}}}}}
+    proof=[{'pilot_key':claim['identity']['key'],'project_position':claim['placements'][0]['position'],'item':AMULET,'source_count_argument':raw,'source_default_charges':default}]
+    return claim,admitted,proof
+
+def build_charged(claim,items,proof):return rca.build_records([claim],manifest_for(claim),items,proof)
+
+def test_definition_default_normalizes_one_instance_and_preserves_raw_source():
+    claim,items,proof=charged_fixture();records,checks=build_charged(claim,items,proof)
+    reward=records[0]['definition']['placements'][0]['reward']['items'][0]
+    assert reward['count']==1
+    assert checks[0]['source_count_argument']==5 and checks[0]['definition_charges']==5
+    assert checks[0]['reason']=='NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED'
+    assert records[0]['definition']['readiness']=='waiting_item_semantics'
+    assert rca.validate(records,items,checks,[claim],proof)==[]
+    assert claim['placements'][0]['reward']['items'][0]['count']==5
+    records[0]['definition']['readiness']='ready'
+    assert any('marked ready' in e for e in rca.validate(records,items,checks,[claim],proof))
+
+def test_banshee_one_charge_is_a_source_definition_conflict():
+    claim,items,proof=charged_fixture(raw=1,default=5);records,checks=build_charged(claim,items,proof)
+    assert checks[0]['reason']=='SOURCE_CHARGE_MISMATCH'
+    assert checks[0]['classification']=='CONFLICT'
+    assert 'normalization' not in checks[0]
+    assert rca.validate(records,items,checks,[claim],proof)==[]
+
+def test_forged_quantity_or_source_diagnostics_are_rejected():
+    claim,items,proof=charged_fixture();records,checks=build_charged(claim,items,proof)
+    changed=copy.deepcopy(records);changed[0]['definition']['placements'][0]['reward']['items'][0]['count']=5
+    assert any('quantity disagrees' in e for e in rca.validate(changed,items,checks,[claim],proof))
+    assert any('missing or stale' in e for e in rca.validate(records,items,[],[claim],proof))
+    changed=copy.deepcopy(checks);changed[0]['source_count_argument']=1
+    assert any('missing or stale' in e for e in rca.validate(records,items,changed,[claim],proof))
+
+def test_same_item_and_number_without_exact_source_proof_are_not_normalized():
+    claim,items,proof=charged_fixture();records,checks=build_charged(claim,items,[])
+    assert records[0]['definition']['placements'][0]['reward']['items'][0]['count']==5
+    assert checks[0]['reason']=='SOURCE_CHARGE_ARGUMENT_UNKNOWN'
+    assert rca.validate(records,items,checks,[claim],[])==[]
+    proof[0]['project_position']={**proof[0]['project_position'],'x':101}
+    records,checks=build_charged(claim,items,proof)
+    assert checks[0]['reason']=='SOURCE_CHARGE_ARGUMENT_UNKNOWN'
+
+def test_source_edits_cannot_reuse_the_old_normalization_proof():
+    claim,items,proof=charged_fixture();claim['placements'][0]['reward']['items'][0]['count']=2
+    records,checks=build_charged(claim,items,proof)
+    assert checks[0]['reason']=='SOURCE_CHARGE_ARGUMENT_UNKNOWN'
+    assert records[0]['definition']['placements'][0]['reward']['items'][0]['count']==2
+    assert rca.validate(records,items,checks,[claim],proof)==[]
+
+def test_changed_definition_charge_fact_never_uses_reward_as_its_replacement():
+    claim,items,proof=charged_fixture();items[AMULET]['semantics']['charges']['value']['count']['value']=10
+    records,checks=build_charged(claim,items,proof)
+    assert checks[0]['reason']=='SOURCE_CHARGE_MISMATCH'
+    assert records[0]['definition']['placements'][0]['reward']['items'][0]['count']==5
+    assert checks[0]['definition_charges']==10
+
+def test_exact_charged_source_without_a_definition_charge_fact_stays_held():
+    claim,items,proof=charged_fixture();items[AMULET]['semantics']['charges']={'state':'UNKNOWN'}
+    records,checks=build_charged(claim,items,proof)
+    assert checks[0]['reason']=='ITEM_CHARGE_SEMANTICS_UNKNOWN'
+    assert records[0]['definition']['placements'][0]['reward']['items'][0]['count']==5
+    assert rca.validate(records,items,checks,[claim],proof)==[]
+    records[0]['definition']['readiness']='ready'
+    assert any('marked ready' in e for e in rca.validate(records,items,checks,[claim],proof))
+
+def test_explicit_empty_original_source_cannot_fall_back_to_evidence():
+    claim,items,proof=charged_fixture();records,checks=build_charged(claim,items,proof)
+    assert rca.validate(records,items,checks,[claim],proof)==[]
+    assert any('original source reward binding is missing' in e
+        for e in rca.validate(records,items,checks,[],proof))
+
+
+def test_removed_original_reward_cannot_keep_a_stale_normalization():
+    claim,items,proof=charged_fixture();records,checks=build_charged(claim,items,proof)
+    removed=copy.deepcopy(claim);removed['placements'][0]['reward']['items']=[]
+    assert any('original source reward binding is missing' in e
+        for e in rca.validate(records,items,checks,[removed],proof))
+
+
+def test_moved_original_reward_cannot_keep_the_old_binding():
+    claim,items,proof=charged_fixture();records,checks=build_charged(claim,items,proof)
+    moved=copy.deepcopy(claim);moved['placements'][0]['position']['x']+=1
+    assert any('original source reward binding is missing' in e
+        for e in rca.validate(records,items,checks,[moved],proof))
+
+
+def test_stackable_rune_charge_definition_keeps_piece_quantity():
+    claim=pilot_claim('rune/quantity','canary:item/3155',5)
+    rune='oteryn:item.tibia.i3155'
+    admitted={rune:{'materializable':True,'stack_class':'StackCapable','semantics':{
+        'charges':{'state':'KNOWN','value':{'count':{'state':'KNOWN','value':3}}}}}}
+    records,checks=rca.build_records([claim],manifest_for(claim),admitted,[])
+    assert records[0]['definition']['placements'][0]['reward']['items'][0]['count']==5
+    assert checks==[]
+    assert records[0]['definition']['readiness']=='ready'
+
+
 
 
 def test_committed_content_is_valid() -> None:

@@ -37,6 +37,28 @@ texts, random choices and achievements are later children.
   Duplicate legacy unique ids are server-scoped and recorded with every claim/position;
   validation rejects missing or stale collision diagnostics. Position bindings remain authoritative.
 
+## D277 charged source rewards
+
+Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)
+closes the architecture for charged rewards: one ItemInstance, quantity1, charges
+from the Item definition. The raw reward argument never creates an Item charges fact.
+`source_charge_evidence.json` binds the historical two-argument chest helper calls
+by source claim, position, Item and raw argument, with pinned source and ruling evidence.
+Only an exact binding with known NonStackable semantics and matching positive
+`charges.count`/source default is normalized. The original pilot stays unchanged;
+`source_checks` preserves the raw argument and the derived canonical quantity.
+
+A default-matching reward stays held as `NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED`:
+current native MINT request/after-state have no charge initialization or persistence.
+This is an implementation gap under covered architecture. Source/default disagreement
+stays `SOURCE_CHARGE_MISMATCH` (CONFLICT), notably Banshee3081 raw1 versus definition5.
+Unproved source arguments and unknown definition charges remain UNKNOWN without
+normalization. Stackable rune charge definitions retain quantity as piece count.
+Build and committed validation recompute quantity and exact source diagnostics;
+forged normalization, missing diagnostics and false ready status are rejected.
+An explicit source list must contain the original reward binding; an empty, removed
+or moved binding is an error. Optional `None` is fixture consistency mode only.
+
 ```sh
 cd tools/content-schema/reward-claim-authoring
 python reward_claim_authoring.py content          # rebuild after the pilot or content/items changes
