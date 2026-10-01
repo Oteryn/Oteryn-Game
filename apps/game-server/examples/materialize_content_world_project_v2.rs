@@ -19,6 +19,7 @@ use oteryn_game_server::content::{
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     item_admission::apply_item_admission_v1,
+    item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
     item_stats_promotion::apply_item_stats_promotion_v2,
     protected_cw2_b1_donor_identity_epoch_2_import, protected_r7_p04_gold_coin_item_family_import,
@@ -1943,6 +1944,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // ITEM-SEM-2b: TibiaWiki stats replace earlier promotions on the canonical Item keys.
     let stats = apply_item_stats_promotion_v2(&mut draft)?;
+    // Explicit bounded wiki capacity repair, preserving conflicting furniture variants.
+    let _capacity_fields = apply_item_capacity_promotion_v1(&mut draft)?;
     // STARTER-CONTENT-1: the main backpack becomes materializable and container-slot equippable.
     let admitted = apply_item_admission_v1(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
