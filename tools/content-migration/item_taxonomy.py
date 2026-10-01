@@ -15,6 +15,7 @@ from engine_items import (
     resolve_wiki_family_value,
 )
 from item_official_navigation import build_official_navigation
+from item_navigation_source_supplement import build_seven, load_alias_fallback, name_agrees
 
 SNAPSHOT = "imports/tibiawiki/facts/items-stats.json"
 # The census omitted this BR navigation label; both the weapons and schema already
@@ -121,6 +122,10 @@ def build_taxonomy(
             continue
         entry = (fallback or {}).get(key[1])
         if entry:
+            if "qualified_native_name" in entry and not name_agrees(
+                definition, entry["qualified_native_name"]
+            ):
+                continue
             evidence = entry["evidence"]
             rows[key] = {
                 "target": definition["identity"],
@@ -136,6 +141,10 @@ def build_taxonomy(
                     "qualified_fallback": evidence,
                 },
             }
+            if "snapshot_file_sha256" in entry:
+                rows[key]["source_evidence"]["snapshot_file_sha256"] = entry[
+                    "snapshot_file_sha256"
+                ]
             continue
         appearance = (client or {}).get(item_id)
         if not appearance:
@@ -199,10 +208,20 @@ def build_taxonomy(
     for row in direct_official:
         key = tuple(row["target"][field] for field in ("family", "key", "revision"))
         rows[key] = row
+    for row in build_seven(
+        {key[1]: definition for key, definition in definitions.items()},
+        snapshot,
+        client or {},
+        routed_keys | {key[1] for key in rows},
+    ):
+        key = tuple(row["target"][field] for field in ("family", "key", "revision"))
+        rows[key] = row
     return [rows[key] for key in sorted(rows)]
 
 
-def load_taxonomy_fallback(root, identity_index, bound_keys, routed_keys, snapshot):
+def load_taxonomy_fallback(
+    root, identity_index, bound_keys, routed_keys, snapshot, alias_fallback=None
+):
     """Join the separate reviewed family corpus without changing retained evidence."""
     fallback_path = root / FALLBACK_PATH
     fallback_digest = json.loads(fallback_path.read_text())["snapshot_sha256"]
@@ -234,6 +253,15 @@ def load_taxonomy_fallback(root, identity_index, bound_keys, routed_keys, snapsh
         entry["snapshot_sha256"] = bulk_digest
         entry["snapshot_path"] = BULK_FALLBACK_PATH
     fallback.update(bulk)
+    for key, entry in (alias_fallback or {}).items():
+        if (
+            key in fallback
+            or key not in bound_keys
+            or key in routed_keys
+            or key in primary_keys
+        ):
+            raise ValueError("TAXONOMY_ALIAS_BINDING_OWNER_PRIMARY_OR_OVERLAP")
+        fallback[key] = entry
     return fallback
 
 
@@ -260,8 +288,9 @@ def taxonomy_inputs(root=ROOT):
                 pointer = row.get("provenance", {}).get("item_pointer", {})
                 if pointer:
                     routed_keys.add(pointer["key"])
+    identity = build_identity_index()
     fallback = load_taxonomy_fallback(
-        root, build_identity_index(), bound_keys, routed_keys, snapshot
+        root, identity, bound_keys, routed_keys, snapshot, load_alias_fallback(root, identity)
     )
     client_bytes = (root / CLIENT_PATH).read_bytes()
     if hashlib.sha256(client_bytes).hexdigest() != CLIENT_DIGEST:
