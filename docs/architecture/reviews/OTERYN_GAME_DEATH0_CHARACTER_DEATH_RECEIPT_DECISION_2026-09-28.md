@@ -79,6 +79,14 @@ without weakening that chain?
 - The XP receipt table is unchanged. A `CharacterRevision` successor now has exactly one receipt
   of either kind.
 
+**Amendment (pending on acceptance of PARTY-PVP-0;
+`reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md` §9 and §10.3).** Once
+accepted, the death receipt also records `pvp_death`, `skull_at_death`, `twist_of_fate_used`,
+`adventurer_applied` and `unfair_fight_milli`, and `command_binding` also covers the kill
+classification inputs. The same transaction writes the PvP consequence rows of PARTY-PVP-0 §9
+(skulls, unjustified points, revenge marks, kill blocks), locked after `character_root` in
+CharacterId order; they advance no `CharacterRevision`, so the death still has exactly one receipt.
+
 ### 3.2 Guard changes (the DEATH-0 migration)
 
 - **State guard:** an update with `revision + 1` and unchanged revision fields is admitted when

@@ -71,6 +71,14 @@ A player dies when a committed effect takes their runtime HP to 0 (SPELL-D2 vita
 decision is implemented, D54's floor at 1 is removed. Only PvE deaths are in scope (D60). A death
 with any PvP contribution is out of scope and keeps the D54 floor until the PvP death decision.
 
+**Amendment (pending on acceptance of PARTY-PVP-0;
+`reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md` §10).** PARTY-PVP-0 is the
+PvP death decision; the owner's direction of 2026-09-30 (full Global parity now) supersedes D60's
+deferral. Once accepted, a PvP-contributed death commits through the same transaction with
+PARTY-PVP-0 §10's rules: the PvP death test, red and black skull loss, Twist of Fate, Adventurer's
+Blessing, the unfair-fight field, and a black-skulled character respawns with 40 HP and 0 mana
+instead of §4.5's full values. D58, D59, D62, D65 and D68 are unchanged.
+
 ### 4.2 Death occurrence
 
 - At the lethal commit, the Channel owner mints one server UUIDv7 `PlayerDeathOccurrence` and
