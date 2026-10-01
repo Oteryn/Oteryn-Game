@@ -29,8 +29,8 @@
 | BAGS-DEPOT-1 | hard, persistence review | trees in depot boxes and in the Inbox, counted per item; views anchored to the depot (§9) | DEPOT-1; INBOX-1; BAGS-1 |
 | BAGS-TRADE-1 | hard, persistence and security review | a container tree as a trade offer, with its content binding (§9) | TRADE-1; BAGS-1 |
 
-Later, each with its own decision or amendment: parcels with nested bags (a MAIL-0 amendment of
-`MAIL0-RL-03`), containers with contents in houses (HOUSE-RUNTIME-0), containers dropped on death
+Later, each with its own decision or amendment: parcels with nested bags (the MAIL-0 amendment of
+`MAIL0-RL-03`, 2026-10-01, MAIL-0 §7), containers with contents in houses (HOUSE-RUNTIME-0), containers dropped on death
 (DEATH-3), bags inside monster corpses (loot content), weight (B3-3), the quiver, Manage
 Containers and auto-loot, container sorting, containers larger than 20 entries.
 
@@ -292,8 +292,8 @@ Each item names the decision, its refusal today, the result and the child that b
   disposition step moves whole trees.
 - **D3 and A10** (corpse depth 1): kept for corpses. Looting into a nested bag is lifted (§6).
   Bags in corpses wait for DEATH-3 (death drops) and loot content (monster loot bags).
-- **MAIL-0 §7, open** (10 children without contents): explicit follow-up. A MAIL-0 amendment may
-  raise `MAIL0-RL-03` to a parcel tree within §3; MAIL-PARCEL-1 uses the §4 tree move.
+- **MAIL-0 §7** (10 children without contents): lifted by the MAIL-0 amendment of `MAIL0-RL-03`
+  (2026-10-01): a parcel tree within §3; MAIL-PARCEL-1 uses the §4 tree move.
 
 - **Trade restrictions.** Every item of an offered tree, the root and each descendant, must pass
   the PLAYER-TRADE-0 `NOT_TRADEABLE` and binding restrictions (an untradeable or bound item makes
