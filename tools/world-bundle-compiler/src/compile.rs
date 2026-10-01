@@ -377,42 +377,33 @@ pub struct Equivalence {
     pub dropped_teleports: usize,
 }
 
-/// Proves `bundle` equal to its source `regions` tile by tile (ADR-0021 §4.6, §4.8), from the
-/// source authorities rather than the compiler state or the bundle's own claims: every manifest
-/// palette entry is the `(family, id)` that `resolver` gives its key; every source tile is at its
-/// native position with the same flags, house and zones, and every entry keeps its depth,
-/// attributes and palette key, except the rules of the format document: a subtree under a key
-/// `resolver` calls provisional is left out, a (0,0,0) teleport is dropped, and a teleport floor
-/// is native. The manifest World must equal `world`, the extent of the World record; every key,
-/// a skipped one included, must resolve; every house id must be in the House family; every
-/// teleport is checked again against `families` (§4.5), and every Transition record must meet
-/// its attribute. The bundle holds no other tile, `skipped_provisional_keys` is
-/// exactly the set of provisional keys met, and `dropped_teleports` is exactly the set of
-/// placement keys of the kept top-level entries that lost a (0,0,0) teleport.
+/// Proves `bundle` equal to the compiler `input` it claims to come from (ADR-0021 §4.6, §4.8),
+/// from the source authorities rather than the compiler state or the bundle's own claims. Every
+/// source tile is at its native position with the same flags, house and zones, and every entry
+/// keeps its depth, attributes and palette key, except the rules of the format document: a
+/// subtree under a key `resolver` calls provisional is left out, a (0,0,0) teleport is dropped,
+/// and a teleport floor is native. Every key, a skipped one included, must resolve; every house
+/// id must be in the House family; every teleport is checked again against the families (§4.5),
+/// and every Transition record must meet its attribute. The bundle holds no other tile, and its
+/// whole manifest must be the one derived here: the input identity, World, build class and draft
+/// areas; the palette of exactly the kept source indices in ascending order, each with the
+/// `(family, id)` `resolver` gives it; the provisional keys met; and the placement keys of the
+/// kept top-level entries that lost a (0,0,0) teleport.
 pub fn equivalence(
-    regions: &[Vec<u8>],
-    palette: &[String],
+    input: &Input,
     resolver: &dyn KeyResolver,
-    families: &Families,
-    world: &Extent,
     bundle: &[u8],
 ) -> Result<Equivalence, Error> {
     let read = bundle::read(bundle)?;
     let differs = |what: String| Err(Error::Format(format!("equivalence: {what}")));
-    if read.manifest.world != *world {
-        return differs("manifest World is not the World record".into());
-    }
-    for entry in &read.manifest.palette {
-        if resolver.resolve(&entry.key) != Resolution::Resolved(entry.family, entry.id) {
-            return differs(format!("palette entry {} is not its resolution", entry.key));
-        }
-    }
+    let (palette, families) = (input.palette, input.families);
+    let mut used = BTreeSet::new();
     let resolved: Vec<Resolution> = palette.iter().map(|key| resolver.resolve(key)).collect();
     let mut provisional = BTreeSet::new();
     let (mut dropped, mut records_met) = (BTreeSet::new(), BTreeSet::new());
     let (mut report, mut budget) = (Equivalence::default(), bundle::BUNDLE_BUDGET);
     let mut seen = BTreeSet::new();
-    for data in regions {
+    for data in input.regions {
         let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
         let (z, floor) = (region.z, native_floor(region.z)?);
         for (sx, sy, tiles) in region.sectors {
@@ -436,6 +427,7 @@ pub fn equivalence(
                     floor,
                     dropped: &mut dropped,
                     records_met: &mut records_met,
+                    used: &mut used,
                     report: &mut report,
                 };
                 let expected = context.entries(source)?;
@@ -475,17 +467,72 @@ pub fn equivalence(
     if records_met.len() != families.teleports.len() {
         return differs("a Transition record meets no teleport attribute".into());
     }
-    if !dropped
+    let palette = used
         .into_iter()
-        .eq(read.manifest.dropped_teleports.iter().copied())
-    {
-        return differs("dropped_teleports is not the set of dropped placement keys".into());
+        .map(|at| match resolver.resolve(&palette[at as usize]) {
+            Resolution::Resolved(family, id) => Ok(PaletteEntry {
+                key: palette[at as usize].clone(),
+                family,
+                id,
+            }),
+            _ => Err(Error::Format(
+                "equivalence: a kept key does not resolve".into(),
+            )),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let expected = Manifest {
+        format: bundle::FORMAT.into(),
+        min_reader_version: bundle::VERSION,
+        projection_class: "server".into(),
+        compiler_version: bundle::compiler_version(),
+        build_class: input.build_class,
+        identity: input.identity.clone(),
+        world: input.world.clone(),
+        palette,
+        draft_areas: BTreeSet::from_iter(input.draft_areas.iter().cloned())
+            .into_iter()
+            .collect(),
+        skipped_provisional_keys: provisional.into_iter().cloned().collect(),
+        dropped_teleports: dropped.into_iter().collect(),
+    };
+    let got = &read.manifest;
+    for (field, same) in [
+        ("format", expected.format == got.format),
+        (
+            "min_reader_version",
+            expected.min_reader_version == got.min_reader_version,
+        ),
+        (
+            "projection_class",
+            expected.projection_class == got.projection_class,
+        ),
+        (
+            "compiler_version",
+            expected.compiler_version == got.compiler_version,
+        ),
+        ("build_class", expected.build_class == got.build_class),
+        ("identity", expected.identity == got.identity),
+        ("world", expected.world == got.world),
+        ("palette", expected.palette == got.palette),
+        ("draft_areas", expected.draft_areas == got.draft_areas),
+        (
+            "skipped_provisional_keys",
+            expected.skipped_provisional_keys == got.skipped_provisional_keys,
+        ),
+        (
+            "dropped_teleports",
+            expected.dropped_teleports == got.dropped_teleports,
+        ),
+    ] {
+        if !same {
+            return differs(format!(
+                "manifest {field} is not the one derived from the input"
+            ));
+        }
     }
-    if !provisional
-        .into_iter()
-        .eq(read.manifest.skipped_provisional_keys.iter())
-    {
-        return differs("skipped_provisional_keys is not the set of provisional keys met".into());
+    // A field the list above does not name yet is still compared.
+    if expected != *got {
+        return differs("manifest is not the one derived from the input".into());
     }
     Ok(report)
 }
@@ -501,6 +548,8 @@ struct Context<'a, 'b> {
     floor: i8,
     dropped: &'b mut BTreeSet<u64>,
     records_met: &'b mut BTreeSet<LegacyPosition>,
+    /// Kept palette indices.
+    used: &'b mut BTreeSet<u32>,
     report: &'b mut Equivalence,
 }
 
@@ -564,6 +613,7 @@ impl<'a> Context<'a, '_> {
                     self.dropped.insert(placement);
                 }
             }
+            self.used.insert(item.palette);
             items.push((key, item.depth, attrs));
         }
         Ok(items)

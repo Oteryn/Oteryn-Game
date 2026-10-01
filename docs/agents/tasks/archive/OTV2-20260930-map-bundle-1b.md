@@ -88,6 +88,17 @@ Repair candidate after returning to AUTHORING; the three P1 findings are fixed i
 
 Real-map rerun: same digest `fa65ffb1…`, 41 s.
 
+## Review round 4 (Codex review 5374280327 of `5fb02c2d`)
+
+Repair candidate after returning to AUTHORING. The two P1 findings (draft areas, identity) and
+the P2 (exact palette) had one root cause: the proof checked manifest fields one claim at a
+time. `equivalence` now takes the compiler `Input` and derives the whole manifest from it
+(identity, World, build class, draft areas, the palette of exactly the kept source indices in
+ascending order with their resolutions, and the two key sets), then requires the bundle's
+manifest to equal it field by field and as a whole.
+
+Real-map rerun: same digest `fa65ffb1…`.
+
 ## Stated assumptions (reversible; for the control plane)
 
 - An Item key that no catalogue record points at is a plain Item and resolves to `item`
@@ -114,7 +125,7 @@ Real-map rerun: same digest `fa65ffb1…`, 41 s.
 
 - `cargo fmt --check`; `cargo clippy --locked -p oteryn-world-bundle-compiler --all-targets --
   -D warnings`; `cargo test --locked -p oteryn-world-bundle-compiler` (18 tests, with the
-  round 1 to 3 assertions added).
+  round 1 to 4 assertions added).
 - `python3 tools/agents/validate_governance.py`; `python3
   tools/repository/validate_repository_policy.py`; `git diff --check`.
 

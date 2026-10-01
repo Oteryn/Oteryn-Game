@@ -274,9 +274,10 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
 - **Real-map compile and equivalence (1b-2).** `oteryn-world-bundle-compiler compile` reads the
   placements, the World, Transition.Teleport and House families and the content registry of a
   repository root, compiles, then proves the bundle against its source authorities before it
-  writes it, never against the bundle's own claims. The manifest World must be the World record,
-  and each manifest palette entry must be the `(family, id)` the resolver gives its key. Tile by
-  tile, every source tile must be at its native position with the same flags, house and zones,
+  writes it, never against the bundle's own claims. The whole manifest must be the one derived
+  from the compiler input: its identity, World record, build class and draft areas; a palette of
+  exactly the kept source palette indices in ascending order, each with the `(family, id)` the
+  resolver gives its key; and the two key sets below. Tile by tile, every source tile must be at its native position with the same flags, house and zones,
   every nonzero house id must be in the House family, every source entry must resolve (a key the
   resolver does not know fails even inside a skipped subtree), and every entry must keep its depth,
   attributes and palette key. The only exceptions are the rules above: subtrees under keys the

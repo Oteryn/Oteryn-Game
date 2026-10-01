@@ -128,25 +128,17 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
             "the World Project must hold one World shard".into(),
         ));
     };
-    let world = project::world_extent(world)?;
     let input = Input {
         regions: &project.regions,
         palette: &palette,
         identity,
-        world: world.clone(),
+        world: project::world_extent(world)?,
         build_class,
         draft_areas: project::draft_areas(&project.index)?,
         families: &project.families,
     };
     let compiled = compile::compile(&input, &registry)?;
-    let proof = equivalence(
-        &project.regions,
-        &palette,
-        &registry,
-        &project.families,
-        &world,
-        &compiled.bytes,
-    )?;
+    let proof = equivalence(&input, &registry, &compiled.bytes)?;
     fs::write(out, &compiled.bytes)
         .map_err(|e| Error::Format(format!("{}: {e}", out.display())))?;
     let digest: String = compiled.digest.iter().map(|b| format!("{b:02x}")).collect();
