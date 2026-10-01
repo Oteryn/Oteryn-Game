@@ -93,6 +93,8 @@ view, the 18 × 14 map area and the floor rule. The manual states only a charact
   ceiling applies. They are not carried in `WORLD_OBJECT_OVERLAY`, whose registered
   `WOBJ-RL-03` (486 entries) serves object state and stays unchanged.
 - The observer's own actor is always included.
+- **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §3.2).** NPCs are visible actors of entity kind 5 `Npc`,
+  added to capability 6's schema before it is offered; they count in the D87 ceiling.
 
 ### 4.3 Ceiling and degradation (D87)
 
