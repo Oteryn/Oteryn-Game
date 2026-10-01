@@ -104,6 +104,8 @@ take?
 - The build receipt carries the before and after values of all seven skills as well.
 - "At least one changes" covers all eight families: a receipt that changes nothing is not a
   receipt.
+  **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §3).** The rule and the `training` strict-OR also count
+  stamina; OFFLINE-0's `logout` and `offline_settlement` markers are exempt from the no-op rule.
 - Cause directions:
   - `training`: vocation equal; for each family, (`level`, `tries`) is equal or strictly larger,
     compared in that order; at least one family strictly larger. The row CHECK is each family
