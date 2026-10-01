@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-creature-ai-0
-pr: "named in the #162 FREEZE_SHA entry"
+pr: "1431"
 base_sha: b73fe23c
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -78,7 +78,7 @@ protocol or content change is made.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1431. Merge commit/result: its squash merge.
 - Reported to the control plane: architect rulings R2 (no cross-floor chase, against the literal
   wording of 4a) and R4 (D57's new owner decision read as 4a with D188 and 6a).
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
