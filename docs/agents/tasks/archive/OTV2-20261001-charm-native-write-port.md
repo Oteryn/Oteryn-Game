@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: codex/charm-native-durability-port-20261001
 branch: codex/charm-native-write-port-v2-20261001
-pr: null
+pr: 1507
 issue: 162
 base_sha: 667be3950e0bc64925d9e48370616a0dbe95fbb7
 head_sha: null
@@ -62,4 +62,4 @@ qualified Content generations, commercial facts, paid unassign and combat activa
 unfinished. The full nine-row parent stays IMPLEMENTING. Stack CI requires base main; CP owns
 retarget/requalification after PR1501 integration. Root publishes guarded actual Git identity;
 exact frozen head and independent review belong to the external packet. This child archive
-reaches main only if its PR merges; a commit cannot contain its own final SHA.
+reaches main only if PR1507 merges; a commit cannot contain its own final SHA.
