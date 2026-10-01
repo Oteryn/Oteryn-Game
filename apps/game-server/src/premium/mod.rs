@@ -25,6 +25,7 @@ use crate::durability::premium_fence::{
 use crate::durability::{DurabilityError, DurabilityRoot};
 use snapshot::SnapshotRejection;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, PoisonError};
 
 pub const SNAPSHOT_SCHEMA: &str = "oteryn.premium_snapshot.v1";
@@ -109,6 +110,29 @@ struct AccountView {
     quarantined: bool,
     /// The latest bound response was outside the compatibility record.
     unsupported: bool,
+    /// The ticket of the latest ingest that set `quarantined` or `unsupported`: only proof from
+    /// an ingest started after it clears them, whatever order concurrent ingests finish in.
+    failed_at: u64,
+}
+
+impl AccountView {
+    fn fail(&mut self, ticket: u64, unsupported: bool) {
+        if unsupported {
+            self.unsupported = true;
+        } else {
+            self.quarantined = true;
+        }
+        self.failed_at = self.failed_at.max(ticket);
+    }
+
+    fn prove(&mut self, ticket: u64, fence: PremiumFenceView) {
+        merge(self, Some(fence));
+        self.proven = true;
+        if ticket > self.failed_at {
+            self.quarantined = false;
+            self.unsupported = false;
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,6 +149,8 @@ pub enum IngestOutcome {
 #[derive(Debug, Default)]
 pub struct PremiumConsumer {
     accounts: Mutex<HashMap<[u8; 16], AccountView>>,
+    /// Ingest tickets, increasing across accounts and `release`.
+    tickets: AtomicU64,
 }
 
 impl PremiumConsumer {
@@ -149,25 +175,23 @@ impl PremiumConsumer {
         nonce: &str,
         body: &[u8],
     ) -> IngestOutcome {
+        let ticket = self.tickets.fetch_add(1, Ordering::Relaxed) + 1;
         let evidence = match snapshot::validate(body, account_id, nonce) {
             Ok(evidence) => evidence,
             Err(rejection) => {
                 if rejection == SnapshotRejection::Unsupported {
-                    self.update(account_id, |view| view.unsupported = true);
+                    self.update(account_id, |view| view.fail(ticket, true));
                 }
                 return IngestOutcome::Rejected(rejection);
             }
         };
         let Ok(outcome) = root.accept_premium_evidence(&evidence).await else {
-            self.update(account_id, |view| view.quarantined = true);
+            self.update(account_id, |view| view.fail(ticket, false));
             return IngestOutcome::FenceUnavailable;
         };
         self.update(account_id, |view| match outcome.clone() {
             PremiumFenceOutcome::Accepted(fence) | PremiumFenceOutcome::Replayed(fence) => {
-                merge(view, Some(fence));
-                view.proven = true;
-                view.quarantined = false;
-                view.unsupported = false;
+                view.prove(ticket, fence);
             }
             PremiumFenceOutcome::Stale(fence) | PremiumFenceOutcome::Conflict(fence) => {
                 merge(view, Some(fence));

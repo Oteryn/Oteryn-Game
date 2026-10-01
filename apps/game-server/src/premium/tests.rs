@@ -247,6 +247,17 @@ fn only_proven_active_evidence_inside_its_interval_is_current() {
         classify(Some(&unsupported), at(T0 + 1)),
         InvalidOrConflicting
     );
+    // Overlapping ingests: proof from an ingest started before a newer failure does not clear
+    // it, whichever finishes last; proof from a later ingest does.
+    let fence = active.fence.clone().unwrap();
+    for unsupported in [false, true] {
+        let mut racing = active.clone();
+        racing.fail(2, unsupported);
+        racing.prove(1, fence.clone());
+        assert_eq!(classify(Some(&racing), at(T0 + 1)), InvalidOrConflicting);
+        racing.prove(3, fence.clone());
+        assert_eq!(classify(Some(&racing), at(T0 + 1)), CurrentAuthority);
+    }
     let mut conflicting = active.clone();
     conflicting.fence.as_mut().unwrap().conflicting = true;
     assert_eq!(
