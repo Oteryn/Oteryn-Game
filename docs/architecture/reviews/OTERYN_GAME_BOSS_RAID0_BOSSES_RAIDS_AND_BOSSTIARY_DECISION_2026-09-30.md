@@ -280,7 +280,8 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 
 **Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md`).** The lever
 is WORLD-INTERACTION-0's `BOSS_ENTRY` child (ENCOUNTER-RT-0 §7); the boss room's Ground items are
-in InstanceRuntime custody and retire by `InstanceRetire` when the instance ends (§8).
+in InstanceRuntime custody and retire by `InstanceRetire` when the instance ends (§8); the instance
+allocation row gains the states `RETIRING` and `RETIRED`, and BOSS-ROOM-1's recovery finishes them.
 
 ## 7. Death identity and contribution (BOSS-REWARD-1)
 

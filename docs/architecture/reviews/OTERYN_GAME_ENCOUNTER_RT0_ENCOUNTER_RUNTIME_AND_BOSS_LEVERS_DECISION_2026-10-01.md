@@ -242,6 +242,9 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
   name: BOSS-REWARD-1 and BOSSTIARY-1, the quest domain (QUEST-STATE-0), later others. Each
   consumer writes under its own contract and fence, idempotent by the outcome key.
 - Content admission (E4) refuses an encounter whose outcome name has no bound consumer.
+- Consumers that write character data take that character's own fence by their contract; a
+  credited character who is offline or elsewhere is handled by the consumer (BOSS-REWARD-1's
+  per-character MINT, the quest domain's own rule), never by the encounter.
 - An outcome that has not committed in its consumer when the owner crashes is lost, as the fight is
   (BOSS-RAID-0 ruling R3); it is never replayed from memory into a second write.
 
@@ -252,6 +255,9 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
   action index)`, with the chance drawn by `ENCOUNTER_DRAW` first. It follows the D3 loot MINT
   shape, the tile and channel limits (a full tile drops nothing, as a full Canary tile refuses
   `createItem`) and the §32 fence of the scope.
+- It may stand in any rule, `damage_taken` and `heal_received` included (Ugly Monster drops on
+  hits). Its position is taken when the trigger fires, as `death_position` and `role_position`
+  (format §9.2), so a delayed drop lands where its trigger happened.
 - At most `ENCRT0-RL-05` drops per instance per 60 s; above it the drop is skipped and counted
   (a value-creation bound; Ugly Monster drops on hits).
 - Amended: DUR-03 §39.3.
@@ -285,9 +291,14 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
 - **Retirement.** When the instance ends (reset, time limit, last player gone, or found dead after a
   crash), every live Ground root of it and its contents are retired by a new closed cause
   **`InstanceRetire`**, keyed by `(WorldId, InstanceId)`, on the shared retirement tables as the
-  `WorldReset` amendment does: one-item steps, resumable from durable state, the instance record
-  `RETIRING` until no live Ground item of it remains. A boot or the World job finds instances that
-  ended or died with live Ground items and finishes them. An InstanceId is never reused.
+  `WorldReset` amendment does: one-item steps, resumable from durable state. Progress lives in two
+  places only: BOSS-RAID-0's instance allocation row gains the states `RETIRING` and `RETIRED`
+  (from `ACTIVE`; `RETIRED` only when no live Ground item of the instance remains), and each item's
+  step in the shared retirement tables. BOSS-ROOM-1's recovery (at boot and as a periodic World job
+  of the HOUSE-OWN-0 §9 kind) finds allocation rows `ACTIVE` whose InstanceRuntime is gone or
+  `RETIRING`, and finishes them. An item already reserved by `CorpseDecay` finishes by that cause;
+  the shared per-item uniqueness keeps one retirement per item. An instance retires only after its
+  last character has left it (BOSS-RAID-0 §6.4). An InstanceId is never reused.
 - This is the instance form of Tibia's rule that what is left on a boss-room floor is gone when the
   room is cleared (the instance replaces the shared room, D26). Players are warned by the existing
   time-limit message.
