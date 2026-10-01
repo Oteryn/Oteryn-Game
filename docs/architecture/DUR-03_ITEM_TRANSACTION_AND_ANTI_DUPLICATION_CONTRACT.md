@@ -741,6 +741,16 @@ shapes only, it supersedes the §39.1 exclusions of non-item accounts, multiple 
 burn combined with other lines, and the §39.1 and §39.3 source and destination limits, within the
 MARKET-0 §9 rows (100 touched items, 3 value lines). Every other obligation is unchanged.
 
+**Amendment (pending on acceptance of MAIL-0; `reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §6).**
+The mail row is filled with no new custody family: a posting moves a letter or a parcel root
+from a main backpack entry into the recipient's `CharacterInbox` (`TRANSFER`) and stamps the same
+item (`TRANSFORM`, `PRESERVE_INSTANCE`, §16.2) in one transaction, under the closed `MailCause`.
+A parcel's children keep their `Container` location (§10). A child of an Inbox parcel leaves as a
+one-item `TRANSFER`; a system letter, if the owner admits it, is one `MINT` into the Inbox. No
+value lines. For those shapes only, it supersedes the §39.1 exclusions of transform combined with
+transfer and of multiple touched items, and the §39.1 and §39.3 source and destination limits,
+within the MAIL-0 §11 rows (11 touched items). Every other obligation is unchanged.
+
 ## 39. Mandatory durable evidence boundary
 
 ADR-0006 requires durable audit for security-relevant durable item/currency mutation. DUR-03 therefore requires ANL-compatible durable transaction evidence sufficient to reconcile every effect whose owning value/security policy declares mandatory audit.

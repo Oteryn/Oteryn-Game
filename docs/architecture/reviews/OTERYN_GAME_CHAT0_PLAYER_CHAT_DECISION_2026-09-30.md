@@ -145,6 +145,12 @@ How do players talk to each other: nearby, privately, and to the whole World?
 - **Privacy:** text is never written to a table or to ordinary logs (FND-02 §20); the per-session
   egress queue (§7) holds lines in memory only, and nothing is replayed from storage.
 
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §9).** The relay
+gains one payload kind, the mail notice: the recipient CharacterId, with no sender name and no
+text, sealed like every line. It is sent after a posting commits, at most once and best effort;
+the node holding the recipient's session shows "New mail has arrived." next to a depot locker. It
+does not use the sender's spam bucket, which MAIL-0's posting rate replaces.
+
 ## 6. Spam control and gates (CHAT-1; durable row CHAT-2)
 
 - Per character: a bucket of 4 lines, refilled one per 2.5 s, over local speech, rooms and private
