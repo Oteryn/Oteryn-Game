@@ -102,19 +102,9 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Light Healing infobox: words exura; vocations Paladin, Druid, Sorcerer and Monk; Healing subclass; Instant type; cooldown 1 second and group cooldown 1 second; level 8; mana 20; Premium not required. The indexed official Library observation of 2026-08-14 agrees and is retained as discovery evidence.",
+        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Light Healing infobox: words exura; vocations Paladin, Druid, Sorcerer and Monk; Healing subclass; Instant type; cooldown 1 second and group cooldown 1 second; level 8; mana 20; Premium not required. The indexed official Library observation of 2026-08-14 agrees; it is discovery evidence only, recorded in this case's history and not a target source.",
         "evidence_class": "OBSERVED",
         "sources": [
-          {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?spell=lighthealing&subtopic=spells",
-            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#light-healing",
-            "effective_date": null,
-            "observed_at": null,
-            "retrieved_at": "2026-08-14T11:01:22Z",
-            "provenance_state": "PENDING",
-            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
-          },
           {
             "source_type": "COMMUNITY_CORROBORATION",
             "locator": "https://tibia.fandom.com/wiki/Light_Healing?oldid=1182813",
@@ -143,7 +133,7 @@
       "provenance": {
         "state": "CLEARED",
         "legal_review_state": "CLEARED",
-        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library source stays PENDING discovery evidence and is not relied upon."
+        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library observation (provenance PENDING) is removed from the target sources and kept only in history, so no uncleared source remains on the target."
       },
       "history": [
         {
@@ -153,7 +143,7 @@
         },
         {
           "date": "2026-10-01",
-          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE.",
+          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE. The PENDING indexed official source (https://www.tibia.com/library/?spell=lighthealing&subtopic=spells, retrieved 2026-08-14T11:01:22Z) is removed from target.sources and kept here as discovery history.",
           "reason": "Owner decision 2026-10-01 (#162, answer 8a) accepts the archived wiki cut and target continuity on it; manifest revision 6."
         }
       ]
@@ -174,19 +164,9 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Light Healing infobox: an Instant Healing-subclass spell that heals the caster (base power 40). The indexed official Library description of 2026-08-14 (heals the caster's own wounds, limited effect) agrees and is retained as discovery evidence.",
+        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Light Healing infobox: an Instant Healing-subclass spell that heals the caster (base power 40). The indexed official Library description of 2026-08-14 (heals the caster's own wounds, limited effect) agrees; it is discovery evidence only, recorded in this case's history and not a target source.",
         "evidence_class": "OBSERVED",
         "sources": [
-          {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?spell=lighthealing&subtopic=spells",
-            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#light-healing",
-            "effective_date": null,
-            "observed_at": null,
-            "retrieved_at": "2026-08-14T11:01:22Z",
-            "provenance_state": "PENDING",
-            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
-          },
           {
             "source_type": "COMMUNITY_CORROBORATION",
             "locator": "https://tibia.fandom.com/wiki/Light_Healing?oldid=1182813",
@@ -215,7 +195,7 @@
       "provenance": {
         "state": "CLEARED",
         "legal_review_state": "CLEARED",
-        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library source stays PENDING discovery evidence and is not relied upon."
+        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library observation (provenance PENDING) is removed from the target sources and kept only in history, so no uncleared source remains on the target."
       },
       "history": [
         {
@@ -225,7 +205,7 @@
         },
         {
           "date": "2026-10-01",
-          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE.",
+          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE. The PENDING indexed official source (https://www.tibia.com/library/?spell=lighthealing&subtopic=spells, retrieved 2026-08-14T11:01:22Z) is removed from target.sources and kept here as discovery history.",
           "reason": "Owner decision 2026-10-01 (#162, answer 8a) accepts the archived wiki cut and target continuity on it; manifest revision 6."
         }
       ]
@@ -246,19 +226,9 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Ice Strike infobox: words exori frigo; vocations Sorcerer and Druid; Attack subclass; Instant type; Ice damage type; cooldown 2 seconds and group cooldown 2 seconds; level 8; mana 20; Premium not required. The indexed official Library observation of 2026-08-14 agrees and is retained as discovery evidence.",
+        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Ice Strike infobox: words exori frigo; vocations Sorcerer and Druid; Attack subclass; Instant type; Ice damage type; cooldown 2 seconds and group cooldown 2 seconds; level 8; mana 20; Premium not required. The indexed official Library observation of 2026-08-14 agrees; it is discovery evidence only, recorded in this case's history and not a target source.",
         "evidence_class": "OBSERVED",
         "sources": [
-          {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?spell=icestrike&subtopic=spells",
-            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#ice-strike",
-            "effective_date": null,
-            "observed_at": null,
-            "retrieved_at": "2026-08-14T11:01:22Z",
-            "provenance_state": "PENDING",
-            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
-          },
           {
             "source_type": "COMMUNITY_CORROBORATION",
             "locator": "https://tibia.fandom.com/wiki/Ice_Strike?oldid=1182794",
@@ -287,7 +257,7 @@
       "provenance": {
         "state": "CLEARED",
         "legal_review_state": "CLEARED",
-        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library source stays PENDING discovery evidence and is not relied upon."
+        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library observation (provenance PENDING) is removed from the target sources and kept only in history, so no uncleared source remains on the target."
       },
       "history": [
         {
@@ -297,7 +267,7 @@
         },
         {
           "date": "2026-10-01",
-          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE.",
+          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE. The PENDING indexed official source (https://www.tibia.com/library/?spell=icestrike&subtopic=spells, retrieved 2026-08-14T11:01:22Z) is removed from target.sources and kept here as discovery history.",
           "reason": "Owner decision 2026-10-01 (#162, answer 8a) accepts the archived wiki cut and target continuity on it; manifest revision 6."
         }
       ]
@@ -318,19 +288,9 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Ice Strike infobox: an Instant Attack-subclass spell dealing Ice damage to an aimed target (base power 45). The indexed official Library description of 2026-08-14 (hits an aimed opponent in close range with ice; damage determined by magical abilities) agrees and is retained as discovery evidence.",
+        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Ice Strike infobox: an Instant Attack-subclass spell dealing Ice damage to an aimed target (base power 45). The indexed official Library description of 2026-08-14 (hits an aimed opponent in close range with ice; damage determined by magical abilities) agrees; it is discovery evidence only, recorded in this case's history and not a target source.",
         "evidence_class": "OBSERVED",
         "sources": [
-          {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?spell=icestrike&subtopic=spells",
-            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#ice-strike",
-            "effective_date": null,
-            "observed_at": null,
-            "retrieved_at": "2026-08-14T11:01:22Z",
-            "provenance_state": "PENDING",
-            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
-          },
           {
             "source_type": "COMMUNITY_CORROBORATION",
             "locator": "https://tibia.fandom.com/wiki/Ice_Strike?oldid=1182794",
@@ -359,7 +319,7 @@
       "provenance": {
         "state": "CLEARED",
         "legal_review_state": "CLEARED",
-        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library source stays PENDING discovery evidence and is not relied upon."
+        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library observation (provenance PENDING) is removed from the target sources and kept only in history, so no uncleared source remains on the target."
       },
       "history": [
         {
@@ -369,7 +329,7 @@
         },
         {
           "date": "2026-10-01",
-          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE.",
+          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE. The PENDING indexed official source (https://www.tibia.com/library/?spell=icestrike&subtopic=spells, retrieved 2026-08-14T11:01:22Z) is removed from target.sources and kept here as discovery history.",
           "reason": "Owner decision 2026-10-01 (#162, answer 8a) accepts the archived wiki cut and target continuity on it; manifest revision 6."
         }
       ]
