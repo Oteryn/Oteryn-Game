@@ -106,3 +106,20 @@ Multiline rewards, quantities, aliases and scoped requirements are parsed withou
 media/fragment links. Source-only specs retain unknown IDs and prerequisites;
 scoped level facts never become a guessed global minimum. Illuminator title
 overlap remains an explicit identity conflict.
+
+The standalone SOURCE migration bundle embeds all quest/progress/interaction/gate/claim
+and wiki-catalogue payloads with strict offline schemas and exact input provenance.
+It preserves full typed source-conflict alternatives and all 5468 progress write
+occurrences; computed expressions and unresolved ownership remain source gaps.
+
+```sh
+python bundle_authoring.py
+python bundle_authoring.py --check
+python bundle_authoring.py --validate samples/source_migration/bundle.json
+python bundle_authoring.py --validate samples/source_migration/bundle.json --source-backed
+```
+
+Standalone validation reports STRUCTURAL_ONLY / NOT_VERIFIED for input provenance.
+Source-backed validation deterministically reconstructs the entire packet from
+local samples and reports VERIFIED_AGAINST_LOCAL_INPUTS. Neither mode establishes
+native admission or runtime readiness. The offline runner checks regeneration.

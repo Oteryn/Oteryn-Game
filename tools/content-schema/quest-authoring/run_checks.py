@@ -14,8 +14,11 @@ def main():
     packet = here / 'samples/migration/quest-source-packet.json'
     scripts = ['verify_quest_schema.py', 'validate_quest_content.py',
                'refresh_quest_source_checks.py', 'quest_catalogue_authoring.py',
-               'quest_tree_authoring.py']
+               'quest_tree_authoring.py', 'bundle_authoring.py']
     missing = [str(here / name) for name in scripts if not (here / name).is_file()]
+    bundle = here / 'samples/source_migration/bundle.json'
+    if not bundle.is_file():
+        missing.append(str(bundle))
     if not packet.is_file():
         missing.append(str(packet))
     if missing:
@@ -30,6 +33,7 @@ def main():
          '--interactions-manifest', 'samples/interactions/manifest.json'],
         ['refresh_quest_source_checks.py', '--check'],
         ['quest_catalogue_authoring.py', '--check'],
+        ['bundle_authoring.py', '--check'],
         ['quest_tree_authoring.py', 'content', '--check', '--source-packet', str(packet)],
     ]
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}

@@ -1,0 +1,706 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/quest-progress-source/v1",
+  "title": "Quest progress SOURCE transcription",
+  "description": "Offline source evidence for donor progress tracks, owners, readers and writes. Validation establishes source shape only; it grants no canonical/runtime admission and never converts computed writes into executable constants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "progress"
+  ],
+  "properties": {
+    "progress": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/progress"
+      }
+    }
+  },
+  "$defs": {
+    "progress_key": {
+      "type": "string",
+      "pattern": "^(canary|crystalserver):quest-progress/[a-z0-9_]+(?:/[a-z0-9_]+)*$"
+    },
+    "quest_key": {
+      "type": "string",
+      "pattern": "^(canary|crystalserver):quest/[a-z0-9_]+$"
+    },
+    "mission_key": {
+      "type": "string",
+      "pattern": "^(canary|crystalserver):quest/[a-z0-9_]+#[a-z0-9_]+$"
+    },
+    "gate_key": {
+      "type": "string",
+      "pattern": "^(canary|crystalserver):door-gate/progress/[a-z0-9_]+(?:/[a-z0-9_]+)*$"
+    },
+    "source_path": {
+      "type": "string",
+      "pattern": "^(data|data-otservbr-global|data-global|data-crystal)/(?!\\.\\.?/)(?!.*\\/\\.\\.?/)[^/\\\\\\r\\n]+(?:/[^/\\\\\\r\\n]+)*\\.lua$"
+    },
+    "script_path": {
+      "type": "string",
+      "pattern": "^(npc|scripts|lib|libs|modules|monster)/(?!\\.\\.?/)(?!.*\\/\\.\\.?/)[^/\\\\\\r\\n]+(?:/[^/\\\\\\r\\n]+)*\\.lua$"
+    },
+    "dialogue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "keywords",
+        "topics"
+      ],
+      "properties": {
+        "keywords": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "oteryn:schema/quest-content/v1#/$defs/text_ref"
+              }
+            ]
+          }
+        },
+        "topics": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "source_descriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "line",
+        "registrations"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/source_path"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "registrations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(aid|id|uid|position|type)\\([^\\r\\n]*\\)$"
+          }
+        },
+        "dialogue": {
+          "$ref": "#/$defs/dialogue"
+        }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "canary": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/source_descriptor"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "^(data|data-otservbr-global)/"
+                }
+              }
+            }
+          ]
+        },
+        "crystalserver": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/source_descriptor"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "^(data|data-global|data-crystal)/"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "script",
+        "sources",
+        "write",
+        "source_occurrences"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z_]+_[0-9]+$"
+        },
+        "script": {
+          "$ref": "#/$defs/script_path"
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "write": {
+          "$ref": "oteryn:schema/quest-content/v1#/$defs/transition"
+        },
+        "source_occurrences": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/source_occurrence"
+          }
+        }
+      }
+    },
+    "storage_declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "revision",
+        "path",
+        "line",
+        "storage_id",
+        "expression"
+      ],
+      "properties": {
+        "repository": {
+          "enum": [
+            "opentibiabr/canary",
+            "zimbadev/crystalserver"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^(data-otservbr-global|data-global|data-crystal)/lib/core/storages\\.lua$"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "storage_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expression": {
+          "type": "string",
+          "pattern": "^Storage(?:\\.[A-Za-z_][A-Za-z0-9_]*)+$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "repository": {
+                "const": "opentibiabr/canary"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "path": {
+                "const": "data-otservbr-global/lib/core/storages.lua"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "path": {
+                "pattern": "^(data-global|data-crystal)/"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "source_checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "owner": {
+          "type": "string",
+          "pattern": "^(UNKNOWN|CONFLICT)[:;] .+$"
+        },
+        "storage_declaration": {
+          "type": "string",
+          "pattern": "^(UNKNOWN|CONFLICT)[:;] .+$"
+        }
+      }
+    },
+    "writes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canary",
+        "crystalserver"
+      ],
+      "properties": {
+        "canary": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "crystalserver": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "missions",
+        "start_of",
+        "read_by_gates",
+        "writes",
+        "transitions"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/progress_key"
+        },
+        "missions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/mission_key"
+          }
+        },
+        "start_of": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/quest_key"
+          }
+        },
+        "read_by_gates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/gate_key"
+          }
+        },
+        "writes": {
+          "$ref": "#/$defs/writes"
+        },
+        "transitions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/transition"
+          }
+        },
+        "auxiliary_of": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/quest_key"
+          }
+        },
+        "owner_basis": {
+          "enum": [
+            "UNKNOWN",
+            "exact source-path alias",
+            "exclusive curated NPC writers",
+            "gate catalogue link",
+            "mission track prefix",
+            "script directory",
+            "track_owners.json"
+          ]
+        },
+        "wiki_quest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alias_of": {
+          "$ref": "#/$defs/progress_key"
+        },
+        "source_storage": {
+          "$ref": "#/$defs/storage_declaration"
+        },
+        "source_storage_candidates": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/storage_declaration"
+          }
+        },
+        "source_checks": {
+          "$ref": "#/$defs/source_checks"
+        }
+      },
+      "dependentRequired": {
+        "auxiliary_of": [
+          "owner_basis"
+        ],
+        "owner_basis": [
+          "auxiliary_of"
+        ],
+        "wiki_quest": [
+          "auxiliary_of",
+          "owner_basis"
+        ],
+        "source_storage_candidates": [
+          "source_checks"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "alias_of"
+            ]
+          },
+          "then": {
+            "required": [
+              "auxiliary_of",
+              "owner_basis"
+            ],
+            "properties": {
+              "owner_basis": {
+                "const": "exact source-path alias"
+              },
+              "missions": {
+                "maxItems": 0
+              },
+              "start_of": {
+                "maxItems": 0
+              },
+              "read_by_gates": {
+                "minItems": 1
+              }
+            },
+            "anyOf": [
+              {
+                "required": [
+                  "source_storage"
+                ]
+              },
+              {
+                "required": [
+                  "source_checks"
+                ],
+                "properties": {
+                  "source_checks": {
+                    "required": [
+                      "storage_declaration"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "else": {
+            "properties": {
+              "owner_basis": {
+                "not": {
+                  "const": "exact source-path alias"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "alias_of"
+            ],
+            "properties": {
+              "key": {
+                "pattern": "^canary:"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "alias_of": {
+                "pattern": "^crystalserver:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "alias_of"
+            ],
+            "properties": {
+              "key": {
+                "pattern": "^crystalserver:"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "alias_of": {
+                "pattern": "^canary:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "owner_basis"
+            ],
+            "properties": {
+              "owner_basis": {
+                "const": "UNKNOWN"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "source_checks"
+            ],
+            "properties": {
+              "auxiliary_of": {
+                "maxItems": 0
+              },
+              "source_checks": {
+                "required": [
+                  "owner"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "source_storage_candidates"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "source_storage"
+              ]
+            },
+            "properties": {
+              "source_checks": {
+                "required": [
+                  "storage_declaration"
+                ],
+                "properties": {
+                  "storage_declaration": {
+                    "pattern": "^CONFLICT: .+$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "source_checks"
+            ],
+            "properties": {
+              "source_checks": {
+                "required": [
+                  "storage_declaration"
+                ],
+                "properties": {
+                  "storage_declaration": {
+                    "pattern": "^CONFLICT: "
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "source_storage_candidates"
+            ],
+            "not": {
+              "required": [
+                "source_storage"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "wiki_quest"
+            ]
+          },
+          "then": {
+            "properties": {
+              "auxiliary_of": {
+                "maxItems": 0
+              },
+              "owner_basis": {
+                "const": "track_owners.json"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "source_occurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "line",
+        "registrations",
+        "source",
+        "occurrence",
+        "repository",
+        "revision",
+        "target",
+        "blob_sha256",
+        "line_sha256",
+        "write"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/source_path"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "registrations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(aid|id|uid|position|type)\\([^\\r\\n]*\\)$"
+          }
+        },
+        "dialogue": {
+          "$ref": "#/$defs/dialogue"
+        },
+        "source": {
+          "enum": [
+            "canary",
+            "crystalserver"
+          ]
+        },
+        "occurrence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "repository": {
+          "enum": [
+            "opentibiabr/canary",
+            "zimbadev/crystalserver"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blob_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "write": {
+          "$ref": "oteryn:schema/quest-content/v1#/$defs/transition"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "canary"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "repository": {
+                "const": "opentibiabr/canary"
+              },
+              "path": {
+                "pattern": "^(data|data-otservbr-global)/"
+              },
+              "write": {
+                "properties": {
+                  "servers": {
+                    "const": [
+                      "canary"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "crystalserver"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "repository": {
+                "const": "zimbadev/crystalserver"
+              },
+              "path": {
+                "pattern": "^(data|data-global|data-crystal)/"
+              },
+              "write": {
+                "properties": {
+                  "servers": {
+                    "const": [
+                      "crystalserver"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
