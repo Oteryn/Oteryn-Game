@@ -132,9 +132,10 @@ The owner confirmed these directly in this session on 2026-09-29.
 - **Admission.** Admission loads the row, or the absent-row values, into the live Character, and
   `CasterState` reads from it. It writes nothing.
 - **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §3).** The row gains `stamina_minutes` (0..2,520, absent
-  2,520), `offline_pool_s` (0..43,200, absent 43,200), `offline_skill` (`none` or a trainable family,
-  absent `none`), `last_logout_at` and `last_seen_at` (database timestamps, absent NULL). The
-  admission settlement of OFFLINE-0 §5 is a build receipt committed after admission, not part of it.
+  2,520), `offline_pool_s` (0..43,200, absent 43,200) and `offline_skill` (`none` or a trainable
+  family, absent `none`). No timestamp columns: offline time is read from marker receipts'
+  `committed_at`. The admission settlement is a build receipt committed after admission, not part
+  of it.
 
 ### 4.2 Receipt chain
 
@@ -155,10 +156,12 @@ The owner confirmed these directly in this session on 2026-09-29.
       that order (an advance resets `mana_spent`);
     - `vocation_choice`: `none` to a vocation key; `magic_level` and `mana_spent` equal;
     - `promotion`: a vocation key to another key; `magic_level` and `mana_spent` equal;
-    - **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §3).** `training` also admits stamina equal or lower and
-      the offline pool equal or higher; new causes `logout` (one per terminal release) and
-      `offline_settlement` (one per lease, keyed by CharacterId and lease generation), with the
-      directions OFFLINE-0 §3 states; receipts carry the before and after stamina and pool;
+    - **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §3).** Receipts carry the before and after stamina, pool
+      and offline skill. `training` also admits stamina equal or lower (pool and skill equal), and
+      its strict-OR and no-op rule count stamina. Two marker causes, exempt from the no-op rule and
+      keyed `UNIQUE (character_id, lease_generation)`: `logout` (once per lease, before the terminal
+      release) and `offline_settlement` (once per lease, at admission), with OFFLINE-0 §3's
+      directions and an `as_of` database time bound in the binding;
   - There is no death cause: the loss is carried by the death receipt itself (§4.6);
   - `command_binding` (1..1,024 B), `policy_digest` (32 B), the revision fields of an XP receipt and
     `committed_at`.
@@ -285,6 +288,8 @@ The owner confirmed these directly in this session on 2026-09-29.
 - **One revision per death.** A death stays one semantic transaction that advances
   `CharacterRevision` once, with exactly one receipt: the DEATH-0 death receipt (DUR-02 rule 2,
   DEATH-0 §3.1). No build receipt is written in the death transaction.
+  **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §3).** Death receipts carry stamina, pool and offline skill
+  equal before and after; the flush first commits pending stamina with pending mana and tries.
 - **Flush first.** Pending `mana_spent` is committed before the death as an ordinary `training`
   checkpoint, in its own earlier transaction through `commit_character_build` (§4.5). It is skipped
   when nothing is pending. The death then takes its fence at the revision the flush committed, so
