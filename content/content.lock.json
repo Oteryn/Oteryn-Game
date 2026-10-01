@@ -31,7 +31,8 @@
     "Proficiency": 443,
     "RewardClaim": 231,
     "Service.Trade": 322,
-    "Service.Travel": 56
+    "Service.Travel": 56,
+    "StarterKit": 1
   },
   "item_authoring_counts": {
     "authoring": 164,
@@ -42,7 +43,7 @@
     "declarations": "db94438b50e034bd93f305bf3f3c77f815fa68d5",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "9c462823853f16aebc8b74fe3e3feeb9c9a6e5a3",
-    "reference": "e420d94f4e31cf161d51f405ac9f7e1086b50ebe",
+    "reference": "473d0bc74691679d7092bf62cde7c1e677348b66",
     "sources": "d5b23c34093a2d10b4e41eeff5cdeb103de7f07a"
   },
   "project_revision": "tree-npc-fan-wiki-parity-r1",

@@ -225,6 +225,8 @@ However, this ADR does not freeze the final topology for house presence or entry
 
 Until a separate house ADR is accepted, only ownership, access, persistence and anti-duplication invariants are normative.
 
+**Pointer (pending on acceptance of HOUSE-RUNTIME-0; `reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md` §3-§4).** The topology is one shared World instance per active house: a house scope of runtime scope kind 2 keyed by `HouseId`, entered and left through a door by the §10 session transition, with exit to the origin Channel.
+
 ### 12. Consistency and exploit prevention
 
 The architecture must make the following exploit classes impossible by construction or explicit transactional policy:

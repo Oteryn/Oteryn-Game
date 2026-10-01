@@ -413,3 +413,10 @@ table above). The DEATH owner must accept it; it does not block this contract.
   `reviews/OTERYN_GAME_A13_CHARACTER_BUILD_STATE_DECISION_2026-09-29.md`.)
 - PvP rules.
 - Any spell value as an Oteryn product value.
+
+**Amendment (pending on acceptance of SPELL-PRESENT-0; `reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md`
+§6, §8, §10).** Rejection texts and cast effects are decided there. `WorldActorSpellCastResultV1`
+gains `detail` (field 2, a closed enum), sent only to sessions holding `PRESENTATION_V1`; the
+result stays within 4 bytes and a peer without the capability never sees it. The cooldown state
+domain of §3 is `ACTOR_COOLDOWNS`. The dispositions and SPELL-D1 to SPELL-D8 are otherwise
+unchanged.

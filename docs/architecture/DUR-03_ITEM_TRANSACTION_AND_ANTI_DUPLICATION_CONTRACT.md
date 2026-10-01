@@ -309,6 +309,17 @@ GAME-ITEM-01 owns containment legality. DUR-03 requires:
 - destroy/replace of a container with live descendants is invalid unless the same bounded transaction explicitly gives every affected descendant a legal disposition;
 - no committed orphan/cycle.
 
+**Amendment (pending on acceptance of BAGS-0;
+`reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §3, §4).**
+Containers with contents are admitted. Every entry is `Container {parent ItemInstanceId, ordinal}`
+and stores no owner; the owner is the root's location. A tree has depth at most 8 and at most 500
+items. Moving a container is one TRANSFER of the root; the descendants are locked `FOR SHARE` and
+checked, never moved, and the receipt binds their count and a hash. For these shapes only, it
+supersedes the §39.1 exclusion of nested containers and sets container expansion to 8 levels
+(`DUR03-RL-05-TREE`). §39.3 step 3 keeps its one-item `DECAY_RETIRE` shape for a Ground tree:
+one transaction per item, in post-order (every descendant before its parent, the root last), which
+extends the D3 order to depth 8. Every other obligation is unchanged.
+
 ## 11. Item lifecycle and identity transitions
 
 ### 11.1 Same concrete lifecycle preserves identity
@@ -385,6 +396,9 @@ Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBu
 gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC service amendment in
 §39.3, the closed `NpcTradeCause` of a SELL. Pending on acceptance of ITEM-USE-0, the item use
 amendment in §39.3 admits the closed `ItemUseCause`.
+
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
+The quest exchange amendment in §39.3 admits the closed `QuestExchangeCause`.
 
 ## 16. Transform semantics
 
@@ -1562,6 +1576,32 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
   event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
   use's effect, with its own suffixed resource rows.
+
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
+Once accepted, in its NPC-QUEST-1 child:
+
+- **Dialogue claim.** A `RewardClaim` MINT whose source cause is the confirming NPC talk occurrence
+  and the claim, beside the D40 `USE` child, with the same claim rules (D40-D42).
+- **Exchange.** One item-only transaction under the closed cause `QuestExchangeCause {npc, node,
+  exchange_key, occurrence}`: at most 8 BURN lines (§17) from direct entries of the main backpack
+  (§11.1, §11.5), the claim's MINT lines and its `RewardClaim` row (D42) when the node rewards, and
+  one quest obligation row. Every check precedes every write: it is refused with nothing written
+  when an item is missing, the claim is not allowed, or any QUEST-STATE-0 §4 validation of the
+  transition fails (`STAGE_MISMATCH`, `REVISION_MISMATCH`, `OUT_OF_RANGE`, `NOT_SUPPORTED`), or
+  the character already holds 64 pending quest obligations (`OBLIGATIONS_FULL`). An exchange always
+  names a transition.
+- **Gold hand-in** (owner Q1b). An exchange that takes gold is also a fee under the
+  `FeeBurnCause` variant `QuestExchange(QuestExchangeCause)`, an item-only fee source in the same
+  transaction: coins first, then the bank part of the bank fee amendment above (one `FEE_DEBIT`
+  value line, `DUR03-RL-03-FEE`), refused with nothing written on insufficient funds or a junior
+  payer whose coins are short.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn, of multiple touched items
+  and of a MINT committed with other lines: the rewarded exchange commits the claim's MINT lines
+  together with the BURN lines, the `RewardClaim` row and the quest obligation row in one
+  transaction, with one audit aggregate (one event, one cause record) covering all its lines. The
+  MINT admission is bounded to the named claim's declared items, and the lines are never
+  independent of the BURN lines. Every other §39 obligation is unchanged; its rows are suffixed
+  `-QUEST-EXCHANGE`.
 
 ## 40. Durable acknowledgement
 

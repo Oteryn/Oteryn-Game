@@ -18,6 +18,7 @@ use oteryn_game_server::content::{
     ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
+    item_admission::apply_item_admission_v1,
     item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
     item_stats_promotion::apply_item_stats_promotion_v2,
     protected_cw2_b1_donor_identity_epoch_2_import, protected_r7_p04_gold_coin_item_family_import,
@@ -1942,19 +1943,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // ITEM-SEM-2b: TibiaWiki stats replace earlier promotions on the canonical Item keys.
     let stats = apply_item_stats_promotion_v2(&mut draft)?;
+    // STARTER-CONTENT-1: the main backpack becomes materializable and container-slot equippable.
+    let admitted = apply_item_admission_v1(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         APPEARANCE_ONLY_ITEM_IDS.len(),
         promoted.promoted_items,
         promoted.promoted_fields,
         stats.items,
         stats.fields,
-        stats.replaced
+        stats.replaced,
+        admitted
     );
     Ok(())
 }

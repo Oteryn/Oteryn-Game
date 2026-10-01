@@ -31,6 +31,11 @@
 Callers come with their own decisions: NPC-QUEST-0 (dialogue), QUEST-GATE-0 (doors), the
 interaction and creature-event owners. A quest log wire is deferred (A8).
 
+**Amendment (pending on acceptance of QUEST-GATE-0; `OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §3-§7).** QUEST-GATE-0
+decides the gate, trigger and NPC dialogue callers, the quest XP obligation and the quest log wire
+(A8), with their children QUEST-GATE-1, QUEST-TRIGGER-1, NPC-QUEST-1, QUEST-XP-1 and
+QUEST-LOG-WIRE-1.
+
 ## 1. Question
 
 Where does a character's quest progress live, and how does it change safely?
@@ -144,6 +149,13 @@ Where does a character's quest progress live, and how does it change safely?
   (XP `character_progression.rs:817`, death `character_death.rs:478`, charm `charm_state.rs:720`,
   monk `monk_state.rs:397`), a mismatch is not retried: it fails closed and is reported as a
   defect.
+
+**Amendment (pending on acceptance of PREY-0;
+`reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md` §4.2 and §9).** The
+death chain becomes XP, then Bestiary or Bosstiary, then task kill credit, then quest transitions.
+Task kill credit is written only when the Creature matches an active task. Prey and Task Board
+writes are revision-advancing writers on the sequencer; their bindings exclude the revision, so a
+mismatch reloads the cursor and retries once.
 
 ### 5.3 Fence and locks
 
