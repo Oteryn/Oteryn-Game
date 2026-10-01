@@ -42,8 +42,8 @@
     "unresolved_conditions": 1759,
     "by_status": {
       "conflict": 1,
-      "mapped": 214,
-      "unresolved_semantics": 1006
+      "mapped": 215,
+      "unresolved_semantics": 1005
     }
   },
   "undeclared_progress_tracks": [],
@@ -3119,7 +3119,7 @@
     },
     {
       "destination": "canary:interaction/dark_trails/movements_necrometer_tile_access",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -21510,18 +21510,6 @@
       "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission74",
       "reason": "progress track not declared",
       "record": "canary:interaction/the_gravedigger_of_drefia/actions_sacrifice"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_50/dark_trails/mission04",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/dark_trails/movements_necrometer_tile_access"
-    },
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/quest/u10_50/dark_trails/mission10",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/dark_trails/movements_necrometer_tile_access"
     },
     {
       "field": "condition.quest_stage.progress",

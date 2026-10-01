@@ -9,11 +9,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
-      "sha256": "639448d393f47527b1747cb40f9ab3471fd69f305c306795d21d78672bf3b78d"
+      "sha256": "108195169dcbde2689614005af5fa00e8f6e9240be741e28d7ce29704371189e"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "f2ce63b30e417f40aa1b18b4f1322dab47abc434a7c423beef1903fb61d6159d"
+      "sha256": "fc4a33118ef8965222d5c66738c49530a7966b4515b82627faa29a74010727e7"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -25,7 +25,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
-      "sha256": "642a9db6cab72367e9ed24dcfd7e4d746379c50b95528edf47edbb421028d531"
+      "sha256": "8869006ab863d2bc2ccc846d5de59f42ff9d88e8adfd1800d6ef57ecfab7872f"
     }
   ],
   "historical_coverage_ots_sources": {
@@ -7318,6 +7318,7 @@
             "classification": "DERIVED",
             "features": [
               "door_progress",
+              "npc_dialogue",
               "quest_state",
               "scheduler",
               "trigger_kill",
@@ -43730,7 +43731,10 @@
           "ots_shown_in_quest_log": false,
           "readiness_data": {
             "classification": "DERIVED",
-            "features": [],
+            "features": [
+              "npc_dialogue",
+              "quest_state"
+            ],
             "data_gaps": {
               "interactions_with_gaps": 0,
               "unresolved_items": 1
@@ -61892,6 +61896,7 @@
             "classification": "DERIVED",
             "features": [
               "door_progress",
+              "npc_dialogue",
               "quest_state",
               "reward_claim",
               "scheduler",
@@ -90742,14 +90747,12 @@
               "npc_dialogue",
               "quest_state",
               "scheduler",
-              "teleport",
-              "trigger_step",
               "trigger_use",
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 7,
-              "unresolved_items": 20
+              "interactions_with_gaps": 6,
+              "unresolved_items": 18
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -106717,6 +106720,7 @@
               "creature_removal",
               "item_consume",
               "kv_state",
+              "npc_dialogue",
               "quest_state",
               "scheduler",
               "summon",
@@ -124343,6 +124347,7 @@
               "achievement",
               "item_consume",
               "item_hand_out",
+              "npc_dialogue",
               "quest_state",
               "reward_claim",
               "teleport",

@@ -2080,228 +2080,976 @@
         }
       ],
       "note": "All direct writes to this exact source field are these three NPC Golden outfit1210/1211 callbacks. No cross-source storage alias or initial value is inferred."
+    },
+    "quest/u10_50/dark_trails/mission01": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/a_beggar.lua",
+        "npc/ezebeth.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1990,
+          "storage_id": 44551,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission01",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2129,
+          "storage_id": 44551,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission01",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2129,
+          "storage_id": 44551,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission01",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission02": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/a_beggar.lua",
+        "npc/the_beggar_king.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1991,
+          "storage_id": 44552,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission02",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2130,
+          "storage_id": 44552,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission02",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2130,
+          "storage_id": 44552,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission02",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission03": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1992,
+          "storage_id": 44553,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission03",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2131,
+          "storage_id": 44553,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission03",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2131,
+          "storage_id": 44553,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission03",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission04": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/elliott.lua",
+        "npc/jacob.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1993,
+          "storage_id": 44554,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission04",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2132,
+          "storage_id": 44554,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission04",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2132,
+          "storage_id": 44554,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission04",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission05": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1994,
+          "storage_id": 44555,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission05",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2133,
+          "storage_id": 44555,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission05",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2133,
+          "storage_id": 44555,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission05",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission06": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/elliott.lua",
+        "npc/jacob.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1995,
+          "storage_id": 44556,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission06",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2134,
+          "storage_id": 44556,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission06",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2134,
+          "storage_id": 44556,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission06",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission07": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/barazbaz.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1996,
+          "storage_id": 44557,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission07",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2135,
+          "storage_id": 44557,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission07",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2135,
+          "storage_id": 44557,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission07",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission08": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/marvin.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1997,
+          "storage_id": 44558,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission08",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2136,
+          "storage_id": 44558,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission08",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2136,
+          "storage_id": 44558,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission08",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission09": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/barazbaz.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1998,
+          "storage_id": 44559,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission09",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2137,
+          "storage_id": 44559,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission09",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2137,
+          "storage_id": 44559,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission09",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission10": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/jondrin.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 1999,
+          "storage_id": 44560,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission10",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2138,
+          "storage_id": 44560,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission10",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2138,
+          "storage_id": 44560,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission10",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission11": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 2000,
+          "storage_id": 44561,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission11",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2139,
+          "storage_id": 44561,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission11",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2139,
+          "storage_id": 44561,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission11",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission12": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/barazbaz.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 2001,
+          "storage_id": 44562,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission12",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2140,
+          "storage_id": 44562,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission12",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2140,
+          "storage_id": 44562,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission12",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission13": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/sholley.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 2002,
+          "storage_id": 44563,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission13",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2141,
+          "storage_id": 44563,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission13",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2141,
+          "storage_id": 44563,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission13",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission14": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 2003,
+          "storage_id": 44564,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission14",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2142,
+          "storage_id": 44564,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission14",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2142,
+          "storage_id": 44564,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission14",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission15": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/barnabas_dee.lua",
+        "npc/sholley.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 2004,
+          "storage_id": 44565,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission15",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2143,
+          "storage_id": 44565,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission15",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2143,
+          "storage_id": 44565,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission15",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission16": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/quandons_ghost.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 2005,
+          "storage_id": 44567,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission16",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2144,
+          "storage_id": 44567,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission16",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2144,
+          "storage_id": 44567,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission16",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u10_50/dark_trails/mission17": {
+      "quest": "canary:quest/dark_trails_quest",
+      "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+      "npc_sources": [
+        "npc/terrence.lua"
+      ],
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "line": 2006,
+          "storage_id": 44568,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission17",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2145,
+          "storage_id": 44568,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission17",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/lib/core/storages.lua",
+          "line": 2145,
+          "storage_id": 44568,
+          "expression": "Storage.Quest.U10_50.DarkTrails.Mission17",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        }
+      ]
+    },
+    "quest/u9_1/elementalist_outfits/addon1": {
+      "wiki_quest": "Elementalist Outfits Quest",
+      "npc_source": "npc/broken_servant_sentry.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "https://github.com/opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "line": 74,
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 72,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 72,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u9_1/elementalist_outfits/addon2": {
+      "wiki_quest": "Elementalist Outfits Quest",
+      "npc_source": "npc/broken_servant_sentry.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "https://github.com/opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "line": 89,
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 87,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 87,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u9_1/elementalist_outfits/outfit": {
+      "wiki_quest": "Elementalist Outfits Quest",
+      "npc_source": "npc/broken_servant_sentry.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "https://github.com/opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "line": 103,
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "https://github.com/opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "line": 115,
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 101,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 113,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 101,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 113,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u9_1/elementalist_outfits/questline": {
+      "wiki_quest": "Elementalist Outfits Quest",
+      "npc_source": "npc/broken_servant_sentry.lua",
+      "owner_evidence": [
+        {
+          "source": "canary",
+          "repository": "https://github.com/opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "line": 104,
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 102,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "https://github.com/zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "line": 102,
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ],
+      "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+    },
+    "quest/u8_54/an_uneasy_alliance/questline": {
+      "wiki_quest": "An Uneasy Alliance Quest"
+    },
+    "quest/u14_15/the_way_of_the_monk/shrines_count": {
+      "quest": "canary:quest/the_way_of_the_monk_quest"
+    },
+    "storage/775558": {
+      "note": "Unknown quest owner: literal playerDoubleMageKill=775558 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:3, writerL10; source callback/value retained, no initial/bounds inferred."
+    },
+    "quest/u8_0/the_inquisition_quest/enter_teleport": {
+      "quest": "canary:quest/the_inquisition_quest",
+      "note": "Exact Crystal custom datapack U8_0 spelling and writes are preserved separately from global-pack U8_2; matching numeric41706 is not an alias proof. Initial value and bounds remain UNKNOWN.",
+      "owner_evidence": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-crystal/lib/core/storages.lua",
+          "line": 143,
+          "storage_id": 41706,
+          "expression": "Storage.Quest.U8_0.TheInquisitionQuest.EnterTeleport",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_storage_declaration"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-crystal/scripts/quests/inqusition_quest/teleport_boss.lua",
+          "line": 55,
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "role": "exact_executable_writer"
+        }
+      ]
     }
   },
   "deferred_tracks": {
-    "quest/u14_15/the_way_of_the_monk/shrines_count": {
-      "owner_evidence": {
-        "quest": "canary:quest/the_way_of_the_monk_quest"
-      },
-      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
-    },
-    "quest/u8_0/the_inquisition_quest/enter_teleport": {
-      "owner_evidence": {
-        "quest": "canary:quest/the_inquisition_quest"
-      },
-      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
-    },
-    "quest/u8_54/an_uneasy_alliance/questline": {
-      "owner_evidence": {
-        "wiki_quest": "An Uneasy Alliance Quest"
-      },
-      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
-    },
     "storage/673003": {
       "owner_evidence": {
         "note": "Unknown quest owner: literal yielothaxKillStorage=673003 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:4; setStorageValue receiver/effects retained. Shared/global versus character scope needs an owning contract; no initial/bounds inferred."
       },
-      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
+      "reason": "PROVEN GLOBAL/WORLD: pinned Game.setStorageValue(yielothaxKillStorage,0), not character progress. Source alias and owning-scope uncertainty retained; no character track, initial value or bounds invented."
     },
-    "storage/775558": {
+    "quest/u10_50/dark_trails/mission18": {
       "owner_evidence": {
-        "note": "Unknown quest owner: literal playerDoubleMageKill=775558 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:3, writerL10; source callback/value retained, no initial/bounds inferred."
-      },
-      "reason": "UNKNOWN writer under conservative immutable alias scanner; historical owner evidence retained but no active transition invented."
-    },
-    "quest/u9_1/elementalist_outfits/addon1": {
-      "owner_evidence": {
-        "wiki_quest": "Elementalist Outfits Quest",
-        "npc_source": "npc/broken_servant_sentry.lua",
+        "quest": "canary:quest/dark_trails_quest",
+        "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
         "owner_evidence": [
           {
             "source": "canary",
-            "repository": "https://github.com/opentibiabr/canary",
+            "repository": "opentibiabr/canary",
             "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
-            "line": 74,
-            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
+            "path": "data-otservbr-global/lib/core/storages.lua",
+            "line": 2007,
+            "storage_id": 44569,
+            "expression": "Storage.Quest.U10_50.DarkTrails.Mission18",
+            "classification": "OTS_HYPOTHESIS_ONLY",
+            "role": "exact_storage_declaration"
           },
           {
-            "source": "crystalserver",
-            "repository": "https://github.com/zimbadev/crystalserver",
+            "source": "crystal",
+            "repository": "zimbadev/crystalserver",
             "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 72,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
+            "path": "data-global/lib/core/storages.lua",
+            "line": 2146,
+            "storage_id": 44569,
+            "expression": "Storage.Quest.U10_50.DarkTrails.Mission18",
+            "classification": "OTS_HYPOTHESIS_ONLY",
+            "role": "exact_storage_declaration"
           },
           {
             "source": "crystal-summer",
-            "repository": "https://github.com/zimbadev/crystalserver",
+            "repository": "zimbadev/crystalserver",
             "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 72,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
+            "path": "data-global/lib/core/storages.lua",
+            "line": 2146,
+            "storage_id": 44569,
+            "expression": "Storage.Quest.U10_50.DarkTrails.Mission18",
+            "classification": "OTS_HYPOTHESIS_ONLY",
+            "role": "exact_storage_declaration"
           }
-        ],
-        "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
+        ]
       },
-      "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
-    },
-    "quest/u9_1/elementalist_outfits/addon2": {
-      "owner_evidence": {
-        "wiki_quest": "Elementalist Outfits Quest",
-        "npc_source": "npc/broken_servant_sentry.lua",
-        "owner_evidence": [
-          {
-            "source": "canary",
-            "repository": "https://github.com/opentibiabr/canary",
-            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
-            "line": 89,
-            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "crystalserver",
-            "repository": "https://github.com/zimbadev/crystalserver",
-            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 87,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "crystal-summer",
-            "repository": "https://github.com/zimbadev/crystalserver",
-            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 87,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          }
-        ],
-        "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
-      },
-      "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
-    },
-    "quest/u9_1/elementalist_outfits/outfit": {
-      "owner_evidence": {
-        "wiki_quest": "Elementalist Outfits Quest",
-        "npc_source": "npc/broken_servant_sentry.lua",
-        "owner_evidence": [
-          {
-            "source": "canary",
-            "repository": "https://github.com/opentibiabr/canary",
-            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
-            "line": 103,
-            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "canary",
-            "repository": "https://github.com/opentibiabr/canary",
-            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
-            "line": 115,
-            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "crystalserver",
-            "repository": "https://github.com/zimbadev/crystalserver",
-            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 101,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "crystalserver",
-            "repository": "https://github.com/zimbadev/crystalserver",
-            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 113,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "crystal-summer",
-            "repository": "https://github.com/zimbadev/crystalserver",
-            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 101,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "crystal-summer",
-            "repository": "https://github.com/zimbadev/crystalserver",
-            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 113,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          }
-        ],
-        "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
-      },
-      "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
-    },
-    "quest/u9_1/elementalist_outfits/questline": {
-      "owner_evidence": {
-        "wiki_quest": "Elementalist Outfits Quest",
-        "npc_source": "npc/broken_servant_sentry.lua",
-        "owner_evidence": [
-          {
-            "source": "canary",
-            "repository": "https://github.com/opentibiabr/canary",
-            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-            "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
-            "line": 104,
-            "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "crystalserver",
-            "repository": "https://github.com/zimbadev/crystalserver",
-            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 102,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          },
-          {
-            "source": "crystal-summer",
-            "repository": "https://github.com/zimbadev/crystalserver",
-            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
-            "path": "data-global/npc/broken_servant_sentry.lua",
-            "line": 102,
-            "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
-            "role": "executable",
-            "classification": "OTS_HYPOTHESIS_ONLY"
-          }
-        ],
-        "note": "Exclusive direct writes to this outfit-specific source storage in all three pinned Lua trees; default initial value remains UNKNOWN."
-      },
-      "reason": "UNKNOWN: exact source NPC writes are not represented by the current conservative writer scanner; no auxiliary track may be fabricated."
+      "reason": "Exact storage declaration exists; no observed source writer in accepted executable inventory. No transition or journal stage invented."
     }
   }
 }

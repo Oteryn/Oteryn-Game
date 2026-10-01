@@ -391,10 +391,6 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
                      **({'source_checks': {'owner': 'UNKNOWN: curated NPC has no catalogue quest'}} if not quest else {})}
         elif len(gate_owners) == 1:
             owner = {'auxiliary_of': sorted(gate_owners), 'owner_basis': 'gate catalogue link'}
-        elif prefix:
-            owner = {'auxiliary_of': sorted(prefixes[prefix]), 'owner_basis': 'mission track prefix'}
-        elif len(by_directory) == 1:
-            owner = {'auxiliary_of': sorted(by_directory), 'owner_basis': 'script directory'}
         elif key_norm in TRACK_OWNERS:
             used.add(key_norm)
             recorded = TRACK_OWNERS[key_norm]
@@ -404,6 +400,10 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
                      **({'note': recorded['note']} if recorded.get('note') else {}),
                      **({'source_checks': {'owner': 'UNKNOWN: ' + recorded['note']}}
                         if recorded.get('note', '').startswith('Unknown quest owner:') else {})}
+        elif prefix:
+            owner = {'auxiliary_of': sorted(prefixes[prefix]), 'owner_basis': 'mission track prefix'}
+        elif len(by_directory) == 1:
+            owner = {'auxiliary_of': sorted(by_directory), 'owner_basis': 'script directory'}
         elif key_norm in gate_tracks:
             owner = {'auxiliary_of': [], 'owner_basis': 'UNKNOWN',
                      'source_checks': {'owner': 'UNKNOWN; gate/source declaration does not establish a unique catalogue owner'}}

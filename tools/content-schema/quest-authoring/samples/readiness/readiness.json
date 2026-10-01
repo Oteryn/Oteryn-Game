@@ -43,15 +43,15 @@
    "item_hand_out": 49,
    "kv_state": 8,
    "mount": 3,
-   "npc_dialogue": 85,
+   "npc_dialogue": 90,
    "outfit": 4,
-   "quest_state": 110,
+   "quest_state": 111,
    "reward_claim": 135,
    "scheduler": 50,
    "summon": 36,
-   "teleport": 84,
+   "teleport": 83,
    "trigger_kill": 49,
-   "trigger_step": 83,
+   "trigger_step": 82,
    "trigger_use": 195,
    "world_object": 86
   },
@@ -63,49 +63,49 @@
   {
    "feature": "trigger_step",
    "owner": "GAME-INTERACTION-01 step edges",
-   "quests_complete_on_engine_side": 33,
+   "quests_complete_on_engine_side": 32,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "teleport",
    "owner": "relocation owner (D37)",
-   "quests_complete_on_engine_side": 36,
+   "quests_complete_on_engine_side": 35,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "trigger_use",
    "owner": "GAME-INTERACTION-01 USE edge",
-   "quests_complete_on_engine_side": 37,
+   "quests_complete_on_engine_side": 36,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "reward_claim",
    "owner": "DUR-03 inventory mint and RewardClaim (D39-D42)",
-   "quests_complete_on_engine_side": 123,
+   "quests_complete_on_engine_side": 122,
    "of_which_without_data_gaps": 87
   },
   {
    "feature": "world_object",
    "owner": "world-object overlay (D38)",
-   "quests_complete_on_engine_side": 130,
+   "quests_complete_on_engine_side": 129,
    "of_which_without_data_gaps": 87
   },
   {
    "feature": "item_consume",
    "owner": "DUR-03 consumption",
-   "quests_complete_on_engine_side": 133,
+   "quests_complete_on_engine_side": 132,
    "of_which_without_data_gaps": 88
   },
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 137,
+   "quests_complete_on_engine_side": 136,
    "of_which_without_data_gaps": 89
   },
   {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 138,
+   "quests_complete_on_engine_side": 137,
    "of_which_without_data_gaps": 89
   },
   {
@@ -308,6 +308,7 @@
    "kind": "script_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "scheduler",
     "trigger_kill",
@@ -805,7 +806,7 @@
     "trigger_use",
     "world_object"
    ],
-   "interactions": 6,
+   "interactions": 7,
    "data_gaps": {
     "interactions_with_gaps": 5,
     "unresolved_items": 19
@@ -1136,7 +1137,10 @@
   {
    "quest": "canary:quest/elementalist_outfits_quest",
    "kind": "script_only",
-   "features": [],
+   "features": [
+    "npc_dialogue",
+    "quest_state"
+   ],
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
@@ -1612,6 +1616,7 @@
    "kind": "reward_only",
    "features": [
     "door_progress",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "scheduler",
@@ -2166,15 +2171,13 @@
     "npc_dialogue",
     "quest_state",
     "scheduler",
-    "teleport",
-    "trigger_step",
     "trigger_use",
     "world_object"
    ],
-   "interactions": 8,
+   "interactions": 6,
    "data_gaps": {
-    "interactions_with_gaps": 7,
-    "unresolved_items": 20
+    "interactions_with_gaps": 6,
+    "unresolved_items": 18
    }
   },
   {
@@ -2500,6 +2503,7 @@
     "creature_removal",
     "item_consume",
     "kv_state",
+    "npc_dialogue",
     "quest_state",
     "scheduler",
     "summon",
@@ -4057,6 +4061,7 @@
     "achievement",
     "item_consume",
     "item_hand_out",
+    "npc_dialogue",
     "quest_state",
     "reward_claim",
     "teleport",

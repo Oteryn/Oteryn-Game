@@ -67,12 +67,12 @@
   "unresolved_lines": 2017,
   "unresolved_conditions": 1759,
   "blocked_children": 487,
-  "reference_gaps": 89,
-  "total_unresolved_items": 4352,
+  "reference_gaps": 87,
+  "total_unresolved_items": 4350,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3740
+   "bespoke": 3738
   },
   "quests_triaged": 250,
   "quests_with_bespoke_work": 105,
@@ -744,7 +744,7 @@
    "quest": "canary:quest/dark_trails_quest",
    "kind": "reward_only",
    "counts": {
-    "owner_pending": 2,
+    "owner_pending": 3,
     "shared_mechanism": 4,
     "bespoke": 15
    },
@@ -2045,7 +2045,7 @@
    "counts": {
     "owner_pending": 7,
     "shared_mechanism": 0,
-    "bespoke": 20
+    "bespoke": 18
    },
    "owners_needed": [
     "scheduler"
@@ -2053,7 +2053,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:20"
+    "bespoke:18"
    ]
   },
   {

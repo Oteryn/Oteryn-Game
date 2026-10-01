@@ -14,8 +14,11 @@ import re
 from functools import lru_cache
 
 import lua_tables
+import scoped_storage_aliases
 
 WRITE = re.compile(r'setStorageValue\(\s*(Storage\.[A-Za-z0-9_.]+(?:\[\d+\])?|\d+)\s*,')
+PROCEDURAL_WRITE = re.compile(r'(?<![\w.:])setPlayerStorageValue\s*\(')
+STORAGE_TARGET = re.compile(r'(?:Storage\.[A-Za-z0-9_.]+(?:\[\d+\])?|\d+)')
 FUNCTION = re.compile(r'^\s*(?:local\s+)?function\s+([A-Za-z_]\w*)(?:[.:]([A-Za-z_]\w*))?\s*\(')
 OBJECT = re.compile(r'^\s*local\s+(\w+)\s*=\s*(MoveEvent|Action|CreatureEvent|GlobalEvent|TalkAction|EventCallback)\s*\(')
 REGISTRATION = re.compile(r'^\s*(\w+):(uid|aid|id|position|type)\((.*)\)\s*$')
@@ -183,7 +186,7 @@ def dialogue_at_write(lines, start, write_line):
                 stack.pop()
     # strip_code blanks string literals, so keywords come from the raw condition lines
     conditions = [re.sub(r'--.*$', '', lines[n - 1]) for n in stack if n]
-    keywords = [k for c in conditions for k in re.findall(r'MsgContains\(\s*\w+\s*,\s*"([^"]+)"', c)]
+    keywords = list(dict.fromkeys(k for c in conditions for k in re.findall(r'MsgContains\(\s*\w+\s*,\s*"([^"]+)"', c)))
     topics = sorted({int(t) for c in conditions for t in re.findall(r'[Tt]opic\w*(?:\[[^\]]*\]|\([^)]*\))?\s*==\s*(\d+)', c)})
     return {'keywords': keywords, 'topics': topics}
 
@@ -373,7 +376,58 @@ def guard_pattern(target):
     return re.compile(r'getStorageValue\(\s*' + re.escape(target) + r'\s*\)\s*(==|~=|<=|>=|<|>)\s*(-?\d+)')
 
 
+def pristine_procedure(text, name):
+    """A bare legacy builtin call is source evidence only while its binding is untouched.
+    Any declaration, assignment, parameter, alias or escape leaves that name unknown.
+    Qualified table methods are separate symbols, never this builtin."""
+    try:
+        tokens = [t for t in lua_tables.tokenize(text) if t[0] not in ('comment', 'lcomment')]
+    except lua_tables.LuaError:
+        return False
+    for i, (kind, value, _) in enumerate(tokens):
+        if kind != 'name' or value != name or i and tokens[i - 1][1] in ('.', ':'):
+            continue
+        if (i and tokens[i - 1][1] == 'function'
+                or i + 1 >= len(tokens) or tokens[i + 1][1] != '('):
+            return False
+    return True
+
+
+def call_arguments(text, start):
+    """Split a complete call with lexical offsets intact; commas in nested calls are not separators."""
+    code, depth, begin, parts = mask_code(text), 0, start, []
+    for i in range(start, len(code)):
+        char = code[i]
+        if char in '([{':
+            depth += 1
+        elif char in ')]}':
+            if depth == 0:
+                return parts + [text[begin:i].strip()] if char == ')' else None
+            depth -= 1
+        elif char == ',' and depth == 0:
+            parts.append(text[begin:i].strip())
+            begin = i + 1
+    return None
+
+
+def procedural_writes(text):
+    """setPlayerStorageValue(receiver, storage, value): storage is the second argument.
+    Keep the source receiver verbatim; it is not a resolved player identity. Anonymous
+    storage expressions stay unknown instead of joining another numeric argument."""
+    if not pristine_procedure(text, 'setPlayerStorageValue'):
+        return []
+    found = []
+    for match in PROCEDURAL_WRITE.finditer(mask_code(text)):
+        args = call_arguments(text, match.end())
+        if (args and len(args) == 3 and args[0] and args[2] and STORAGE_TARGET.fullmatch(args[1])
+                and (not args[1].startswith('Storage.')
+                     or builtin_binding_is_pristine(text.splitlines(), 'Storage'))):
+            found.append((match.start(), args[1], args[2], args[0]))
+    return found
+
+
 def scan(text, path):
+    text = scoped_storage_aliases.expand_scoped_storage_aliases(text)
     aliases = storage_aliases(text.split('\n'))
     text = '\n'.join(expand_aliases(line, aliases) for line in text.split('\n'))
     lines = text.split('\n')
@@ -386,24 +440,39 @@ def scan(text, path):
         if (m := REGISTRATION.match(line)):
             registrations.setdefault(m.group(1), []).append(f'{m.group(2)}({m.group(3).strip()[:60]})')
     writes = []
-    for match in WRITE.finditer(text):
-        line = text.count('\n', 0, match.start()) + 1
-        target, value = match.group(1), argument(text, match.end()).strip()
+    candidates = [(m.start(), m.group(1), argument(text, m.end()).strip(), None)
+                  for m in WRITE.finditer(text)] + procedural_writes(text)
+    for offset, target, value, receiver in sorted(candidates):
+        line = text.count('\n', 0, offset) + 1
         enclosing = next(((n, obj, method) for n, obj, method in reversed(functions) if n <= line), None)
         start = enclosing[0] if enclosing else 1
         guard = None
+        pattern = guard_pattern(target) if receiver is None else re.compile(
+            r'(?<![\w.:])getPlayerStorageValue\(\s*' + re.escape(receiver)
+            + r'\s*,\s*' + re.escape(target) + r'\s*\)\s*(==|~=|<=|>=|<|>)\s*(-?\d+)')
+        # Equal expression text does not prove the same player: calls may return
+        # different actors and identifiers may be reassigned or shadowed. Only a
+        # literal CID (or an already-proved immutable literal alias) is stable here.
+        reader_known = receiver is None or (bool(re.fullmatch(r'\d+', receiver))
+                                           and pristine_procedure(text, 'getPlayerStorageValue'))
         for number in range(line - 1, start - 1, -1):
-            g = guard_pattern(target).search(lines[number - 1])
+            g = pattern.search(strip_code(lines[number - 1])) if reader_known else None
             if g:
                 guard = guard_at_write(lines, number, line, g.group(1), int(g.group(2)))
                 break
         step = re.fullmatch(r'(?:\w+:)?getStorageValue\(\s*' + re.escape(target) + r'\s*\)\s*\+\s*(\d+)', value)
+        if receiver is not None:
+            step = re.fullmatch(r'getPlayerStorageValue\(\s*' + re.escape(receiver)
+                               + r'\s*,\s*' + re.escape(target) + r'\s*\)\s*\+\s*(\d+)', value) if reader_known else None
         if re.fullmatch(r'-?\d+', value):
             effect = {'to': int(value)}
         elif step:
             effect = {'increment': int(step.group(1))}
         else:
-            effect = {'computed': 'timestamp' if 'os.time' in value else 'expression'}
+            timestamp = ('os.time' in value if receiver is None else
+                         bool(re.search(r'\bos\.time\s*\(', mask_code(value)))
+                         and builtin_binding_is_pristine(lines, 'os'))
+            effect = {'computed': 'timestamp' if timestamp else 'expression'}
         obj = enclosing[1] if enclosing else None
         if '/npc/' in path:
             owner = 'npc'
@@ -414,5 +483,7 @@ def scan(text, path):
         writes.append({'line': line, 'target': target, 'value': value[:60], **effect, 'from': guard, 'owner': owner,
                        'callback': enclosing[2] if enclosing else None,
                        'registrations': sorted(set(registrations.get(obj, [])))[:6],
-                       **({'dialogue': dialogue_at_write(lines, start, line)} if owner == 'npc' else {})})
+                       **({'dialogue': dialogue_at_write(lines, start, line)} if owner == 'npc' else {}),
+                       **({'call_form': 'legacy_procedure', 'receiver_expression': receiver}
+                          if receiver is not None else {})})
     return writes
