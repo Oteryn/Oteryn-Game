@@ -471,7 +471,7 @@ def build(packet: dict) -> dict:
             "target": TARGET, "source_registry": packet["source_registry"], "normalized_sources": sources,
             "normalized_sources_sha256": binding.sha256(binding.canonical_bytes(sources)),
             "qualification_policy": "Draft selection prefers explicit current per-item Tibiopedia tables matching primary "
-                "client slots over older Imbuement Tool helper tables (21 stale slot counts, pre-Monk missing Punch and "
+                "client slots over conflicting Imbuement Tool helper tables (mostly 2024; WandsRods last modified 2026-06-16) (21 stale slot counts, pre-Monk missing Punch and "
                 "incorrect built-in-effect exclusions). Both claims and every discrepancy remain preserved. "
                 "DERIVED_SELECTED_OVER_STALE_HELPER is a source candidate choice, never verified Global parity or runtime "
                 "admission. Any profile with only one community table, including native-only tables, is "
