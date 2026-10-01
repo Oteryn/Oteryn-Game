@@ -12,7 +12,8 @@ import wheel_authoring as wheel
 
 class FollowupTests(unittest.TestCase):
     def setUp(self):
-        self.candidate = wheel.read(wheel.ROOT / 'samples/wheel-candidate.json')
+        self.previous_bytes = (wheel.ROOT / 'samples/wheel-candidate.json').read_bytes()
+        self.candidate = wheel.decode_json(self.previous_bytes)
 
     def effects(self, candidate):
         for data in candidate['vocations'].values():
@@ -80,7 +81,8 @@ class FollowupTests(unittest.TestCase):
     def successor(self):
         candidate = copy.deepcopy(self.candidate)
         candidate.update(revision='r2', release={'kind': 'value_only',
-                                               'predecessor': self.candidate['revision']})
+                                               'predecessor': self.candidate['revision'],
+            'predecessor_sha256': hashlib.sha256(self.previous_bytes).hexdigest()})
         return candidate
 
     def test_gem_change_requires_its_own_declaration(self):
@@ -89,7 +91,7 @@ class FollowupTests(unittest.TestCase):
             candidate = self.successor()
             mutate(candidate)
             with self.subTest(mutate=mutate), self.assertRaisesRegex(ValueError, 'GEM_REVISION_DECLARATION_REQUIRED'):
-                wheel.validate(candidate, self.candidate)
+                wheel.validate(candidate, self.candidate, self.previous_bytes)
 
     def write_declaration(self, root, candidate, kind):
         path = root / 'samples/gem-revisions/test.json'
@@ -117,7 +119,7 @@ class FollowupTests(unittest.TestCase):
                 root = Path(directory)
                 self.write_declaration(root, candidate, kind)
                 with patch.object(gem_revisions, 'ROOT', root):
-                    wheel.validate(candidate, self.candidate)
+                    wheel.validate(candidate, self.candidate, self.previous_bytes)
 
     def test_duplicate_json_fields_are_rejected_at_every_depth(self):
         with tempfile.TemporaryDirectory() as directory:

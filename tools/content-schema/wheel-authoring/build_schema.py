@@ -48,7 +48,9 @@ gem_revision=obj({'kind':enum(['declared_compatible','staged_migration']),
     'reference':{'type':'string','pattern':r'^samples/gem-revisions/[a-z0-9][a-z0-9_-]*\.json$'},
     'sha256':{'type':'string','pattern':'^[a-f0-9]{64}$'}})
 release={'oneOf':[obj({'kind':{'const':'initial'},'predecessor':{'type':'null'}}),
-    obj({'kind':enum(['value_only','wheel_reset']),'predecessor':text,'gem_revision':gem_revision},['kind','predecessor'])]}
+    obj({'kind':enum(['value_only','wheel_reset']),'predecessor':text,
+        'predecessor_sha256':{'type':'string','pattern':'^[a-f0-9]{64}$'},
+        'gem_revision':gem_revision},['kind','predecessor','predecessor_sha256'])]}
 parameter_units={e['kind']:e['unit'] for effects in parameters['revelations'].values() for e in effects}
 revelation_effect={'oneOf':[obj({'kind':{'const':k},'value':parameter_value_schema(k,u),'unit':{'const':u}}) for k,u in parameter_units.items()]}
 supreme_units={'dodge':'percent_points','critical_extra_damage':'percent_points','life_leech':'percent_points','mana_leech':'percent_points','base_damage_bonus':'percent_points','base_healing_bonus':'percent_points','cooldown_reduction':'seconds','momentum_chance':'percent_points','revelation_mastery_points':'points'}

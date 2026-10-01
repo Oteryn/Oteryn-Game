@@ -1139,7 +1139,7 @@
       "stage": 2,
       "planner_value": 60,
       "selected_value": 40,
-      "evidence": "CONFLICT: planner 60, pinned Canary and captured Fandom:1206174 40; selected existing project target evidence, Fandom 1206174 now read via Chrome/CDP; Global target-version conflict remains Live BR wiki r443774 instead says +15%; planner +60% and selected project +40% retained. Target-version conflict remains pending."
+      "evidence": "FORMULA_SELECTION_CONFIRMED: English TibiaWiki Conviction r1206174 explicitly gives +40% base damage; official > English wiki > Canary per architect ruling #162/5933264015. BR r443774 +15% and planner +60% are retained conflicting corroboration, not selected authority. Runtime and current Global parity remain unadmitted."
     }
   ],
   "augment_parameters": {
@@ -1867,7 +1867,7 @@
   "unique_source_selections": {
     "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
     "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
-    "guiding_presence": "official:8833 selects sharing 100% of mantra; official:8944 and Fandom:1206174 add party bonuses +33%. source_percent preserves wording; relative/points, rounding and own-Serene-copy semantics remain Q5 with the runtime owner.",
+    "guiding_presence": "Official8833 full mantra share100%; official8944/EnglishWiki1206174 literal party+33%. EnglishWiki gives no arithmetic; pinnedCanary99902524 party.cpp308-321 implements mantra sharing but combat.cpp824-835/game.cpp210-223 has no Guiding+33 bonus. Arithmetic/rounding/self-copy PARITY_PENDING; runtime unadmitted; no owner gate.",
     "runic_mastery": {
       "evidence": "FANDOM_1206174",
       "rule": "Percentage applies to the character base magic level for that rune effect only; no effective-skill or equipment bonus is invented."

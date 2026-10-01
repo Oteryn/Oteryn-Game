@@ -200,13 +200,13 @@ def structure(candidate):
         if isinstance(value,list):return [scrub(v) for v in value]
         return value
     return scrub({k:candidate[k] for k in ['progression','topology','vocations','gems']})
-def validate(candidate, previous=None):
+def validate(candidate, previous=None, previous_bytes=None):
     finite_json(candidate)
     schema=read(ROOT/'wheel.schema.json');Draft202012Validator.check_schema(schema);Draft202012Validator(schema).validate(candidate)
     def require(condition, code):
         if not condition:raise ValueError(code)
     release=candidate['release']
-    if release['kind']=='initial':require(previous is None,'INITIAL_WITH_PREDECESSOR')
+    if release['kind']=='initial':require(previous is None and previous_bytes is None,'INITIAL_WITH_PREDECESSOR')
     else:
         require(previous is not None,'PREDECESSOR_REQUIRED')
         finite_json(previous)
@@ -214,6 +214,9 @@ def validate(candidate, previous=None):
             previous.get('runtime_admitted') is False and isinstance(previous.get('revision'),str) and
             1<=len(previous['revision'])<=128,'PREDECESSOR_ENVELOPE')
         require(release['predecessor']==previous['revision'] and candidate['revision']!=previous['revision'],'REVISION_CHAIN')
+        require(isinstance(previous_bytes,bytes),'PREDECESSOR_BYTES_REQUIRED')
+        require(previous==decode_json(previous_bytes),'PREDECESSOR_CONTENT')
+        require(hashlib.sha256(previous_bytes).hexdigest()==release['predecessor_sha256'],'PREDECESSOR_DIGEST')
         if release['kind']=='value_only':require(structure(candidate)==structure(previous),'VALUE_ONLY_STRUCTURE_CHANGED')
         from gem_revisions import validate_gem_revision
         validate_gem_revision(candidate,previous)
@@ -408,7 +411,9 @@ def main():
             if args.file.read_text()!=json.dumps(candidate,indent=2,allow_nan=False)+'\n':raise ValueError('REBUILD_DRIFT')
         else:args.file.write_text(json.dumps(candidate,indent=2,allow_nan=False)+'\n')
     else:
-        candidate=read(args.file);validate(candidate,read(args.previous) if args.previous else None)
+        previous_bytes=args.previous.read_bytes() if args.previous else None
+        candidate=read(args.file)
+        validate(candidate,decode_json(previous_bytes) if previous_bytes is not None else None,previous_bytes)
     if args.evidence or ((args.command=='validate' or args.check) and args.file.resolve()==(ROOT/'samples/wheel-candidate.json').resolve()):
         validate_evidence(candidate,args.file.read_bytes(),args.evidence);qualified=True
     print('PASS: Wheel reference candidate; '+('exact-file evidence qualified.' if qualified else 'semantic validation only; evidence not qualified.'))

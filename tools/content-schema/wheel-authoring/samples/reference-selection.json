@@ -89,7 +89,7 @@
     "secondary_br_revision": 443774,
     "secondary_br_approved_on": "2026-09-02",
     "planner_percent": 60,
-    "decision": "40 retained for Sept 27 snapshot, now directly corroborated by read Fandom r1206174; BR +15 remains conflicting. Live Global value not established."
+    "decision": "40 confirmed by explicit English TibiaWiki Conviction r1206174 row under architect FORMULA ruling; BR15/planner60 remain corroboration/conflict evidence only."
   },
   "great_fire_wave_i": "Both +15 critical extra damage and +10 critical chance selected from the existing project spell capture.",
   "flurry_of_blows_i": "Select AREA_GREATER_FLURRY_OF_BLOWS. Planner range +1 is preserved as an unselected cast-range hypothesis.",
@@ -99,12 +99,23 @@
   "unique_conviction_selections": {
     "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
     "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
-    "guiding_presence": "official:8833 selects sharing 100% of mantra; official:8944 and Fandom:1206174 add party bonuses +33%. source_percent preserves wording; relative/points, rounding and own-Serene-copy semantics remain Q5 with the runtime owner.",
+    "guiding_presence": "Official8833 full mantra share100%; official8944/EnglishWiki1206174 literal party+33%. EnglishWiki gives no arithmetic; pinnedCanary99902524 party.cpp308-321 implements mantra sharing but combat.cpp824-835/game.cpp210-223 has no Guiding+33 bonus. Arithmetic/rounding/self-copy PARITY_PENDING; runtime unadmitted; no owner gate.",
     "runic_mastery": "Fandom:1206174 explicitly applies the percentage bonus to base magic level, for that specific rune effect only."
   },
   "atelier_conflicts": {
     "selected_project": 12000000,
     "fandom_1151969": 12500000,
-    "state": "KEEP_ACCEPTED_PROJECT_GRADE_TABLE; GLOBAL_PRICE_UNCONFIRMED"
+    "state": "CANDIDATE_12M_RETAINED_UNTIL_ARCHITECT_WHEEL_GEM0_AMENDMENT; REFERENCE_SELECTION_12_5M"
+  },
+  "architect_ruling": {
+    "reference": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015",
+    "formula_precedence": "official > English TibiaWiki > pinned Canary; BR/planner corroboration only",
+    "gem_price_cap_application": "DEFERRED_BY_COORDINATOR_STATE_5897165704_PENDING_ARCHITECT_WHEEL_GEM0_AMENDMENT; 225/12.5M are architect reference selections, candidate250/12M unchanged",
+    "task_shop_and_grade_iv_maximum": "OUT_OF_SCOPE_REFERENCE_ONLY; no accepted runtime value",
+    "deferred_reference_values": {
+      "revealed_gem_limit": 225,
+      "supreme_grade_iii_gold": 12500000
+    },
+    "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704"
   }
 }
