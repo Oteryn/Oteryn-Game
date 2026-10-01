@@ -291,3 +291,25 @@ the engines may share source dependency, and unsupported wiki categories require
 I5/I9/I10, seven unpopulated rulesets, capacity/stackability conflicts, native restriction
 admission, held identities and map runtime work remain open. Requirements enrichment follows
 as a separate bounded implementation batch.
+
+### Retained fallback and client data follow-up
+
+The checked 15.30 appearances artifact from the owner's `content/assets/files` link supplies
+two additional categories with matching market category and exact clothing slot; the admitted
+family fallback supplies another 81. Navigation now covers **9,418** Items, leaving **3,283**
+without taxonomy or an existing map owner. Every supplement preserves source identity,
+digest and per-observation evidence. Explicit newer wiki category conflicts/unadmitted values,
+generic hand slots and appearance-only identity holds remain unresolved. See
+[`OTV2-20261001-client-1530-item-taxonomy-check.md`](../evidence/OTV2-20261001-client-1530-item-taxonomy-check.md).
+
+Further Tavily corroboration (`41bcbc97-06cb-4155-aabd-b950818a18a4`) reads BR
+[Zaoan Monk Robe rev. 424096](https://www.tibiawiki.com.br/index.php?title=Zaoan_Monk_Robe&oldid=424096)
+and [Legs of Enlightenment rev. 423789](https://www.tibiawiki.com.br/index.php?title=Legs_of_Enlightenment&oldid=423789),
+consistent with the client categories. BR
+[Adventurer Backpack rev. 433126](https://www.tibiawiki.com.br/index.php?title=Adventurer_Backpack&oldid=433126)
+reports volume 22, corroborating retained Fandom rev. 1198148 rather than the engine-derived
+20. Its uniquely bound identity is qualified for the separate capacity repair; shared furniture
+variants and i5801 remain held. Fandom Glooth Spear full extraction failed again; the successful
+search (`4eda5fdd-bb99-4641-9b17-32f04efea746`) reports stackable, matching the official
+client flag but supplying no stack maximum. Six taxonomy boundary regressions and the complete
+migration suite pass after this supplement.

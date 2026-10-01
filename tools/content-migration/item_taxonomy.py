@@ -7,11 +7,37 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/content-schema/item-authoring"))
-from engine_items import resolve_wiki_family_value
+from engine_items import (
+    build_identity_index,
+    load_appearance_objects,
+    load_wiki_family_fallback,
+    resolve_wiki_family_value,
+)
 
 SNAPSHOT = "imports/tibiawiki/facts/items-stats.json"
 # The census omitted this BR navigation label; both the weapons and schema already
 # distinguish throwing/distance weapons from melee weapons.
+CLIENT_DIGEST = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+CLIENT_PATH = f"content/assets/files/appearances-{CLIENT_DIGEST}.dat"
+FALLBACK_PATH = "imports/tibiawiki/facts/items-family-fallback.json"
+# Only semantic clothing slots are admitted; hand slots do not identify a family.
+MARKET_PROFILES = {
+    1: "equipment_armor",
+    3: "equipment_armor",
+    7: "equipment_armor",
+    8: "equipment_armor",
+    2: "equipment_offhand",
+    11: "equipment_offhand",
+}
+MARKET_CLOTHES_SLOT = {1: 4, 3: 8, 7: 1, 8: 7, 2: 2, 11: 9}
+CLOTHES_PROFILES = {
+    1: "equipment_armor",
+    4: "equipment_armor",
+    7: "equipment_armor",
+    8: "equipment_armor",
+    2: "equipment_offhand",
+    9: "equipment_offhand",
+}
 PROFILE_ALIASES = {"Armas de Arremesso": "weapon_distance"}
 
 
@@ -20,7 +46,14 @@ def legacy_profile(primary, assignments):
 
 
 def build_taxonomy(
-    definitions, authoring, assignments, snapshot, bound_keys, routed_keys
+    definitions,
+    authoring,
+    assignments,
+    snapshot,
+    bound_keys,
+    routed_keys,
+    fallback=None,
+    client=None,
 ):
     rows = {}
     for key, item in sorted(authoring.items()):
@@ -68,6 +101,72 @@ def build_taxonomy(
                 ],
             },
         }
+    wiki_by_id = {row["item_id"]: row for row in snapshot["records"].values()}
+    for key, definition in sorted(definitions.items()):
+        if key in rows or key[1] not in bound_keys or key[1] in routed_keys:
+            continue
+        item_id = int(key[1].rsplit("i", 1)[1])
+        observed = wiki_by_id.get(item_id, {}).get("observations", [])
+        # An explicit conflicting or unadmitted category remains a hold even when
+        # another source could supply a plausible profile.
+        primary = [
+            row["fields"]["primarytype"]
+            for row in observed
+            if "primarytype" in row["fields"]
+        ]
+        if primary:
+            continue
+        entry = (fallback or {}).get(key[1])
+        if entry:
+            evidence = entry["evidence"]
+            rows[key] = {
+                "target": definition["identity"],
+                "source_taxonomy": {
+                    "primary": evidence["value"]
+                    if evidence["resolution"] == "direct"
+                    else evidence["candidates"][0]["value"]
+                },
+                "family_profile": entry["profile"],
+                "source_evidence": {
+                    "snapshot": FALLBACK_PATH,
+                    "snapshot_sha256": entry["snapshot_sha256"],
+                    "qualified_fallback": evidence,
+                },
+            }
+            continue
+        appearance = (client or {}).get(item_id)
+        if not appearance:
+            continue
+        flags = appearance["flags"]
+        market = MARKET_PROFILES.get(flags.get("market.category"))
+        clothes = CLOTHES_PROFILES.get(flags.get("clothes.slot"))
+        if (
+            not market
+            or market != clothes
+            or MARKET_CLOTHES_SLOT.get(flags.get("market.category"))
+            != flags.get("clothes.slot")
+            or flags.get("flags.take") is not True
+        ):
+            continue
+        rows[key] = {
+            "target": definition["identity"],
+            "source_taxonomy": {
+                "primary": f"client market category {flags['market.category']}"
+            },
+            "family_profile": market,
+            "source_evidence": {
+                "source": "official_client",
+                "client_version": "15.30",
+                "artifact": CLIENT_PATH,
+                "artifact_sha256": CLIENT_DIGEST,
+                "appearance_id": item_id,
+                "appearance_name": appearance.get("name"),
+                "flags": {
+                    field: flags[field]
+                    for field in ("flags.take", "market.category", "clothes.slot")
+                },
+            },
+        }
     return [rows[key] for key in sorted(rows)]
 
 
@@ -94,4 +193,13 @@ def taxonomy_inputs(root=ROOT):
                 pointer = row.get("provenance", {}).get("item_pointer", {})
                 if pointer:
                     routed_keys.add(pointer["key"])
-    return snapshot, bound_keys, routed_keys
+    fallback_path = root / FALLBACK_PATH
+    fallback_digest = json.loads(fallback_path.read_text())["snapshot_sha256"]
+    fallback = load_wiki_family_fallback(fallback_path, build_identity_index())
+    for entry in fallback.values():
+        entry["snapshot_sha256"] = fallback_digest
+    client_bytes = (root / CLIENT_PATH).read_bytes()
+    if hashlib.sha256(client_bytes).hexdigest() != CLIENT_DIGEST:
+        raise ValueError("TAXONOMY_CLIENT_DIGEST")
+    client = load_appearance_objects(client_bytes)
+    return snapshot, bound_keys, routed_keys, fallback, client

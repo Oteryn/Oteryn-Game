@@ -20,6 +20,7 @@ owned_paths:
   - content/items/{taxonomy,relations}/**
   - content/content.lock.json
   - docs/agents/reports/OTV2-20261001-item-catalog-audit-and-map-handover.md
+  - docs/agents/evidence/OTV2-20261001-client-1530-item-taxonomy-check.md
 public_contracts:
   - OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1
 depends_on: []
@@ -27,7 +28,9 @@ depends_on: []
 
 ## Outcome and evidence
 
-- PROVEN: taxonomy 164 -> 9,335, all 22 profiles; eleven throwing-weapon null profiles repaired.
+- PROVEN: taxonomy 164 -> 9,418, all 22 profiles; eleven throwing-weapon null profiles repaired.
+  The final supplement admits 81 validated family fallback rows and two official client
+  market/clothing agreements; contradictory or unadmitted newer wiki categories remain held.
 - PROVEN: all 656 positive imbuement-slot definitions have their relation; 582 missing edges
   repaired, total 729 relation sources / 803 edges. Forge/enchanting evidence remains retained.
 - PROVEN: nested XML imbuement family ceilings survive parsing and candidate conversion.
@@ -45,7 +48,7 @@ depends_on: []
 
 ## Validation
 
-Tree regeneration/validator, materialized tree validator, tree tests and four taxonomy
+Tree regeneration/validator, materialized tree validator, tree tests and six taxonomy
 boundary regressions passed. The 252 formal-schema checks, 599 engine checks, three nested
 limit regressions, Ruff checks/formatting, governance validator, 36 governance tests and
 whitespace checks passed. Exact remote head and repository CI are recorded in PR/check

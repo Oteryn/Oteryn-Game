@@ -7,7 +7,7 @@ from world_project_v2_to_tree import capability_relations
 
 
 class TaxonomyTests(unittest.TestCase):
-    def rows(self, categories, bound=True, routed=False, legacy=None):
+    def rows(self, categories, bound=True, routed=False, legacy=None, **sources):
         target = {
             "family": "Item",
             "key": "oteryn:item.tibia.i34086",
@@ -38,6 +38,7 @@ class TaxonomyTests(unittest.TestCase):
             snapshot,
             {target["key"]} if bound else set(),
             {target["key"]} if routed else set(),
+            **sources,
         )
 
     def test_source_agreement_and_provenance(self):
@@ -59,6 +60,50 @@ class TaxonomyTests(unittest.TestCase):
         self.assertEqual(row["family_profile"], "weapon_melee")
         self.assertNotIn("source_evidence", row)
         self.assertEqual(legacy_profile("Armas de Arremesso", {}), "weapon_distance")
+
+    def test_client_agreement_and_identity_holds(self):
+        client = {
+            34086: {
+                "name": "monk robe",
+                "flags": {"flags.take": True, "market.category": 1, "clothes.slot": 4},
+            }
+        }
+        row = self.rows([], client=client)[0]
+        self.assertEqual(row["family_profile"], "equipment_armor")
+        self.assertEqual(row["source_evidence"]["appearance_id"], 34086)
+        for kwargs in ({"bound": False}, {"routed": True}):
+            self.assertEqual(self.rows([], client=client, **kwargs), [])
+        self.assertEqual(self.rows(["Unknown category"], client=client), [])
+        client[34086]["flags"]["market.category"] = 7
+        self.assertEqual(self.rows([], client=client), [])
+        client[34086]["flags"]["market.category"] = 1
+        client[34086]["flags"]["clothes.slot"] = 9
+        self.assertEqual(self.rows([], client=client), [])
+        client[34086]["flags"].pop("clothes.slot")
+        self.assertEqual(self.rows([], client=client), [])
+
+    def test_admitted_fallback_preserves_evidence_and_primary_holds(self):
+        fallback = {
+            "oteryn:item.tibia.i34086": {
+                "profile": "quest_item",
+                "snapshot_sha256": "c" * 64,
+                "evidence": {
+                    "resolution": "disambiguation",
+                    "candidates": [
+                        {"field": "primarytype", "value": "Quest Items"},
+                        {"field": "primarytype", "value": "Quest Objects"},
+                    ],
+                },
+            }
+        }
+        row = self.rows([], fallback=fallback)[0]
+        self.assertEqual(row["family_profile"], "quest_item")
+        self.assertEqual(
+            row["source_evidence"]["qualified_fallback"],
+            fallback["oteryn:item.tibia.i34086"]["evidence"],
+        )
+        self.assertEqual(self.rows(["Unknown category"], fallback=fallback), [])
+        self.assertEqual(self.rows(["Club Weapons", "Food"], fallback=fallback), [])
 
     def test_later_imbuement_slots_need_no_wave1_authoring(self):
         definition = {
