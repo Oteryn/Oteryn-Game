@@ -268,6 +268,13 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
 
 ### 4.4 Wire (contract candidate, owner acceptance required)
 
+**Amendment (pending on acceptance of PROF-WIRE-0; `reviews/OTERYN_GAME_PROF_WIRE0_PROFICIENCY_WIRE_ACCEPTANCE_DECISION_2026-10-01.md`).**
+Accepted by the protocol owner: capability 2 `WEAPON_PROFICIENCY_V1`, command 6, domain 6; the
+Character Authority revision rule of #162 5907282001, with each track's `committed_character_revision`
+on the wire; a snapshot replacement for commits above 16 tracks; bounds `PROFWIRE0-RL-01..05`; the
+result codes; the one offer gate is PROF-1 + PROF-2 (PROFICIENCY-1 commands answer `NOT_ADMITTED`
+until admitted).
+
 - **Capability.** This is the first registry capability, and PROF-WIRE-1 defines the registry row
   shape: id, name, owner decision, and the message types it gates. A session that did not
   negotiate it receives neither the domain nor any command result, because it cannot send the
