@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "manifest_revision": 5,
+  "manifest_revision": 6,
   "canonical_digest": null,
   "status": "ACCEPTED",
   "reference_target": {
@@ -102,22 +102,22 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. Official Tibia Library content surfaced through search on 2026-08-14 (search index reported an approximately two-week-old crawl) reports: Light Healing; formula exura; vocations Druid, Monk, Paladin and Sorcerer; Healing group; Instant type; Healing magic type; 1 second spell cooldown and 1 second group cooldown; experience level 8; mana 20; Premium not required.",
-        "evidence_class": "UNKNOWN",
+        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Light Healing infobox: words exura; vocations Paladin, Druid, Sorcerer and Monk; Healing subclass; Instant type; cooldown 1 second and group cooldown 1 second; level 8; mana 20; Premium not required. The indexed official Library observation of 2026-08-14 agrees; it is discovery evidence only, recorded in this case's history and not a target source.",
+        "evidence_class": "OBSERVED",
         "sources": [
           {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?spell=lighthealing&subtopic=spells",
-            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#light-healing",
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://tibia.fandom.com/wiki/Light_Healing?oldid=1182813",
+            "artifact_id": "tools/content-schema/spell-authoring/samples/wiki-spell-facts-fandom-2026-09-27.json",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-08-14T11:01:22Z",
-            "provenance_state": "PENDING",
-            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Archived TibiaWiki (Fandom) cut, page 799 revision 1182813 (2026-05-06T21:45:33Z). The revision is the last one at or before the 2026-09-27 cut and predates 2026-07-28, so it is also the page state at the 2026-07-28 target boundary; the owner accepts target continuity on this cut. Accepted as OBSERVED target evidence by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment)."
           }
         ],
         "confidence_notes": "The indexed result for the exact official locator surfaced the stated fields. Direct live-page verification was unavailable because the research environment received HTTP 403; the content is retained only as discovery evidence.",
-        "uncertainty_notes": "Continuity from the 2026-07-28 target boundary is not evidenced. Exact crawl time/live-page equality, source provenance clearance, mana/cooldown commit anchors, legality precedence and failure behavior are also not evidenced.",
+        "uncertainty_notes": "Exact official-page equality at the target boundary is not separately proven; a later difference against tibia.com is recorded as PARITY_PENDING, not as a blocker. Mana/cooldown commit anchors, legality precedence and failure behavior are not evidenced.",
         "conflicts": []
       },
       "oteryn": {
@@ -131,15 +131,20 @@
         "accepted_difference_reference": null
       },
       "provenance": {
-        "state": "PENDING",
-        "legal_review_state": "PENDING",
-        "notes": "Exact official locator identity is known, but indexed content could not be directly revalidated against the official page. Source provenance and legal review remain PENDING; missing target continuity independently keeps target evidence UNKNOWN."
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library observation (provenance PENDING) is removed from the target sources and kept only in history, so no uncleared source remains on the target."
       },
       "history": [
         {
           "date": "2026-08-14",
           "summary": "Registered as a fail-closed UNKNOWN target case from indexed post-boundary official Library content with provenance pending.",
           "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
+        },
+        {
+          "date": "2026-10-01",
+          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE. The PENDING indexed official source (https://www.tibia.com/library/?spell=lighthealing&subtopic=spells, retrieved 2026-08-14T11:01:22Z) is removed from target.sources and kept here as discovery history.",
+          "reason": "Owner decision 2026-10-01 (#162, answer 8a) accepts the archived wiki cut and target continuity on it; manifest revision 6."
         }
       ]
     },
@@ -159,22 +164,22 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. Official Tibia Library content surfaced through search on 2026-08-14 (search index reported an approximately two-week-old crawl) characterizes Light Healing as healing the caster's own wounds/injuries and describes the effect as limited.",
-        "evidence_class": "UNKNOWN",
+        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Light Healing infobox: an Instant Healing-subclass spell that heals the caster (base power 40). The indexed official Library description of 2026-08-14 (heals the caster's own wounds, limited effect) agrees; it is discovery evidence only, recorded in this case's history and not a target source.",
+        "evidence_class": "OBSERVED",
         "sources": [
           {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?spell=lighthealing&subtopic=spells",
-            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#light-healing",
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://tibia.fandom.com/wiki/Light_Healing?oldid=1182813",
+            "artifact_id": "tools/content-schema/spell-authoring/samples/wiki-spell-facts-fandom-2026-09-27.json",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-08-14T11:01:22Z",
-            "provenance_state": "PENDING",
-            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Archived TibiaWiki (Fandom) cut, page 799 revision 1182813 (2026-05-06T21:45:33Z). The revision is the last one at or before the 2026-09-27 cut and predates 2026-07-28, so it is also the page state at the 2026-07-28 target boundary; the owner accepts target continuity on this cut. Accepted as OBSERVED target evidence by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment)."
           }
         ],
         "confidence_notes": "The indexed result for the exact official locator surfaced the qualitative self-healing description. Direct live-page verification was unavailable because the research environment received HTTP 403; the content is retained only as discovery evidence.",
-        "uncertainty_notes": "Continuity from the 2026-07-28 target boundary is not evidenced. Exact crawl time/live-page equality, source provenance clearance, heal formula, magnitude range, scaling, rounding and complete target legality are unproven.",
+        "uncertainty_notes": "Heal formula, magnitude range, scaling, rounding and complete target legality remain unproven; a later difference against tibia.com is recorded as PARITY_PENDING, not as a blocker.",
         "conflicts": []
       },
       "oteryn": {
@@ -188,15 +193,20 @@
         "accepted_difference_reference": null
       },
       "provenance": {
-        "state": "PENDING",
-        "legal_review_state": "PENDING",
-        "notes": "Exact official locator identity is known, but indexed content could not be directly revalidated against the official page. Source provenance and legal review remain PENDING; missing target continuity independently keeps target evidence UNKNOWN."
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library observation (provenance PENDING) is removed from the target sources and kept only in history, so no uncleared source remains on the target."
       },
       "history": [
         {
           "date": "2026-08-14",
           "summary": "Registered as a fail-closed UNKNOWN target case from indexed post-boundary official Library content with provenance pending.",
           "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
+        },
+        {
+          "date": "2026-10-01",
+          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE. The PENDING indexed official source (https://www.tibia.com/library/?spell=lighthealing&subtopic=spells, retrieved 2026-08-14T11:01:22Z) is removed from target.sources and kept here as discovery history.",
+          "reason": "Owner decision 2026-10-01 (#162, answer 8a) accepts the archived wiki cut and target continuity on it; manifest revision 6."
         }
       ]
     },
@@ -216,22 +226,22 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. Official Tibia Library content surfaced through search on 2026-08-14 (search index reported an approximately two-week-old crawl) reports: Ice Strike; formula exori frigo; vocations Druid and Sorcerer; Attack group; Instant type; Ice magic type; 2 second spell cooldown and 2 second group cooldown; experience level 8; mana 20; Premium not required.",
-        "evidence_class": "UNKNOWN",
+        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Ice Strike infobox: words exori frigo; vocations Sorcerer and Druid; Attack subclass; Instant type; Ice damage type; cooldown 2 seconds and group cooldown 2 seconds; level 8; mana 20; Premium not required. The indexed official Library observation of 2026-08-14 agrees; it is discovery evidence only, recorded in this case's history and not a target source.",
+        "evidence_class": "OBSERVED",
         "sources": [
           {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?spell=icestrike&subtopic=spells",
-            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#ice-strike",
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://tibia.fandom.com/wiki/Ice_Strike?oldid=1182794",
+            "artifact_id": "tools/content-schema/spell-authoring/samples/wiki-spell-facts-fandom-2026-09-27.json",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-08-14T11:01:22Z",
-            "provenance_state": "PENDING",
-            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Archived TibiaWiki (Fandom) cut, page 19924 revision 1182794 (2026-05-06T21:39:59Z). The revision is the last one at or before the 2026-09-27 cut and predates 2026-07-28, so it is also the page state at the 2026-07-28 target boundary; the owner accepts target continuity on this cut. Accepted as OBSERVED target evidence by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment)."
           }
         ],
         "confidence_notes": "The indexed result for the exact official locator surfaced the stated fields. Direct live-page verification was unavailable because the research environment received HTTP 403; the content is retained only as discovery evidence.",
-        "uncertainty_notes": "Continuity from the 2026-07-28 target boundary is not evidenced. Exact crawl time/live-page equality, source provenance clearance, cost/cooldown commit anchors and failure behavior are also not evidenced.",
+        "uncertainty_notes": "Exact official-page equality at the target boundary is not separately proven; a later difference against tibia.com is recorded as PARITY_PENDING, not as a blocker. Cost/cooldown commit anchors and failure behavior are not evidenced.",
         "conflicts": []
       },
       "oteryn": {
@@ -245,15 +255,20 @@
         "accepted_difference_reference": null
       },
       "provenance": {
-        "state": "PENDING",
-        "legal_review_state": "PENDING",
-        "notes": "Exact official locator identity is known, but indexed content could not be directly revalidated against the official page. Source provenance and legal review remain PENDING; missing target continuity independently keeps target evidence UNKNOWN."
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library observation (provenance PENDING) is removed from the target sources and kept only in history, so no uncleared source remains on the target."
       },
       "history": [
         {
           "date": "2026-08-14",
           "summary": "Registered as a fail-closed UNKNOWN target case from indexed post-boundary official Library content with provenance pending.",
           "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
+        },
+        {
+          "date": "2026-10-01",
+          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE. The PENDING indexed official source (https://www.tibia.com/library/?spell=icestrike&subtopic=spells, retrieved 2026-08-14T11:01:22Z) is removed from target.sources and kept here as discovery history.",
+          "reason": "Owner decision 2026-10-01 (#162, answer 8a) accepts the archived wiki cut and target continuity on it; manifest revision 6."
         }
       ]
     },
@@ -273,22 +288,22 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. Official Tibia Library content surfaced through search on 2026-08-14 (search index reported an approximately two-week-old crawl) characterizes Ice Strike as hitting an aimed opponent in close range with ice and says damage is determined by the caster's magical abilities.",
-        "evidence_class": "UNKNOWN",
+        "expected_observable_behavior": "OBSERVED for the 2026-07-28 target cut on the archived TibiaWiki (Fandom) Ice Strike infobox: an Instant Attack-subclass spell dealing Ice damage to an aimed target (base power 45). The indexed official Library description of 2026-08-14 (hits an aimed opponent in close range with ice; damage determined by magical abilities) agrees; it is discovery evidence only, recorded in this case's history and not a target source.",
+        "evidence_class": "OBSERVED",
         "sources": [
           {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?spell=icestrike&subtopic=spells",
-            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#ice-strike",
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://tibia.fandom.com/wiki/Ice_Strike?oldid=1182794",
+            "artifact_id": "tools/content-schema/spell-authoring/samples/wiki-spell-facts-fandom-2026-09-27.json",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-08-14T11:01:22Z",
-            "provenance_state": "PENDING",
-            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Archived TibiaWiki (Fandom) cut, page 19924 revision 1182794 (2026-05-06T21:39:59Z). The revision is the last one at or before the 2026-09-27 cut and predates 2026-07-28, so it is also the page state at the 2026-07-28 target boundary; the owner accepts target continuity on this cut. Accepted as OBSERVED target evidence by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment)."
           }
         ],
         "confidence_notes": "The indexed result for the exact official locator surfaced aimed-opponent, close-range, ice-damage and magic-ability-scaling concepts. Direct live-page verification was unavailable because the research environment received HTTP 403; the content is retained only as discovery evidence.",
-        "uncertainty_notes": "Continuity from the 2026-07-28 target boundary is not evidenced. Exact crawl time/live-page equality, source provenance clearance, tile/range metric, cardinality/ordering, LoS/floor/PvP/PZ legality, damage formula/scaling/rounding, mitigation/resistance and crit/block/dodge/RNG remain unproven.",
+        "uncertainty_notes": "Tile/range metric, cardinality/ordering, LoS/floor/PvP/PZ legality, damage formula/scaling/rounding, mitigation/resistance and crit/block/dodge/RNG remain unproven; a later difference against tibia.com is recorded as PARITY_PENDING, not as a blocker.",
         "conflicts": []
       },
       "oteryn": {
@@ -302,15 +317,20 @@
         "accepted_difference_reference": null
       },
       "provenance": {
-        "state": "PENDING",
-        "legal_review_state": "PENDING",
-        "notes": "Exact official locator identity is known, but indexed content could not be directly revalidated against the official page. Source provenance and legal review remain PENDING; missing target continuity independently keeps target evidence UNKNOWN."
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Cleared for reference use only, with no redistribution of wiki text (CC BY-SA infobox facts with page and revision ids). Clearance rests on the archived TibiaWiki cut accepted by owner decision 2026-10-01 (#162, answer 8a; docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md amendment); the indexed official Library observation (provenance PENDING) is removed from the target sources and kept only in history, so no uncleared source remains on the target."
       },
       "history": [
         {
           "date": "2026-08-14",
           "summary": "Registered as a fail-closed UNKNOWN target case from indexed post-boundary official Library content with provenance pending.",
           "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
+        },
+        {
+          "date": "2026-10-01",
+          "summary": "Promoted to OBSERVED with cleared provenance on the archived TibiaWiki cut; parity stays PARITY_PENDING_EVIDENCE. The PENDING indexed official source (https://www.tibia.com/library/?spell=icestrike&subtopic=spells, retrieved 2026-08-14T11:01:22Z) is removed from target.sources and kept here as discovery history.",
+          "reason": "Owner decision 2026-10-01 (#162, answer 8a) accepts the archived wiki cut and target continuity on it; manifest revision 6."
         }
       ]
     },
@@ -1111,6 +1131,12 @@
       "date": "2026-09-27",
       "summary": "Register bounded DERIVED cumulative experience thresholds for levels 7 and 8 plus their level-7 span from one pre-target official observation and pinned pre-target TibiaWiki BR/Fandom corroboration; retain the post-target official table only as a separate current-state observation and keep exact target-boundary continuity, modifiers, death arithmetic, runtime implementation and parity confirmation unresolved.",
       "issue": "#483"
+    },
+    {
+      "manifest_revision": 6,
+      "date": "2026-10-01",
+      "summary": "Promote the four GAME-ABILITY-01 cases (Light Healing cast metadata and self-heal semantics; Ice Strike cast metadata and targeted ice-damage semantics) to OBSERVED with cleared provenance and reference-only legal review on the archived TibiaWiki cut, per owner decision 8a; parity stays PARITY_PENDING_EVIDENCE and no runtime promotion follows.",
+      "issue": "#162"
     }
   ]
 }

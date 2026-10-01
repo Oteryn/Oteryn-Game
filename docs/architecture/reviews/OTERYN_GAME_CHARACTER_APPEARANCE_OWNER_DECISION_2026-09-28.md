@@ -84,6 +84,8 @@ Presentation belongs to the client; the server owns what is selected and whether
   mount decision (with the world ruleset's speed fact, D47). Until then no mount is shown to
   anyone, and the observation contract (§4.5) carries no mount.
 
+**Amendment (owner decision 2026-10-01, #162): mount speed now.** The deferral above ends for speed. An active mount adds +10 speed, a ruleset fact of the Reference profile (D47: mount speed belongs to the world ruleset), applied now. Mount activation is Global (D125, `OTERYN_GAME_OWNER_DECISION_BATCH_D118_D128_2026-09-28.md` §2.5). Source: TibiaWiki "Mounts" (https://tibia.fandom.com/wiki/Mounts): "All mounts give +10 speed." Per-mount exceptions stay **UNKNOWN** and default to +10. The speed value is profile data, not a Character field, and `mount_key` storage and validation are unchanged.
+
 ### 4.3 Allowed selection
 
 The owner accepts a selection only if, on this world's active content:
