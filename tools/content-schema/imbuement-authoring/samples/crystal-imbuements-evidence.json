@@ -5923,7 +5923,7 @@
     }
   ],
   "unresolved": [
-    "No complete official behavior proof for Etcher consumption, equipped scroll targets, exact frozen-date item-type matrix or fine-grained timers.",
+    "No complete official behavior proof for Etcher consumption, equipped scroll targets, full current Global item-type matrix or fine-grained timers.",
     "Branch has dormant Vibrancy and malformed quest-storage lookup; no blanket reuse can preserve correctness.",
     "Output insertion/consumption methods are not proven atomic; faithful runtime needs fenced, validated transactions rather than copying these failure paths."
   ],

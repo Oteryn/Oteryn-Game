@@ -10,7 +10,7 @@
       "const": "DRAFT_NOT_RUNTIME_READY"
     },
     "target": {
-      "const": "global-tibia-observable-2026-07-28-post-server-save"
+      "const": "global-tibia-current-2026-10-01"
     },
     "source_facts_sha256": {
       "type": "string",
@@ -20,6 +20,10 @@
       "type": "object",
       "properties": {
         "crystal-imbuements-evidence.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "current-behavior-answers.json": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
@@ -58,6 +62,7 @@
       },
       "required": [
         "crystal-imbuements-evidence.json",
+        "current-behavior-answers.json",
         "global-observation-plan.json",
         "global-rules-evidence.json",
         "imbuement-access.json",
@@ -77,6 +82,9 @@
     },
     "combat_profile": {
       "const": "imbuement-combat.json"
+    },
+    "current_behavior_profile": {
+      "const": "current-behavior-answers.json"
     },
     "missing_item_proposals": {
       "const": "missing-item-definitions.json"
@@ -651,6 +659,7 @@
     "global_rules_profile",
     "observation_plan_profile",
     "combat_profile",
+    "current_behavior_profile",
     "missing_item_proposals",
     "engine_reference_profile",
     "architecture_reconciliation",

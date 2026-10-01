@@ -18,7 +18,7 @@
       "digest_scope": "Exact UTF-8 Tavily extracted markdown retained as page-0.md.",
       "captured_on": "2026-10-01",
       "revision": null,
-      "target_continuity": "UNVERIFIED"
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY"
     },
     "official_tradeable_imbuements": {
       "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8396",
@@ -50,7 +50,7 @@
       "source_sha256": "860c07104e1d01d86226c820ec66e0c823ea7ba7f55f555bbc1cdb1c125bb01d",
       "digest_scope": "Exact UTF-8 extracted markdown retained from full Forgotten Knowledge page, revision445526.",
       "captured_on": "2026-10-01",
-      "target_continuity": "UNVERIFIED"
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY"
     },
     "br_heart_of_destruction": {
       "url": "https://www.tibiawiki.com.br/wiki/Heart_of_Destruction_Quest",
@@ -77,20 +77,20 @@
       "published_on": "2026-06-11",
       "source_sha256": "aafbf01fcd1905e72a987d011efd9a7e39707c34a508eaa92078e5cb32ade1f9",
       "digest_scope": "Tavily extracted full UTF-8 markdown of third-party official-news mirror.",
-      "scope": "Official announcement8834 mirror predatesJuly28,2026; EchoWardens drop all24 Basic scroll types. Mirror date is not represented as direct primary-page extraction."
+      "scope": "Dated third-party mirror of official announcement8834; Echo Wardens drop all24 Basic scroll types. Historical publication date is preserved, while the current-reference target is October1,2026. Mirror date is not represented as direct primary-page extraction."
     },
     "br_blank_scroll": {
       "url": "https://www.tibiawiki.com.br/wiki/Blank_Imbuement_Scroll",
       "role": "COMMUNITY_GLOBAL_REFERENCE",
       "access_status": "FULL_ARTICLE_BROWSER_READ",
-      "scope": "Full article explicitly lists six named Blank Scroll monster drops, Albinius25000gold sale subject to built world temple and five submitted tomes, and blank conversion to Intricate/Powerful. Revision428617 predates July28,2026; the rendered article may incorporate current templates and does not prove exact target-date server loot configuration.",
+      "scope": "Full article explicitly lists six named Blank Scroll monster drops, Albinius25000gold sale subject to built world temple and five submitted tomes, and blank conversion to Intricate/Powerful. Historical revision428617 timestamp is retained; the article read on October1,2026 may incorporate current rendered templates and is a current community reference, not official server telemetry.",
       "method": "Remote Desktop + Chrome/CDP",
       "revision_id": 428617,
       "revision_url": "https://www.tibiawiki.com.br/index.php?title=Blank_Imbuement_Scroll&oldid=428617",
       "source_sha256": "1a34e6109d176c756ff1c070a40c384453f4fb97fc1b5a8356ce5dbe1ad35166",
       "digest_scope": "Complete UTF-8 .mw-parser-output innerText, including category navigation.",
       "captured_on": "2026-10-01",
-      "target_continuity": "REVISION_PREDATES_TARGET_BUT_RENDERED_TEMPLATES_CURRENT_NOT_EXACT_TARGET_SERVER_CERTIFICATION",
+      "target_continuity": "CURRENT_COMMUNITY_REFERENCE_RENDERED_TEMPLATES_CURRENT_NOT_SERVER_TELEMETRY",
       "selected_quote": "Loot de:\tHeadwalker, Inkwing, Shell Drake, Sir Leonard, Sir Leopold, Wrathful Archivist.",
       "revision_timestamp": "2025-08-23T10:16:39Z",
       "revision_parent_id": 428528,
@@ -123,7 +123,7 @@
       "captured_at": "2026-10-01T12:17:34.718068+00:00",
       "revision": null,
       "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
-      "target_continuity": "UNVERIFIED"
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY"
     },
     "tibiopedia_dangerous_depths": {
       "url": "https://tibiopedia.pl/quests/Dangerous_Depths_Quest",
@@ -134,7 +134,7 @@
       "captured_at": "2026-10-01T12:17:35.085738+00:00",
       "revision": null,
       "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
-      "target_continuity": "UNVERIFIED"
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY"
     },
     "tibiopedia_dream_courts": {
       "url": "https://tibiopedia.pl/quests/The_Dream_Courts_Quest",
@@ -145,7 +145,7 @@
       "captured_at": "2026-10-01T12:17:36.268827+00:00",
       "revision": null,
       "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
-      "target_continuity": "UNVERIFIED"
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY"
     },
     "tibiopedia_albinius": {
       "url": "https://tibiopedia.pl/npcs/Albinius",
@@ -156,7 +156,7 @@
       "captured_at": "2026-10-01T12:17:36.659641+00:00",
       "revision": null,
       "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
-      "target_continuity": "UNVERIFIED"
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY"
     },
     "tibiopedia_etcher": {
       "url": "https://tibiopedia.pl/items/Etcher",
@@ -164,7 +164,7 @@
       "source_sha256": "ec035f6c43b88badcc309cdd7f1bacbfb622f9d8562b8549f41910d93789b3bf",
       "digest_scope": "Exact public HTML bytes retrieved after ordinary locale/layout setup; item page title and facts inspected; no revision identifier supplied",
       "revision": null,
-      "target_continuity": "UNVERIFIED",
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY",
       "scope": "Explicit Free Account application allowance; this does not prove a Free Account NPC-purchase allowance."
     },
     "fandom_imbuing_revision_1194750": {
@@ -175,12 +175,12 @@
       "source_sha256": "e07d4be8d37844eeaf4f078ad7de1242047e18466cc999a6686c22c05657c82b",
       "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
       "scope": "Distinct elemental-damage conversion imbuements on one item mutually exclude; no blanket rule for other categories is inferred.",
-      "target_continuity": "PRE_TARGET_COMMUNITY_REVISION_NOT_SERVER_CERTIFICATION"
+      "target_continuity": "CURRENT_REFERENCE_HISTORICAL_COMMUNITY_REVISION_NOT_SERVER_TELEMETRY"
     },
     "item_eligibility_catalogue": {
       "path": "imbuement-eligibility.json",
       "role": "DERIVED_CLIENT_IDENTITY_AND_COMMUNITY_ELIGIBILITY",
-      "scope": "Primary client establishes item identity and static slot count. Selected per-family maximum tiers are source-qualified community observations and amendments in the eligibility catalogue; neither this reference nor the guard certifies full target-date Global server parity."
+      "scope": "Primary client establishes item identity and static slot count. Selected per-family maximum tiers are source-qualified community observations and amendments in the eligibility catalogue; neither this reference nor the guard certifies full current Global server parity."
     },
     "official_echo_raids_live_release": {
       "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8845",
@@ -192,6 +192,12 @@
       "digest_scope": "Exact complete UTF-8 browser document.body.innerText, including page chrome",
       "selected_quote": "With Echo Raids, creatures may turn into echoes and trigger optional encounters. Rare Echo Wardens empower nearby enemies and offer new challenges and rewards during your hunts.",
       "scope": "Actual SummerUpdate2026 liveEchoRaids; does not explicitly quantify Basic scroll drop count."
+    },
+    "current_behavior_answers": {
+      "path": "current-behavior-answers.json",
+      "role": "SOURCE_QUALIFIED_CURRENT_ENGINE_AND_PUBLIC_REFERENCE_ANSWERS",
+      "scope": "Concrete answers for inspected Canary and Crystal versions, with public Global corroboration and limits stated per question. A pinned engine result is not automatically promoted to an observed Global server transaction.",
+      "as_of": "2026-10-01"
     }
   },
   "predicate_definitions": {
@@ -1289,7 +1295,7 @@
           "br_blank_scroll"
         ],
         "evidence_status": "COMMUNITY_EXPLICIT_FULL_ARTICLE_REVISION",
-        "scope": "Six explicit named drops from the captured complete community article; not an official exhaustive or exact-target server drop table.",
+        "scope": "Six explicit named drops from the community article read on October1,2026; this current-reference capture is not an official exhaustive server drop table.",
         "capture_profile": "sources.br_blank_scroll",
         "source_revision_id": 428617
       }
@@ -1386,6 +1392,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -1513,6 +1527,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -1640,6 +1662,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -1767,6 +1797,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -1894,6 +1932,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -2024,6 +2070,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -2151,6 +2205,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -2281,6 +2343,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -2408,6 +2478,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -2535,6 +2613,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -2665,6 +2751,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -2792,6 +2886,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -2919,6 +3021,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -3046,6 +3156,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -3176,6 +3294,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -3306,6 +3432,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -3433,6 +3567,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -3560,6 +3702,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -3690,6 +3840,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -3817,6 +3975,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -3947,6 +4113,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -4074,6 +4248,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -4201,6 +4383,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -4331,6 +4521,14 @@
           "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
           "intricate": "PRIMARY_OFFICIAL",
           "powerful": "PRIMARY_OFFICIAL"
+        },
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ],
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
         }
       },
       "scroll_inscription": {
@@ -4395,10 +4593,11 @@
     "No entire quest completion is required for a Forgotten Knowledge branch unlock. Boss defeat and the correct branch shrine activation are required; the ice branch additionally reports to A Dragon Mother and enters the opened shrine area. All previous portals are access prerequisites for the final Lore Keeper boss; they are not duplicated as separate imprint gates.",
     "The world temple construction consists of an earlier collective quest event. The character contributes five Heavy Old Tomes once; world contribution quantities are not charged per imbue.",
     "These records are authoring facts, not a runtime quest implementation or an assertion that source client quest-line IDs are canonical Game quest identities.",
-    "The accepted source manifest identifies client version 15.30 but contains no dated snapshot field; this packet does not infer a client capture date from version or file metadata. External access sources were retrieved on captured_on, rather than archived at the client snapshot date.",
+    "The accepted source manifest identifies client version 15.30 but contains no dated snapshot field; this packet does not infer a client capture date from version or file metadata. External access sources were retrieved on captured_on. Current behavior targets October1,2026 independently of the unavailable client capture date.",
     "Completed Intricate/Powerful monster loot is resolved as empty in all 48 separately inspected Tibiopedia item records. This does not infer absence from the manual, blank-scroll drops or Basic Echo Warden drops, and does not claim official universal server proof.",
     "All 72 direct-shrine and completed-scroll tier routes share compatible_item, including the revision-qualified five-elemental-conversion group exclusion. This is independent of the same-family duplicate restriction and does not promote general architectural categories to Global exclusion rules.",
-    "All72 direct-shrine and72 completed-scroll family/tier routes additionally require requested numeric tier1..3 not exceeding the selected item allowed_types family cap in imbuement-eligibility.json. This source-qualified limit is independent of shrine/quest/Premium exemptions and is not full Global server certification."
+    "All72 direct-shrine and72 completed-scroll family/tier routes additionally require requested numeric tier1..3 not exceeding the selected item allowed_types family cap in imbuement-eligibility.json. This source-qualified limit is independent of shrine/quest/Premium exemptions and is not full Global server certification.",
+    "Current behavior questions have concrete pinned Canary/Crystal answers in current-behavior-answers.json. Their source qualifications remain separate from the selected Global account/quest semantics in this access packet."
   ],
   "target_client_manifest": "imports/cipsoft-staticdata/quest-lines/manifest.json",
   "status_scope": "Source access and crafting predicate definitions; scroll acquisition has separate item-specific evidence statuses.",
@@ -4961,7 +5160,14 @@
         "official_manual",
         "tibiopedia_albinius"
       ],
-      "qualification_scope": "NPC purchase requires the completed worthy qualification. Free Account application permission is a separate claim and cannot resolve the NPC purchase Premium question."
+      "qualification_scope": "NPC purchase requires the completed worthy qualification. Free Account application permission is a separate claim and cannot resolve the NPC purchase Premium question.",
+      "current_behavior_profile": {
+        "catalogue": "current-behavior-answers.json",
+        "question_ids": [
+          "etcher_npc_purchase_requires_premium"
+        ],
+        "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+      }
     }
   },
   "utility_application": {
@@ -4976,8 +5182,17 @@
       "source_refs": [
         "tibiopedia_etcher"
       ],
-      "scope": "ACCOUNT_ACCESS_ONLY; clearing, target validation and consumption evidence belong to global-rules-evidence.json",
-      "qualification_note": "The worthy NPC-purchase predicate is not automatically propagated to using an already acquired Etcher."
+      "scope": "Account access is recorded here; clearing, target validation and source-qualified transaction answers are linked through global-rules-evidence.json and current-behavior-answers.json.",
+      "qualification_note": "The worthy NPC-purchase predicate is not automatically propagated to using an already acquired Etcher.",
+      "current_behavior_profile": {
+        "catalogue": "current-behavior-answers.json",
+        "question_ids": [
+          "etcher_consumption"
+        ],
+        "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION"
+      }
     }
-  }
+  },
+  "target": "global-tibia-current-2026-10-01",
+  "as_of": "2026-10-01"
 }

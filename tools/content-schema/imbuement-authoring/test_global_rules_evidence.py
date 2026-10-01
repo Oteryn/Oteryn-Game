@@ -54,7 +54,7 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
     def test_pre_target_etcher_archive_does_not_fill_transaction_unknowns(self):
         source = self.sources["wiki_br_etcher_archived_2026_01_30"]
         self.assertEqual(source["revision"], "428283")
-        self.assertLess(source["archive_snapshot_at"][:10], "2026-07-28")
+        self.assertLess(source["archive_snapshot_at"][:10], "2026-10-01")
         self.assertEqual(source["access_status"], "FULL_PUBLIC_ARCHIVE_HTML_EXTRACTED")
         self.assertEqual(source["explicit_facts"]["npc_price_gold"], 30000)
         self.assertTrue(source["explicit_facts"]["usable_by_free_account"])
@@ -130,13 +130,13 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertIsNone(self.rules["etcher_consumed_units"]["value"])
         self.assertEqual(self.rules["etcher_consumed_units"]["parity_status"], "PARITY_PENDING")
 
-    def test_current_sources_do_not_claim_immutable_frozen_date_certification(self):
+    def test_owner_current_date_selection_removes_historical_snapshot_requirement(self):
         self.assertEqual(self.packet["target"],
-                         "global-tibia-observable-2026-07-28-post-server-save")
+                         "global-tibia-current-2026-10-01")
         pending = {r["id"] for r in self.packet["unresolved"]}
-        self.assertTrue({"exact_target_snapshot", "fine_grained_timers", "combat_pipeline"} <= pending)
+        self.assertTrue({"fine_grained_timers", "combat_pipeline"} <= pending)
         self.assertEqual(self.rules["duration_ms"]["target_time_status"],
-                         "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT")
+                         "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01")
 
     def test_derived_runtime_details_do_not_become_primary_certification(self):
         for key in ("leech_overkill_counts", "timer_swiftness_ticks_outside_combat",
@@ -168,7 +168,7 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
     def test_basic_scroll_timeline_precedes_frozen_target_without_primary_date_overclaim(self):
         introduction = self.rules["basic_scroll_introduction"]
         self.assertEqual(introduction["value"]["client_version"], "15.30")
-        self.assertLessEqual(introduction["value"]["release_date"], "2026-07-28")
+        self.assertLessEqual(introduction["value"]["release_date"], "2026-10-01")
         self.assertEqual(introduction["value"]["teaser_date"], "2026-06-11")
         self.assertTrue(introduction["parity_status"].startswith("DERIVED"))
         self.assertNotIn("basic_scroll_origin_date", {r["id"] for r in self.packet["unresolved"]})
@@ -205,7 +205,7 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertFalse(rule["hypotheses"][0]["selected_as_global"])
         self.assertEqual(self.rules["same_imbuement_type_maximum_per_item"]["value"], 1)
         self.assertEqual(self.sources["fandom_imbuing_full"]["revision"], "1194750")
-        self.assertLess(self.sources["fandom_imbuing_full"]["published_date"], "2026-07-28")
+        self.assertLess(self.sources["fandom_imbuing_full"]["published_date"], "2026-10-01")
 
     def test_higher_required_level_is_scoped_community_evidence(self):
         rule = self.rules["equipment_above_character_level_imbuement_behavior"]
@@ -285,12 +285,21 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertIsNone(conflict["selected_runtime_pz_timer_policy"])
         self.assertIn("fine_grained_timers", {r["id"] for r in self.packet["unresolved"]})
 
-    def test_post_target_mana_overkill_claim_does_not_establish_life_or_target_pipeline(self):
+    def test_current_mana_overkill_claim_does_not_establish_life_pipeline(self):
         rule = self.rules["leech_overkill_counts"]
         self.assertEqual(rule["scope"], "MANA_LEECH_COMMUNITY_CLAIM_ONLY")
         self.assertTrue(rule["parity_status"].startswith("DERIVED"))
-        self.assertGreater(self.sources["fandom_formulae_full"]["published_date"], "2026-07-28")
+        self.assertLessEqual(self.sources["fandom_formulae_full"]["published_date"], "2026-10-01")
         self.assertIn("combat_pipeline", {r["id"] for r in self.packet["unresolved"]})
+
+    def test_current_native_example_remains_bounded_and_keeps_armor_order_explicit(self):
+        rule = self.rules["native_equipment_percentage_reduction_example"]
+        value = rule["value"]
+        self.assertEqual(value["example"]["after_helmet"], 190)
+        self.assertEqual(value["example"]["after_amulet"], 178)
+        self.assertIsNone(value["universal_imbuement_native_wheel_order"])
+        self.assertEqual(rule["evidence"], ["fandom_formulae_full"])
+        self.assertIn("armor before", rule["notes"])
 
     def test_etcher_purchase_gate_is_separate_from_free_application(self):
         self.assertTrue(self.rules["etcher_usable_by_free_account"]["value"])
@@ -311,21 +320,22 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
 
     def test_pvp_snippet_qualification_keeps_success_state_gate_unresolved(self):
         rule = self.rules["vibrancy_pvp_gate"]
-        self.assertIsNone(rule["value"])
-        self.assertEqual(rule["parity_status"], "PARITY_PENDING")
+        self.assertTrue(rule["value"]["additional_paralysis_deflection_requires_initial_success"])
+        self.assertIsNone(rule["value"]["successful_state_lifetime"])
+        self.assertEqual(rule["parity_status"], "DERIVED_CURRENT_COMMUNITY_CONDITIONAL_GATE_PARTIAL")
         self.assertIn("vibrancy_pvp_gate", {r["id"] for r in self.packet["unresolved"]})
         self.assertNotIn("vibrancy_pvp", {r["id"] for r in self.packet["closed_gaps"]})
         conflict = next(r for r in self.packet["conflicts"]
                         if r["id"] == "vibrancy_pvp_success_state_gate")
         self.assertEqual(conflict["family_page_qualification"], "if initially successful")
         self.assertEqual(set(conflict["evidence"]), set(rule["evidence"]))
-        for key in set(rule["evidence"]) - {"fandom_vibrancy_archive_2025"}:
+        for key in set(rule["evidence"]) - {"fandom_vibrancy_archive_2025", "fandom_vibrancy_current_full"}:
             self.assertEqual(self.sources[key]["access_status"], "INDEXED_SEARCH_SNIPPET_ONLY")
             self.assertEqual(self.sources[key]["role"], "DERIVED")
         archive = self.sources["fandom_vibrancy_archive_2025"]
         self.assertIn("if initially successful", archive["selected_quotes"][0])
         self.assertEqual(archive["access_status"], "FULL_PUBLIC_ARCHIVE_HTML_EXTRACTED")
-        self.assertLess(archive["archive_snapshot_at"][:10], "2026-07-28")
+        self.assertLess(archive["archive_snapshot_at"][:10], "2026-10-01")
         profile = next(r for r in self.packet["delegated_profiles"]
                        if r["id"] == "vibrancy_sequence")
         self.assertEqual(profile["status"], "PARTIALLY_CORROBORATED_NOT_CLOSED")
@@ -350,19 +360,19 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertEqual(value["scope"], "LIFE_LEECH_REFERENCE_ONLY")
         self.assertFalse(value["damage_prey_bonus_included"])
         for key in ("rounding", "overkill_basis", "all_damage_modifier_order",
-                    "current_target_continuity"):
+                    ):
             self.assertIsNone(value[key])
-        self.assertGreater(self.sources["fandom_formulae_full"]["published_date"], "2026-07-28")
+        self.assertLessEqual(self.sources["fandom_formulae_full"]["published_date"], "2026-10-01")
         self.assertIn("combat_pipeline", {r["id"] for r in self.packet["unresolved"]})
 
-    def test_nearest_public_archive_is_not_the_requested_target_snapshot(self):
+    def test_historical_archive_is_preserved_without_current_snapshot_requirement(self):
         source = self.sources["fandom_imbuing_archive_2026_05_22"]
         self.assertEqual(source["revision"], "1140491")
         self.assertEqual(source["archive_snapshot_at"], "2026-05-22T17:28:55Z")
         self.assertIsNone(source["published_date"])
         self.assertIn("fandom_imbuing_archive_2026_05_22",
                       self.rules["transaction_payment_sources"]["evidence"])
-        self.assertIn("exact_target_snapshot", {r["id"] for r in self.packet["unresolved"]})
+        self.assertNotIn("exact_target_snapshot", {r["id"] for r in self.packet["unresolved"]})
         attempt = next(r for r in self.packet["research_attempts"]
                        if r["id"] == "owner_directed_completion_2026_10_01")
         for row in attempt["target_archive_discovery"]:
@@ -415,7 +425,7 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
             self.assertEqual(rule["hypotheses"][0]["evidence"], ["crystal_imbuements_player_impl"])
         pending = {r["id"] for r in self.packet["unresolved"]}
         self.assertIn("scroll_consumption", pending)
-        self.assertEqual(len(pending), 12)
+        self.assertEqual(len(pending), 11)
         self.assertIn("failed_transaction_consumption_and_rollback", pending)
 
     def test_discovery_and_unrelated_trade_receipts_do_not_become_runtime_facts(self):

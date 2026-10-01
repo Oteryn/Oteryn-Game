@@ -18,8 +18,8 @@ import binding_evidence as binding
 
 HERE = Path(__file__).resolve().parent
 OUTPUT = HERE / "samples/imbuement-eligibility.json"
-TARGET = "global-tibia-observable-2026-07-28-post-server-save"
-TARGET_DATE = date(2026, 7, 28)
+TARGET = "global-tibia-current-2026-10-01"
+TARGET_DATE = date(2026, 10, 1)
 WIKI_ALIASES = {"souleater (axe)": "souleater"}
 CANONICAL_ALIASES = {6527: ("avenger", "the avenger"), 8024: ("devileye", "the devileye"),
                      8025: ("ironworker", "the ironworker"), 8101: ("stomper", "the stomper"),

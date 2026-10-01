@@ -19,11 +19,24 @@ ITEM_TOOL = ROOT / "tools/content-schema/item-authoring"
 FACTS = HERE / "samples/missing-item-source-facts.json"
 OUTPUT = HERE / "samples/missing-item-definitions.json"
 TEST_IDS = (28464, 28465, 28478, 28479)
+TARGET = "global-tibia-current-2026-10-01"
+TARGET_DATE = "2026-10-01"
 
 
 def digest(value: object) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
                                      separators=(",", ":")).encode()).hexdigest()
+
+
+def qualify_current_target(introduced_on: str, target_date: str) -> str:
+    """Qualify dated current proposals without admitting future releases."""
+    introduced = datetime.strptime(introduced_on, "%Y-%m-%d").date()
+    target = datetime.strptime(target_date, "%Y-%m-%d").date()
+    if introduced.isoformat() != introduced_on or target.isoformat() != target_date:
+        raise ValueError("introduction/target dates must be exact ISO calendar dates")
+    if introduced > target:
+        raise ValueError("introduction is after the current target; cannot include future Item")
+    return "PREEXISTING_TARGET_SOURCE_VERSION"
 
 
 def validate_source_provenance(source: dict) -> None:
@@ -107,6 +120,8 @@ def build() -> dict:
     import validate_item
 
     facts = json.loads(FACTS.read_bytes())
+    if facts.get("target") != TARGET or facts.get("target_date") != TARGET_DATE:
+        raise ValueError("missing Item proposals must use the active current target")
     clients = client_objects()  # Verifies the pinned primary client's exact bytes.
     appearances = engine_items.load_appearance_objects(APPEARANCES.read_bytes())
     # The owning engine reader preserves other known flags but currently leaves
@@ -174,7 +189,7 @@ def build() -> dict:
         errors, warnings = validate_item.validate(authoring, dependencies)
         if errors:
             raise ValueError(f"{item_id}: owning Item validator rejected proposal: {errors}")
-        introduced = observed["introduced_on"]
+        target_time_status = qualify_current_target(observed["introduced_on"], facts["target_date"])
         proposals.append({
             "source_client_id": item_id,
             "proposed_item_ref": {"family": "Item", **authoring["identity"]},
@@ -184,8 +199,8 @@ def build() -> dict:
             "primary_client": {**client, "flags": flags, "frame_groups": appearance["frame_groups"]},
             "source_facts": source,
             "source_facts_sha256": digest(source),
-            "target_time_status": "INTRODUCED_AFTER_TARGET" if introduced and introduced > facts["target_date"]
-                                  else "PREEXISTING_TARGET_SOURCE_VERSION",
+            "target_time_status": target_time_status,
+            "current_target_included": True,
             "validation": {"contract": "tools/content-schema/item-authoring/item.schema.json",
                            "validator": "tools/content-schema/item-authoring/validate_item.py",
                            "errors": errors, "warnings": warnings},
@@ -213,6 +228,7 @@ def build() -> dict:
     return {
         "schema": "OTERYN_MISSING_IMBUEMENT_ITEM_DEFINITION_PROPOSALS/v1",
         "activation": "REVIEWABLE_PROPOSALS_NOT_RUNTIME_DEFINITIONS",
+        "target": facts["target"],
         "target_date": facts["target_date"],
         "inputs": {
             "source_facts_sha256": hashlib.sha256(FACTS.read_bytes()).hexdigest(),

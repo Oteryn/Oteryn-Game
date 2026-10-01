@@ -20,6 +20,42 @@ def unique_keys(pairs):
 
 
 class AccessEvidenceTest(unittest.TestCase):
+    def test_current_behavior_profiles_preserve_source_dates_and_access_conditions(self):
+        self.assertEqual(self.packet["target"], "global-tibia-current-2026-10-01")
+        self.assertEqual(self.packet["as_of"], "2026-10-01")
+        self.assertEqual(self.packet["sources"]["official_echo_wardens"]["published_on"],
+                         "2026-06-11")
+        self.assertEqual(self.packet["sources"]["br_blank_scroll"]["revision_timestamp"],
+                         "2025-08-23T10:16:39Z")
+        self.assertEqual(self.packet["sources"]["current_behavior_answers"]["path"],
+                         "current-behavior-answers.json")
+        linked_tier_routes = 0
+        for family in self.families.values():
+            application = family["scroll_apply"]
+            profile = application["current_behavior_profile"]
+            self.assertEqual(profile["catalogue"], "current-behavior-answers.json")
+            self.assertEqual(set(profile["question_ids"]),
+                             {"scroll_consumption", "scroll_application_equipped_target"})
+            events = self.leaves(application)
+            # Adding engine transaction answers must not add shrine/Premium
+            # requirements to completed scrolls, or exempt direct shrine use.
+            self.assertFalse(events & self.leaves(self.definitions["premium"]))
+            self.assertFalse(events & self.leaves(self.definitions["shrine_access"]))
+            self.assertTrue(self.granted(application, events))
+            self.assertFalse(self.granted(family["direct_shrine"]["powerful"], events))
+            linked_tier_routes += 3
+        self.assertEqual(linked_tier_routes, 72)
+        purchase = self.packet["utility_acquisition"]["etcher_npc_purchase"]
+        application = self.packet["utility_application"]["etcher"]
+        self.assertEqual(purchase["current_behavior_profile"]["question_ids"],
+                         ["etcher_npc_purchase_requires_premium"])
+        self.assertEqual(application["current_behavior_profile"]["question_ids"],
+                         ["etcher_consumption"])
+        self.assertEqual(purchase["current_behavior_profile"]["catalogue"],
+                         application["current_behavior_profile"]["catalogue"])
+        self.assertIsNone(purchase["premium_requirement"]["value"])
+        self.assertFalse(application["premium_required"])
+
     def test_basic_scroll_announcement_has_full_primary_capture_and_separate_live_release(self):
         teaser = self.packet["sources"]["official_echo_wardens"]
         live = self.packet["sources"]["official_echo_raids_live_release"]
@@ -335,7 +371,7 @@ class AccessEvidenceTest(unittest.TestCase):
         self.assertRegex(source["source_sha256"], r"^[a-f0-9]{64}$")
         self.assertIn("Complete UTF-8", source["digest_scope"])
         self.assertIn("RENDERED_TEMPLATES_CURRENT", source["target_continuity"])
-        self.assertIn("NOT_EXACT_TARGET_SERVER_CERTIFICATION", source["target_continuity"])
+        self.assertIn("NOT_SERVER_TELEMETRY", source["target_continuity"])
         heading, values = source["selected_quote"].split("\t", 1)
         self.assertEqual(heading, "Loot de:")
         names = values.removesuffix(".").split(", ")

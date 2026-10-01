@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_MISSING_IMBUEMENT_ITEM_SOURCE_FACTS/v1",
   "captured_on": "2026-10-01",
-  "target_date": "2026-07-28",
+  "target_date": "2026-10-01",
   "records": [
     {
       "client_id": 49160,
@@ -418,5 +418,6 @@
         "Community location labels may describe a wider area than the client NPC location; retain provider-specific precision rather than silently equating them."
       ]
     }
-  ]
+  ],
+  "target": "global-tibia-current-2026-10-01"
 }

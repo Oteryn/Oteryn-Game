@@ -1,9 +1,9 @@
 {
   "schema": "OTERYN_IMBUEMENT_GLOBAL_RULES_EVIDENCE/v1",
   "schema_version": 1,
-  "target": "global-tibia-observable-2026-07-28-post-server-save",
+  "target": "global-tibia-current-2026-10-01",
   "reviewed_at": "2026-10-01",
-  "scope": "Normalized public facts and provenance; not runtime activation or proof of every field on the exact frozen date.",
+  "scope": "Current public Global facts as of2026-10-01, with source dates and code-reference answers separated; not runtime activation or official certification of hidden implementation.",
   "sources": {
     "official_manual": {
       "role": "OFFICIAL_PUBLIC",
@@ -611,7 +611,7 @@
       "status": 200,
       "sha256": "a6145d0d62d71867d6793e92efa51898c87cf2459f5e2185b923d186e854d5ba",
       "digest_scope": "Exact complete HTTP response bytes of named public Wayback HTML, including replay toolbar; not an extracted snippet or an entire-history digest",
-      "temporal_qualification": "PUBLIC_ARCHIVED_TEXT_EXISTED_BEFORE_2026_07_28_TARGET_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
+      "temporal_qualification": "PUBLIC_ARCHIVED_TEXT_EXISTED_AT_THE_NAMED_ARCHIVE_DATE_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
       "limits": [
         "Archive snapshot date is not inferred as revision publication date.",
         "Community text is a reference statement, not recorded Global telemetry or proof of all later continuity."
@@ -635,7 +635,7 @@
       "status": 200,
       "sha256": "c8bdd03030ffbd4676ad326b29a3bba998334918e16440e09696da954bd4c6f6",
       "digest_scope": "Exact complete HTTP response bytes of named public Wayback HTML, including replay toolbar; not an extracted snippet or an entire-history digest",
-      "temporal_qualification": "PUBLIC_ARCHIVED_TEXT_EXISTED_BEFORE_2026_07_28_TARGET_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
+      "temporal_qualification": "PUBLIC_ARCHIVED_TEXT_EXISTED_AT_THE_NAMED_ARCHIVE_DATE_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
       "limits": [
         "Archive snapshot date is not inferred as revision publication date.",
         "Community text is a reference statement, not recorded Global telemetry or proof of all later continuity."
@@ -659,7 +659,7 @@
       "status": 200,
       "sha256": "87ad436a20cbba484a44d65b39a7518afe65b2cabf1df8c12d99b47556f1020f",
       "digest_scope": "Exact complete HTTP response bytes of named public Wayback HTML, including replay toolbar; not an extracted snippet or an entire-history digest",
-      "temporal_qualification": "PUBLIC_ARCHIVED_TEXT_EXISTED_BEFORE_2026_07_28_TARGET_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
+      "temporal_qualification": "PUBLIC_ARCHIVED_TEXT_EXISTED_AT_THE_NAMED_ARCHIVE_DATE_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
       "limits": [
         "Archive snapshot date is not inferred as revision publication date.",
         "Community text is a reference statement, not recorded Global telemetry or proof of all later continuity."
@@ -727,6 +727,36 @@
         "No successful/invalid consumption count, target slots, Free NPC purchase or atomicity discussed.",
         "Announcement is not an observed frozen July28,2026 server transaction."
       ]
+    },
+    "fandom_vibrancy_current_full": {
+      "role": "DERIVED_COMMUNITY",
+      "url": "https://tibia.fandom.com/wiki/Vibrancy",
+      "revision": "1194726",
+      "published_date": null,
+      "accessed_date": "2026-10-01",
+      "sha256": "a8a2f0587dd651848c74f4e50400a50467dc7b92aea50b8ed8f248614a504315",
+      "digest_scope": "Complete UTF-8 #mw-content-text innerText in owned public research tab; not an excerpt.",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "temporal_qualification": "CURRENT_PUBLIC_BODY_READ_2026_10_01_REVISION_DATE_NOT_INFERRED",
+      "selected_quotes": [
+        "Vibrancy is a imbuement that can be applied to boots. It can give a chance to remove paralysis, and in PvP fights, it always deflects additional paralysis attacks if initially successful. For example, with this imbuement active, when you are already paralyzed and someone paralyzes you in PvP, there is a 50% chance that you’ll no longer be paralyzed.\n\nThree Vibrancy imbuements are available:\n\nBasic Vibrancy\nIntricate Vibrancy\nPowerful Vibrancy\n\nThe ability to apply the basic and intricate forms can be obtained in the Forgotten Knowledge Quest and the Powerful version by finishing The Dream Courts Quest.\n\nRelated Astral Sources:\n\nWereboar Hooves\nCrystallized Anger\nQuill"
+      ]
+    },
+    "fandom_life_current_full": {
+      "role": "DERIVED_COMMUNITY",
+      "url": "https://tibia.fandom.com/wiki/Life_Leech",
+      "revision": "1101811",
+      "published_date": null,
+      "accessed_date": "2026-10-01",
+      "sha256": "039565d317590cea0d35826a70ecf83532285efa3b48f7a17f1ebc395122e83b",
+      "digest_scope": "Complete UTF-8 #mw-content-text innerText in owned public research tab; not an excerpt.",
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "method": "Remote Desktop + Chrome/CDP",
+      "temporal_qualification": "CURRENT_PUBLIC_BODY_READ_2026_10_01_REVISION_DATE_NOT_INFERRED",
+      "selected_quotes": [
+        "Life Leech\nVersion\n10.94\nMay 31, 2016\nSummer Update 2016\nStatus\nActive\nLife Leech, introduced with Updates/10.94, is a way to receive health points from your opponent during fighting. It can be done by Imbuing certain equipment with Basic Vampirism, Intricate Vampirism or Powerful Vampirism, by enhancing skills through the Wheel of Destiny, or wearing equipment that has Augments that provide life leech.\n\nIt is worth noting that Damage Preys do not affect the leech.\n\nHistory\nIt was initially available via Charging (which was removed with Updates/11.40) and later also by Imbuing certain equipment.\nIt used to be called Hit Points Leech before the name was changed to Life Leech.\n\nSee also:\n\n\n\n\nCritical Hits, Mana Leech, and Imbuing"
+      ]
     }
   },
   "rules": [
@@ -781,7 +811,7 @@
         "fandom_imbuing_fees"
       ],
       "parity_status": "DERIVED_SEARCH_SNIPPET_ONLY",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
       "notes": "Per single occupied slot cleared at a shrine. The official manual confirms a fee but does not publish its amount."
     },
     {
@@ -791,7 +821,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT"
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01"
     },
     {
       "id": "max_slots",
@@ -800,7 +830,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT"
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01"
     },
     {
       "id": "tiers",
@@ -813,7 +843,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT"
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01"
     },
     {
       "id": "direct_shrine_requires_unequipped_target",
@@ -822,7 +852,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT"
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01"
     },
     {
       "id": "materials_sources",
@@ -834,7 +864,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT",
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01",
       "notes": "Global permits Stash materials. Oteryn candidate proposal limits the first slice to main-backpack direct entries; this is a proposed implementation difference."
     },
     {
@@ -844,7 +874,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
       "notes": "Basic consumes its one recipe material; Intricate consumes Basic plus Intricate material; Powerful consumes all three."
     },
     {
@@ -859,7 +889,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT",
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01",
       "notes": "Quest/shrine access is separate from Premium. Powerful per-type quest alternatives are detailed in quest-access-evidence.json."
     },
     {
@@ -883,7 +913,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT"
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01"
     },
     {
       "id": "scroll_inscription_requires_shrine",
@@ -892,7 +922,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT"
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01"
     },
     {
       "id": "scroll_inscription_consumes_blank_units",
@@ -911,7 +941,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT"
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01"
     },
     {
       "id": "scroll_application_requires_quest",
@@ -920,7 +950,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT"
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01"
     },
     {
       "id": "scroll_application_fee_gold",
@@ -930,7 +960,7 @@
         "news_8396_mirror"
       ],
       "parity_status": "DERIVED_INFERENCE",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
       "notes": "Inventory multiuse application is described without an additional fee; explicit primary statement of zero fee was not retrieved."
     },
     {
@@ -1057,7 +1087,8 @@
           ],
           "conditions": "Etcher action dispatches to onClearAllImbuementsOnEtcher; scans active slots then removes1 before clearing all slots. Requires owned etcher; no claim of durable/atomic transaction behavior."
         }
-      ]
+      ],
+      "current_engine_answer_profile": "current-behavior-answers.json#etcher_consumption"
     },
     {
       "id": "timer_equipped_hunting_general",
@@ -1066,7 +1097,7 @@
         "official_manual"
       ],
       "parity_status": "OFFICIAL_PUBLIC_CONFIRMED",
-      "target_time_status": "CURRENT_MANUAL_NOT_IMMUTABLE_TARGET_SNAPSHOT",
+      "target_time_status": "CURRENT_OFFICIAL_MANUAL_READ_2026_10_01",
       "notes": "Only coarse equipped/hunting statement is official; fine-grained combat/PZ deadlines, offline accounting and tick precision remain separate."
     },
     {
@@ -1076,7 +1107,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
       "notes": "Backpack is the exception explicitly documented by BR."
     },
     {
@@ -1103,7 +1134,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
       "notes": "Converts physical damage to one of Fire/Earth/Ice/Energy/Death. Exact combat-pipeline ordering is not confirmed by these pages."
     },
     {
@@ -1117,7 +1148,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01"
     },
     {
       "id": "death_resistance_percent_by_tier",
@@ -1130,7 +1161,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01"
     },
     {
       "id": "strike_chance_percent",
@@ -1175,7 +1206,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01"
     },
     {
       "id": "void_leech_percent_by_tier",
@@ -1188,7 +1219,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01"
     },
     {
       "id": "leech_trigger_chance_percent",
@@ -1197,7 +1228,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01"
     },
     {
       "id": "leech_overkill_counts",
@@ -1207,8 +1238,8 @@
         "fandom_formulae_full"
       ],
       "parity_status": "DERIVED_CURRENT_COMMUNITY_MANA_SCOPE_ONLY",
-      "target_time_status": "REVISION_2026_09_07_POST_TARGET_NOT_TARGET_CERTIFICATION",
-      "notes": "Legacy indexed claim had no retrieved revision/date. Full current Formulae revision1205374 explicitly states overkill counts within the Mana Leech section; that revision is7September2026, after the frozen target. Preserve it as a community mana claim only, not proof of life-leech rounding/basis or historical target parity. Exact ordering remains in the combat profile; Crystal actual-health-removed behavior conflicts and is not used to override this community statement.",
+      "target_time_status": "CURRENT_COMMUNITY_REVISION_2026_09_07_READ_2026_10_01",
+      "notes": "Full current Formulae revision1205374 dated7September2026 states overkill counts in the Mana Leech section. This is current community mana evidence. It does not establish the Life formula or every damage-modifier order; pinned Crystal actual-health-removed code differs and is recorded independently.",
       "scope": "MANA_LEECH_COMMUNITY_CLAIM_ONLY",
       "runtime_semantics_profile": "imbuement-combat.json"
     },
@@ -1223,7 +1254,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
       "notes": "Percentage of total capacity; never encode as a flat capacity increase."
     },
     {
@@ -1237,7 +1268,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01"
     },
     {
       "id": "swiftness_bonus_points_by_tier",
@@ -1250,7 +1281,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT"
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01"
     },
     {
       "id": "vibrancy_deflection_chance_percent_by_tier",
@@ -1263,7 +1294,7 @@
         "wiki_br_imbuements"
       ],
       "parity_status": "DERIVED_CORROBORATED",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
       "notes": "Legacy numeric rule id retained for reference compatibility. These15/25/50 percent values must not be interpreted as a blanket chance to reject every paralysis admission: primary news4779 describes protection against subsequent paralysis and a probability to remove initial paralysis. Exact sequence and PvP semantics are sourced in imbuement-combat.json.",
       "runtime_semantics_profile": "imbuement-combat.json"
     },
@@ -1315,7 +1346,8 @@
           ],
           "conditions": "Lua rejects non-item target; C++ skips removal when no active imbuement is found."
         }
-      ]
+      ],
+      "current_engine_answer_profile": "current-behavior-answers.json#etcher_consumption"
     },
     {
       "id": "scroll_application_accepts_equipped_target",
@@ -1347,7 +1379,8 @@
           "conditions": "applyImbuementScrollToItem requires owned target but explicitly adds equipped stats when parent==Player; other validation/storage/Premium behavior is assessed separately in Crystal branch packet."
         }
       ],
-      "notes": "General inventory use and at-any-time community wording do not independently prove equipped-target acceptance."
+      "notes": "General inventory use and at-any-time community wording do not independently prove equipped-target acceptance.",
+      "current_engine_answer_profile": "current-behavior-answers.json#scroll_application_equipped_target"
     },
     {
       "id": "fine_grained_timer_hypothesis",
@@ -1373,9 +1406,23 @@
             "canary_timer_impl"
           ],
           "value": {
-            "aggressive": "Requires holding player, outsidePZ, in fight and outside a container",
-            "non_aggressive": "Requires direct Player parent; ticks regardlessPZ/combat when nonAggressiveFightOnlyfalse",
-            "configuration_override": "TOGGLE_IMBUEMENT_NON_AGGRESSIVE_FIGHT_ONLY can restrict every category to aggressive timing"
+            "base_duration_seconds": 72000,
+            "scheduling_interval_ms": 1000,
+            "debit_seconds": "floor(max(0,currentTime-lastUpdate)/1000); saturating subtraction",
+            "last_update": "updated each scanned tracked-item pass even if its gate rejected every slot; paused time not subsequently charged",
+            "scan_scope": "tracked item pointer; holding player is queried currently; no holder removes tracker until restart",
+            "aggressive_gate": "requires holder, direct equipment parent, CONDITION_INFIGHT and outside PZ",
+            "nonaggressive_default_gate": "direct player parent required; no fight or PZ requirement",
+            "nonaggressive_with_config_true": "uses aggressive fight/outside-PZ gate too",
+            "nonaggressive_category_ids": [
+              10,
+              17,
+              19
+            ],
+            "expiry": "set packed slot to0, remove stats/tracker; getImbuementInfo hides zero slots",
+            "equip_lifecycle": "start on equip, stop on deequip, restart active slots on login without changing remaining duration",
+            "ordinary_infight_condition_default_seconds": 60,
+            "ordinary_infight_condition_scope": "addInFightTicks uses configuredPZ_LOCKED; flags/customconfig and PvPwhite-skull paths can change applicability/lifetime; not every fight lasts exactly60seconds"
           }
         },
         {
@@ -1392,21 +1439,28 @@
           }
         }
       ],
-      "notes": "Official manual gives coarse equipped+hunting only. Dated2021 community answer supports equipped+online utility timers. QA15297 reports unchanged Powerful Void0:00h at13:53/13:56 without attacking and refusal to re-imbue; this historical minute-display/slot example does not measure internal seconds or prove expiration. Community PZ residual-state claims remain conflicting. Exact tick/combat deadline, PZ transitions, logout/save/restore and transfer boundaries remain null."
+      "notes": "Official manual gives coarse equipped+hunting only. Dated2021 community answer supports equipped+online utility timers. QA15297 reports unchanged Powerful Void0:00h at13:53/13:56 without attacking and refusal to re-imbue; this historical minute-display/slot example does not measure internal seconds or prove expiration. Community PZ residual-state claims remain conflicting. Exact tick/combat deadline, PZ transitions, logout/save/restore and transfer boundaries remain null.",
+      "current_engine_answer_profile": "current-behavior-answers.json#fine_grained_timers"
     },
     {
       "id": "vibrancy_pvp_gate",
-      "value": null,
+      "value": {
+        "additional_paralysis_deflection_requires_initial_success": true,
+        "successful_state_lifetime": null,
+        "successful_state_reset": null
+      },
       "evidence": [
         "fandom_vibrancy_gate",
         "fandom_basic_vibrancy_gate",
         "fandom_powerful_vibrancy_gate",
-        "fandom_vibrancy_archive_2025"
+        "fandom_vibrancy_archive_2025",
+        "fandom_vibrancy_current_full"
       ],
-      "parity_status": "PARITY_PENDING",
-      "target_time_status": "PRE_TARGET_FULL_ARCHIVE_WITH_INDEXED_SOURCE_CONFLICT_NOT_EXACT_TARGET_PROOF",
+      "parity_status": "DERIVED_CURRENT_COMMUNITY_CONDITIONAL_GATE_PARTIAL",
+      "target_time_status": "CURRENT_PUBLIC_BODY_READ_2026_10_01",
       "runtime_semantics_profile": "imbuement-combat.json",
-      "notes": "The indexed Vibrancy family page explicitly qualifies additional PvP paralysis deflection with if initially successful. Shorter Basic/Powerful snippets describe always deflecting on additional attacks without that qualification. Whether deflection requires a previous successful recovery and its state lifetime are unqualified; do not select unconditional deflection from truncated item snippets. Repeated-attack recovery remains independently corroborated. Complete18May2025 archived family revision884982 independently supplies the if initially successful wording. Exact successful-state predicate, lifetime/reset and target continuity remain unresolved."
+      "notes": "Current full family revision1194726 explicitly qualifies additional PvP deflection with if initially successful. This resolves the wording gate as a community rule, while the state lifetime/reset and engine reflection disagreement remain explicit.",
+      "current_engine_answer_profile": "current-behavior-answers.json#vibrancy_pvp_gate"
     },
     {
       "id": "same_imbuement_type_maximum_per_item",
@@ -1428,7 +1482,7 @@
         "tibiopedia_imbuing_guide"
       ],
       "parity_status": "DERIVED_COMMUNITY_EXPLICIT",
-      "target_time_status": "CURRENT_REFERENCE_ONLY_NOT_DATED_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
       "notes": "Guide explicitly states an imbuement on equipment requiring a higher level than the character does not activate during combat, while its time still decreases. This is a scoped level requirement statement; no extrapolation to wrong vocation, utility/PZ exceptions, native abilities or changed effect strengths."
     },
     {
@@ -1454,7 +1508,8 @@
       ],
       "parity_status": "DERIVED_COMMUNITY_REVISION_EXPLICIT_BOUNDED",
       "target_time_status": "REVISION_2026_07_07_PRE_TARGET_NOT_SERVER_OBSERVATION",
-      "notes": "Full Fandom Imbuing states inventory creature products and gold are consumed first, then missing resources draw from Stash or bank. This establishes normal-shrine source preference only; it does not establish exact container searches, inter-resource debit sequencing, rollback or NPC/Etcher/scroll routes. Public22May2026 archived revision1140491 independently retains the source preference; edited8January2026 QA1121 corroborates materials from Stash only. Neither adds exact debit order or failure behavior."
+      "notes": "Full Fandom Imbuing states inventory creature products and gold are consumed first, then missing resources draw from Stash or bank. This establishes normal-shrine source preference only; it does not establish exact container searches, inter-resource debit sequencing, rollback or NPC/Etcher/scroll routes. Public22May2026 archived revision1140491 independently retains the source preference; edited8January2026 QA1121 corroborates materials from Stash only. Neither adds exact debit order or failure behavior.",
+      "current_engine_answer_profile": "current-behavior-answers.json#transaction_payment_sources"
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
@@ -1465,7 +1520,8 @@
       ],
       "parity_status": "PARITY_PENDING",
       "target_time_status": "NO_GLOBAL_FAILURE_TRANSACTION_OBSERVATION",
-      "notes": "Guaranteed imbuement success does not prove error-path atomicity. Public sources do not establish money/material/blank-scroll/Etcher consumption or rollback after incompatible targets, full inventory, stale slots, interruption, insertion failure or concurrent transfer."
+      "notes": "Guaranteed imbuement success does not prove error-path atomicity. Public sources do not establish money/material/blank-scroll/Etcher consumption or rollback after incompatible targets, full inventory, stale slots, interruption, insertion failure or concurrent transfer.",
+      "current_engine_answer_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback"
     },
     {
       "id": "native_effect_composition",
@@ -1477,7 +1533,8 @@
       "parity_status": "PARITY_PENDING",
       "target_time_status": "NO_COMPLETE_GLOBAL_NATIVE_EFFECT_COMPOSITION_PROOF",
       "runtime_semantics_profile": "imbuement-combat.json",
-      "notes": "Per-item compatibility restrictions are separate from formulas combining native leech/critical/protection, imbuements, vocation baselines, wheel, proficiency, charms and caps. No complete Global composition or ordering proof is present; explicit OTS additive/reduction paths remain hypotheses."
+      "notes": "Per-item compatibility restrictions are separate from formulas combining native leech/critical/protection, imbuements, vocation baselines, wheel, proficiency, charms and caps. No complete Global composition or ordering proof is present; explicit OTS additive/reduction paths remain hypotheses.",
+      "current_engine_answer_profile": "current-behavior-answers.json#native_effect_composition"
     },
     {
       "id": "transfer_preserves_imbuement_state_and_remaining_duration",
@@ -1488,7 +1545,8 @@
       ],
       "parity_status": "PARITY_PENDING",
       "target_time_status": "NO_GLOBAL_TRANSFER_STATE_OBSERVATION",
-      "notes": "Community guide allows using equipment imbued by another character. That supports transferred-item usability but does not prove exact preservation of slot identity, remaining duration, checkpoint metadata or combat/timer state across trade, market, mail, containers and owner changes."
+      "notes": "Community guide allows using equipment imbued by another character. That supports transferred-item usability but does not prove exact preservation of slot identity, remaining duration, checkpoint metadata or combat/timer state across trade, market, mail, containers and owner changes.",
+      "current_engine_answer_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration"
     },
     {
       "id": "etcher_npc_purchase_requires_worthy",
@@ -1534,7 +1592,8 @@
       ],
       "parity_status": "PARITY_PENDING",
       "target_time_status": "NO_EXPLICIT_GLOBAL_ETCHER_PURCHASE_PREMIUM_PROOF",
-      "notes": "Manual explicitly requires Premium for inscription and blank-scroll purchase, but its separate Etcher-sale sentence only says worthy. Free-account Etcher use does not settle acquisition. Keep Etcher purchase Premium requirement unselected."
+      "notes": "Manual explicitly requires Premium for inscription and blank-scroll purchase, but its separate Etcher-sale sentence only says worthy. Free-account Etcher use does not settle acquisition. Keep Etcher purchase Premium requirement unselected.",
+      "current_engine_answer_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium"
     },
     {
       "id": "shared_category_compatibility",
@@ -1594,7 +1653,7 @@
       ],
       "parity_status": "OFFICIAL_PUBLIC_WITH_DATED_COMMUNITY_CORROBORATION",
       "target_time_status": "2025_ANNOUNCEMENT_AND_LIVE_RELEASE_WITH_PRE_TARGET_REVISIONS",
-      "notes": "Official23June2025 announces every character has5% intrinsic critical chance and10% critical extra damage.21July2025 release confirms Weapon Proficiency rollout; post-release Critical Hit revision24July2025 explicitly identifies these intrinsic values. Imbuing revision7July2026 provides later pre-target corroboration. This is bounded dated-source continuity, not complete target-server observation."
+      "notes": "Official23June2025 announces every character has5% intrinsic critical chance and10% critical extra damage.21July2025 release confirms Weapon Proficiency rollout; post-release Critical Hit revision24July2025 explicitly identifies these intrinsic values. Imbuing revision7July2026 provides later dated corroboration. This is bounded dated-source continuity, not complete target-server observation."
     },
     {
       "id": "strike_additive_modifiers",
@@ -1678,7 +1737,7 @@
       ],
       "parity_status": "DERIVED_DATED_PUBLIC_PLAYER_REPORT",
       "target_time_status": "HISTORICAL_2020_REPORT_NOT_2026_TARGET_OBSERVATION",
-      "notes": "Question19March2020, edited20March; accepted answer19March. A minute-resolution display remains0:00h and the asker reports refusal to imbue again without attacking. This is a textual player report, not an independently recorded server trace. Neither exact remaining seconds nor zero-display expiration is established; no utility/PZ/offline/transfer/tick or July2026 continuity inference."
+      "notes": "Question19March2020, edited20March; accepted answer19March. A minute-resolution display remains0:00h and the asker reports refusal to imbue again without attacking. This is a textual player report, not an independently recorded server trace. Neither exact remaining seconds nor zero-display expiration is established; no utility/PZ/offline/transfer/tick or current2026 continuity inference."
     },
     {
       "id": "scroll_application_consumed_units",
@@ -1700,7 +1759,8 @@
           "conditions": "Only the successful removeItemOfType(scrollId,1) branch immediately before setImbuement, player.cpp2851-2852."
         }
       ],
-      "notes": "Completed-scroll units consumed on success or an invalid target are not explicitly established by the retrieved Global public sources. The official blank-scroll inscription requirement is a different transaction. Do not select the pinned OTS hypothesis as a Global rule."
+      "notes": "Completed-scroll units consumed on success or an invalid target are not explicitly established by the retrieved Global public sources. The official blank-scroll inscription requirement is a different transaction. Do not select the pinned OTS hypothesis as a Global rule.",
+      "current_engine_answer_profile": "current-behavior-answers.json#scroll_consumption"
     },
     {
       "id": "scroll_application_invalid_target_consumed_units",
@@ -1722,7 +1782,8 @@
           "conditions": "Pre-removal target/client/slot/ownership/missing-definition/duplicate-type/tier guards return before removeItemOfType, player.cpp2772-2848. Bounded to these explicit guards, not every possible failure or atomic rollback."
         }
       ],
-      "notes": "Completed-scroll units consumed on success or an invalid target are not explicitly established by the retrieved Global public sources. The official blank-scroll inscription requirement is a different transaction. Do not select the pinned OTS hypothesis as a Global rule."
+      "notes": "Completed-scroll units consumed on success or an invalid target are not explicitly established by the retrieved Global public sources. The official blank-scroll inscription requirement is a different transaction. Do not select the pinned OTS hypothesis as a Global rule.",
+      "current_engine_answer_profile": "current-behavior-answers.json#scroll_consumption"
     },
     {
       "id": "echo_warden_basic_scroll_drop_announcement",
@@ -1791,15 +1852,48 @@
         "all_damage_modifier_order": null,
         "overkill_basis": null,
         "rounding": null,
-        "current_target_continuity": null
+        "current_target_continuity": "CURRENT_PUBLIC_LIFE_REFERENCE_CORROBORATED"
       },
       "evidence": [
-        "fandom_life_archive_2026"
+        "fandom_life_archive_2026",
+        "fandom_life_current_full",
+        "fandom_formulae_full"
       ],
-      "parity_status": "DERIVED_ARCHIVED_PRE_TARGET_COMMUNITY_EXPLICIT_LIFE_ONLY",
-      "target_time_status": "ARCHIVE_2026_01_13_BEFORE_TARGET_NOT_EXACT_TARGET_OBSERVATION",
+      "parity_status": "DERIVED_CURRENT_COMMUNITY_EXPLICIT_LIFE_CORROBORATED",
+      "target_time_status": "CURRENT_PUBLIC_BODY_READ_2026_10_01",
       "runtime_semantics_profile": "imbuement-combat.json",
-      "notes": "The full archived Life Leech reference explicitly excludes Damage Preys. This is an independent LIFE-specific historical reference; it neither promotes the post-target MANA formula to Life nor establishes broader rounding, ordering, caps or exact-target behavior."
+      "notes": "Current full Life Leech page explicitly excludes Damage Preys; current Formulae independently mentions mana/health prey exclusion. Keep the numerical mana formula scoped to mana; Life rounding, overkill and general modifier order remain separate."
+    },
+    {
+      "id": "native_equipment_percentage_reduction_example",
+      "value": {
+        "scope": "NATIVE_EQUIPMENT_COMMUNITY_EXAMPLE_ONLY",
+        "iteration": "every equipped percentage-reduction item",
+        "rounding": "floor after each item",
+        "example": {
+          "incoming_damage": 200,
+          "zaoan_helmet_percent": 5,
+          "after_helmet": 190,
+          "protection_amulet_percent": 6,
+          "after_amulet": 178,
+          "armor": 9,
+          "armor_subtraction_range": [
+            4,
+            7
+          ],
+          "final_damage_range": [
+            171,
+            174
+          ]
+        },
+        "universal_imbuement_native_wheel_order": null
+      },
+      "evidence": [
+        "fandom_formulae_full"
+      ],
+      "parity_status": "DERIVED_CURRENT_COMMUNITY_BOUNDED_NATIVE_EXAMPLE",
+      "target_time_status": "CURRENT_COMMUNITY_REVISION_2026_09_07_READ_2026_10_01",
+      "notes": "Current Formulae says percentage reduction is calculated iteratively for every single item and supplies this named floor/armor example. It does not specify universal imbuement/native/Wheel ordering. Pinned engines process armor before per-slot imbuement ceil and native round, so the engine pipeline is separately recorded."
     }
   ],
   "conflicts": [
@@ -1872,7 +1966,8 @@
         "fandom_vibrancy_gate",
         "fandom_basic_vibrancy_gate",
         "fandom_powerful_vibrancy_gate",
-        "fandom_vibrancy_archive_2025"
+        "fandom_vibrancy_archive_2025",
+        "fandom_vibrancy_current_full"
       ],
       "resolution": "Preserve unresolved qualification; shorter indexed item snippets cannot establish absence of a success-state gate.",
       "archived_family_qualification": "Full18May2025 public archive corroborates if initially successful; no state lifetime/reset selected."
@@ -1922,23 +2017,8 @@
   ],
   "unresolved": [
     {
-      "id": "exact_target_snapshot",
-      "reason": "Targeted public Wayback availability queries returned nearest Imbuing22May2026 and BRImbuements16February2026; no exact28July snapshot was returned for these queries. Public archives do not certify immutable Global server configuration or hidden mechanics.",
-      "evidence": [
-        "official_manual",
-        "fandom_imbuing_full",
-        "fandom_imbuing_archive_2026_05_22"
-      ],
-      "source_urls": [
-        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
-        "https://tibia.fandom.com/wiki/Imbuing",
-        "https://web.archive.org/web/20260522172855/https://tibia.fandom.com/wiki/Imbuing"
-      ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
-    },
-    {
       "id": "etcher_consumption",
-      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification. Exact pinnedCanary public implementation now supplies one unit on success andzero on invalid target as explicit OTS hypotheses; no Global single-use statement retrieved.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "wiki_br_etcher",
         "tibiopedia_etcher",
@@ -1949,11 +2029,13 @@
         "https://tibiopedia.pl/items/Etcher",
         "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#etcher_consumption",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "scroll_application_equipped_target",
-      "reason": "New official June2025 anywhere location statement does not say target stays equipped. Equipped acceptance remains unqualified.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "official_manual",
         "canary_scroll_action",
@@ -1966,11 +2048,13 @@
         "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp",
         "https://www.tibia.com/forum/?action=thread&postid=39527096#post39527096"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "fine_grained_timers",
-      "reason": "Full pre-target Swiftness equipped+online outside-combat wording is now corroborated by public11December2025 archive. Exact PZ/combat deadlines, tick precision, logout/save/restore and transfer boundaries remain unqualified.",
+      "reason": "Equipped/online utility behavior and current coarse hunting requirements are sourced. Exact Global tick/save/restore and PZ state boundaries are not fully specified; all three engine gates and ticks are separately answered.",
       "evidence": [
         "official_manual",
         "wiki_br_imbuements",
@@ -1993,11 +2077,13 @@
         "https://tibia.fandom.com/wiki/Imbuing",
         "https://web.archive.org/web/20251211063342/https://tibia.fandom.com/wiki/Swiftness"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#fine_grained_timers",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "combat_pipeline",
-      "reason": "Pre-target archived Life Leech source explicitly excludes Damage Preys, without settling rounding, unequal/zero-target/overkill behavior or universal spell/charm/proficiency order.",
+      "reason": "Current SeptemberFormulae supplies a mana-specific sum/ceil formula and overkill claim; current Life independently excludes DamagePreys. Universal Life rounding and modifier order are not specified. Concrete engine pipelines are separately answered.",
       "evidence": [
         "fandom_formulae_full",
         "official_news_8421_full",
@@ -2010,11 +2096,13 @@
         "https://www.tibiawiki.com.br/wiki/Imbuements",
         "https://web.archive.org/web/20260113015644/https://tibia.fandom.com/wiki/Life_Leech"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#combat_pipeline",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "vibrancy_pvp_gate",
-      "reason": "Full pre-target family wording is now supplied by public18May2025 archive; missing successful-state predicate, lifetime/reset and target continuity remain unqualified.",
+      "reason": "Current full family supplies the conditional initial-success wording; exact state lifetime/reset lacks explicit public specification. Concrete Canary/Crystal admission/recovery code is separately answered.",
       "evidence": [
         "fandom_vibrancy_gate",
         "fandom_basic_vibrancy_gate",
@@ -2028,11 +2116,13 @@
         "https://tibia.fandom.com/wiki/Powerful_Vibrancy",
         "https://web.archive.org/web/20250518214227/https://tibia.fandom.com/wiki/Vibrancy"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#vibrancy_pvp_gate",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "transaction_payment_sources",
-      "reason": "Pre-target archive22May2026 corroborates inventory-first then Stash/bank; edited8January2026 QA corroborates Stash materials. Exact container search, inter-resource debit order, other routes and failure behavior remain unqualified.",
+      "reason": "Current Imbuing and prior archive specify inventory-first then Stash/bank. All engine search/debit orders are answered; hidden Global container/inter-resource ordering is not explicitly specified.",
       "evidence": [
         "fandom_imbuing_full",
         "fandom_imbuing_archive_2026_05_22",
@@ -2043,11 +2133,13 @@
         "https://web.archive.org/web/20260522172855/https://tibia.fandom.com/wiki/Imbuing",
         "https://www.tibiaqa.com/1120/how-does-supply-stash-work-and-what-is-the-capacity"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#transaction_payment_sources",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
-      "reason": "Guaranteed success does not define failure-path resource consumption, rollback or concurrency semantics.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "official_manual",
         "news_8396_mirror"
@@ -2056,11 +2148,13 @@
         "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
         "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "native_effect_composition",
-      "reason": "Native abilities, imbuements and other bonuses need source-qualified composition, caps and order; OTS implementation is a hypothesis.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "wiki_br_imbuements",
         "tibiopedia_imbuing_guide"
@@ -2069,11 +2163,13 @@
         "https://www.tibiawiki.com.br/wiki/Imbuements",
         "https://tibiopedia.pl/articles/3,Imbuing-nasycenia"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#native_effect_composition",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "transfer_preserves_imbuement_state_and_remaining_duration",
-      "reason": "Transferred imbued items are usable according to community guide; exact persistent state and duration preservation across transfer routes is unqualified.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "tibiopedia_imbuing_guide",
         "official_manual",
@@ -2084,11 +2180,13 @@
         "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
         "https://www.tibiaqa.com/30081/is-it-possible-to-safe-trade-items-in-the-depot-to-another-player"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "etcher_npc_purchase_requires_premium",
-      "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "official_manual",
         "news_8396_mirror",
@@ -2101,11 +2199,13 @@
         "https://www.tibiawiki.com.br/wiki/Etcher",
         "https://tibiopedia.pl/items/Etcher"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "scroll_consumption",
-      "reason": "Exact completed-scroll units consumed on successful application and explicit invalid-target failures lack Global public proof. Blank-scroll inscription consumption is separate; pinned Crystal1-on-success/0-on-pre-debit-guard branches remain OTS hypotheses.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "official_manual",
         "crystal_imbuements_player_impl",
@@ -2116,7 +2216,9 @@
         "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp",
         "https://www.tibiabr.com/wp-json/wp/v2/search?search=imbuement&per_page=30"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#scroll_consumption",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     }
   ],
   "rejected_sources": [
@@ -2159,7 +2261,7 @@
         "official_news_8834_basic_scrolls",
         "official_news_8845_release"
       ],
-      "resolution": "Full dated primary11June2026 teaser and13July2026 live release now corroborate introduction before frozen target; client15.30 identity/version evidence remains separate.",
+      "resolution": "Full dated primary11June2026 teaser and13July2026 live release now corroborate introduction before the current research date; client15.30 identity/version evidence remains separate.",
       "source_urls": [
         "https://tibiaroute.com/news/Echo-Raids-and-Discovery-System-8834-aS71",
         "https://tibiopedia.pl/news/archives/2452",
@@ -2179,6 +2281,18 @@
         "https://tibia.fandom.com/wiki/Imbuing"
       ],
       "source_url_scope": "Only the bounded resolution and confidence stated in this row."
+    },
+    {
+      "id": "exact_target_snapshot",
+      "resolution": "Owner clarified current data/research scope on2026-10-01; an immutable July28 configuration is no longer a requirement. Historical retrieval attempts remain provenance, not an unresolved current-data task.",
+      "evidence": [
+        "fandom_formulae_full"
+      ],
+      "resolution_kind": "OWNER_SCOPE_RESOLVED_NOT_EMPIRICAL_PROOF",
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Formulae"
+      ],
+      "source_url_scope": "Current-source context only; owner clarification resolves scope, not an empirical observation of hidden Global mechanics."
     }
   ],
   "research_attempts": [
@@ -2625,6 +2739,11 @@
         "scroll_consumption"
       ],
       "hidden_semantics_limit": "Visible public before/after state does not certify hidden atomicity, locks, durable storage or concurrency; no account/game actions were performed."
+    },
+    {
+      "id": "owner_current_target_correction_2026_10_01",
+      "method": "CURRENT_PUBLIC_CODE_READ_AND_CHROME_CDP_AFTER_HTTP_402_403",
+      "outcome": "Current date applies to data; AugustItem and SeptemberFormulae included. Current Life/Vibrancy full bodies read. Original12 questions have11 concrete engine answer groups and1 owner scope resolution; Global limitations remain separate."
     }
   ],
   "delegated_profiles": [
@@ -2632,7 +2751,14 @@
       "id": "vibrancy_sequence",
       "evidence_catalogue": "imbuement-combat.json",
       "status": "PARTIALLY_CORROBORATED_NOT_CLOSED",
-      "resolution": "Repeated-paralysis recovery is corroborated; exact PvP success-state gate and present reflection remain unqualified. Delegation does not close those observation requirements."
+      "resolution": "Current family conditional initial-success wording is corroborated. State lifetime/reset and current reflection engine disagreement remain qualified in the combat and concrete behavior profiles."
     }
-  ]
+  ],
+  "target_selection": {
+    "as_of": "2026-10-01",
+    "basis": "OWNER_CURRENT_DATA_SCOPE_CLARIFICATION",
+    "previous_target": "global-tibia-observable-2026-07-28-post-server-save",
+    "historical_captures_preserved": true,
+    "exact_historical_snapshot_required": false
+  }
 }

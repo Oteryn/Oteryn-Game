@@ -3,7 +3,7 @@
   "inputs": {
     "owning_item_schema_sha256": "b58bba554efd346b9f33103a889acfb571b97861ee06be460a474f0c115b3c1c",
     "primary_appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
-    "source_facts_sha256": "6364ba74b3d3c63e161042a4df782faa7bfcd76c36004e89428b7da69ca77086",
+    "source_facts_sha256": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d",
     "test_wiki_facts_sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
   },
   "proposals": [
@@ -70,6 +70,7 @@
           "tradeable": true
         }
       },
+      "current_target_included": true,
       "dependencies": {
         "assets": [],
         "definitions": [],
@@ -424,6 +425,7 @@
           "tradeable": true
         }
       },
+      "current_target_included": true,
       "dependencies": {
         "assets": [],
         "definitions": [],
@@ -685,7 +687,7 @@
         }
       },
       "source_facts_sha256": "be642ef8f3638f0277305925cd71c2c9484fc9707d18c6872f17ba086373b0ee",
-      "target_time_status": "INTRODUCED_AFTER_TARGET",
+      "target_time_status": "PREEXISTING_TARGET_SOURCE_VERSION",
       "validation": {
         "contract": "tools/content-schema/item-authoring/item.schema.json",
         "errors": [],
@@ -695,7 +697,8 @@
     }
   ],
   "schema": "OTERYN_MISSING_IMBUEMENT_ITEM_DEFINITION_PROPOSALS/v1",
-  "target_date": "2026-07-28",
+  "target": "global-tibia-current-2026-10-01",
+  "target_date": "2026-10-01",
   "test_item_evidence": [
     {
       "action": "Do not mint live global definitions or assign real-item eligibility from naming/classes.",

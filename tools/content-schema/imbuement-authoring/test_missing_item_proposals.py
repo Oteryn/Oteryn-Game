@@ -19,12 +19,28 @@ class MissingItemProposalTests(unittest.TestCase):
             self.assertEqual(row["validation"]["errors"], [])
             self.assertEqual(row["validation"]["warnings"], [])
 
-    def test_sailor_is_after_july_target_and_bursa_preexisting(self):
+    def test_both_items_are_included_in_current_october_target(self):
         rows = {row["source_client_id"]: row for row in self.packet["proposals"]}
-        self.assertEqual(rows[53192]["target_time_status"], "INTRODUCED_AFTER_TARGET")
+        self.assertEqual(self.packet["target"], "global-tibia-current-2026-10-01")
+        self.assertEqual(self.packet["target_date"], "2026-10-01")
+        for row in rows.values():
+            self.assertEqual(row["target_time_status"], "PREEXISTING_TARGET_SOURCE_VERSION")
+            self.assertTrue(row["current_target_included"])
         self.assertEqual(rows[53192]["source_facts"]["facts"]["introduced_on"], "2026-08-04")
         self.assertEqual(rows[49160]["authoring_definition"]["container"]["capacity"], 1)
         self.assertEqual(rows[49160]["source_facts"]["facts"]["introduced_on"], "2024-08-06")
+
+    def test_future_introduction_cannot_be_qualified_for_current_target(self):
+        self.assertEqual(proposals.qualify_current_target("2026-10-01", "2026-10-01"),
+                         "PREEXISTING_TARGET_SOURCE_VERSION")
+        for introduced in ("2026-10-02", "2027-01-01"):
+            with self.subTest(introduced=introduced):
+                with self.assertRaisesRegex(ValueError, "after the current target"):
+                    proposals.qualify_current_target(introduced, "2026-10-01")
+        for introduced in ("2026-02-30", "2026-8-4", "unknown"):
+            with self.subTest(introduced=introduced):
+                with self.assertRaises(ValueError):
+                    proposals.qualify_current_target(introduced, "2026-10-01")
 
     def test_revision_links_match_named_wiki_identity(self):
         for source in json.loads(proposals.FACTS.read_bytes())["records"]:

@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_IMBUEMENT_ELIGIBILITY_EVIDENCE/v1",
   "activation": "DRAFT_NOT_RUNTIME_READY",
-  "target": "global-tibia-observable-2026-07-28-post-server-save",
+  "target": "global-tibia-current-2026-10-01",
   "source_registry": {
     "wiki_armors": {
       "role": "DERIVED_COMMUNITY",
@@ -96947,13 +96947,15 @@
       "selected_eligibility_source": "tibiopedia_i813",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_boots",
-            "revision": "419573",
-            "date": "2024-12-19"
+            "wiki_title": "Terra Boots",
+            "page_id": 20447,
+            "revision_id": 1202745,
+            "revision_timestamp": "2026-08-22T19:34:14Z",
+            "content_sha256": "e193939ae0b8b11d9681734aaec6ea5957caeb8ce033ff9f398156fed67ba552"
           }
         ]
       },
@@ -97026,13 +97028,15 @@
       "selected_eligibility_source": "tibiopedia_i818",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_boots",
-            "revision": "419573",
-            "date": "2024-12-19"
+            "wiki_title": "Magma Boots",
+            "page_id": 20314,
+            "revision_id": 1202743,
+            "revision_timestamp": "2026-08-22T19:33:56Z",
+            "content_sha256": "68a77de70fe87af7f1e408299459fa34a6460bb45943ab159576ec0a7bca725b"
           }
         ]
       },
@@ -97124,13 +97128,15 @@
       "selected_eligibility_source": "tibiopedia_i819",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_boots",
-            "revision": "419573",
-            "date": "2024-12-19"
+            "wiki_title": "Glacier Shoes",
+            "page_id": 20358,
+            "revision_id": 1202741,
+            "revision_timestamp": "2026-08-22T19:33:46Z",
+            "content_sha256": "4dfe7af10b440f48a3852f06fc50d46107e3661e585b87ad4a8d70ec205441bf"
           }
         ]
       },
@@ -97203,13 +97209,15 @@
       "selected_eligibility_source": "tibiopedia_i820",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_boots",
-            "revision": "419573",
-            "date": "2024-12-19"
+            "wiki_title": "Lightning Boots",
+            "page_id": 20078,
+            "revision_id": 1202742,
+            "revision_timestamp": "2026-08-22T19:33:52Z",
+            "content_sha256": "0a17bc6b66798dce7410295b05c91d5b8a6d99227a6fb1aa9b544d956e31519d"
           }
         ]
       },
@@ -99497,13 +99505,15 @@
       "selected_eligibility_source": "tibiopedia_i3301",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_swords",
-            "revision": "419589",
-            "date": "2024-12-19"
+            "wiki_title": "Broadsword",
+            "page_id": 4668,
+            "revision_id": 1202770,
+            "revision_timestamp": "2026-08-22T19:44:22Z",
+            "content_sha256": "d49c4d508b8651d4fad0a659a33ebf7cff08410a6d8546adc3a16481008a31d1"
           }
         ]
       },
@@ -100448,13 +100458,15 @@
       "selected_eligibility_source": "tibiopedia_i3318",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_axes",
-            "revision": "419594",
-            "date": "2024-12-19"
+            "wiki_title": "Knight Axe",
+            "page_id": 2643,
+            "revision_id": 1202789,
+            "revision_timestamp": "2026-08-22T19:45:26Z",
+            "content_sha256": "4daa6987ea4cb128d716b2b75b83d5f1d6311ee75b7f455c7fb5d0035e62cacc"
           }
         ]
       },
@@ -101293,13 +101305,15 @@
       "selected_eligibility_source": "tibiopedia_i3333",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_clubs",
-            "revision": "419582",
-            "date": "2024-12-19"
+            "wiki_title": "Crystal Mace",
+            "page_id": 2693,
+            "revision_id": 1202776,
+            "revision_timestamp": "2026-08-22T19:44:43Z",
+            "content_sha256": "a522e3c037255234fb2e2f40409e17c9e1ab81b8f639fca0a24ca13e6644ea20"
           }
         ]
       },
@@ -101896,13 +101910,15 @@
       "selected_eligibility_source": "tibiopedia_i3342",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_axes",
-            "revision": "419594",
-            "date": "2024-12-19"
+            "wiki_title": "War Axe",
+            "page_id": 17172,
+            "revision_id": 1202807,
+            "revision_timestamp": "2026-08-22T19:46:22Z",
+            "content_sha256": "355de1785bd11b0b3d68e3adb374cdc405f9e02d0180a7c8ddf9323f183059f6"
           }
         ]
       },
@@ -102480,13 +102496,15 @@
       "selected_eligibility_source": "tibiopedia_i3365",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_helmets",
-            "revision": "419580",
-            "date": "2024-12-19"
+            "wiki_title": "Golden Helmet",
+            "page_id": 2345,
+            "revision_id": 1207380,
+            "revision_timestamp": "2026-09-29T12:52:13Z",
+            "content_sha256": "0e151bc9c1829856cdee68d4e7abea5bb84a2b32d71b48e2beedd694a2a0e0b7"
           }
         ]
       },
@@ -108869,13 +108887,15 @@
       "selected_eligibility_source": "tibiopedia_i7383",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_swords",
-            "revision": "419589",
-            "date": "2024-12-19"
+            "wiki_title": "Relic Sword",
+            "page_id": 19600,
+            "revision_id": 1202798,
+            "revision_timestamp": "2026-08-22T19:46:09Z",
+            "content_sha256": "489927f6afb88a057bd3f1f66f8d13b4b3a63f83d7a9159668105ca0b5c2588e"
           }
         ]
       },
@@ -109600,13 +109620,15 @@
       "selected_eligibility_source": "tibiopedia_i7402",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_swords",
-            "revision": "419589",
-            "date": "2024-12-19"
+            "wiki_title": "Dragon Slayer",
+            "page_id": 16496,
+            "revision_id": 1202781,
+            "revision_timestamp": "2026-08-22T19:44:50Z",
+            "content_sha256": "5f8b6d6b2c6ae87bbac0be7b88f062fc95f3b0ad8a8b5c7ae9ed7744087a2dd3"
           }
         ]
       },
@@ -119245,13 +119267,15 @@
       "selected_eligibility_source": "tibiopedia_i10386",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_boots",
-            "revision": "419573",
-            "date": "2024-12-19"
+            "wiki_title": "Zaoan Shoes",
+            "page_id": 41758,
+            "revision_id": 1202746,
+            "revision_timestamp": "2026-08-22T19:34:18Z",
+            "content_sha256": "c70282ae0424dbe0eeb413b960e36eaadeb37aae55ff835eaffe69078de125d7"
           }
         ]
       },
@@ -127590,13 +127614,15 @@
       "selected_eligibility_source": "tibiopedia_i21169",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_boots",
-            "revision": "419573",
-            "date": "2024-12-19"
+            "wiki_title": "Metal Spats",
+            "page_id": 67865,
+            "revision_id": 1202744,
+            "revision_timestamp": "2026-08-22T19:34:06Z",
+            "content_sha256": "428a1f553743758aadaa42cfb1f4355f1bd58f8a5f608d4cd63972a9195b46f0"
           }
         ]
       },
@@ -128141,13 +128167,15 @@
       "selected_eligibility_source": "tibiopedia_i22086",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_boots",
-            "revision": "419573",
-            "date": "2024-12-19"
+            "wiki_title": "Badger Boots",
+            "page_id": 75097,
+            "revision_id": 1202740,
+            "revision_timestamp": "2026-08-22T19:33:41Z",
+            "content_sha256": "bb02fa48ab58a29192e4917adda392efbebf6e6918f53b3f3e32d38812a8b0fd"
           }
         ]
       },
@@ -131140,13 +131168,15 @@
       "selected_eligibility_source": "tibiopedia_i25699",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_spellbooks",
-            "revision": null,
-            "date": "2024-12-19"
+            "wiki_title": "Wooden Spellbook",
+            "page_id": 81405,
+            "revision_id": 1202765,
+            "revision_timestamp": "2026-08-22T19:43:44Z",
+            "content_sha256": "16131539592af30b7019baac263500f87f7b083fecacdf02d09870bd78525c5b"
           }
         ]
       },
@@ -151457,13 +151487,15 @@
       "selected_eligibility_source": "tibiopedia_i45639",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_spellbooks",
-            "revision": null,
-            "date": "2024-12-19"
+            "wiki_title": "Cocoa Grimoire",
+            "page_id": 105195,
+            "revision_id": 1202657,
+            "revision_timestamp": "2026-08-22T12:58:58Z",
+            "content_sha256": "222d86d7543d551381097e1bf8ab69ae8c6eb995e5a04d3df9e7ef4bb6839d72"
           }
         ]
       },
@@ -160665,13 +160697,15 @@
       "selected_eligibility_source": "tibiopedia_i50239",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_fists",
-            "revision": null,
-            "date": "2025-07-23"
+            "wiki_title": "Amber Kusarigama",
+            "page_id": 108151,
+            "revision_id": 1207393,
+            "revision_timestamp": "2026-09-29T14:21:47Z",
+            "content_sha256": "0031ea0f30982114f0aef2a50b85cd1f036e7b7937c264934f3ff487207a5ed2"
           }
         ]
       },
@@ -160998,13 +161032,15 @@
       "selected_eligibility_source": "tibiopedia_i50251",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED",
+      "target_time_status": "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
-        "sources": [
+        "observations": [
           {
-            "source_id": "wiki_fists",
-            "revision": null,
-            "date": "2025-07-23"
+            "wiki_title": "Rending Inferniarch Claws",
+            "page_id": 108154,
+            "revision_id": 1206326,
+            "revision_timestamp": "2026-09-16T19:05:07Z",
+            "content_sha256": "f84b634dfd1491c00812bab23465c4095038d5b935c6943275d6d3cec0b57324"
           }
         ]
       },
@@ -165652,12 +165688,12 @@
       "eligibility_sources": [
         "tibiopedia_i53192"
       ],
-      "status": "POST_TARGET_RELEASE_EXCLUDED",
+      "status": "CANONICAL_ITEM_ABSENT",
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "selected_eligibility_source": "tibiopedia_i53192",
       "selected_type_amendments": [],
       "independent_field_corroborations": [],
-      "target_time_status": "POST_TARGET_RELEASE_EXCLUDED",
+      "target_time_status": "PRE_TARGET_RELEASE_CONTINUITY_UNVERIFIED",
       "target_time_evidence": {
         "version": "15.32.fc9100",
         "date": "2026-08-04",
@@ -168118,13 +168154,12 @@
     "native_item_table_rows": 607,
     "community_named_matches": 629,
     "status_counts": {
-      "CANONICAL_ITEM_ABSENT": 1,
+      "CANONICAL_ITEM_ABSENT": 2,
       "COMMUNITY_CORROBORATED": 429,
       "COMMUNITY_SINGLE_SOURCE": 96,
       "COMMUNITY_SINGLE_SOURCE_WITH_CORROBORATED_FIELD": 1,
       "DERIVED_SELECTED_OVER_STALE_HELPER": 101,
       "MISSING_ELIGIBILITY_EVIDENCE": 4,
-      "POST_TARGET_RELEASE_EXCLUDED": 1,
       "RETIRED_SOURCE_ITEM_EXCLUDED": 30
     },
     "evidence_status_counts": {
@@ -168137,13 +168172,12 @@
     },
     "typed_items": 629,
     "target_time_status_counts": {
-      "POST_TARGET_RELEASE_EXCLUDED": 1,
-      "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED": 20,
-      "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED": 569,
-      "PRE_TARGET_RELEASE_CONTINUITY_UNVERIFIED": 43,
+      "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED": 2,
+      "PRE_TARGET_NAMED_OBSERVATION_CONTINUITY_UNVERIFIED": 587,
+      "PRE_TARGET_RELEASE_CONTINUITY_UNVERIFIED": 44,
       "WITHDRAWN_BEFORE_TARGET_EXCLUDED": 30
     },
-    "target_candidate_typed_items": 628,
+    "target_candidate_typed_items": 629,
     "target_candidate_bound_items": 627,
     "discrepancy_counts": {
       "COMMUNITY_TYPE_TIER_DISPUTE": 101,

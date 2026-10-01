@@ -17,20 +17,20 @@ REPORT = HERE / "samples/imbuement-source-comparison.json"
 SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-access.json": "f56f29d4be08c9047eb999a59bf3f7852bf40be4b0d712d774c7b21291883741",
-    "imbuement-eligibility.json": "ac311c6ff107cced3db7223c9034d5efdbb64134c19ddb282ef3540db53167f7",
-    "global-rules-evidence.json": "24ed1eb24b1f4297ba2fa5c214ddd5ef26856ecc8bd248342c8fbd1f25c1c8a7",
-    "imbuement-combat.json": "86251ba9e2f38277f91a76e8584351e06a0646d8c4506577fb365e7176c52aa8",
-    "crystal-imbuements-evidence.json": "b7f6d5ac40111c103c82a9fc02bc4188be733171a01a1665e588fff41bc8e68c",
-    "missing-item-definitions.json": "d1984e33fbeea4494986f2ef3f7b9188069d145a317ac45765e25e2997ff4b3b",
-    "missing-item-source-facts.json": "6364ba74b3d3c63e161042a4df782faa7bfcd76c36004e89428b7da69ca77086",
-    "global-observation-plan.json": "05718ad4d9fe0c9bf23a5724ec864b9ee9512a31ec62792bceba621c766f1e6e",
+    "imbuement-access.json": "95c966ebcbd3c1ed15277417c6e6f2acf720817c6b9776732873f511c7a15dcc",
+    "imbuement-eligibility.json": "c26be2542ce0b048258f1a4bcc2604145608af6cb669e20dbeb75f0ee76c062e",
+    "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
+    "imbuement-combat.json": "3166820fc12c066bd87918321f15a2637d27b986e34c7e0ae51914bc7799088b",
+    "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
+    "missing-item-definitions.json": "d1d324a100dbda840c1730561401f803aea4ec6014ec11dec23389e3280fd40d",
+    "missing-item-source-facts.json": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d",
+    "current-behavior-answers.json": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2",
+    "global-observation-plan.json": "1b72e0ae9187955643308da9e809095f74f1fe3e5d48057f115cd7ce42c09f7d",
 }
 # Independently anchor reviewed capture requirements. Mutable scenario fields
 # cannot redefine the evidence necessary to qualify their own claims.
 CAPTURE_GROUPS_SHA256 = "b18a064a812601e7791aa3f86e4b33b747fe3d48e1da50cc210e44da8720fda2"
 MINIMUM_CAPTURE_GROUPS = {
-    "exact_target_snapshot": set(),
     "etcher_consumption": {"item_state", "inventory_resources"},
     "scroll_application_equipped_target": {"item_state", "inventory_resources"},
     "fine_grained_timers": {"item_state", "timer_context"},
@@ -74,6 +74,7 @@ def validate_observation_plan(plan, packets):
         if (requirement["status"] != "PUBLIC_EVIDENCE_NOT_SUFFICIENT"
                 or requirement["ledger_ref"] != {"catalogue": "global-rules-evidence.json",
                                                   "section": "unresolved", "id": requirement["id"]}
+                or requirement.get("engine_answer_profile") != "current-behavior-answers.json#" + requirement["id"]
                 or not requirement["source_and_capture_limitations"]
                 or not requirement["source_refs"] or not requirement["scenarios"]):
             raise ValueError("observation requirement lacks its qualified ledger context")
@@ -109,7 +110,7 @@ def supporting():
                 "imbuement-eligibility.json", "global-rules-evidence.json",
                 "imbuement-combat.json", "crystal-imbuements-evidence.json",
                 "missing-item-definitions.json", "missing-item-source-facts.json",
-                "global-observation-plan.json"}
+                "global-observation-plan.json", "current-behavior-answers.json"}
     if set(EVIDENCE_PINS) != expected:
         raise ValueError("supporting evidence pins are incomplete")
     packets = {}
@@ -134,6 +135,12 @@ def supporting():
     combat_evidence.validate(packets["imbuement-combat.json"])
     newbranch_evidence.validate(packets["crystal-imbuements-evidence.json"])
     validate_observation_plan(packets["global-observation-plan.json"], packets)
+    import behavior_answers
+    errors = behavior_answers.validate(packets["current-behavior-answers.json"],
+                                      global_evidence=packets["global-rules-evidence.json"],
+                                      combat_evidence=packets["imbuement-combat.json"])
+    if errors:
+        raise ValueError("current behavior evidence: " + "; ".join(errors))
     proposals = packets["missing-item-definitions.json"]["proposals"]
     if {p["source_client_id"] for p in proposals} != {49160, 53192} or any(
             p["identity_state"] != "PROPOSED_NOT_REGISTERED" for p in proposals):
@@ -233,13 +240,14 @@ def schema():
                       "tiers": array(tier, 3, 3)})
     root = obj({"schema": {"const": "OTERYN_IMBUEMENT_AUTHORING_CATALOGUE/v1"},
                 "activation": {"const": "DRAFT_NOT_RUNTIME_READY"},
-                "target": {"const": "global-tibia-observable-2026-07-28-post-server-save"},
+                "target": {"const": "global-tibia-current-2026-10-01"},
                 "source_facts_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
                 "supporting_catalogues": obj({name: {"type": "string", "pattern": "^[0-9a-f]{64}$"}
                                               for name in sorted(EVIDENCE_PINS)}),
                 "global_rules_profile": {"const": "global-rules-evidence.json"},
                 "observation_plan_profile": {"const": "global-observation-plan.json"},
                 "combat_profile": {"const": "imbuement-combat.json"},
+                "current_behavior_profile": {"const": "current-behavior-answers.json"},
                 "missing_item_proposals": {"const": "missing-item-definitions.json"},
                 "engine_reference_profile": {"const": "crystal-imbuements-evidence.json"},
                 "architecture_reconciliation": {"const": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE"},
@@ -320,11 +328,12 @@ def build():
                             "item_eligibility_binding": {"catalogue": "imbuement-eligibility.json", "candidate_key": key(name)},
                             "tiers": tiers})
     return {"schema": "OTERYN_IMBUEMENT_AUTHORING_CATALOGUE/v1", "activation": "DRAFT_NOT_RUNTIME_READY",
-            "target": sources["decision"]["findings"]["target"], "source_facts_sha256": FACTS_SHA256,
+            "target": packets["global-rules-evidence.json"]["target"], "source_facts_sha256": FACTS_SHA256,
             "supporting_catalogues": dict(sorted(EVIDENCE_PINS.items())),
             "global_rules_profile": "global-rules-evidence.json",
             "observation_plan_profile": "global-observation-plan.json",
             "combat_profile": "imbuement-combat.json",
+            "current_behavior_profile": "current-behavior-answers.json",
             "missing_item_proposals": "missing-item-definitions.json",
             "engine_reference_profile": "crystal-imbuements-evidence.json",
             "architecture_reconciliation": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE", "definitions": definitions}
@@ -363,6 +372,8 @@ def comparison():
                 "completed_scroll_loot_records": 48,
                 "global_rules": len(packets["global-rules-evidence.json"]["rules"]),
                 "combat_rule_profiles": len(packets["imbuement-combat.json"]["rules"]),
+                "source_answered_engine_question_groups": packets["current-behavior-answers.json"]["counts"]["engine_answered_questions"],
+                "owner_resolved_scope_questions": packets["current-behavior-answers.json"]["counts"]["owner_scope_resolved"],
                 "planned_not_observed_scenarios": packets["global-observation-plan.json"]["counts"]["planned_scenarios"],
                 "crystal_imbuements_revision": packets["crystal-imbuements-evidence.json"]["revision"],
                 "gold_token_exchange_bundles": len(packets["imbuement-access.json"]["material_acquisition"]["yana_gold_token_exchange"]["recipes"]),

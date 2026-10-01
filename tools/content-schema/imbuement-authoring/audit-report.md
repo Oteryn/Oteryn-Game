@@ -63,9 +63,10 @@ changes and checks use the ordinary workspace and GitHub API.
   exclusion and inventory-first materials/gold. Fine transaction failure and
   ordering behavior is still unqualified.
 - Formulae revision 1205374, dated 2026-09-07, supplies mana-specific per-creature
-  ceiling, critical/prey and overkill rules. The July archived article required
-  login and was not read; current mana evidence cannot certify that target or
-  general life-leech rounding. Dated paired Powerful Void/Vampirism reports
+  ceiling, critical/prey and overkill rules for the current-data scope. The July
+  archived article required login and was not read; it is not required to prove
+  a superseded July snapshot. Mana-specific evidence does not establish general
+  life-leech rounding. Dated paired Powerful Void/Vampirism reports
   support only the recorded pair sums, not arbitrary native or charm composition.
 
 Source descriptors record URLs, access methods, dates, revision ids, hash scopes
@@ -106,32 +107,35 @@ unequal-target Life behavior, arbitrary caps or current charm rules. Another
 historical report shows an occupied Void slot displayed as `0:00h`; neither exact
 seconds nor a new timer policy is inferred from that display.
 
-All twelve unresolved scopes now have 28 concrete, prospective scenarios in
-`samples/global-observation-plan.json`, with capture fields, source/rule links and
-explicit visible/hidden and historical/current limits. Expected Global results
-remain null and collected observations remain zero. Validation rejects missing
-scopes, fabricated outcomes, broken references and invented observation counts.
+The original observation plan recorded twelve research scopes and 28 prospective
+scenarios. The owner has now resolved the historical snapshot question by choosing
+current data as of 2026-10-01. The [current answer table](current-behavior-answers.md)
+and validated packet deliver eleven implementation answer groups across three engines,
+with67 complete source-file identities and224 replayed exact line-range quotes.
+The residual observation plan has eleven groups and27 prospective scenarios. Expected Global
+observations are not invented from engine code. Validation rejects fabricated
+outcomes, broken references and invented observation counts.
 Capture groups are independently pinned; each scenario must retain the minimum
 dated public context and the relevant inventory, combat, timer or payment context.
 
 The definition and recipe catalogue is populated. Full Global server parity is
-not established. The immutable target is
-`global-tibia-observable-2026-07-28-post-server-save`; current public pages cannot
-prove continuity of every rule at that timestamp.
+not established. The active target is **`global-tibia-current-2026-10-01`**;
+historical capture dates remain provenance rather than an active July restriction.
 
 The census contains 663 client objects with observed slots, 629 current typed
-profiles and 628 typed target candidates. Sailor's Backpack was introduced after
-the target. Thirty withdrawn objects and four TEST objects are explicitly
+profiles and 629 typed current-target candidates, with 627 canonical bindings.
+Sailor's Backpack's 4 August 2026 release is included. Thirty withdrawn objects
+and four TEST objects are explicitly
 excluded. Per-item allow lists remain community evidence, with zero officially
 verified server allow lists. The two missing canonical Items have validated
 proposals; they are not registered runtime identities.
 
 Exact timer boundaries, generalized/current life-leech rounding and broader combat composition, Etcher
 consumption, equipped-scroll acceptance, the Vibrancy PvP success gate,
-transaction behavior and preservation across transfers still require qualified
-Global observations. Crystal code supplies hypotheses, not that proof. Some
-operational topics have attempted public sources; newly named gaps still need
-targeted evidence work.
+transaction behavior and preservation across transfers have concrete pinned-engine
+source paths recorded in the current-behavior answers. The matrix and its
+references are delivered in `current-behavior-answers.json`. Canary/Crystal answers describe those
+implementations; Global equivalence still requires qualified evidence.
 
 Canonical quest-state bindings, persistence, effect execution and protocol/UI
 integration remain outside this source draft. Repository workflows do not run
@@ -170,7 +174,8 @@ conflicts with the current Fandom1194750 blanket native-ammunition exclusion;
 that conflict is mandatory and no universal/current conversion policy is selected.
 The public current Fandom page was browser-read with the same reviewed hash;
 the explicit historical-oldid route required login and was not accessed.
-All twelve broad unresolved scopes remain pending.
+The historical date-snapshot requirement is superseded by the current-data scope;
+behavioral qualifications and source conflicts remain explicit.
 
 ## Oteryn versus Crystal and Canary completeness audit
 
@@ -191,7 +196,7 @@ These comparisons used ordinary public GitHub HTTP/API, not Remote Desktop.
 | Apply fees by tier | 7500/60000/250000, Global sources | same selected flat fees | older XML5000/30000/200000 |
 | Canonical loaded rules | `READY_UNPOPULATED` | XML load path exists | XML load path exists |
 | Apply/clear, ticking, active state, effects, protocol | no imbuement implementation found | executable paths, with source-qualified OTS differences | executable paths, with source-qualified OTS differences |
-| Global certainty | 12 explicit broad evidence gaps | code is an OTS hypothesis | code is an OTS hypothesis |
+| Behavioral answers / Global certainty | 11 concrete engine-answer groups delivered; historical snapshot question resolved | Concrete code answers for this engine; Global equivalence remains qualified | Concrete code answers for this engine; Global equivalence remains qualified |
 
 The source audit found and repaired a real comparison defect: the original capture
 searched child attributes for scroll IDs and missed root-level `scrollid` values.
@@ -263,8 +268,9 @@ units. Eight teaser and 15 live-release forum pages were inspected. Old
 probabilistic-failure material loss and uncompleted sale advertisements were
 rejected as proof of current rollback and transfer preservation.
 
-All 12 observation scopes remain explicit. Nearest archive timestamps are not
-the requested 28 July date, and public before/after state cannot certify hidden
+The owner selected current 2026-10-01 data, closing the historical date-snapshot
+question without changing source capture dates. Current engine-answer references
+are delivered in `current-behavior-answers.json`; public before/after state cannot certify hidden
 storage or atomicity. [completion-handoff.md](completion-handoff.md) identifies
 the completed data work, exact remaining capture needs and owning implementation
 children. The architecture/coordinator packet is on
@@ -272,9 +278,13 @@ children. The architecture/coordinator packet is on
 
 ## Validation
 
-All 179 offline tests pass. The seven replay/schema commands in README pass,
-including both missing Items through the owning Item validator with zero errors
-and warnings, and an additional reparse of all three pinned engine XMLs. All 71
-Global rule records and 17 combat profiles retain qualified source references.
-The catalogue preserves 12 named
-Global observation requirements rather than declaring complete server parity.
+The current package has204 offline test cases and eight replay/schema commands,
+plus a reparse of all three pinned engine XMLs. Both missing Item proposals pass
+the owning Item validator with zero errors and warnings. The current behavior
+packet additionally pins67 full source files, with224 exact line-range quotes
+replayed from those bytes. Published-candidate validation and independent review
+are recorded against the frozen PR head through#162.
+
+Source counts are72 Global rules/51sources and18combat profiles/24sources. Seven
+fine-grained combat profiles retain null values for unsourced proprietary details;
+concrete implementation answers remain available in the separate12-question matrix.

@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_IMBUEMENT_COMBAT_EVIDENCE/v1",
   "activation": "DRAFT_NOT_RUNTIME_READY",
-  "target": "global-tibia-observable-2026-07-28-post-server-save",
+  "target": "global-tibia-current-2026-10-01",
   "sources": [
     {
       "id": "official_vibrancy_4779",
@@ -152,15 +152,41 @@
         "verbatim": "\nImbuing\nMana Leech\n\nWhen one of the Void imbuements is triggered by area attacks, the mana leeched is not the same as it would be for one creature multiplied by the number of creatures, otherwise this imbuement would be too powerful. There are a few ways to calculate the actual mana gained. One way of looking at it is to consider that 100% of the leech is applied to one creature, and 10% of it to the other creatures, though this does not allow for an accurate calculation when different resistances are involved.\n\nIn reality, for each creature the mana leeched is the following:\n\n𝑀\n𝑎\n𝑛\n𝑎\n𝐿\n𝑒\n𝑒\n𝑐\nℎ\n𝑒\n𝑑\n=\n𝐷\n𝑚\n𝑔\n×\n𝐿\n𝑒\n𝑒\n𝑐\nℎ\n×\n(\n0.1\n𝑁\n+\n0.9\n)\n𝑁\n,\n\nwhere N is the number of creatures attacked and Leech is the Leech % depending on the level of the imbuement (Basic, Intricate or Powerful). Furthermore, the result is always rounded up. For N = 1, this simplifies to:\n\n𝑀\n𝑎\n𝑛\n𝑎\n𝐿\n𝑒\n𝑒\n𝑐\nℎ\n𝑒\n𝑑\n=\n𝐷\n𝑚\n𝑔\n×\n𝐿\n𝑒\n𝑒\n𝑐\nℎ\n,\n\nas one would expect.\n\nNotes:\n\nSince the value is always calculated independently for each creature and rounded up, simply multiplying the first formula by N and consider the total damage dealt does not result in the total mana leeched and will underestimate the real value.\nDamage preys do not influence the mana/health leech amount, but Critical Hits do increase the leech.\n\"Overkill\" damage dealt above maximum health/current health of a monster still counts for leech.",
         "revision": 1205374,
         "revision_timestamp": "2026-09-07T17:28:39Z",
-        "historical_pre_target_revision_access": {
+        "historical_revision_access": {
           "requested_url": "https://tibia.fandom.com/wiki/Formulae?oldid=1197205",
           "revision_timestamp": "2026-07-21T13:24:22Z",
           "status": "ACCESS_RESTRICTED_REQUIRES_LOGIN",
           "text_read": false,
           "qualification": "Revision ID/timestamp is public metadata; archived contents were not accessible without login. No login or alternative access attempted."
+        },
+        "native_percentage_reduction_example": {
+          "scope": "ONLY_CURRENT_REFERENCE_ZAOAN_HELMET_AND_PROTECTION_AMULET_EXAMPLE",
+          "original_damage": 200,
+          "items": [
+            "Zaoan Helmet",
+            "Protection Amulet"
+          ],
+          "reduction_bps": [
+            500,
+            600
+          ],
+          "damage_after_each": [
+            190,
+            178
+          ],
+          "reference_damage_after_armor_range": [
+            171,
+            174
+          ],
+          "reference_armor_stage": "AFTER_PERCENTAGE_REDUCTION_IN_THIS_EXAMPLE",
+          "verbatim_anchor": "This formula have to be applied for every single item that has percentage reduction.",
+          "universal_imbuement_composition": null,
+          "runtime_observation": false
         }
       },
-      "selected_claims_sha256": "fd6e6a3941e83cde102501cf63647ab7a0d021d417f699027c09ea769ec852a4"
+      "selected_claims_sha256": "6939adbcbea95d7729e5d31ebd36e455a093c25bfc72eebbd5864593d8688bb3",
+      "source_stage": "CURRENT_PUBLIC_COMMUNITY_REVISION",
+      "target_time_status": "CURRENT_DATED_COMMUNITY_REVISION_NOT_GLOBAL_RUNTIME_OBSERVATION"
     },
     {
       "id": "tibiaqa_two_mana_2018",
@@ -220,7 +246,7 @@
       "answer_created_at": "2020-02-28T04:19:02Z",
       "report_body_edited_on": "2020-02-28",
       "revision_source": "tibiaqa_life_answer_revisions_14497",
-      "target_time_status": "HISTORICAL_2020_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+      "target_time_status": "HISTORICAL_2020_REPORT_NOT_CURRENT_RUNTIME_OBSERVATION",
       "selected_claims": {
         "answer_id": 14497,
         "report_setup": "one Powerful Vampirism armor; same gear; Dragon Lords; Avalanche; no wand",
@@ -270,7 +296,7 @@
       "role": "COMMUNITY_GLOBAL_REFERENCE",
       "published_on": "2020-02-28",
       "source_stage": "PUBLIC_ANSWER_REVISION_DIFF",
-      "target_time_status": "HISTORICAL_2020_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+      "target_time_status": "HISTORICAL_2020_REPORT_NOT_CURRENT_RUNTIME_OBSERVATION",
       "selected_claims": {
         "answer_id": 14497,
         "quotes": [
@@ -292,7 +318,7 @@
       "role": "COMMUNITY_GLOBAL_REFERENCE",
       "published_on": "2022-11-28",
       "answer_created_at": "2022-11-28T15:15:48Z",
-      "target_time_status": "DATED_2022_COMMUNITY_EXAMPLE_NOT_EXACT_TARGET_OBSERVATION",
+      "target_time_status": "HISTORICAL_2022_COMMUNITY_EXAMPLE_NOT_CURRENT_RUNTIME_OBSERVATION",
       "selected_claims": {
         "answer_id": 31836,
         "quotes": [
@@ -318,7 +344,7 @@
       "role": "COMMUNITY_GLOBAL_REFERENCE",
       "published_on": "2020-06-01",
       "report_body_edited_on": "2021-05-14",
-      "target_time_status": "HISTORICAL_2020_2021_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+      "target_time_status": "HISTORICAL_2020_2021_REPORT_NOT_CURRENT_RUNTIME_OBSERVATION",
       "selected_claims": {
         "answer_id": 17284,
         "quote": "I had the same doubt my self, and tried the elemental charms/parry/wound don't trigger the imbuements",
@@ -343,7 +369,7 @@
       "published_on": "2021-01-27",
       "answer_created_at": "2021-01-27T20:17:56Z",
       "trial_count_comment_at": "2021-01-27T21:02:45Z",
-      "target_time_status": "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_EXACT_TARGET_OBSERVATION",
+      "target_time_status": "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_CURRENT_RUNTIME_OBSERVATION",
       "selected_claims": {
         "answer_id": 23756,
         "author": "YakiHon",
@@ -395,7 +421,7 @@
       "role": "COMMUNITY_GLOBAL_REFERENCE",
       "method": "Remote Desktop + Chrome/CDP",
       "revision_access": "CURRENT_PUBLIC_PAGE_ONLY_ARCHIVE_REQUIRES_LOGIN",
-      "target_time_status": "PRE_TARGET_COMMUNITY_REVISION_CURRENT_CAPTURE_NOT_FULL_TARGET_SNAPSHOT",
+      "target_time_status": "CURRENT_COMMUNITY_REVISION_CAPTURE_NOT_GLOBAL_RUNTIME_OBSERVATION",
       "selected_claims": {
         "verbatim": "Finally, the elemental damage imbuement will not work with area ammunition such as Diamond and Burst Arrows nor native-elemental ammunition, such as Envenomed and Flash Arrows. Still, the imbuement's time will be consumed.",
         "reference_claim": "NO_EFFECT_WITH_AREA_OR_NATIVE_ELEMENTAL_AMMUNITION",
@@ -425,8 +451,8 @@
       "published_on": null,
       "revision_timestamp": null,
       "archive_snapshot_at": "2026-01-13T01:56:44Z",
-      "source_stage": "PUBLIC_ARCHIVE_PRE_TARGET",
-      "target_time_status": "PUBLIC_ARCHIVED_TEXT_EXISTED_BEFORE_2026_07_28_TARGET_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
+      "source_stage": "PUBLIC_ARCHIVE_HISTORICAL",
+      "target_time_status": "PUBLIC_ARCHIVED_REFERENCE_NOT_CURRENT_GLOBAL_RUNTIME_OBSERVATION",
       "limits": [
         "Archive snapshot date is not inferred as revision publication date.",
         "Community text is a reference statement, not recorded Global telemetry or proof of all later continuity."
@@ -456,8 +482,8 @@
       "published_on": null,
       "revision_timestamp": null,
       "archive_snapshot_at": "2025-05-18T21:42:27Z",
-      "source_stage": "PUBLIC_ARCHIVE_PRE_TARGET",
-      "target_time_status": "PUBLIC_ARCHIVED_TEXT_EXISTED_BEFORE_2026_07_28_TARGET_NOT_IMMUTABLE_GLOBAL_CONFIGURATION",
+      "source_stage": "PUBLIC_ARCHIVE_HISTORICAL",
+      "target_time_status": "PUBLIC_ARCHIVED_REFERENCE_NOT_CURRENT_GLOBAL_RUNTIME_OBSERVATION",
       "limits": [
         "Archive snapshot date is not inferred as revision publication date.",
         "Community text is a reference statement, not recorded Global telemetry or proof of all later continuity."
@@ -473,6 +499,62 @@
         "generic_50_percent_example_is_not_all_tier_probability": true
       },
       "selected_claims_sha256": "e68243283ad0fd78203148f3293fbb5558098594934d6cca9d8760f8b79f685f"
+    },
+    {
+      "id": "fandom_life_current_1101811",
+      "url": "https://tibia.fandom.com/wiki/Life_Leech",
+      "revision": 1101811,
+      "published_on": null,
+      "revision_timestamp": null,
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_REVISIONED_COMMUNITY_BROWSER_TEXT",
+      "sha256": "039565d317590cea0d35826a70ecf83532285efa3b48f7a17f1ebc395122e83b",
+      "digest_scope": "Exact complete UTF-8 #mw-content-text innerText of the public current Life Leech article, captured by parent-owned Chrome/CDP; not full HTML, archive bytes or gameplay log",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "method": "Remote Desktop + Chrome/CDP (parent-owned browser)",
+      "source_stage": "CURRENT_PUBLIC_COMMUNITY_REVISION",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION",
+      "selected_claims": {
+        "reference_scope": "LIFE_LEECH_ONLY",
+        "damage_prey_bonus_included": false,
+        "verbatim": "Damage Preys do not affect the leech.",
+        "reference_enablement_routes": [
+          "imbuement",
+          "Wheel of Destiny",
+          "equipment augments"
+        ],
+        "composition_formula": null,
+        "rounding": null,
+        "overkill_basis": null,
+        "runtime_observation": false
+      },
+      "selected_claims_sha256": "2f90936245a934350c3cb087c0b50031d71ee98e8832630f9abd5d3cc1f1f42a"
+    },
+    {
+      "id": "fandom_vibrancy_current_1194726",
+      "url": "https://tibia.fandom.com/wiki/Vibrancy",
+      "revision": 1194726,
+      "published_on": null,
+      "revision_timestamp": null,
+      "captured_on": "2026-10-01",
+      "access_status": "FULL_REVISIONED_COMMUNITY_BROWSER_TEXT",
+      "sha256": "a8a2f0587dd651848c74f4e50400a50467dc7b92aea50b8ed8f248614a504315",
+      "digest_scope": "Exact complete UTF-8 #mw-content-text innerText of the public current Vibrancy article, captured by parent-owned Chrome/CDP; not full HTML, archive bytes or gameplay log",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "method": "Remote Desktop + Chrome/CDP (parent-owned browser)",
+      "source_stage": "CURRENT_PUBLIC_COMMUNITY_REVISION",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION",
+      "selected_claims": {
+        "scope": "VIBRANCY_CURRENT_CONDITIONAL_PVP_REFERENCE",
+        "verbatim": "in PvP fights, it always deflects additional paralysis attacks if initially successful.",
+        "requires_initial_success_reference_qualification": true,
+        "initial_success_definition": null,
+        "success_state_lifetime": null,
+        "success_state_reset": null,
+        "generic_50_percent_example_is_not_all_tier_probability": true,
+        "runtime_observation": false
+      },
+      "selected_claims_sha256": "c466f4b8bf2f2c146078132f2485ab3f93f3566bc5aac3986ce906be283b4704"
     }
   ],
   "rules": [
@@ -501,10 +583,11 @@
         "fandom_vibrancy",
         "fandom_basic_vibrancy",
         "fandom_powerful_vibrancy",
-        "fandom_vibrancy_archive_2025"
+        "fandom_vibrancy_archive_2025",
+        "fandom_vibrancy_current_1194726"
       ],
-      "notes": "Repeated-attack recovery is corroborated by current BR notes and the historical primary teaser. Current Fandom family wording qualifies PvP additional-attack deflection with if initially successful; shorter tier excerpts omit that qualification. Do not select unconditional PvP protection. Reflection from the historical teaser remains excluded. Complete public archived family revision884982 (snapshot18May2025) independently supplies the conditional additional-PvP wording. Its generic50% recovery example does not replace the existing tier probabilities; no success-state lifetime/reset is inferred.",
-      "target_time_status": "PRE_TARGET_INTRODUCTION_WITH_CURRENT_CORROBORATION_NOT_FULL_SNAPSHOT"
+      "notes": "Repeated-attack recovery is corroborated by current BR notes and the historical primary teaser. Full current Fandom1194726 and archived884982 family text explicitly qualify PvP additional-attack deflection with initial success. This selected sequence does not invent the success-state predicate/lifetime/reset; its finer profile remainsnull. The generic50% example does not replace tier probabilities. Historical reflection teaser remains excluded.",
+      "target_time_status": "HISTORICAL_INTRODUCTION_WITH_CURRENT_COMMUNITY_CORROBORATION"
     },
     {
       "id": "leech_equal_damage_aoe_scaling",
@@ -534,7 +617,7 @@
         "tibiapal_leech_calculator"
       ],
       "notes": "Public calculator confirms equal-hit examples and prevents selecting flat leech from the whole summed AoE damage. It does not certify unequal damage, zero-damage target count, overkill or rounding.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+      "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION"
     },
     {
       "id": "leech_rounding",
@@ -544,8 +627,8 @@
         "tibiapal_leech_calculator",
         "fandom_formulae_1205374"
       ],
-      "notes": "Generic rounding remains unqualified. mana_leech_current_reference_formula selects a post-target Mana reference; life_leech_reported_equal_hit_ceiling separately records historical equal-hit LIFE examples fitting per-target ceiling. Neither certifies universal/current Life rounding or unequal-Life behavior.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION",
+      "notes": "Generic rounding remains unqualified. mana_leech_current_reference_formula selects a current dated Mana reference; life_leech_reported_equal_hit_ceiling separately records historical equal-hit LIFE examples fitting per-target ceiling. Neither certifies universal/current Life rounding or unequal-Life behavior.",
+      "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION",
       "bounded_profiles": [
         "mana_leech_current_reference_formula",
         "life_leech_reported_equal_hit_ceiling"
@@ -560,8 +643,8 @@
         "tibiapal_leech_calculator",
         "fandom_formulae_1205374"
       ],
-      "notes": "The post-target Mana reference selects per-target scaling, ceiling and overkill inclusion. Historical equal-hit Life examples and named charm exclusion tests are separately scoped. Unequal-Life, zero-damage counting, overkill order, current charm/proficiency composition and generic pipelines remain unqualified. The separately bounded full pre-target Life reference also excludes DamagePreys, without selecting other modifier order, rounding or overkill basis.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION",
+      "notes": "The current dated Mana reference selects per-target scaling, ceiling and overkill inclusion. Historical equal-hit Life examples and named charm exclusion tests are separately scoped. Unequal-Life, zero-damage counting, overkill order, current charm/proficiency composition and generic pipelines remain unqualified. The separately bounded full pre-target Life reference also excludes DamagePreys, without selecting other modifier order, rounding or overkill basis.",
+      "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION",
       "bounded_profiles": [
         "mana_leech_current_reference_formula",
         "life_leech_reported_equal_hit_ceiling",
@@ -579,7 +662,7 @@
         "official_vibrancy_release_4828"
       ],
       "notes": "The historical teaser proposed reflection; the full Dec3,2018 release explicitly removed it. Releasefalse is recorded separately. Exact present continuity and PvP additional-attack deflection lifecycle remain unqualified; do not select current reflection solely from old announcements.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+      "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION"
     },
     {
       "id": "critical_healing_scope",
@@ -589,7 +672,7 @@
         "vocation_adjustments_8783_test"
       ],
       "notes": "Test announcement limits critical healing to Blessing of the Grove. It does not prove all healing spells or all vocations can critically heal on the target server.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+      "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION"
     },
     {
       "id": "leech_equipment_composition",
@@ -602,7 +685,7 @@
         "tibiaqa_two_leech_pairs_2021"
       ],
       "notes": "leech_two_powerful_equipment_pairs records two specific Powerful pairs; mana_leech_wheel_equipment_example records only800+50=850bps Mana example. Arbitrary mixtures, more items, Life Wheel/proficiency contributions and caps remain unqualified.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION",
+      "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION",
       "bounded_profiles": [
         "leech_two_powerful_equipment_pairs",
         "mana_leech_wheel_equipment_example"
@@ -616,8 +699,11 @@
         "tibiapal_leech",
         "tibiopedia_general_guide"
       ],
-      "notes": "Candidate architecture says absorbs are summed, whereas Crystal applies each equipped slot sequentially with ceil. No independent public Global composition statement was retrieved; reconcile against real observations before implementing either as certified parity.",
-      "target_time_status": "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION"
+      "notes": "Candidate architecture says absorbs are summed, whereas Crystal applies each equipped slot sequentially with ceil. No independent public Global composition statement was retrieved; reconcile against real observations before implementing either as certified parity. A current reference named ZaoanHelmet/ProtectionAmulet percentage-reduction example is separately selected; it does not settle arbitrary imbuement/native/Wheel order or rounding.",
+      "target_time_status": "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION",
+      "bounded_profiles": [
+        "native_equipment_percentage_reduction_example"
+      ]
     },
     {
       "id": "vibrancy_pvp_gate",
@@ -627,10 +713,11 @@
         "fandom_vibrancy",
         "fandom_basic_vibrancy",
         "fandom_powerful_vibrancy",
-        "fandom_vibrancy_archive_2025"
+        "fandom_vibrancy_archive_2025",
+        "fandom_vibrancy_current_1194726"
       ],
-      "notes": "The complete public18May2025 family archive revision884982 explicitly qualifies additional-PvP deflection with if initially successful, independently of current family/tier indexed excerpts. Full pre-target wording is available; the exact initial-success predicate, state lifetime/reset and continuity at28July2026 remain unqualified. No unconditional selected boolean.",
-      "target_time_status": "PRE_TARGET_ARCHIVED_QUALIFIED_WORDING_NO_EXACT_GATE_OR_TARGET_CERTIFICATION"
+      "notes": "The complete current public family revision1194726, captured on1 October2026, explicitly qualifies deflection of additional PvP paralysis with initial success; full archived revision884982 corroborates historical wording. The public conditional claim is known. This null profile concerns the finer state predicate: definition of initial success, lifetime/reset and state transitions. It does not invent unconditional protection or treat the generic50% example as a probability for all tiers.",
+      "target_time_status": "CURRENT_COMMUNITY_CONDITIONAL_PVP_WORDING_STATE_GATE_UNRESOLVED"
     },
     {
       "id": "vibrancy_reflection_removed_at_release",
@@ -674,12 +761,12 @@
           }
         ]
       },
-      "status": "POST_TARGET_COMMUNITY_EXPLICIT_MANA_ONLY",
+      "status": "CURRENT_DATED_COMMUNITY_EXPLICIT_MANA_ONLY",
       "evidence": [
         "fandom_formulae_1205374"
       ],
-      "notes": "Full Formulae mana section explicitly rounds each target up before summing, includes critical and overkill damage, excludes damage prey. RevisionSept7,2026 is later than July28target. Public metadata identifies July21revision1197205 but its content requireslogin and was not read. Do not infer historical continuity or apply mana rounding to Life Leech. Positive-hit examples do not settle zero-damage target counting or all combat extensions.",
-      "target_time_status": "POST_TARGET_COMMUNITY_REVISION_NOT_TARGET_CERTIFIED"
+      "notes": "Current public Formulae revision1205374 (7 September2026), captured1 October2026, explicitly describes the Mana-only per-target formula, ceiling, critical damage, prey exclusion and overkill inclusion. This is a current dated community reference rather than proprietary Global implementation or gameplay telemetry. Do not apply its rounding/formula to Life or infer zero-damage target counting.",
+      "target_time_status": "CURRENT_DATED_COMMUNITY_REVISION_NOT_GLOBAL_RUNTIME_OBSERVATION"
     },
     {
       "id": "leech_two_powerful_equipment_pairs",
@@ -713,7 +800,7 @@
         "tibiaqa_two_leech_pairs_2021"
       ],
       "notes": "Dated public2018answer gives2*8%=16%;2021comment explicitly two25%life leech instances and two8%mana instances. These two Powerful pairs support bounded stacking observations, not arbitrary tier mixtures, moreitems, proficiency or Wheel contributions, Life Leech rounding or general composition.",
-      "target_time_status": "DATED_PRE_TARGET_COMMUNITY_NOT_EXACT_TARGET_OBSERVATION"
+      "target_time_status": "HISTORICAL_2018_2021_COMMUNITY_NOT_CURRENT_RUNTIME_OBSERVATION"
     },
     {
       "id": "life_leech_reported_equal_hit_ceiling",
@@ -769,7 +856,7 @@
         "tibiaqa_life_answer_revisions_14497"
       ],
       "notes": "Public answer revision dates field-report addition to Feb28,2020. One Powerful Vampirism armor, equal Dragon Lord hits from Avalanche with no wand: recorded cases fit ceiling for each target before summing. N2/N3 differ from Crystal nearest rounding. This is an interpretation of reported historical examples, not universal/current Life rounding; unequal-Life, overkill and caps remain unqualified.",
-      "target_time_status": "HISTORICAL_2020_REPORT_NOT_EXACT_TARGET_OBSERVATION"
+      "target_time_status": "HISTORICAL_2020_REPORT_NOT_CURRENT_RUNTIME_OBSERVATION"
     },
     {
       "id": "mana_leech_wheel_equipment_example",
@@ -791,7 +878,7 @@
         "tibiaqa_wheel_void_example_2022"
       ],
       "notes": "Dated2022 community statement explicitly combines Powerful Void800bps with Wheel50bps to850bps at10000bps chance. This single Mana example does not prove arbitrary mixed equipment, Life composition, caps or exact target continuity.",
-      "target_time_status": "DATED_2022_COMMUNITY_EXAMPLE_NOT_EXACT_TARGET_OBSERVATION"
+      "target_time_status": "HISTORICAL_2022_COMMUNITY_EXAMPLE_NOT_CURRENT_RUNTIME_OBSERVATION"
     },
     {
       "id": "leech_elemental_parry_wound_reported_exclusions",
@@ -811,7 +898,7 @@
         "tibiaqa_charm_leech_test_2020"
       ],
       "notes": "Answer createdJune1,2020 and editedMay14,2021 reports personally testing elemental charms/parry/wound without imbuement leech. Exact gameplay date is unknown. Other charms, later charm changes and current target continuity remain unqualified.",
-      "target_time_status": "HISTORICAL_2020_2021_REPORT_NOT_EXACT_TARGET_OBSERVATION"
+      "target_time_status": "HISTORICAL_2020_2021_REPORT_NOT_CURRENT_RUNTIME_OBSERVATION"
     },
     {
       "id": "ranged_elemental_ammo_reported_cases",
@@ -861,7 +948,7 @@
         "fandom_imbuing_full"
       ],
       "notes": "YakiHon reports Jan27,2021 testing Basic Frost Elvish Bow with Flash and Shiver Arrows; same-day comment23759 says200arrows total. Flash50/50 physical/energy with noice; Shiver approximately45/55 physical/ice fits10% of physical half converted. No raw logs, targets/resistances, critical setup or per-ammo trial counts. These are narrowly reported historical cases, not universal/current ranged or melee conversion, damage conservation/caps, integer rounding or armor/critical processing order. Current Fandom Imbuing revision1194750 broadly excludes native-elemental and area ammunition; this corroborates the reported Flash case but conflicts with historical Shiver55%. Conflict is retained explicitly. Do not select historical Shiver as current parity, blanket native-ammo exclusion, timer consumption or universal ordering from either source.",
-      "target_time_status": "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_EXACT_TARGET_OBSERVATION"
+      "target_time_status": "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_CURRENT_RUNTIME_OBSERVATION"
     },
     {
       "id": "life_leech_damage_prey_exclusion",
@@ -873,12 +960,54 @@
         "rounding": null,
         "current_target_continuity": null
       },
-      "status": "ARCHIVED_PRE_TARGET_COMMUNITY_EXPLICIT_LIFE_ONLY",
+      "status": "CURRENT_COMMUNITY_EXPLICIT_LIFE_PREY_ONLY",
       "evidence": [
-        "fandom_life_archive_2026"
+        "fandom_life_archive_2026",
+        "fandom_formulae_1205374",
+        "fandom_life_current_1101811"
       ],
-      "notes": "New full LifeLeech archive revision1101811 explicitly excludes DamagePreys. This independent Life-specific pre-target reference does not promote the post-target Mana formula to Life or settle broader pipelines.",
-      "target_time_status": "ARCHIVE_2026_01_13_BEFORE_TARGET_NOT_EXACT_TARGET_OBSERVATION"
+      "notes": "The complete current public Life Leech revision1101811, captured on1 October2026, directly excludes Damage Prey from Life Leech; current Formulae revision1205374 independently names both mana and health leech in its prey-exclusion note. The archived Life revision corroborates historical wording. Current reference text does not establish other modifier order, Life rounding or overkill basis, composition across enablement routes, or Global runtime telemetry.",
+      "target_time_status": "CURRENT_LIFE_AND_DATED_HEALTH_LEECH_PREY_REFERENCE_WITH_HISTORICAL_CORROBORATION"
+    },
+    {
+      "id": "native_equipment_percentage_reduction_example",
+      "value": {
+        "scope": "ONLY_CURRENT_REFERENCE_ZAOAN_HELMET_AND_PROTECTION_AMULET_EXAMPLE",
+        "original_damage": 200,
+        "percentage_steps": [
+          {
+            "item": "Zaoan Helmet",
+            "reduction_bps": 500,
+            "damage_after_step": 190
+          },
+          {
+            "item": "Protection Amulet",
+            "reduction_bps": 600,
+            "damage_after_step": 178
+          }
+        ],
+        "reference_percentage_rounding": "FLOOR_REMAINING_DAMAGE_AFTER_EACH_ITEM",
+        "total_armor": 9,
+        "reference_armor_reduction_range": [
+          4,
+          7
+        ],
+        "reference_damage_after_armor_range": [
+          171,
+          174
+        ],
+        "reference_armor_stage": "AFTER_PERCENTAGE_REDUCTION_IN_THIS_EXAMPLE",
+        "imbuement_and_native_composition": null,
+        "wheel_order": null,
+        "arbitrary_equipment_order": null,
+        "current_global_runtime_applicability": null
+      },
+      "status": "CURRENT_DATED_COMMUNITY_EXPLICIT_BOUNDED_NATIVE_EXAMPLE",
+      "evidence": [
+        "fandom_formulae_1205374"
+      ],
+      "notes": "Current public Formulae1205374 supplies this named native equipment example and places its armor subtraction after iterative percentage reduction. Its floor rule and armor stage differ from the pinned engines native std::round and Creature::blockHit-before-player-reduction ordering. Preserve the exact example as a community reference; do not infer arbitrary imbuement/native/Wheel composition or current proprietary Global code.",
+      "target_time_status": "CURRENT_DATED_COMMUNITY_EXAMPLE_NOT_GLOBAL_RUNTIME_OBSERVATION"
     }
   ],
   "excluded_test_server_changes": [
@@ -927,7 +1056,7 @@
     },
     {
       "url": "https://web.archive.org/web/20260113015644/https://tibia.fandom.com/wiki/Life_Leech",
-      "result": "New full public archive revision1101811 was read via ordinary HTTP200. Snapshot13January2026 proves pre-target availability of Life-specific prey exclusion text, not publication date, later continuity or gameplay telemetry."
+      "result": "New full public archive revision1101811 was read via ordinary HTTP200. Snapshot13January2026 proves historical availability of Life-specific prey exclusion text, not publication date, later continuity or gameplay telemetry."
     }
   ],
   "engine_combat_hypotheses": [
@@ -1100,9 +1229,9 @@
   "source_conflicts": [
     {
       "field": "leech overkill basis",
-      "global_reference": "mana_leech_current_reference_formula: post-target Formulae1205374 explicit overkill counts for mana; generic or target-date lifecycle remains unknown",
+      "global_reference": "mana_leech_current_reference_formula: current dated Formulae1205374 explicit overkill counts for mana; generic lifecycle remains unknown",
       "crystal_imbuements": "actual health removed; damage is clamped to remaining target health",
-      "resolution": "Preserve this post-target community mana observation separately from the Crystal hypothesis; do not substitute remainingHP clipping or claim July28continuity."
+      "resolution": "Preserve this current dated community mana reference separately from the Crystal hypothesis; do not substitute remainingHP clipping or claim universal Global runtime behavior."
     },
     {
       "field": "elemental protection composition",
@@ -1114,14 +1243,15 @@
       "field": "Vibrancy PvP additional-attack success gate",
       "family_page_claim": "It always deflects additional paralysis attacks if initially successful",
       "tier_page_claim": "Always deflects PvP paralysis upon additional paralyse attacks; qualification omitted from the retrieved excerpts",
-      "resolution": "Complete public pre-target family archive corroborates the success qualification; current tier indexed excerpts omit it. Exact success-state predicate/lifetime/reset and target-date continuity remain unqualified; no unconditional selected boolean.",
-      "archived_family_source": "fandom_vibrancy_archive_2025"
+      "resolution": "Current complete public family text and historical archive agree on the initial-success qualification. Shorter tier indexed excerpts omit it; retain the qualification. Definition/lifetime/reset of the success state is still unspecified; no unconditional selected boolean.",
+      "archived_family_source": "fandom_vibrancy_archive_2025",
+      "current_full_family_source": "fandom_vibrancy_current_1194726"
     },
     {
       "field": "mana leech per-target integer rounding",
       "current_community_reference": "Formulae1205374: each target ceiling before sum",
       "crystal_imbuements": "nearest integer lround with clamp to realDamage",
-      "resolution": "Current public community statement is not a July28runtime observation; preserve discrepancy and Life Leech uncertainty."
+      "resolution": "Current public community statement is not Global runtime telemetry; preserve discrepancy and Life Leech uncertainty."
     },
     {
       "topic": "Life Leech rounding in reported equal-hit examples",
@@ -1144,6 +1274,14 @@
       "resolution": "KEEP_HISTORICAL_EXAMPLES_ONLY_NO_CURRENT_ALGORITHM_SELECTED",
       "current_native_ammo_rule": null,
       "current_timer_rule": null
+    },
+    {
+      "id": "native_percentage_reduction_reference_vs_engine",
+      "bounded_profile": "native_equipment_percentage_reduction_example",
+      "public_reference": "Formulae1205374 named native pair: floor remaining damage at each item, then armor subtraction",
+      "engine_behavior": "All pinned engines call Creature::blockHit before player item reduction; imbuement reduction uses ceil removed damage and native same-item absorb uses std::round removed damage",
+      "resolution": "Preserve bounded public example and OTS source algorithms separately; no universal Global pipeline selected",
+      "current_global_pipeline": null
     }
   ]
 }

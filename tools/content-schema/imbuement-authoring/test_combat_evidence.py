@@ -183,7 +183,7 @@ class CombatEvidenceTests(unittest.TestCase):
         self.mutation_rejected(lambda p: charm(p).update(scope="ALL_CURRENT_CHARMS"))
         self.mutation_rejected(lambda p: charm(p).update(other_charms={"low_blow": False}))
         self.mutation_rejected(lambda p: charm(p).update(current_target_continuity=True))
-        self.mutation_rejected(lambda p: charm(p).update(gameplay_calendar_date="2026-07-28"))
+        self.mutation_rejected(lambda p: charm(p).update(gameplay_calendar_date="2026-10-01"))
         self.mutation_rejected(lambda p: charm(p)["reported_to_trigger_imbuement_leech"].update(parry=0))
 
     def test_captured_report_dates_raw_bytes_and_revision_history_are_pinned(self):
@@ -192,7 +192,7 @@ class CombatEvidenceTests(unittest.TestCase):
                 def source(packet):
                     return next(s for s in packet["sources"] if s["id"] == source_id)
                 self.mutation_rejected(lambda p: source(p).update(sha256="0" * 64))
-                self.mutation_rejected(lambda p: source(p).update(published_on="2026-07-28"))
+                self.mutation_rejected(lambda p: source(p).update(published_on="2026-10-01"))
                 self.mutation_rejected(lambda p: source(p).update(role="PRIMARY_OFFICIAL"))
                 self.mutation_rejected(lambda p: source(p).update(target_time_status="TARGET_CERTIFIED"))
         self.mutation_rejected(lambda p: next(s for s in p["sources"]
@@ -270,7 +270,7 @@ class CombatEvidenceTests(unittest.TestCase):
         def source(packet):
             return next(s for s in packet["sources"]
                 if s["id"] == "tibiaqa_basic_frost_elemental_ammo_2021")
-        self.mutation_rejected(lambda p: source(p).update(trial_count_comment_at="2026-07-28T12:00:00Z"))
+        self.mutation_rejected(lambda p: source(p).update(trial_count_comment_at="2026-10-01T12:00:00Z"))
         self.mutation_rejected(lambda p: source(p)["selected_claims"].update(author="CipSoft"))
         def forge(packet):
             captured = source(packet)
@@ -341,7 +341,7 @@ class CombatEvidenceTests(unittest.TestCase):
             self.assertEqual(captured["access_status"], "FULL_PUBLIC_ARCHIVED_COMMUNITY_HTML")
             for change in ({"published_on": captured["archive_snapshot_at"][:10]},
                            {"revision_timestamp": captured["archive_snapshot_at"]},
-                           {"archive_snapshot_at": "2026-07-28T10:00:00Z"},
+                           {"archive_snapshot_at": "2026-10-01T10:00:00Z"},
                            {"revision": 1197205}, {"sha256": "0" * 64},
                            {"role": "PRIMARY_OFFICIAL"},
                            {"digest_scope": "EXACT_TARGET_GAMEPLAY_LOG"}):
@@ -369,7 +369,7 @@ class CombatEvidenceTests(unittest.TestCase):
             self.mutation_rejected(remove_archive)
 
     def test_new_life_reference_preserves_all_seven_unresolved_profiles(self):
-        self.assertEqual(len(self.packet["rules"]), 17)
+        self.assertEqual(len(self.packet["rules"]), 18)
         unresolved = {r["id"] for r in self.packet["rules"] if r["value"] is None}
         self.assertEqual(unresolved, {
             "leech_rounding", "leech_unequal_damage_and_overkill_order",
@@ -380,6 +380,89 @@ class CombatEvidenceTests(unittest.TestCase):
             if r["id"] == "life_leech_damage_prey_exclusion").update(
                 target_time_status="EXACT_TARGET_GLOBAL_OBSERVATION"))
 
+
+    def test_current_vibrancy_full_text_cannot_be_removed_or_supply_a_gate_lifetime(self):
+        for name in ("vibrancy_sequence", "vibrancy_pvp_gate"):
+            self.mutation_rejected(lambda p, rid=name: next(r for r in p["rules"]
+                if r["id"] == rid)["evidence"].remove("fandom_vibrancy_current_1194726"))
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "vibrancy_pvp_gate").update(
+                value={"initial_success": "FIRST_RECOVERY", "lifetime": "UNTIL_UNEQUIPPED"}))
+        source = next(s for s in self.packet["sources"]
+            if s["id"] == "fandom_vibrancy_current_1194726")
+        self.assertEqual(source["revision"], 1194726)
+        self.assertIsNone(source["selected_claims"]["success_state_lifetime"])
+        self.assertIsNone(source["selected_claims"]["success_state_reset"])
+
+    def test_native_reference_engine_discrepancy_cannot_be_erased_or_resolved_as_global(self):
+        def conflict(packet):
+            return next(c for c in packet["source_conflicts"]
+                if c.get("id") == "native_percentage_reduction_reference_vs_engine")
+        self.assertIsNone(conflict(self.packet)["current_global_pipeline"])
+        self.mutation_rejected(lambda p: p["source_conflicts"].remove(conflict(p)))
+        self.mutation_rejected(lambda p: conflict(p).update(current_global_pipeline="ENGINE"))
+
+    def test_current_evaluation_date_does_not_promote_historical_rounding_reports(self):
+        self.assertEqual(self.packet["target"], "global-tibia-current-2026-10-01")
+        self.mutation_rejected(lambda p: p.update(
+            target="global-tibia-observable-2026-07-28-post-server-save"))
+        mana = next(r for r in self.packet["rules"]
+            if r["id"] == "mana_leech_current_reference_formula")
+        self.assertEqual(mana["status"], "CURRENT_DATED_COMMUNITY_EXPLICIT_MANA_ONLY")
+        self.assertEqual(mana["value"]["scope"], "MANA_LEECH_ONLY")
+        self.assertEqual(mana["target_time_status"],
+            "CURRENT_DATED_COMMUNITY_REVISION_NOT_GLOBAL_RUNTIME_OBSERVATION")
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "mana_leech_current_reference_formula").update(
+                status="POST_TARGET_COMMUNITY_EXPLICIT_MANA_ONLY"))
+        for rule_id in ("life_leech_reported_equal_hit_ceiling",
+                        "ranged_elemental_ammo_reported_cases"):
+            rule = next(r for r in self.packet["rules"] if r["id"] == rule_id)
+            self.assertTrue(rule["target_time_status"].startswith("HISTORICAL_"))
+            self.mutation_rejected(lambda p, name=rule_id: next(r for r in p["rules"]
+                if r["id"] == name).update(target_time_status=
+                    "CURRENT_DATED_COMMUNITY_REVISION_NOT_GLOBAL_RUNTIME_OBSERVATION"))
+
+    def test_current_life_prey_corroboration_keeps_the_mana_formula_life_boundary(self):
+        rule = next(r for r in self.packet["rules"]
+            if r["id"] == "life_leech_damage_prey_exclusion")
+        self.assertEqual(set(rule["evidence"]), {
+            "fandom_life_archive_2026", "fandom_formulae_1205374",
+            "fandom_life_current_1101811"})
+        self.assertEqual(rule["status"], "CURRENT_COMMUNITY_EXPLICIT_LIFE_PREY_ONLY")
+        self.assertIsNone(rule["value"]["rounding"])
+        self.assertIsNone(rule["value"]["overkill_basis"])
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "life_leech_damage_prey_exclusion").update(
+                evidence=["fandom_formulae_1205374"]))
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "leech_rounding").update(value="ceil"))
+
+    def test_native_reference_pair_is_iterative_not_additive_or_a_generic_pipeline(self):
+        def value(packet):
+            return next(r for r in packet["rules"]
+                if r["id"] == "native_equipment_percentage_reduction_example")["value"]
+        selected = value(self.packet)
+        damage = selected["original_damage"]
+        for step in selected["percentage_steps"]:
+            damage = damage * (10000 - step["reduction_bps"]) // 10000
+            self.assertEqual(damage, step["damage_after_step"])
+        self.assertEqual(damage, 178)
+        # This particular final integer coincides with additive reduction;
+        # the reference establishes its stages, not a discriminating hit log.
+        self.assertNotEqual(Fraction(190 * (10000 - 600), 10000),
+                            Fraction(200 * (10000 - 500 - 600), 10000))
+        self.assertEqual([damage - 7, damage - 4],
+            selected["reference_damage_after_armor_range"])
+        for change in ({"scope": "ALL_EQUIPMENT_AND_IMBUEMENTS"},
+                       {"reference_percentage_rounding": "ROUND_REMOVED_DAMAGE"},
+                       {"reference_armor_stage": "BEFORE_PERCENTAGE_REDUCTION"},
+                       {"imbuement_and_native_composition": "SUM"},
+                       {"wheel_order": "LAST"},
+                       {"current_global_runtime_applicability": True}):
+            self.mutation_rejected(lambda p, c=change: value(p).update(c))
+        self.mutation_rejected(lambda p: next(r for r in p["rules"]
+            if r["id"] == "protection_equipment_composition").update(value="multiply"))
 
 if __name__ == "__main__":
     unittest.main()

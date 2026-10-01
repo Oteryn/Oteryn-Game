@@ -70,7 +70,7 @@ class ImbuementAuthoringTests(unittest.TestCase):
     def test_completion_does_not_admit_post_target_item_or_proposed_refs(self):
         report = authoring.comparison()["completion"]
         self.assertEqual(report["current_equipment_typed"], 629)
-        self.assertEqual(report["target_equipment_typed"], 628)
+        self.assertEqual(report["target_equipment_typed"], 629)
         self.assertEqual(report["target_existing_item_refs"], 627)
         self.assertEqual(report["validated_missing_item_proposals"], 2)
         self.assertEqual(report["gold_token_exchange_bundles"], 9)

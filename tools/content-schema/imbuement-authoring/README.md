@@ -1,6 +1,10 @@
 # Imbuement authoring and Global parity audit
 
-The owner requested complete imbuement definitions and a check against Global Tibia.
+The owner requested complete current imbuement definitions and a check against
+Global Tibia as of **2026-10-01**, rather than a historical July snapshot.
+The original source-facts packet retains its historical decision target as immutable
+capture provenance. The active catalogue/schema target comes from the current Global
+ledger; it includes Sailor's Backpack and September Formulae evidence.
 This draft contains the 24 types and 72 tiers, resolved material and scroll Item
 references, source-defined quest predicates, a census of every client item with
 imbuement slots, and a field-by-field evidence ledger. It remains a reviewable
@@ -24,7 +28,9 @@ The ruleset destination from the full-game tree remains
 | `samples/imbuement-access.json` | All 72 direct shrine routes, scroll routes and exact Powerful unlock alternatives, including claim actions after bosses. |
 | `samples/imbuement-eligibility.json` | Exhaustive 663-item client census with primary slots, per-source type/tier claims, discrepancies and explicit missing evidence. |
 | `samples/global-rules-evidence.json` | Source-qualified rules, concrete transaction/timer hypotheses, architecture conflicts and observation requirements. |
-| `samples/global-observation-plan.json` | All 12 remaining scopes with 28 prospective evidence scenarios, required capture fields and resolved source/rule references; zero observations are claimed. |
+| `samples/current-behavior-answers.json` | Twelve original questions: one owner scope resolution and eleven concrete answer groups across three engines, with 67 full source-file pins and separate Global evidence. |
+| `current-behavior-answers.md` | Readable current answer table and implementation disagreements. |
+| `samples/global-observation-plan.json` | Qualified behavioral observation requirements; the date-snapshot question is resolved by the owner's current-data scope. Current engine-answer references are delivered in `current-behavior-answers.json`; no gameplay observations are claimed. |
 | `samples/imbuement-combat.json` | Sourced Vibrancy sequence, bounded AoE leech formula, engine hypotheses and rejected test-server generalizations. |
 | `samples/crystal-imbuements-evidence.json` | Additional owner-supplied `imbuements` branch: 72 XML records, 13 pinned source files, execution facts and nine token exchanges. |
 | `samples/missing-item-definitions.json`, `samples/missing-item-source-facts.json` | Two concrete Item authoring proposals with primary flags, capacity, weight, slots, acquisition, source revisions and target dates; owning Item validation passes. |
@@ -59,7 +65,7 @@ The ruleset destination from the full-game tree remains
    Initial Fandom extraction failed. Remote Desktop + Chrome/CDP subsequently
    read Imbuing revision 1194750 (2026-07-07), Critical Hit 1113308 (2025-07-24),
    Vibrancy 1194726 (2026-07-06) and Formulae 1205374 (2026-09-07), with public
-   revision timestamps. Formulae is post-target community evidence. Archived
+   revision timestamps. The September Formulae revision is current community evidence. Archived
    Formulae revision 1197205 required login and was not read. Recipe/effect
    corroboration remains community-derived.
 4. **Engine hypotheses.**
@@ -67,7 +73,8 @@ The ruleset destination from the full-game tree remains
    [Crystal summer-update 00ce02a57ca5a12e48f32a3476e37471167e4c3f](https://github.com/zimbadev/crystalserver/tree/00ce02a57ca5a12e48f32a3476e37471167e4c3f),
    and the additional owner-supplied [Crystal imbuements 15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1](https://github.com/zimbadev/crystalserver/tree/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1).
    Imbuement and Item XML facts are compared by qualified identity, not document
-   position. They remain `OTS_HYPOTHESIS_ONLY` and cannot close a Global evidence gap.
+   position. Their code answers questions about those pinned implementations;
+   `OTS_HYPOTHESIS_ONLY` does not automatically establish Global behavior.
 
 Research used the Tavily search/extract connector, with five independent agent
 lanes for rules, identities, per-item eligibility, quest predicates and the
@@ -129,10 +136,10 @@ from `content/quests/definitions/`, so no fake runtime Quest reference is minted
 
 ## Verification limits and admission
 
-The immutable repository target remains
-`global-tibia-observable-2026-07-28-post-server-save`. Current retrieved pages and
-a versioned client file are evidence, not a blanket proof of every server rule at
-that exact timestamp. The ledger preserves temporal qualification for each claim.
+The active target is **`global-tibia-current-2026-10-01`**. The owner resolved the
+historical date-snapshot question by requesting current data. Genuine source
+revision, archive and release dates remain recorded; current community pages and
+a versioned client file do not establish every hidden Global server rule.
 
 The eligibility census records all 663 client slot items. Types and maximum tiers
 are filled for 629 current items: 607 direct Tibiopedia tables and 22 explicit
@@ -158,11 +165,10 @@ fills the candidate without calling community data verified server behavior.
 The packet records zero officially verified per-item allow lists. Exact counts,
 affected names and per-source claims live in its `summary` and `items` records.
 
-Current item existence and the frozen target are checked separately. Sailor's
-Backpack was introduced on **2026-08-04**, after the **2026-07-28** target; it is
-excluded from that target while its current facts and proposal are preserved.
-The target therefore has **628 typed candidates**, **627 existing canonical
-references**, and one source-filled proposal for Bursa Obscura. The 30 legacy
+Sailor's Backpack was introduced on **2026-08-04** and is included in the current
+target. The current target therefore has **629 typed candidates**, **627 existing
+canonical references**, and two source-filled, unregistered proposals: Bursa
+Obscura and Sailor's Backpack. The 30 legacy
 items were withdrawn on 2017-12-05. Client presence alone proves neither live
 release nor availability. A dated 2024-01-23 patch also corrects Stoic Iks Casque's
 Epiphany maximum from tier 1 to **tier 2**, preserving the old helper value.
@@ -181,15 +187,13 @@ the selected recovery sequence and are not loaded. Basic scrolls are absent from
 its action, quest storage is passed as a boolean, and custom assistant packages
 are not Global NPC evidence. Etcher consumption, equipped-scroll targets, timer
 configuration, leech rounding and protection composition have concrete code
-anchors; those anchors remain engine hypotheses.
+anchors and verified source-code answers; equivalence with Global remains separately qualified.
 
-Fine-grained timers, leech/critical composition, etcher consumption, equipped
-scroll target acceptance, the exact Vibrancy PvP success gate and target-time
-continuity retain explicit
-observation requirements. The ledger records attempted sources and distinguishes unresolved observations
-from operational topics that still require further evidence. Public recipe tables cannot prove
-server transactions.
-They are not filled with arbitrary values to make the catalogue appear complete.
+Fine-grained timers, leech/critical composition, Etcher consumption, equipped
+scroll target acceptance and the Vibrancy PvP success gate have concrete
+Canary/Crystal code anchors. The current-behavior answer matrix and its catalogue
+references are delivered in `current-behavior-answers.json`. These engine answers are distinct from
+qualified Global observations; recipe tables alone cannot prove server transactions.
 
 `candidate_key` identifies a local authoring definition. Percentages use integer
 basis points (`100 = 1%`), skill/speed bonuses use points, and duration is
@@ -205,8 +209,9 @@ Critical effects explicitly carry `ADDITIVE_IMBUEMENT_MODIFIER` semantics. The
 `critical_intrinsic_baseline` rule lives separately in the Global ledger; adding
 it once produces isolated totals of 10% chance and +15/25/50% damage. Other
 equipment, proficiency and combat interactions are not implied by this example.
-The post-target Formulae page supplies a mana-specific per-target ceiling and
-overkill formula. It does not close life-leech rounding or prove the July target.
+The Formulae revision dated **2026-09-07** supplies current community evidence for
+a mana-specific per-target ceiling and overkill formula. Its mana-specific scope
+does not establish general life-leech rounding.
 Separate historical Life evidence now exists: a public answer and revision history
 dated 2020-02-28 report per-target Avalanche damage/healing logs for 1–4 Dragon
 Lords, wearing one Powerful Vampirism armour and no wand. The reported examples
@@ -226,8 +231,9 @@ slot: a rounded display alone does not prove expiration or exact internal second
 Every unresolved scope has a concrete evidence requirement in the observation
 plan, including version/time context, before/after resources, item identity and
 timer/combat observations. All scenarios are `PLANNED_NOT_OBSERVED`, with no
-expected Global result selected. Current recordings cannot reconstruct the
-historical target or certify hidden server atomicity. These are research limits,
+expected Global result selected. Public observations cannot certify hidden
+server atomicity. The current engine-answer matrix is delivered in `current-behavior-answers.json`;
+source-qualified engine answers do not automatically become Global results. These are research limits,
 not missing definition/recipe rows; the catalogue covers all 24 families and 72 tiers.
 
 Runtime activation stays `DRAFT_NOT_RUNTIME_READY`. Implementing the proposed
@@ -261,8 +267,8 @@ actual execution differences and source-name/ID-space qualifications.
 
 The owner-directed completion batch and the split between research limits and
 implementation owners are recorded in [completion-handoff.md](completion-handoff.md).
-It includes all 12 remaining evidence scopes and the disposition of all 101
-helper/native eligibility differences. Filled source profiles are not verified
+It records the resolved current-date scope, behavioral evidence qualifications
+and the disposition of all 101 helper/native eligibility differences. Filled source profiles are not verified
 server allowlists, and the canonical/runtime boundary remains blocked.
 
 ```sh
@@ -272,6 +278,7 @@ python tools/content-schema/imbuement-authoring/eligibility_evidence.py --check
 python tools/content-schema/imbuement-authoring/missing_item_proposals.py --check
 python tools/content-schema/imbuement-authoring/combat_evidence.py --check
 python tools/content-schema/imbuement-authoring/newbranch_evidence.py --check
+python tools/content-schema/imbuement-authoring/behavior_answers.py --check
 python tools/content-schema/imbuement-authoring/imbuement_authoring.py build --check
 python tools/content-schema/imbuement-authoring/imbuement_authoring.py validate
 python -m unittest discover -s tools/content-schema/imbuement-authoring -p 'test_*.py'

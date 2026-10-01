@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_IMBUEMENT_GLOBAL_OBSERVATION_PLAN/v1",
   "activation": "DRAFT_NOT_RUNTIME_READY",
-  "target": "global-tibia-observable-2026-07-28-post-server-save",
+  "target": "global-tibia-current-2026-10-01",
   "status": "PUBLIC_EVIDENCE_NOT_SUFFICIENT",
   "plan_scope": "Data/schema/research completion plan for the existing draft; no runtime activation or implementation. Scenarios are prospective public-evidence requirements, not executed tests or Global facts.",
   "created_on": "2026-10-01",
@@ -97,78 +97,6 @@
     ]
   },
   "requirements": [
-    {
-      "id": "exact_target_snapshot",
-      "status": "PUBLIC_EVIDENCE_NOT_SUFFICIENT",
-      "ledger_ref": {
-        "catalogue": "global-rules-evidence.json",
-        "section": "unresolved",
-        "id": "exact_target_snapshot"
-      },
-      "related_rule_refs": [],
-      "source_refs": [
-        {
-          "catalogue": "global-rules-evidence.json",
-          "id": "official_manual"
-        },
-        {
-          "catalogue": "global-rules-evidence.json",
-          "id": "wiki_br_imbuements"
-        },
-        {
-          "catalogue": "global-rules-evidence.json",
-          "id": "official_news_8436_release"
-        },
-        {
-          "catalogue": "global-rules-evidence.json",
-          "id": "fandom_formulae_full"
-        },
-        {
-          "catalogue": "global-rules-evidence.json",
-          "id": "fandom_imbuing_archive_2026_05_22"
-        }
-      ],
-      "source_and_capture_limitations": [
-        "Current manual/wiki retrieval dates do not reconstruct an immutable Global configuration on 2026-07-28 post-server-save.",
-        "Formulae 1205374 is dated 2026-09-07; earlier 1197205 metadata exists but its archived content was login-restricted and unread.",
-        "Targeted public Wayback availability queries returned nearest Imbuing22May2026 and BRImbuements16February2026; no exact28July snapshot was returned for these queries. Public archives do not certify immutable Global server configuration or hidden mechanics."
-      ],
-      "scenarios": [
-        {
-          "id": "target_historical_public_capture",
-          "method": "DATED_PUBLIC_RECORDING_OR_LOG",
-          "status": "PLANNED_NOT_OBSERVED",
-          "capture_group_refs": [
-            "public_context"
-          ],
-          "capture_fields": [
-            "public_artifact_url",
-            "artifact_publication_date",
-            "continuous_capture_timestamps",
-            "visible_client_version",
-            "world_and_server_save_context",
-            "character_level_and_vocation",
-            "visible_premium_and_quest_access_context",
-            "procedure_start_and_end_utc",
-            "monotonic_elapsed_time",
-            "observable_success_or_rejection_messages",
-            "historical_capture_date_provenance",
-            "archived_revision_or_release_identity",
-            "exact_claim_scope_and_unobserved_fields"
-          ],
-          "procedures": [
-            "Locate an already-public recording, dated guide revision or release record covering 2026-07-28 after server save, with visible version/world/context.",
-            "Preserve original public URL, publication/capture dates and literal relevant evidence; distinguish recording date from upload date.",
-            "Map each supported claim to its exact scope; leave other target fields unqualified."
-          ],
-          "expected_global_result": null,
-          "visible_claim_only": [
-            "Only an adequately dated historical public artifact can supply historical target observations; current tests cannot recover this target snapshot."
-          ]
-        }
-      ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
-    },
     {
       "id": "etcher_consumption",
       "status": "PUBLIC_EVIDENCE_NOT_SUFFICIENT",
@@ -309,7 +237,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#etcher_consumption"
     },
     {
       "id": "scroll_application_equipped_target",
@@ -463,7 +392,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#scroll_application_equipped_target"
     },
     {
       "id": "fine_grained_timers",
@@ -525,7 +455,7 @@
         "Existing dated community descriptions distinguish utility/equipped-online from combat timers but do not resolve exact boundaries.",
         "PZ can hide Logout Block; icon absence is not proof of an expired combat deadline.",
         "Minute-only duration displays cannot establish subminute ticks or exact remaining milliseconds.",
-        "Full pre-target Swiftness equipped+online outside-combat wording is now corroborated by public11December2025 archive. Exact PZ/combat deadlines, tick precision, logout/save/restore and transfer boundaries remain unqualified."
+        "Full dated historical Swiftness equipped+online outside-combat wording is now corroborated by public11December2025 archive. Exact PZ/combat deadlines, tick precision, logout/save/restore and transfer boundaries remain unqualified."
       ],
       "scenarios": [
         {
@@ -724,7 +654,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#fine_grained_timers"
     },
     {
       "id": "combat_pipeline",
@@ -1010,7 +941,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#combat_pipeline"
     },
     {
       "id": "vibrancy_pvp_gate",
@@ -1059,7 +991,7 @@
       "source_and_capture_limitations": [
         "Family wording includes if initially successful; indexed tier excerpts omit this gate.",
         "Historical release reflection removal does not define present additional-attack deflection lifetime or resets.",
-        "Full pre-target family wording is now supplied by public18May2025 archive; missing successful-state predicate, lifetime/reset and target continuity remain unqualified."
+        "Full dated historical family wording is now supplied by public18May2025 archive; missing successful-state predicate, lifetime/reset and target continuity remain unqualified."
       ],
       "scenarios": [
         {
@@ -1160,7 +1092,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#vibrancy_pvp_gate"
     },
     {
       "id": "transaction_payment_sources",
@@ -1303,7 +1236,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#transaction_payment_sources"
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
@@ -1437,7 +1371,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback"
     },
     {
       "id": "native_effect_composition",
@@ -1609,7 +1544,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#native_effect_composition"
     },
     {
       "id": "transfer_preserves_imbuement_state_and_remaining_duration",
@@ -1664,7 +1600,7 @@
         "Display quantization and unrecorded equipped-online time can hide decrement differences; distinguish item copies by visible attributes.",
         "Historical community Market evidence concerns listing classic equipment with active imbuements; it does not establish a ban on player trade, mail, container movement or every ownership-transfer route. Completed-scroll Market behavior is a separate scope.",
         "The historical official Exaltation Forge restriction concerns unimbued input items for fusion and tier transfer. Forge tier transfer is distinct from transferring item ownership between players; this scoped prerequisite does not establish a blanket transfer ban.",
-        "These historical Market and Forge prerequisites provide route context, not before/after proof of preserved imbuement state or precise remaining duration, nor certification of the exact 2026-07-28 target snapshot."
+        "These historical Market and Forge prerequisites provide route context, not before/after proof of preserved imbuement state or precise remaining duration, nor certification of the complete current Global hidden implementation."
       ],
       "scenarios": [
         {
@@ -1900,7 +1836,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration"
     },
     {
       "id": "etcher_npc_purchase_requires_premium",
@@ -1991,7 +1928,8 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium"
     },
     {
       "id": "scroll_consumption",
@@ -2133,15 +2071,16 @@
           ]
         }
       ],
-      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan."
+      "hidden_server_semantics": "Public before/after views establish visible net changes only; they cannot certify internal atomicity, locking, rollback implementation or persistence storage. Runtime design and implementation are outside this data/schema/research plan.",
+      "engine_answer_profile": "current-behavior-answers.json#scroll_consumption"
     }
   ],
   "counts": {
-    "planned_requirements": 12,
-    "planned_scenarios": 28,
+    "planned_requirements": 11,
+    "planned_scenarios": 27,
     "observations_collected_by_this_plan": 0
   },
-  "historical_target_limit": "Contemporary observations cannot recover an immutable2026-07-28 configuration. Historical parity requires separately dated public artifacts; successful current recordings remain current observations.",
+  "historical_target_limit": "Current research target is2026-10-01. Historical captures remain source provenance; an immutable July28 configuration is not required. Planned recordings cover only residual Global details beyond the concrete sourced engine answers.",
   "interpretation_limits": [
     "No expected Global outcomes are invented: every scenario expected_global_result is null.",
     "Positive and rejected outcomes must both be preserved; public source excerpts and before/after views qualify only visible behavior at recorded precision.",

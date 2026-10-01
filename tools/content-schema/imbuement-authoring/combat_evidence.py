@@ -9,17 +9,19 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PACKET = HERE / "samples/imbuement-combat.json"
+TARGET = "global-tibia-current-2026-10-01"
 RULE_STATUSES = {
+    "native_equipment_percentage_reduction_example": "CURRENT_DATED_COMMUNITY_EXPLICIT_BOUNDED_NATIVE_EXAMPLE",
     "vibrancy_sequence": "PRIMARY_INDEXED_WITH_COMMUNITY_CORROBORATION",
     "leech_equal_damage_aoe_scaling": "COMMUNITY_EXPLICIT",
     "vibrancy_reflection_removed_at_release": "PRIMARY_OFFICIAL_HISTORICAL_RELEASE",
-    "mana_leech_current_reference_formula": "POST_TARGET_COMMUNITY_EXPLICIT_MANA_ONLY",
+    "mana_leech_current_reference_formula": "CURRENT_DATED_COMMUNITY_EXPLICIT_MANA_ONLY",
     "leech_two_powerful_equipment_pairs": "DATED_COMMUNITY_EXPLICIT_BOUNDED_PAIRS",
     "life_leech_reported_equal_hit_ceiling": "DATED_COMMUNITY_GAMEPLAY_REPORTED_EXAMPLES",
     "mana_leech_wheel_equipment_example": "DATED_COMMUNITY_EXPLICIT_WHEEL_MANA_EXAMPLE",
     "leech_elemental_parry_wound_reported_exclusions": "DATED_COMMUNITY_REPORTED_CHARM_TEST",
     "ranged_elemental_ammo_reported_cases": "DATED_COMMUNITY_REPORTED_RANGED_AMMO_FIELD_STUDY",
-    "life_leech_damage_prey_exclusion": "ARCHIVED_PRE_TARGET_COMMUNITY_EXPLICIT_LIFE_ONLY",
+    "life_leech_damage_prey_exclusion": "CURRENT_COMMUNITY_EXPLICIT_LIFE_PREY_ONLY",
     **{name: "PUBLIC_EVIDENCE_UNRESOLVED" for name in (
         "leech_rounding", "leech_unequal_damage_and_overkill_order",
         "vibrancy_reflection_current", "critical_healing_scope",
@@ -37,6 +39,20 @@ MANA_VALUE = {
         {"damage_by_target": [101], "leech_share_bps": 800, "total_mana": 9},
         {"damage_by_target": [100, 900], "leech_share_bps": 800, "total_mana": 45},
     ],
+}
+NATIVE_PERCENTAGE_EXAMPLE = {
+    "scope": "ONLY_CURRENT_REFERENCE_ZAOAN_HELMET_AND_PROTECTION_AMULET_EXAMPLE",
+    "original_damage": 200,
+    "percentage_steps": [
+        {"item": "Zaoan Helmet", "reduction_bps": 500, "damage_after_step": 190},
+        {"item": "Protection Amulet", "reduction_bps": 600, "damage_after_step": 178},
+    ],
+    "reference_percentage_rounding": "FLOOR_REMAINING_DAMAGE_AFTER_EACH_ITEM",
+    "total_armor": 9, "reference_armor_reduction_range": [4, 7],
+    "reference_damage_after_armor_range": [171, 174],
+    "reference_armor_stage": "AFTER_PERCENTAGE_REDUCTION_IN_THIS_EXAMPLE",
+    "imbuement_and_native_composition": None, "wheel_order": None,
+    "arbitrary_equipment_order": None, "current_global_runtime_applicability": None,
 }
 LIFE_PREY_VALUE = {
     "scope": "LIFE_LEECH_REFERENCE_ONLY", "damage_prey_bonus_included": False,
@@ -108,32 +124,43 @@ RANGED_REFERENCE_CONFLICT = {
     "current_native_ammo_rule": None, "current_timer_rule": None,
 }
 NEW_RULES = {
+    "native_equipment_percentage_reduction_example": (
+        NATIVE_PERCENTAGE_EXAMPLE, "CURRENT_DATED_COMMUNITY_EXAMPLE_NOT_GLOBAL_RUNTIME_OBSERVATION",
+        {"fandom_formulae_1205374"}),
     "life_leech_damage_prey_exclusion": (
-        LIFE_PREY_VALUE, "ARCHIVE_2026_01_13_BEFORE_TARGET_NOT_EXACT_TARGET_OBSERVATION",
-        {"fandom_life_archive_2026"}),
+        LIFE_PREY_VALUE, "CURRENT_LIFE_AND_DATED_HEALTH_LEECH_PREY_REFERENCE_WITH_HISTORICAL_CORROBORATION",
+        {"fandom_life_archive_2026", "fandom_formulae_1205374", "fandom_life_current_1101811"}),
     "vibrancy_reflection_removed_at_release": (
         {"reflect_to_attacker": False, "scope": "LIVE_RELEASE_2018_12_03_ONLY"},
         "HISTORICAL_RELEASE_CONFIRMED_CURRENT_CONTINUITY_UNQUALIFIED",
         {"official_vibrancy_release_4828"}),
     "mana_leech_current_reference_formula": (
-        MANA_VALUE, "POST_TARGET_COMMUNITY_REVISION_NOT_TARGET_CERTIFIED", {"fandom_formulae_1205374"}),
+        MANA_VALUE, "CURRENT_DATED_COMMUNITY_REVISION_NOT_GLOBAL_RUNTIME_OBSERVATION", {"fandom_formulae_1205374"}),
     "leech_two_powerful_equipment_pairs": (
-        PAIR_VALUE, "DATED_PRE_TARGET_COMMUNITY_NOT_EXACT_TARGET_OBSERVATION",
+        PAIR_VALUE, "HISTORICAL_2018_2021_COMMUNITY_NOT_CURRENT_RUNTIME_OBSERVATION",
         {"tibiaqa_two_mana_2018", "tibiaqa_two_leech_pairs_2021"}),
     "life_leech_reported_equal_hit_ceiling": (
-        LIFE_VALUE, "HISTORICAL_2020_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+        LIFE_VALUE, "HISTORICAL_2020_REPORT_NOT_CURRENT_RUNTIME_OBSERVATION",
         {"tibiaqa_life_equal_hit_2020", "tibiaqa_life_answer_revisions_14497"}),
     "mana_leech_wheel_equipment_example": (
-        WHEEL_VALUE, "DATED_2022_COMMUNITY_EXAMPLE_NOT_EXACT_TARGET_OBSERVATION",
+        WHEEL_VALUE, "HISTORICAL_2022_COMMUNITY_EXAMPLE_NOT_CURRENT_RUNTIME_OBSERVATION",
         {"tibiaqa_wheel_void_example_2022"}),
     "leech_elemental_parry_wound_reported_exclusions": (
-        CHARM_VALUE, "HISTORICAL_2020_2021_REPORT_NOT_EXACT_TARGET_OBSERVATION",
+        CHARM_VALUE, "HISTORICAL_2020_2021_REPORT_NOT_CURRENT_RUNTIME_OBSERVATION",
         {"tibiaqa_charm_leech_test_2020"}),
     "ranged_elemental_ammo_reported_cases": (
-        RANGED_AMMO_VALUE, "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_EXACT_TARGET_OBSERVATION",
+        RANGED_AMMO_VALUE, "HISTORICAL_2021_REPORTED_AMMO_CASES_NOT_CURRENT_RUNTIME_OBSERVATION",
         {"tibiaqa_basic_frost_elemental_ammo_2021", "fandom_imbuing_full"}),
 }
 SOURCE_PROFILES = {
+    "fandom_vibrancy_current_1194726": (
+        "https://tibia.fandom.com/wiki/Vibrancy",
+        "a8a2f0587dd651848c74f4e50400a50467dc7b92aea50b8ed8f248614a504315",
+        "FULL_REVISIONED_COMMUNITY_BROWSER_TEXT", "COMMUNITY_GLOBAL_REFERENCE"),
+    "fandom_life_current_1101811": (
+        "https://tibia.fandom.com/wiki/Life_Leech",
+        "039565d317590cea0d35826a70ecf83532285efa3b48f7a17f1ebc395122e83b",
+        "FULL_REVISIONED_COMMUNITY_BROWSER_TEXT", "COMMUNITY_GLOBAL_REFERENCE"),
     'fandom_vibrancy_archive_2025': (
         'https://web.archive.org/web/20250518214227/https://tibia.fandom.com/wiki/Vibrancy',
         'a6145d0d62d71867d6793e92efa51898c87cf2459f5e2185b923d186e854d5ba',
@@ -187,16 +214,21 @@ SOURCE_PROFILES = {
 # These offline checks protect captured bytes, claims, revision links and dates;
 # they do not fetch the source or turn a community report into Global telemetry.
 BOUNDED_SOURCE_RECORD_SHA256 = {
-    'fandom_vibrancy_archive_2025': 'caa29e1f6e6c1c5b1711ed1cbc4c36da56f922d4e68ad70780ca51087f42dac0',
-    'fandom_life_archive_2026': 'ed34805d032fd136f0ea834370aee980f9497c854d22eaf28ced21639247f978',
-    "tibiaqa_life_equal_hit_2020": "690881ab2e0897cab0949e43505083d398325dac6da0589dc735dc6045b6f238",
-    "tibiaqa_life_answer_revisions_14497": "4693b05ac634043ecd67fb0bf428c40bfc2ea18596c82fa055e8fe8042e51d16",
-    "tibiaqa_wheel_void_example_2022": "7c8871b4dc4435324b9848b7887ff0345506e03d882f3bbc595067fece6a5a0c",
-    "tibiaqa_charm_leech_test_2020": "68182e8300f29d3c7a8f30156ca41a552f2e83276ec00661bb25b7d8b907be00",
-    "tibiaqa_basic_frost_elemental_ammo_2021": "70863489377139ec9c4b04be527b31c01ce4db8ff38bbe04c1774719e77b459e",
-    "fandom_imbuing_full": "24a02f33245590d7f7abce0f86ac211d42b9586af90ff53cb9a59b23d2523ead",
+    "fandom_vibrancy_current_1194726": "61b5f6a74f687c6d89f1e2ccaff33098ba37026db7a4709e2e228fbb449c58a4",
+    "fandom_life_current_1101811": "fed3fd2df619f5e95f458e7efddfd2e2959741c189955874732959f9a2b8adbb",
+    "fandom_formulae_1205374": "30e4bc1ba9bd86b4ff26716c21bd50010624e1b637a39d4108f33750680a9ecb",
+    'fandom_vibrancy_archive_2025': 'a808e488e02ca1de01f2b5c5727ecdc0e02e4c07f87393f01a4502c6a290c91c',
+    'fandom_life_archive_2026': 'fe6695794393258c41af4ae90a1515d56cc9791f23f7b0f8fd24e1a11dddfef5',
+    "tibiaqa_life_equal_hit_2020": "94f1f5bd9de7817102011e5e67dd2e8190964c6b31be6a8fe4eaa697abe730b1",
+    "tibiaqa_life_answer_revisions_14497": "f7b394be74de12298949ef92345fdc9e6b906341af5c73b84debe9e7485be10c",
+    "tibiaqa_wheel_void_example_2022": "1e252cf5ec76ebdd93f9a54c496cb0839e79edbd9941614b85ebe8d7f863c192",
+    "tibiaqa_charm_leech_test_2020": "2e259cb41975504a73d299bcd9f20184b63fee1e371b858ac9a63bf8e641ecb7",
+    "tibiaqa_basic_frost_elemental_ammo_2021": "22ce48210f88200145d853b037fe681078ff18d07c79a8f61e75d5b79ff1050b",
+    "fandom_imbuing_full": "0e5e7f209e6b85a3491578b94606857a2b7dc9e86b7c5076e73c55ec3f4cb663",
 }
+NATIVE_REFERENCE_CONFLICT = {'id': 'native_percentage_reduction_reference_vs_engine', 'bounded_profile': 'native_equipment_percentage_reduction_example', 'public_reference': 'Formulae1205374 named native pair: floor remaining damage at each item, then armor subtraction', 'engine_behavior': 'All pinned engines call Creature::blockHit before player item reduction; imbuement reduction uses ceil removed damage and native same-item absorb uses std::round removed damage', 'resolution': 'Preserve bounded public example and OTS source algorithms separately; no universal Global pipeline selected', 'current_global_pipeline': None}
 BOUNDED_LINKS = {
+    "protection_equipment_composition": ["native_equipment_percentage_reduction_example"],
     "leech_rounding": ["mana_leech_current_reference_formula", "life_leech_reported_equal_hit_ceiling"],
     "leech_equipment_composition": ["leech_two_powerful_equipment_pairs", "mana_leech_wheel_equipment_example"],
     "leech_unequal_damage_and_overkill_order": [
@@ -204,9 +236,9 @@ BOUNDED_LINKS = {
         "leech_elemental_parry_wound_reported_exclusions", "life_leech_damage_prey_exclusion"],
 }
 RULE_TIME_STATUSES = {
-    **{name: "CURRENT_SOURCE_NO_EXACT_TARGET_CERTIFICATION" for name in RULE_STATUSES},
-    "vibrancy_sequence": "PRE_TARGET_INTRODUCTION_WITH_CURRENT_CORROBORATION_NOT_FULL_SNAPSHOT",
-    "vibrancy_pvp_gate": "PRE_TARGET_ARCHIVED_QUALIFIED_WORDING_NO_EXACT_GATE_OR_TARGET_CERTIFICATION",
+    **{name: "CURRENT_REFERENCE_NOT_GLOBAL_RUNTIME_OBSERVATION" for name in RULE_STATUSES},
+    "vibrancy_sequence": "HISTORICAL_INTRODUCTION_WITH_CURRENT_COMMUNITY_CORROBORATION",
+    "vibrancy_pvp_gate": "CURRENT_COMMUNITY_CONDITIONAL_PVP_WORDING_STATE_GATE_UNRESOLVED",
     **{name: profile[1] for name, profile in NEW_RULES.items()},
 }
 
@@ -239,6 +271,8 @@ def life_reported_example(damage_per_target, hit_targets):
 def validate(packet):
     if packet["schema"] != "OTERYN_IMBUEMENT_COMBAT_EVIDENCE/v1":
         raise ValueError("unknown combat evidence schema")
+    if packet["target"] != TARGET:
+        raise ValueError("combat reference must use the owner-selected current evaluation date")
     if packet["activation"] != "DRAFT_NOT_RUNTIME_READY":
         raise ValueError("combat evidence cannot activate runtime")
     sources = {s["id"]: s for s in packet["sources"]}
@@ -268,7 +302,7 @@ def validate(packet):
                 or set(rule["evidence"]) != evidence):
             raise ValueError("bounded combat facts cannot become generic or target-certified rules")
     for source_id in (set().union(*(rule[2] for rule in NEW_RULES.values()))
-                      | {"fandom_vibrancy_archive_2025"}):
+                      | {"fandom_vibrancy_archive_2025", "fandom_vibrancy_current_1194726"}):
         source = sources[source_id]
         if tuple(source[key] for key in ("url", "sha256", "access_status", "role")) != SOURCE_PROFILES[source_id]:
             raise ValueError("bounded combat sources must retain their exact identity and qualification")
@@ -291,6 +325,11 @@ def validate(packet):
     if (len(ranged_conflicts) != 1 or json.dumps(ranged_conflicts[0], sort_keys=True)
             != json.dumps(RANGED_REFERENCE_CONFLICT, sort_keys=True)):
         raise ValueError("historical Shiver report must retain unresolved current-reference conflict")
+    native_conflicts = [c for c in packet["source_conflicts"]
+                        if c.get("id") == NATIVE_REFERENCE_CONFLICT["id"]]
+    if (len(native_conflicts) != 1 or json.dumps(native_conflicts[0], sort_keys=True)
+            != json.dumps(NATIVE_REFERENCE_CONFLICT, sort_keys=True)):
+        raise ValueError("native reference example must retain unresolved engine-order discrepancy")
     for example in rules["life_leech_reported_equal_hit_ceiling"]["value"]["reported_examples"]:
         derived = life_reported_example(example["damage_per_target"], example["hit_targets"])
         if (derived["ceil_each"] != example["healed_each_target"]
@@ -306,7 +345,7 @@ def validate(packet):
     if (mana_source["revision"] != 1205374
             or mana_source["revision_timestamp"] != "2026-09-07T17:28:39Z"
             or mana_source["role"] != "COMMUNITY_GLOBAL_REFERENCE"):
-        raise ValueError("mana formula must retain its post-target community provenance")
+        raise ValueError("mana formula must retain its current dated community provenance")
     for source_id, date in (("tibiaqa_two_mana_2018", "2018-09-27"),
                             ("tibiaqa_two_leech_pairs_2021", "2021-05-27")):
         if sources[source_id]["published_on"] != date:
@@ -314,8 +353,8 @@ def validate(packet):
     if any(h["status"] != "OTS_HYPOTHESIS_ONLY" for h in packet["engine_combat_hypotheses"]):
         raise ValueError("engine hypotheses cannot be promoted to Global evidence")
     for name in ("vibrancy_sequence", "vibrancy_pvp_gate"):
-        if "fandom_vibrancy_archive_2025" not in rules[name]["evidence"]:
-            raise ValueError("Vibrancy profiles must retain the complete pre-target conditional reference")
+        if not {"fandom_vibrancy_archive_2025", "fandom_vibrancy_current_1194726"}.issubset(rules[name]["evidence"]):
+            raise ValueError("Vibrancy profiles must retain current and historical conditional references")
     sequence = rules["vibrancy_sequence"]["value"]
     if sequence["trigger"] != "additional_paralysis_attack_while_paralysed":
         raise ValueError("Vibrancy cannot be modelled as initial paralysis immunity")

@@ -392,15 +392,16 @@
     ]
   },
   "supporting_catalogues": {
-    "crystal-imbuements-evidence.json": "b7f6d5ac40111c103c82a9fc02bc4188be733171a01a1665e588fff41bc8e68c",
-    "global-observation-plan.json": "05718ad4d9fe0c9bf23a5724ec864b9ee9512a31ec62792bceba621c766f1e6e",
-    "global-rules-evidence.json": "24ed1eb24b1f4297ba2fa5c214ddd5ef26856ecc8bd248342c8fbd1f25c1c8a7",
-    "imbuement-access.json": "f56f29d4be08c9047eb999a59bf3f7852bf40be4b0d712d774c7b21291883741",
+    "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
+    "current-behavior-answers.json": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2",
+    "global-observation-plan.json": "1b72e0ae9187955643308da9e809095f74f1fe3e5d48057f115cd7ce42c09f7d",
+    "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
+    "imbuement-access.json": "95c966ebcbd3c1ed15277417c6e6f2acf720817c6b9776732873f511c7a15dcc",
     "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
-    "imbuement-combat.json": "86251ba9e2f38277f91a76e8584351e06a0646d8c4506577fb365e7176c52aa8",
-    "imbuement-eligibility.json": "ac311c6ff107cced3db7223c9034d5efdbb64134c19ddb282ef3540db53167f7",
-    "missing-item-definitions.json": "d1984e33fbeea4494986f2ef3f7b9188069d145a317ac45765e25e2997ff4b3b",
-    "missing-item-source-facts.json": "6364ba74b3d3c63e161042a4df782faa7bfcd76c36004e89428b7da69ca77086"
+    "imbuement-combat.json": "3166820fc12c066bd87918321f15a2637d27b986e34c7e0ae51914bc7799088b",
+    "imbuement-eligibility.json": "c26be2542ce0b048258f1a4bcc2604145608af6cb669e20dbeb75f0ee76c062e",
+    "missing-item-definitions.json": "d1d324a100dbda840c1730561401f803aea4ec6014ec11dec23389e3280fd40d",
+    "missing-item-source-facts.json": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d"
   },
   "completion": {
     "definitions": 24,
@@ -408,37 +409,24 @@
     "material_bindings": 72,
     "scroll_bindings": 72,
     "current_equipment_typed": 629,
-    "target_equipment_typed": 628,
+    "target_equipment_typed": 629,
     "target_existing_item_refs": 627,
     "basic_only_eligibility_profiles": 12,
     "validated_missing_item_proposals": 2,
     "source_defined_shrine_routes": 72,
     "completed_scroll_loot_records": 48,
-    "global_rules": 71,
-    "combat_rule_profiles": 17,
-    "planned_not_observed_scenarios": 28,
+    "global_rules": 72,
+    "combat_rule_profiles": 18,
+    "source_answered_engine_question_groups": 11,
+    "owner_resolved_scope_questions": 1,
+    "planned_not_observed_scenarios": 27,
     "crystal_imbuements_revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
     "gold_token_exchange_bundles": 9
   },
   "remaining_global_observation_requirements": [
     {
-      "id": "exact_target_snapshot",
-      "reason": "Targeted public Wayback availability queries returned nearest Imbuing22May2026 and BRImbuements16February2026; no exact28July snapshot was returned for these queries. Public archives do not certify immutable Global server configuration or hidden mechanics.",
-      "evidence": [
-        "official_manual",
-        "fandom_imbuing_full",
-        "fandom_imbuing_archive_2026_05_22"
-      ],
-      "source_urls": [
-        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
-        "https://tibia.fandom.com/wiki/Imbuing",
-        "https://web.archive.org/web/20260522172855/https://tibia.fandom.com/wiki/Imbuing"
-      ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
-    },
-    {
       "id": "etcher_consumption",
-      "reason": "Single-use units and invalid-target no-consumption behavior need final transaction/observation qualification. Exact pinnedCanary public implementation now supplies one unit on success andzero on invalid target as explicit OTS hypotheses; no Global single-use statement retrieved.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "wiki_br_etcher",
         "tibiopedia_etcher",
@@ -449,11 +437,13 @@
         "https://tibiopedia.pl/items/Etcher",
         "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#etcher_consumption",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "scroll_application_equipped_target",
-      "reason": "New official June2025 anywhere location statement does not say target stays equipped. Equipped acceptance remains unqualified.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "official_manual",
         "canary_scroll_action",
@@ -466,11 +456,13 @@
         "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp",
         "https://www.tibia.com/forum/?action=thread&postid=39527096#post39527096"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "fine_grained_timers",
-      "reason": "Full pre-target Swiftness equipped+online outside-combat wording is now corroborated by public11December2025 archive. Exact PZ/combat deadlines, tick precision, logout/save/restore and transfer boundaries remain unqualified.",
+      "reason": "Equipped/online utility behavior and current coarse hunting requirements are sourced. Exact Global tick/save/restore and PZ state boundaries are not fully specified; all three engine gates and ticks are separately answered.",
       "evidence": [
         "official_manual",
         "wiki_br_imbuements",
@@ -493,11 +485,13 @@
         "https://tibia.fandom.com/wiki/Imbuing",
         "https://web.archive.org/web/20251211063342/https://tibia.fandom.com/wiki/Swiftness"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#fine_grained_timers",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "combat_pipeline",
-      "reason": "Pre-target archived Life Leech source explicitly excludes Damage Preys, without settling rounding, unequal/zero-target/overkill behavior or universal spell/charm/proficiency order.",
+      "reason": "Current SeptemberFormulae supplies a mana-specific sum/ceil formula and overkill claim; current Life independently excludes DamagePreys. Universal Life rounding and modifier order are not specified. Concrete engine pipelines are separately answered.",
       "evidence": [
         "fandom_formulae_full",
         "official_news_8421_full",
@@ -510,11 +504,13 @@
         "https://www.tibiawiki.com.br/wiki/Imbuements",
         "https://web.archive.org/web/20260113015644/https://tibia.fandom.com/wiki/Life_Leech"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#combat_pipeline",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "vibrancy_pvp_gate",
-      "reason": "Full pre-target family wording is now supplied by public18May2025 archive; missing successful-state predicate, lifetime/reset and target continuity remain unqualified.",
+      "reason": "Current full family supplies the conditional initial-success wording; exact state lifetime/reset lacks explicit public specification. Concrete Canary/Crystal admission/recovery code is separately answered.",
       "evidence": [
         "fandom_vibrancy_gate",
         "fandom_basic_vibrancy_gate",
@@ -528,11 +524,13 @@
         "https://tibia.fandom.com/wiki/Powerful_Vibrancy",
         "https://web.archive.org/web/20250518214227/https://tibia.fandom.com/wiki/Vibrancy"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#vibrancy_pvp_gate",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "transaction_payment_sources",
-      "reason": "Pre-target archive22May2026 corroborates inventory-first then Stash/bank; edited8January2026 QA corroborates Stash materials. Exact container search, inter-resource debit order, other routes and failure behavior remain unqualified.",
+      "reason": "Current Imbuing and prior archive specify inventory-first then Stash/bank. All engine search/debit orders are answered; hidden Global container/inter-resource ordering is not explicitly specified.",
       "evidence": [
         "fandom_imbuing_full",
         "fandom_imbuing_archive_2026_05_22",
@@ -543,11 +541,13 @@
         "https://web.archive.org/web/20260522172855/https://tibia.fandom.com/wiki/Imbuing",
         "https://www.tibiaqa.com/1120/how-does-supply-stash-work-and-what-is-the-capacity"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#transaction_payment_sources",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "failed_transaction_consumption_and_rollback",
-      "reason": "Guaranteed success does not define failure-path resource consumption, rollback or concurrency semantics.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "official_manual",
         "news_8396_mirror"
@@ -556,11 +556,13 @@
         "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
         "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "native_effect_composition",
-      "reason": "Native abilities, imbuements and other bonuses need source-qualified composition, caps and order; OTS implementation is a hypothesis.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "wiki_br_imbuements",
         "tibiopedia_imbuing_guide"
@@ -569,11 +571,13 @@
         "https://www.tibiawiki.com.br/wiki/Imbuements",
         "https://tibiopedia.pl/articles/3,Imbuing-nasycenia"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#native_effect_composition",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "transfer_preserves_imbuement_state_and_remaining_duration",
-      "reason": "Transferred imbued items are usable according to community guide; exact persistent state and duration preservation across transfer routes is unqualified.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "tibiopedia_imbuing_guide",
         "official_manual",
@@ -584,11 +588,13 @@
         "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
         "https://www.tibiaqa.com/30081/is-it-possible-to-safe-trade-items-in-the-depot-to-another-player"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "etcher_npc_purchase_requires_premium",
-      "reason": "Worthy sale restriction is sourced, but no explicit Etcher purchase Premium requirement was retrieved.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "official_manual",
         "news_8396_mirror",
@@ -601,11 +607,13 @@
         "https://www.tibiawiki.com.br/wiki/Etcher",
         "https://tibiopedia.pl/items/Etcher"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     },
     {
       "id": "scroll_consumption",
-      "reason": "Exact completed-scroll units consumed on successful application and explicit invalid-target failures lack Global public proof. Blank-scroll inscription consumption is separate; pinned Crystal1-on-success/0-on-pre-debit-guard branches remain OTS hypotheses.",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
       "evidence": [
         "official_manual",
         "crystal_imbuements_player_impl",
@@ -616,7 +624,9 @@
         "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp",
         "https://www.tibiabr.com/wp-json/wp/v2/search?search=imbuement&per_page=30"
       ],
-      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior."
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#scroll_consumption",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
     }
   ],
   "blocked": [

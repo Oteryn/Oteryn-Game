@@ -1,7 +1,9 @@
 """Semantic regression checks for source conflicts and fail-closed Item admission."""
 import copy
+from datetime import date
 import json
 import unittest
+from unittest.mock import patch
 
 import eligibility_evidence as eligibility
 
@@ -209,17 +211,47 @@ class EligibilityEvidenceTests(unittest.TestCase):
         self.assertIsNone(self.items[23223]["item_ref"])
         self.assertEqual(self.packet["source_registry"]["tibiopedia_i23223"]["withdrawn_version"], "11.50")
 
-    def test_preloaded_post_target_item_is_retained_but_excluded_from_target(self):
+    def test_august_release_is_included_in_current_target_without_canonical_invention(self):
         row = self.items[53192]
+        self.assertEqual(self.packet["target"], "global-tibia-current-2026-10-01")
+        self.assertEqual(eligibility.TARGET_DATE, date(2026, 10, 1))
         self.assertEqual(row["allowed_types"], {"featherweight": 3})
-        self.assertEqual(row["status"], "POST_TARGET_RELEASE_EXCLUDED")
+        self.assertEqual(row["status"], "CANONICAL_ITEM_ABSENT")
+        self.assertIsNone(row["item_ref"])
+        self.assertEqual(row["target_time_status"], "PRE_TARGET_RELEASE_CONTINUITY_UNVERIFIED")
         self.assertEqual(row["target_time_evidence"]["date"], "2026-08-04")
         self.assertEqual(self.packet["summary"]["typed_items"], 629)
-        self.assertEqual(self.packet["summary"]["target_candidate_typed_items"], 628)
+        self.assertEqual(self.packet["summary"]["target_candidate_typed_items"], 629)
+        self.assertEqual(self.packet["summary"]["target_candidate_bound_items"], 627)
+        self.assertNotIn("POST_TARGET_RELEASE_EXCLUDED", self.packet["summary"]["target_time_status_counts"])
         packet = copy.deepcopy(self.packet)
         packet["normalized_sources"]["release_dates"]["15.32.fc9100"]["date"] = "2026-07-01"
         with self.assertRaisesRegex(ValueError, "release date differs from pinned source"):
             eligibility.build(packet)
+
+    def test_source_release_day_boundary_is_inclusive(self):
+        for target_date, excluded in ((date(2026, 8, 3), True), (date(2026, 8, 4), False)):
+            with self.subTest(target_date=target_date), patch.object(eligibility, "TARGET_DATE", target_date):
+                result = eligibility.build(self.packet)
+                row = next(r for r in result["items"] if r["client_id"] == 53192)
+                self.assertEqual(row["target_time_status"] == "POST_TARGET_RELEASE_EXCLUDED", excluded)
+                self.assertEqual(row["allowed_types"], {"featherweight": 3})
+                self.assertIsNone(row["item_ref"])
+
+    def test_future_release_remains_excluded_until_its_day(self):
+        # A synthetic fixture exercises a release after the new current target;
+        # the immutable production source dates are never changed or regenerated.
+        packet = copy.deepcopy(self.packet)
+        release = packet["normalized_sources"]["release_dates"]["15.32.fc9100"]
+        release["date"] = "2026-10-02"
+        packet["source_registry"][release["source_id"]]["release_date"] = release["date"]
+        for target_date, excluded in ((date(2026, 10, 1), True), (date(2026, 10, 2), False)):
+            with self.subTest(target_date=target_date), patch.object(eligibility, "TARGET_DATE", target_date):
+                result = eligibility.build(packet)
+                row = next(r for r in result["items"] if r["client_id"] == 53192)
+                self.assertEqual(row["target_time_status"] == "POST_TARGET_RELEASE_EXCLUDED", excluded)
+                self.assertEqual(result["summary"]["target_candidate_typed_items"], 628 if excluded else 629)
+        self.assertEqual(self.packet["normalized_sources"]["release_dates"]["15.32.fc9100"]["date"], "2026-08-04")
 
     def test_dated_item_patch_corrects_one_cap_without_promoting_whole_profile(self):
         row = self.items[44636]
