@@ -1,0 +1,47 @@
+{
+  "status": "READ_ONLY_PUBLISHED_ITEM_FX_AUDIO_AUDIT",
+  "published_head": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "formal_schema_presentation_properties": [
+    "grammar",
+    "inspection_description",
+    "flavor_text",
+    "sounds",
+    "appearance_binding",
+    "effects",
+    "projectile_effect",
+    "attack_effect",
+    "variants",
+    "display_weight",
+    "display_flags"
+  ],
+  "engine_xml_mapping": {
+    "effect": "presentation.effects",
+    "shoottype": "presentation.projectile_effect",
+    "meleeattackeffect": "presentation.attack_effect"
+  },
+  "engine_xml_sound_mapping": "NONE_IN_ENGINE_ITEMS_PY",
+  "published_item_authoring_count": 316,
+  "published_item_presentation_references": 0,
+  "published_general_presentation_profiles": 2613,
+  "published_general_profiles_with_audio": 0,
+  "published_general_profiles_with_visual": 0,
+  "native_item_presentation_fields": [
+    "name",
+    "description"
+  ],
+  "native_item_weapon_has_projectile_or_sound_fields": false,
+  "protected_B1_melee_effect_disposition": "EXPLICIT_UNSUPPORTED_PRESENTATION_BINDING_V1",
+  "source_access": "local Git published blobs and retained pinned source files; upstream normal HTTP read by parallel source agents",
+  "notes": [
+    "Formal converter asset identifiers do not prove admitted playable assets or combat runtime delivery.",
+    "Source scripts and weapon/ammunition type defaults need distinct event-bound observations, not fabricated per-item literal attributes.",
+    "Retained count universe is not all unique fully-classified portable Items."
+  ],
+  "file_witnesses": {
+    "apps/game-server/src/content/reference_playable.rs": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+    "apps/game-server/src/content/cw2_b1_import.rs": "cecc31c5a3098a7a08e003d845a5317d9b6d3f0033ee90c80005f7d63e3db253",
+    "tools/content-schema/item-authoring/engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+    "tools/content-schema/item-authoring/item.schema.json": "a7147e948459563f83a13d11a9a4b0e4f424393f438da1d0e1ae08f274352997",
+    "content/world/definitions/declarations.json": "d32ec9f1c94a5d04a063e068396d4362439fdcb132e2713c6428faf8c18b1a5c"
+  }
+}

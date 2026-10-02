@@ -1,0 +1,630 @@
+{
+  "schema": "OTERYN_WEAPON_PRESENTATION_UPSTREAM_READONLY_AUDIT/v1",
+  "status": "PASS_BOUNDED_READ_ONLY_SOURCE_FINDINGS",
+  "capture_utc": "2026-10-02T11:35:02.032986+00:00",
+  "scope": "Crystal pinned ff7ede5 and00ce02a5 complete items.xml + all10 files under data/scripts/weapons; selected parser/weapon/player/combat consumers. Canary admitted47df corroborating selected files/items.xml. No repo edits/Cargo/Tavily/publish.",
+  "source_role": "OtsHypothesisOnly; exact upstream implementation evidence, not official Tibia per-Item product truth",
+  "findings": [
+    {
+      "kind": "PER_ITEM_EXPLICIT_PROJECTILE",
+      "finding": "XML shootType maps to ItemType.shootType and drives Distance/Wand params.distanceEffect. ff7 has83 weapon declaration rows excluding ammunition (15distance+68wand), plus29 explicit ammunition rows and2 lacking weaponType (diamond arrow25757,royal star25759), total114 XML declarations with shootType. Untyped rows require actual script/binding identity bridge."
+    },
+    {
+      "kind": "PER_ITEM_EXPLICIT_MELEE_VISUAL_OVERRIDE",
+      "finding": "ff7 XML has22 meleeAttackEffect item rows, all declare fist. Sai10389 monkdaggers and drachaku10391 monkstaff. Parser accepts explicit effect tokens; C++ gives explicit item override priority then type default."
+    },
+    {
+      "kind": "XML_EFFECT_NOT_ALL_WEAPON_MEDIA",
+      "finding": "ff7 XML effect60 rows contain no weaponType declaration; examples water/lava. Must not report60 weapon attack effects. XML keys containing sound count0 at both pinned Crystal versions."
+    },
+    {
+      "kind": "SCRIPT_COMBAT_CONTEXT",
+      "finding": "Diamond arrow25757/35901 registered explicitly: ENERGYHIT impact, DIAMONDARROW projectile, diamond impact sound and bow cast sound. Burst arrow similarly registers3449/22119. Script effects belong to onUseWeapon combat context; mapping needs literal registration/full binding, not filename/name inference."
+    },
+    {
+      "kind": "INHERITED_ENGINE_SOUND_DEFAULT",
+      "finding": "Player attack sound switch derives axe/sword/club/fist,bow/crossbow/throw,magical from current weapon/ammo; hit sound switch selects projectile-aware burst/diamond sound plus ordinary ranged/wand values. Weapon dispatch sends these if params.soundCastEffect SILENCE, otherwise sends explicit combat sound pair."
+    },
+    {
+      "kind": "OTHER_CONTEXT_NOT_INTRINSIC_WEAPON_FACT",
+      "finding": "Combat chain effects/sounds selected by type/element in setupChain and Item movement sound by category/material are separate event contexts; do not silently promote as intrinsic item attack media."
+    }
+  ],
+  "xml_counts_per_declaration": {
+    "ff7ede59": {
+      "source_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+      "item_xml_rows": 17669,
+      "media_key_counts": {
+        "effect": 60,
+        "shootType": 114,
+        "meleeAttackEffect": 22
+      },
+      "note": "Counts are XML item declaration nodes; ranges not expanded.",
+      "shootType_breakdown": {
+        "weapons_excluding_ammunition": 83,
+        "distance": 15,
+        "wand": 68,
+        "explicit_ammunition": 29,
+        "type_absent": 2
+      },
+      "literal_sound_keys": 0
+    },
+    "00ce02a5": {
+      "source_sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+      "item_xml_rows": 18065,
+      "media_key_counts": {
+        "effect": 62,
+        "shootType": 117,
+        "meleeAttackEffect": 24
+      },
+      "note": "Counts are XML item declaration nodes; ranges not expanded.",
+      "shootType_breakdown": {
+        "weapons_excluding_ammunition": 87,
+        "distance": 15,
+        "wand": 72,
+        "explicit_ammunition": 28,
+        "type_absent": 2
+      },
+      "literal_sound_keys": 0
+    },
+    "47dfd51f": {
+      "source_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "item_xml_rows": 17109,
+      "media_key_counts": {
+        "effect": 45,
+        "shootType": 108
+      },
+      "note": "Counts are XML item declaration nodes; ranges not expanded.",
+      "shootType_breakdown": {
+        "weapons_excluding_ammunition": 81,
+        "distance": 15,
+        "wand": 66,
+        "explicit_ammunition": 25,
+        "type_absent": 2
+      },
+      "literal_sound_keys": 0
+    }
+  },
+  "script_media_counts": {
+    "ff7ede59": {
+      "weapons_script_files": 10,
+      "explicit_combat_parameter_sites": {
+        "EFFECT": {
+          "file_count": 7,
+          "assignments": 7,
+          "sites": [
+            {
+              "path": "data/scripts/weapons/scripts/firestorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_FIREATTACK)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+              "line": 11,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ENERGYHIT)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+              "line": 9,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_EXPLOSIONAREA)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/thunderstorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ENERGYAREA)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/shatterstorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_GROUNDSHAKER)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/terrastorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_CARNIPHILA)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/froststorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ICEATTACK)"
+            }
+          ]
+        },
+        "DISTANCEEFFECT": {
+          "file_count": 10,
+          "assignments": 11,
+          "sites": [
+            {
+              "path": "data/scripts/weapons/dawnport_weapons.lua",
+              "line": 6,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_ICE)"
+            },
+            {
+              "path": "data/scripts/weapons/dawnport_weapons.lua",
+              "line": 30,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_FIRE)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/firestorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_FIRESTORMARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/poison_arrow.lua",
+              "line": 3,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_POISONARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/viper_star.lua",
+              "line": 3,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_GREENSTAR)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_DIAMONDARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+              "line": 10,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_BURSTARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/thunderstorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_THUNDERSTORMARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/shatterstorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_SHATTERSTORMARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/terrastorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_TERRASTORMARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/froststorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_FROSTSTORMARROW)"
+            }
+          ]
+        },
+        "CASTSOUND": {
+          "file_count": 7,
+          "assignments": 7,
+          "sites": [
+            {
+              "path": "data/scripts/weapons/scripts/firestorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+              "line": 14,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+              "line": 14,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/thunderstorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/shatterstorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/terrastorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/froststorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            }
+          ]
+        },
+        "IMPACTSOUND": {
+          "file_count": 2,
+          "assignments": 2,
+          "sites": [
+            {
+              "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_IMPACTSOUND, SOUND_EFFECT_TYPE_DIAMOND_ARROW_EFFECT)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_IMPACTSOUND, SOUND_EFFECT_TYPE_BURST_ARROW_EFFECT)"
+            }
+          ]
+        }
+      }
+    },
+    "00ce02a5": {
+      "weapons_script_files": 10,
+      "explicit_combat_parameter_sites": {
+        "EFFECT": {
+          "file_count": 7,
+          "assignments": 7,
+          "sites": [
+            {
+              "path": "data/scripts/weapons/scripts/firestorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_FIREATTACK)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+              "line": 11,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ENERGYHIT)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+              "line": 9,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_EXPLOSIONAREA)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/thunderstorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ENERGYAREA)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/shatterstorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_GROUNDSHAKER)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/terrastorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_CARNIPHILA)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/froststorm_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ICEATTACK)"
+            }
+          ]
+        },
+        "DISTANCEEFFECT": {
+          "file_count": 10,
+          "assignments": 11,
+          "sites": [
+            {
+              "path": "data/scripts/weapons/dawnport_weapons.lua",
+              "line": 6,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_ICE)"
+            },
+            {
+              "path": "data/scripts/weapons/dawnport_weapons.lua",
+              "line": 30,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_FIRE)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/firestorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_FIRESTORMARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/poison_arrow.lua",
+              "line": 3,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_POISONARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/viper_star.lua",
+              "line": 3,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_GREENSTAR)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+              "line": 12,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_DIAMONDARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+              "line": 10,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_BURSTARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/thunderstorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_THUNDERSTORMARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/shatterstorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_SHATTERSTORMARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/terrastorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_TERRASTORMARROW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/froststorm_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_FROSTSTORMARROW)"
+            }
+          ]
+        },
+        "CASTSOUND": {
+          "file_count": 7,
+          "assignments": 7,
+          "sites": [
+            {
+              "path": "data/scripts/weapons/scripts/firestorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+              "line": 14,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+              "line": 14,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/thunderstorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/shatterstorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/terrastorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/froststorm_arrow.lua",
+              "line": 15,
+              "literal": "combat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)"
+            }
+          ]
+        },
+        "IMPACTSOUND": {
+          "file_count": 2,
+          "assignments": 2,
+          "sites": [
+            {
+              "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_IMPACTSOUND, SOUND_EFFECT_TYPE_DIAMOND_ARROW_EFFECT)"
+            },
+            {
+              "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+              "line": 13,
+              "literal": "combat:setParameter(COMBAT_PARAM_IMPACTSOUND, SOUND_EFFECT_TYPE_BURST_ARROW_EFFECT)"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "citations": {
+    "xml_shoottype_parser": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/functions/item/item_parse.cpp",
+      "line_start": 329,
+      "line_end": 337,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/functions/item/item_parse.cpp#L329-L337",
+      "excerpt": "void ItemParse::parseShootType(const std::string &stringValue, pugi::xml_attribute valueAttribute, ItemType &itemType) {\n\tif (stringValue == \"shoottype\") {\n\t\tconst ShootType_t &shoot = getShootType(asLowerCaseString(valueAttribute.as_string()));\n\t\tif (shoot != CONST_ANI_NONE) {\n\t\t\titemType.shootType = shoot;\n\t\t} else {\n\t\t\tg_logger().warn(\"[Items::parseItemNode] - Unknown shootType {}\", valueAttribute.as_string());\n\t\t}\n\t}",
+      "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7"
+    },
+    "xml_effect_parser": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/functions/item/item_parse.cpp",
+      "line_start": 340,
+      "line_end": 348,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/functions/item/item_parse.cpp#L340-L348",
+      "excerpt": "void ItemParse::parseMagicEffect(const std::string &stringValue, pugi::xml_attribute valueAttribute, ItemType &itemType) {\n\tif (stringValue == \"effect\") {\n\t\tconst MagicEffectClasses &effect = getMagicEffect(asLowerCaseString(valueAttribute.as_string()));\n\t\tif (effect != CONST_ME_NONE) {\n\t\t\titemType.magicEffect = effect;\n\t\t} else {\n\t\t\tg_logger().warn(\"[Items::parseItemNode] - Unknown effect {}\", valueAttribute.as_string());\n\t\t}\n\t}",
+      "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7"
+    },
+    "xml_melee_parser": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/functions/item/item_parse.cpp",
+      "line_start": 1317,
+      "line_end": 1343,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/functions/item/item_parse.cpp#L1317-L1343",
+      "excerpt": "void ItemParse::parseMeleeAttackEffect(const std::string &stringValue, pugi::xml_attribute valueAttribute, ItemType &itemType) {\n\tif (stringValue != \"meleeattackeffect\") {\n\t\treturn;\n\t}\n\n\tstatic const phmap::flat_hash_map<std::string, MagicEffectClasses> meleeAttackEffects = {\n\t\t{ \"sword\", CONST_ME_SWORD_ATTACK },\n\t\t{ \"swordattack\", CONST_ME_SWORD_ATTACK },\n\t\t{ \"club\", CONST_ME_CLUB_ATTACK },\n\t\t{ \"clubattack\", CONST_ME_CLUB_ATTACK },\n\t\t{ \"axe\", CONST_ME_AXE_ATTACK },\n\t\t{ \"axeattack\", CONST_ME_AXE_ATTACK },\n\t\t{ \"fist\", CONST_ME_FIST_ATTACK },\n\t\t{ \"fistattack\", CONST_ME_FIST_ATTACK },\n\t\t{ \"monkstaff\", CONST_ME_MONK_STAFF_ATTACK },\n\t\t{ \"monkstaffattack\", CONST_ME_MONK_STAFF_ATTACK },\n\t\t{ \"monkdaggers\", CONST_ME_MONK_DAGGERS_ATTACK },\n\t\t{ \"monkdaggersattack\", CONST_ME_MONK_DAGGERS_ATTACK },\n\t};\n\n\tconst auto effect = meleeAttackEffects.find(asLowerCaseString(valueAttribute.as_string()));\n\tif (effect != meleeAttackEffects.end()) {\n\t\titemType.meleeAttackEffect = effect->second;\n\t} else {\n\t\tg_logger().warn(\"[Items::parseItemNode] - Unknown meleeAttackEffect {}\", valueAttribute.as_string());\n\t}\n}",
+      "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7"
+    },
+    "item_media_defaults": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/items.hpp",
+      "line_start": 321,
+      "line_end": 328,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/items.hpp#L321-L328",
+      "excerpt": "\n\tMagicEffectClasses magicEffect = CONST_ME_NONE;\n\tMagicEffectClasses meleeAttackEffect = CONST_ME_NONE;\n\tDirection bedPartnerDir = DIRECTION_NONE;\n\tBedItemPart_t bedPart = BED_NONE_PART;\n\tWeaponType_t weaponType = WEAPON_NONE;\n\tAmmo_t ammoType = AMMO_NONE;\n\tShootType_t shootType = CONST_ANI_NONE;",
+      "sha256": "4bb45e54fc06921e82b12badee389330376f72f352b2ef8c0074e824cf7b9844"
+    },
+    "melee_override_and_type_default": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/weapons/weapons.cpp",
+      "line_start": 273,
+      "line_end": 298,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/weapons/weapons.cpp#L273-L298",
+      "excerpt": "uint16_t Weapon::getWeaponAttackEffect(const std::shared_ptr<Item> &item, const std::shared_ptr<Player> &player) const {\n\tif (!item) {\n\t\treturn CONST_ME_FIST_ATTACK; // Fist attack when no weapon\n\t}\n\n\tconst ItemType &it = Item::items[item->getID()];\n\tif (it.meleeAttackEffect != CONST_ME_NONE) {\n\t\treturn it.meleeAttackEffect;\n\t}\n\n\tswitch (item->getWeaponType()) {\n\t\tcase WEAPON_SWORD:\n\t\t\treturn CONST_ME_SWORD_ATTACK;\n\n\t\tcase WEAPON_CLUB:\n\t\t\treturn CONST_ME_CLUB_ATTACK;\n\n\t\tcase WEAPON_AXE:\n\t\t\treturn CONST_ME_AXE_ATTACK;\n\n\t\tcase WEAPON_FIST:\n\t\t\treturn CONST_ME_FIST_ATTACK;\n\n\t\tdefault:\n\t\t\treturn CONST_ME_NONE;\n\t}",
+      "sha256": "b4b5dae27ffad1f0699a483aeb50799b42162ca3cab90b7c081a3b28884463cb"
+    },
+    "attack_dispatch_sound_and_directional_mark": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/weapons/weapons.cpp",
+      "line_start": 301,
+      "line_end": 319,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/weapons/weapons.cpp#L301-L319",
+      "excerpt": "void Weapon::internalUseWeapon(const std::shared_ptr<Player> &player, const std::shared_ptr<Item> &item, const std::shared_ptr<Creature> &target, int32_t damageModifier, int32_t cleavePercent) const {\n\tif (player) {\n\t\tif (params.soundCastEffect == SoundEffect_t::SILENCE) {\n\t\t\tg_game().sendDoubleSoundEffect(player->getPosition(), player->getHitSoundEffect(), player->getAttackSoundEffect(), player);\n\t\t} else {\n\t\t\tg_game().sendDoubleSoundEffect(player->getPosition(), params.soundCastEffect, params.soundImpactEffect, player);\n\t\t}\n\t}\n\n\t// 15.x: directional melee swing for melee weapons (CreatureMark IsAttacked + per-weapon weaponType).\n\t// Non-melee weapons (distance, wands) have no melee swing \u2014 skip.\n\tif (cleavePercent == 0) {\n\t\tconst uint16_t attackEffect = getWeaponAttackEffect(item, player);\n\t\tif (attackEffect != CONST_ME_NONE) {\n\t\t\tplayer->sendCreatureSquare(target, SQ_PLAYER_ATTACK, static_cast<SquareColor_t>(markWeaponType(attackEffect)));\n\t\t}\n\t}\n\n\tif (isLoadedScriptId()) {",
+      "sha256": "b4b5dae27ffad1f0699a483aeb50799b42162ca3cab90b7c081a3b28884463cb"
+    },
+    "distance_uses_per_item_projectile": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/weapons/weapons.cpp",
+      "line_start": 738,
+      "line_end": 745,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/weapons/weapons.cpp#L738-L745",
+      "excerpt": "\t// Add combat type and distance effect to the weapon\n\tparams.blockedByArmor = true;\n\tparams.combatType = COMBAT_PHYSICALDAMAGE;\n}\n\nvoid WeaponDistance::configureWeapon(const ItemType &it) {\n\tparams.distanceEffect = it.shootType;\n\tif (it.abilities) {",
+      "sha256": "b4b5dae27ffad1f0699a483aeb50799b42162ca3cab90b7c081a3b28884463cb"
+    },
+    "wand_uses_per_item_projectile": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/weapons/weapons.cpp",
+      "line_start": 1052,
+      "line_end": 1058,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/weapons/weapons.cpp#L1052-L1058",
+      "excerpt": "WeaponWand::WeaponWand() = default;\n\nvoid WeaponWand::configureWeapon(const ItemType &it) {\n\tparams.distanceEffect = it.shootType;\n\tconst_cast<ItemType &>(it).combatType = params.combatType;\n\tconst_cast<ItemType &>(it).maxHitChance = (minChange + maxChange) / 2;\n\tWeapon::configureWeapon(it);",
+      "sha256": "b4b5dae27ffad1f0699a483aeb50799b42162ca3cab90b7c081a3b28884463cb"
+    },
+    "attack_sound_default": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/creatures/players/player.cpp",
+      "line_start": 11354,
+      "line_end": 11399,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/creatures/players/player.cpp#L11354-L11399",
+      "excerpt": "SoundEffect_t Player::getAttackSoundEffect() const {\n\tconst auto &tool = getWeapon();\n\tif (tool == nullptr) {\n\t\treturn SoundEffect_t::HUMAN_CLOSE_ATK_FIST;\n\t}\n\n\tconst ItemType &it = Item::items[tool->getID()];\n\tif (it.weaponType == WEAPON_NONE || it.weaponType == WEAPON_SHIELD) {\n\t\treturn SoundEffect_t::HUMAN_CLOSE_ATK_FIST;\n\t}\n\n\tswitch (it.weaponType) {\n\t\tcase WEAPON_FIST: {\n\t\t\treturn SoundEffect_t::HUMAN_CLOSE_ATK_FIST;\n\t\t}\n\t\tcase WEAPON_AXE: {\n\t\t\treturn SoundEffect_t::MELEE_ATK_AXE;\n\t\t}\n\t\tcase WEAPON_SWORD: {\n\t\t\treturn SoundEffect_t::MELEE_ATK_SWORD;\n\t\t}\n\t\tcase WEAPON_CLUB: {\n\t\t\treturn SoundEffect_t::MELEE_ATK_CLUB;\n\t\t}\n\t\tcase WEAPON_AMMO:\n\t\tcase WEAPON_DISTANCE: {\n\t\t\tif (tool->getAmmoType() == AMMO_BOLT) {\n\t\t\t\treturn SoundEffect_t::DIST_ATK_CROSSBOW;\n\t\t\t}\n\t\t\tif (tool->getAmmoType() == AMMO_ARROW) {\n\t\t\t\treturn SoundEffect_t::DIST_ATK_BOW;\n\t\t\t}\n\t\t\treturn SoundEffect_t::DIST_ATK_THROW;\n\n\t\t\tbreak;\n\t\t}\n\t\tcase WEAPON_WAND: {\n\t\t\treturn SoundEffect_t::MAGICAL_RANGE_ATK;\n\t\t}\n\t\tdefault: {\n\t\t\treturn SoundEffect_t::SILENCE;\n\t\t}\n\t}\n\n\treturn SoundEffect_t::SILENCE;\n}",
+      "sha256": "5f03562f860a19ebe623553d77f78b64e145ecc97c87788a55375d994be8aa1d"
+    },
+    "hit_sound_default_and_projectile_overrides": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/creatures/players/player.cpp",
+      "line_start": 11401,
+      "line_end": 11446,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/creatures/players/player.cpp#L11401-L11446",
+      "excerpt": "SoundEffect_t Player::getHitSoundEffect() const {\n\t// Distance sound effects\n\tconst auto &tool = getWeapon();\n\tif (tool == nullptr) {\n\t\treturn SoundEffect_t::SILENCE;\n\t}\n\n\tswitch (const auto &it = Item::items[tool->getID()]; it.weaponType) {\n\t\tcase WEAPON_AMMO: {\n\t\t\tif (it.ammoType == AMMO_BOLT) {\n\t\t\t\treturn SoundEffect_t::DIST_ATK_CROSSBOW_SHOT;\n\t\t\t}\n\t\t\tif (it.ammoType == AMMO_ARROW) {\n\t\t\t\tif (it.shootType == CONST_ANI_BURSTARROW) {\n\t\t\t\t\treturn SoundEffect_t::BURST_ARROW_EFFECT;\n\t\t\t\t}\n\t\t\t\tif (it.shootType == CONST_ANI_DIAMONDARROW) {\n\t\t\t\t\treturn SoundEffect_t::DIAMOND_ARROW_EFFECT;\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\treturn SoundEffect_t::DIST_ATK_THROW_SHOT;\n\t\t\t}\n\t\t}\n\t\tcase WEAPON_DISTANCE: {\n\t\t\tif (tool->getAmmoType() == AMMO_BOLT) {\n\t\t\t\treturn SoundEffect_t::DIST_ATK_CROSSBOW_SHOT;\n\t\t\t}\n\t\t\tif (tool->getAmmoType() == AMMO_ARROW) {\n\t\t\t\treturn SoundEffect_t::DIST_ATK_BOW_SHOT;\n\t\t\t}\n\t\t\treturn SoundEffect_t::DIST_ATK_THROW_SHOT;\n\t\t}\n\t\tcase WEAPON_WAND: {\n\t\t\t// Separate between wand and rod here\n\t\t\t// return SoundEffect_t::DIST_ATK_ROD_SHOT;\n\t\t\treturn SoundEffect_t::DIST_ATK_WAND_SHOT;\n\t\t}\n\t\tdefault: {\n\t\t\treturn SoundEffect_t::SILENCE;\n\t\t}\n\t} // switch\n\n\treturn SoundEffect_t::SILENCE;\n}\n\n// event methods",
+      "sha256": "5f03562f860a19ebe623553d77f78b64e145ecc97c87788a55375d994be8aa1d"
+    },
+    "diamond_arrow_script_params": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+      "line_start": 9,
+      "line_end": 15,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/weapons/scripts/diamond_arrow.lua#L9-L15",
+      "excerpt": "local combat = Combat()\ncombat:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)\ncombat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ENERGYHIT)\ncombat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_DIAMONDARROW)\ncombat:setParameter(COMBAT_PARAM_IMPACTSOUND, SOUND_EFFECT_TYPE_DIAMOND_ARROW_EFFECT)\ncombat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)\ncombat:setParameter(COMBAT_PARAM_BLOCKARMOR, true)",
+      "sha256": "b2f64a75c21a257e328eb52a0f211f3d5d952ff0154c9ef7ec262f6eb43f4bb2"
+    },
+    "diamond_arrow_exact_id_registration": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+      "line_start": 26,
+      "line_end": 41,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/weapons/scripts/diamond_arrow.lua#L26-L41",
+      "excerpt": "local diamondArrow = Weapon(WEAPON_AMMO)\n\nfunction diamondArrow.onUseWeapon(player, variant)\n\treturn combat:execute(player, variant)\nend\n\ndiamondArrow:id(25757)\ndiamondArrow:id(35901)\ndiamondArrow:level(150)\ndiamondArrow:attack(37)\ndiamondArrow:action(\"removecount\")\ndiamondArrow:ammoType(\"arrow\")\ndiamondArrow:shootType(CONST_ANI_DIAMONDARROW)\ndiamondArrow:maxHitChance(100)\ndiamondArrow:wieldUnproperly(true)\ndiamondArrow:register()",
+      "sha256": "b2f64a75c21a257e328eb52a0f211f3d5d952ff0154c9ef7ec262f6eb43f4bb2"
+    },
+    "chain_combat_context_defaults": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/creatures/combat/combat.cpp",
+      "line_start": 1384,
+      "line_end": 1435,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/creatures/combat/combat.cpp#L1384-L1435",
+      "excerpt": "\tauto setCommonValues = [this, weapon](double formula, SoundEffect_t impactSound, uint32_t effect) {\n\t\tdouble weaponSkillFormula = weapon->getChainSkillValue();\n\t\tsetPlayerCombatValues(COMBAT_FORMULA_SKILL, 0, 0, weaponSkillFormula ? weaponSkillFormula : formula, 0);\n\t\tsetParam(COMBAT_PARAM_IMPACTSOUND, impactSound);\n\t\tsetParam(COMBAT_PARAM_EFFECT, effect);\n\t\tsetParam(COMBAT_PARAM_BLOCKARMOR, true);\n\t};\n\n\tsetChainCallback(g_configManager().getNumber(COMBAT_CHAIN_TARGETS), 1, true);\n\n\tswitch (weaponType) {\n\t\tcase WEAPON_FIST:\n\t\t\tsetCommonValues(g_configManager().getFloat(COMBAT_CHAIN_SKILL_FORMULA_FIST), HUMAN_CLOSE_ATK_FIST, CONST_ME_HITAREA);\n\t\t\tbreak;\n\t\tcase WEAPON_SWORD:\n\t\t\tsetCommonValues(g_configManager().getFloat(COMBAT_CHAIN_SKILL_FORMULA_SWORD), MELEE_ATK_SWORD, CONST_ME_SLASH);\n\t\t\tbreak;\n\t\tcase WEAPON_CLUB:\n\t\t\tsetCommonValues(g_configManager().getFloat(COMBAT_CHAIN_SKILL_FORMULA_CLUB), MELEE_ATK_CLUB, CONST_ME_BLACK_BLOOD);\n\t\t\tbreak;\n\t\tcase WEAPON_AXE:\n\t\t\tsetCommonValues(g_configManager().getFloat(COMBAT_CHAIN_SKILL_FORMULA_AXE), MELEE_ATK_AXE, CONST_ANI_WHIRLWINDAXE);\n\t\t\tbreak;\n\t\tcase WEAPON_DISTANCE:\n\t\t\tsetCommonValues(g_configManager().getFloat(COMBAT_CHAIN_SKILL_FORMULA_DISTANCE), DIST_ATK_BOW, CONST_ANI_HOLY);\n\t\t\tsetParam(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_WEAPONTYPE);\n\t\t\tbreak;\n\t\tcase WEAPON_AMMO:\n\t\t\tsetCommonValues(g_configManager().getFloat(COMBAT_CHAIN_SKILL_FORMULA_DISTANCE), DIST_ATK_BOW, CONST_ANI_HOLY);\n\t\t\tsetParam(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_WEAPONTYPE);\n\t\t\tbreak;\n\t\tcase WEAPON_MISSILE:\n\t\t\tsetCommonValues(g_configManager().getFloat(COMBAT_CHAIN_SKILL_FORMULA_MISSILE), DIST_ATK_BOW, CONST_ANI_HOLY);\n\t\t\tsetParam(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_WEAPONTYPE);\n\t\t\tbreak;\n\t}\n\n\tif (weaponType == WEAPON_WAND) {\n\t\tstatic const std::map<CombatType_t, std::pair<MagicEffectClasses, MagicEffectClasses>> elementEffects = {\n\t\t\t{ COMBAT_DEATHDAMAGE, { CONST_ME_MORTAREA, CONST_ME_BLACK_BLOOD } },\n\t\t\t{ COMBAT_ENERGYDAMAGE, { CONST_ME_ENERGYAREA, CONST_ME_PINK_ENERGY_SPARK } },\n\t\t\t{ COMBAT_FIREDAMAGE, { CONST_ME_FIREATTACK, CONST_ME_FIREATTACK } },\n\t\t\t{ COMBAT_ICEDAMAGE, { CONST_ME_ICEATTACK, CONST_ME_ICEATTACK } },\n\t\t\t{ COMBAT_EARTHDAMAGE, { CONST_ME_STONES, CONST_ME_POISONAREA } },\n\t\t};\n\n\t\tauto it = elementEffects.find(weapon->getElementType());\n\t\tif (it != elementEffects.end()) {\n\t\t\tsetPlayerCombatValues(COMBAT_FORMULA_LEVELMAGIC, 0, 0, g_configManager().getFloat(COMBAT_CHAIN_SKILL_FORMULA_WANDS_AND_RODS), 0);\n\t\t\tsetParam(COMBAT_PARAM_EFFECT, it->second.first);\n\t\t\tsetParam(COMBAT_PARAM_CHAIN_EFFECT, it->second.second);\n\t\t}",
+      "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad"
+    },
+    "move_sound_separate_context": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/items/item.cpp",
+      "line_start": 2109,
+      "line_end": 2119,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/item.cpp#L2109-L2119",
+      "excerpt": "SoundEffect_t Item::getMovementSound(const std::shared_ptr<Cylinder> &toCylinder) const {\n\tif (!toCylinder) {\n\t\treturn SoundEffect_t::ITEM_MOVE_DEFAULT;\n\t}\n\n\tif (const auto &toContainer = toCylinder->getContainer();\n\t    toContainer && toContainer->getHoldingPlayer()) {\n\t\treturn SoundEffect_t::ITEM_MOVE_BACKPACK;\n\t}\n\n\tswitch (items[id].type) {",
+      "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5"
+    },
+    "canary_diamond_arrow_sound_corrob": {
+      "repo": "opentibiabr/canary",
+      "commit": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+      "line_start": 9,
+      "line_end": 15,
+      "url": "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/weapons/scripts/diamond_arrow.lua#L9-L15",
+      "excerpt": "local combat = Combat()\ncombat:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)\ncombat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ENERGYHIT)\ncombat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_DIAMONDARROW)\ncombat:setParameter(COMBAT_PARAM_IMPACTSOUND, SOUND_EFFECT_TYPE_DIAMOND_ARROW_EFFECT)\ncombat:setParameter(COMBAT_PARAM_CASTSOUND, SOUND_EFFECT_TYPE_DIST_ATK_BOW)\ncombat:setParameter(COMBAT_PARAM_BLOCKARMOR, true)",
+      "sha256": "832997513f59f8916e90c8e3c2cf2c7ff79eb92327a9f405eff50c63d65d7840"
+    },
+    "canary_ordinary_sound_dispatch": {
+      "repo": "opentibiabr/canary",
+      "commit": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/weapons/weapons.cpp",
+      "line_start": 26,
+      "line_end": 35,
+      "url": "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/weapons/weapons.cpp#L26-L35",
+      "excerpt": "\t\t}\n\n\t\tif (params.soundCastEffect == SoundEffect_t::SILENCE) {\n\t\t\tg_game().sendDoubleSoundEffect(player->getPosition(), player->getHitSoundEffect(), player->getAttackSoundEffect(), player);\n\t\t\treturn;\n\t\t}\n\n\t\tg_game().sendDoubleSoundEffect(player->getPosition(), params.soundCastEffect, params.soundImpactEffect, player);\n\t}\n}",
+      "sha256": "faf0b2da524fd64d7c968a25a6c7a4964fe5f5206550ce810dba7b18f361c4ab"
+    },
+    "xml_wand_vortex": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/items/items.xml",
+      "line_start": 7194,
+      "line_end": 7200,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/items/items.xml#L7194-L7200",
+      "excerpt": "\t<item id=\"3074\" article=\"a\" name=\"wand of vortex\">\n\t\t<attribute key=\"description\" value=\"Surges of energy rush through the tip of this wand\" />\n\t\t<attribute key=\"weaponType\" value=\"wand\" />\n\t\t<attribute key=\"shootType\" value=\"energy\" />\n\t\t<attribute key=\"range\" value=\"3\" />\n\t\t<attribute key=\"weight\" value=\"1900\" />\n\t\t<attribute key=\"script\" value=\"moveevent;weapon\">",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    },
+    "xml_hammer_no_literal_media": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/items/items.xml",
+      "line_start": 9272,
+      "line_end": 9285,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/items/items.xml#L9272-L9285",
+      "excerpt": "\t<item id=\"3332\" article=\"a\" name=\"hammer of wrath\">\n\t\t<attribute key=\"description\" value=\"A giant is said to have forged this hammer to take revenge for the death of his brother\" />\n\t\t<attribute key=\"weaponType\" value=\"club\" />\n\t\t<attribute key=\"slotType\" value=\"two-handed\" />\n\t\t<attribute key=\"attack\" value=\"48\" />\n\t\t<attribute key=\"defense\" value=\"12\" />\n\t\t<attribute key=\"weight\" value=\"7000\" />\n\t\t<attribute key=\"imbuementslot\" value=\"3\">\n\t\t\t<attribute key=\"elemental damage\" value=\"3\" />\n\t\t\t<attribute key=\"life leech\" value=\"3\" />\n\t\t\t<attribute key=\"mana leech\" value=\"3\" />\n\t\t\t<attribute key=\"critical hit\" value=\"3\" />\n\t\t\t<attribute key=\"skillboost club\" value=\"3\" />\n\t\t</attribute>",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    },
+    "xml_sai_override": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/items/items.xml",
+      "line_start": 27319,
+      "line_end": 27342,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/items/items.xml#L27319-L27342",
+      "excerpt": "\t<item id=\"10389\" article=\"a\" name=\"traditional sai\">\n\t\t<attribute key=\"primarytype\" value=\"fist weapons\" />\n\t\t<attribute key=\"weaponType\" value=\"fist\" />\n\t\t<attribute key=\"meleeAttackEffect\" value=\"monkdaggers\" />\n\t\t<attribute key=\"elementalbond\" value=\"physical\" />\n\t\t<attribute key=\"slotType\" value=\"two-handed\" />\n\t\t<attribute key=\"attack\" value=\"28\" />\n\t\t<attribute key=\"defense\" value=\"15\" />\n\t\t<attribute key=\"weight\" value=\"5000\" />\n\t\t<attribute key=\"imbuementslot\" value=\"2\">\n\t\t\t<attribute key=\"life leech\" value=\"3\" />\n\t\t\t<attribute key=\"mana leech\" value=\"3\" />\n\t\t\t<attribute key=\"critical hit\" value=\"3\" />\n\t\t\t<attribute key=\"skillboost fist\" value=\"3\" />\n\t\t</attribute>\n\t\t<attribute key=\"script\" value=\"moveevent;weapon\">\n\t\t\t<attribute key=\"level\" value=\"30\" />\n\t\t\t<attribute key=\"unproperly\" value=\"true\" />\n\t\t\t<attribute key=\"weaponType\" value=\"fist\" />\n\t\t\t<attribute key=\"vocation\" value=\"Monk;true, Exalted Monk\" />\n\t\t</attribute>\n\t</item>\n\t<item id=\"10390\" article=\"a\" name=\"Zaoan sword\">\n\t\t<attribute key=\"primarytype\" value=\"sword weapons\" />",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    },
+    "xml_drachaku_override": {
+      "repo": "zimbadev/crystalserver",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/items/items.xml",
+      "line_start": 27362,
+      "line_end": 27385,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/items/items.xml#L27362-L27385",
+      "excerpt": "\t<item id=\"10391\" article=\"a\" name=\"drachaku\">\n\t\t<attribute key=\"primarytype\" value=\"fist weapons\" />\n\t\t<attribute key=\"weaponType\" value=\"fist\" />\n\t\t<attribute key=\"meleeAttackEffect\" value=\"monkstaff\" />\n\t\t<attribute key=\"elementalbond\" value=\"energy\" />\n\t\t<attribute key=\"slotType\" value=\"two-handed\" />\n\t\t<attribute key=\"attack\" value=\"41\" />\n\t\t<attribute key=\"defense\" value=\"16\" />\n\t\t<attribute key=\"weight\" value=\"6000\" />\n\t\t<attribute key=\"imbuementslot\" value=\"2\">\n\t\t\t<attribute key=\"life leech\" value=\"3\" />\n\t\t\t<attribute key=\"mana leech\" value=\"3\" />\n\t\t\t<attribute key=\"critical hit\" value=\"3\" />\n\t\t\t<attribute key=\"skillboost fist\" value=\"3\" />\n\t\t</attribute>\n\t\t<attribute key=\"script\" value=\"moveevent;weapon\">\n\t\t\t<attribute key=\"level\" value=\"90\" />\n\t\t\t<attribute key=\"unproperly\" value=\"true\" />\n\t\t\t<attribute key=\"weaponType\" value=\"fist\" />\n\t\t\t<attribute key=\"vocation\" value=\"Monk;true, Exalted Monk\" />\n\t\t</attribute>\n\t</item>\n\t<item id=\"10392\" article=\"a\" name=\"twin hooks\">\n\t\t<attribute key=\"primarytype\" value=\"sword weapons\" />",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    }
+  },
+  "captures_manifest": {
+    "path": "/workspace/audit-continuation/weapon-presentation-source-audit/captures.json",
+    "sha256": "af53c2ef16584e877be80fc71874a1d002b7f10b2d955ada932ec2057aa7f8dd",
+    "captured_sources": 49
+  },
+  "limits": [
+    "Oteryn schema/import/native coverage is reviewed separately by Root; this worker does not claim a new canonical media promotion.",
+    "No source absence converted into Known silence/none; defaults and script-context behavior retain their own evidence class.",
+    "Both Crystal XML files were fetched freshly from exact public commits and byte-equal to retained local pinned sources."
+  ]
+}

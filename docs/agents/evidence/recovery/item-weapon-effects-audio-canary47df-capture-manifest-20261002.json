@@ -1,0 +1,165 @@
+{
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "sources": [
+    {
+      "path": "data/items/items.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "bytes": 3637462,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.341808+00:00"
+    },
+    {
+      "path": "src/items/items.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/items.cpp",
+      "sha256": "f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7",
+      "bytes": 15251,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.145794+00:00"
+    },
+    {
+      "path": "src/items/items.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/items.hpp",
+      "sha256": "b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6",
+      "bytes": 11423,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.146076+00:00"
+    },
+    {
+      "path": "src/items/weapons/weapons.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/weapons/weapons.cpp",
+      "sha256": "faf0b2da524fd64d7c968a25a6c7a4964fe5f5206550ce810dba7b18f361c4ab",
+      "bytes": 30664,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.405167+00:00"
+    },
+    {
+      "path": "src/items/weapons/weapons.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/weapons/weapons.hpp",
+      "sha256": "cf06af185b377080f22bb79ddace86f7b001c4307551279fd55ee447d2bfcb97",
+      "bytes": 9921,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.402406+00:00"
+    },
+    {
+      "path": "src/creatures/combat/combat.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/combat/combat.cpp",
+      "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+      "bytes": 95855,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.568308+00:00"
+    },
+    {
+      "path": "src/creatures/combat/combat.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/combat/combat.hpp",
+      "sha256": "3f1a109f59b9a81b09afb292049186a07cdb74c393caf967664407b454173ea3",
+      "bytes": 16320,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.634960+00:00"
+    },
+    {
+      "path": "src/lua/functions/items/weapon_functions.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/items/weapon_functions.cpp",
+      "sha256": "bec98597f589d369a49dd05a962823c2e157c696b98ca5f17dcf8bbcda14990e",
+      "bytes": 20352,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.667018+00:00"
+    },
+    {
+      "path": "src/lua/functions/creatures/combat/combat_functions.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/creatures/combat/combat_functions.cpp",
+      "sha256": "8d295e93f2099b1b7a616ab627b54a2bb8611324cdbf510fc07ecc5c719db968",
+      "bytes": 6917,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.749560+00:00"
+    },
+    {
+      "path": "src/utils/tools.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/utils/tools.cpp",
+      "sha256": "28dc881ffb1fa38d63f3cf1c02e2329cab8051117936b055f78000d6f0a5cc19",
+      "bytes": 64110,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.862457+00:00"
+    },
+    {
+      "path": "src/utils/tools.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/utils/tools.hpp",
+      "sha256": "3e2fdb913d9b920bbcd5cedafc3e8fcc3b97f9369a59e42d4cddc2b2e4780bc6",
+      "bytes": 9721,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.867662+00:00"
+    },
+    {
+      "path": "data/scripts/weapons/scripts/burst_arrow.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/weapons/scripts/burst_arrow.lua",
+      "sha256": "731ce6f63024c5b29f6738d42499f0ae9a6a2edbfca2c02b212f8d296364da2b",
+      "bytes": 982,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:36.940964+00:00"
+    },
+    {
+      "path": "data/scripts/weapons/scripts/diamond_arrow.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/weapons/scripts/diamond_arrow.lua",
+      "sha256": "832997513f59f8916e90c8e3c2cf2c7ff79eb92327a9f405eff50c63d65d7840",
+      "bytes": 1363,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:37.094398+00:00"
+    },
+    {
+      "path": "data/scripts/weapons/scripts/poison_arrow.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/weapons/scripts/poison_arrow.lua",
+      "sha256": "e1b13187ffd26c096ed894130433a08811ae952bec939db50d3bcee8e97e9966",
+      "bytes": 835,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:37.127792+00:00"
+    },
+    {
+      "path": "data/scripts/weapons/scripts/viper_star.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/weapons/scripts/viper_star.lua",
+      "sha256": "b6e262a0bac63ee4fad8272c71739de5257dd7eeb94bb355b1426a2a5c1dff9f",
+      "bytes": 1030,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:30:37.152566+00:00"
+    },
+    {
+      "path": "src/items/functions/item/item_parse.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/functions/item/item_parse.cpp",
+      "sha256": "4abe1c35c621595472bc6b30d39e10d7db115dd569d9e3334b64b600b9141477",
+      "bytes": 57777,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:31:40.557465+00:00"
+    },
+    {
+      "path": "src/items/functions/item/item_parse.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/functions/item/item_parse.hpp",
+      "sha256": "06221b5fc0a6e744df143eb6c91c1abe83689a438fb5f64d2dba28b0baae17ef",
+      "bytes": 20510,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:31:40.693837+00:00"
+    },
+    {
+      "path": "src/creatures/players/player.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/player.cpp",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "bytes": 378350,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:31:40.672315+00:00"
+    },
+    {
+      "path": "src/creatures/players/player.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/player.hpp",
+      "sha256": "543db347284aa85f42b1c82297a951cd64b4a1d2ce989a5a3447c7bfa87d32ab",
+      "bytes": 74285,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:31:40.743809+00:00"
+    },
+    {
+      "path": "data/scripts/spells/attack/whirlwind_throw.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/spells/attack/whirlwind_throw.lua",
+      "sha256": "933a7da08cf4ef4b15b7f0cde135fb592dd8909368d1419cb8f58b3bd73fa81d",
+      "bytes": 1226,
+      "method": "anonymous urllib HTTP GET",
+      "captured_utc": "2026-10-02T11:31:40.870044+00:00"
+    }
+  ]
+}
