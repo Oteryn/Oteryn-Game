@@ -1,0 +1,65 @@
+{
+  "schema": "OTERYN_PHYSICAL8_INDEPENDENT_PROFILE_ONLY_REVIEW/v1",
+  "status": "PASS_PROFILE_ONLY_PROPOSAL_REVIEW_NO_LIVE_ACCEPTANCE",
+  "review_scope": "Read-only external proposal, actual published4f source/old owning contract, synthetic measurement and registry arithmetic. This is not live profile acceptance or production/source promotion approval.",
+  "baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "proposal_manifest": {
+    "path": "/workspace/audit-continuation/physical8-profile-only-proposal/manifest.json",
+    "sha256": "41352308c5d99d4378d13aa64ad696d24a926ec6addf9eb426a1af846d5c97a3",
+    "owned_blobs_verified_twice": 3
+  },
+  "checks": {
+    "actual_published_git_readback": "PASS all seven witness blobs match both git4f and current file SHA/size",
+    "current_universe": "PASS57320 nativeReference records/34031 unique Item family-key-revision triples",
+    "atom_observation": "PASS12100 Known names/max46UTF8 bytes/zero Known descriptions",
+    "record_retention": {
+      "materializable_false": 33965,
+      "materializable_true": 66
+    },
+    "old_profile_acceptance": "Archived task504 records original owning acceptance and canonical mergedPR749. Historical doc pending heading alone is not evidence of current nonacceptance.",
+    "old_v4_exact_universe": "PASS oldTypedItemV4 for_source and accepts_item_count require38157; cannot serve current34031 typed source without separate owning disposition.",
+    "version_domain": "PASS proposed distinctmagicOTRPA05/profile5/compiler5/canonicalization5/body2; preserve1..6 and appendModifierElementPhysical7 only. Shareddecoder must keep profile-scoped v4 encode/lookup rejection7; old lazy boundary retained.",
+    "registry": "PASS31 unique proposed entries/no existingID collisions/all required fields/ranges/failure categories valid; original30V1 entries unchanged.",
+    "arithmetic": {
+      "item_count": 34031,
+      "index_entry_max_bytes": 1069,
+      "fixed_envelope_bytes": 200,
+      "manifest_bytes": 7500,
+      "server_record_bytes": 3555,
+      "client_record_bytes": 3433,
+      "index_bytes": 36379143,
+      "server_body_bytes": 120980205,
+      "client_body_bytes": 116828423,
+      "server_artifact_bytes": 157367048,
+      "client_artifact_bytes": 153215266,
+      "pair_bytes": 310582314,
+      "interpretation": "Calculated bounded encoded byte ceilings, not RSS/allocator or current full-artifact measurements."
+    },
+    "measurement": "PASS authenticity/scope only: fc10 measurement and b779 oracle hash verified. Oracle diff introduces only explicit synthetic profile4/5 and element-domain6/7, no complete v5 carrier or production Rust. No full-family/max+1 acceptance inferred.",
+    "source_inventory": "PASS retained inventory1542e265 hash verified; historicalSource57/Native49/Physical8 remain unchanged.",
+    "stop_hash_recheck": "PASS final413 manifest and all three owned blobs unchanged after review",
+    "identity_set_digest": {
+      "status": "PASS exact5f0f8adc468b8c147b3bc3a7e8aa185e309d988cecd949f1da8efc873c03f760 reproduced",
+      "algorithm": "Select native reference records with kind Item; sort identity dicts by json.dumps(identity,sort_keys=True,separators=(',',':')). Serialize UTF8 json.dumps(identities,sort_keys=True,ensure_ascii=False,separators=(',',':')) plus exactly one final newline; SHA256.",
+      "unique_item_identities": 34031,
+      "framed_bytes": 2643790,
+      "source_git_blob": "f0e3cac0ab805a5dc0861998c4052fbd2c615d3e"
+    }
+  },
+  "findings": [],
+  "design_recommendation": {
+    "necessary_owning_change": "A distinct explicit current34031 source-family profile with exact identity/source receipt and profile-scoped Physical7/source-schema carrier disposition is justified by old accepted exact38157 contract.",
+    "registry_scope": "31 scoped V2 rows are a valid proposed choice, not a technical requirement to duplicate all30 dimensions. Of old30,23 hard maxima are unchanged and seven cardinality/aggregate maxima change; newElementCode7 is distinct.",
+    "minimum_alternative": "New owning profile may explicitly inherit the23 unchanged V1 bounds and optionally retain conservative old encoded byte ceilings, while separately binding exact34031 admission/identities and newElement7. Existing V1 contract/rows/38157 selection remain unchanged. Any reuse must be explicitly accepted in exact new profile/registry/tool/evidence blobs, never an automatic old-profile partial-family exception.",
+    "selected_candidate": "Current proposal deliberately chooses independently scoped lower V2 byte ceilings. No correctness objection to that choice; no request to remove guards or evidence.",
+    "digest_reproduction": "Record exact canonical JSON plus trailing-newline recipe in the owning qualification receipt. Existing claimed digest is correct; no incorrect-hash finding."
+  },
+  "release_holds": [
+    "Actual full-family server/client artifacts, every max/max+1 boundary, metadata/header/profile/golden pairing and independent production oracle qualification remain PENDING.",
+    "Source/schema carrier literal/version disposition and all historical whole-file dependency seals need truthful successor receipts before enum/codec release; no silent old proof edits.",
+    "Exact live owning acceptedcheckpoint tied to stopped concrete profile/registry/tool/evidence blobs remains PENDING.",
+    "Production schema/codec implementation/compilation, runtime admission and Physical8 native16 atoms are outside this review and remain unimplemented."
+  ],
+  "writes": "Only this external review report; no repository/schema/native/Git/ref/Cargo mutations.",
+  "reviewed_at": "2026-10-02"
+}

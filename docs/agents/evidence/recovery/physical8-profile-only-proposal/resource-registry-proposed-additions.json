@@ -1,0 +1,643 @@
+{
+  "schema": "OTERYN_REFERENCE_ITEM_RESOURCE_PROFILE_V2_REGISTRY_PROPOSAL/v1",
+  "status": "PROPOSED_ONLY_NO_REGISTRY_MUTATION_OR_ACCEPTANCE",
+  "existing_registry_sha256": "3dd7459d81c90a9d1d4cbc75246b4fe9a0f61d128ec542d1c0bb1251eaf7607b",
+  "existing_profile_v1_rows_action": "RETAIN_BYTE_AND_SEMANTIC_IDENTICAL",
+  "proposed_action": "Append proposed rows in profile-only candidate for exact-blob review; release only after live owning acceptance and complete evidence.",
+  "proposed_rows": [
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-ITEM-RECORDS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Complete current canonical Item records in each explicitly selected v5 projection",
+      "unit": "records",
+      "hard_maximum": 34031,
+      "configurable_range": {
+        "minimum": 34031,
+        "maximum": 34031
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate exact identity/index/body cardinality before allocating record or index collections.",
+      "client_visible": true,
+      "boundary_tests": [
+        "Exactly 34031 unique current full Item identities accepted only when every nested limit and universe digest passes",
+        "34030 or 34032 records rejected before collection allocation",
+        "duplicate or substituted current family/key/revision rejected independently; no synthetic identity fill"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: current4f complete Item universe observed; distinct historical38157 fixture/V1 rows remain unchanged. No runtime/admission implication."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-PRESENTATION-NAME-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One known Item presentation name",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 46,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 46
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check declared byte length before copying or UTF-8 decoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "46-byte valid UTF-8 name accepted",
+        "47 bytes rejected before retention",
+        "invalid UTF-8 rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-PRESENTATION-DESCRIPTION-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One known Item presentation description",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 200,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 200
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check declared byte length before copying or UTF-8 decoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "200-byte valid UTF-8 description accepted",
+        "201 bytes rejected before retention",
+        "invalid UTF-8 rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-PRESENTATION-ALIASES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Item presentation aliases in profile v1",
+      "unit": "entries",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Profile v1 admits no collection allocation; any entry retains explicit unsupported provenance and fails encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "empty collection accepted as EXPLICIT_UNSUPPORTED_IN_V1",
+        "first entry rejected without silent loss"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-PRESENTATION-TAGS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Item presentation tags in profile v1",
+      "unit": "entries",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Profile v1 admits no collection allocation; any entry retains explicit unsupported provenance and fails encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "empty collection accepted as EXPLICIT_UNSUPPORTED_IN_V1",
+        "first entry rejected without silent loss"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Present typed capability groups in one server-authoritative Item body",
+      "unit": "groups",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject duplicates, noncanonical order and unknown critical groups.",
+      "client_visible": false,
+      "boundary_tests": [
+        "16 known ordered unique groups accepted",
+        "17 groups rejected before allocation",
+        "duplicate, unsorted or unknown group rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Present typed capability groups in one client-safe Item body",
+      "unit": "groups",
+      "hard_maximum": 11,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 11
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before allocation and reject every server-only group through the projection allowlist.",
+      "client_visible": true,
+      "boundary_tests": [
+        "11 allowlisted ordered unique groups accepted",
+        "12 groups rejected before allocation",
+        "each server-only group rejected independently"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CAPABILITY-TRUTH-STATES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Classification capability truth states in one Item record",
+      "unit": "fixed typed states",
+      "hard_maximum": 24,
+      "configurable_range": {
+        "minimum": 24,
+        "maximum": 24
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Require the exact closed capability shape; never allocate from an encoded arbitrary count.",
+      "client_visible": true,
+      "boundary_tests": [
+        "exactly 24 truth states accepted",
+        "23-state truncation rejected",
+        "25th state rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-EQUIPMENT-PATTERNS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Alternative complete Equipment patterns per Item",
+      "unit": "patterns",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before pattern allocation; canonicalize semantic content and reject semantic duplicates.",
+      "client_visible": true,
+      "boundary_tests": [
+        "2 distinct canonical patterns accepted",
+        "3rd pattern rejected before allocation",
+        "same semantic pattern under a different local ID rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. max(normalized 38,157-row candidate-corpus maximum 1, minimum non-singleton schema witness 2)."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-EQUIPMENT-RESERVED-SLOTS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Additional reserved semantic slots per Equipment pattern",
+      "unit": "slots",
+      "hard_maximum": 9,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 9
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique slots and reject the primary slot.",
+      "client_visible": true,
+      "boundary_tests": [
+        "9 unique non-primary slots accepted",
+        "10th additional slot rejected",
+        "duplicate or primary-slot repetition rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-EQUIPMENT-EXCLUSIVE-GROUPS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Mutually exclusive Equipment group memberships per pattern",
+      "unit": "memberships",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before key allocation; validate each inherited ProductionKey length/grammar then strict order and uniqueness.",
+      "client_visible": true,
+      "boundary_tests": [
+        "2 distinct ordered valid group keys accepted",
+        "3rd membership rejected before allocation",
+        "empty, malformed, duplicate or unsorted group key rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. G=max(complete explicit-membership census maximum 0, minimum non-singleton grammar witness 2); no gameplay group assertion."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-EQUIPMENT-GROUP-KEY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One Equipment mutually-exclusive semantic group key",
+      "unit": "ASCII bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check u16-declared length before copying; apply the inherited namespaced ProductionKey grammar before retention.",
+      "client_visible": true,
+      "boundary_tests": [
+        "512-byte valid namespaced key accepted",
+        "513 bytes rejected before retention",
+        "empty, malformed or non-production key rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. Reuses the existing canonical ProductionKey representation and ceiling; unrelated record-byte ceilings do not apply."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-EQUIPMENT-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Base-vocation allow-set entries per Equipment pattern",
+      "unit": "vocations",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 5
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed five-vocation domain.",
+      "client_visible": true,
+      "boundary_tests": [
+        "5 unique base vocations accepted",
+        "6th entry rejected before allocation",
+        "duplicate or unknown vocation rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-TRADE-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Base-vocation entries in one TradeRestrictions record",
+      "unit": "vocations",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 5
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed five-vocation domain.",
+      "client_visible": false,
+      "boundary_tests": [
+        "5 unique base vocations accepted",
+        "6th entry rejected before allocation",
+        "duplicate or unknown vocation rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-WEAPON-ELEMENTS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Typed elemental entries in one Weapon record",
+      "unit": "entries",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 5
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; validate closed kinds, canonical order and uniqueness.",
+      "client_visible": true,
+      "boundary_tests": [
+        "5 unique typed elements accepted",
+        "6th entry rejected before allocation",
+        "duplicate, unsorted or unknown kind rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-PROTECTION-RESISTANCES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Typed resistance entries in one Protection record",
+      "unit": "entries",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; validate closed kinds, canonical order, uniqueness and rational parameters.",
+      "client_visible": true,
+      "boundary_tests": [
+        "12 unique typed resistances accepted",
+        "13th entry rejected before allocation",
+        "duplicate kind or zero denominator rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SKILL-MODIFIERS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Typed SkillModifier definitions in one Item record",
+      "unit": "definitions",
+      "hard_maximum": 37,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 37
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; validate closed kinds, canonical order, uniqueness and typed parameters.",
+      "client_visible": true,
+      "boundary_tests": [
+        "37 unique typed modifiers accepted",
+        "38th modifier rejected before allocation",
+        "duplicate/unknown kind or invalid typed parameter rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-IMBUEMENT-SLOTS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Known gameplay imbuement slot count on one Item",
+      "unit": "slots",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate the scalar before retaining the Imbuement capability.",
+      "client_visible": true,
+      "boundary_tests": [
+        "slot count 3 accepted",
+        "slot count 4 rejected",
+        "known zero remains distinct from unknown/not-applicable"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-IMBUEMENT-ALLOWED-ENTRIES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Allowed imbuement family/tier entries per Item",
+      "unit": "entries",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require canonical unique family keys and accepted typed tiers.",
+      "client_visible": true,
+      "boundary_tests": [
+        "20 unique family/tier entries accepted",
+        "21st entry rejected before allocation",
+        "duplicate family or unknown tier rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-IMBUEMENT-EXCLUDED-FAMILIES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Excluded imbuement families per Item",
+      "unit": "entries",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require canonical unique family keys.",
+      "client_visible": true,
+      "boundary_tests": [
+        "20 unique excluded families accepted",
+        "21st entry rejected before allocation",
+        "duplicate or unknown family rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CROSS-ITEM-TARGETS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Typed cross-Item target values retained in one server Item record",
+      "unit": "target values",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use the protected native identity map; reject any extra target field or accepted dangling ordinal before retention.",
+      "client_visible": false,
+      "boundary_tests": [
+        "12 schema-defined target values accepted when each resolves or carries a non-known disposition",
+        "13th target field rejected",
+        "accepted dangling target rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-MANIFEST-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Reference Item artifact manifest section",
+      "unit": "bytes",
+      "hard_maximum": 7500,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 7500
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate section length and checked range before retaining or parsing manifest bytes.",
+      "client_visible": true,
+      "boundary_tests": [
+        "7,500-byte manifest accepted only when grammar and artifact total pass",
+        "7,501 bytes rejected before retention",
+        "offset plus length overflow rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. Preserves the existing Reference carrier maximum."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-INDEX-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Reference Item artifact index section",
+      "unit": "bytes",
+      "hard_maximum": 36379143,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 36379143
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate index section length before retention; bound every entry atom before allocation/copy.",
+      "client_visible": true,
+      "boundary_tests": [
+        "36379143 bytes accepted only with exact34031 full current family and all nested grammar/source/projection bounds",
+        "36379144 bytes rejected before allocation, parse or pair staging as appropriate",
+        "checked arithmetic overflow and malformed nested ranges reject without partial publication"
+      ],
+      "notes": "PROPOSED_ARITHMETIC_NOT_FULL_ARTIFACT_MEASUREMENT: exact34031 selected universe; current synthetic3555/3433 record evidence only. Complete maximum/max+1 qualification pending."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One typed server-authoritative Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3555,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3555
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3,555-byte semantically valid record accepted",
+        "3,556 bytes rejected before record allocation",
+        "truncated record rejected"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One typed client-safe Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3433,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3433
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or allowlisted field decode.",
+      "client_visible": true,
+      "boundary_tests": [
+        "3,433-byte semantically valid client record accepted",
+        "3,434 bytes rejected before record allocation",
+        "server-only group rejected independently"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: inherited grammar/vocabulary maxima; old measurement provenance remains historical; full successor boundary qualification pending. "
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Aggregate server Item body section",
+      "unit": "bytes",
+      "hard_maximum": 120980205,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 120980205
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication/addition before section allocation; enforce every nested record bound.",
+      "client_visible": false,
+      "boundary_tests": [
+        "120980205 bytes accepted only with exact34031 full current family and all nested grammar/source/projection bounds",
+        "120980206 bytes rejected before allocation, parse or pair staging as appropriate",
+        "checked arithmetic overflow and malformed nested ranges reject without partial publication"
+      ],
+      "notes": "PROPOSED_ARITHMETIC_NOT_FULL_ARTIFACT_MEASUREMENT: exact34031 selected universe; current synthetic3555/3433 record evidence only. Complete maximum/max+1 qualification pending."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Aggregate client-safe Item body section",
+      "unit": "bytes",
+      "hard_maximum": 116828423,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 116828423
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication/addition before section allocation; enforce every nested client record bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "116828423 bytes accepted only with exact34031 full current family and all nested grammar/source/projection bounds",
+        "116828424 bytes rejected before allocation, parse or pair staging as appropriate",
+        "checked arithmetic overflow and malformed nested ranges reject without partial publication"
+      ],
+      "notes": "PROPOSED_ARITHMETIC_NOT_FULL_ARTIFACT_MEASUREMENT: exact34031 selected universe; current synthetic3555/3433 record evidence only. Complete maximum/max+1 qualification pending."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One full server-authoritative Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 157367048,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 157367048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check total slice length before header parse or input-sized allocation; all nested section limits remain conjunctive.",
+      "client_visible": false,
+      "boundary_tests": [
+        "157367048 bytes accepted only with exact34031 full current family and all nested grammar/source/projection bounds",
+        "157367049 bytes rejected before allocation, parse or pair staging as appropriate",
+        "checked arithmetic overflow and malformed nested ranges reject without partial publication"
+      ],
+      "notes": "PROPOSED_ARITHMETIC_NOT_FULL_ARTIFACT_MEASUREMENT: exact34031 selected universe; current synthetic3555/3433 record evidence only. Complete maximum/max+1 qualification pending."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One full client-safe Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 153215266,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 153215266
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check total slice length before header parse or input-sized allocation; all nested allowlist limits remain conjunctive.",
+      "client_visible": true,
+      "boundary_tests": [
+        "153215266 bytes accepted only with exact34031 full current family and all nested grammar/source/projection bounds",
+        "153215267 bytes rejected before allocation, parse or pair staging as appropriate",
+        "checked arithmetic overflow and malformed nested ranges reject without partial publication"
+      ],
+      "notes": "PROPOSED_ARITHMETIC_NOT_FULL_ARTIFACT_MEASUREMENT: exact34031 selected universe; current synthetic3555/3433 record evidence only. Complete maximum/max+1 qualification pending."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-GENERATION-PAIR-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Combined encoded server and client-safe Reference Item artifacts in one generation",
+      "unit": "bytes",
+      "hard_maximum": 310582314,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 310582314
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
+      "client_visible": false,
+      "boundary_tests": [
+        "310582314 bytes accepted only with exact34031 full current family and all nested grammar/source/projection bounds",
+        "310582315 bytes rejected before allocation, parse or pair staging as appropriate",
+        "checked arithmetic overflow and malformed nested ranges reject without partial publication"
+      ],
+      "notes": "PROPOSED_ARITHMETIC_NOT_FULL_ARTIFACT_MEASUREMENT: exact34031 selected universe; current synthetic3555/3433 record evidence only. Complete maximum/max+1 qualification pending."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-MODIFIER-ELEMENT-CODE",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Known Modifier ELEMENT u8 code in artifact v5 only; v4 remains1..6",
+      "unit": "closed enum wire code",
+      "hard_maximum": 7,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 7
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Validate profile-scoped closed domain before retaining a known Element; no allocation or fallback from unknown code. Shared enum expansion must not bypass legacy v4 decode rejection.",
+      "client_visible": true,
+      "boundary_tests": [
+        "v5 exact values1..7 accepted; Physical7 preserved in server and client projection",
+        "0,8,255 rejected; v4 rejects7 at encode and lazy lookup decode",
+        "old1..6 wire bytes and serde spellings remain identical"
+      ],
+      "notes": "PROPOSED_NOT_ACCEPTED: new ModifierElement.Physical7 only, not ResistanceKind.Physical10 or WeaponElement widening."
+    }
+  ],
+  "arithmetic": {
+    "item_count": 34031,
+    "index_entry_max_bytes": 1069,
+    "fixed_envelope_bytes": 200,
+    "manifest_bytes": 7500,
+    "server_record_bytes": 3555,
+    "client_record_bytes": 3433,
+    "ITEM-RECORDS": 34031,
+    "INDEX-BYTES": 36379143,
+    "SERVER-BODY-BYTES": 120980205,
+    "CLIENT-BODY-BYTES": 116828423,
+    "SERVER-ARTIFACT-BYTES": 157367048,
+    "CLIENT-ARTIFACT-BYTES": 153215266,
+    "GENERATION-PAIR-BYTES": 310582314
+  },
+  "qualification": "Record lengths observed only in external synthetic experiment; aggregate formulas proposed, not measured artifact/max+1 results."
+}

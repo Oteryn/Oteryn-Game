@@ -1,0 +1,30 @@
+{
+  "schema": "OTERYN_PHYSICAL8_PROFILE_ONLY_EXTERNAL_MANIFEST/v1",
+  "status": "PROPOSAL_ONLY_NOT_ACCEPTED_OR_IMPLEMENTED",
+  "inspection_parent": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "owned_files": [
+    {
+      "path": "/workspace/audit-continuation/physical8-profile-only-proposal/profile-proposal.json",
+      "sha256": "7dfeeedd485f1ca737466a1989074b4dae9ed0f65793cea29c26bb5f006a5a05",
+      "bytes": 4631
+    },
+    {
+      "path": "/workspace/audit-continuation/physical8-profile-only-proposal/proposed-profile-v5.md",
+      "sha256": "ac31a9fdc5b80d82eee3903bb9e74e00762f759ebad925752e00d87503368cf8",
+      "bytes": 10606
+    },
+    {
+      "path": "/workspace/audit-continuation/physical8-profile-only-proposal/resource-registry-proposed-additions.json",
+      "sha256": "4f1daa573e8ba3d70f0a395acd838d8558aab75b9a791b7d36b0dd94ff188d04",
+      "bytes": 31805
+    }
+  ],
+  "checks": {
+    "existing_profile_tool_registry_and_native_source_read": "PASS exact4f",
+    "proposal_JSON_required_registry_shape_unique_ids_and_arithmetic": "PASS structural calculation only",
+    "synthetic_measurement": "REFERENCED_EXISTING_NO_RERUN",
+    "current_full_artifact_Rust_max_plus_one": "NOT_RUN",
+    "live_owning_checkpoint": "PENDING"
+  },
+  "Cargo_WT_Git_ref_edits": false
+}

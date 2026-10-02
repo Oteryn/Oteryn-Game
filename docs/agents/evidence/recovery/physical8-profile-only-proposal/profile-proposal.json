@@ -1,0 +1,117 @@
+{
+  "schema": "OTERYN_PHYSICAL8_PROFILE_ONLY_DISPOSITION/v1",
+  "status": "PROPOSED_DISTINCT_V5_LIVE_OWNING_ACCEPTANCE_PENDING",
+  "inspection_parent": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "candidate_codec": {
+    "artifact_profile": "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5",
+    "magic_hex": "4f54525041303500",
+    "profile_version": 5,
+    "body_version": 2,
+    "compiler": "OTERYN_REFERENCE_PLAYABLE_COMPILER/v5",
+    "canonicalization": "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v5",
+    "resource_profile": "D6_M1_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE/v2",
+    "modifier_elements": {
+      "Death": 1,
+      "Earth": 2,
+      "Energy": 3,
+      "Fire": 4,
+      "Holy": 5,
+      "Ice": 6,
+      "Physical": 7
+    },
+    "modifier_kind_count": 37,
+    "old_v4_domain": "1..6 only; lazy body semantic rejection7 retained",
+    "source_schema_literal_version_disposition": "Required explicitly at owning checkpoint, not silently widened",
+    "selection": "Explicit current-full-family v5 constructor, never generic count/Physical-presence fallback"
+  },
+  "universes": {
+    "current_reference_records": 57320,
+    "current_items": 34031,
+    "current_full_item_identity_sha256": "5f0f8adc468b8c147b3bc3a7e8aa185e309d988cecd949f1da8efc873c03f760",
+    "historical_protected_b1_v4_items": 38157,
+    "difference4126": "Distinct source universes, not missing native Item backlog; never synthesize or import to fill",
+    "old_v4_for_source_exact_count_and_registry": "UNCHANGED38157"
+  },
+  "actual_current_json_atom_observation": {
+    "known_names": 12100,
+    "maximum_name_UTF8_bytes": 46,
+    "artifact_encoding_or_full_boundary_test": false
+  },
+  "physical_source_cohort": {
+    "source_qualified_held_ids": [
+      10389,
+      17828,
+      50164,
+      50165,
+      50181,
+      50239,
+      50273,
+      52335
+    ],
+    "whole_vectors": 8,
+    "atoms": 16,
+    "native_applied": 0
+  },
+  "fresh_measurement": {
+    "path": "/workspace/audit-continuation/physical8-external-prototype-measurement-20261002.json",
+    "sha256": "fc10e2f99a60d76e4b81b8aa35d41e0ff704e2dff640ba71ae4d4a491e3b79bc",
+    "scope": "EXTERNAL_SYNTHETIC_SINGLE_RECORD_ONLY",
+    "production_Rust": false,
+    "full_artifact_maximum_or_max_plus_one": false
+  },
+  "immutable_source_inventory": {
+    "path": "/workspace/audit-continuation/physical8-implementation-work-inventory-20261002.json",
+    "sha256": "1542e265e962ffe4cf8af8f9d5e6566e1143a1f6a3cacbded1ba811f968b2560"
+  },
+  "read_witnesses": [
+    {
+      "path": "docs/architecture/OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "sha256": "e96c4b716b5070a598183a3760bf7f859855a0a4ae320a2f47d88f38dbdad508",
+      "bytes": 12074
+    },
+    {
+      "path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
+      "sha256": "3dd7459d81c90a9d1d4cbc75246b4fe9a0f61d128ec542d1c0bb1251eaf7607b",
+      "bytes": 414720
+    },
+    {
+      "path": "tools/reference-item-resource-profile/item_resource_profile.py",
+      "sha256": "73e0c3e009966b3db75a60b39ca53f63648405b8ce794eca73231ff59fdbb6d0",
+      "bytes": 83077
+    },
+    {
+      "path": "apps/game-server/src/content/reference_artifact.rs",
+      "sha256": "bee2d053314ac6023d187d0e1ae00aa13c96096d8fb3d31a12d6a8accb63072c",
+      "bytes": 145808
+    },
+    {
+      "path": "apps/game-server/src/content/reference_playable.rs",
+      "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+      "bytes": 107416
+    },
+    {
+      "path": "docs/agents/tasks/archive/OTV2-20260922-content-world-item-schema-readiness-504.md",
+      "sha256": "411a15c6d3d3868ab866ed510e1d81212146fa9a4099efecbfb10029c7e7d304",
+      "bytes": 12165
+    },
+    {
+      "path": "content/world/definitions/reference.json",
+      "sha256": "1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e",
+      "bytes": 24951707
+    }
+  ],
+  "required_release_gates": [
+    "Independent frozen profile/tool/evidence and all boundary review",
+    "Exact profile-only registry/governance validation",
+    "Live owner ACCEPTED checkpoint tied exact commit/blob hashes and chosen34031 full universe",
+    "Fresh production schema/codec/source-version diff + independent oracle and full projection tests",
+    "Historical26/49 proof preservation + new truthful dependency qualification closure",
+    "Separate8 whole-vector atomic promotion and all57320 record delta proof"
+  ],
+  "not_authorized_by_this_proposal": [
+    "Protocol/runtime/admission activation",
+    "Native Physical Known promotions",
+    "Profile release without accepted exact blobs",
+    "Prototype transplant or historical pin rewrite"
+  ]
+}
