@@ -1,0 +1,511 @@
+{
+  "schema": "OTERYN_IMBUEMENT_TWO_OWN_NOTES_POSITIVE_SOURCE_ALLOWANCES/v1",
+  "status": "PROVEN_EXPLICIT_POSITIVE_TIER_LIMITS_WHOLE_NATIVE_WHITELIST_HELD",
+  "records": [
+    {
+      "source_item_id": 28715,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i28715",
+        "revision": "definition-r1"
+      },
+      "native_slots": 2,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "28715",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i28715",
+          "revision": "definition-r1"
+        }
+      },
+      "own_source": {
+        "page_id": 85231,
+        "revision_id": 1148286,
+        "revision_timestamp": "2025-12-08T17:39:32Z",
+        "content_sha256": "9a70d09fa28caa0fc02809c90b239370cc5338ed7b5a90775b520b9d690cce0c",
+        "raw_itemid": [
+          "28715"
+        ],
+        "raw_name": {
+          "name": [
+            "Falcon Coif"
+          ],
+          "actualname": [
+            "falcon coif"
+          ]
+        },
+        "raw_notes": [
+          "This is one of the few helmets that can be worn by Knights which can be imbued with up to Tier 2 [[Intricate Epiphany|Epiphany]] (Magic Level boost) [[Imbuing|imbuements]]. It's also one of the few helmets available for Paladins with this property."
+        ],
+        "capture_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/imbuement-renderers-own-exceptions-browser-cdp-source.json",
+        "capture_sha256": "a88f57f1a169e8c188baa3e25247c4843e218fa49c7b807c41795e501a190c13"
+      },
+      "qualified_positive_only_allowance": {
+        "family": "SKILL_MAGIC_LEVEL",
+        "max_tier": 2
+      },
+      "ots_whole_family_ceiling_hypotheses": [
+        {
+          "source": "crystal_ff7ede5",
+          "source_name": "falcon coif",
+          "literal_item_attrs": {
+            "id": "28715",
+            "article": "a",
+            "name": "falcon coif"
+          },
+          "imbuementslot_attributes": [
+            {
+              "slot_value": "2",
+              "whole_direct_children": [
+                {
+                  "key": "mana leech",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost axe",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost sword",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost club",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost shielding",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost distance",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost magic level",
+                  "value": "2",
+                  "nested_children": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "source": "crystal_00ce02a5",
+          "source_name": "falcon coif",
+          "literal_item_attrs": {
+            "id": "28715",
+            "article": "a",
+            "name": "falcon coif"
+          },
+          "imbuementslot_attributes": [
+            {
+              "slot_value": "2",
+              "whole_direct_children": [
+                {
+                  "key": "mana leech",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost axe",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost sword",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost club",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost shielding",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost distance",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost magic level",
+                  "value": "2",
+                  "nested_children": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "source": "canary_04b83b51",
+          "source_name": "falcon coif",
+          "literal_item_attrs": {
+            "id": "28715",
+            "article": "a",
+            "name": "falcon coif"
+          },
+          "imbuementslot_attributes": [
+            {
+              "slot_value": "2",
+              "whole_direct_children": [
+                {
+                  "key": "mana leech",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost axe",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost sword",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost club",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost shielding",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost distance",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost magic level",
+                  "value": "2",
+                  "nested_children": 0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "native_whole_family_list_promotion": "HOLD_PARTIAL_POSITIVE_FACT_NOT_COMPLETE_WHITELIST",
+      "current_positive_identity_guards": {
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i28715",
+          "revision": "definition-r1"
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "falcon coif"
+        },
+        "official_name": "falcon coif",
+        "official_full_object": {
+          "flags": {
+            "flags.take": true,
+            "flags.clothes": true,
+            "clothes.slot": 1,
+            "flags.market": true,
+            "market.category": 7,
+            "market.trade_as_object_id": 28715,
+            "market.show_as_object_id": 28715,
+            "flags.cyclopediaitem": true,
+            "cyclopediaitem.cyclopedia_type": 28715,
+            "flags.upgradeclassification": true,
+            "upgradeclassification.upgrade_classification": 4
+          },
+          "frame_groups": [
+            {
+              "fixed_frame_group": 2,
+              "geometry": {
+                "pattern_width": 1,
+                "pattern_height": 1,
+                "pattern_depth": 1,
+                "layers": 1,
+                "phase_count": 1,
+                "is_opaque": false
+              },
+              "sprite_ids": [
+                219702
+              ]
+            }
+          ],
+          "id": 28715,
+          "name": "falcon coif"
+        },
+        "no_actual_World_owner": true,
+        "Native_allowed_family_tiers": {
+          "state": "UNKNOWN"
+        }
+      }
+    },
+    {
+      "source_item_id": 29427,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i29427",
+        "revision": "definition-r1"
+      },
+      "native_slots": 2,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "29427",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i29427",
+          "revision": "definition-r1"
+        }
+      },
+      "own_source": {
+        "page_id": 86769,
+        "revision_id": 1148314,
+        "revision_timestamp": "2025-12-08T17:40:03Z",
+        "content_sha256": "bccd74d9275d3ed99b64cf3aae7f6a9d1d2da494866583aa693b9e50e7bd67b6",
+        "raw_itemid": [
+          "29427"
+        ],
+        "raw_name": {
+          "name": [
+            "Dark Whispers"
+          ],
+          "actualname": [
+            "dark whispers"
+          ]
+        },
+        "raw_notes": [
+          "This helmet can be imbued with [[Basic Epiphany]] ([[Magic Level]] bonus), but not with [[Intricate Epiphany|Intricate]] or [[Powerful Epiphany]]."
+        ],
+        "capture_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/imbuement-renderers-own-exceptions-browser-cdp-source.json",
+        "capture_sha256": "a88f57f1a169e8c188baa3e25247c4843e218fa49c7b807c41795e501a190c13"
+      },
+      "qualified_positive_only_allowance": {
+        "family": "SKILL_MAGIC_LEVEL",
+        "max_tier": 1
+      },
+      "ots_whole_family_ceiling_hypotheses": [
+        {
+          "source": "crystal_ff7ede5",
+          "source_name": "dark whispers",
+          "literal_item_attrs": {
+            "id": "29427",
+            "article": "a",
+            "name": "dark whispers"
+          },
+          "imbuementslot_attributes": [
+            {
+              "slot_value": "2",
+              "whole_direct_children": [
+                {
+                  "key": "mana leech",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost axe",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost sword",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost club",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost shielding",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost distance",
+                  "value": "3",
+                  "nested_children": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "source": "crystal_00ce02a5",
+          "source_name": "dark whispers",
+          "literal_item_attrs": {
+            "id": "29427",
+            "article": "a",
+            "name": "dark whispers"
+          },
+          "imbuementslot_attributes": [
+            {
+              "slot_value": "2",
+              "whole_direct_children": [
+                {
+                  "key": "mana leech",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost axe",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost sword",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost club",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost shielding",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost distance",
+                  "value": "3",
+                  "nested_children": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "source": "canary_04b83b51",
+          "source_name": "dark whispers",
+          "literal_item_attrs": {
+            "id": "29427",
+            "article": "a",
+            "name": "dark whispers"
+          },
+          "imbuementslot_attributes": [
+            {
+              "slot_value": "2",
+              "whole_direct_children": [
+                {
+                  "key": "mana leech",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost axe",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost sword",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost club",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost shielding",
+                  "value": "3",
+                  "nested_children": 0
+                },
+                {
+                  "key": "skillboost distance",
+                  "value": "3",
+                  "nested_children": 0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "native_whole_family_list_promotion": "HOLD_PARTIAL_POSITIVE_FACT_NOT_COMPLETE_WHITELIST",
+      "current_positive_identity_guards": {
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i29427",
+          "revision": "definition-r1"
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "dark whispers"
+        },
+        "official_name": "dark whispers",
+        "official_full_object": {
+          "flags": {
+            "flags.take": true,
+            "flags.clothes": true,
+            "clothes.slot": 1,
+            "flags.market": true,
+            "market.category": 7,
+            "market.trade_as_object_id": 29427,
+            "market.show_as_object_id": 29427,
+            "flags.cyclopediaitem": true,
+            "cyclopediaitem.cyclopedia_type": 29427,
+            "flags.upgradeclassification": true,
+            "upgradeclassification.upgrade_classification": 3
+          },
+          "frame_groups": [
+            {
+              "fixed_frame_group": 2,
+              "geometry": {
+                "pattern_width": 1,
+                "pattern_height": 1,
+                "pattern_depth": 1,
+                "layers": 1,
+                "phase_count": 4,
+                "is_opaque": false
+              },
+              "sprite_ids": [
+                220238,
+                220239,
+                220240,
+                220239
+              ]
+            }
+          ],
+          "id": 29427,
+          "name": "dark whispers"
+        },
+        "no_actual_World_owner": true,
+        "Native_allowed_family_tiers": {
+          "state": "UNKNOWN"
+        }
+      }
+    }
+  ],
+  "closed_native_wholelist_eligible_ids": [],
+  "sourcequalified_positive_only_ids": [
+    28715,
+    29427
+  ],
+  "current_native_reference": {
+    "path": "content/world/definitions/reference.json",
+    "sha256": "1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e"
+  },
+  "official_appearance_artifact": {
+    "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+    "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+  }
+}

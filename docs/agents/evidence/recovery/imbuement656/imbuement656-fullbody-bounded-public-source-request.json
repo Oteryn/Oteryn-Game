@@ -1,0 +1,196 @@
+{
+  "schema": "OTERYN_IMBUEMENT_FULLBODY_BOUNDED_PUBLIC_SOURCE_REQUEST/v1",
+  "utc": "2026-10-02T12:22:52.198270+00:00",
+  "sample": [
+    {
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10200",
+        "revision": "definition-r1"
+      },
+      "source_item_id": 10200,
+      "reference": {
+        "page_id": 42274,
+        "title": "Crystal Boots",
+        "revision_id": 1147668,
+        "revision_timestamp": "2025-12-08T17:26:42Z",
+        "content_sha256": "647fb54c851d80a4271bb7935a209d1b791f26989730a5a24a761ae52725e90e",
+        "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-047.json",
+        "capture_sha256": "24af612f30880952dba59dd2c84521508494952faa0b6106bc55eb01cc13c173",
+        "page_ordinal": 28,
+        "batch": 47,
+        "own_object_box_indices": [
+          0
+        ],
+        "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+        "box_index": 0,
+        "occurrence_index": 0,
+        "raw_itemid": "10200",
+        "strict_numeric_itemid": true,
+        "balanced": true,
+        "inside_comment": false,
+        "duplicate_itemid_parameters": false
+      }
+    },
+    {
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i813",
+        "revision": "definition-r1"
+      },
+      "source_item_id": 813,
+      "reference": {
+        "page_id": 20447,
+        "title": "Terra Boots",
+        "revision_id": 1202745,
+        "revision_timestamp": "2026-08-22T19:34:14Z",
+        "content_sha256": "e193939ae0b8b11d9681734aaec6ea5957caeb8ce033ff9f398156fed67ba552",
+        "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-024.json",
+        "capture_sha256": "75ae9c05b86a7e64dd4ee1c07c2ec600b35fa1a8aee9adde1271bd5a04e7bf35",
+        "page_ordinal": 31,
+        "batch": 24,
+        "own_object_box_indices": [
+          0
+        ],
+        "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+        "box_index": 0,
+        "occurrence_index": 0,
+        "raw_itemid": "813",
+        "strict_numeric_itemid": true,
+        "balanced": true,
+        "inside_comment": false,
+        "duplicate_itemid_parameters": false
+      }
+    },
+    {
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3264",
+        "revision": "definition-r1"
+      },
+      "source_item_id": 3264,
+      "reference": {
+        "page_id": 1450,
+        "title": "Sword",
+        "revision_id": 1147199,
+        "revision_timestamp": "2025-12-08T14:26:37Z",
+        "content_sha256": "25563320b387f5a989a88e45273b2ad4f727de941e05ce0c0c661efeb5df9b86",
+        "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-000.json",
+        "capture_sha256": "59a35ccdbac1fec85ae8746166cb1ac946434ea956a9b5490b5f6e41eab271a0",
+        "page_ordinal": 30,
+        "batch": 0,
+        "own_object_box_indices": [
+          0
+        ],
+        "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+        "box_index": 0,
+        "occurrence_index": 0,
+        "raw_itemid": "3264",
+        "strict_numeric_itemid": true,
+        "balanced": true,
+        "inside_comment": false,
+        "duplicate_itemid_parameters": false
+      }
+    },
+    {
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3332",
+        "revision": "definition-r1"
+      },
+      "source_item_id": 3332,
+      "reference": {
+        "page_id": 2694,
+        "title": "Hammer of Wrath",
+        "revision_id": 1147268,
+        "revision_timestamp": "2025-12-08T14:28:03Z",
+        "content_sha256": "cdd7525e7cf5b44ed295c7f42e522128c6c19091573da6c5a9bf89b129b7299a",
+        "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-005.json",
+        "capture_sha256": "895158a54a475451710484fb53664a5470921e0f3b940bed779257c24d8df291",
+        "page_ordinal": 18,
+        "batch": 5,
+        "own_object_box_indices": [
+          0
+        ],
+        "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+        "box_index": 0,
+        "occurrence_index": 0,
+        "raw_itemid": "3332",
+        "strict_numeric_itemid": true,
+        "balanced": true,
+        "inside_comment": false,
+        "duplicate_itemid_parameters": false
+      }
+    },
+    {
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i34086",
+        "revision": "definition-r1"
+      },
+      "source_item_id": 34086,
+      "reference": {
+        "page_id": 91424,
+        "title": "Soulcrusher",
+        "revision_id": 1148388,
+        "revision_timestamp": "2025-12-08T17:41:37Z",
+        "content_sha256": "4612cb155cefb64da68ed6f841b1f09ee895a30824cb249a61db7aa17f492f16",
+        "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-131.json",
+        "capture_sha256": "3759602b901d6a2c172e2e5413d5bad31b8a3e89073797af78ca07cf7bf82f4b",
+        "page_ordinal": 0,
+        "batch": 131,
+        "own_object_box_indices": [
+          0
+        ],
+        "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+        "box_index": 0,
+        "occurrence_index": 0,
+        "raw_itemid": "34086",
+        "strict_numeric_itemid": true,
+        "balanced": true,
+        "inside_comment": false,
+        "duplicate_itemid_parameters": false
+      }
+    },
+    {
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i28719",
+        "revision": "definition-r1"
+      },
+      "source_item_id": 28719,
+      "reference": {
+        "page_id": 85236,
+        "title": "Falcon Plate",
+        "revision_id": 1148290,
+        "revision_timestamp": "2025-12-08T17:39:36Z",
+        "content_sha256": "a260a37d846eef8c7a12dddf5eaadaf57709d26b6d718895da11cd6c4543af0e",
+        "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-117.json",
+        "capture_sha256": "9d1a274790d851fc8da60a855043d4e07f324e634e42b98c48b6e170a40db4dc",
+        "page_ordinal": 8,
+        "batch": 117,
+        "own_object_box_indices": [
+          0
+        ],
+        "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+        "box_index": 0,
+        "occurrence_index": 0,
+        "raw_itemid": "28719",
+        "strict_numeric_itemid": true,
+        "balanced": true,
+        "inside_comment": false,
+        "duplicate_itemid_parameters": false
+      }
+    }
+  ],
+  "url": "https://tibia.fandom.com/api.php?action=query&format=json&prop=revisions&revids=1147668%7C1202745%7C1147199%7C1147268%7C1148388%7C1148290&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main",
+  "method": "anonymous_normal_public_HTTP",
+  "additional_titles": [
+    "Imbuing",
+    "Imbuements",
+    "Template:Infobox Object",
+    "Module:Imbuements"
+  ],
+  "purpose": "Inspect complete ownItem article body/table; identify actual global family eligibility/tier rules and exceptions. Source facts only, no assumedItemmax3.",
+  "error": "HTTP Error 402: Payment Required"
+}
