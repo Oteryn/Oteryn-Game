@@ -12,14 +12,14 @@
     },
     "children_by_owner": {
       "Ability": 211,
-      "Achievement": 27,
+      "Achievement": 28,
       "Experience": 9,
-      "Item": 367,
+      "Item": 368,
       "Mount": 2,
       "Movement": 801,
       "Outfit": 10,
       "Presentation": 2681,
-      "Quest": 842,
+      "Quest": 856,
       "WorldObject": 874
     },
     "blocked_children": {
@@ -37,9 +37,9 @@
       "TRANSFORM": 479
     },
     "overlay_operations_with_revert_after": 0,
-    "quest_children_naming_a_transition": 205,
-    "unresolved_lines": 2010,
-    "unresolved_conditions": 1758,
+    "quest_children_naming_a_transition": 207,
+    "unresolved_lines": 1937,
+    "unresolved_conditions": 1752,
     "by_status": {
       "conflict": 2,
       "mapped": 245,

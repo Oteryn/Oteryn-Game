@@ -61,7 +61,67 @@
     },
     {
       "title": "Primal Ordeal Quest",
-      "basis": "wiki title and script directory scripts/quests/primal_ordeal_quest match once normalised; also the wiki_quest of 2 auxiliary progress tracks (a second, legacy directory scripts/quests/the_primal_ordeal keeps its own identity and stays unlinked)"
+      "basis": "Legacy the_primal_ordeal magma-bubble and Primal Menace death callbacks are partial boss components of the existing Primal Ordeal quest. Distinct directory/Interaction identities and donor conflicts remain intact.",
+      "coverage_gap": "Full quest journey, callback/monster attachments and alternate source consistency remain UNKNOWN.",
+      "coverage_scope": "partial_executable_component",
+      "source_paths": [
+        "scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua",
+        "scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua",
+          "blob_sha256": "a02c9e9de6a053d938cf09610f253164db78d635397e890df91995f7a6b351ae",
+          "line": 7,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/the_primal_ordeal/creaturescripts_magma_bubble_death",
+          "blob_sha1": "121b4071da0c64d2ba302dd958d8904537726f8b"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua",
+          "blob_sha256": "a02c9e9de6a053d938cf09610f253164db78d635397e890df91995f7a6b351ae",
+          "line": 7,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/the_primal_ordeal/creaturescripts_magma_bubble_death",
+          "blob_sha1": "121b4071da0c64d2ba302dd958d8904537726f8b"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua",
+          "blob_sha256": "bb59f7e062940669b3fb6208b72974421465ba6d1f5987e0255a6f13e07cca95",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/the_primal_ordeal/creaturescripts_the_primal_menace_killed",
+          "blob_sha1": "3cafb041e31f9f068b2ec118af2b5575aee6d2bc"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua",
+          "blob_sha256": "bb59f7e062940669b3fb6208b72974421465ba6d1f5987e0255a6f13e07cca95",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/the_primal_ordeal/creaturescripts_the_primal_menace_killed",
+          "blob_sha1": "3cafb041e31f9f068b2ec118af2b5575aee6d2bc"
+        }
+      ],
+      "interaction_keys": [
+        "canary:interaction/the_primal_ordeal/creaturescripts_magma_bubble_death",
+        "canary:interaction/the_primal_ordeal/creaturescripts_the_primal_menace_killed"
+      ]
     },
     {
       "title": "Newhaven Quest",
@@ -5559,10 +5619,11 @@
       "title": "Within the Tides Quest",
       "key": "within_the_tides_quest",
       "source_paths": [
-        "scripts/quests/marapur/actions_boss_timira_fight.lua"
+        "scripts/quests/marapur/actions_boss_timira_fight.lua",
+        "scripts/quests/marapur/actions_teleports_timira.lua"
       ],
-      "basis": "Pinned wiki spoiler98527@1106110 names Timira the Many-Headed; source Encounter defines that boss under marapur. Timira component only.",
-      "coverage_gap": "NPC missions, access prerequisites, full quest rewards, native/runtime admission remain unassessed.",
+      "basis": "Pinned wiki Timira encounter matches these four explicitly named Timira bucket/water/chest/teleport callbacks. Marapur ramp is excluded; identities and donor variants stay separate.",
+      "coverage_gap": "Other NPC missions, access prerequisites, encounter completeness, map bindings and native/runtime admission remain UNKNOWN.",
       "source_evidence": [
         {
           "source": "canary",
@@ -5573,7 +5634,110 @@
           "line": 175,
           "role": "executable",
           "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+          "line": 341,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
+          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+          "line": 341,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
+          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+          "line": 299,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
+          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+          "line": 299,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
+          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+          "line": 369,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
+          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+          "line": 369,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
+          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/marapur/actions_teleports_timira.lua",
+          "blob_sha256": "994832b6641a10350f6005ddfc1d07e48fc5498b508521d76e14133bc59cd543",
+          "line": 16,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/marapur/actions_teleports_timira",
+          "blob_sha1": "862da606a05416991530f5295daa5ec8d74cabbd"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/marapur/actions_teleports_timira.lua",
+          "blob_sha256": "994832b6641a10350f6005ddfc1d07e48fc5498b508521d76e14133bc59cd543",
+          "line": 16,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/marapur/actions_teleports_timira",
+          "blob_sha1": "862da606a05416991530f5295daa5ec8d74cabbd"
         }
+      ],
+      "coverage_scope": "partial_executable_component",
+      "interaction_keys": [
+        "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
+        "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
+        "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
+        "canary:interaction/marapur/actions_teleports_timira"
       ]
     },
     {
@@ -6425,10 +6589,14 @@
       "title": "The Mage's Tower World Change",
       "key": "the_mages_tower_world_change",
       "source_paths": [
-        "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua"
+        "scripts/quests/raging_mage_tower/creaturescripts_energized_raging_mage_kill.lua",
+        "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+        "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_2.lua",
+        "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_kill.lua",
+        "scripts/quests/raging_mage_tower/creaturescripts_yielothax_kill.lua"
       ],
-      "basis": "Exact Fandom spoiler55046/rev1095409 names Energized Raging Mage, Raging Mage and Yielothax. Both donors implement the event death/kill components with character775558 and world673003/775559 scopes.",
-      "coverage_gap": "Full world scheduler, map/creature event attachment, kill-participant eligibility and native world-state admission remain unbound. Existing script defect with getSpectators destructuring/#t remains source behavior, not repaired by transcription; global storages never become Character tracks.",
+      "basis": "Pinned wiki names Energized Raging Mage, Raging Mage and Yielothax. Associate their five event callbacks with this world-change component without equating character and world storage.",
+      "coverage_gap": "World scheduler/activation, attachment, eligibility and native world-state admission remain UNKNOWN; existing source defects remain source behavior.",
       "source_evidence": [
         {
           "source": "canary",
@@ -6469,7 +6637,1290 @@
           "line": 18,
           "role": "executable",
           "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_energized_raging_mage_kill.lua",
+          "blob_sha256": "bba1ec499ebdde41ae50cd7e5b485b6b915d25e6594885394ceaecedc702c086",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_energized_raging_mage_kill",
+          "blob_sha1": "e8210faafb0051839f39860f5bb48c08e18a76b8"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_energized_raging_mage_kill.lua",
+          "blob_sha256": "bba1ec499ebdde41ae50cd7e5b485b6b915d25e6594885394ceaecedc702c086",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_energized_raging_mage_kill",
+          "blob_sha1": "e8210faafb0051839f39860f5bb48c08e18a76b8"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+          "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_1",
+          "blob_sha1": "e9ca2dd65bd2fdb86fdf4b6049a39d8b70b4198e"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+          "blob_sha256": "9ea52f3a1f97195c63705663d84c4e61d3acfac105a3dd9a01c410a617a1f948",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_1",
+          "blob_sha1": "e9ca2dd65bd2fdb86fdf4b6049a39d8b70b4198e"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_2.lua",
+          "blob_sha256": "c6fcf0ecc6cbb4d6deca8228665e05b7dc8476ec2e96bc7e4cad17b416637fd4",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_2",
+          "blob_sha1": "50dd16de684c061ce3a356b5a33dd1650dee2173"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_2.lua",
+          "blob_sha256": "c6fcf0ecc6cbb4d6deca8228665e05b7dc8476ec2e96bc7e4cad17b416637fd4",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_2",
+          "blob_sha1": "50dd16de684c061ce3a356b5a33dd1650dee2173"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_kill.lua",
+          "blob_sha256": "5e69122039930b76de64987bb023d4305f7b105650a8746d48ea426257be8f82",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_kill",
+          "blob_sha1": "ec9bb84846706b4f1ebb2ced8a4e55636d3143e4"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_kill.lua",
+          "blob_sha256": "5e69122039930b76de64987bb023d4305f7b105650a8746d48ea426257be8f82",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_kill",
+          "blob_sha1": "ec9bb84846706b4f1ebb2ced8a4e55636d3143e4"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_yielothax_kill.lua",
+          "blob_sha256": "ac95220245c49950456445edd16da864bab4772e32fe2a6e8ad630fe84db3d6b",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_yielothax_kill",
+          "blob_sha1": "8ff28ceb8248c4d13d2bf446b68212c76ef1d931"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/raging_mage_tower/creaturescripts_yielothax_kill.lua",
+          "blob_sha256": "ac95220245c49950456445edd16da864bab4772e32fe2a6e8ad630fe84db3d6b",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/raging_mage_tower/creaturescripts_yielothax_kill",
+          "blob_sha1": "8ff28ceb8248c4d13d2bf446b68212c76ef1d931"
         }
+      ],
+      "coverage_scope": "partial_executable_component",
+      "interaction_keys": [
+        "canary:interaction/raging_mage_tower/creaturescripts_energized_raging_mage_kill",
+        "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_1",
+        "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_2",
+        "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_kill",
+        "canary:interaction/raging_mage_tower/creaturescripts_yielothax_kill"
+      ]
+    },
+    {
+      "title": "Dreamer's Challenge Quest",
+      "key": "dreamer_s_challenge_quest",
+      "basis": "The named Dreamers Challenge action/movement directory is the existing Dreamer's Challenge reward quest; apostrophe normalization differs. Exact callbacks remain separate identities.",
+      "coverage_gap": "NPC storyline, full puzzle ordering, map bindings and runtime execution remain UNKNOWN.",
+      "coverage_scope": "partial_executable_component",
+      "source_paths": [
+        "scripts/quests/dreamers_challenge_quest/actions_stone_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/actions_tic_tac.lua",
+        "scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/actions_walls.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_carrot.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_clock_tile.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_death_ring.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_death_ring_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_fire_bug_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_riddle.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_stone_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_tic_teleport.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_tower.lua",
+        "scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_stone_teleport.lua",
+          "blob_sha256": "78371cc4a1dc6c73c7e2a4d8fbe293590e1478d9db81fedb06aae63b95ea7c4a",
+          "line": 27,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_stone_teleport",
+          "blob_sha1": "2bb5a5a4597a2e8d46f7d8e890061ff3e4e35234"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/actions_stone_teleport.lua",
+          "blob_sha256": "78371cc4a1dc6c73c7e2a4d8fbe293590e1478d9db81fedb06aae63b95ea7c4a",
+          "line": 27,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_stone_teleport",
+          "blob_sha1": "2bb5a5a4597a2e8d46f7d8e890061ff3e4e35234"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac.lua",
+          "blob_sha256": "549d50df63fdd5855f2ae7d15ddeba9eb648c4e875b1c9827d498e5bbcd3ec63",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_tic_tac",
+          "blob_sha1": "34375e9c8e820cc32369daa17507c548c2d04bda"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac.lua",
+          "blob_sha256": "549d50df63fdd5855f2ae7d15ddeba9eb648c4e875b1c9827d498e5bbcd3ec63",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_tic_tac",
+          "blob_sha1": "34375e9c8e820cc32369daa17507c548c2d04bda"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua",
+          "blob_sha256": "14c409614c30717122812c9c81c9239d18c5d6139e9228c2be37ad236ee54390",
+          "line": 14,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_tic_tac_teleport",
+          "blob_sha1": "28323ba246cb843394a5e5bc1b064ee10a1127de"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua",
+          "blob_sha256": "14c409614c30717122812c9c81c9239d18c5d6139e9228c2be37ad236ee54390",
+          "line": 14,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_tic_tac_teleport",
+          "blob_sha1": "28323ba246cb843394a5e5bc1b064ee10a1127de"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua",
+          "blob_sha256": "cf98b12030c3eae9ee9daf42fe9800c54c1562ead559f8795424d487147890dd",
+          "line": 37,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_walls",
+          "blob_sha1": "69c508c83d636f1ea3ae79b57fc970cd2e8c7f69"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua",
+          "blob_sha256": "cf98b12030c3eae9ee9daf42fe9800c54c1562ead559f8795424d487147890dd",
+          "line": 37,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_walls",
+          "blob_sha1": "69c508c83d636f1ea3ae79b57fc970cd2e8c7f69"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua",
+          "blob_sha256": "1f068fe7a1d29e176e7374514e967b96eec2b8bc9613fab1072649dbcadec963",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_carrot",
+          "blob_sha1": "2b860e00ed13bb62fe09fc2462a777a957af4b55"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua",
+          "blob_sha256": "1f068fe7a1d29e176e7374514e967b96eec2b8bc9613fab1072649dbcadec963",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_carrot",
+          "blob_sha1": "2b860e00ed13bb62fe09fc2462a777a957af4b55"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_clock_tile.lua",
+          "blob_sha256": "f23f61052bc972cac6dae52ccfaf71f6b581f218b167195c25c21d269fa4b14b",
+          "line": 11,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_clock_tile",
+          "blob_sha1": "6b31290ad9b7f0accd8d868e7535a6a7b1a98d55"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_clock_tile.lua",
+          "blob_sha256": "f23f61052bc972cac6dae52ccfaf71f6b581f218b167195c25c21d269fa4b14b",
+          "line": 11,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_clock_tile",
+          "blob_sha1": "6b31290ad9b7f0accd8d868e7535a6a7b1a98d55"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua",
+          "blob_sha256": "29548c957829df1ef5618c008d400da2c105a8879966f8a00588ea0170c7cc9f",
+          "line": 10,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_court_teleport",
+          "blob_sha1": "e161d244f177aeb888f311f6584f55a9d853eb0e"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua",
+          "blob_sha256": "29548c957829df1ef5618c008d400da2c105a8879966f8a00588ea0170c7cc9f",
+          "line": 10,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_court_teleport",
+          "blob_sha1": "e161d244f177aeb888f311f6584f55a9d853eb0e"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_death_ring.lua",
+          "blob_sha256": "24cd7e5a4a000da965217b7987b5d2cfd3abeead0ed85ebee130d62f07c76326",
+          "line": 9,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_death_ring",
+          "blob_sha1": "8f5345245e8235cf86ca4d1b5994ba1d373d7152"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_death_ring.lua",
+          "blob_sha256": "24cd7e5a4a000da965217b7987b5d2cfd3abeead0ed85ebee130d62f07c76326",
+          "line": 9,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_death_ring",
+          "blob_sha1": "8f5345245e8235cf86ca4d1b5994ba1d373d7152"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_death_ring_teleport.lua",
+          "blob_sha256": "78203e004e6239c0e26f248fbb074835bfb2b97cce2fd046867c76cfe12dc2a6",
+          "line": 9,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_death_ring_teleport",
+          "blob_sha1": "007640a95048ea89d72e4047fb0c59257caed071"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_death_ring_teleport.lua",
+          "blob_sha256": "78203e004e6239c0e26f248fbb074835bfb2b97cce2fd046867c76cfe12dc2a6",
+          "line": 9,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_death_ring_teleport",
+          "blob_sha1": "007640a95048ea89d72e4047fb0c59257caed071"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_fire_bug_teleport.lua",
+          "blob_sha256": "2b7a31c94aab438ecee7a9a21031aa4e69f40ae5a3f7189c141b6c810664676d",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_fire_bug_teleport",
+          "blob_sha1": "01e87b102424e127266aded2b9dc9a1b9f129f16"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_fire_bug_teleport.lua",
+          "blob_sha256": "2b7a31c94aab438ecee7a9a21031aa4e69f40ae5a3f7189c141b6c810664676d",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_fire_bug_teleport",
+          "blob_sha1": "01e87b102424e127266aded2b9dc9a1b9f129f16"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua",
+          "blob_sha256": "ed669a43d2a190dd444f16de0004e23b81815b287fcecdf342c4a7c7bbdcbae3",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle",
+          "blob_sha1": "6462722f8ba890d2b22103d27d1b00703fea6207"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua",
+          "blob_sha256": "ed669a43d2a190dd444f16de0004e23b81815b287fcecdf342c4a7c7bbdcbae3",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle",
+          "blob_sha1": "6462722f8ba890d2b22103d27d1b00703fea6207"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua",
+          "blob_sha256": "ed669a43d2a190dd444f16de0004e23b81815b287fcecdf342c4a7c7bbdcbae3",
+          "line": 48,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle_2",
+          "blob_sha1": "6462722f8ba890d2b22103d27d1b00703fea6207"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua",
+          "blob_sha256": "ed669a43d2a190dd444f16de0004e23b81815b287fcecdf342c4a7c7bbdcbae3",
+          "line": 48,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle_2",
+          "blob_sha1": "6462722f8ba890d2b22103d27d1b00703fea6207"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua",
+          "blob_sha256": "dc3052123b1b10bf5cddffdde7b3dc24fd0e591d466154c7ff1a3f04dec4c274",
+          "line": 46,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_riddle_teleport",
+          "blob_sha1": "928bb5da43e1f7bc41b7c1b647b4e4b83ab922ca"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua",
+          "blob_sha256": "dc3052123b1b10bf5cddffdde7b3dc24fd0e591d466154c7ff1a3f04dec4c274",
+          "line": 46,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_riddle_teleport",
+          "blob_sha1": "928bb5da43e1f7bc41b7c1b647b4e4b83ab922ca"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_stone_teleport.lua",
+          "blob_sha256": "5b383f6d0885e4148d5109297ca606e64225461194b7ffe5e615999b57e9c332",
+          "line": 11,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_stone_teleport",
+          "blob_sha1": "bb13ec5cd99076cc0da71b99fe69fd5f0a5340d9"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_stone_teleport.lua",
+          "blob_sha256": "5b383f6d0885e4148d5109297ca606e64225461194b7ffe5e615999b57e9c332",
+          "line": 11,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_stone_teleport",
+          "blob_sha1": "bb13ec5cd99076cc0da71b99fe69fd5f0a5340d9"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua",
+          "blob_sha256": "50e9040b4195ded42fe17c1da43d462f11520e31101cd8ed2109d8b755922513",
+          "line": 12,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_teleport",
+          "blob_sha1": "c844f344ac8846537cf43052698527aaac8a7aa4"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua",
+          "blob_sha256": "50e9040b4195ded42fe17c1da43d462f11520e31101cd8ed2109d8b755922513",
+          "line": 12,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_teleport",
+          "blob_sha1": "c844f344ac8846537cf43052698527aaac8a7aa4"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_tic_teleport.lua",
+          "blob_sha256": "2c52a3d84563892000d5858771622cd7a04b67ced4a80d5ac475ab5a104fc438",
+          "line": 21,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_tic_teleport",
+          "blob_sha1": "14d1cc3e51425f45ca76fcf9a1211e48b1211ce8"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_tic_teleport.lua",
+          "blob_sha256": "2c52a3d84563892000d5858771622cd7a04b67ced4a80d5ac475ab5a104fc438",
+          "line": 21,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_tic_teleport",
+          "blob_sha1": "14d1cc3e51425f45ca76fcf9a1211e48b1211ce8"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua",
+          "blob_sha256": "fe73c7395d155e319e6d92281420c0a93e04e14c7883ce040641179f85bb5417",
+          "line": 15,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_tower",
+          "blob_sha1": "1ade2e63256426e83cb71cc70629761b7ecbdf54"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua",
+          "blob_sha256": "fe73c7395d155e319e6d92281420c0a93e04e14c7883ce040641179f85bb5417",
+          "line": 15,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_tower",
+          "blob_sha1": "1ade2e63256426e83cb71cc70629761b7ecbdf54"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua",
+          "blob_sha256": "fbbecbf160b5537ca724ec62005bd50026872199ede0df7e53f08702cd9a7611",
+          "line": 22,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_wall_teleport",
+          "blob_sha1": "71a59f861bd706a40c54c1c7ccc1c65a5f39a7f0"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua",
+          "blob_sha256": "fbbecbf160b5537ca724ec62005bd50026872199ede0df7e53f08702cd9a7611",
+          "line": 22,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/dreamers_challenge_quest/movement_wall_teleport",
+          "blob_sha1": "71a59f861bd706a40c54c1c7ccc1c65a5f39a7f0"
+        }
+      ],
+      "interaction_keys": [
+        "canary:interaction/dreamers_challenge_quest/actions_stone_teleport",
+        "canary:interaction/dreamers_challenge_quest/actions_tic_tac",
+        "canary:interaction/dreamers_challenge_quest/actions_tic_tac_teleport",
+        "canary:interaction/dreamers_challenge_quest/actions_walls",
+        "canary:interaction/dreamers_challenge_quest/movement_carrot",
+        "canary:interaction/dreamers_challenge_quest/movement_clock_tile",
+        "canary:interaction/dreamers_challenge_quest/movement_court_teleport",
+        "canary:interaction/dreamers_challenge_quest/movement_death_ring",
+        "canary:interaction/dreamers_challenge_quest/movement_death_ring_teleport",
+        "canary:interaction/dreamers_challenge_quest/movement_fire_bug_teleport",
+        "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle",
+        "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle_2",
+        "canary:interaction/dreamers_challenge_quest/movement_riddle_teleport",
+        "canary:interaction/dreamers_challenge_quest/movement_stone_teleport",
+        "canary:interaction/dreamers_challenge_quest/movement_teleport",
+        "canary:interaction/dreamers_challenge_quest/movement_tic_teleport",
+        "canary:interaction/dreamers_challenge_quest/movement_tower",
+        "canary:interaction/dreamers_challenge_quest/movement_wall_teleport"
+      ]
+    },
+    {
+      "title": "Barbarian Arena Quest",
+      "key": "barbarian_arena_quest",
+      "basis": "Dedicated ARENA_TROPHY movement and named arena table refer to the existing Barbarian Arena reward quest; this is the trophy collection component only.",
+      "coverage_gap": "Complete arena rounds, monster lifecycle, difficulty progression, map bindings and runtime admission remain UNKNOWN.",
+      "coverage_scope": "partial_executable_component",
+      "source_paths": [
+        "scripts/quests/svargrond_arena/movements_arena_trophy.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/svargrond_arena/movements_arena_trophy.lua",
+          "blob_sha256": "cefe89169b60d6a26c73749ca8e44d0fe5b22fb2e9fe8f5bed0d502b866763fd",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/svargrond_arena/movements_arena_trophy",
+          "blob_sha1": "ba8a6888accc3f693bb8e0bd6ff9fd4e2d127ba6"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/svargrond_arena/movements_arena_trophy.lua",
+          "blob_sha256": "cefe89169b60d6a26c73749ca8e44d0fe5b22fb2e9fe8f5bed0d502b866763fd",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/svargrond_arena/movements_arena_trophy",
+          "blob_sha1": "ba8a6888accc3f693bb8e0bd6ff9fd4e2d127ba6"
+        }
+      ],
+      "interaction_keys": [
+        "canary:interaction/svargrond_arena/movements_arena_trophy"
+      ]
+    },
+    {
+      "title": "Life Ring Quest",
+      "key": "life_ring_quest",
+      "basis": "Dedicated registered life_ring_lever callback supplies the bridge component of the existing Life Ring chest quest; reward claims retain their identities.",
+      "coverage_gap": "Complete chest access/journey, switch-map placement linkage and native/runtime admission remain UNKNOWN.",
+      "coverage_scope": "partial_executable_component",
+      "source_paths": [
+        "scripts/quests/thais_quest/actions_life_ring_lever.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+          "blob_sha256": "f24ab1e72f54048662b0cd436129ff69657f80fbbb359154f6502b194f4893f9",
+          "line": 16,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/thais_quest/actions_life_ring_lever",
+          "blob_sha1": "61786e84ec35fc2b857d8894de783c1cec02d16e"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+          "blob_sha256": "f24ab1e72f54048662b0cd436129ff69657f80fbbb359154f6502b194f4893f9",
+          "line": 16,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/thais_quest/actions_life_ring_lever",
+          "blob_sha1": "61786e84ec35fc2b857d8894de783c1cec02d16e"
+        }
+      ],
+      "interaction_keys": [
+        "canary:interaction/thais_quest/actions_life_ring_lever"
+      ]
+    },
+    {
+      "title": "Serpentine Tower Quest",
+      "key": "serpentine_tower_quest",
+      "basis": "Dedicated Serpentine Tower lever and torch callbacks form exact named puzzle components. No other actions/others callback is attributed to this quest.",
+      "coverage_gap": "The unsolved/full tower quest, global puzzle ordering and map/runtime bindings remain UNKNOWN.",
+      "coverage_scope": "partial_executable_component",
+      "source_paths": [
+        "scripts/quests/others/actions_serpentine_tower_lever.lua",
+        "scripts/quests/others/actions_serpentine_tower_torch.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/others/actions_serpentine_tower_lever.lua",
+          "blob_sha256": "a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+          "line": 9,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/others/actions_serpentine_tower_lever",
+          "blob_sha1": "debc4358c3650999543d8e4c337e2c7dbc9935c5"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/others/actions_serpentine_tower_lever.lua",
+          "blob_sha256": "a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+          "line": 9,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/others/actions_serpentine_tower_lever",
+          "blob_sha1": "debc4358c3650999543d8e4c337e2c7dbc9935c5"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/others/actions_serpentine_tower_torch.lua",
+          "blob_sha256": "ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/others/actions_serpentine_tower_torch",
+          "blob_sha1": "0e918435656e385c94ebf012941cbc059452749a"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/others/actions_serpentine_tower_torch.lua",
+          "blob_sha256": "ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/others/actions_serpentine_tower_torch",
+          "blob_sha1": "0e918435656e385c94ebf012941cbc059452749a"
+        }
+      ],
+      "interaction_keys": [
+        "canary:interaction/others/actions_serpentine_tower_lever",
+        "canary:interaction/others/actions_serpentine_tower_torch"
+      ]
+    },
+    {
+      "title": "Oriental Outfits Quest",
+      "key": "oriental_outfits_quest",
+      "basis": "Comb-door action explicitly reads Storage.Quest.U7_8.OrientalOutfits.FirstOrientalAddon and checks Oriental outfit146/150 addon1. This associates only that door with the existing Oriental Outfits quest.",
+      "coverage_gap": "Full outfit acquisition/NPC missions, Calassa map access and native/runtime admission remain UNKNOWN.",
+      "coverage_scope": "partial_executable_component",
+      "source_paths": [
+        "scripts/quests/others/actions_calassa_comb_door.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/others/actions_calassa_comb_door.lua",
+          "blob_sha256": "e886da33919a0b5e75533fa4ea884c8921542030d0f75fc71ef144e69a81460d",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/others/actions_calassa_comb_door",
+          "blob_sha1": "681712d6aee7c245d6cd6df92b69bbc6f2291ac8"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/others/actions_calassa_comb_door.lua",
+          "blob_sha256": "e886da33919a0b5e75533fa4ea884c8921542030d0f75fc71ef144e69a81460d",
+          "line": 2,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/others/actions_calassa_comb_door",
+          "blob_sha1": "681712d6aee7c245d6cd6df92b69bbc6f2291ac8"
+        }
+      ],
+      "interaction_keys": [
+        "canary:interaction/others/actions_calassa_comb_door"
+      ]
+    },
+    {
+      "title": "Hydra Egg Quest",
+      "key": "hydra_egg_quest",
+      "basis": "The registered generic quest system contains explicit Hydra Egg Quest UID9255 reward item4839 and named HydraEggQuest storage; the dispatcher is registered.",
+      "coverage_gap": "Generic table selection/control flow, full acquisition/map placement and typed reward/runtime admission remain UNKNOWN.",
+      "coverage_scope": "partial_registered_reward_configuration",
+      "source_paths": [
+        "scripts/actions/other/others/quest_system2.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/actions/other/others/quest_system2.lua",
+          "blob_sha256": "e9f0c4674ed977088105fbdc1fc0817f4e5cf2ef7ddd4ff94278d0851ca9ab29",
+          "line": 106,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/actions/other/others/quest_system2.lua",
+          "blob_sha256": "e9f0c4674ed977088105fbdc1fc0817f4e5cf2ef7ddd4ff94278d0851ca9ab29",
+          "line": 361,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/actions/other/others/quest_system2.lua",
+          "blob_sha256": "e9f0c4674ed977088105fbdc1fc0817f4e5cf2ef7ddd4ff94278d0851ca9ab29",
+          "line": 481,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/actions/other/others/quest_system2.lua",
+          "blob_sha256": "04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635",
+          "line": 106,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/actions/other/others/quest_system2.lua",
+          "blob_sha256": "04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635",
+          "line": 361,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/actions/other/others/quest_system2.lua",
+          "blob_sha256": "04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635",
+          "line": 492,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ]
+    },
+    {
+      "title": "The Spirit Will Get You Quest",
+      "key": "the_spirit_will_get_you_quest",
+      "basis": "Pinned wiki names Cranky Lizard Crone and Old Cape. Her registered dialogue exchanges source11701/11700 for Wayfarer addon1/2; raw Item IDs remain source-qualified.",
+      "coverage_gap": "Full journey/acquisition, NPC dialogue graph, additive second storage semantics and native/runtime admission remain UNKNOWN.",
+      "coverage_scope": "partial_registered_addon_exchange",
+      "source_paths": [
+        "npc/cranky_lizard_crone.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/cranky_lizard_crone.lua",
+          "blob_sha256": "fc53fabc5f0e29370c8de5bb929182daffd95bcb99ee5743e7bf3944b665a8b8",
+          "line": 61,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/cranky_lizard_crone.lua",
+          "blob_sha256": "fc53fabc5f0e29370c8de5bb929182daffd95bcb99ee5743e7bf3944b665a8b8",
+          "line": 64,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/cranky_lizard_crone.lua",
+          "blob_sha256": "fc53fabc5f0e29370c8de5bb929182daffd95bcb99ee5743e7bf3944b665a8b8",
+          "line": 86,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/cranky_lizard_crone.lua",
+          "blob_sha256": "fc53fabc5f0e29370c8de5bb929182daffd95bcb99ee5743e7bf3944b665a8b8",
+          "line": 89,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/cranky_lizard_crone.lua",
+          "blob_sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+          "line": 59,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/cranky_lizard_crone.lua",
+          "blob_sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+          "line": 62,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/cranky_lizard_crone.lua",
+          "blob_sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+          "line": 84,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/cranky_lizard_crone.lua",
+          "blob_sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+          "line": 87,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ]
+    },
+    {
+      "title": "Treasure Hunt Quest",
+      "key": "treasure_hunt_quest",
+      "basis": "Pinned Treasure Hunt Mission4 names Captain Waverider/Treasure Island; his registered passage dialogue charges200 and teleports to the island. Shared travel component only.",
+      "coverage_gap": "Other missions, quest-exclusive eligibility, full rewards/map bindings and runtime admission remain UNKNOWN.",
+      "coverage_scope": "partial_shared_travel_component",
+      "source_paths": [
+        "npc/captain_waverider.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/captain_waverider.lua",
+          "blob_sha256": "28c838ffbd7e7ad0cc475ae9eda5ba922c6553466377bf9c99ed6e96dc2eec7f",
+          "line": 85,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/captain_waverider.lua",
+          "blob_sha256": "28c838ffbd7e7ad0cc475ae9eda5ba922c6553466377bf9c99ed6e96dc2eec7f",
+          "line": 87,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/captain_waverider.lua",
+          "blob_sha256": "28c838ffbd7e7ad0cc475ae9eda5ba922c6553466377bf9c99ed6e96dc2eec7f",
+          "line": 102,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/captain_waverider.lua",
+          "blob_sha256": "49eb00228cb490f2c15b8a73a1cd577874929ebdcd0260d305ac8174b16730b0",
+          "line": 83,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/captain_waverider.lua",
+          "blob_sha256": "49eb00228cb490f2c15b8a73a1cd577874929ebdcd0260d305ac8174b16730b0",
+          "line": 85,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/captain_waverider.lua",
+          "blob_sha256": "49eb00228cb490f2c15b8a73a1cd577874929ebdcd0260d305ac8174b16730b0",
+          "line": 100,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ]
+    },
+    {
+      "title": "Treasure Island Quest",
+      "key": "treasure_island_quest",
+      "basis": "Pinned Treasure Island method names Captain Waverider; his registered passage dialogue charges200 and teleports to the island. Shared NPC remains nonexclusive.",
+      "coverage_gap": "Island chest acquisition, full rewards/map bindings and native/runtime admission remain UNKNOWN.",
+      "coverage_scope": "partial_shared_travel_component",
+      "source_paths": [
+        "npc/captain_waverider.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/captain_waverider.lua",
+          "blob_sha256": "28c838ffbd7e7ad0cc475ae9eda5ba922c6553466377bf9c99ed6e96dc2eec7f",
+          "line": 85,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/captain_waverider.lua",
+          "blob_sha256": "28c838ffbd7e7ad0cc475ae9eda5ba922c6553466377bf9c99ed6e96dc2eec7f",
+          "line": 87,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/captain_waverider.lua",
+          "blob_sha256": "28c838ffbd7e7ad0cc475ae9eda5ba922c6553466377bf9c99ed6e96dc2eec7f",
+          "line": 102,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/captain_waverider.lua",
+          "blob_sha256": "49eb00228cb490f2c15b8a73a1cd577874929ebdcd0260d305ac8174b16730b0",
+          "line": 83,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/captain_waverider.lua",
+          "blob_sha256": "49eb00228cb490f2c15b8a73a1cd577874929ebdcd0260d305ac8174b16730b0",
+          "line": 85,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/captain_waverider.lua",
+          "blob_sha256": "49eb00228cb490f2c15b8a73a1cd577874929ebdcd0260d305ac8174b16730b0",
+          "line": 100,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ]
+    },
+    {
+      "title": "Goblin Merchant Quest",
+      "key": "goblin_merchant_quest",
+      "basis": "Pinned wiki explicitly starts Rafzan tasks via help/task; accepted sources register these task/help dialogue responses. This is dialogue-reference coverage only.",
+      "coverage_gap": "NPC task implementation, progress writers, all rewards/acquisition and runtime readiness remain UNKNOWN; the source responses do not implement the six tasks.",
+      "coverage_scope": "partial_registered_task_dialogue_reference",
+      "source_paths": [
+        "npc/rafzan.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/rafzan.lua",
+          "blob_sha256": "9f1a480e77c5c63f9daf16a7f01a8959324ae4d4715642650ccd2e2132e4dd4b",
+          "line": 50,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/rafzan.lua",
+          "blob_sha256": "9f1a480e77c5c63f9daf16a7f01a8959324ae4d4715642650ccd2e2132e4dd4b",
+          "line": 57,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/rafzan.lua",
+          "blob_sha256": "9f1a480e77c5c63f9daf16a7f01a8959324ae4d4715642650ccd2e2132e4dd4b",
+          "line": 106,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/rafzan.lua",
+          "blob_sha256": "9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+          "line": 48,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/rafzan.lua",
+          "blob_sha256": "9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+          "line": 55,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/rafzan.lua",
+          "blob_sha256": "9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+          "line": 107,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ]
+    },
+    {
+      "title": "The Scatterbrained Sorcerer Quest",
+      "key": "the_scatterbrained_sorcerer_quest",
+      "basis": "Pinned quest methods name Eclesius; accepted NPC registers assistant dialogue referencing daily tasks/missions. Dialogue-reference coverage only.",
+      "coverage_gap": "All daily mission effects, task eligibility, progress/rewards and runtime readiness remain UNKNOWN; the assistant response is not their implementation.",
+      "coverage_scope": "partial_registered_task_dialogue_reference",
+      "source_paths": [
+        "npc/eclesius.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/eclesius.lua",
+          "blob_sha256": "42f2280ed2f039d1a117ef175d1bd72c1f11b5695bfc09e3c58277f2c06e713a",
+          "line": 70,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/eclesius.lua",
+          "blob_sha256": "42f2280ed2f039d1a117ef175d1bd72c1f11b5695bfc09e3c58277f2c06e713a",
+          "line": 88,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/npc/eclesius.lua",
+          "blob_sha256": "5986ade6ce2e749981c41d4886ef3b4011dd04fe6af0fc52ea0df220a0cd726b",
+          "line": 69,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ]
+    },
+    {
+      "title": "The Roost of the Graveborn Quest",
+      "key": "the_roost_of_the_graveborn_quest",
+      "basis": "Pinned wiki identifies Bone Overlord as a quest boss; Crystal registers that monster definition. Only the registered boss component is represented; uncertain source stats are not promoted.",
+      "coverage_gap": "Quest-to-boss attachment, all mission/storage/journal/event mechanics, rewards and native/runtime readiness remain UNKNOWN.",
+      "coverage_scope": "partial_registered_boss_definition",
+      "source_paths": [
+        "monster/winter_update_2025/bosses/bone_overlord.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/monster/winter_update_2025/bosses/bone_overlord.lua",
+          "blob_sha256": "392849006690c0665f2762ea46f23d406aafbad68b16c13d736f08dea447b8ee",
+          "line": 1,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/monster/winter_update_2025/bosses/bone_overlord.lua",
+          "blob_sha256": "392849006690c0665f2762ea46f23d406aafbad68b16c13d736f08dea447b8ee",
+          "line": 129,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY"
+        }
+      ]
+    },
+    {
+      "title": "Opticording Sphere Quest",
+      "key": "opticording_sphere_quest",
+      "basis": "Pinned wiki names Mysterious Metal Egg as this quest item; dedicated registered item-use action is an unavailable-content placeholder. Associate source component without pretending it opens the egg.",
+      "coverage_gap": "Actual egg contents/puzzle/rewards, full quest journey and runtime readiness remain UNKNOWN; accepted callback explicitly reports content not implemented.",
+      "coverage_scope": "partial_unavailable_placeholder_interaction",
+      "source_paths": [
+        "scripts/quests/mysterious_ornate/actions_mysterious_metal_egg.lua"
+      ],
+      "source_evidence": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/mysterious_ornate/actions_mysterious_metal_egg.lua",
+          "blob_sha256": "473922162ea4d27d2ec432f33793aa4cfcff4faab9f3e7e68992b57526cf14a5",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/mysterious_ornate/actions_mysterious_metal_egg",
+          "blob_sha1": "cf26310169d78ea56d02ac40baef5004b60c1f0a"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/mysterious_ornate/actions_mysterious_metal_egg.lua",
+          "blob_sha256": "473922162ea4d27d2ec432f33793aa4cfcff4faab9f3e7e68992b57526cf14a5",
+          "line": 3,
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/mysterious_ornate/actions_mysterious_metal_egg",
+          "blob_sha1": "cf26310169d78ea56d02ac40baef5004b60c1f0a"
+        }
+      ],
+      "interaction_keys": [
+        "canary:interaction/mysterious_ornate/actions_mysterious_metal_egg"
       ]
     }
   ]

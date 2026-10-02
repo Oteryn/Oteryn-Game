@@ -64,27 +64,27 @@
   ]
  },
  "counts": {
-  "unresolved_lines": 2010,
-  "unresolved_conditions": 1758,
+  "unresolved_lines": 1937,
+  "unresolved_conditions": 1752,
   "blocked_children": 486,
   "reference_gaps": 1,
-  "total_unresolved_items": 4255,
+  "total_unresolved_items": 4176,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3643
+   "bespoke": 3564
   },
-  "quests_triaged": 268,
-  "quests_with_bespoke_work": 104,
+  "quests_triaged": 276,
+  "quests_with_bespoke_work": 109,
   "quests_fully_covered_by_owners_and_mechanisms": 1,
-  "interactions_unlinked_to_a_quest": 47
+  "interactions_unlinked_to_a_quest": 12
  },
  "owners_ranked_by_quests": [
   {
    "owner": "scheduler",
    "lines": 287,
    "interactions": 183,
-   "quests": 50
+   "quests": 52
   },
   {
    "owner": "condition",
@@ -143,43 +143,43 @@
  "unlock_order": [
   {
    "adds": "owner:scheduler",
-   "quests_owner_mechanism_complete": 15,
-   "of_which_still_have_bespoke_gaps": 15
+   "quests_owner_mechanism_complete": 17,
+   "of_which_still_have_bespoke_gaps": 17
   },
   {
    "adds": "mechanism:kill_reward_fanout",
-   "quests_owner_mechanism_complete": 27,
-   "of_which_still_have_bespoke_gaps": 26
+   "quests_owner_mechanism_complete": 29,
+   "of_which_still_have_bespoke_gaps": 28
   },
   {
    "adds": "owner:condition",
-   "quests_owner_mechanism_complete": 39,
-   "of_which_still_have_bespoke_gaps": 38
+   "quests_owner_mechanism_complete": 41,
+   "of_which_still_have_bespoke_gaps": 40
   },
   {
    "adds": "owner:creature_removal",
-   "quests_owner_mechanism_complete": 45,
-   "of_which_still_have_bespoke_gaps": 44
+   "quests_owner_mechanism_complete": 47,
+   "of_which_still_have_bespoke_gaps": 46
   },
   {
    "adds": "owner:kv_state",
-   "quests_owner_mechanism_complete": 53,
-   "of_which_still_have_bespoke_gaps": 52
+   "quests_owner_mechanism_complete": 55,
+   "of_which_still_have_bespoke_gaps": 54
   },
   {
    "adds": "owner:boss_cooldown",
-   "quests_owner_mechanism_complete": 60,
-   "of_which_still_have_bespoke_gaps": 59
+   "quests_owner_mechanism_complete": 62,
+   "of_which_still_have_bespoke_gaps": 61
   },
   {
    "adds": "mechanism:boss_room_entry_gate",
-   "quests_owner_mechanism_complete": 69,
-   "of_which_still_have_bespoke_gaps": 68
+   "quests_owner_mechanism_complete": 71,
+   "of_which_still_have_bespoke_gaps": 70
   },
   {
    "adds": "mechanism:boss_portal_spectator_gate",
-   "quests_owner_mechanism_complete": 72,
-   "of_which_still_have_bespoke_gaps": 71
+   "quests_owner_mechanism_complete": 74,
+   "of_which_still_have_bespoke_gaps": 73
   }
  ],
  "quests": [
@@ -321,11 +321,11 @@
   },
   {
    "quest": "canary:quest/barbarian_arena_quest",
-   "kind": "reward_only",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 1,
     "shared_mechanism": 0,
-    "bespoke": 29
+    "bespoke": 36
    },
    "owners_needed": [
     "condition"
@@ -333,7 +333,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:condition",
-    "bespoke:29"
+    "bespoke:36"
    ]
   },
   {
@@ -483,7 +483,7 @@
    "counts": {
     "owner_pending": 5,
     "shared_mechanism": 0,
-    "bespoke": 51
+    "bespoke": 48
    },
    "owners_needed": [
     "creature_removal",
@@ -493,7 +493,7 @@
    "to_finish": [
     "owner:creature_removal",
     "owner:scheduler",
-    "bespoke:51"
+    "bespoke:48"
    ]
   },
   {
@@ -696,7 +696,7 @@
    "counts": {
     "owner_pending": 31,
     "shared_mechanism": 3,
-    "bespoke": 208
+    "bespoke": 200
    },
    "owners_needed": [
     "boss_cooldown",
@@ -713,7 +713,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:208"
+    "bespoke:200"
    ]
   },
   {
@@ -1012,11 +1012,11 @@
   },
   {
    "quest": "canary:quest/dreamer_s_challenge_quest",
-   "kind": "reward_only",
+   "kind": "script_only",
    "counts": {
-    "owner_pending": 6,
+    "owner_pending": 8,
     "shared_mechanism": 0,
-    "bespoke": 30
+    "bespoke": 91
    },
    "owners_needed": [
     "scheduler"
@@ -1024,7 +1024,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:30"
+    "bespoke:91"
    ]
   },
   {
@@ -1390,6 +1390,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/goblin_merchant_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/goblin_temple_quest",
    "kind": "reward_only",
    "counts": {
@@ -1504,7 +1516,7 @@
    "counts": {
     "owner_pending": 21,
     "shared_mechanism": 0,
-    "bespoke": 173
+    "bespoke": 143
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1516,7 +1528,7 @@
     "owner:boss_cooldown",
     "owner:creature_removal",
     "owner:scheduler",
-    "bespoke:173"
+    "bespoke:143"
    ]
   },
   {
@@ -1610,6 +1622,18 @@
   },
   {
    "quest": "canary:quest/hunting_for_tokens",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/hydra_egg_quest",
    "kind": "script_only",
    "counts": {
     "owner_pending": 0,
@@ -1801,15 +1825,17 @@
   },
   {
    "quest": "canary:quest/life_ring_quest",
-   "kind": "reward_only",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 0
+    "bespoke": 5
    },
    "owners_needed": [],
    "mechanisms_needed": [],
-   "to_finish": []
+   "to_finish": [
+    "bespoke:5"
+   ]
   },
   {
    "quest": "canary:quest/lion_trophy_quest",
@@ -2086,12 +2112,24 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/opticording_sphere_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/oramond_quest",
    "kind": "storyline",
    "counts": {
     "owner_pending": 7,
     "shared_mechanism": 0,
-    "bespoke": 18
+    "bespoke": 16
    },
    "owners_needed": [
     "scheduler"
@@ -2099,7 +2137,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:18"
+    "bespoke:16"
    ]
   },
   {
@@ -2128,15 +2166,17 @@
   },
   {
    "quest": "canary:quest/oriental_outfits_quest",
-   "kind": "reward_only",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 0
+    "bespoke": 2
    },
    "owners_needed": [],
    "mechanisms_needed": [],
-   "to_finish": []
+   "to_finish": [
+    "bespoke:2"
+   ]
   },
   {
    "quest": "canary:quest/oriental_trader_mini_world_change",
@@ -2299,8 +2339,8 @@
    "kind": "script_only",
    "counts": {
     "owner_pending": 0,
-    "shared_mechanism": 1,
-    "bespoke": 23
+    "shared_mechanism": 2,
+    "bespoke": 29
    },
    "owners_needed": [],
    "mechanisms_needed": [
@@ -2308,7 +2348,7 @@
    ],
    "to_finish": [
     "mechanism:kill_reward_fanout",
-    "bespoke:23"
+    "bespoke:29"
    ]
   },
   {
@@ -2534,15 +2574,17 @@
   },
   {
    "quest": "canary:quest/serpentine_tower_quest",
-   "kind": "reward_only",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 0
+    "bespoke": 7
    },
    "owners_needed": [],
    "mechanisms_needed": [],
-   "to_finish": []
+   "to_finish": [
+    "bespoke:7"
+   ]
   },
   {
    "quest": "canary:quest/shadows_of_yalahar_quest",
@@ -2732,12 +2774,12 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 10
+    "bespoke": 5
    },
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:10"
+    "bespoke:5"
    ]
   },
   {
@@ -3136,13 +3178,18 @@
    "quest": "canary:quest/the_mages_tower_world_change",
    "kind": "script_only",
    "counts": {
-    "owner_pending": 0,
+    "owner_pending": 2,
     "shared_mechanism": 0,
-    "bespoke": 0
+    "bespoke": 23
    },
-   "owners_needed": [],
+   "owners_needed": [
+    "scheduler"
+   ],
    "mechanisms_needed": [],
-   "to_finish": []
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:23"
+   ]
   },
   {
    "quest": "canary:quest/the_mummys_curse_world_change",
@@ -3184,7 +3231,7 @@
    "counts": {
     "owner_pending": 10,
     "shared_mechanism": 4,
-    "bespoke": 59
+    "bespoke": 54
    },
    "owners_needed": [
     "boss_cooldown",
@@ -3199,7 +3246,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:59"
+    "bespoke:54"
    ]
   },
   {
@@ -3304,12 +3351,24 @@
    ]
   },
   {
+   "quest": "canary:quest/the_scatterbrained_sorcerer_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/the_secret_library_quest",
    "kind": "storyline",
    "counts": {
     "owner_pending": 12,
     "shared_mechanism": 0,
-    "bespoke": 160
+    "bespoke": 141
    },
    "owners_needed": [
     "boss_cooldown",
@@ -3321,7 +3380,7 @@
     "owner:boss_cooldown",
     "owner:condition",
     "owner:scheduler",
-    "bespoke:160"
+    "bespoke:141"
    ]
   },
   {
@@ -3340,6 +3399,18 @@
     "owner:scheduler",
     "bespoke:24"
    ]
+  },
+  {
+   "quest": "canary:quest/the_spirit_will_get_you_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/the_tainted_soul",
@@ -3613,6 +3684,18 @@
    ]
   },
   {
+   "quest": "canary:quest/treasure_hunt_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/triangle_tower_quest",
    "kind": "reward_only",
    "counts": {
@@ -3777,7 +3860,7 @@
    "counts": {
     "owner_pending": 17,
     "shared_mechanism": 2,
-    "bespoke": 68
+    "bespoke": 61
    },
    "owners_needed": [
     "condition",
@@ -3792,7 +3875,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:68"
+    "bespoke:61"
    ]
   },
   {
@@ -4019,7 +4102,7 @@
    ]
   },
   {
-   "quest": "crystalserver:quest/within_the_tides_quest",
+   "quest": "crystalserver:quest/the_roost_of_the_graveborn_quest",
    "kind": "script_only",
    "counts": {
     "owner_pending": 0,
@@ -4029,53 +4112,47 @@
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/treasure_island_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/within_the_tides_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 0,
+    "bespoke": 27
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:27"
+   ]
   }
  ],
  "interactions_unlinked": [
-  "canary:interaction/dreamers_challenge_quest/actions_stone_teleport",
-  "canary:interaction/dreamers_challenge_quest/actions_tic_tac",
-  "canary:interaction/dreamers_challenge_quest/actions_tic_tac_teleport",
-  "canary:interaction/dreamers_challenge_quest/actions_walls",
-  "canary:interaction/dreamers_challenge_quest/movement_carrot",
-  "canary:interaction/dreamers_challenge_quest/movement_clock_tile",
-  "canary:interaction/dreamers_challenge_quest/movement_court_teleport",
-  "canary:interaction/dreamers_challenge_quest/movement_death_ring",
-  "canary:interaction/dreamers_challenge_quest/movement_death_ring_teleport",
-  "canary:interaction/dreamers_challenge_quest/movement_fire_bug_teleport",
-  "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle",
-  "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle_2",
-  "canary:interaction/dreamers_challenge_quest/movement_riddle_teleport",
-  "canary:interaction/dreamers_challenge_quest/movement_stone_teleport",
-  "canary:interaction/dreamers_challenge_quest/movement_teleport",
-  "canary:interaction/dreamers_challenge_quest/movement_tic_teleport",
-  "canary:interaction/dreamers_challenge_quest/movement_tower",
-  "canary:interaction/dreamers_challenge_quest/movement_wall_teleport",
   "canary:interaction/edron_rope/movements_rope",
   "canary:interaction/extension_mota/movements_extension_mota",
-  "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
-  "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
-  "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
-  "canary:interaction/marapur/actions_teleports_timira",
   "canary:interaction/marapur/movements_ramp_to_north_temple",
-  "canary:interaction/mysterious_ornate/actions_mysterious_metal_egg",
-  "canary:interaction/others/actions_calassa_comb_door",
   "canary:interaction/others/actions_gooey_mass",
   "canary:interaction/others/actions_hellgate_lever",
   "canary:interaction/others/actions_orc_edron_lever",
-  "canary:interaction/others/actions_serpentine_tower_lever",
-  "canary:interaction/others/actions_serpentine_tower_torch",
-  "canary:interaction/raging_mage_tower/creaturescripts_energized_raging_mage_kill",
-  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_1",
-  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_2",
-  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_kill",
-  "canary:interaction/raging_mage_tower/creaturescripts_yielothax_kill",
   "canary:interaction/soulpit/exalted_core",
   "canary:interaction/soulpit/soul_prism",
   "canary:interaction/soulpit/soulpit_fight",
-  "canary:interaction/svargrond_arena/movements_arena_trophy",
-  "canary:interaction/thais_quest/actions_life_ring_lever",
-  "canary:interaction/the_primal_ordeal/creaturescripts_magma_bubble_death",
-  "canary:interaction/the_primal_ordeal/creaturescripts_the_primal_menace_killed",
   "canary:interaction/white_pearl/movements_white_pearl",
   "crystalserver:interaction/candia_bosses/sugar_daddy_teleports",
   "crystalserver:interaction/rookgaard_quests/quiver"

@@ -328,6 +328,63 @@ CHAIN_STEP = re.compile(r'\.([A-Za-z_]\w*)|\[(\d+)\]|\[([A-Za-z_]\w*)\]')
 VALUE_ALIAS = re.compile(r'^local\s+(\w+)\s*=\s*((?:\w+:getStorageValue|Game\.getStorageValue)\([^()]*\))$')
 
 
+def pristine_constructor(lines, name):
+    """Bare calls are not root escapes; mutations/shadows/reflection still reject."""
+    code = mask_code('\n'.join(lines))
+    if re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadstring|loadfile|dofile|require|debug)\b', code):
+        return False
+    proof = re.sub(rf'(?<![\w.:]){re.escape(name)}\s*(?=\()', f'{name}.__constructor__', code)
+    return builtin_binding_is_pristine(proof.splitlines(), name)
+
+
+def readonly_table_lines(lines):
+    """Complete literal constructors have no gameplay effects, including Position.
+
+    Never skip an expression, function, incomplete table or trailing statement.
+    Physical lines remain intact for the control-flow/source witness machinery.
+    """
+    result = set()
+    position_safe = pristine_constructor(lines, 'Position')
+    def primitive(value):
+        if isinstance(value, dict):
+            if 'fields' in value:
+                # Lua evaluates every constructor field, including overwritten
+                # duplicate keys. Inspect the original AST before dict collapse.
+                return all(type(field['key']) in (int, float, str, bool)
+                           and primitive(field['value']) for field in value['fields'])
+            return not ({'expr', 'function'} & value.keys()) and all(primitive(v) for v in value.values())
+        if isinstance(value, list):
+            return all(primitive(v) for v in value)
+        return value is None or type(value) in (int, float, str, bool)
+    for index, line in enumerate(lines):
+        header = re.match(r'^\s*local\s+\w+\s*=\s*(\{)', line)
+        if not header:
+            continue
+        # The parser can see following statements; only the closing line is
+        # consumed, and everything after its brace on that line must be empty.
+        text = '\n'.join(lines[index:index + 256])[header.start(1):]
+        if len(text) > 32768:
+            text = text[:32768]
+        try:
+            parser = LiteralParser(text)
+            value = parser.table()
+            last = parser.tokens[parser.i - 1][2]
+            closing = parser.tokens[parser.i - 1]
+            tail = parser.peek()
+            if not primitive(value) or (tail[0] != 'eof' and tail[2] == last):
+                continue
+            tokens = parser.tokens[:parser.i]
+            calls = [token for i, token in enumerate(tokens[:-1]) if token[0] == 'name' and tokens[i + 1][1] == '(']
+            if calls and (not position_safe or any(token[1] != 'Position' for token in calls)):
+                continue
+            if closing[1] != '}':
+                continue
+            result.update(range(index + 1, index + last + 1))
+        except (lua_tables.LuaError, IndexError, ValueError, TypeError):
+            pass
+    return result
+
+
 def typed_tile_item_removal(script, raw, number, in_loop=False):
     # Existing library proof rejects direct constructor calls as escapes.
     # Normalize only lexical bare calls for that proof; declarations, shadows
@@ -382,6 +439,8 @@ class Script:
         self.commentless_lines = mask_code('\n'.join(self.lines), literals=False, long_literals=True).split('\n')
         self.code_lines = mask_code('\n'.join(self.lines)).split('\n')
         self.block_lines, self.condition_headers = multiline_conditions(self.commentless_lines, self.code_lines)
+        self.readonly_tables = readonly_table_lines(self.commentless_lines)
+        self.player_constructor_safe = pristine_constructor(self.lines, "Player")
         self.builtin_proofs = {root: builtin_binding_is_pristine(self.lines, root) for root in ('Game', 'table')}
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
@@ -469,10 +528,37 @@ class Script:
             if (m := VALUE_ALIAS.match(self.raw(n))) and static_name_is_immutable(callback_lines, m.group(1)):
                 self.value_aliases[m.group(1)] = (n, m.group(2), self.line_scopes[n])
         self.player_aliases = {}
+        # getId() can fall through Player's numeric GUID lookup for a non-player.
+        # Retain that spelling only after an exact same-actor player guard.
+        player_known_lines = set()
+        def player_guards(nodes, known=False):
+            for node in nodes:
+                if node[0] == 'stmt':
+                    if known:
+                        player_known_lines.add(node[1])
+                elif node[0] == 'if':
+                    branches = node[1]
+                    exact = len(branches) == 1 and actor and re.fullmatch(
+                        rf'if\s+(not\s+)?{actor}:isPlayer\(\)\s+then', self.raw(branches[0][1]))
+                    for _, line, body in branches:
+                        player_guards(body, known or bool(exact and not exact[1]))
+                    player_guards(node[2], known or bool(exact and exact[1]))
+                    if exact and exact[1] and not node[2]:
+                        body = branches[0][2]
+                        if len(body) == 1 and body[0][0] == 'stmt' and re.fullmatch(
+                                r'return(?:\s+(?:true|false))?', self.raw(body[0][1])):
+                            known = True
+        player_guards(body_nodes, callback == 'onUse')
+        actor_unchanged = actor and static_name_is_immutable([f'local {actor} = nil', *callback_lines], actor)
         for n in sorted(body_numbers):
-            if (actor
-                    and (m := re.fullmatch(rf'local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', self.raw(n)))
-                    and static_name_is_immutable(callback_lines, m.group(1))):
+            raw = self.raw(n)
+            getter = actor and re.fullmatch(rf'local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', raw)
+            constructor = (actor_unchanged and self.player_constructor_safe
+                           and re.fullmatch(rf'local\s+(\w+)\s*=\s*Player\(\s*{actor}(?::getId\(\))?\s*\)', raw))
+            if constructor and ':getId()' in raw and n not in player_known_lines:
+                constructor = None
+            m = getter or constructor
+            if m and static_name_is_immutable(callback_lines, m.group(1)):
                 self.player_aliases[m.group(1)] = (n, self.line_scopes[n])
                 self.players.add(m.group(1))
 
@@ -843,6 +929,11 @@ class Script:
         text = re.sub(r'\b(\w+):getId\(\)',
                       lambda m: f'{m.group(1)}.itemid' if self.roles.get(m.group(1)) in ('source', 'contact')
                       else m.group(0), text)
+        # Player(actor) returns this actor or nil. Equality to nil/boolean
+        # therefore uses the existing acting-player predicate, never another id.
+        nullable = re.fullmatch(r'(\w+)\s*(==|~=)\s*nil', text)
+        if nullable and nullable[1] in self.player_aliases and self.proven_player(nullable[1], number):
+            return {'actor_is_player': True, 'negate': nullable[2] == '=='}
         parts = re.split(r'\s+(and|or)\s+', text)
         terms, joins = parts[0::2], set(parts[1::2])
         if len(joins) > 1:
@@ -884,6 +975,8 @@ class Script:
 
     def children(self, number, in_loop=False):
         self.current_line = number
+        if number in self.readonly_tables:
+            return []
         raw = self.raw(number)
         code = mask_code(raw).strip()
         found = []

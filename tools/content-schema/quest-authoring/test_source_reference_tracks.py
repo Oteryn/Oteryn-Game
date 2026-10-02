@@ -176,7 +176,8 @@ class ReferenceTrackTests(unittest.TestCase):
                 inputs={'questlog/quests.json':[quest],'questlog/progress.json':progress,
                     'chests/claims.json':[],'doors/gates.json':gates,'interactions/interactions.json':interactions}
                 with patch.object(ots_readiness,'SAMPLES',root),patch.object(ots_readiness,'OUT',root/'out.json'),\
-                     patch.object(ots_readiness,'load',side_effect=lambda name,key:inputs[name]),contextlib.redirect_stdout(io.StringIO()):
+                     patch.object(ots_readiness,'load',side_effect=lambda name,key:inputs[name]),\
+                     patch.object(ots_readiness,'curated_link_inputs',return_value=([],[])),contextlib.redirect_stdout(io.StringIO()):
                     ots_readiness.main()
                 return json.loads((root/'out.json').read_text())
             before=compile([],[inter],[]);after=compile([record],[inter],[])

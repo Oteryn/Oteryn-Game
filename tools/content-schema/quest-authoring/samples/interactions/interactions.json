@@ -8329,18 +8329,6 @@
       ],
       "unresolved": [
         {
-          "line": 16,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 17,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 18,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 22,
           "reason": "loop with its own control flow"
         },
@@ -11944,22 +11932,6 @@
           "reason": "loop with its own control flow"
         },
         {
-          "line": 401,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 402,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 403,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 404,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 407,
           "reason": "loop with its own control flow"
         },
@@ -13682,22 +13654,6 @@
         },
         {
           "line": 32,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 34,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 35,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 36,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 37,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -44529,26 +44485,6 @@
       ],
       "unresolved": [
         {
-          "line": 196,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 197,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 198,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 199,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 200,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 217,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -44898,26 +44834,6 @@
       ],
       "unresolved": [
         {
-          "line": 134,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 135,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 136,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 137,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 138,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 155,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -45222,66 +45138,6 @@
         }
       ],
       "unresolved": [
-        {
-          "line": 349,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 350,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 351,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 352,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 353,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 357,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 358,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 359,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 360,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 361,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 365,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 366,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 367,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 368,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 369,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 387,
           "reason": "statement outside the transcribed vocabulary"
@@ -45656,26 +45512,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 143,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 144,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 145,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 146,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 147,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 164,
           "reason": "statement outside the transcribed vocabulary"
@@ -60424,14 +60260,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 25,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 26,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 30,
           "reason": "delayed callback (addEvent) without a scheduler owner"
         }
@@ -72763,6 +72591,12 @@
                                           "source_line": 10
                                         },
                                         {
+                                          "owner": "Quest",
+                                          "request": "set_progress",
+                                          "progress": "canary:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+                                          "value_source_line": 11
+                                        },
+                                        {
                                           "owner": "Ability",
                                           "effect": "summon",
                                           "creature": {
@@ -72850,7 +72684,22 @@
                                 },
                                 "negate": false
                               },
-                              "then": []
+                              "then": [
+                                {
+                                  "owner": "Quest",
+                                  "request": "set_progress",
+                                  "progress": "canary:quest-progress/quest/u8_7/spirit_hunters/charm_use",
+                                  "to": 1
+                                }
+                              ]
+                            }
+                          ],
+                          "otherwise": [
+                            {
+                              "owner": "Quest",
+                              "request": "set_progress",
+                              "progress": "canary:quest-progress/quest/u8_7/spirit_hunters/ghost_use",
+                              "value_source_line": 24
                             }
                           ]
                         },
@@ -72905,6 +72754,12 @@
                           "source_line": 29
                         },
                         {
+                          "owner": "Quest",
+                          "request": "set_progress",
+                          "progress": "canary:quest-progress/quest/u8_7/spirit_hunters/souleater_use",
+                          "value_source_line": 30
+                        },
+                        {
                           "owner": "WorldObject",
                           "operation": "TRANSFORM",
                           "value_source_line": 31
@@ -72955,6 +72810,12 @@
                           "source_line": 34
                         },
                         {
+                          "owner": "Quest",
+                          "request": "set_progress",
+                          "progress": "canary:quest-progress/quest/u8_7/spirit_hunters/nightstalker_use",
+                          "value_source_line": 35
+                        },
+                        {
                           "owner": "WorldObject",
                           "operation": "TRANSFORM",
                           "value_source_line": 36
@@ -72982,26 +72843,6 @@
         {
           "line": 9,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 11,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 22,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 24,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 30,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 35,
-          "reason": "effect receiver not proven to be the acting player in this scope"
         }
       ]
     },
@@ -100091,28 +99932,7 @@
           }
         }
       ],
-      "unresolved": [
-        {
-          "line": 57,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 58,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 59,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 60,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 61,
-          "reason": "statement outside the transcribed vocabulary"
-        }
-      ]
+      "unresolved": []
     },
     {
       "identity": {
@@ -111247,6 +111067,19 @@
                               },
                               "then": [
                                 {
+                                  "owner": "Quest",
+                                  "request": "set_progress",
+                                  "progress": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/trial_timer",
+                                  "value_source_line": 56
+                                },
+                                {
+                                  "owner": "Quest",
+                                  "request": "set_progress",
+                                  "progress": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/questline",
+                                  "to": 6,
+                                  "transition": "canary:quest/the_secret_library_quest#bursting_at_the_seams:movement_1"
+                                },
+                                {
                                   "owner": "Presentation",
                                   "effect": "message",
                                   "authoritative": false,
@@ -111298,19 +111131,11 @@
         },
         {
           "line": 32,
-          "reason": "effect receiver not proven to be the acting player in this scope"
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 26,
           "reason": "loop with its own control flow"
-        },
-        {
-          "line": 56,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 57,
-          "reason": "effect receiver not proven to be the acting player in this scope"
         }
       ]
     },
@@ -111503,6 +111328,12 @@
                               "effect": "message",
                               "authoritative": false,
                               "source_line": 13
+                            },
+                            {
+                              "owner": "Quest",
+                              "request": "set_progress",
+                              "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/boat_stages",
+                              "to": 1
                             }
                           ]
                         },
@@ -111567,13 +111398,37 @@
                                       "branch": [
                                         {
                                           "when": {
-                                            "unresolved": {
-                                              "line": 22
-                                            }
+                                            "actor_item_count": {
+                                              "item": {
+                                                "family": "Item",
+                                                "key": "canary:item/28707",
+                                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                              },
+                                              "op": ">=",
+                                              "value": 1
+                                            },
+                                            "negate": false
                                           },
-                                          "then": []
+                                          "then": [
+                                            {
+                                              "owner": "Item",
+                                              "request": "consume",
+                                              "item": {
+                                                "family": "Item",
+                                                "key": "canary:item/28707",
+                                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                              },
+                                              "count": 1
+                                            }
+                                          ]
                                         }
                                       ]
+                                    },
+                                    {
+                                      "owner": "Quest",
+                                      "request": "set_progress",
+                                      "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/boat_stages",
+                                      "to": 2
                                     }
                                   ]
                                 }
@@ -111631,7 +111486,15 @@
                                     },
                                     "negate": false
                                   },
-                                  "then": []
+                                  "then": [
+                                    {
+                                      "owner": "Quest",
+                                      "request": "set_progress",
+                                      "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/questline",
+                                      "to": 3,
+                                      "transition": "canary:quest/the_secret_library_quest#high_and_dry:movement_1"
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -111656,24 +111519,7 @@
           }
         }
       ],
-      "unresolved": [
-        {
-          "line": 14,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 23,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 25,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 34,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        }
-      ]
+      "unresolved": []
     },
     {
       "identity": {
@@ -111849,7 +111695,7 @@
         },
         {
           "line": 77,
-          "reason": "effect receiver not proven to be the acting player in this scope"
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 78,
@@ -112394,9 +112240,8 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 18
-                    }
+                    "actor_is_player": true,
+                    "negate": false
                   },
                   "then": [
                     {
@@ -112481,9 +112326,8 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 20
-                    }
+                    "actor_is_player": true,
+                    "negate": false
                   },
                   "then": [
                     {
@@ -112498,6 +112342,12 @@
                       "effect": "message",
                       "authoritative": false,
                       "source_line": 28,
+                      "repeated": true
+                    },
+                    {
+                      "owner": "Achievement",
+                      "request": "grant",
+                      "value_source_line": 31,
                       "repeated": true
                     },
                     {
@@ -112539,12 +112389,8 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 31,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
           "line": 34,
-          "reason": "effect receiver not proven to be the acting player in this scope"
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 21,
@@ -113825,24 +113671,7 @@
           }
         }
       ],
-      "unresolved": [
-        {
-          "line": 30,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 31,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 32,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 33,
-          "reason": "statement outside the transcribed vocabulary"
-        }
-      ]
+      "unresolved": []
     },
     {
       "identity": {
@@ -114047,9 +113876,8 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 14
-                    }
+                    "actor_is_player": true,
+                    "negate": false
                   },
                   "then": [
                     {
@@ -114073,6 +113901,12 @@
                                     }
                                   },
                                   "then": [
+                                    {
+                                      "owner": "Quest",
+                                      "request": "set_progress",
+                                      "progress": "canary:quest-progress/quest/u11_80/the_secret_library/darashia/color_puzzle",
+                                      "to": 1
+                                    },
                                     {
                                       "owner": "Presentation",
                                       "effect": "message",
@@ -114098,23 +113932,19 @@
       "unresolved": [
         {
           "line": 20,
-          "reason": "effect receiver not proven to be the acting player in this scope"
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 22,
-          "reason": "effect receiver not proven to be the acting player in this scope"
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 25,
-          "reason": "effect receiver not proven to be the acting player in this scope"
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 16,
           "reason": "loop with its own control flow"
-        },
-        {
-          "line": 31,
-          "reason": "effect receiver not proven to be the acting player in this scope"
         }
       ]
     },
@@ -114236,9 +114066,8 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 102
-                    }
+                    "actor_is_player": true,
+                    "negate": false
                   },
                   "then": [
                     {
@@ -114385,6 +114214,13 @@
                                   },
                                   "then": [
                                     {
+                                      "owner": "Quest",
+                                      "request": "set_progress",
+                                      "progress": "canary:quest-progress/quest/u11_80/the_secret_library/darashia/puzzle_sqm",
+                                      "value_source_line": 159,
+                                      "repeated": true
+                                    },
+                                    {
                                       "owner": "Presentation",
                                       "effect": "magic_effect",
                                       "authoritative": false,
@@ -114395,6 +114231,13 @@
                                       "effect": "message",
                                       "authoritative": false,
                                       "source_line": 163,
+                                      "repeated": true
+                                    },
+                                    {
+                                      "owner": "Quest",
+                                      "request": "set_progress",
+                                      "progress": "canary:quest-progress/quest/u11_80/the_secret_library/darashia/puzzle_sqm",
+                                      "to": 0,
                                       "repeated": true
                                     },
                                     {
@@ -114449,20 +114292,12 @@
           "reason": "loop with its own control flow"
         },
         {
-          "line": 159,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
-          "line": 166,
-          "reason": "effect receiver not proven to be the acting player in this scope"
-        },
-        {
           "line": 152,
           "reason": "loop with its own control flow"
         },
         {
           "line": 176,
-          "reason": "effect receiver not proven to be the acting player in this scope"
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 173,
@@ -122406,18 +122241,6 @@
           "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
-          "line": 22,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 23,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 24,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 27,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -122428,14 +122251,6 @@
         {
           "line": 34,
           "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
-        {
-          "line": 36,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 37,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 40,
@@ -124263,9 +124078,8 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 242
-                }
+                "actor_is_player": true,
+                "negate": true
               },
               "then": []
             }
@@ -124276,6 +124090,13 @@
               "effect": "message",
               "authoritative": false,
               "source_line": 261,
+              "repeated": true
+            },
+            {
+              "owner": "Quest",
+              "request": "set_progress",
+              "progress": "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/message",
+              "to": 1,
               "repeated": true
             },
             {
@@ -124293,10 +124114,6 @@
         {
           "line": 255,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 262,
-          "reason": "effect receiver not proven to be the acting player in this scope"
         },
         {
           "line": 266,

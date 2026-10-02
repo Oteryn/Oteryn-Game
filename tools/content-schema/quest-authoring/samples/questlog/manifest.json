@@ -414,22 +414,22 @@
     },
     "transitions_in_both_servers": 1345,
     "storyline_quests_linked_to_wiki": 52,
-    "reward_only_quests_absorbed": 25,
-    "script_only_quests": 100,
-    "catalogue_quests": 268,
+    "reward_only_quests_absorbed": 30,
+    "script_only_quests": 113,
+    "catalogue_quests": 276,
     "by_status": {
       "mapped": 529
     },
     "requirements_parsed": {
-      "quests_with_wiki_requirements": 262,
+      "quests_with_wiki_requirements": 270,
       "premium": {
-        "parsed": 260,
+        "parsed": 268,
         "partial": 2
       },
       "min_level": {
         "none": 2,
-        "note": 4,
-        "parsed": 239,
+        "note": 5,
+        "parsed": 246,
         "range": 6,
         "uncertain": 4,
         "varies": 1
@@ -437,12 +437,17 @@
     }
   },
   "reward_only_absorbed": [
+    "canary:quest/barbarian_arena_quest",
     "canary:quest/children_of_the_revolution_quest",
     "canary:quest/cults_of_tibia_quest",
     "canary:quest/dawnport_quest",
     "canary:quest/desert_dungeon_quest",
+    "canary:quest/dreamer_s_challenge_quest",
     "canary:quest/forgotten_knowledge_quest",
+    "canary:quest/life_ring_quest",
+    "canary:quest/oriental_outfits_quest",
     "canary:quest/secret_service_quest",
+    "canary:quest/serpentine_tower_quest",
     "canary:quest/shadows_of_yalahar_quest",
     "canary:quest/thais_lighthouse_quest",
     "canary:quest/the_ape_city_quest",
@@ -2110,6 +2115,15 @@
     },
     "script_coverage_holds": [
       {
+        "quest": "canary:quest/primal_ordeal_quest",
+        "source_paths": [
+          "scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua",
+          "scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua"
+        ],
+        "coverage_gap": "Full quest journey, callback/monster attachments and alternate source consistency remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
         "quest": "canary:quest/fury_gates_mini_world_change",
         "source_paths": [
           "scripts/world_changes/fury_gates.lua"
@@ -2365,9 +2379,10 @@
       {
         "quest": "crystalserver:quest/within_the_tides_quest",
         "source_paths": [
-          "scripts/quests/marapur/actions_boss_timira_fight.lua"
+          "scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "scripts/quests/marapur/actions_teleports_timira.lua"
         ],
-        "coverage_gap": "NPC missions, access prerequisites, full quest rewards, native/runtime admission remain unassessed.",
+        "coverage_gap": "Other NPC missions, access prerequisites, encounter completeness, map bindings and native/runtime admission remain UNKNOWN.",
         "classification": "UNKNOWN"
       },
       {
@@ -2489,9 +2504,134 @@
       {
         "quest": "canary:quest/the_mages_tower_world_change",
         "source_paths": [
-          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua"
+          "scripts/quests/raging_mage_tower/creaturescripts_energized_raging_mage_kill.lua",
+          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_2.lua",
+          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_kill.lua",
+          "scripts/quests/raging_mage_tower/creaturescripts_yielothax_kill.lua"
         ],
-        "coverage_gap": "Full world scheduler, map/creature event attachment, kill-participant eligibility and native world-state admission remain unbound. Existing script defect with getSpectators destructuring/#t remains source behavior, not repaired by transcription; global storages never become Character tracks.",
+        "coverage_gap": "World scheduler/activation, attachment, eligibility and native world-state admission remain UNKNOWN; existing source defects remain source behavior.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/dreamer_s_challenge_quest",
+        "source_paths": [
+          "scripts/quests/dreamers_challenge_quest/actions_stone_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/actions_tic_tac.lua",
+          "scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/actions_walls.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_carrot.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_clock_tile.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_death_ring.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_death_ring_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_fire_bug_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_riddle.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_stone_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_tic_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_tower.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua"
+        ],
+        "coverage_gap": "NPC storyline, full puzzle ordering, map bindings and runtime execution remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/barbarian_arena_quest",
+        "source_paths": [
+          "scripts/quests/svargrond_arena/movements_arena_trophy.lua"
+        ],
+        "coverage_gap": "Complete arena rounds, monster lifecycle, difficulty progression, map bindings and runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/life_ring_quest",
+        "source_paths": [
+          "scripts/quests/thais_quest/actions_life_ring_lever.lua"
+        ],
+        "coverage_gap": "Complete chest access/journey, switch-map placement linkage and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/serpentine_tower_quest",
+        "source_paths": [
+          "scripts/quests/others/actions_serpentine_tower_lever.lua",
+          "scripts/quests/others/actions_serpentine_tower_torch.lua"
+        ],
+        "coverage_gap": "The unsolved/full tower quest, global puzzle ordering and map/runtime bindings remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/oriental_outfits_quest",
+        "source_paths": [
+          "scripts/quests/others/actions_calassa_comb_door.lua"
+        ],
+        "coverage_gap": "Full outfit acquisition/NPC missions, Calassa map access and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/hydra_egg_quest",
+        "source_paths": [
+          "scripts/actions/other/others/quest_system2.lua"
+        ],
+        "coverage_gap": "Generic table selection/control flow, full acquisition/map placement and typed reward/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/the_spirit_will_get_you_quest",
+        "source_paths": [
+          "npc/cranky_lizard_crone.lua"
+        ],
+        "coverage_gap": "Full journey/acquisition, NPC dialogue graph, additive second storage semantics and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/treasure_hunt_quest",
+        "source_paths": [
+          "npc/captain_waverider.lua"
+        ],
+        "coverage_gap": "Other missions, quest-exclusive eligibility, full rewards/map bindings and runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/treasure_island_quest",
+        "source_paths": [
+          "npc/captain_waverider.lua"
+        ],
+        "coverage_gap": "Island chest acquisition, full rewards/map bindings and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/goblin_merchant_quest",
+        "source_paths": [
+          "npc/rafzan.lua"
+        ],
+        "coverage_gap": "NPC task implementation, progress writers, all rewards/acquisition and runtime readiness remain UNKNOWN; the source responses do not implement the six tasks.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/the_scatterbrained_sorcerer_quest",
+        "source_paths": [
+          "npc/eclesius.lua"
+        ],
+        "coverage_gap": "All daily mission effects, task eligibility, progress/rewards and runtime readiness remain UNKNOWN; the assistant response is not their implementation.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/the_roost_of_the_graveborn_quest",
+        "source_paths": [
+          "monster/winter_update_2025/bosses/bone_overlord.lua"
+        ],
+        "coverage_gap": "Quest-to-boss attachment, all mission/storage/journal/event mechanics, rewards and native/runtime readiness remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/opticording_sphere_quest",
+        "source_paths": [
+          "scripts/quests/mysterious_ornate/actions_mysterious_metal_egg.lua"
+        ],
+        "coverage_gap": "Actual egg contents/puzzle/rewards, full quest journey and runtime readiness remain UNKNOWN; accepted callback explicitly reports content not implemented.",
         "classification": "UNKNOWN"
       }
     ],

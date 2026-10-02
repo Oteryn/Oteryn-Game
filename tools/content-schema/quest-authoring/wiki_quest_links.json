@@ -687,6 +687,177 @@
         "wiki_path": "samples/wiki-source-specs/source-specs-105.enriched.json",
         "questlog_path": "samples/questlog/quests.json"
       }
+    },
+    {
+      "wiki_title": "Exchange Quests",
+      "wiki_pageid": 9667,
+      "wiki_revid": 692497,
+      "target_key": "canary:quest/friends_and_traders",
+      "mission_keys": [
+        "the_sweaty_cyclops",
+        "the_mermaid_marina"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Pinned Exchange Quests source explicitly lists The Sweaty Cyclops and The Mermaid Marina; existing Friends and Traders missions represent only these two exchanges. All remaining family components and runtime admission remain UNKNOWN.",
+      "evidence": {
+        "wiki_path": "samples/wiki-source-specs/source-specs-105.enriched.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/a_sweaty_cyclops.lua",
+            "blob_sha256": "1db83ed842c76a99b0760899543491d1791051e3da1570557d6e4b4735fa3d75",
+            "line": 115,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/marina.lua",
+            "blob_sha256": "098b22a3bf4631956b7c1978763818f9796766d21c121381fe10eb51a5d6f176",
+            "line": 111,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/a_sweaty_cyclops.lua",
+            "blob_sha256": "bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+            "line": 113,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/marina.lua",
+            "blob_sha256": "8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682",
+            "line": 109,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "wiki_component_witnesses": [
+          {
+            "provider": "tibia_fandom",
+            "pageid": 9666,
+            "revid": 564371,
+            "content_sha256": "d3b86d29fe9014e6c8023ce5343cca5480abe3ba59609c6bd13740479d9888ca",
+            "url": "https://tibia.fandom.com/index.php?curid=9666&oldid=564371",
+            "relation": "spoiler",
+            "line": 3,
+            "line_sha256": "02d91b61762350812dba348fea029be48cb872bff1621fa8a602291f4acdc30c",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "pageid": 260,
+            "revid": 408214,
+            "content_sha256": "e1f874f6fef26778c02e6b4931084e23c476695891a2d9f636851f7db6f9f357",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=260&oldid=408214",
+            "relation": "crosscheck",
+            "line": 22,
+            "line_sha256": "bb9e942d17cad8b7875921b5de78521b3167d56366125713ba7faa9cb97203ab",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "pageid": 260,
+            "revid": 408214,
+            "content_sha256": "e1f874f6fef26778c02e6b4931084e23c476695891a2d9f636851f7db6f9f357",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=260&oldid=408214",
+            "relation": "crosscheck",
+            "line": 28,
+            "line_sha256": "dc3d150ff3ff603c203a6fa68d5f5907e511d82dac140a6a4f0108fe530d7042",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "pageid": 260,
+            "revid": 408214,
+            "content_sha256": "e1f874f6fef26778c02e6b4931084e23c476695891a2d9f636851f7db6f9f357",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=260&oldid=408214",
+            "relation": "crosscheck",
+            "line": 53,
+            "line_sha256": "c8d8e5b1d44c4355872e331cb13c9e1eb399d9b8bedfc5de47ff388ca1ef64da",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          }
+        ]
+      }
+    },
+    {
+      "wiki_title": "Loose Ends Quest",
+      "wiki_pageid": 54680,
+      "wiki_revid": 844805,
+      "target_key": "canary:quest/tibia_tales",
+      "mission_keys": [
+        "the_ultimate_booze"
+      ],
+      "scope": "partial_named_missions",
+      "basis": "Pinned Loose Ends Venore chapter explicitly directs players to Boozer/The Ultimate Booze Quest. Existing Tibia Tales ultimate-booze mission represents this chapter only; Thais/Ankrahmun are not inferred. All remaining family components and runtime admission remain UNKNOWN.",
+      "evidence": {
+        "wiki_path": "samples/wiki-source-specs/source-specs-105.enriched.json",
+        "questlog_path": "samples/questlog/quests.json",
+        "source_evidence": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/boozer.lua",
+            "blob_sha256": "d7faa202ca0c1c52ed3c3610246d0d37f474aeabc186008de4bbbad285e1d5dc",
+            "line": 65,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/boozer.lua",
+            "blob_sha256": "9a5d787bdb3ad7ac07eaf22c43c60f94467227363d9a01035e5d3b297ede379f",
+            "line": 63,
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "wiki_component_witnesses": [
+          {
+            "provider": "tibia_fandom",
+            "pageid": 54681,
+            "revid": 748896,
+            "content_sha256": "7f199b5418973f33b4dd4133f563d4b35cb260119b476974bbd182dc7460daa9",
+            "url": "https://tibia.fandom.com/index.php?curid=54681&oldid=748896",
+            "relation": "spoiler",
+            "line": 19,
+            "line_sha256": "ff67f87ebfddfd6e32464f3f179a2aed04a392a6f09f54eaeda20615f45d0d94",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibia_fandom",
+            "pageid": 54681,
+            "revid": 748896,
+            "content_sha256": "7f199b5418973f33b4dd4133f563d4b35cb260119b476974bbd182dc7460daa9",
+            "url": "https://tibia.fandom.com/index.php?curid=54681&oldid=748896",
+            "relation": "spoiler",
+            "line": 20,
+            "line_sha256": "4b4c7b15c41d03f5fbe80cecf762b342d17e860d31ad211e19adf0a37a3cd683",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          }
+        ]
+      }
     }
   ]
 }

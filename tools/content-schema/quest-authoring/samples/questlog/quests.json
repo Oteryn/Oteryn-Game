@@ -689,7 +689,7 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Barbarian Arena Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Barbarian Arena Quest",
@@ -10879,7 +10879,7 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Dreamer's Challenge Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Dreamer's Challenge Quest",
@@ -12624,6 +12624,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/goblin_merchant_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Goblin Merchant Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Goblin Merchant Quest",
+        "pageid": 61804,
+        "revid": 845754
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/goblin_temple_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -14242,6 +14265,29 @@
       },
       "requirements": {
         "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/hydra_egg_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Hydra Egg Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Hydra Egg Quest",
+        "pageid": 4964,
+        "revid": 692493
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
         "min_level": 0
       }
     },
@@ -20939,7 +20985,7 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Life Ring Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Life Ring Quest",
@@ -21701,6 +21747,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/opticording_sphere_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Opticording Sphere Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Opticording Sphere Quest",
+        "pageid": 65056,
+        "revid": 1035096
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "100"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 100
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/oramond_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -21889,7 +21958,7 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Oriental Outfits Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Oriental Outfits Quest",
@@ -28514,7 +28583,7 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Serpentine Tower Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Serpentine Tower Quest",
@@ -47032,6 +47101,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/the_scatterbrained_sorcerer_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Scatterbrained Sorcerer Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Scatterbrained Sorcerer Quest",
+        "pageid": 36950,
+        "revid": 843982
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/the_secret_library_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -51688,6 +51780,29 @@
       "requirements": {
         "premium": true,
         "min_level": 20
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_spirit_will_get_you_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Spirit Will Get You Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Spirit Will Get You Quest",
+        "pageid": 46745,
+        "revid": 844389
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -57580,6 +57695,32 @@
     },
     {
       "identity": {
+        "key": "canary:quest/treasure_hunt_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Treasure Hunt Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Treasure Hunt Quest",
+        "pageid": 37108,
+        "revid": 843992
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "35 (The Shattered Isles Quest)"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/triangle_tower_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -61534,6 +61675,52 @@
       },
       "requirements_unparsed": {
         "min_level": "range"
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/the_roost_of_the_graveborn_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Roost of the Graveborn Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Roost of the Graveborn Quest",
+        "pageid": 109735,
+        "revid": 1195314
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "450"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 450
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/treasure_island_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Treasure Island Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Treasure Island Quest",
+        "pageid": 9265,
+        "revid": 684052
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {

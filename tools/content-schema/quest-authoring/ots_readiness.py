@@ -20,9 +20,12 @@ a missing runtime owner (key-value writes, conditions, boss cooldowns, creature
 removal, delayed callbacks) counts as a needed feature, not as a data gap.
 """
 import collections
+import functools
 import json
 import pathlib
 import re
+
+from ots_chests import SOURCES
 
 HERE = pathlib.Path(__file__).resolve().parent
 SAMPLES = HERE / 'samples'
@@ -157,13 +160,73 @@ def interaction_facts(inter, declared_tracks=None, uncertain_tracks=None):
     return tracks, features, gaps
 
 
-def join_interactions(quests, progress, interactions):
+@functools.lru_cache(maxsize=1)
+def curated_link_inputs():
+    """Committed finite callbacks, not a directory-wide ownership alias."""
+    return (json.loads((HERE / 'script_quests.json').read_text())['quests'],
+            json.loads((SAMPLES / 'interactions/manifest.json').read_text())['entries'])
+
+
+def curated_interaction_owners(quests, interactions, entries=None, manifest_entries=None, strict=False):
+    if entries is None or manifest_entries is None:
+        default_entries, default_manifest = curated_link_inputs()
+        entries = default_entries if entries is None else entries
+        manifest_entries = default_manifest if manifest_entries is None else manifest_entries
+    by_title = collections.defaultdict(list)
+    for quest in quests:
+        if quest.get('display_name'):
+            by_title[quest['display_name']].append(quest['identity']['key'])
+    known = {i['identity']['key'] for i in interactions}
+    manifest = {row['destination']: row for row in manifest_entries}
+    owners, seen = collections.defaultdict(set), set()
+    for entry in entries:
+        keys = entry.get('interaction_keys')
+        if keys is None:
+            continue
+        if (not isinstance(keys, list) or not keys or any(not isinstance(k, str) for k in keys)
+                or len(keys) != len(set(keys)) or entry['title'] in seen
+                or not entry.get('coverage_gap') or not entry.get('coverage_scope', '').startswith('partial_')):
+            raise ValueError('invalid finite interaction curation: ' + entry['title'])
+        seen.add(entry['title'])
+        targets = by_title[entry['title']]
+        if len(targets) != 1:
+            if strict or targets:
+                raise ValueError('missing or ambiguous curated quest: ' + entry['title'])
+            continue  # A projected conflict alternative may contain only one quest.
+        for key in keys:
+            if key not in known:
+                if strict:
+                    raise ValueError('stale curated interaction: ' + key)
+                continue  # Conflict/readiness consumers can project one Interaction.
+            row = manifest.get(key)
+            witnesses = [e for e in entry.get('source_evidence', []) if e.get('interaction_key') == key]
+            if not row or not witnesses:
+                raise ValueError('missing curated callback provenance: ' + key)
+            for witness in witnesses:
+                matching = [source for source in row['sources']
+                            if source['source'] == witness.get('source')
+                            and source['path'] == witness.get('path')
+                            and source['callback_line'] == witness.get('line')
+                            and source['blob_sha1'] == witness.get('blob_sha1')]
+                pin = SOURCES.get(witness.get('source'), {})
+                if (not matching or witness.get('repository') != pin.get('repository')
+                        or witness.get('revision') != pin.get('revision')
+                        or witness.get('role') != 'executable'
+                        or witness.get('classification') != 'OTS_HYPOTHESIS_ONLY'
+                        or not re.fullmatch(r'[0-9a-f]{64}', witness.get('blob_sha256', ''))):
+                    raise ValueError('stale curated callback provenance: ' + key)
+            owners[key].add(targets[0])
+    return owners
+
+
+def join_interactions(quests, progress, interactions, curated_entries=None, manifest_entries=None):
     """Explicit directory ownership precedes inferred cross-track ownership.
 
     Keep direct track owners as well: a boss script may grant another quest's
     outfit while remaining part of its named quest. Ambiguous inference stays
     unlinked; it never selects an arbitrary owner.
     """
+    curated_callbacks = curated_interaction_owners(quests, interactions, curated_entries, manifest_entries)
     quest_keys = {q['identity']['key'] for q in quests}
     track_quests, by_name = collections.defaultdict(set), collections.defaultdict(set)
     for q in quests:
@@ -190,7 +253,7 @@ def join_interactions(quests, progress, interactions):
         explicit = named if len(named) == 1 else set()
         candidates = by_directory[directory]
         inferred = candidates if len(candidates) == 1 and not owners and not explicit else set()
-        joined[key] = owners | explicit | inferred
+        joined[key] = owners | explicit | inferred | curated_callbacks[key]
     return joined
 
 
@@ -277,6 +340,7 @@ def main():
         if gate['quest'] and gate['quest']['key'] in info:
             info[gate['quest']['key']]['features'].add(DOOR_FEATURE[gate['condition']['kind']])
 
+    curated_interaction_owners(quests, interactions, strict=True)
     joined = join_interactions(quests, progress, interactions)
     for key, count in interaction_conflict_holds(
             json.loads((SAMPLES / 'interactions/manifest.json').read_text()), joined, quests, progress).items():
