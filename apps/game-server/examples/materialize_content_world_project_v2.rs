@@ -202,6 +202,29 @@ const NPC_APPEARANCE_INVISIBLE_SHA256: &str =
     "94ce471059d576dc4cadc3d06df22f395482b75443d061d5ef821515ac5bf3ca";
 const NPC_APPEARANCE_INVISIBLE_PREDECESSOR: &str =
     "a59e099cd3818406d8428ecb727f818d44536dbb8b34d6c810274724e441f788";
+const NPC_QUEST_DIALOGUE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r28/native-enrichment.json"
+);
+const NPC_QUEST_DIALOGUE_SHA256: &str =
+    "4dfa43f6fda9a58dcf9f7e83da21203f63d1f7b66f0e6136f34848ee5ccd6d47";
+const NPC_QUEST_DIALOGUE_PREDECESSOR: &str =
+    "28a2c3140b89792f7c5cf9d1d74aa85b0fea06878388174bd93c270528089c1f";
+fn quest_dialogue_provisional(
+    draft: ProjectV2Draft,
+) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_QUEST_DIALOGUE,
+        NPC_QUEST_DIALOGUE_SHA256,
+        NPC_QUEST_DIALOGUE_PREDECESSOR,
+    )?;
+    Ok(draft)
+}
 fn visual_invisible_provisional(
     draft: ProjectV2Draft,
 ) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
@@ -216,7 +239,7 @@ fn visual_invisible_provisional(
         NPC_APPEARANCE_INVISIBLE_SHA256,
         NPC_APPEARANCE_INVISIBLE_PREDECESSOR,
     )?;
-    Ok(draft)
+    quest_dialogue_provisional(draft)
 }
 fn visual_followup_provisional(
     draft: ProjectV2Draft,
@@ -445,6 +468,18 @@ fn materialize_from_predecessor(
     };
     let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    if document_tree_digest(&before) == NPC_QUEST_DIALOGUE_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_QUEST_DIALOGUE,
+            NPC_QUEST_DIALOGUE_SHA256,
+            NPC_QUEST_DIALOGUE_PREDECESSOR,
+        )?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("npc_quest_dialogue=133 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
     if document_tree_digest(&before) == NPC_APPEARANCE_INVISIBLE_PREDECESSOR {
         npc_bulk_enrichment::apply(
             &mut draft,
@@ -452,6 +487,7 @@ fn materialize_from_predecessor(
             NPC_APPEARANCE_INVISIBLE_SHA256,
             NPC_APPEARANCE_INVISIBLE_PREDECESSOR,
         )?;
+        let draft = quest_dialogue_provisional(draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
         let tree_sha256 = write_documents(output, &documents)?;
         println!("npc_visual_invisible=2 tree_sha256={tree_sha256} predecessor_mode=true");

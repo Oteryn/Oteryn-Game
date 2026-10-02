@@ -10,6 +10,9 @@ class VisualStageTests(unittest.TestCase):
         profiles={r['target']['key']:r for r in cls.baseline['authoring_profiles']}
         followup=json.loads((ROOT/'docs/agents/evidence/OTV2-20261002-npc-appearance-r26/native-enrichment.json').read_text())
         invisible = json.loads((ROOT/'docs/agents/evidence/OTV2-20261002-npc-appearance-r27/native-enrichment.json').read_text())
+        quest_dialogue=json.loads((ROOT/'docs/agents/evidence/OTV2-20261002-npc-enrichment-r28/native-enrichment.json').read_text())
+        for repair in quest_dialogue['repairs']:records[repair['before']['identity']['key']]=repair['before']
+        for repair in quest_dialogue['profile_repairs']:profiles[repair['before']['target']['key']]=repair['before']
         for repair in invisible['repairs']:records[repair['before']['identity']['key']]=repair['before']
         for repair in invisible['profile_repairs']:profiles[repair['before']['target']['key']]=repair['before']
         for repair in followup['repairs']:records[repair['before']['identity']['key']]=repair['before']

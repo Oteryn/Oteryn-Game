@@ -365,6 +365,121 @@ fn visual_scope(
     }
     Ok(fields.len() == next.len())
 }
+fn quest_dialogue_actors() -> Result<BTreeSet<String>> {
+    if hex_sha256(NPC_APPEARANCE_INVISIBLE) != NPC_APPEARANCE_INVISIBLE_SHA256 {
+        return Err("quest-dialogue predecessor packet drifted".into());
+    }
+    let p: Packet = serde_json::from_slice(NPC_APPEARANCE_INVISIBLE)?;
+    let mut keys = BTreeSet::new();
+    for repair in p.repairs {
+        if let ProjectV2Declaration::Npc {
+            identity, fields, ..
+        } = repair.after
+        {
+            let q = fields
+                .iter()
+                .find(|f| f.field_path == "oteryn:source.npc.bulk.quality")
+                .ok_or("quest-dialogue quality missing")?;
+            let ProjectV2CandidateValue::Text(text) = &q.value else {
+                return Err("quest-dialogue quality shape".into());
+            };
+            let q: Value = serde_json::from_str(text)?;
+            if ["greet", "farewell", "name", "job"]
+                .iter()
+                .all(|part| q[format!("dialogue.{part}")] == "defaulted")
+            {
+                keys.insert(identity.key);
+            }
+        }
+    }
+    if keys.len() != 33 {
+        return Err("quest-dialogue closed eligible inventory drifted".into());
+    }
+    Ok(keys)
+}
+fn quest_dialogue_scope(
+    before: &ProjectV2Declaration,
+    after: &ProjectV2Declaration,
+    eligible: &BTreeSet<String>,
+) -> Result<bool> {
+    match (before, after) {
+        (
+            ProjectV2Declaration::Npc {
+                identity, fields, ..
+            },
+            ProjectV2Declaration::Npc { fields: next, .. },
+        ) => {
+            for old in fields {
+                let Some(new) = next.iter().find(|f| f.field_path == old.field_path) else {
+                    return Ok(false);
+                };
+                if old == new {
+                    continue;
+                }
+                let (ProjectV2CandidateValue::Text(a), ProjectV2CandidateValue::Text(b)) =
+                    (&old.value, &new.value)
+                else {
+                    return Ok(false);
+                };
+                let mut a: Value = serde_json::from_str(a)?;
+                let mut b: Value = serde_json::from_str(b)?;
+                match old.field_path.as_str() {
+                    "oteryn:source.npc.bulk.quality" => {
+                        if !eligible.contains(&identity.key) {
+                            return Ok(false);
+                        }
+                        let (Some(a), Some(b)) = (a.as_object_mut(), b.as_object_mut()) else {
+                            return Ok(false);
+                        };
+                        a.retain(|k, _| k != "dialogue" && !k.starts_with("dialogue."));
+                        b.retain(|k, _| k != "dialogue" && !k.starts_with("dialogue."));
+                        if a != b {
+                            return Ok(false);
+                        }
+                    }
+                    "oteryn:source.npc.bulk.source_metadata" => {
+                        let (Some(a), Some(b)) = (a.as_object_mut(), b.as_object_mut()) else {
+                            return Ok(false);
+                        };
+                        if eligible.contains(&identity.key) {
+                            a.remove("r28_source_upgrades");
+                            b.remove("r28_source_upgrades");
+                        }
+                        if identity.key == "oteryn:npc.a_blue_stone" {
+                            a.remove("r28_exchange_reference");
+                            b.remove("r28_exchange_reference");
+                        }
+                        if a != b {
+                            return Ok(false);
+                        }
+                    }
+                    _ => return Ok(false),
+                }
+            }
+            Ok(fields.len() == next.len())
+        }
+        (
+            ProjectV2Declaration::Dialogue {
+                identity, fields, ..
+            },
+            ProjectV2Declaration::Dialogue { fields: next, .. },
+        ) => {
+            let Some(stem) = identity.key.strip_prefix("oteryn:dialogue.npc.") else {
+                return Ok(false);
+            };
+            Ok(eligible.contains(&format!("oteryn:npc.{stem}"))
+                && next.iter().all(|f| {
+                    fields.contains(f)
+                        || matches!(
+                            f.field_path.as_str(),
+                            "oteryn:source.npc.bulk.quality"
+                                | "oteryn:source.npc.bulk.dialogue_source"
+                        )
+                }))
+        }
+        _ => Ok(false),
+    }
+}
 pub(super) fn apply(
     draft: &mut ProjectV2Draft,
     bytes: &[u8],
@@ -402,11 +517,25 @@ pub(super) fn apply(
     } else {
         None
     };
+    let quest_eligible = if packet.from_project_revision == "g4-npc-provisional-enrichment-r27" {
+        if !packet.profile_repairs.is_empty() {
+            return Err("quest dialogue cannot change any profile".into());
+        }
+        Some(quest_dialogue_actors()?)
+    } else {
+        None
+    };
     let actors = actors()?;
     let mut next = draft.clone();
     let mut seen = BTreeSet::new();
     let mut npc_count = 0;
     for repair in &packet.repairs {
+        if let Some(eligible) = &quest_eligible
+            && !quest_dialogue_scope(&repair.before, &repair.after, eligible)?
+        {
+            return Err("quest dialogue actor/metadata scope drifted".into());
+        }
+
         if packet.from_project_revision == "g4-npc-provisional-enrichment-r26"
             && !matches!(&repair.before, ProjectV2Declaration::Npc { identity, .. }
                 if matches!(identity.key.as_str(), "oteryn:npc.mud" | "oteryn:npc.planestrider_npc"))
@@ -429,6 +558,7 @@ pub(super) fn apply(
             "g4-npc-provisional-enrichment-r21"
                 | "g4-npc-provisional-enrichment-r22"
                 | "g4-npc-provisional-enrichment-r23"
+                | "g4-npc-provisional-enrichment-r27"
         ) && let (
             ProjectV2Declaration::Dialogue { keywords: k, .. },
             ProjectV2Declaration::Dialogue { keywords: nk, .. },
@@ -548,6 +678,7 @@ pub(super) fn reverse_for_fixture(
 ) -> Result<()> {
     let chain = if bytes == NPC_ENRICH {
         vec![
+            (NPC_QUEST_DIALOGUE, NPC_QUEST_DIALOGUE_SHA256),
             (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
@@ -558,6 +689,7 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_ENRICH_MORE {
         vec![
+            (NPC_QUEST_DIALOGUE, NPC_QUEST_DIALOGUE_SHA256),
             (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
@@ -567,6 +699,7 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_ENRICH_FINAL {
         vec![
+            (NPC_QUEST_DIALOGUE, NPC_QUEST_DIALOGUE_SHA256),
             (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
@@ -575,6 +708,7 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_ENRICH_UPGRADE {
         vec![
+            (NPC_QUEST_DIALOGUE, NPC_QUEST_DIALOGUE_SHA256),
             (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
@@ -582,13 +716,20 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_APPEARANCE_VISUAL {
         vec![
+            (NPC_QUEST_DIALOGUE, NPC_QUEST_DIALOGUE_SHA256),
             (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (bytes, packet_sha256),
         ]
     } else if bytes == NPC_APPEARANCE_FOLLOWUP {
         vec![
+            (NPC_QUEST_DIALOGUE, NPC_QUEST_DIALOGUE_SHA256),
             (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
+            (bytes, packet_sha256),
+        ]
+    } else if bytes == NPC_APPEARANCE_INVISIBLE {
+        vec![
+            (NPC_QUEST_DIALOGUE, NPC_QUEST_DIALOGUE_SHA256),
             (bytes, packet_sha256),
         ]
     } else {
