@@ -254,7 +254,7 @@ mod tests {
         for item in ["oteryn:creature.rat", "oteryn:item.", "oteryn:item.bad key"] {
             invalid(values(item, DEFINITION, "r1", 0, &[None]));
         }
-        for definition in ["oteryn:item.tibia.i1", "oteryn:proficiency.", "bad"] {
+        for definition in ["oteryn:item.synthetic.i1", "oteryn:proficiency.", "bad"] {
             invalid(values(ITEM, definition, "r1", 0, &[None]));
         }
         for revision in ["".to_owned(), "r 1".to_owned(), "r".repeat(129)] {
@@ -545,6 +545,7 @@ mod request_tests {
         ProficiencyOccurrence::from_bytes(id(tag)).expect("UUIDv7")
     }
 
+    // Codec fixtures are synthetic and do not claim an admitted Tibia identity.
     fn state(
         item: u8,
         revision: &str,
@@ -552,7 +553,7 @@ mod request_tests {
         choices: &[Option<u8>],
     ) -> DurableProficiencyState {
         DurableProficiencyState::new(
-            format!("oteryn:item.tibia.i{item}"),
+            format!("oteryn:item.synthetic.i{item}"),
             "oteryn:proficiency.tibia.p1",
             revision,
             progress,
@@ -656,7 +657,7 @@ mod request_tests {
             assert_eq!(forward.policy_digest(), &[2; 32]);
             assert_eq!(
                 forward.lines()[0].before().item_key(),
-                "oteryn:item.tibia.i1"
+                "oteryn:item.synthetic.i1"
             );
         }
         assert_eq!(
@@ -674,9 +675,9 @@ mod request_tests {
         assert_eq!(
             expected,
             [
-                0x01, 0x16, 0x44, 0xde, 0xef, 0xe4, 0x7d, 0x11, 0xd5, 0x22, 0x74, 0xeb, 0xf2, 0xd9,
-                0x1d, 0x11, 0x61, 0x87, 0xc3, 0xaa, 0xb0, 0xc9, 0x7e, 0xe3, 0x77, 0x25, 0xa0, 0x09,
-                0x45, 0x33, 0x82, 0xfb, 0x27,
+                0x01, 0xbb, 0x7e, 0xce, 0x48, 0xc0, 0x95, 0x01, 0xa0, 0x35, 0x71, 0x42, 0xe5, 0xce,
+                0x25, 0xb2, 0x5b, 0x50, 0x32, 0xcc, 0x8b, 0x4d, 0xf8, 0xed, 0xc5, 0x92, 0x98, 0x5c,
+                0x71, 0x21, 0xd8, 0x0e, 0x4c,
             ]
         );
         for mutate in [
@@ -704,7 +705,7 @@ mod request_tests {
         );
         let mut framed = Vec::new();
         encode_proficiency_intent_state(original.lines()[0].before(), &mut framed);
-        assert!(framed.starts_with(b"oteryn:item.tibia.i1\0oteryn:proficiency.tibia.p1\0r1\0"));
+        assert!(framed.starts_with(b"oteryn:item.synthetic.i1\0oteryn:proficiency.tibia.p1\0r1\0"));
     }
 
     #[test]
