@@ -1,0 +1,39 @@
+{
+  "schema": "OTERYN_PHYSICAL8_EXTERNAL_PROTOTYPE_MEASUREMENT/v1",
+  "status": "PROPOSAL_MEASUREMENT_ONLY_NOT_ACCEPTED_RESOURCE_PROFILE",
+  "oracle_path": "/workspace/audit-continuation/physical8-v5-prototype/tree/tools/reference-item-resource-profile/item_resource_profile.py",
+  "oracle_sha256": "b77934f4b3c1c7a99442ecadc854b5d81412a83a3cbd52485971d334ccfb2d87",
+  "method": "Local external Python synthetic codec; no Cargo, repository mutation or browser use",
+  "results": {
+    "4": {
+      "server": {
+        "original_maximal_synthetic_record_bytes": 3555,
+        "physical7_encoding": "REJECTED"
+      },
+      "client": {
+        "original_maximal_synthetic_record_bytes": 3433,
+        "physical7_encoding": "REJECTED"
+      }
+    },
+    "5": {
+      "server": {
+        "original_maximal_synthetic_record_bytes": 3555,
+        "physical7_encoding": "ROUND_TRIP_PASS",
+        "physical_record_bytes": 3555,
+        "invalid_elements_0_8_255": "REJECTED"
+      },
+      "client": {
+        "original_maximal_synthetic_record_bytes": 3433,
+        "physical7_encoding": "ROUND_TRIP_PASS",
+        "physical_record_bytes": 3433,
+        "invalid_elements_0_8_255": "REJECTED"
+      }
+    }
+  },
+  "limits": [
+    "No production Rust codec was changed or tested.",
+    "These are synthetic single-record measurements, not full artifact maximum/max+1 qualification.",
+    "Historical38157 and current34031 Item universes remain separate.",
+    "Owning exact-blob profile acceptance is still required before schema/codec release."
+  ]
+}
