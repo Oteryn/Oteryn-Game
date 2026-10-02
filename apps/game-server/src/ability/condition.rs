@@ -9,7 +9,7 @@
 //! decision bound to the caller's `(GameplayDecisionRoot, DecisionOccurrenceId)`.
 
 use oteryn_simulation_determinism::{
-    deterministic_decision_u64, DecisionOccurrenceId, GameplayDecisionRoot,
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 
 fn valid_atom(value: &str) -> bool {

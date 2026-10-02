@@ -1,0 +1,65 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/light",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Light",
+    "carrier": "instant",
+    "words": "utevo lux",
+    "reference_spell_id": 10,
+    "library_text": "Every character can learn this very basic spell for free. By using it the caster will activate the inherent magic energy of his immediate surrounding to provide him with decent illumination for about ten minutes. While it is hardly brighter than your average torch, it is always good to have this spell in the book in case you are stuck in a deep dungeon and run out of non-magical light sources.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 8,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 6,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_light"
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/light",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

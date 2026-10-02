@@ -1,0 +1,61 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/ice_strike",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Ice Strike",
+    "carrier": "instant",
+    "words": "exori frigo",
+    "reference_spell_id": 112,
+    "library_text": "Even though ice spells are clearly the resort of druids, this spell can be learnt by both magically gifted vocations. If a sorcerer or druid casts an Ice Strike, a freezing arrow hits any aimed opponent in a close range. Especially creatures with a sensitivity to ice, so to speak all fire dominated beings, will be wounded badly by this reliable spell which can already be learnt by rather young magicians. As the damage caused by this spell is determined by the caster's magical abilities, this spell can be a deadly weapon in the hands of an experienced magician.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 8,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": true,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 3,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_ice_strike"
+    },
+    "base_power": 45,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/ice_strike",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

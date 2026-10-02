@@ -135,8 +135,8 @@ mod ability;
 use ability::{
     AbilityEngine, AbilityError, AbilityIntent, AbilityOccurrence, AiAbilityAdapter,
     CalculationStage, ClientAbilityAdapter, CommitGroup, CommitGroupMode, CommitReceipt, Effect,
-    EffectPlan, ProposalSource, RevisionSet, ScriptAbilityAdapter, SubOccurrenceRef, TargetId,
-    MAX_EFFECT_PLAN_BYTES,
+    EffectPlan, MAX_EFFECT_PLAN_BYTES, ProposalSource, RevisionSet, ScriptAbilityAdapter,
+    SubOccurrenceRef, TargetId,
 };
 
 fn revisions(version: &str) -> Result<RevisionSet, AbilityError> {
@@ -247,8 +247,8 @@ fn retry_reuses_the_original_occurrence_revision_without_double_commit() -> Resu
 }
 
 #[test]
-fn plan_accepts_each_registered_maximum_and_rejects_max_plus_one_before_commit(
-) -> Result<(), AbilityError> {
+fn plan_accepts_each_registered_maximum_and_rejects_max_plus_one_before_commit()
+-> Result<(), AbilityError> {
     let occurrence = AbilityOccurrence::new("ability-occurrence:limits", revisions("formula:v1")?)?;
     let maximum_intent = AbilityIntent::normalize(
         ProposalSource::Script,
@@ -371,8 +371,8 @@ fn proposals_remain_non_mutating_until_the_authoritative_engine_commits() -> Res
 }
 
 #[test]
-fn resolved_target_limit_rejects_resolver_output_after_candidate_validation(
-) -> Result<(), AbilityError> {
+fn resolved_target_limit_rejects_resolver_output_after_candidate_validation()
+-> Result<(), AbilityError> {
     assert_eq!(
         AbilityIntent::resolve(
             ProposalSource::Client,
@@ -386,8 +386,8 @@ fn resolved_target_limit_rejects_resolver_output_after_candidate_validation(
 }
 
 #[test]
-fn plan_canonicalizes_calculation_and_effect_order_before_sequential_commit(
-) -> Result<(), AbilityError> {
+fn plan_canonicalizes_calculation_and_effect_order_before_sequential_commit()
+-> Result<(), AbilityError> {
     let occurrence =
         AbilityOccurrence::new("ability-occurrence:ordered", revisions("formula:v1")?)?;
     let intent = AbilityIntent::resolve(
@@ -438,8 +438,8 @@ fn plan_canonicalizes_calculation_and_effect_order_before_sequential_commit(
 }
 
 #[test]
-fn sequential_commit_records_progress_without_replaying_prior_suboccurrences(
-) -> Result<(), AbilityError> {
+fn sequential_commit_records_progress_without_replaying_prior_suboccurrences()
+-> Result<(), AbilityError> {
     let setup_occurrence =
         AbilityOccurrence::new("ability-occurrence:partial-setup", revisions("formula:v1")?)?;
     let setup_intent =
@@ -482,8 +482,8 @@ fn sequential_commit_records_progress_without_replaying_prior_suboccurrences(
 }
 
 #[test]
-fn atomic_commit_rejects_later_overflow_without_partial_fixture_mutation(
-) -> Result<(), AbilityError> {
+fn atomic_commit_rejects_later_overflow_without_partial_fixture_mutation()
+-> Result<(), AbilityError> {
     let occurrence = AbilityOccurrence::new("ability-occurrence:atomic", revisions("formula:v1")?)?;
     let intent =
         AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:fixture"])?;
@@ -505,8 +505,8 @@ fn atomic_commit_rejects_later_overflow_without_partial_fixture_mutation(
 }
 
 #[test]
-fn normalization_has_stable_membership_and_order_under_shuffled_candidates(
-) -> Result<(), AbilityError> {
+fn normalization_has_stable_membership_and_order_under_shuffled_candidates()
+-> Result<(), AbilityError> {
     let normalized = AbilityIntent::normalize(
         ProposalSource::Client,
         "actor:fixture",

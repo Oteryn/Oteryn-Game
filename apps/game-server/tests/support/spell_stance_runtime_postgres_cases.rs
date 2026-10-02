@@ -1,7 +1,9 @@
 //! Actual Spell owner consumes a genuine PostgreSQL Stance receipt.
-use crate::bestiary_postgres_harness::{Harness, SESSION, TestResult, configured_admin, debug, fence, id, runtime};
-use crate::foundation::GameSessionId;
+use crate::bestiary_postgres_harness::{
+    Harness, SESSION, TestResult, configured_admin, debug, fence, id, runtime,
+};
 use crate::durability::character_stance::StanceChangeOutcome;
+use crate::foundation::GameSessionId;
 
 /// This exercises a genuine private writer receipt, never a test receipt
 /// constructor. The test book opens only its Premium header gate; the native
@@ -187,7 +189,6 @@ fn stance_real_receipt_pays_actual_actor_once_and_preserves_intervening_hp() -> 
         Ok(())
     })
 }
-
 
 fn run<F>(tag: &'static str, body: F) -> TestResult
 where

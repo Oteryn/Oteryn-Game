@@ -212,7 +212,7 @@ def qualify_item_closure(catalog, provider):
         return {'item_ref_count': 0, 'exact_used_bindings': []}
     from build_spell_item_identities import BINDINGS, binding_index
     raw = BINDINGS.read_bytes(); bindings = binding_index(raw)
-    packet_path = ROOT/'imports/canary/bindings/spell-items-candidate.json'
+    packet_path = ROOT/'tools/content-schema/native-gameplay/candidate-bindings/spell-items-candidate.json'
     packet_raw, packet = read(packet_path)
     if packet['qualification']['source_revision'] != CANARY or len(packet['bindings']) != 1:
         raise ValueError('Actual Item40450 complete source packet mismatch')

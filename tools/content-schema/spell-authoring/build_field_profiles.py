@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Pinned native field condition recipes; XML order and C++ float ramp preserved."""
+import argparse
 import hashlib
+import os
 import json
 from pathlib import Path
 import struct
@@ -72,7 +74,11 @@ def recipe(field):
 def git(repo,path):
     return subprocess.check_output(["git","-C",str(repo),"show",f"HEAD:{path}"])
 
-def build(root=Path("/workspace/spell-sources")):
+def source_root():
+    return Path(os.environ.get("OTERYN_SPELL_SOURCE_ROOT", Path(__file__).resolve().parents[3] / "_sources"))
+
+def build(root=None):
+    root = Path(root) if root is not None else source_root()
     profiles=[]
     for server,pin in PINS.items():
         repo=root/server
@@ -99,6 +105,10 @@ def build(root=Path("/workspace/spell-sources")):
     return {"schema":"OTERYN_NATIVE_FIELD_PROFILES/v1","profiles":profiles}
 
 if __name__=="__main__":
-    target=Path(__file__).parent/"samples/native-field-profiles.json"
-    target.write_text(json.dumps(build(),indent=2)+"\n")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sources", type=Path, default=source_root())
+    parser.add_argument("--out", type=Path, default=Path(__file__).parent / "samples/native-field-profiles.json")
+    args = parser.parse_args()
+    target = args.out
+    target.write_text(json.dumps(build(args.sources),indent=2)+"\n")
     print(target)

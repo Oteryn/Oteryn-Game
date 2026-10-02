@@ -47,14 +47,14 @@
         "result": {
           "family": "Item",
           "key": "candidate:item/3191",
-          "revision": "spell-p2-r20"
+          "revision": "spell-p2-r21"
         },
         "count": 4,
         "effect_asset_binding": "canary.appearance:effect/magic_red",
         "reagent": {
           "family": "Item",
           "key": "candidate:item/3147",
-          "revision": "spell-p2-r20"
+          "revision": "spell-p2-r21"
         }
       }
     }

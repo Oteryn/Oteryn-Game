@@ -40,18 +40,18 @@ pub mod item_admission;
 pub mod item_identity;
 pub mod item_stats_promotion;
 mod model;
-mod production;
-mod project;
-pub(crate) mod native_gameplay;
-pub(crate) mod spell_wheel_profile;
 pub(crate) mod native_cell_lookup;
+pub(crate) mod native_gameplay;
 pub(crate) mod native_source_world_carrier;
 pub(crate) mod native_spell_appearances;
+mod production;
+mod project;
 mod project_fs;
 mod reference_artifact;
 mod reference_playable;
 #[cfg(test)]
 pub(crate) mod reference_static_cell;
+pub(crate) mod spell_wheel_profile;
 #[allow(
     dead_code,
     reason = "unactivated engineering Content carrier awaits the separate Movement consumer lease"
@@ -108,4 +108,4 @@ mod tests;
 pub(crate) mod spell_familiar_config;
 pub(crate) mod spell_familiar_defenses;
 
-pub(crate) use project::{SourceFloorChange, QualifiedSourceStepTile};
+pub(crate) use project::{QualifiedSourceStepTile, SourceFloorChange};

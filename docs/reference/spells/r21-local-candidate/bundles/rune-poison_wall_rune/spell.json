@@ -1,0 +1,79 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/poison_wall_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "poison wall rune",
+    "carrier": "rune",
+    "reference_spell_id": 32,
+    "library_text": "The poison wall rune is probably the most basic of all wall spells, and it is frequently the first one to be studied by those who have just taken up the study of magic. When this rune is used a wall of concentrated toxic fumes is created which inflicts a moderate poison on all those who are foolish enough to enter it. The effect is usually impressive enough to discourage monsters from doing so, although few of the stronger monstrosities that walk the land will hesitate if there is nothing but a poison wall between them and their dinner. For this reason it is advisable not to completely rely on this rune for protection, although there is no doubt that a clever adventurer can put it to use quite often. Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are war opponents.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 29,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": true,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_poison_wall_rune"
+    },
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3176",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 4,
+      "magic_level": 5,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": false,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/poison_wall_rune",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

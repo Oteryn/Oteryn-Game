@@ -11,7 +11,7 @@ from pathlib import Path
 
 PIN = "99902524e052f37574194466c2949c576e4ab269"
 ROOT = Path(__file__).resolve().parents[3]
-PACKET = ROOT / "imports/canary/bindings/spell-items-candidate.json"
+PACKET = ROOT / "tools/content-schema/native-gameplay/candidate-bindings/spell-items-candidate.json"
 SOURCE_HASHES = {
     "data/items/appearances.dat": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
     "src/protobuf/appearances.proto": "f03674197041967fc095e48462edaa1ab27c481385aad3d85d27a7d25af325c4",

@@ -780,8 +780,13 @@ impl CompiledFirstProductionContent {
         let mut expectation = self.expectation.clone();
         expectation.server_artifact_digest = server_digest;
         expectation.client_artifact_digest = client_digest;
-        Self { server_artifact: server, client_artifact: client,
-            server_digest, client_digest, expectation }
+        Self {
+            server_artifact: server,
+            client_artifact: client,
+            server_digest,
+            client_digest,
+            expectation,
+        }
     }
     pub(crate) fn with_native_server_artifact(&self, bytes: Vec<u8>) -> Self {
         let server_digest = sha256(&bytes);
@@ -1889,13 +1894,22 @@ impl StagedGeneration {
         expected: &FirstProductionExpectation,
     ) -> Result<Self, ContentError> {
         if super::native_source_world_carrier::is_envelope(server_bytes) {
-            FirstProductionLimits::v1().check("native source world server bytes", server_bytes.len(),
-                super::native_source_world_carrier::MAX_SERVER_BYTES)?;
-            FirstProductionLimits::v1().check("native source world client bytes", client_bytes.len(),
-                super::native_source_world_carrier::MAX_CLIENT_BYTES)?;
+            FirstProductionLimits::v1().check(
+                "native source world server bytes",
+                server_bytes.len(),
+                super::native_source_world_carrier::MAX_SERVER_BYTES,
+            )?;
+            FirstProductionLimits::v1().check(
+                "native source world client bytes",
+                client_bytes.len(),
+                super::native_source_world_carrier::MAX_CLIENT_BYTES,
+            )?;
             if sha256(server_bytes) != expected.server_artifact_digest
-                || sha256(client_bytes) != expected.client_artifact_digest {
-                return Err(ContentError::RevisionMismatch("native source world outer issuance pins"));
+                || sha256(client_bytes) != expected.client_artifact_digest
+            {
+                return Err(ContentError::RevisionMismatch(
+                    "native source world outer issuance pins",
+                ));
             }
             let decoded = super::native_source_world_carrier::decode(server_bytes, client_bytes)?;
             let mut inner_expected = expected.clone();
@@ -1903,15 +1917,22 @@ impl StagedGeneration {
                 if super::native_gameplay::is_envelope(decoded.baseline_server) {
                     sha256(decoded.baseline_server)
                 } else {
-                    stage_artifact(decoded.baseline_server,
-                        ProductionProjection::ServerAuthoritative)?.artifact_digest
+                    stage_artifact(
+                        decoded.baseline_server,
+                        ProductionProjection::ServerAuthoritative,
+                    )?
+                    .artifact_digest
                 };
             // Outer issuance pins the complete source-world envelopes. The retained
             // production client uses its canonical payload digest, excluding its trailer.
             inner_expected.client_artifact_digest =
                 stage_artifact(decoded.baseline_client, ProductionProjection::ClientSafe)?
                     .artifact_digest;
-            let mut staged = Self::stage(decoded.baseline_server, decoded.baseline_client, &inner_expected)?;
+            let mut staged = Self::stage(
+                decoded.baseline_server,
+                decoded.baseline_client,
+                &inner_expected,
+            )?;
             if staged.runtime_state.native_source_world.is_some() {
                 return Err(ContentError::InvalidArtifact("nested native source world"));
             }
@@ -1922,7 +1943,8 @@ impl StagedGeneration {
             if let Some(native) = staged.runtime_state.native_gameplay.as_mut() {
                 native.bind_qualified_outer_artifact(expected.server_artifact_digest)?;
             }
-            staged.runtime_state.native_source_world = Some(std::sync::Arc::from(decoded.source_world));
+            staged.runtime_state.native_source_world =
+                Some(std::sync::Arc::from(decoded.source_world));
             return Ok(staged);
         }
         if super::native_gameplay::is_envelope(server_bytes) {

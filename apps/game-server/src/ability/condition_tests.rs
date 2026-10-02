@@ -400,15 +400,17 @@ fn admission_refuses_immunity_cleanse_immunity_reentry_protection_and_the_instan
     );
     // Paralysis immunity does not refuse haste.
     let haste = speed(false, 1_000, 0);
-    assert!(store
-        .apply(
-            &haste,
-            Some(1),
-            ConditionSourceKind::SelfUse,
-            &[ConditionType::Paralysis],
-            &facts(0, &root)
-        )
-        .is_ok());
+    assert!(
+        store
+            .apply(
+                &haste,
+                Some(1),
+                ConditionSourceKind::SelfUse,
+                &[ConditionType::Paralysis],
+                &facts(0, &root)
+            )
+            .is_ok()
+    );
 
     let mut protected = facts(0, &root);
     protected.target_reentry_protected = true;
@@ -422,13 +424,15 @@ fn admission_refuses_immunity_cleanse_immunity_reentry_protection_and_the_instan
         Err(ConditionRefusal::ReentryProtected)
     );
     // Fields and PvP are unaffected.
-    assert!(apply(
-        &mut store,
-        &dot(DotElement::Fire, 5, 5, true),
-        ConditionSourceKind::Field,
-        &protected
-    )
-    .is_ok());
+    assert!(
+        apply(
+            &mut store,
+            &dot(DotElement::Fire, 5, 5, true),
+            ConditionSourceKind::Field,
+            &protected
+        )
+        .is_ok()
+    );
     assert!(apply(&mut store, &poison, ConditionSourceKind::Player, &protected).is_ok());
     // A protected player's own offensive action applies none to a creature.
     let mut attacking = facts(0, &root);
@@ -919,17 +923,19 @@ fn source_field_sequence_is_bounded_and_a_refused_definition_cannot_mutate_store
     assert!(store.take_due(10000 * MS, TickFacts::default()).is_empty());
     assert_eq!(store.take_due(10001 * MS, TickFacts::default()).len(), 4);
     steps[0].interval_ms = 999;
-    assert!(ConditionDefinition::new(
-        "invalid",
-        1,
-        ConditionValues::DamageSequence {
-            element: DotElement::Fire,
-            steps,
-            len: 1,
-            delayed: false,
-        }
-    )
-    .is_none());
+    assert!(
+        ConditionDefinition::new(
+            "invalid",
+            1,
+            ConditionValues::DamageSequence {
+                element: DotElement::Fire,
+                steps,
+                len: 1,
+                delayed: false,
+            }
+        )
+        .is_none()
+    );
 }
 
 #[test]
@@ -1176,15 +1182,17 @@ fn qualified_curse_seventeen_groups_retain_all_fifty_five_occurrences() {
     }
     assert_eq!((count, total), (55, 1092));
     assert!(store.instances().is_empty());
-    assert!(ConditionDefinition::new(
-        "source.curse.bad33",
-        1,
-        ConditionValues::DamageSequence {
-            element: DotElement::Cursed,
-            steps,
-            len: 33,
-            delayed: true
-        }
-    )
-    .is_none());
+    assert!(
+        ConditionDefinition::new(
+            "source.curse.bad33",
+            1,
+            ConditionValues::DamageSequence {
+                element: DotElement::Cursed,
+                steps,
+                len: 33,
+                delayed: true
+            }
+        )
+        .is_none()
+    );
 }

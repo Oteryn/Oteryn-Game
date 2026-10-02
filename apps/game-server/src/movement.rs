@@ -13,19 +13,19 @@
 //! or `ai/**` decision logic itself: the future perception/chase/wander decision (AI-3, `ai/**`)
 //! proposes a step and this module's existing machinery revalidates and commits it, unchanged.
 
+use crate::content::native_cell_lookup::NativeStaticCellLookup;
 use crate::content::static_cell_engine::{
     EngineeringStaticCellIndex, EngineeringStaticCellScope, StaticCellEngineError,
 };
 use crate::content::{CollisionClass, LogicalCell};
-use crate::content::native_cell_lookup::NativeStaticCellLookup;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, CurrentOwnerMovementPosition, ExactActorRef,
     MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
 };
 use std::num::NonZeroUsize;
 pub(crate) mod interest;
-pub(crate) mod speed;
 pub(crate) mod source_floor_change;
+pub(crate) mod speed;
 
 pub(crate) const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
 

@@ -1,0 +1,102 @@
+{
+  "checks": [
+    {
+      "snapshot": "canary",
+      "check": "Every tracked Lua has exactly one classification and exact immutable Git blob",
+      "rows": 5378,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "canary",
+      "check": "Every local-only source byte equals recorded SHA256 and immutable Git blob",
+      "rows": 5378,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "canary",
+      "check": "Every constructor file has captured registration or explicit unresolved/helper classification",
+      "files": 851,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "canary",
+      "check": "Attack and mixed-table defense slots are unique and bound to actual source blobs",
+      "slots": 6787,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "crystal",
+      "check": "Every tracked Lua has exactly one classification and exact immutable Git blob",
+      "rows": 8046,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "crystal",
+      "check": "Every local-only source byte equals recorded SHA256 and immutable Git blob",
+      "rows": 8046,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "crystal",
+      "check": "Every constructor file has captured registration or explicit unresolved/helper classification",
+      "files": 1503,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "crystal",
+      "check": "Attack and mixed-table defense slots are unique and bound to actual source blobs",
+      "slots": 13675,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "canary-main-current",
+      "check": "Every tracked Lua has exactly one classification and exact immutable Git blob",
+      "rows": 5381,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "canary-main-current",
+      "check": "Every local-only source byte equals recorded SHA256 and immutable Git blob",
+      "rows": 5381,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "canary-main-current",
+      "check": "Every constructor file has captured registration or explicit unresolved/helper classification",
+      "files": 838,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "canary-main-current",
+      "check": "Attack and mixed-table defense slots are unique and bound to actual source blobs",
+      "slots": 6787,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "crystal-summer-current",
+      "check": "Every tracked Lua has exactly one classification and exact immutable Git blob",
+      "rows": 8125,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "crystal-summer-current",
+      "check": "Every local-only source byte equals recorded SHA256 and immutable Git blob",
+      "rows": 8125,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "crystal-summer-current",
+      "check": "Every constructor file has captured registration or explicit unresolved/helper classification",
+      "files": 1504,
+      "result": "PASS"
+    },
+    {
+      "snapshot": "crystal-summer-current",
+      "check": "Attack and mixed-table defense slots are unique and bound to actual source blobs",
+      "slots": 13777,
+      "result": "PASS"
+    }
+  ],
+  "all_passed": true,
+  "scope": "Source identity and census completeness only; no external wiki semantic verification or gameplay claim"
+}

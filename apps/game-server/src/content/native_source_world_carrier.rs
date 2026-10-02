@@ -140,27 +140,51 @@ mod tests {
         assert_eq!(decoded.baseline_client, base.compiled().client_artifact);
         assert_eq!(decoded.source_world, source);
         assert_ne!(sha256(&pair.client), base.compiled().client_digest());
-        let compiled = base.compiled().with_native_artifact_pair(
-            pair.server.clone(), pair.client.clone());
+        let compiled = base
+            .compiled()
+            .with_native_artifact_pair(pair.server.clone(), pair.client.clone());
         let staged = super::super::production::StagedGeneration::stage(
-            &pair.server, &pair.client, compiled.expectation()).unwrap();
-        assert_eq!(staged.runtime_state().native_source_world().unwrap(), source);
+            &pair.server,
+            &pair.client,
+            compiled.expectation(),
+        )
+        .unwrap();
+        assert_eq!(
+            staged.runtime_state().native_source_world().unwrap(),
+            source
+        );
         assert!(staged.runtime_state().native_gameplay().is_none());
         // Outer issuance compares the complete pair before any inner decoding.
         let mut different_server = pair.server.clone();
         different_server[0] ^= 1;
-        let wrong_server = base.compiled().with_native_artifact_pair(
-            different_server, pair.client.clone());
-        assert!(matches!(super::super::production::StagedGeneration::stage(
-            &pair.server, &pair.client, wrong_server.expectation()),
-            Err(ContentError::RevisionMismatch("native source world outer issuance pins"))));
+        let wrong_server = base
+            .compiled()
+            .with_native_artifact_pair(different_server, pair.client.clone());
+        assert!(matches!(
+            super::super::production::StagedGeneration::stage(
+                &pair.server,
+                &pair.client,
+                wrong_server.expectation()
+            ),
+            Err(ContentError::RevisionMismatch(
+                "native source world outer issuance pins"
+            ))
+        ));
         let mut different_client = pair.client.clone();
         different_client[0] ^= 1;
-        let wrong_client = base.compiled().with_native_artifact_pair(
-            pair.server.clone(), different_client);
-        assert!(matches!(super::super::production::StagedGeneration::stage(
-            &pair.server, &pair.client, wrong_client.expectation()),
-            Err(ContentError::RevisionMismatch("native source world outer issuance pins"))));
+        let wrong_client = base
+            .compiled()
+            .with_native_artifact_pair(pair.server.clone(), different_client);
+        assert!(matches!(
+            super::super::production::StagedGeneration::stage(
+                &pair.server,
+                &pair.client,
+                wrong_client.expectation()
+            ),
+            Err(ContentError::RevisionMismatch(
+                "native source world outer issuance pins"
+            ))
+        ));
         let mut server = pair.server.clone();
         server.push(0);
         assert!(decode(&server, &pair.client).is_err());

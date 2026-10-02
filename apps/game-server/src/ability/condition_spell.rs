@@ -509,13 +509,16 @@ mod item_appearance_tests {
         )
         .unwrap();
         let mut store = ConditionStore::<String>::new();
-        assert!(store
-            .apply(&bare, None, ConditionSourceKind::Player, &[], &facts)
-            .is_err());
-        assert!(bare
-            .clone()
-            .with_item_appearance("oteryn:item.tibia.i3264", "definition-r1", [0; 32])
-            .is_none());
+        assert!(
+            store
+                .apply(&bare, None, ConditionSourceKind::Player, &[], &facts)
+                .is_err()
+        );
+        assert!(
+            bare.clone()
+                .with_item_appearance("oteryn:item.tibia.i3264", "definition-r1", [0; 32])
+                .is_none()
+        );
         let definition = bare
             .with_item_appearance("oteryn:item.tibia.i3264", "definition-r1", [4; 32])
             .unwrap();

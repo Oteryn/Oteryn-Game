@@ -2,6 +2,7 @@
 from copy import deepcopy
 import hashlib
 from pathlib import Path
+from build_field_profiles import source_root
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -11,7 +12,7 @@ from jsonschema import Draft202012Validator, ValidationError
 import native_catalog as catalog
 
 
-ROOT = Path('/workspace/spell-sources')
+ROOT = source_root()
 
 
 def identities(module):

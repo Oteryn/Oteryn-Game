@@ -769,8 +769,9 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
                     Ok((binding.external_id.clone(), binding))
                 })
                 .collect::<Result<_, ContentError>>()?;
-        let candidate_bytes =
-            include_bytes!("../../../../imports/canary/bindings/spell-items-candidate.json");
+        let candidate_bytes = include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/candidate-bindings/spell-items-candidate.json"
+        );
         if hex(sha256(candidate_bytes))
             != "da75016a8948fe7e49279c6700acc6f6808b0f4890df89f4ad1048e4d738dd93"
         {

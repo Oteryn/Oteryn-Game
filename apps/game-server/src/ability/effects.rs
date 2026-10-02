@@ -1,5 +1,5 @@
-use super::intent::TargetId;
 use super::AbilityError;
+use super::intent::TargetId;
 use std::cmp::Ordering;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

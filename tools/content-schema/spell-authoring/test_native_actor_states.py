@@ -2,6 +2,7 @@
 from copy import deepcopy
 import hashlib
 from pathlib import Path
+from build_field_profiles import source_root
 import unittest
 from unittest.mock import patch
 
@@ -186,7 +187,7 @@ class ActorStateAuthoringTests(unittest.TestCase):
             self.assertTrue(row['conflicts'])
 
     def test_available_real_pinned_checkouts_qualify_all_twelve(self):
-        root = Path('/workspace/spell-sources')
+        root = source_root()
         if not (root / 'canary/.git').exists() or not (root / 'crystal/.git').exists():
             self.skipTest('Optional full-file source integration check requires pinned source checkouts')
         for name, sources in states.SOURCE_SPECS.items():

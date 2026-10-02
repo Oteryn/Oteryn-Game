@@ -1,7 +1,7 @@
 //! Exact Rune source reservation on the same fenced transaction as caster payment.
 //! The instance handle selects no authority: real nested custody/current revisions
 //! and the active source-bound ItemCount rule are qualified by the Item owner.
-use crate::content::{native_gameplay::NativeGameplayState, QualifiedNativeEntryRoom};
+use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
 use crate::durability::character_equipment::EquipmentSnapshot;
 use crate::durability::spell_item_transaction::{
     self as items, SpellItemAuthority, SpellItemError,
@@ -184,10 +184,12 @@ mod tests {
         source.quantity_before = 1;
         source.quantity_after = 0;
         let before = equipment(&source);
-        assert!(equipment_successor(&before, &source)
-            .unwrap()
-            .items
-            .is_empty());
+        assert!(
+            equipment_successor(&before, &source)
+                .unwrap()
+                .items
+                .is_empty()
+        );
     }
     #[test]
     fn each_changed_predecessor_refuses_without_normalizing_inventory() {
