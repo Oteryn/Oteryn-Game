@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "8d3bf8f53ad809a139c9c220af64084be8f12e953daa8c81e4bc7305bd4aff95",
+        "321c93321ea63bb8e9db2c2b4fe7ae630e44964bfb529e6a0f5061c3aee10997",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        24_951_707,
-        "1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e",
+        24_952_379,
+        "debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "f426ae40c4cb8099777c0e9a520eb581d163418b362a02285f178b11e86aff45",
+        "eb8279c0e8c15a348f10a1aab7e6565664a2a3a3bf5a40fc91593256f14304cd",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "4dde8ff8e6f8b786ace743ebfc6635e2f1bdc68de4c30ed3fce6c87beeb9e6e7",
+        "320a5142b5344cda9aab3e5419ae2262832c6fca46c5701eac32eb89acda944f",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "70a797186021dfa0ad6a68d7cd833787370b32b11366a2f6aa7d70969584154e";
+const TREE_SHA256: &str = "04b0f9a6428484137dfd9b8443c37308b301f9fdb9b11db70e29cbada2bda2e1";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -503,6 +503,23 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
         _ => false,
     }));
+    let default8_packet: serde_json::Value = serde_json::from_slice(
+        item_stack_default_successor8_promotion::ITEM_STACK_DEFAULT_SUCCESSOR8_PACKET,
+    )
+    .expect("sealed eight successor defaults");
+    assert_eq!(
+        Sha256::digest(
+            item_stack_default_successor8_promotion::ITEM_STACK_DEFAULT_SUCCESSOR8_PACKET
+        )
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>(),
+        item_stack_default_successor8_promotion::ITEM_STACK_DEFAULT_SUCCESSOR8_PACKET_SHA256
+    );
+    let default8_rows = default8_packet["promotions"]
+        .as_array()
+        .expect("eight default rows");
+    assert_eq!(default8_rows.len(), 8);
     let use_packet: serde_json::Value =
         serde_json::from_slice(item_use_observation_promotion::ITEM_USE_OBSERVATION_PACKET)
             .expect("sealed source-only use packet");
@@ -1084,6 +1101,26 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         linked.definitions.len(),
         ITEMS + CREATURE_RECORDS + NPC_RECORDS
     );
+    for row in default8_rows {
+        let key = row["item_key"].as_str().expect("explicit default key");
+        let definition = linked
+            .definitions
+            .iter()
+            .find(|d| d.definition.key().as_str() == key)
+            .expect("qualified Item present");
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            panic!("Item target required")
+        };
+        assert_eq!(
+            item.semantics.stack,
+            ReferenceItemField::Known(ReferenceItemStack {
+                stackable: ReferenceItemField::Known(false),
+                stack_max: ReferenceItemField::Unknown
+            })
+        );
+        assert_eq!(item.stack_class, ReferenceItemStackClass::Unknown);
+        assert!(!item.materializable);
+    }
     for row in hit_magic_rows
         .iter()
         .filter(|r| r["facts"]["hit_chance"].is_object())
@@ -1221,13 +1258,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // Documented-default No adds 1,487 leaves; 500 overlap this older atom census.
     // Seven genuine historical defaults add seven leaves; three overlap this census.
     // Affirmative official marketability adds 4,891 leaves without altering admission.
+    // Eight successor defaults add eight false leaves; all already have Wave 1 atoms.
     assert_eq!(
         wave1_items,
         164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2519
     );
     assert_eq!(
         wave1_fields,
-        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_891
+        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_891 + 8
     );
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked

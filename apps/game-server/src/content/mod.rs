@@ -49,6 +49,7 @@ pub mod item_movable_promotion;
 pub mod item_name_promotion;
 pub mod item_physical_promotion;
 pub mod item_stack_default_promotion;
+pub mod item_stack_default_successor8_promotion;
 pub mod item_stack_false_promotion;
 pub mod item_stack_historical_promotion;
 pub mod item_stats_promotion;

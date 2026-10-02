@@ -16,6 +16,8 @@ on:
       - imports/crystalserver/facts/**
       - imports/tibiawiki/facts/items-family-fallback.json
       - imports/tibiawiki/facts/items-stats.json
+      - imports/tibiawiki/source-evidence/stack-default-successor8/**
+      - docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-*.json
       - imports/tibiawiki/batches.json
       - imports/tibiawiki/sources.json
       - tools/content-census/item_wiki_family_capture.py
@@ -153,6 +155,13 @@ jobs:
         run: |
           python test_lower_item_weapon_metadata_packet.py
           python lower_item_weapon_metadata_packet.py --check
+
+      - name: Closed successor eight documented stack defaults and source replay
+        working-directory: tools/content-schema/item-authoring
+        run: |
+          set -euo pipefail
+          python test_stack_default_successor8.py
+          python lower_wiki_stack_default_successor8_packet.py --check
 
       - name: Weapon proficiency tests and artifact drift
         run: |
