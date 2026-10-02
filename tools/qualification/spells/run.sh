@@ -6,11 +6,8 @@ cd "$SPELL_REPO_ROOT"
 mode="${1:-help}"
 if [[ $# -gt 0 ]]; then shift; fi
 prepare_current_manifest() {
-  SPELL_TEST_INPUT_ROOT="$(mktemp -d -t oteryn-spells.XXXXXXXX)"
-  trap 'rm -rf -- "$SPELL_TEST_INPUT_ROOT"' EXIT
-  python docs/reference/spells/r25-candidate/materialize_manifest.py \
-    --out "$SPELL_TEST_INPUT_ROOT/input" >/dev/null
-  SPELL_CURRENT_MANIFEST="$SPELL_TEST_INPUT_ROOT/input/manifest.json"
+  SPELL_CURRENT_MANIFEST="$SPELL_REPO_ROOT/content/test-packs/spells/r25/manifest.json"
+  [[ -f "$SPELL_CURRENT_MANIFEST" ]] || { echo 'Imported spell manifest missing' >&2; exit 2; }
 }
 case "$mode" in
   runtime)
