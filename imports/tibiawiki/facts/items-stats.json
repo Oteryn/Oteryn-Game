@@ -19522,29 +19522,6 @@
         }
       ]
     },
-    "53855": {
-      "item_id": 53855,
-      "observations": [
-        {
-          "content_sha256": "fdf505c1e486c20d26f491dfd592f1ceeb29eeea009d95a7dd41b0b0bbcd73b2",
-          "fields": {
-            "attack": "25",
-            "hands": "One",
-            "objectclass": "Weapons",
-            "primarytype": "Distance Weapons",
-            "slot": "Weapon Hand",
-            "stackable": "yes",
-            "weight": "0.94"
-          },
-          "page_id": 110826,
-          "revision_id": 1195705,
-          "revision_sha1": "de7453d25a733498948192c908baa5b17b426cd7",
-          "revision_timestamp": "2026-07-13T14:41:54Z",
-          "url": "https://tibia.fandom.com/wiki/Snowball_with_Ice_Shards",
-          "wiki_title": "Snowball with Ice Shards"
-        }
-      ]
-    },
     "54510": {
       "item_id": 54510,
       "observations": [
@@ -235732,6 +235709,29 @@
         }
       ]
     },
+    "oteryn:item.tibia.i53855": {
+      "item_id": 53855,
+      "observations": [
+        {
+          "content_sha256": "fdf505c1e486c20d26f491dfd592f1ceeb29eeea009d95a7dd41b0b0bbcd73b2",
+          "fields": {
+            "attack": "25",
+            "hands": "One",
+            "objectclass": "Weapons",
+            "primarytype": "Distance Weapons",
+            "slot": "Weapon Hand",
+            "stackable": "yes",
+            "weight": "0.94"
+          },
+          "page_id": 110826,
+          "revision_id": 1195705,
+          "revision_sha1": "de7453d25a733498948192c908baa5b17b426cd7",
+          "revision_timestamp": "2026-07-13T14:41:54Z",
+          "url": "https://tibia.fandom.com/wiki/Snowball_with_Ice_Shards",
+          "wiki_title": "Snowball with Ice Shards"
+        }
+      ]
+    },
     "oteryn:item.tibia.i5412": {
       "item_id": 5412,
       "observations": [
@@ -278547,7 +278547,7 @@
     }
   },
   "schema": "OTERYN_ITEM_WIKI_STATS_SNAPSHOT/v1",
-  "snapshot_sha256": "5fc20ff76f65ab8e0a6bb8f52bc366a0bc0b0b617aaaf3bc8b1c987604a2a2d6",
+  "snapshot_sha256": "2e6e083d041f7d0901556bcdcee1b1975a1bcb961828bbfbd782ecb0a3dfee91",
   "source": {
     "api": "https://tibia.fandom.com/api.php",
     "attribution": {
