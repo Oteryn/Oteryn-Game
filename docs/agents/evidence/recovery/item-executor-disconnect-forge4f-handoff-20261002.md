@@ -51,3 +51,20 @@ The proposed raw artifact paths are repository-relative imports/tibiawiki/source
 At disconnect, environment_status reported observed/desired phase running but current connectivity offline. Root minimal pwd did not complete; workers stopped mutations. No evidence establishes lost files, but local access is unavailable. No final Weapon/Default tests or publications may be claimed from earlier checks.
 Root has not used Remote Desktop for recovery or project actions. User limits it to public internet browser research. Tavily quota is exhausted. Research relies on retained explicit source captures; current public revision continuity remains uncertain.
 All changes remain draft/main, not merged; protected CI/integration and full Item readiness remain pending.
+
+## Worker/reviewer exact hashes received after disconnect
+
+These are reported last-read hashes, not a fresh filesystem read or final validation.
+- Unfrozen Weapon proofv2: e2d77e5cded9f0c170d03359b18b8766f780bee20541249ed97a60915d1e855b (581742 bytes).
+- Unfrozen Weapon packet:60944931e8540d986335f5b2e34528578efe30e2b5eb1479edd15e830466ac8c.
+- Migration two-file authoring manifest:c7146da86156d9a392acb8e87ae67bf7153c095f77d380ec0cce813d6cfb6b48.
+- Migration validator:c59f2e1869afedcd55a0df182e700d6dfd34641b34a83aaae9968aa36cd857cf.
+- Migration negative tests:9d23af49dab94e66ad712cce6f503af5adee37b86b6e612dbbad042a3a0c5cf6.
+- Shared catalog unchanged:8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc.
+- Independent Forge-parent census:21246a6dbf5dc85948ed69e2e6ff21c51b5ecd9de3e58262f9a00739d6718f36 (526780 bytes).
+- Independent exact historical/current Native guard delta:2c54d7db950cdb5adf4b0ef6df12f10b1cbc60fa1a3fc100f1a9e22a9bd82663.
+- Accepted additional24 source-peer:7d80ee8ceffc52c6058192de6e4debe0fe681680542cbab39ed12c72725bcdc8.
+- Weapon closed103 source manifest:264546b1f5af184c4415fa52e98b9b66dd106d2c3297f13ae695b1b804889ff4.
+- Source24 proof:497ce38dcdfabc0bcac7642ed3159808869b1418d9b61b34d074d9beb7e7c0a2.
+
+No final source/worker manifest or task archive was created for Weapon. No Cargo was run. The pre-Cargo checks JSON exists locally but its full SHA was not read; do not invent it. Source-only rustfmt edition2024 completed before transport failure. Original79+24 qualifications were unchanged.
