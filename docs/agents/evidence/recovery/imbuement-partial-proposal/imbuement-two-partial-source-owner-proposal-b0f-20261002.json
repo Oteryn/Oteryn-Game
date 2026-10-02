@@ -1,0 +1,243 @@
+{
+  "schema": "OTERYN_PARTIAL_IMBUEMENT_SOURCE_OWNER_PROPOSAL/v1",
+  "status": "PROPOSAL_REQUIRES_NARROW_ACCEPTED_SOURCE_CONTRACT_SUPPLEMENT_NOT_IMPLEMENTED",
+  "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "source_fact_file": {
+    "path": "/workspace/audit-continuation/imbuement-two-own-notes-source-qualified-positive-tier-facts.json",
+    "sha256": "38ee23b0733947544695e4d146734916ea679c28c93e69ac75a7d576001953b8"
+  },
+  "counts": {
+    "independently_source_qualified_positive_fact_entries": 2,
+    "target_items": 2,
+    "new_known_native_whole_allowed_vectors": 0,
+    "currently_source_item_authoring_owners": 411,
+    "if_approved_new_source_owners": 413,
+    "complete_items_claimed": 0
+  },
+  "existing_route_result": "No present ProjectV2ItemAuthoring typed partial imbuement carrier; no repurposing of damage/type/mana UseObservation, augment candidates, Forge, editor notes or Native whole whitelist. Formal source_observations currently attributes_text only.",
+  "contract_boundary": {
+    "path": "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+    "line": 75,
+    "current_rule": "Imbuement semantics stay existing executable Reference Item path; V2 does not duplicate them.",
+    "required_narrow_exception": "Optional partial positive family-ceiling source observations on existing ItemAuthoring owner, never Native/runtime whitelist, no interpretation of unmentioned families/tiers as unavailable."
+  },
+  "proposed_existing_owner_extension": {
+    "owner": "ProjectV2ItemAuthoring",
+    "field": "imbuement_allowance_observations",
+    "type": "Option<ProjectV2ItemImbuementAllowanceObservations>",
+    "serde": "default, skip_serializing_if=Option::is_none; deny_unknown_fields for nested structs",
+    "payload": {
+      "closure": "single source-only enum variant PARTIAL_POSITIVE_FACTS; mandatory when present",
+      "facts": "nonempty vector of {family: existing ReferenceImbuementFamily, max_tier:u8}; family-sorted, unique; bounded<=20 existingfamilycardinality",
+      "max_tier_unit": "Tibia imbuing level Basic=1,Intricate=2,Powerful=3; explicit observed ceiling, no default or unrelatedForge/max10",
+      "formal_proposed_path": "/item/source_observations/imbuement_allowance_facts",
+      "Native_lowering": "NONE",
+      "closure_semantics": "Known positive membership+explicit ceiling only for listed family; source snapshot is partial, all unmentioned families/whole Native whitelist remain UNKNOWN"
+    }
+  },
+  "existing_native_type_boundary": {
+    "family": "ReferenceImbuementFamily::SkillMagicLevel=18 alreadyexists; reuse, no new Native enum values",
+    "tier": "ReferenceImbuementTier currently Two,Three,Ten; noOne; do not extend/reinterpret codec for DarkWhispers basic1",
+    "whole_carrier": "ReferenceItemImbuement.allowed_family_tiers=ReferenceItemField<Vec<ReferenceImbuementAllowance>> means entireKnownvector; partialfacts forbidden",
+    "formal_candidate": "build_formal_schema.py imbueTier has familystring+tier integer>=1, but wholeallowedlist has no partialclosure semantics; optionalpartialSOURCE property requires explicitnewsourcecontract route"
+  },
+  "source_semantics": {
+    "generic_notes_route": "Preserve existing editor/provenance mapping of notes; no blanket notes→imbue alias. Extract only these two fixed item-specific quoted claims through dedicated supplement/helper and keep full raw Notes witnesses.",
+    "FalconCoif": "Explicit up to Tier2 Epiphany / MagicLevel boost supports listedfamily ceiling2. No inference of anyotherfamily.",
+    "DarkWhispers": "ExplicitBasicEpiphany and notIntricate/Powerful supports max1. Preserve exclusionwords in originalraw proof; no completeexcluded_family vector.",
+    "OTS": "All XML broadfamilylists remain hypotheses; missingmagicchild DarkWhispers doesnotcontradict/noFalse sourceabsence; Canary04b83 is hypothesis-only."
+  },
+  "minimum_changed_paths_if_approved": [
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md explicitexception",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md SOURCE observation path/units/partialclosure",
+    "apps/game-server/src/content/project/v2.rs optionalownerproperty, two boundedstructs, canonical sort, validator, literalconstructorNoneinitializers",
+    "tools/content-schema/item-authoring/build_formal_schema.py and generateditem.schema.json if formalSOURCE property accepted",
+    "dedicated scoped source supplement/compiler+twofactpacket and thin atomicauthoringwrapper",
+    "tools/content-migration/validate_world_project_v2_to_tree.py exactsealed2 ownerexemption preservingall411siblings",
+    "apps/game-server/tests/content_world_project_repository.rs exactsealed2 declaration/canonicalmerge assertions and fixtures",
+    "workflow exactnewproof/packet trigger+compiler check"
+  ],
+  "minimum_checks": [
+    "old absent-field v2 canonical bytes identical; old strictreader rejects presentunknownfield; currentextendedreader roundtrips partialpayload",
+    "rejectempty/duplicate/unsortedfacts, unknownfamily, nonpartialclosure, tier0/4/255/float/bool/absent",
+    "exactcurrent ownID/name/source binding forwardreverse and latest/historicalmembership; source cut and allownNotes opposition; no World and actualKnownslots2",
+    "two-target atomicmerge, idempotence and forged lateconflict preserveexisting411fullowners+allNative recordssiblings",
+    "wrong extra/partial SOURCEowners and canonicalmetadata reject; no source packet count inferred from slotcount",
+    "all Native57320 and imbuementKnownslots/Unknownwholelists byteidentical; no runtimeABI/artifactprofilechanges"
+  ],
+  "records": [
+    {
+      "source_item_id": 28715,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i28715",
+        "revision": "definition-r1"
+      },
+      "source_proven_positive_fact": {
+        "family": "SKILL_MAGIC_LEVEL",
+        "max_tier": 2
+      },
+      "own_source": {
+        "page_id": 85231,
+        "revision_id": 1148286,
+        "revision_timestamp": "2025-12-08T17:39:32Z",
+        "content_sha256": "9a70d09fa28caa0fc02809c90b239370cc5338ed7b5a90775b520b9d690cce0c",
+        "raw_itemid": [
+          "28715"
+        ],
+        "raw_name": {
+          "name": [
+            "Falcon Coif"
+          ],
+          "actualname": [
+            "falcon coif"
+          ]
+        },
+        "raw_notes": [
+          "This is one of the few helmets that can be worn by Knights which can be imbued with up to Tier 2 [[Intricate Epiphany|Epiphany]] (Magic Level boost) [[Imbuing|imbuements]]. It's also one of the few helmets available for Paladins with this property."
+        ],
+        "capture_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/imbuement-renderers-own-exceptions-browser-cdp-source.json",
+        "capture_sha256": "a88f57f1a169e8c188baa3e25247c4843e218fa49c7b807c41795e501a190c13"
+      },
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "28715",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i28715",
+          "revision": "definition-r1"
+        }
+      },
+      "actual_b0f_current_native_headers": {
+        "kind": "Item",
+        "client_projection": "ClientSafe",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "actual_b0f_current_native_name": {
+        "state": "KNOWN",
+        "value": "falcon coif"
+      },
+      "actual_b0f_current_native_imbuement": {
+        "state": "KNOWN",
+        "value": {
+          "slot_count": {
+            "state": "KNOWN",
+            "value": 2
+          },
+          "allowed_family_tiers": {
+            "state": "UNKNOWN"
+          },
+          "excluded_families": {
+            "state": "UNKNOWN"
+          }
+        }
+      },
+      "existing_source_owners": [],
+      "proposed_source_metadata": {
+        "imbuement_allowance_observations": {
+          "closure": "PARTIAL_POSITIVE_FACTS",
+          "facts": [
+            {
+              "family": "SKILL_MAGIC_LEVEL",
+              "max_tier": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "source_item_id": 29427,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i29427",
+        "revision": "definition-r1"
+      },
+      "source_proven_positive_fact": {
+        "family": "SKILL_MAGIC_LEVEL",
+        "max_tier": 1
+      },
+      "own_source": {
+        "page_id": 86769,
+        "revision_id": 1148314,
+        "revision_timestamp": "2025-12-08T17:40:03Z",
+        "content_sha256": "bccd74d9275d3ed99b64cf3aae7f6a9d1d2da494866583aa693b9e50e7bd67b6",
+        "raw_itemid": [
+          "29427"
+        ],
+        "raw_name": {
+          "name": [
+            "Dark Whispers"
+          ],
+          "actualname": [
+            "dark whispers"
+          ]
+        },
+        "raw_notes": [
+          "This helmet can be imbued with [[Basic Epiphany]] ([[Magic Level]] bonus), but not with [[Intricate Epiphany|Intricate]] or [[Powerful Epiphany]]."
+        ],
+        "capture_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/imbuement-renderers-own-exceptions-browser-cdp-source.json",
+        "capture_sha256": "a88f57f1a169e8c188baa3e25247c4843e218fa49c7b807c41795e501a190c13"
+      },
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "29427",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i29427",
+          "revision": "definition-r1"
+        }
+      },
+      "actual_b0f_current_native_headers": {
+        "kind": "Item",
+        "client_projection": "ClientSafe",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "actual_b0f_current_native_name": {
+        "state": "KNOWN",
+        "value": "dark whispers"
+      },
+      "actual_b0f_current_native_imbuement": {
+        "state": "KNOWN",
+        "value": {
+          "slot_count": {
+            "state": "KNOWN",
+            "value": 2
+          },
+          "allowed_family_tiers": {
+            "state": "UNKNOWN"
+          },
+          "excluded_families": {
+            "state": "UNKNOWN"
+          }
+        }
+      },
+      "existing_source_owners": [],
+      "proposed_source_metadata": {
+        "imbuement_allowance_observations": {
+          "closure": "PARTIAL_POSITIVE_FACTS",
+          "facts": [
+            {
+              "family": "SKILL_MAGIC_LEVEL",
+              "max_tier": 1
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "git_input_hashes": {
+    "content/world/definitions/reference.json": "1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e",
+    "content/world/definitions/declarations.json": "b9ad3d8429f538f1d9459c0917d500c84168cc74ae0e6c969eb99425b98d7a3e",
+    "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+  },
+  "access_method": "LOCAL_RETAINED_PUBLIC_CHROME_CDP_RAW_SOURCES_AND_ACTUAL_PUBLISHED_GIT_BLOBS; no new HTTP/browser/Cargo/WT mutation",
+  "description114_source9": "FROZEN_UNTOUCHED"
+}

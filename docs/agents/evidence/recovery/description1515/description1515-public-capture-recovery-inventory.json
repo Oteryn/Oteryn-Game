@@ -1,0 +1,45 @@
+{
+  "schema": "OTERYN_DESCRIPTION1515_PUBLIC_CAPTURE_RECOVERY_INVENTORY/v1",
+  "status": "SOURCE_CAPTURE_AND_POLICY_PEER_STOPPED_NO_NATIVE_MUTATION",
+  "owned_files": [
+    {
+      "path": "/workspace/audit-continuation/description1515-look-normal-http-source-attempt.json",
+      "sha256": "b176b12664d48be9778633537126c8dc7e8286bcf9dde79f1000d5355a759c90",
+      "bytes": 528,
+      "kind": "PUBLIC_SOURCE_CAPTURE"
+    },
+    {
+      "path": "/workspace/audit-continuation/description1515-look-browser-cdp-source.json",
+      "sha256": "19e76a1bb1bbfb95fbe8b56bbad59d399ff730fd13bb9f3b8982d1ac2ecafdeb",
+      "bytes": 6893,
+      "kind": "PUBLIC_SOURCE_CAPTURE"
+    },
+    {
+      "path": "/workspace/audit-continuation/description1515-infobox-item-look-raw-wikitext.txt",
+      "sha256": "4deb9fc589e198b6480cf521e06dda151ca7c2325a78521d199d020eed1396f5",
+      "bytes": 5805,
+      "kind": "PUBLIC_SOURCE_CAPTURE"
+    },
+    {
+      "path": "/workspace/audit-continuation/description1515-independent-scoped-literal-policy-peer.json",
+      "sha256": "b0638732d5c873eab343b79bf6524f1408a037c630e80d466edea5288a4fa8d6",
+      "bytes": 9464,
+      "kind": "INDEPENDENT_REVIEW"
+    },
+    {
+      "path": "/workspace/audit-continuation/review-description1515-source-policy-peer.py",
+      "sha256": "e5a3e2e12fcb9c442a41199a54f0de7171e7f3b1502b23ca103d2914c5a40dc6",
+      "bytes": 10611,
+      "kind": "INDEPENDENT_REVIEW"
+    }
+  ],
+  "source_full_API_response_retained_in_CDP": true,
+  "standalone_wikitext_utf8_exact_content_no_trailing_LF_added": true,
+  "public_page_id": 67603,
+  "public_revision_id": 1131388,
+  "public_revision_timestamp": "2025-10-02T13:44:36Z",
+  "public_revision_sha1": "701ceb7a706dd261552f5beb3f2f950060978eb9",
+  "source_coordinate": "https://tibia.fandom.com/wiki/Template:Infobox_Item/Look?oldid=1131388",
+  "capture_route": "Anonymous normal public HTTP402 once, then explicitly authorized anonymous public same-origin MediaWiki API through existing Chrome CDP200; own single research target closed.",
+  "scope": "No project or private remote files, other tabs, admin/configuration/install, WT, Cargo, Git or publication mutation."
+}

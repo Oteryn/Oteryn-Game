@@ -1,0 +1,497 @@
+{
+  "schema": "OTERYN_DEFAULT8_FINAL_WORKER_MANIFEST/v1",
+  "status": "PASS",
+  "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "branch": "codex/item-stack-default8-20261002",
+  "pr": 1560,
+  "worktree": "/workspace/pr1437-stack-default-completion",
+  "closed_ids": [
+    23229,
+    23230,
+    23231,
+    23232,
+    23295,
+    23299,
+    23335,
+    23339
+  ],
+  "source_policy": "DERIVED_DOCUMENTED_TEMPLATE_DEFAULT; no absence=false from official client",
+  "stable_source": {
+    "source_manifest_sha256": "bf5ec823867f04db5f333eb55a4d30473af2e31d377f6f433eae727dc744c0af",
+    "source_peer_sha256": "2831153b8b275831c110b55efddcb8544f370594bc1c6b01ff20ef273b26e29e",
+    "source_proof_sha256": "5f9a767cee631c73cd2ce534c04787dc82091ab15b8ad65add15e8b7cbc67bd4",
+    "current_parent_receipt_sha256": "2aa278f6f11cbdcd10a7a9bb554a4fe314c0d7592c387ac4634a7c425157f61e",
+    "packet_sha256": "75355beb3b3426686b16c469004ec5761053b92f49b566e4512b12ee2570beed",
+    "source13_postgen_changes": [
+      "apps/game-server/tests/content_world_project_repository.rs"
+    ],
+    "remaining12_source_files": "BYTE_IDENTICAL",
+    "final_postgen_independent_peer": "PENDING; worker stopped source/data until review"
+  },
+  "owned_files": [
+    {
+      "path": ".github/workflows/item-authoring-schema.yml",
+      "sha256": "ef3946ae7fc2ee6b9245186edeeb62673d7b89fe4834081b145a55037dd09b62",
+      "bytes": 13261
+    },
+    {
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "c09e053b243823b197fabf5c3d232ad30f66aa2922c40a89123cec10eb917b50",
+      "bytes": 87739
+    },
+    {
+      "path": "apps/game-server/src/content/item_stack_default_successor8_promotion.rs",
+      "sha256": "a03aef1d731247c0065fd7e52f60144ead75c34295f6894a9accb1f9ec819fa2",
+      "bytes": 9138
+    },
+    {
+      "path": "apps/game-server/src/content/mod.rs",
+      "sha256": "54e0ef0426676efbedb47ff883ac599b866ce0e34c27eded3ba2e166f6fff374",
+      "bytes": 5019
+    },
+    {
+      "path": "apps/game-server/tests/content_world_project_repository.rs",
+      "sha256": "139aa9bb93667de745f592940f34cd837b6853be684aef62c1da7f725a97555c",
+      "bytes": 63346
+    },
+    {
+      "path": "content/abilities/definitions/index.json",
+      "sha256": "a7455c8a9ae699beff735d1877040ba73714d382aa2c7baef878507fb8afc69b",
+      "bytes": 1054
+    },
+    {
+      "path": "content/abilities/effects/index.json",
+      "sha256": "d305a7f19e1b7b1fb698cc243e5491cf69c078335a64a8668afa3c48b37466f8",
+      "bytes": 875
+    },
+    {
+      "path": "content/abilities/formulas/index.json",
+      "sha256": "87b334a2f95fb665d7a6c0d0b671a5b4ecba76bc35d9052eca6a1a68d961728b",
+      "bytes": 896
+    },
+    {
+      "path": "content/behaviors/index.json",
+      "sha256": "b180a11551aa944abba7cbee65d34c3dcbeba575ab97494f3ce0c5be019ed353",
+      "bytes": 629
+    },
+    {
+      "path": "content/content.lock.json",
+      "sha256": "574250bb806673981c643e61967189419367f143ae0b20c9208d8bd13bff4ad8",
+      "bytes": 1411
+    },
+    {
+      "path": "content/creatures/definitions/index.json",
+      "sha256": "e797afeb5d9ea5a03a905052971a42f465b1351af7bfe6a70b9ae67f5850e7fc",
+      "bytes": 586
+    },
+    {
+      "path": "content/items/definitions/items-12000-12499.json",
+      "sha256": "ff4c6c9e5da82951b41f81ba4c260d1005819eee3400ea476c61fc569b37d145",
+      "bytes": 518379
+    },
+    {
+      "path": "content/items/index.json",
+      "sha256": "30d850cbd076e3f75cb6cf8cc2429e79358123a4574b4dfa676a670f0436f790",
+      "bytes": 3985
+    },
+    {
+      "path": "content/loot/index.json",
+      "sha256": "baab6c60b07f2f1307e7ae1947d4dadab107593ad6b371e7657e9cbee3a66ffc",
+      "bytes": 452
+    },
+    {
+      "path": "content/presentations/definitions/index.json",
+      "sha256": "7eb80eb06193dfb13da4737ab8d5c8a2fee10cdda32153f4bbc4d2f11dba5e10",
+      "bytes": 753
+    },
+    {
+      "path": "content/world/content.lock.json",
+      "sha256": "321c93321ea63bb8e9db2c2b4fe7ae630e44964bfb529e6a0f5061c3aee10997",
+      "bytes": 364
+    },
+    {
+      "path": "content/world/definitions/reference.json",
+      "sha256": "debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2",
+      "bytes": 24952379
+    },
+    {
+      "path": "content/world/manifest.json",
+      "sha256": "eb8279c0e8c15a348f10a1aab7e6565664a2a3a3bf5a40fc91593256f14304cd",
+      "bytes": 1937
+    },
+    {
+      "path": "content/world/project.json",
+      "sha256": "320a5142b5344cda9aab3e5419ae2262832c6fca46c5701eac32eb89acda944f",
+      "bytes": 390
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-current-parent-receipt-v1.json",
+      "sha256": "2aa278f6f11cbdcd10a7a9bb554a4fe314c0d7592c387ac4634a7c425157f61e",
+      "bytes": 52294
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json",
+      "sha256": "75355beb3b3426686b16c469004ec5761053b92f49b566e4512b12ee2570beed",
+      "bytes": 15492
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json",
+      "sha256": "5f9a767cee631c73cd2ce534c04787dc82091ab15b8ad65add15e8b7cbc67bd4",
+      "bytes": 152017
+    },
+    {
+      "path": "imports/tibiawiki/source-evidence/stack-default-successor8/global-infobox-object-source-part-098.json",
+      "sha256": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+      "bytes": 514595
+    },
+    {
+      "path": "imports/tibiawiki/source-evidence/stack-default-successor8/global-own-itemid-index.json",
+      "sha256": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
+      "bytes": 19246670
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py",
+      "sha256": "b953c499affb23e5fc0892f37677a5584e8e2f5b6dfc52762ee9f45e1e034e92",
+      "bytes": 11574
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_stack_default_successor8.py",
+      "sha256": "ca54d90178a6232c7e0eeacf0cec2d7bf9526ce88ba6e36e98a1c9aa3575a673",
+      "bytes": 8726
+    },
+    {
+      "path": "tools/content-schema/item-authoring/verify_default8_exact_delta.py",
+      "sha256": "ffcc1272c2ea4ed0390787561f5921d949fd1430343458dc9443ca5e7f96f791",
+      "bytes": 5264
+    }
+  ],
+  "checks": {
+    "server-lib": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-server-lib.log"
+    },
+    "model-v2": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-model-v2.log"
+    },
+    "repository": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-repository.log"
+    },
+    "clippy": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-clippy.log"
+    },
+    "fmt": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-fmt.log"
+    },
+    "Python_all_gates": {
+      "status": "PASS",
+      "commands": 34,
+      "packet_checks": "14 prior +newDefault8; two historical/current contexts",
+      "Ruff": "FULL CHECK AND FORMAT PASS"
+    },
+    "source_guard_tests": "PASS8; scoped future selected8 and outside sibling enrichment accepted",
+    "migration": "PASS411 owners, 250 source rows/325refs; equiv170; all34031shards69",
+    "tree_schema": "PASS97/97 and10 successor markers",
+    "key_references": "PASS242030",
+    "full_native_delta": "PASS8 only; full57320records/canonical34031; every max/sibling/header/class/admission/World preserved",
+    "second_original_generator": {
+      "schema": "OTERYN_DEFAULT8_ORIGINAL_GENERATOR_BYTE_IDEMPOTENCE/v1",
+      "status": "PASS",
+      "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-migration/regenerate_content.py",
+        "--skip-checks"
+      ],
+      "generator_sha256": "d85cbceaf8324f2a859dddb1eb2a843de4fb07d078d4663cad0b8ccbd2f488d5",
+      "predecessor_scope_files": 7746,
+      "scope_files_before": 7755,
+      "scope_files_after": 7755,
+      "all_content_files": 7723,
+      "source_owned_files": 13,
+      "different_files": [],
+      "exit_code": 0,
+      "cargo_after_this_generation": "NOT_RUN; original materializer is final Cargo action"
+    }
+  },
+  "materialized": {
+    "native_records": 57320,
+    "items": 34031,
+    "canonical_shards": 69,
+    "changed_items": 8,
+    "changed_shards": [
+      "content/items/definitions/items-12000-12499.json"
+    ],
+    "stackable_false_before": 3900,
+    "stackable_false_after": 3908,
+    "authoring_owners": 411,
+    "relation_sources": 250,
+    "relation_references": 325,
+    "unknown_client_cumulative": "PRESERVED UNKNOWN_ABSENT",
+    "allotherrecords_siblings_maxima_admission_classes_lifecycle_World": "UNCHANGED"
+  },
+  "source_file_count": 13,
+  "generated_file_count": 14,
+  "evidence": [
+    {
+      "path": "/workspace/audit-continuation/default8-source-worker-manifest-v2.json",
+      "sha256": "bf5ec823867f04db5f333eb55a4d30473af2e31d377f6f433eae727dc744c0af",
+      "bytes": 5469
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-independent-source-authoring-peer-v2.json",
+      "sha256": "2831153b8b275831c110b55efddcb8544f370594bc1c6b01ff20ef273b26e29e",
+      "bytes": 9354
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-independent-parent-predecessor-checks-reuse.json",
+      "sha256": "eb4623e0e7bfbfef527f2c4d8526df3b0f89da034ff786aee21360a8fd914a25",
+      "bytes": 8002
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-first-generation-result.json",
+      "sha256": "ce91f959659f9eb9ec056a27650514ced841894d4c51282bc1b5fcc0f772ddf3",
+      "bytes": 225
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-firstgen-exact-native-delta.json",
+      "sha256": "9568029a795a6d8334a6197a6090621aada43e642daadd066933b6a3a716bced",
+      "bytes": 662
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-final-exact-preservation.json",
+      "sha256": "066c697ab5fd51ad245efdf8e84ec4dcf834f58cab4520e06e5be71a0d75d9c5",
+      "bytes": 1114
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-serial-cargo-results.json",
+      "sha256": "230fd7f4529dd46f6947e216d545ef28ebfdfc3d7438c0e8c15087b579cbc276",
+      "bytes": 1275
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-gate-results.json",
+      "sha256": "510451e70c6c62a5ecd3dc96b81587c2aa85aff37647c965add12b6363a21114",
+      "bytes": 11694
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-second-generation-byte-idempotence.json",
+      "sha256": "21d7cdefb807dba5d148b42d8995144364b3008e88ec99f1e9c20dd06e8d7e55",
+      "bytes": 670
+    }
+  ],
+  "logs": [
+    {
+      "path": "/workspace/audit-continuation/default8-first-generation.log",
+      "sha256": "75e9a3d01d050dafb7a3e51c9b81dc1238b45a0fdc1427fd0d0b5f8336fcf055",
+      "bytes": 1893
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-second-generation.log",
+      "sha256": "cb100f7325ad589edee6276ac8fdd30c9b0de69f5d8f5d0a22418dbce8f1735a",
+      "bytes": 1893
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_client_physical_packet.log",
+      "sha256": "28362e07af342492aadeac12178de78bd7c53bd649237242cbdfa8c0b31a7b8b",
+      "bytes": 122
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_wiki_capacity_packet.log",
+      "sha256": "ccf0946630852fe1254849f52ec5a7b6bf2b22b00dcb25199a7d13f0bdaa2f35",
+      "bytes": 32
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_wiki_stats_packet.log",
+      "sha256": "cc316a1a90f3074391f02ead28ca0eb0420c9d1845cd3283779313e77b373dc0",
+      "bytes": 36
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_wiki_stack_false_packet.log",
+      "sha256": "e475959022683da7ab45b9a73184b1e9fdae246fff7868e78e0e74d3d556dedb",
+      "bytes": 34
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_client_market_packet.log",
+      "sha256": "20faae33d501ddb8c552ec612730d1fdf132a4c84c4369aacfeb53199b366cb9",
+      "bytes": 35
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_wiki_movable_packet.log",
+      "sha256": "9fc3c240b89c3544bce897e59a530d3f30e9213cd1bbd2b566bb663f9672b577",
+      "bytes": 50
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_item_document_packet.log",
+      "sha256": "7fbbc3ec2fa97bb654c55b2eb0edac2c37bcfa4a03e9af4c3b6124b946d2ae3d",
+      "bytes": 27
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_elemental_magic_modifier_packet.log",
+      "sha256": "431eb082264c540804bde8f6d213945e3ff8663ff6f2bacf18bc5d3aa559fe48",
+      "bytes": 96
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_item_name_packet.log",
+      "sha256": "305acf14547656f25ac56bc8e72a0d75567c71c66317cc50f88229e44a0c856d",
+      "bytes": 25
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_item_hit_magic_packet.log",
+      "sha256": "0705efb8e82f681421cc799893e11fec8ca5ed3b315113e9c955b3aa8aaa88b9",
+      "bytes": 31
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_mantra_bond_modifier_packet.log",
+      "sha256": "7bdd1e5f9956241e20fe77f4e5781d06a50971cb490d6e82f54c5e829c65064f",
+      "bytes": 106
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_item_use_observation_packet.log",
+      "sha256": "182def43eb5ba4d90c790f39ff463cf847b1582990f5d08043d5799ec14dfa5d",
+      "bytes": 47
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_item_forge3332_packet.log",
+      "sha256": "a7da37e3b907fa5203c69f4d23103419e3161752926433006806d76eecca64f3",
+      "bytes": 35
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_item_weapon_metadata_packet.log",
+      "sha256": "f060e53f1db198e9958a0fa9722e1351042db7f3450b1d3f5667dc284f8ce3b9",
+      "bytes": 47
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-lower_wiki_stack_default_successor8_packet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-context-default.log",
+      "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25",
+      "bytes": 267
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-context-historical.log",
+      "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25",
+      "bytes": 267
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-source8-tests.log",
+      "sha256": "8268c2f08889be2f61ef33d562ff2a5fdbd89e61a2885c0a5b004fd5f24d1f14",
+      "bytes": 107
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-0.log",
+      "sha256": "68b7a5c257fc59d18debf9ae1d39bc348d5acffd5fcc1aa02905f3967e4d486b",
+      "bytes": 448
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-1.log",
+      "sha256": "a1be65a474b6223321b220e5401db93083df2c7d2251020daad515258b7c5165",
+      "bytes": 648
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-2.log",
+      "sha256": "aae937d4e7ec96b4c1eef5d1daaf5fdb5952ce0586e9142514fe3dcfb9ff223b",
+      "bytes": 68
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-3.log",
+      "sha256": "413fc5b31aae85d83b3aa550191d8b925ce6085a77d882e2aa3c30dc6612dca6",
+      "bytes": 83
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-4.log",
+      "sha256": "0d7cfef78b72706b58192cb7fba2ba6c160e88b1cdc26fa3efb8b49d2166dfd4",
+      "bytes": 24
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-5.log",
+      "sha256": "2dad938d34a047a6675c5518e9842becbb87598ab52bbdf4dfdf2c61258ab2d7",
+      "bytes": 30
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-6.log",
+      "sha256": "766d44c371f8afd6aa34b7ab3a4359590d8a32fc3c37048ddb65c26958d261f0",
+      "bytes": 31
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-7.log",
+      "sha256": "dcfe00e165162028c9a3917f8b30c9fda0c6f78db106e3deb7dea6a8023e9b8c",
+      "bytes": 30
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-8.log",
+      "sha256": "fafa75821862650c34843699116602770f46afba4ec641a8e8505ab035ea9f2a",
+      "bytes": 117
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-9.log",
+      "sha256": "b026dc6196197ea8844eeaeb42b76866e15338d388dc1638e0e63e7af3a390af",
+      "bytes": 143
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-content-10.log",
+      "sha256": "071a24ad0579b9477bcb54118178b6c2b76ef7ef24c89811d8a243011a59426e",
+      "bytes": 77
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-master-schema.log",
+      "sha256": "c7dd5cd86083158cd48e35301c5907b32d4ce688d06fbc711a11cc7db98975bd",
+      "bytes": 81
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-master-tests.log",
+      "sha256": "b427c3a892077b30efa49c88588c560f00da23fb5ea7302ca2b66394497ef99e",
+      "bytes": 27
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-source-packet-fixtures.log",
+      "sha256": "0b5883400f47c1c80f49929d57c004bcd0428378705adcfb4586ff7524de2359",
+      "bytes": 127
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-Ruff-whole-check.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-python-Ruff-whole-format.log",
+      "sha256": "71569ff9f54f638bbfa980480f05bfadc7eb0908775c997623d7184712a4e476",
+      "bytes": 27
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-cargo-server-lib.log",
+      "sha256": "bf49f23e9827d344da7fee451f67456816f6f77fe7d9651ea99a0730a531cdfb",
+      "bytes": 145818
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-cargo-model-v2.log",
+      "sha256": "2f7a0979de27d8b9cdb1f016441eceaab577726eaf99645005c519a9b9a18d30",
+      "bytes": 2339
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-cargo-repository.log",
+      "sha256": "a6c9a35172e6c4cd8823d8486fdb7da8befc18e58b73ea3aef550bc052f94f11",
+      "bytes": 1161
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-cargo-clippy.log",
+      "sha256": "82b4cf4704ef2bb89b6058ab2dd4c6c21103cb2e16adffc70ab71a27b88441ac",
+      "bytes": 628
+    },
+    {
+      "path": "/workspace/audit-continuation/default8-cargo-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "git_ref_or_publication_by_worker": false,
+  "cargo_and_generation_finished": true,
+  "cargo_after_second_generation": "NOT_RUN and forbidden until new Root allocation",
+  "root_docs_excluded": true,
+  "all_items_complete": false
+}

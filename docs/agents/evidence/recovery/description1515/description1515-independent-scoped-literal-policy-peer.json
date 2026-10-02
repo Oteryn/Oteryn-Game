@@ -1,0 +1,148 @@
+{
+  "schema": "OTERYN_DESCRIPTION1515_INDEPENDENT_SCOPED_LITERAL_POLICY_PEER/v1",
+  "status": "SOURCE_DESCRIPTION1515_POLICY_PROPOSAL_PEER_PASS_CURRENT_PARENT_ADMISSION_PENDING",
+  "findings": [],
+  "native_applied": 0,
+  "source_policy_decision": "The existing structured-reference extraction discipline supports a bounded DERIVED selection of these exact1515 own-ID Wiki in-game flavor literals including the terminal period. Actual pinned OTS descriptions remain lower-authority differing observations. This is not XML agreement, not punctuation normalization, not official/control-observation parity proof and not automatic current-parent or runtime admission.",
+  "proposed_binding_or_schema_change": false,
+  "frozen_proposal": {
+    "path": "/workspace/audit-continuation/description1515-explicit-wiki-literal-policy-proposal.json",
+    "sha256": "c798c1cbce3f35d8b0ab9652cfa4f0fbc0cdc3cebcba863f940fe9923c269f6a",
+    "bytes": 14539414
+  },
+  "original_research": {
+    "path": "/workspace/audit-continuation/item-description-own-source-qualification-forge4f-20261002.json",
+    "sha256": "eb0b4e264c2c5363ceb415167b85067da8c4f7592388ffcf4c24f0fda9117bad",
+    "bytes": 33868762
+  },
+  "independent_replay": {
+    "path": "/workspace/audit-continuation/review-description1515-source-policy-peer.py",
+    "sha256": "e5a3e2e12fcb9c442a41199a54f0de7171e7f3b1502b23ca103d2914c5a40dc6",
+    "bytes": 10611
+  },
+  "checks": {
+    "all_1515_records_exact_original_held_rows": true,
+    "selected_IDs_exact_original_1515_period_only_partition": true,
+    "all_214_full_global_source_parts_rehashed_and_own_numeric_ID_frames_reparsed": true,
+    "all_selected_global_own_ID_witnesses_no_omission": true,
+    "all_raw_flavortext_values_equal_full_proposed_literal": true,
+    "all_selected_source_coordinates_cutoff_raw_name_and_bindings_checked": true,
+    "full_official_43516_objects_current_membership_historical_membership_native_unknown_description_and_World_guards": true,
+    "all_present_pinned_XML_descriptions_exact_literal_minus_last_period": true,
+    "XML_observation_sets": {
+      "all_three_sources": 1508,
+      "both_Crystal_sources_Canary_absent_description": 7
+    },
+    "max_UTF8_description_bytes": 200,
+    "excluded_strict114": 114,
+    "excluded_absence_or_other_difference924": 924,
+    "no_unresolved_higher_authority_atomic_description_observation_found_in_reviewed_sources": true,
+    "historical4f_and_publishedb0f_full_Native_reference_bytes_equal": {
+      "sha256": "1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e",
+      "bytes": 24951707
+    },
+    "actualname_and_variant_counts": {
+      "explicit_actualname_display_variant": 1492,
+      "explicit_actualname_equal_display": 11,
+      "name_fallback_no_actualname": 12
+    }
+  },
+  "renderer_sources": {
+    "normal_public_HTTP_block": {
+      "path": "/workspace/audit-continuation/description1515-look-normal-http-source-attempt.json",
+      "sha256": "b176b12664d48be9778633537126c8dc7e8286bcf9dde79f1000d5355a759c90",
+      "bytes": 528
+    },
+    "full_exact_CDP_response": {
+      "path": "/workspace/audit-continuation/description1515-look-browser-cdp-source.json",
+      "sha256": "19e76a1bb1bbfb95fbe8b56bbad59d399ff730fd13bb9f3b8982d1ac2ecafdeb",
+      "bytes": 6893
+    },
+    "own_raw_wikitext": {
+      "path": "/workspace/audit-continuation/description1515-infobox-item-look-raw-wikitext.txt",
+      "sha256": "4deb9fc589e198b6480cf521e06dda151ca7c2325a78521d199d020eed1396f5",
+      "bytes": 5805
+    },
+    "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Template%3AInfobox%20Item%2FLook%7CTemplate%3AInfobox%20Item%2FLook%2FDocumentation&format=json&formatversion=2&redirects=1",
+    "status": 200,
+    "captureUTC": "2026-10-02T14:22:21.212Z",
+    "method": "anonymous public browser same-origin fetch via Chrome CDP",
+    "page_id": 67603,
+    "revision_id": 1131388,
+    "revision_timestamp": "2025-10-02T13:44:36Z",
+    "API_revision_sha1": "701ceb7a706dd261552f5beb3f2f950060978eb9",
+    "stable_link": "https://tibia.fandom.com/wiki/Template:Infobox_Item/Look?oldid=1131388",
+    "direct_semantic_citation": {
+      "line2": "This template is used by [[Template:Infobox Object]] to generate the in-game look text for the subject.",
+      "line55": "flavortext -->{{#if:{{{flavortext|}}}|<div class=\"p-flavortext\">{{{flavortext|}}}</div>}}<!--",
+      "conclusion": "flavortext is rendered verbatim in its own look paragraph; no helper, period append, period strip or notes conversion applies to this parameter."
+    },
+    "Documentation_api_missing": true,
+    "owned_public_research_tab": "BADDC0F05F0A9CD9DB3396B0D7BD2DE3",
+    "owned_tab_closed": true,
+    "other_tabs_private_data_remote_files_admin_touched": false
+  },
+  "contracts": [
+    {
+      "path": "/workspace/pr1437-resistances/docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md",
+      "sha256": "c502ca927c303eab6d52ce4e076afaf11ab4388fd99e58c368afc5b8c443818b",
+      "bytes": 19062,
+      "citations": [
+        "lines191-196: Wiki default extraction source; consistent field may become reasoned DERIVED when continuity supported and no stronger conflict exists.",
+        "lines356-362: OTS/donors remain hypotheses; never override newer current structured-wiki static value absent stronger direct evidence.",
+        "lines455-465: claim-scope hierarchy; OTS hypotheses last, stronger evidence must address same field/context/date."
+      ]
+    },
+    {
+      "path": "/workspace/pr1437-resistances/tools/content-schema/item-authoring/source_field_catalogs.py",
+      "sha256": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc",
+      "bytes": 67615,
+      "citation": "immutable825 catalog: own flavortext maps formal presentation.flavor_text, XML description maps inspection_description."
+    },
+    {
+      "path": "/workspace/pr1437-resistances/tools/content-schema/item-authoring/engine_items.py",
+      "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+      "bytes": 141088,
+      "citation": "immutable28644 XML description importer unchanged."
+    },
+    {
+      "path": "/workspace/pr1437-resistances/apps/game-server/src/content/reference_playable.rs",
+      "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+      "bytes": 107416,
+      "citation": "Existing ReferenceItemPresentation.description Field<String> and200UTF8-byte bound; no new native carrier/ABI."
+    },
+    {
+      "path": "/workspace/audit-continuation/weapon-presentation-source-audit/ff7ede59/src/items/functions/item/item_parse.cpp",
+      "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+      "bytes": 59234,
+      "citation": "pinnedff7 lines140-143: literal XML description as_string; configuration-only goldpouch override outside selected cohort."
+    },
+    {
+      "path": "/workspace/audit-continuation/weapon-presentation-source-audit/ff7ede59/src/items/item.cpp",
+      "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+      "bytes": 96623,
+      "citation": "pinnedff7 lines3270-3276: instance specialDescription or immutable description emitted literally after newline; no terminal punctuation rewrite. OTS implementation evidence only."
+    }
+  ],
+  "semantic_limits": [
+    "PROVEN is the exact captured own-source literal, source coordinates and renderer parameter behavior; Native value selection remains explicit bounded DERIVED reasoning.",
+    "Original114 exact-XML qualification and whole3694 held report remain immutable. These1515 form a separate closed source-selection qualifier, not a generic opposition bypass.",
+    "Do not remove the XML opposition observations or relabel them as matching/corroborating identical description; only the same wording with one terminal-period difference is established.",
+    "Full Wiki article content_sha256 in old ownbox frames remains declared metadata, not independent full-article-body proof. Actual full source-part/ownbox bytes are verified.",
+    "Current exact published predecessor must be rebound with live full identity/four headers/native name/description Unknown-or-identical and own-source coordinates. No whole-native or unrelated sibling full-artifact guard.",
+    "Existing114 descriptions, existing source authoring owners, all other Native leaves, World ownership and portable admission remain preserved; future Default8 siblings remain allowed.",
+    "No broader924, markup, empty/shared/opposing own flavor, changed current name/identity/class/source coordinates or higher-authority description conflict is eligible under this rule."
+  ],
+  "next_gates": [
+    "Root owning acceptance of the concrete1515 scoped decision and allocation on actual published parent.",
+    "Dedicated closed compiler/setter with exact1515 manifest/full-source replay plus meaningful late conflict/native identity/name/header/Unicode byte-bound/idempotence/preserved siblings negatives.",
+    "Current source peer followed by serialized Rust, full exact1515 leaf delta and original generation/idempotence/publication peer."
+  ],
+  "review_scope": {
+    "read_only_WT": true,
+    "external_capture_and_report_only": true,
+    "Cargo_or_Git_ref_or_publication": false,
+    "normalHTTP_once_then_explicitly_authorized_public_browser_CDP": true,
+    "no_Tavily_calls": true
+  }
+}

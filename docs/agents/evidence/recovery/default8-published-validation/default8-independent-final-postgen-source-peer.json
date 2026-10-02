@@ -1,0 +1,392 @@
+{
+  "schema": "OTERYN_DEFAULT8_INDEPENDENT_FINAL_POSTGEN_PEER/v1",
+  "status": "FINAL_POSTGEN_SOURCE_AUTHORING_PEER_PASS",
+  "findings": [],
+  "timestamp_utc": "2026-10-02T14:23:56.120303+00:00",
+  "repository": "/workspace/pr1437-stack-default-completion",
+  "parent_commit": "b0f91e2883007861f5556c44cce13701bb447283",
+  "worker_manifest": {
+    "path": "/workspace/audit-continuation/default8-final-worker-manifest.json",
+    "sha256": "12dee061bb9ac5e85ff4ed84263d92dc75a73f17ec0904ddd746fa3796846e9a"
+  },
+  "source_peer_sha256": "2831153b8b275831c110b55efddcb8544f370594bc1c6b01ff20ef273b26e29e",
+  "stable_source": {
+    ".github/workflows/item-authoring-schema.yml": "ef3946ae7fc2ee6b9245186edeeb62673d7b89fe4834081b145a55037dd09b62",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "c09e053b243823b197fabf5c3d232ad30f66aa2922c40a89123cec10eb917b50",
+    "apps/game-server/src/content/item_stack_default_successor8_promotion.rs": "a03aef1d731247c0065fd7e52f60144ead75c34295f6894a9accb1f9ec819fa2",
+    "apps/game-server/src/content/mod.rs": "54e0ef0426676efbedb47ff883ac599b866ce0e34c27eded3ba2e166f6fff374",
+    "apps/game-server/tests/content_world_project_repository.rs": "139aa9bb93667de745f592940f34cd837b6853be684aef62c1da7f725a97555c",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-current-parent-receipt-v1.json": "2aa278f6f11cbdcd10a7a9bb554a4fe314c0d7592c387ac4634a7c425157f61e",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json": "75355beb3b3426686b16c469004ec5761053b92f49b566e4512b12ee2570beed",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json": "5f9a767cee631c73cd2ce534c04787dc82091ab15b8ad65add15e8b7cbc67bd4",
+    "imports/tibiawiki/source-evidence/stack-default-successor8/global-infobox-object-source-part-098.json": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+    "imports/tibiawiki/source-evidence/stack-default-successor8/global-own-itemid-index.json": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py": "b953c499affb23e5fc0892f37677a5584e8e2f5b6dfc52762ee9f45e1e034e92",
+    "tools/content-schema/item-authoring/test_stack_default_successor8.py": "ca54d90178a6232c7e0eeacf0cec2d7bf9526ce88ba6e36e98a1c9aa3575a673",
+    "tools/content-schema/item-authoring/verify_default8_exact_delta.py": "ffcc1272c2ea4ed0390787561f5921d949fd1430343458dc9443ca5e7f96f791"
+  },
+  "stable_source13": {
+    ".github/workflows/item-authoring-schema.yml": "ef3946ae7fc2ee6b9245186edeeb62673d7b89fe4834081b145a55037dd09b62",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "c09e053b243823b197fabf5c3d232ad30f66aa2922c40a89123cec10eb917b50",
+    "apps/game-server/src/content/item_stack_default_successor8_promotion.rs": "a03aef1d731247c0065fd7e52f60144ead75c34295f6894a9accb1f9ec819fa2",
+    "apps/game-server/src/content/mod.rs": "54e0ef0426676efbedb47ff883ac599b866ce0e34c27eded3ba2e166f6fff374",
+    "apps/game-server/tests/content_world_project_repository.rs": "139aa9bb93667de745f592940f34cd837b6853be684aef62c1da7f725a97555c",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-current-parent-receipt-v1.json": "2aa278f6f11cbdcd10a7a9bb554a4fe314c0d7592c387ac4634a7c425157f61e",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json": "75355beb3b3426686b16c469004ec5761053b92f49b566e4512b12ee2570beed",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json": "5f9a767cee631c73cd2ce534c04787dc82091ab15b8ad65add15e8b7cbc67bd4",
+    "imports/tibiawiki/source-evidence/stack-default-successor8/global-infobox-object-source-part-098.json": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+    "imports/tibiawiki/source-evidence/stack-default-successor8/global-own-itemid-index.json": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py": "b953c499affb23e5fc0892f37677a5584e8e2f5b6dfc52762ee9f45e1e034e92",
+    "tools/content-schema/item-authoring/test_stack_default_successor8.py": "ca54d90178a6232c7e0eeacf0cec2d7bf9526ce88ba6e36e98a1c9aa3575a673",
+    "tools/content-schema/item-authoring/verify_default8_exact_delta.py": "ffcc1272c2ea4ed0390787561f5921d949fd1430343458dc9443ca5e7f96f791"
+  },
+  "owned27_double_hash": [
+    {
+      "path": ".github/workflows/item-authoring-schema.yml",
+      "sha256": "ef3946ae7fc2ee6b9245186edeeb62673d7b89fe4834081b145a55037dd09b62",
+      "bytes": 13261
+    },
+    {
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "c09e053b243823b197fabf5c3d232ad30f66aa2922c40a89123cec10eb917b50",
+      "bytes": 87739
+    },
+    {
+      "path": "apps/game-server/src/content/item_stack_default_successor8_promotion.rs",
+      "sha256": "a03aef1d731247c0065fd7e52f60144ead75c34295f6894a9accb1f9ec819fa2",
+      "bytes": 9138
+    },
+    {
+      "path": "apps/game-server/src/content/mod.rs",
+      "sha256": "54e0ef0426676efbedb47ff883ac599b866ce0e34c27eded3ba2e166f6fff374",
+      "bytes": 5019
+    },
+    {
+      "path": "apps/game-server/tests/content_world_project_repository.rs",
+      "sha256": "139aa9bb93667de745f592940f34cd837b6853be684aef62c1da7f725a97555c",
+      "bytes": 63346
+    },
+    {
+      "path": "content/abilities/definitions/index.json",
+      "sha256": "a7455c8a9ae699beff735d1877040ba73714d382aa2c7baef878507fb8afc69b",
+      "bytes": 1054
+    },
+    {
+      "path": "content/abilities/effects/index.json",
+      "sha256": "d305a7f19e1b7b1fb698cc243e5491cf69c078335a64a8668afa3c48b37466f8",
+      "bytes": 875
+    },
+    {
+      "path": "content/abilities/formulas/index.json",
+      "sha256": "87b334a2f95fb665d7a6c0d0b671a5b4ecba76bc35d9052eca6a1a68d961728b",
+      "bytes": 896
+    },
+    {
+      "path": "content/behaviors/index.json",
+      "sha256": "b180a11551aa944abba7cbee65d34c3dcbeba575ab97494f3ce0c5be019ed353",
+      "bytes": 629
+    },
+    {
+      "path": "content/content.lock.json",
+      "sha256": "574250bb806673981c643e61967189419367f143ae0b20c9208d8bd13bff4ad8",
+      "bytes": 1411
+    },
+    {
+      "path": "content/creatures/definitions/index.json",
+      "sha256": "e797afeb5d9ea5a03a905052971a42f465b1351af7bfe6a70b9ae67f5850e7fc",
+      "bytes": 586
+    },
+    {
+      "path": "content/items/definitions/items-12000-12499.json",
+      "sha256": "ff4c6c9e5da82951b41f81ba4c260d1005819eee3400ea476c61fc569b37d145",
+      "bytes": 518379
+    },
+    {
+      "path": "content/items/index.json",
+      "sha256": "30d850cbd076e3f75cb6cf8cc2429e79358123a4574b4dfa676a670f0436f790",
+      "bytes": 3985
+    },
+    {
+      "path": "content/loot/index.json",
+      "sha256": "baab6c60b07f2f1307e7ae1947d4dadab107593ad6b371e7657e9cbee3a66ffc",
+      "bytes": 452
+    },
+    {
+      "path": "content/presentations/definitions/index.json",
+      "sha256": "7eb80eb06193dfb13da4737ab8d5c8a2fee10cdda32153f4bbc4d2f11dba5e10",
+      "bytes": 753
+    },
+    {
+      "path": "content/world/content.lock.json",
+      "sha256": "321c93321ea63bb8e9db2c2b4fe7ae630e44964bfb529e6a0f5061c3aee10997",
+      "bytes": 364
+    },
+    {
+      "path": "content/world/definitions/reference.json",
+      "sha256": "debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2",
+      "bytes": 24952379
+    },
+    {
+      "path": "content/world/manifest.json",
+      "sha256": "eb8279c0e8c15a348f10a1aab7e6565664a2a3a3bf5a40fc91593256f14304cd",
+      "bytes": 1937
+    },
+    {
+      "path": "content/world/project.json",
+      "sha256": "320a5142b5344cda9aab3e5419ae2262832c6fca46c5701eac32eb89acda944f",
+      "bytes": 390
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-current-parent-receipt-v1.json",
+      "sha256": "2aa278f6f11cbdcd10a7a9bb554a4fe314c0d7592c387ac4634a7c425157f61e",
+      "bytes": 52294
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json",
+      "sha256": "75355beb3b3426686b16c469004ec5761053b92f49b566e4512b12ee2570beed",
+      "bytes": 15492
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json",
+      "sha256": "5f9a767cee631c73cd2ce534c04787dc82091ab15b8ad65add15e8b7cbc67bd4",
+      "bytes": 152017
+    },
+    {
+      "path": "imports/tibiawiki/source-evidence/stack-default-successor8/global-infobox-object-source-part-098.json",
+      "sha256": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+      "bytes": 514595
+    },
+    {
+      "path": "imports/tibiawiki/source-evidence/stack-default-successor8/global-own-itemid-index.json",
+      "sha256": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
+      "bytes": 19246670
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py",
+      "sha256": "b953c499affb23e5fc0892f37677a5584e8e2f5b6dfc52762ee9f45e1e034e92",
+      "bytes": 11574
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_stack_default_successor8.py",
+      "sha256": "ca54d90178a6232c7e0eeacf0cec2d7bf9526ce88ba6e36e98a1c9aa3575a673",
+      "bytes": 8726
+    },
+    {
+      "path": "tools/content-schema/item-authoring/verify_default8_exact_delta.py",
+      "sha256": "ffcc1272c2ea4ed0390787561f5921d949fd1430343458dc9443ca5e7f96f791",
+      "bytes": 5264
+    }
+  ],
+  "checks": {
+    "actual_owned27_and_evidence_logs": "PASS double SHA+size/current13",
+    "source12_unchanged": "PASS; only repository generated inventory fixture changed",
+    "repository_pin_only_inverse": "PASS exactly5 changed spans/12 generator PIN_VALUE matches reconstruct pregen source SHA6d7531de; handwritten8 asserts unchanged",
+    "actual11_document_pins_and_tree": "PASS independent exact fullfile sizes/SHA/framingtree",
+    "actual_full_native_and_canonical_delta": "PASS full Gitb0f57320 rows +69shards34031 complete canonical rows exactly8 stackable=false; allother fields/headers/source siblings preserved",
+    "preserved_owners_relations_World": "PASS current411fullowners/250fullrelationrows325refs byte-identical Gitb0f, allWorldactualGitbytes; Knownfalse3900->3908",
+    "worker_functional_checks": {
+      "server-lib": {
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/default8-cargo-server-lib.log"
+      },
+      "model-v2": {
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/default8-cargo-model-v2.log"
+      },
+      "repository": {
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/default8-cargo-repository.log"
+      },
+      "clippy": {
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/default8-cargo-clippy.log"
+      },
+      "fmt": {
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/default8-cargo-fmt.log"
+      },
+      "Python_all_gates": {
+        "status": "PASS",
+        "commands": 34,
+        "packet_checks": "14 prior +newDefault8; two historical/current contexts",
+        "Ruff": "FULL CHECK AND FORMAT PASS"
+      },
+      "source_guard_tests": "PASS8; scoped future selected8 and outside sibling enrichment accepted",
+      "migration": "PASS411 owners, 250 source rows/325refs; equiv170; all34031shards69",
+      "tree_schema": "PASS97/97 and10 successor markers",
+      "key_references": "PASS242030",
+      "full_native_delta": "PASS8 only; full57320records/canonical34031; every max/sibling/header/class/admission/World preserved",
+      "second_original_generator": {
+        "schema": "OTERYN_DEFAULT8_ORIGINAL_GENERATOR_BYTE_IDEMPOTENCE/v1",
+        "status": "PASS",
+        "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-migration/regenerate_content.py",
+          "--skip-checks"
+        ],
+        "generator_sha256": "d85cbceaf8324f2a859dddb1eb2a843de4fb07d078d4663cad0b8ccbd2f488d5",
+        "predecessor_scope_files": 7746,
+        "scope_files_before": 7755,
+        "scope_files_after": 7755,
+        "all_content_files": 7723,
+        "source_owned_files": 13,
+        "different_files": [],
+        "exit_code": 0,
+        "cargo_after_this_generation": "NOT_RUN; original materializer is final Cargo action"
+      }
+    },
+    "reviewer_cargo_generation": "NOT_RUN; sealed logs/evidence reviewed only",
+    "fullItem_completion": "NOT_CLAIMED"
+  },
+  "changed_item_keys": [
+    "oteryn:item.tibia.i23229",
+    "oteryn:item.tibia.i23230",
+    "oteryn:item.tibia.i23231",
+    "oteryn:item.tibia.i23232",
+    "oteryn:item.tibia.i23295",
+    "oteryn:item.tibia.i23299",
+    "oteryn:item.tibia.i23335",
+    "oteryn:item.tibia.i23339"
+  ],
+  "changed_canonical_shards": [
+    "content/items/definitions/items-12000-12499.json"
+  ],
+  "preserved_git_paths": [
+    "content/world/objects/index.json",
+    "content/world/objects/objects-00000-00499.json",
+    "content/world/objects/objects-00500-00999.json",
+    "content/world/objects/objects-01000-01499.json",
+    "content/world/objects/objects-01500-01999.json",
+    "content/world/objects/objects-02000-02499.json",
+    "content/world/objects/objects-02500-02999.json",
+    "content/world/objects/objects-03000-03499.json",
+    "content/world/objects/objects-03500-03999.json",
+    "content/world/objects/objects-04000-04499.json",
+    "content/world/objects/objects-04500-04999.json",
+    "content/world/objects/objects-05000-05499.json",
+    "content/world/objects/objects-05500-05999.json",
+    "content/world/objects/objects-06000-06499.json",
+    "content/world/objects/objects-06500-06999.json",
+    "content/world/objects/objects-07000-07499.json",
+    "content/world/objects/objects-07500-07999.json",
+    "content/world/objects/objects-08000-08499.json",
+    "content/world/objects/objects-08500-08999.json",
+    "content/world/objects/objects-09000-09499.json",
+    "content/world/objects/objects-09500-09999.json",
+    "content/world/objects/objects-10000-10499.json",
+    "content/world/objects/objects-10500-10999.json",
+    "content/world/objects/objects-11000-11499.json",
+    "content/world/objects/objects-11500-11999.json",
+    "content/world/objects/objects-12000-12499.json",
+    "content/world/objects/objects-12500-12781.json",
+    "content/world/terrain/index.json",
+    "content/world/terrain/terrain-00000-00499.json",
+    "content/world/terrain/terrain-00500-00999.json",
+    "content/world/terrain/terrain-01000-01499.json",
+    "content/world/terrain/terrain-01500-01999.json",
+    "content/world/terrain/terrain-02000-02499.json",
+    "content/world/terrain/terrain-02500-02999.json",
+    "content/world/terrain/terrain-03000-03499.json",
+    "content/world/terrain/terrain-03500-03999.json",
+    "content/world/terrain/terrain-04000-04499.json",
+    "content/world/terrain/terrain-04500-04999.json",
+    "content/world/terrain/terrain-05000-05499.json",
+    "content/world/terrain/terrain-05500-05999.json",
+    "content/world/terrain/terrain-06000-06499.json",
+    "content/world/terrain/terrain-06500-06999.json",
+    "content/world/terrain/terrain-07000-07499.json",
+    "content/world/terrain/terrain-07500-07999.json",
+    "content/world/terrain/terrain-08000-08499.json",
+    "content/world/terrain/terrain-08500-08547.json",
+    "content/world/definitions/declarations.json",
+    "content/items/relations/items.json",
+    "content/items/relations/index.json",
+    "content/items/taxonomy/items.json",
+    "content/items/taxonomy/index.json",
+    "imports/crystalserver/bindings/items.json",
+    "imports/tibiawiki/facts/items-stats.json"
+  ],
+  "actual_generated_document_pins": [
+    {
+      "locator": "assets/catalog.json",
+      "bytes": 56,
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+    },
+    {
+      "locator": "content.lock.json",
+      "bytes": 364,
+      "sha256": "321c93321ea63bb8e9db2c2b4fe7ae630e44964bfb529e6a0f5061c3aee10997"
+    },
+    {
+      "locator": "definitions/declarations.json",
+      "bytes": 15187971,
+      "sha256": "b9ad3d8429f538f1d9459c0917d500c84168cc74ae0e6c969eb99425b98d7a3e"
+    },
+    {
+      "locator": "definitions/reference.json",
+      "bytes": 24952379,
+      "sha256": "debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2"
+    },
+    {
+      "locator": "editor/author.json",
+      "bytes": 120557,
+      "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+    },
+    {
+      "locator": "manifest.json",
+      "bytes": 1937,
+      "sha256": "eb8279c0e8c15a348f10a1aab7e6565664a2a3a3bf5a40fc91593256f14304cd"
+    },
+    {
+      "locator": "presentations/bindings.json",
+      "bytes": 73,
+      "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+    },
+    {
+      "locator": "project.json",
+      "bytes": 390,
+      "sha256": "320a5142b5344cda9aab3e5419ae2262832c6fca46c5701eac32eb89acda944f"
+    },
+    {
+      "locator": "provenance/imports.json",
+      "bytes": 33077,
+      "sha256": "a6865cf27269c6d3cabb80b9b7895aab202d11d829675e7fda17b1c2cda89763"
+    },
+    {
+      "locator": "provenance/sources.json",
+      "bytes": 1317786,
+      "sha256": "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1"
+    },
+    {
+      "locator": "worlds/world.json",
+      "bytes": 72,
+      "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+    }
+  ],
+  "actual_tree_sha256": "04b0f9a6428484137dfd9b8443c37308b301f9fdb9b11db70e29cbada2bda2e1",
+  "repository_changed_generated_pin_spans": [
+    {
+      "current": "(\n        \"content.lock.json\",\n        364,\n        \"321c93321ea63bb8e9db2c2b4fe7ae630e44964bfb529e6a0f5061c3aee10997\"",
+      "parent": "(\n        \"content.lock.json\",\n        364,\n        \"8d3bf8f53ad809a139c9c220af64084be8f12e953daa8c81e4bc7305bd4aff95\""
+    },
+    {
+      "current": "(\n        \"definitions/reference.json\",\n        24_952_379,\n        \"debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2\"",
+      "parent": "(\n        \"definitions/reference.json\",\n        24_951_707,\n        \"1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e\""
+    },
+    {
+      "current": "(\n        \"manifest.json\",\n        1_937,\n        \"eb8279c0e8c15a348f10a1aab7e6565664a2a3a3bf5a40fc91593256f14304cd\"",
+      "parent": "(\n        \"manifest.json\",\n        1_937,\n        \"f426ae40c4cb8099777c0e9a520eb581d163418b362a02285f178b11e86aff45\""
+    },
+    {
+      "current": "(\n        \"project.json\",\n        390,\n        \"320a5142b5344cda9aab3e5419ae2262832c6fca46c5701eac32eb89acda944f\"",
+      "parent": "(\n        \"project.json\",\n        390,\n        \"4dde8ff8e6f8b786ace743ebfc6635e2f1bdc68de4c30ed3fce6c87beeb9e6e7\""
+    },
+    {
+      "current": "const TREE_SHA256: &str = \"04b0f9a6428484137dfd9b8443c37308b301f9fdb9b11db70e29cbada2bda2e1\";",
+      "parent": "const TREE_SHA256: &str = \"70a797186021dfa0ad6a68d7cd833787370b32b11366a2f6aa7d70969584154e\";"
+    }
+  ],
+  "no_runtime_or_abi_change": true,
+  "scope": "Only8stackable native leaves; historical original proof/current receipt unchanged; independent SourcePASS carried, source guards not reaudited at fake head integration."
+}

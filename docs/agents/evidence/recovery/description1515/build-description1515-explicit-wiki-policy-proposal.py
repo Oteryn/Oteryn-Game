@@ -1,0 +1,13 @@
+from pathlib import Path
+import json,hashlib
+A=Path('/workspace/audit-continuation');p=A/'item-description-own-source-qualification-forge4f-20261002.json';raw=p.read_bytes();assert hashlib.sha256(raw).hexdigest()=='eb0b4e264c2c5363ceb415167b85067da8c4f7592388ffcf4c24f0fda9117bad';j=json.loads(raw)
+ids=set(j['additional_policy_review_only']['punctuation_only_ids']);assert len(ids)==1515
+records=[r for r in j['held'] if r['source_item_id'] in ids];assert len(records)==1515
+for r in records:
+ assert set(r['holds']) <= {'NO_PINNED_OTS_EXACT_DESCRIPTION_CORROBORATION','PRESENT_PINNED_OTS_DESCRIPTION_OPPOSITION'}
+ d=r['description'];assert d.endswith('.') and 0<len(d.encode('utf-8'))<=200
+ values=[v for x in r['xml_description_witnesses'] for v in x['description_values']]
+ assert values and all(v==d[:-1] for v in values),(r['source_item_id'],'difference')
+ assert r['binding']['disposition']=='EXACT' and r['current_native_name']['state']=='KNOWN'
+proposal={'schema':'OTERYN_DESCRIPTION_WIKI_LITERAL_TERMINAL_PERIOD_POLICY_PROPOSAL/v1','status':'PROPOSAL_ONLY_SOURCE_PEER_AND_CURRENT_PARENT_ADMISSION_PENDING','historical_baseline':j['published_native_head'],'parent_research':{'path':str(p),'sha256':hashlib.sha256(raw).hexdigest()},'source_authority':'Own numeric-ID wiki literal in-game flavortext; never OTS-alone or synthesized description.','proposed_scoped_decision':'For these exact1515 rows, preserve the full own wiki literal INCLUDING its terminal period. Every nonempty pinned XML value is recorded unchanged as a differing corroborating observation. Do not normalize strings or claim exact XML agreement. All other identity, source coordinate, raw parser, name, World, admission, markup, cutoff and 200-byte checks remain required.','contract':'Existing Native presentation.description String/200UTF8-byte bound only; no schema/ABI/runtime change.','native_applied':0,'excluded_cohorts':{'other_xml_absence_or_difference':924,'strict114':114},'next_gates':['Independent source-authority/disposition peer review','Fresh actual published parent receipt, no changed identity/class/materializable/description opposition','Dedicated closed compiler/atomic setter; original114 proof unchanged','Serial tests, full delta compare, original generation/idempotence and final peer before publication'],'records':records}
+f=A/'description1515-explicit-wiki-literal-policy-proposal.json';f.write_text(json.dumps(proposal,indent=2,ensure_ascii=False)+'\n');print(json.dumps({'file':str(f),'sha256':hashlib.sha256(f.read_bytes()).hexdigest(),'bytes':f.stat().st_size,'records':len(records),'native_applied':0},indent=2))

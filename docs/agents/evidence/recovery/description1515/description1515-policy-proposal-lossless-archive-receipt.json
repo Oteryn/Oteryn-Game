@@ -1,0 +1,12 @@
+{
+  "schema": "OTERYN_SOURCE_PROPOSAL_LOSSLESS_ARCHIVE/v1",
+  "source_file": "/workspace/audit-continuation/description1515-explicit-wiki-literal-policy-proposal.json",
+  "source_sha256": "c798c1cbce3f35d8b0ab9652cfa4f0fbc0cdc3cebcba863f940fe9923c269f6a",
+  "source_bytes": 14539414,
+  "archive_file": "/workspace/audit-continuation/description1515-explicit-wiki-literal-policy-proposal.json.gz",
+  "archive_sha256": "c60b2b9dc421c97bb87d37e3d99ceaac05330bb1f71e188f474b59c69ff3dd78",
+  "archive_bytes": 1032358,
+  "decompression_exact_bytes": "PASS",
+  "source_policy_review": "b0638732d5c873eab343b79bf6524f1408a037c630e80d466edea5288a4fa8d6",
+  "native_applied": 0
+}

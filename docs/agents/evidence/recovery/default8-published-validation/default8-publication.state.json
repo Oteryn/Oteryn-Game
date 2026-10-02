@@ -1,0 +1,135 @@
+{
+  "phase": "VALIDATE",
+  "root_only_publisher": true,
+  "branch": "codex/item-stack-default8-20261002",
+  "worktree": "/workspace/pr1437-stack-default-completion",
+  "expected_predecessor": "b0f91e2883007861f5556c44cce13701bb447283",
+  "pr": 1560,
+  "depends_on": [
+    1530
+  ],
+  "exclusive_worker": "world_routing",
+  "source_scope": "eight derived documented template defaults; original1487+7 immutable",
+  "cargo": "NOT_GRANTED until source freeze and independent peer PASS",
+  "selected_local_candidate": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "owned_paths": [
+    ".github/workflows/item-authoring-schema.yml",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "apps/game-server/src/content/item_stack_default_successor8_promotion.rs",
+    "apps/game-server/src/content/mod.rs",
+    "apps/game-server/tests/content_world_project_repository.rs",
+    "content/abilities/definitions/index.json",
+    "content/abilities/effects/index.json",
+    "content/abilities/formulas/index.json",
+    "content/behaviors/index.json",
+    "content/content.lock.json",
+    "content/creatures/definitions/index.json",
+    "content/items/definitions/items-12000-12499.json",
+    "content/items/index.json",
+    "content/loot/index.json",
+    "content/presentations/definitions/index.json",
+    "content/world/content.lock.json",
+    "content/world/definitions/reference.json",
+    "content/world/manifest.json",
+    "content/world/project.json",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-current-parent-receipt-v1.json",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default8-completion.md",
+    "docs/agents/tasks/archive/OTV2-20261002-item-stack-default8-completion.md",
+    "imports/tibiawiki/source-evidence/stack-default-successor8/global-infobox-object-source-part-098.json",
+    "imports/tibiawiki/source-evidence/stack-default-successor8/global-own-itemid-index.json",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py",
+    "tools/content-schema/item-authoring/test_stack_default_successor8.py",
+    "tools/content-schema/item-authoring/verify_default8_exact_delta.py"
+  ],
+  "frozen_sha": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "file_blob_ids": {
+    ".github/workflows/item-authoring-schema.yml": "9b6531cbea773d9c4f63ca8d86b227cb34f1864d",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "a235b3ebbd70c7dbf1d8cabddd18b2200fe1ef1d",
+    "apps/game-server/src/content/item_stack_default_successor8_promotion.rs": "5b5ef723d02c866a07f1cb3948ba16f21b0f8214",
+    "apps/game-server/src/content/mod.rs": "e5b31a1aeac0fdff64df9c5c9466e5ce4f71bdb7",
+    "apps/game-server/tests/content_world_project_repository.rs": "5bda7caa36be9358d76b3c36185a926fe42966ca",
+    "content/abilities/definitions/index.json": "9a33468a3901bb380d47125305bed1569b5391f0",
+    "content/abilities/effects/index.json": "4dbf06cac92276227d7217389914e9d965bb5bf7",
+    "content/abilities/formulas/index.json": "a2dea4847c93a4ce58a7e522cd736bb966d7e683",
+    "content/behaviors/index.json": "c032464431fa70e531a3124e85569738aa3b57f1",
+    "content/content.lock.json": "1bbec825f8e0c501b5edb53e8a065e27fa55878e",
+    "content/creatures/definitions/index.json": "db153e56b7ece0682d216bdb6f2b88c750bde48e",
+    "content/items/definitions/items-12000-12499.json": "af1f07a7c6f70c2023989447dda56b902c72e602",
+    "content/items/index.json": "ca146071f9761f2b708c61baa155dcb0e64187e8",
+    "content/loot/index.json": "931b6e4873bd5ce004d9377b299adb87456c858c",
+    "content/presentations/definitions/index.json": "113090b77b029cb07af32e7afcfedeee75f47e5e",
+    "content/world/content.lock.json": "6112ecad973cdba654704582f6dbfd186a6861e6",
+    "content/world/definitions/reference.json": "fe87afacee0b0e7999f17c447e96163d396ffd10",
+    "content/world/manifest.json": "7216f4f56f6dc90a6a5dfe9c65cde076e12e5bfe",
+    "content/world/project.json": "ee394a24feeefc4e8cebe463eae0d5b2e9a016ad",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-current-parent-receipt-v1.json": "42fee4e1f3551e0f627cf4bfa68c6daf1cbb8637",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json": "82fccae41aa783085093655b8249463370fcd164",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json": "220bb7a3325ff3c45e9b79c74be1a92634f7c12f",
+    "imports/tibiawiki/source-evidence/stack-default-successor8/global-infobox-object-source-part-098.json": "7057ccaae6af99a243a3bc12a744284442551d0d",
+    "imports/tibiawiki/source-evidence/stack-default-successor8/global-own-itemid-index.json": "37fc50112f1a8da65acd363961130c4ba698945d",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py": "d3bba99bcff609fc02da6149d5562f46b4991bfc",
+    "tools/content-schema/item-authoring/test_stack_default_successor8.py": "c3a5056367d0514736c43adec945bcbd922b6f9e",
+    "tools/content-schema/item-authoring/verify_default8_exact_delta.py": "f031068ebe02fc1db5c92031f44d53b5cbaefdd5",
+    "docs/agents/evidence/OTV2-20261002-item-stack-default8-completion.md": "6c2047e0f24b4349b475818f4197cb081246c8ea",
+    "docs/agents/tasks/archive/OTV2-20261002-item-stack-default8-completion.md": "407259bba1dd6ed14db1ee34269610dd9c9c0d46"
+  },
+  "readback": "soleparent/livebranch/complete owned delta verified",
+  "local_checks": {
+    "server-lib": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-server-lib.log"
+    },
+    "model-v2": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-model-v2.log"
+    },
+    "repository": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-repository.log"
+    },
+    "clippy": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-clippy.log"
+    },
+    "fmt": {
+      "exit_code": 0,
+      "log": "/workspace/audit-continuation/default8-cargo-fmt.log"
+    },
+    "Python_all_gates": {
+      "status": "PASS",
+      "commands": 34,
+      "packet_checks": "14 prior +newDefault8; two historical/current contexts",
+      "Ruff": "FULL CHECK AND FORMAT PASS"
+    },
+    "source_guard_tests": "PASS8; scoped future selected8 and outside sibling enrichment accepted",
+    "migration": "PASS411 owners, 250 source rows/325refs; equiv170; all34031shards69",
+    "tree_schema": "PASS97/97 and10 successor markers",
+    "key_references": "PASS242030",
+    "full_native_delta": "PASS8 only; full57320records/canonical34031; every max/sibling/header/class/admission/World preserved",
+    "second_original_generator": {
+      "schema": "OTERYN_DEFAULT8_ORIGINAL_GENERATOR_BYTE_IDEMPOTENCE/v1",
+      "status": "PASS",
+      "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-migration/regenerate_content.py",
+        "--skip-checks"
+      ],
+      "generator_sha256": "d85cbceaf8324f2a859dddb1eb2a843de4fb07d078d4663cad0b8ccbd2f488d5",
+      "predecessor_scope_files": 7746,
+      "scope_files_before": 7755,
+      "scope_files_after": 7755,
+      "all_content_files": 7723,
+      "source_owned_files": 13,
+      "different_files": [],
+      "exit_code": 0,
+      "cargo_after_this_generation": "NOT_RUN; original materializer is final Cargo action"
+    }
+  },
+  "ci": "Pending exact-head aggregate",
+  "integration": "Pending active control plane",
+  "full_frozen_blobs_verified": 29,
+  "local_validation": "PASS see bounded source/test evidence"
+}
