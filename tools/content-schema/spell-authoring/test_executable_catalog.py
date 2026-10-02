@@ -56,6 +56,31 @@ class ExecutableCatalogTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing removal evidence"):
             self.altered_readiness(change)
 
+    def test_unknown_status_cannot_masquerade_as_policy_exclusion(self):
+        def change(value):
+            row = next(x for x in value["spells"] if x["status"] == "blocked")
+            row["status"] = "corrupt"
+        with self.assertRaisesRegex(ValueError, "unexpected census carrier or status"):
+            self.altered_readiness(change)
+
+    def test_source_identity_name_carrier_and_revision_are_bound_to_census(self):
+        original = pathlib.Path.read_text
+        target = SOURCE / "bundles" / "instant-light_healing" / "spell.json"
+        for field, value in (("name", "Energy Strike"), ("carrier", "rune"),
+                             ("identity", {"key": "candidate:spell/energy_strike", "revision": "spell-p2-r20"}),
+                             ("identity", {"key": "candidate:spell/light_healing", "revision": "unqualified"})):
+            with self.subTest(field=field, value=value):
+                def read(path, *args, **kwargs):
+                    text = original(path, *args, **kwargs)
+                    if path == target:
+                        document = json.loads(text)
+                        document["spell"][field] = value
+                        return json.dumps(document)
+                    return text
+                with patch.object(pathlib.Path, "read_text", read):
+                    with self.assertRaisesRegex(ValueError, "census/bundle identity mismatch"):
+                        build(SOURCE)
+
     @unittest.skipUnless(pathlib.Path("/workspace/spell-sources/canary/.git").exists(), "pinned sources unavailable")
     def test_familiar_selection_keeps_conflicting_source_evidence(self):
         catalog = build(SOURCE)

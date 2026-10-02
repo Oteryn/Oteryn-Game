@@ -168,3 +168,22 @@ uses ordinary progression, movement, casts and durable training writes; casts on
 an empty footprint do not prove damage to a creature. Monster melee profiles
 explicitly declare fixed physical bite approximation and a nonlethal player floor;
 ranged attacks, defenses, spawning and encounter execution need separate owners.
+
+## Complete reusable scenario matrix
+
+`docs/reference/spells/r24-candidate/scenarios/player-spell-scenarios.json` provides
+positive fixture requirements and isolated refusal cases for all 246 definitions,
+including source-selected aliases, costs, professions, target rules and dependency
+references. It is a qualification plan, not 246 gameplay passes. Regenerate from
+pinned inputs using `build_scenarios.py`; see the scenario README for the exact
+command. Reuse this existing Thalom/S3-B entry point when executing the plans.
+
+Run parser/provisioning regressions with:
+
+```sh
+python -m unittest discover -s tools/qualification/spells -p test_qualification_tools.py
+```
+
+The test manifest helper refuses missing mandatory v5 providers, malformed or
+escaping paths, invalid digests/revisions and unknown fields before creating an
+output directory. Reads remain bounded; output creation remains exclusive.

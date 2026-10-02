@@ -11,7 +11,7 @@ mod actor_movement;
 mod familiar_cast;
 #[path = "movement_equipment.rs"]
 mod movement_equipment;
-pub(in crate::gameplay_transport) use familiar_cast::{FamiliarLogoutSave, FamiliarOwnerEvent};
+pub(in crate::gameplay_transport) use familiar_cast::FamiliarLogoutSave;
 #[path = "familiar_defense.rs"]
 mod familiar_defense;
 #[path = "field_step_ingress.rs"]
@@ -36,7 +36,7 @@ pub(in crate::gameplay_transport) use training_save::TrainingSave;
 mod owner_commit;
 #[path = "stance_cast.rs"]
 mod stance_cast;
-pub(crate) use actor_movement::{StepInChannel, pacing_available, step_in_channel};
+pub(crate) use actor_movement::StepInChannel;
 pub(crate) use owner_commit::{PlayerBatchPreflight, commit_owner_batch, stage_player_batch};
 
 use oteryn_simulation_determinism::{

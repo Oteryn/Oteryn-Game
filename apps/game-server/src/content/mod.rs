@@ -108,4 +108,4 @@ mod tests;
 pub(crate) mod spell_familiar_config;
 pub(crate) mod spell_familiar_defenses;
 
-pub(crate) use project::{QualifiedSourceStepTile, SourceFloorChange};
+pub(crate) use project::SourceFloorChange;

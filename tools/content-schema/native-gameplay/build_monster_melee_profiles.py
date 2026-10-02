@@ -198,6 +198,62 @@ def build(creatures, bundle_root, source_root, pack, melee_skill_engine=None, en
     return result, report
 
 
+def merge_disabled_fallback(creatures, report, fallback_creatures, fallback_report):
+    """Fill only disabled slots; primary provenance/identities remain authoritative.
+
+    The fallback is separately source-attested by build(), and must cover the
+    same exact native identities. A disabled primary is retained in the receipt.
+    """
+    key = lambda record: tuple(record['profile']['target'][k] for k in ('family', 'key', 'revision'))
+    original = {key(r): r for r in creatures['records']}
+    alternatives = {key(r): r for r in fallback_creatures['records']}
+    if (len(original) != len(creatures['records'])
+            or len(alternatives) != len(fallback_creatures['records'])
+            or set(original) != set(alternatives)):
+        raise ValueError('fallback must preserve the exact native population')
+    identity_key = lambda ref: tuple(ref[k] for k in ('family', 'key', 'revision'))
+    observations = {identity_key(r['creature']): r for r in report['records']}
+    alternate_observations = {identity_key(r['creature']): r for r in fallback_report['records']}
+    if (len(observations) != len(report['records'])
+            or len(alternate_observations) != len(fallback_report['records'])
+            or set(observations) != set(original)
+            or set(alternate_observations) != set(original)):
+        raise ValueError('fallback observation closure differs from native population')
+    result, combined = copy.deepcopy(creatures), copy.deepcopy(report)
+    recovered = []
+    for record, observation in zip(result['records'], combined['records']):
+        ref = key(record)
+        if identity_key(observation['creature']) != ref:
+            raise ValueError('primary observation ordering differs')
+        alternate = alternatives[ref]
+        # Only the selected melee field may differ; never accept changed HP,
+        # behavior, appearance or identities under a fallback donor's name.
+        without_melee = lambda r: {k: v for k, v in r.items() if k != 'monster_melee'}
+        if without_melee(original[ref]) != without_melee(alternate):
+            raise ValueError('fallback changed an existing native profile')
+        if record.get('monster_melee'):
+            continue
+        secondary = alternate_observations[ref]
+        if secondary['status'] == 'enabled_approximate_melee':
+            if not alternate.get('monster_melee'):
+                raise ValueError('enabled fallback lacks a selected melee closure')
+            previous = copy.deepcopy(observation)
+            record['monster_melee'] = copy.deepcopy(alternate['monster_melee'])
+            observation.clear()
+            observation.update(copy.deepcopy(secondary), primary_disabled_observation=previous)
+            recovered.append(copy.deepcopy(observation['creature']))
+        else:
+            observation['fallback_disabled_observation'] = copy.deepcopy(secondary)
+    combined['enabled'] = sum(r['status'] == 'enabled_approximate_melee' for r in combined['records'])
+    combined['disabled'] = len(combined['records']) - combined['enabled']
+    combined['fallback'] = {'pack': fallback_report['pack'],
+                            'source_index_sha256': fallback_report['source_index_sha256'],
+                            'precedence': 'primary_enabled_closure_always_wins',
+                            'skill_formula_fallback': False,
+                            'recovered_count': len(recovered), 'recovered': recovered}
+    return result, combined
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--creatures', required=True, type=Path)

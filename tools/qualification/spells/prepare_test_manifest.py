@@ -9,30 +9,51 @@ PINS = (
     "item_profiles", "spell_appearances", "build_training", "familiar_config",
     "familiar_defenses", "wheel_profile", "source_world",
 )
+REQUIRED_V5_PINS = frozenset(PINS[:8]) | {"familiar_config"}
+
+
+def bounded_read(path, limit):
+    with path.open("rb") as handle:
+        data = handle.read(limit + 1)
+    if len(data) > limit:
+        raise ValueError("input exceeds provisioning bound")
+    return data
 
 
 def prepare(source, output, policy, revision, creature_profiles=None, presentation_profiles=None, spell_appearances=None):
     source = source.resolve(strict=True)
-    raw = source.read_bytes()
-    if len(raw) > 16 * 1024:
-        raise ValueError("manifest exceeds provisioning bound")
+    raw = bounded_read(source, 16 * 1024)
     manifest = json.loads(raw)
-    if manifest.get("schema") != "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5":
+    if not isinstance(manifest, dict) or manifest.get("schema") != "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5":
         raise ValueError("full v5 candidate required")
+    if policy not in ("strict", "baseline_test"):
+        raise ValueError("unknown magnitude policy")
+    if set(manifest) - set(PINS) - {"schema", "native_map_profile"}:
+        raise ValueError("unknown manifest field")
+    if any(manifest.get(key) is None for key in REQUIRED_V5_PINS):
+        raise ValueError("missing required v5 provider")
     payloads = {}
     for key in PINS:
         pin = manifest.get(key)
         if pin is None:
             continue
+        if not isinstance(pin, dict) or not isinstance(pin.get("path"), str) or not pin["path"]:
+            raise ValueError("pin requires nonempty string path")
+        allowed = {"path", "sha256"}
+        if key == "build_training":
+            allowed.update(("content_revision", "magnitude_policy"))
+        if set(pin) - allowed:
+            raise ValueError("unknown pin field")
+        digest = pin.get("sha256")
+        if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+            raise ValueError("pin requires lowercase sha256")
         relative = Path(pin["path"])
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError("pin must stay inside source directory")
         path = (source.parent / relative).resolve(strict=True)
         if not path.is_relative_to(source.parent):
             raise ValueError("pin symlink escapes source directory")
-        data = path.read_bytes()
-        if len(data) > 8 * 1024 * 1024:
-            raise ValueError("pin exceeds native input bound")
+        data = bounded_read(path, 8 * 1024 * 1024)
         if hashlib.sha256(data).hexdigest() != pin["sha256"]:
             raise ValueError("source pin digest mismatch")
         target = key + ".json"
@@ -45,9 +66,7 @@ def prepare(source, output, policy, revision, creature_profiles=None, presentati
     ):
         if replacement_path is None:
             continue
-        replacement = replacement_path.resolve(strict=True).read_bytes()
-        if len(replacement) > 8 * 1024 * 1024:
-            raise ValueError("native overlay exceeds input bound")
+        replacement = bounded_read(replacement_path.resolve(strict=True), 8 * 1024 * 1024)
         if json.loads(replacement).get("schema") != schema:
             raise ValueError("native overlay schema mismatch")
         payloads[key + ".json"] = replacement
@@ -56,9 +75,10 @@ def prepare(source, output, policy, revision, creature_profiles=None, presentati
     if training is None:
         raise ValueError("qualified training input required")
     if revision is not None:
-        if not revision or len(revision) > 128 or not revision.isascii():
-            raise ValueError("invalid explicit training revision")
         training["content_revision"] = revision
+    revision = training.get("content_revision")
+    if not isinstance(revision, str) or not revision or len(revision) > 128 or not revision.isascii():
+        raise ValueError("invalid explicit training revision")
     if policy == "baseline_test":
         training["magnitude_policy"] = policy
     else:

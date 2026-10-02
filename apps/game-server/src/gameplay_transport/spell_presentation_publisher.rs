@@ -538,4 +538,3 @@ mod tests;
 
 #[path = "spell_presentation_cooldowns.rs"]
 mod cooldowns;
-pub(crate) use cooldowns::{CandidateCooldownPublisher, CooldownRead};

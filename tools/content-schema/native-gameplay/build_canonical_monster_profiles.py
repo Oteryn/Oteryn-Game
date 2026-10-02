@@ -10,7 +10,7 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
-from build_monster_melee_profiles import build as derive_melee, qualify_melee_skill_engine
+from build_monster_melee_profiles import build as derive_melee, qualify_melee_skill_engine, merge_disabled_fallback
 import build_spell_appearances as appearance
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -142,6 +142,8 @@ def main():
     parser.add_argument('--bundle-root', required=True, type=Path)
     parser.add_argument('--source-root', required=True, type=Path)
     parser.add_argument('--out', required=True, type=Path)
+    parser.add_argument('--crystal-fallback', action='store_true',
+                        help='Fill disabled slots only from separately attested Crystal range closures')
     args = parser.parse_args()
     if args.out.exists():
         parser.error('output directory exists; preserve previously qualified candidates')
@@ -165,6 +167,11 @@ def main():
                                     'canary/data-otservbr-global/monster',
                                     melee_skill_engine=qualify_melee_skill_engine(args.canary_source),
                                     enable_secondary_conditions=True)
+    if args.crystal_fallback:
+        fallback_creatures, fallback_report = derive_melee(
+            creatures, args.bundle_root, args.source_root, 'crystal/data-global/monster',
+            enable_secondary_conditions=True)
+        creatures, melee = merge_disabled_fallback(creatures, melee, fallback_creatures, fallback_report)
     accepted = {identity(r['identity']) for r in reference['records']}
     required = set(references([creatures, presentations]))
     prior_refs = set(references([active, json.loads(args.presentations.read_bytes())]))
@@ -198,6 +205,7 @@ def main():
         'retained_prior_reference_count': len((required - accepted) & prior_refs),
         'disabled_source_only_encounter_references': [dict(zip(('family', 'key', 'revision'), r)) for r in missing_new],
         'melee_enabled': melee['enabled'], 'melee_disabled': melee['disabled'],
+        'fallback': melee.get('fallback'),
         'additional_source_qualified_illusion_appearances': added_illusions,
         'outputs': {name: {'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw)}
                     for name, raw in encoded.items()},

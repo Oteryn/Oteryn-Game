@@ -3460,7 +3460,7 @@ mod spell_parameter_cast;
 #[cfg(test)]
 pub(crate) use actor_spell::ChannelSpellStates;
 #[cfg(test)]
-pub(crate) use party_spell_owner::{SourcePartyWorld, read_source_party_world_in_transaction};
+pub(crate) use party_spell_owner::read_source_party_world_in_transaction;
 #[cfg(test)]
 pub(crate) use spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 #[cfg(test)]

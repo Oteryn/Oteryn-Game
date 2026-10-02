@@ -1,0 +1,51 @@
+{
+  "schema": "OTERYN_R24_MONSTER_PROVIDER_VALIDATION/v1",
+  "preserved_native_profiles": 1508,
+  "preserved_primary_enabled_closures": 1231,
+  "new_crystal_range_closures": 22,
+  "enabled_total": 1253,
+  "disabled_total": 255,
+  "identity_allocation": false,
+  "runtime_activation": false,
+  "tests": {
+    "command": "python -m unittest discover -s tools/content-schema/native-gameplay -p 'test_*monster*profiles.py'",
+    "passed": 19,
+    "failed": 0
+  },
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    }
+  ],
+  "outputs": {
+    "canonical-profile-union-proof.json": {
+      "sha256": "86fffd1e98b680d42b9e92a8925841e6b0952b5ee898e34cc8a9dae9b56c1bc6",
+      "bytes": 9382
+    },
+    "creature-profiles.json": {
+      "sha256": "f908307c4ff9ed9edfefd153bd312c2fd590d9c2bb941dd1d74655a507df149d",
+      "bytes": 5497146
+    },
+    "disabled-resolution-report.json": {
+      "sha256": "9ca356ec752917ec3056c799353b98951570e82b9f9fc0f1ed52404662a6f766",
+      "bytes": 927816
+    },
+    "monster-melee-derivation.json": {
+      "sha256": "f45a0b6d3b77718a4323baaec14a4b11fda1c096279f70661567372818f20fda",
+      "bytes": 2422787
+    },
+    "presentation-profiles.json": {
+      "sha256": "21dfcc27246ed2a7847fd4c80f2babfd726df5cb4468ee9148c7c5e668ff1f1c",
+      "bytes": 445238
+    },
+    "spell-appearances.json": {
+      "sha256": "b00197f1416cec825f3ba77f732d55a18604f0a52c50b5f59849a945ad5af905",
+      "bytes": 200975
+    }
+  }
+}

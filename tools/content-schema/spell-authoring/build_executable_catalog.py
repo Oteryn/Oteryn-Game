@@ -79,6 +79,8 @@ def build(root):
     bundles, removed, identities = [], [], set()
     for row in readiness["spells"]:
         name, carrier = row["name"], row["spell_type"]
+        if carrier not in ("instant", "rune") or row["status"] not in ("ready", "blocked"):
+            raise ValueError(f"unexpected census carrier or status: {name}")
         slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
         bundle_id = f"{carrier}-{slug}"
         directory = root / "bundles" / bundle_id
@@ -86,6 +88,11 @@ def build(root):
                      for key, filename in (("bundle", "spell"), ("dependencies", "dependencies"),
                                            ("catalog", "catalog"), ("manifest", "manifest"))}
         identity = documents["bundle"]["spell"]["identity"]
+        spell = documents["bundle"]["spell"]
+        expected_key = f"candidate:spell/{'rune/' if carrier == 'rune' else ''}{slug}"
+        if (spell["name"].lower() != name or spell["carrier"] != carrier
+                or identity != {"key": expected_key, "revision": REVISION}):
+            raise ValueError(f"census/bundle identity mismatch: {bundle_id}")
         binding = (identity["key"], identity["revision"])
         if binding in identities:
             raise ValueError(f"duplicate identity: {binding}")
