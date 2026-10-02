@@ -1,0 +1,7 @@
+# OTV2-20261002-monster-quality-completion
+
+Owner-directed practical monster completion. Root sole publisher, AUTHORING successor of #1551. Own quality producer/tests and this record; no runtime changes.
+
+Broad nonexclusive creature:inferred role is supported by pinned donor createMonsterType registration, preserving boss/summon/familiar and context evidence. Baseline399 unknown roles can be refined; this does not prove exclusive detailed boss/helper classification. Validate exact Item references, integer stack ranges, ppm-admissible probabilities and revision-pinned wiki evidence for158 low-confidence entries/26creatures. Retain uncertainty; do not invent better drop rates. DarkMerudri125/40/40 remain explicit template balance with NON_GLOBAL_TEMPLATE_BALANCE, SOURCE_TEMPLATE_GLOBAL_UNVERIFIED and GAMEPLAY_UNVERIFIED.
+
+Six focused tests and baseline catalogue validation PASS. Reviewer checked broad classification and provenance; combined output is rebuilt against its final exact index SHA. SOURCE vsDERIVED vsGlobal uncertainty remains distinct. No owner-authority mutation, recovery model NOT_APPLICABLE. Sources pinned cached Git plus earlier captured wiki revisions; no new web or RemoteDesktop operations. Final data receipt preserved in aggregate snapshot draft. Protected integration/review remain #162 controlplane; stacked-base CI needs main retarget after parent integration.
