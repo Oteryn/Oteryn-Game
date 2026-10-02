@@ -93,6 +93,19 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
     return value
 
 
+def validate_item_authoring_targets(legacy_authoring, staged_items):
+    """Retain the Wave1 owners plus only the sealed39 explicit ML-only owners."""
+    raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == "8ec1f103c874e4424e7636743e78a3c57821e1cbebef6a69dd1c9a448cd47660", "HIT_MAGIC_PACKET_DIGEST")
+    packet = json.loads(raw)
+    magic = {target_id(row["target"]): row for row in packet["promotions"]
+             if "required_magic_level" in row["facts"]}
+    require(len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
+    require(set(legacy_authoring) == set(staged_items) | set(magic), "WAVE1_AUTHORING_TARGETS")
+    for key, row in magic.items():
+        require(legacy_authoring[key] == {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}, "CLOSED_ML_OWNER_VALUE")
+
+
 def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, batches: list[Any],
                              migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
@@ -121,7 +134,7 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
 
     aliases = item_alias_targets()
     staged_items = {staged_item_target(item["target"], aliases): item for item in staged["items"]}
-    require(set(staged_items) == set(legacy_authoring), "WAVE1_AUTHORING_TARGETS")
+    validate_item_authoring_targets(legacy_authoring, staged_items)
     relation_count = 0
     seen_sources = set()
     for row in relations["records"]:

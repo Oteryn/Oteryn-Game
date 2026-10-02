@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "3ac2bf9f52fc35367cfd768bc25e50855c955698ba4d157e987fcd56ee5c620d",
+        "958ddb36eafb41996aa67442d01cb8858ee2c9bc887204cf5f6e2a404e33cb9e",
     ),
     (
         "definitions/declarations.json",
-        15_148_142,
-        "01c03a2c2c73ad28d82756a5aebac0ad75bfbf1bd263f1488accf21319917722",
+        15_152_480,
+        "fccb7cbb5d9403ec0709442e7cd31647fde5866be30e187f78ec8bd5609a9f67",
     ),
     (
         "definitions/reference.json",
-        24_925_192,
-        "7373eff572607be537b445dfe682a79e916e9e9cdbb4a837de1dcdcdfd4dfca9",
+        24_926_286,
+        "7b9239cade9578d1755dcf0bfd243af97d0f61f49371d2d44855a1445cbee6c1",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "e435f5629c34ed78ec1c3c0253019aba062494f30e9604351c122bbca33edd03",
+        "05f195d9b4b6d71d61cc04b354d05cf93345378af4a3a43a91bf27a6dde44ac8",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "722da4f04b3b9a15e100c9619efd5d569af521b98dd2f2c16f84fce08fda4c3b",
+        "30b16f4c272be15565dc08bf792dd62ac389f556988c748580b9a185ea5f1bc4",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c2f205fc2ee13de8488e76afed0bf7c625cedf74e2aea7b5d94742e8a2590f76";
+const TREE_SHA256: &str = "1dfb2fecf1a222689f700ab59ed5e86032895ffe1a414552d98336eeb28930bd";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -503,26 +503,58 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
         _ => false,
     }));
-    assert_eq!(v2.item_authoring.len(), 164);
-    assert!(v2.item_authoring.iter().all(|entry| {
-        entry.item.family == ProjectV2Family::Item
-            && entry
-                .taxonomy
-                .as_ref()
-                .is_some_and(|taxonomy| !taxonomy.primary.is_empty())
-            && entry
-                .forge
-                .is_none_or(|forge| forge.classification > 0 && forge.max_tier > 0)
-            && entry.proficiency.is_none()
-            && entry.augments.is_empty()
-            && entry.consumable.is_none()
-    }));
+    assert_eq!(v2.item_authoring.len(), 164 + 39);
+    assert!(
+        v2.item_authoring
+            .iter()
+            .filter(|entry| entry.required_magic_level.is_none())
+            .all(|entry| {
+                entry.item.family == ProjectV2Family::Item
+                    && entry
+                        .taxonomy
+                        .as_ref()
+                        .is_some_and(|taxonomy| !taxonomy.primary.is_empty())
+                    && entry
+                        .forge
+                        .is_none_or(|forge| forge.classification > 0 && forge.max_tier > 0)
+                    && entry.proficiency.is_none()
+                    && entry.augments.is_empty()
+                    && entry.consumable.is_none()
+            })
+    );
     assert_eq!(
         v2.item_authoring
             .iter()
             .filter(|entry| entry.forge.is_some())
             .count(),
         146
+    );
+    let hit_magic: serde_json::Value =
+        serde_json::from_slice(item_hit_magic_promotion::ITEM_HIT_MAGIC_PACKET)
+            .expect("sealed hit/ML packet");
+    let hit_magic_rows = hit_magic["promotions"].as_array().expect("hit/ML rows");
+    assert_eq!(hit_magic_rows.len(), 67);
+    for row in hit_magic_rows
+        .iter()
+        .filter(|r| r["facts"]["required_magic_level"].is_number())
+    {
+        let owner = v2
+            .item_authoring
+            .iter()
+            .find(|o| o.item.key == row["target"]["key"].as_str().expect("ML key"))
+            .expect("ML owner");
+        assert_eq!(
+            owner.required_magic_level.map(u64::from),
+            row["facts"]["required_magic_level"].as_u64()
+        );
+        assert!(owner.taxonomy.is_none() && owner.forge.is_none() && owner.presentation.is_none());
+    }
+    assert_eq!(
+        v2.item_authoring
+            .iter()
+            .filter(|o| o.required_magic_level == Some(0))
+            .count(),
+        9
     );
     assert_eq!(v2.authoring_profiles.len(), CREATURE_PROFILES + NPC_RECORDS);
     assert!(v2.authoring_profiles.iter().all(|profile| matches!(
@@ -884,6 +916,28 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         linked.definitions.len(),
         ITEMS + CREATURE_RECORDS + NPC_RECORDS
     );
+    for row in hit_magic_rows
+        .iter()
+        .filter(|r| r["facts"]["hit_chance"].is_object())
+    {
+        let definition = linked
+            .definitions
+            .iter()
+            .find(|d| {
+                d.definition.key().as_str() == row["target"]["key"].as_str().expect("hit key")
+            })
+            .expect("hit Item");
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            panic!("hit target family")
+        };
+        let ReferenceItemField::Known(weapon) = &item.semantics.weapon else {
+            panic!("hit weapon group")
+        };
+        let expected: ReferenceRationalPercent =
+            serde_json::from_value(row["facts"]["hit_chance"].clone())
+                .expect("relative hit fraction");
+        assert_eq!(weapon.hit_chance, ReferenceItemField::Known(expected));
+    }
     let keys = linked
         .definitions
         .iter()
@@ -973,9 +1027,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(promoted_items, 12_301 - 201 + 23);
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others. Capacity adds 17 unknown atoms; declared charges add one.
+    // Explicit relative hit facts add 28 atoms on Items already in this census.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
