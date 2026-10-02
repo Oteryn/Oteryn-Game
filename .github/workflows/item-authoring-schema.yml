@@ -36,6 +36,7 @@ on:
       - docs/agents/evidence/OTV2-20261001-item-movable*.json
       - docs/agents/evidence/OTV2-20261001-item-document*.json
       - docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier*.json
+      - docs/agents/evidence/OTV2-20261002-item-name*.json
       - content/items/index.json
       - content/items/definitions/**
       - content/assets/files/appearances-*.dat
@@ -150,6 +151,12 @@ jobs:
         run: |
           python test_lower_item_document_packet.py
           python lower_item_document_packet.py --check
+
+      - name: Closed imported display name correction guards and packet drift
+        run: |
+          python test_lower_item_name_packet.py
+          python lower_item_name_packet.py --check
+        working-directory: tools/content-schema/item-authoring
 
       - name: Complete elemental magic modifier qualification guards and packet drift
         run: |
