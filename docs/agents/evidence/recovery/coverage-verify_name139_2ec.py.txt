@@ -1,0 +1,32 @@
+import copy,hashlib,json,subprocess
+from pathlib import Path
+R=Path('/workspace/pr1437-native-publish');A=Path('/workspace/audit-continuation');BASE='2ec1f34f05fd89abbb041f313b0852c331ae2b53'
+blob=lambda p:subprocess.check_output(['git','show',BASE+':'+p],cwd=R)
+sha=lambda b:hashlib.sha256(b).hexdigest()
+packet=json.loads((R/'docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json').read_text());rows={r['target']['key']:r for r in packet['promotions']};assert len(rows)==139
+p='content/world/definitions/reference.json';old=json.loads(blob(p));new=json.loads((R/p).read_bytes());assert len(old['records'])==len(new['records']);changed=[]
+for prior,current in zip(old['records'],new['records']):
+ expected=copy.deepcopy(prior);key=prior.get('identity',{}).get('key')
+ if key in rows:
+  row=rows[key];assert prior['identity']==row['target'] and prior['kind']=='Item'
+  assert prior['semantics']['presentation']['value']['name']=={'state':'KNOWN','value':row['previous_imported_name']}
+  expected['semantics']['presentation']['value']['name']={'state':'KNOWN','value':row['name']};changed.append(key)
+ assert current==expected,('unexpected native value',key)
+assert len(changed)==139
+for k,v in old.items():
+ if k!='records':assert new[k]==v
+nativepaths=['assets/catalog.json','content.lock.json','definitions/declarations.json','definitions/reference.json','editor/author.json','manifest.json','presentations/bindings.json','project.json','provenance/imports.json','provenance/sources.json','worlds/world.json'];nativechanged=[p for p in nativepaths if (R/'content/world'/p).read_bytes()!=blob('content/world/'+p)];assert sorted(nativechanged)==['content.lock.json','definitions/reference.json','manifest.json','project.json'],nativechanged
+index=json.loads(blob('content/items/index.json'));seen=[];shards=[]
+for path in index['shards']:
+ before=json.loads(blob(path));after=json.loads((R/path).read_bytes());assert len(before['records'])==len(after['records']);diff=False
+ for prior,current in zip(before['records'],after['records']):
+  expected=copy.deepcopy(prior);key=prior['definition']['identity']['key']
+  if key in rows:expected['definition']['semantics']['presentation']['value']['name']={'state':'KNOWN','value':rows[key]['name']};seen.append(key);diff=True
+  assert current==expected,('unexpected canonical Item',path,key)
+ for k,v in before.items():
+  if k!='records':assert after[k]==v
+ if diff:shards.append(path)
+assert len(index['shards'])==69 and set(seen)==set(changed) and len(seen)==139
+for scope in ['content/world/objects','content/world/terrain','imports','content/assets','content/items/authoring','content/items/taxonomy','content/items/relation-sources','content/items/aliases.json']:
+ assert not subprocess.check_output(['git','diff','--name-only',BASE,'--',scope],cwd=R,text=True).strip(),('protected source/owner/nav drift',scope)
+p={'baseline':BASE,'fields':139,'items':139,'by_field':{'presentation.name':139},'old_literal_counts':{'weapon of carving':120,'event item':19},'all_native_records_checked':len(old['records']),'all_canonical_item_shards_checked':69,'canonical_changed_shards':shards,'changed_native_documents':nativechanged,'changed_item_keys':changed,'other_native_fields_records_classes_admissions':'UNCHANGED','sources_bindings_World_authoring_nav_aliases':'UNCHANGED','native_reference_sha256':sha((R/'content/world/definitions/reference.json').read_bytes()),'packet_sha256':sha((R/'docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json').read_bytes())};o=A/'name139-exact-semantic-comparison-2ec.json';o.write_text(json.dumps(p,indent=2)+'\n');print('PASS exact139 names;all native records69shards and source/World/authoring/classes/admission preserved; changedshards',len(shards))

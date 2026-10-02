@@ -1,0 +1,99 @@
+{
+  "schema": "FORGE3332_EMERGENCY_LITERAL_HISTORY_RECOVERY/v1",
+  "repository": "Oteryn/Oteryn-Game",
+  "recovery_scope": "UNREFERENCED_BLOB_STAGING_ONLY; ROOT_CONTROLS_TREE_COMMIT_REF_PR_AND_PUBLICATION",
+  "original_authoring_parent": "2ec1f34f05fd89abbb041f313b0852c331ae2b53",
+  "fidelity": "Scripts retain exact visible tool-history heredoc inputs. Patch collection has newly generated JSON framing around exact visible tool patch payloads. These are not the original final formatted source files or generated proof/packet bytes.",
+  "staged_blobs": [
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-restore-and-create-v2.literal-history.py",
+      "blob_sha": "4fdfacea2878b2baedcdcc7680783eaa84b72059",
+      "bytes": 3967,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_GENERATED_PROOF",
+      "readback_full_text_equal": true
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-current-world-projection.literal-history.py",
+      "blob_sha": "233d2c2dffbdb4ba096391360a667b13520eb8bd",
+      "bytes": 937,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_GENERATED_PROOF",
+      "readback_full_text_equal": true
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-current-draft-binding-role.literal-history.py",
+      "blob_sha": "660c6f6add58506575285a48b978d63e67f9e21b",
+      "bytes": 1164,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_GENERATED_PROOF",
+      "readback_full_text_equal": true
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-tool-patch-literals.json",
+      "blob_sha": "8ac4f56519a8a48258c70e2c866cb669a06f1a7c",
+      "bytes": 10794,
+      "fidelity": "EXACT_VISIBLE_TOOL_PATCH_PAYLOADS; NEW_COLLECTION_JSON; NOT_ORIGINAL_FORMATTED_SOURCE",
+      "readback_full_text_equal": true
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-packet-sha-reseal.literal-history.py",
+      "blob_sha": "4a666fbdde3f90892426775ba16290305fa68f24",
+      "bytes": 415,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_FORMATTED_RUST_BYTES",
+      "readback_full_text_equal": true
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-checkpoint-generator.literal-history.py",
+      "blob_sha": "81db3dd0bf0361df639d0dac51892c24a87ce1f4",
+      "bytes": 5005,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_MANIFEST_BYTES",
+      "readback_full_text_equal": true
+    }
+  ],
+  "unavailable_exact_artifacts": [
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-forge3332-source-qualification-v1.json",
+      "historically_reported_sha256": "2ae8206fa72883fac6251f8a85d4574ec0dc29a2c88572b9889f08a59a3bb7d7",
+      "status": "EXACT_BYTES_UNAVAILABLE; DO_NOT_INVENT"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json",
+      "historically_reported_sha256": "a22405164b549aff06849db98ede92d48d0b72606a25a3d8685054c8b6b324c3",
+      "status": "EXACT_BYTES_UNAVAILABLE; DO_NOT_INVENT"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json",
+      "historically_reported_sha256": "295cc4749294ef487593f5e3f3e4d33a9f8812db7447fa5d40a4674bdf2545c9",
+      "status": "EXACT_BYTES_UNAVAILABLE; DO_NOT_INVENT"
+    },
+    {
+      "path": "/workspace/audit-continuation/forge3332-source-authoring-manifest.json",
+      "historically_reported_sha256": "399dd6365828cb78985bc2e85af3ef31363b2ce94e8c97915b044b5d51537546",
+      "status": "EXACT_BYTES_UNAVAILABLE; GENERATOR_RETAINED_NOT_OUTPUT"
+    },
+    {
+      "path": "/workspace/audit-continuation/document208-forge1-source-checkpoint-20261002/manifest.json",
+      "historically_reported_sha256": "e49646fa5285b6e2a4a3ec9e49aa185afb4c81bb387e18836ff562fdcd285473",
+      "status": "ORIGINAL_CHECKPOINT_INPUT_FILES_UNAVAILABLE_IN_THIS_RECOVERY"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_item_forge3332_packet.py; tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py; apps/game-server/src/content/item_forge3332_promotion.rs",
+      "status": "EXACT_FINAL_FORMATTED_SOURCE_BYTES_UNAVAILABLE; RETAINED_PATCHES_ARE_NOT_FULL_FILES"
+    }
+  ],
+  "historical_authoring_sequence": [
+    "restore-and-create-v2 script; then current-world-projection script",
+    "patch collection payloads 03, 04, 05, 06 in chronological order",
+    "current-draft-binding-role script",
+    "patch payload 09; Ruff format and compiler CLI historically generated packet",
+    "packet-sha-reseal script; direct rustfmt",
+    "patch payload 11; focused Python tests and source checks historically ran",
+    "checkpoint generator ran after stable source-only authoring"
+  ],
+  "replay_limits": [
+    "Scripts depend on original checkpoint/proof/source/current native inputs, which are not present in these blobs.",
+    "Intermediate patch constants are chronological authoring literals, not final artifact SHA assurances.",
+    "Historical test/pass declarations in retained scripts describe prior execution; recovery has not rerun filesystem tests or Cargo.",
+    "BR6171 revision443875 article SHA is a declared capture coordinate; unavailable full BR article bytes were not independently hashed. Retained structured source-row proof is distinct.",
+    "No source research, new semantics, filesystem probes, Cargo, tree/commit/ref/PR mutation was performed in this worker recovery.",
+    "A bounded durable read_thread attempt stalled and was terminated without retrieving new history."
+  ]
+}

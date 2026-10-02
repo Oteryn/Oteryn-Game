@@ -1,0 +1,90 @@
+{
+  "schema": "OTERYN_WEAPON79_UNREFERENCED_GITHUB_BLOB_RECOVERY/v1",
+  "repository": "Oteryn/Oteryn-Game",
+  "parent_workspace_head": "2ec1f34f05fd89abbb041f313b0852c331ae2b53",
+  "method": "Authorized GitHub create_blob only, followed by fetch_blob full UTF-8 equality comparison. No tree/commit/ref/branch/PR mutations.",
+  "instructions_are_evidence": true,
+  "root_is_sole_publisher": true,
+  "records": [
+    {
+      "name": "build-weapon79-source-proof.creation.py",
+      "sha": "d53e7dde5e15fedf3522c0f39fc38b7312676b41",
+      "bytes": 3909,
+      "path": "docs/agents/evidence/recovery/weapon79/build-weapon79-source-proof.creation.py",
+      "fidelity": "RETAINED_INITIAL_CREATION_LITERAL; later correction required; final filesystem bytes UNKNOWN; full staged readback equality PASS"
+    },
+    {
+      "name": "weapon_metadata_source_aliases.creation.py",
+      "sha": "3a80232d3c5afda013ecc7190ec58d989a978bf8",
+      "bytes": 1204,
+      "path": "docs/agents/evidence/recovery/weapon79/weapon_metadata_source_aliases.creation.py",
+      "fidelity": "RETAINED_CREATION_LITERAL; final filesystem bytes UNKNOWN; full staged readback equality PASS"
+    },
+    {
+      "name": "lower_item_weapon_metadata_packet.creation.py",
+      "sha": "374c9805a82a8c508741b96a8d01a63f47e0ccd4",
+      "bytes": 9950,
+      "path": "docs/agents/evidence/recovery/weapon79/lower_item_weapon_metadata_packet.creation.py",
+      "fidelity": "RETAINED_INITIAL_CREATION_LITERAL; later proof pin and alias-helper seal correction required; final filesystem bytes UNKNOWN; full staged readback equality PASS"
+    },
+    {
+      "name": "weapon79-retained-corrections.json",
+      "sha": "86861f9d39f7dcd5200b3289a5d7fa44ac93d563",
+      "bytes": 5547,
+      "path": "docs/agents/evidence/recovery/weapon79/weapon79-retained-corrections.json",
+      "fidelity": "RETAINED_VISIBLE_TOOL_ARGUMENT_FRAGMENTS; NOT A CLAIM OF FINAL FILE BYTE EQUALITY; FULL_STAGED_READBACK_EQUALITY_PASS"
+    },
+    {
+      "name": "item-weapon-source79-owner.creation.patch",
+      "sha": "8beddf76adbcae394893a771863d0db4c25dd374",
+      "bytes": 4794,
+      "path": "docs/agents/evidence/recovery/weapon79/item-weapon-source79-owner.creation.patch",
+      "fidelity": "RETAINED_VISIBLE_APPLY_PATCH_ARGUMENT; no final formatted/source byte claim; full staged readback equality PASS"
+    },
+    {
+      "name": "item_weapon_metadata_promotion.creation.rs",
+      "sha": "6f677916dd6d876fa60dfc05b058d4fb8a20af67",
+      "bytes": 10596,
+      "path": "docs/agents/evidence/recovery/weapon79/item_weapon_metadata_promotion.creation.rs",
+      "fidelity": "RETAINED_VISIBLE_INITIAL_CREATION_LITERAL; test fixture correction required; final formatted/source/proof/packet bytes UNKNOWN; full staged readback equality PASS"
+    },
+    {
+      "name": "test_lower_item_weapon_metadata_packet.creation.py",
+      "sha": "1d3848b265a62edcac6ab6c9f67da99e8d8fc88c",
+      "bytes": 3341,
+      "path": "docs/agents/evidence/recovery/weapon79/test_lower_item_weapon_metadata_packet.creation.py",
+      "fidelity": "RETAINED_VISIBLE_INITIAL_CREATION_LITERAL; later formal-schema assertion/imports recorded separately; final filesystem bytes UNKNOWN; full staged readback equality PASS"
+    },
+    {
+      "name": "weapon79-source-type-regression.creation.rs",
+      "sha": "def997ff1557e43510faaf3d89f7aa1d2737e194",
+      "bytes": 2325,
+      "path": "docs/agents/evidence/recovery/weapon79/weapon79-source-type-regression.creation.rs",
+      "fidelity": "RETAINED_VISIBLE_INITIAL_APPEND_LITERAL; private-field/order corrections recorded separately; never compiled; final formatted source bytes UNKNOWN; full staged readback equality PASS"
+    }
+  ],
+  "total_payload_utf8_bytes": 41666,
+  "recovery_scope": "Retained visible creation/append/apply_patch arguments and explicit later correction fragments only. This is recovery evidence, not native source promotion.",
+  "not_recovered": [
+    "79-row actual generated qualification proof bytes",
+    "79-row actual source packet checkpoint bytes",
+    "historical 79-row source proposal and independent peer review complete bytes",
+    "public raw capture files required to independently rebuild source witnesses",
+    "complete final formatted current Rust files or final authoring checkpoint"
+  ],
+  "reported_unrecovered_outputs": [
+    {
+      "sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d",
+      "bytes": 343200,
+      "kind": "historical source-proof generation report, current bytes UNKNOWN"
+    },
+    {
+      "sha256": "0d87f5a4183e92a71f7e52f2f9274626aee81a91c2d7c0d5e103057b8133a19f",
+      "bytes": 20116,
+      "kind": "external source-packet checkpoint report, current bytes UNKNOWN"
+    }
+  ],
+  "retained_state": "AUTHORING; Forge3332 predecessor carry not completed by worker; Cargo/finalgeneration/module+materializer hookup pending; Rust packet pin PENDING.",
+  "durable_history_read": "Supplied durable thread request did not return within initial31s yield and bounded waits; read cell terminated. Full tool-history provenance can be compared independently by Root when its route works.",
+  "verification_limits": "Readback equality proves exact staged content against the transmitted recovery payload. No comparison to unavailable final filesystem bytes, no compilation, no source-value validation performed during recovery."
+}

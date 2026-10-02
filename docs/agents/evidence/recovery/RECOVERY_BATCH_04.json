@@ -1,0 +1,141 @@
+{
+  "schema": "RECOVERY_STAGED_TEXT_V1",
+  "original_file_restoration_complete": false,
+  "files": [
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/build-weapon79-source-proof.creation.py",
+      "sha": "d53e7dde5e15fedf3522c0f39fc38b7312676b41",
+      "bytes": 3909,
+      "fidelity": "RETAINED_INITIAL_CREATION_LITERAL; later correction required; final filesystem bytes UNKNOWN; full staged readback equality PASS",
+      "sha256": "92ae72ca1b7c8ef593dfe218d5be842759b749849994e671b91142c102afa563"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/weapon_metadata_source_aliases.creation.py",
+      "sha": "3a80232d3c5afda013ecc7190ec58d989a978bf8",
+      "bytes": 1204,
+      "fidelity": "RETAINED_CREATION_LITERAL; final filesystem bytes UNKNOWN; full staged readback equality PASS",
+      "sha256": "d053127b4e63496b0b8e721cc3c712e98574199073b6990b55a550bb221b38c5"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/lower_item_weapon_metadata_packet.creation.py",
+      "sha": "374c9805a82a8c508741b96a8d01a63f47e0ccd4",
+      "bytes": 9950,
+      "fidelity": "RETAINED_INITIAL_CREATION_LITERAL; later proof pin and alias-helper seal correction required; final filesystem bytes UNKNOWN; full staged readback equality PASS",
+      "sha256": "7d833b17462c1c4aebe36e0b133ed67e47e22a82050caff41b026b5f087a11cd"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/weapon79-retained-corrections.json",
+      "sha": "86861f9d39f7dcd5200b3289a5d7fa44ac93d563",
+      "bytes": 5547,
+      "fidelity": "RETAINED_VISIBLE_TOOL_ARGUMENT_FRAGMENTS; NOT A CLAIM OF FINAL FILE BYTE EQUALITY; FULL_STAGED_READBACK_EQUALITY_PASS",
+      "sha256": "a9540f0153c78eb3f56e135735a7a2c8b44fc2e74f78a65b6c0f5b241634ef05"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/item-weapon-source79-owner.creation.patch",
+      "sha": "8beddf76adbcae394893a771863d0db4c25dd374",
+      "bytes": 4794,
+      "fidelity": "RETAINED_VISIBLE_APPLY_PATCH_ARGUMENT; no final formatted/source byte claim; full staged readback equality PASS",
+      "sha256": "8d3652c9f81e2d1dca7e6c3567fd3c6d307d22c6df8744e42fa131676cb76085"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/item_weapon_metadata_promotion.creation.rs",
+      "sha": "6f677916dd6d876fa60dfc05b058d4fb8a20af67",
+      "bytes": 10596,
+      "fidelity": "RETAINED_VISIBLE_INITIAL_CREATION_LITERAL; test fixture correction required; final formatted/source/proof/packet bytes UNKNOWN; full staged readback equality PASS",
+      "sha256": "8b0b3fe1222392c8b74cece6a4f782531bdf85995b4ce9a5dc16ad1608b8d51b"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/test_lower_item_weapon_metadata_packet.creation.py",
+      "sha": "1d3848b265a62edcac6ab6c9f67da99e8d8fc88c",
+      "bytes": 3341,
+      "fidelity": "RETAINED_VISIBLE_INITIAL_CREATION_LITERAL; later formal-schema assertion/imports recorded separately; final filesystem bytes UNKNOWN; full staged readback equality PASS",
+      "sha256": "876675068b5f85d26e6181c8f412fc10d34585736403da538fe0e20320edf711"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/weapon79-source-type-regression.creation.rs",
+      "sha": "def997ff1557e43510faaf3d89f7aa1d2737e194",
+      "bytes": 2325,
+      "fidelity": "RETAINED_VISIBLE_INITIAL_APPEND_LITERAL; private-field/order corrections recorded separately; never compiled; final formatted source bytes UNKNOWN; full staged readback equality PASS",
+      "sha256": "e01d42b198edd16a5ef102458648128d5f5810bf158a4a5ca66499ae9662e2cf"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79/weapon79-recovery-manifest.json",
+      "sha": "73239681a6dc9d785689df9798fcb2fbd5921c38",
+      "bytes": 5384,
+      "fidelity": "New recovery inventory; not original final authoring manifest",
+      "sha256": "f264ad57eb96bb13e40610679a98fff7e09e1922b0a50071c9e48e5e27d4040e"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-restore-and-create-v2.literal-history.py",
+      "sha": "4fdfacea2878b2baedcdcc7680783eaa84b72059",
+      "bytes": 3967,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_GENERATED_PROOF",
+      "sha256": "79a740e5fef4a4f164d211126fa2db45346fe0aeccb5d507b4f304fe39468255"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-current-world-projection.literal-history.py",
+      "sha": "233d2c2dffbdb4ba096391360a667b13520eb8bd",
+      "bytes": 937,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_GENERATED_PROOF",
+      "sha256": "6cd789fe64f7abcc6861f7a0f111fc3994558e743524daa0540c5711326c4c01"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-current-draft-binding-role.literal-history.py",
+      "sha": "660c6f6add58506575285a48b978d63e67f9e21b",
+      "bytes": 1164,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_GENERATED_PROOF",
+      "sha256": "8fd287fce542ed7ef97a75fdd240a2a20a2e320c073fb79c6c0cdb062ea28525"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-tool-patch-literals.json",
+      "sha": "8ac4f56519a8a48258c70e2c866cb669a06f1a7c",
+      "bytes": 10794,
+      "fidelity": "EXACT_VISIBLE_TOOL_PATCH_PAYLOADS; NEW_COLLECTION_JSON; NOT_ORIGINAL_FORMATTED_SOURCE",
+      "sha256": "9d080521482033143389a306205e80e77adade4b7af40608f62dff46f7d778ed"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-packet-sha-reseal.literal-history.py",
+      "sha": "4a666fbdde3f90892426775ba16290305fa68f24",
+      "bytes": 415,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_FORMATTED_RUST_BYTES",
+      "sha256": "6e35c1746a7808756e09ab254db7d036116cf9973351555808f007e506f7ca8b"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-checkpoint-generator.literal-history.py",
+      "sha": "81db3dd0bf0361df639d0dac51892c24a87ce1f4",
+      "bytes": 5005,
+      "fidelity": "EXACT_TOOL_HISTORY_HEREDOC_INPUT_NOT_FINAL_MANIFEST_BYTES",
+      "sha256": "4f3e2dd99ba128549c1a4e14426055ff65dede72fc419d01ea2296f3294efe26"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-emergency-literal-history-recovery-manifest.json",
+      "sha": "0c83376327e0a50c58911702cd07d7f8dbc994eb",
+      "bytes": 5543,
+      "fidelity": "New recovery inventory; not original final authoring manifest",
+      "sha256": "0d58ef75f1b69b30c1662cddac98859f6900c656f5e84c732ee6c4ac5c002fd0"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/coverage-item_hit_magic-tests-append-tool-input.rs.txt",
+      "sha": "9cfeeaa6d1cf3becefc66a8f4050ec3cbcead3e8",
+      "bytes": 4741,
+      "fidelity": "Exact retained preformat test append literal; not whole final Rust file",
+      "sha256": "b3dbc63e9192ebdca82dbac433eab18d544b139babf0462debfbd721e08bbc91"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/coverage-verify_name139_2ec.py.txt",
+      "sha": "bf293722f9e2dd5905c2096153916727b98a3ec8",
+      "bytes": 3749,
+      "fidelity": "Exact retained scratch verifier input; final disk state unavailable",
+      "sha256": "172093cd28cf81449830d181f26f3b0b7298a1dbb35c419e8d69380977ce3afa"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/coverage-name139-hitml67-fidelity-inventory.json",
+      "sha": "b6f32027f86c47ce4c104c1f335dcb1259d3d486",
+      "bytes": 7406,
+      "fidelity": "New retained recovery inventory, not original source manifests",
+      "sha256": "12c3d84fc368576d0834e4755b466285c0009c9b940b183615755ed297355edf"
+    }
+  ],
+  "checks": "Root full blob readback, UTF8 lengths/SHA256",
+  "use": "Retained creation/patch/recovery inventories; exact final source/proof/native bytes explicitly unknown"
+}

@@ -1,0 +1,54 @@
+*** Begin Patch
+*** Update File: /workspace/pr1437-world-owner-completion/apps/game-server/src/content/project/v2.rs
+@@
+ use super::*;
++use super::super::ReferenceSignedPoints;
+@@
+ pub struct ProjectV2ItemAuthoring {
+@@
+     pub proficiency: Option<ProjectV2WeaponProficiencyProfile>,
++    /// Intrinsic source attack modifier; never substitutes for native weapon attack.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub weapon_attack_modifier_points: Option<ReferenceSignedPoints>,
++    /// Absolute percentage points (90% = 90/1), distinct from native relative hit.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub weapon_absolute_hit_chance_percent: Option<ProjectV2ExactRatio>,
+@@
+         require_ref(&item.item)?;
++        if let Some(value) = item.weapon_absolute_hit_chance_percent {
++            validate_v2_ratio(value, "v2 absolute weapon hit percent is not canonical")?;
++            if value.numerator < 0
++                || u128::from(value.numerator.unsigned_abs()) > 100 * u128::from(value.denominator)
++            {
++                return Err(ProjectError::InvalidProject(
++                    "v2 absolute weapon hit percent is outside 0..100",
++                ));
++            }
++        }
+*** Update File: /workspace/pr1437-world-owner-completion/apps/game-server/examples/materialize_content_world_project_v2.rs
+@@
+         proficiency: None,
++        weapon_attack_modifier_points: None,
++        weapon_absolute_hit_chance_percent: None,
+*** Update File: /workspace/pr1437-world-owner-completion/apps/game-server/tests/content_world_project_v2.rs
+@@
+         proficiency: Some(ProjectV2WeaponProficiencyProfile {
+@@
+             threshold_class: ProjectV2ProficiencyThresholdClass::Knight,
+         }),
++        weapon_attack_modifier_points: None,
++        weapon_absolute_hit_chance_percent: None,
+*** Update File: /workspace/pr1437-world-owner-completion/docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md
+@@
+ - source-only use observations for legacy/current Infobox `damage`, `damagetype` and `mana`; these preserve evidence for wand/rod/rune-like items while Ability/Effect/Formula remains the sole execution path;
++- optional intrinsic weapon source metadata `weapon_attack_modifier_points` (signed i32 points, formal `/item/weapon/attack_modifier`) and `weapon_absolute_hit_chance_percent` (canonical exact ratio of absolute percentage points in 0..100, formal `/item/weapon/hit_chance_percent`); these retain own-Object `atk_mod` and `hit_chance` without changing native attack or native relative hit;
+@@
+ Fields already owned by the executable Item model — including weight, stackability, equipment requirements, attack/defense/range/hit, elemental attack, armor/resistances, skill modifiers including Elemental Bond/Mantra, charges, duration, container capacity, readable/writeable state and imbuement semantics — continue to use the existing Reference Item path. V2 does not duplicate them.
++
++The two intrinsic weapon metadata properties are distinct from that executable vocabulary: native `attack` is not the source `atk_mod`, and native normalized relative `hit_chance` is not absolute source `hit_chance`. A literal absolute `90%` is stored as `90/1` percentage points; formal relative `90` is also `90/1` points, while its existing native normalization is `9/10`. A separate current own-Object alias catalog declares these exact routes. It does not alter the immutable 84-field legacy Fandom census or admit sibling-page/alias inheritance. Missing properties remain `None`, with no zero/100 default. The extended reader preserves old absent-field canonical bytes; old strict readers reject newly present properties. Runtime lowering and TypedItemV4 remain unchanged.
+*** Update File: /workspace/pr1437-world-owner-completion/docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md
+@@
+ and lifecycle/source-lifecycle facts.
++
++The accepted WorldProject/v2 source supplement retains two additional optional intrinsic weapon metadata properties on the existing Item authoring owner: signed i32 `weapon_attack_modifier_points` maps to formal `/item/weapon/attack_modifier`, and canonical exact `weapon_absolute_hit_chance_percent` maps to `/item/weapon/hit_chance_percent` in absolute 0..100 percentage points (`90%` = `90/1`). Neither writes native attack nor native relative hit. Formal relative percentage points use `p/1`; the native relative percent representation uses reduced `p/100`. The separately generated current own-Object weapon alias catalog supplements the immutable legacy census; it does not rename relative `hit_mod` or infer absent values. Existing Forge, proficiency, magic-level, use-observation and other authoring siblings keep their owners.
+*** End Patch
