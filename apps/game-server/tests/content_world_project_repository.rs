@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         415,
-        "d0df16d4b47c12b8606890980d8c8b21c0a3b44cbd4fea6e1ce6b4be3b8535ff",
+        "d51326d0b179189002e67d75b7fba40c2284fb3c89c9059d13f5e69d028db06d",
     ),
     (
         "definitions/declarations.json",
-        18541878,
-        "7dc51df8e4f61a1c191adad50d678e7de9100eda64ea9e398bdd462999aee7c7",
+        19026086,
+        "72a82d84e70c29a0362258c13ef31d85dd6c85eee0759d23bebc3e3f9abb2fac",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1954,
-        "ecc8e3b441e43eca670eabe01322b2eeaf622a05deb8440489114e853a568893",
+        "7cb8f864955d918121062fa4da79959d7a857229a654fde0af66912c03204ade",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         407,
-        "d3e5aa6b7ef586a13346d24a3256de35d4fed3c26b04e6d44c221f7c03f6f6f2",
+        "03d195fb39280fce3c36588ce94f7d0192cb3aefe25924335cc42bd08701ee2a",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c0d46eaa7380bea64e438f4d0855c582e0d2dc85d2e2adf388820ed1a263eb29";
+const TREE_SHA256: &str = "4c395bf099d057bae2619f49f4124f0eb5593aa7a297e19d53ee04f98f17d394";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -323,7 +323,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "g4-npc-provisional-enrichment-r21"
+        "g4-npc-provisional-enrichment-r22"
     );
     assert_eq!(project.imports().len(), 25);
     let import_for = |batch: &str| {
@@ -523,19 +523,25 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             )
         })
         .collect::<std::collections::BTreeMap<_, _>>();
-    for repair in enrichment["repairs"]
-        .as_array()
-        .expect("closed enrichment array")
-    {
-        if repair["after"]["kind"] == "Dialogue" {
-            let key = repair["before"]["identity"]["key"]
-                .as_str()
-                .expect("enrichment actor key");
-            assert_eq!(
-                expected_provisional_dialogues.get(key),
-                Some(&repair["before"])
-            );
-            expected_provisional_dialogues.insert(key, repair["after"].clone());
+    let followup: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r22/native-enrichment.json"
+    ))
+    .expect("closed followup packet");
+    for packet in [&enrichment, &followup] {
+        for repair in packet["repairs"]
+            .as_array()
+            .expect("closed enrichment array")
+        {
+            if repair["after"]["kind"] == "Dialogue" {
+                let key = repair["before"]["identity"]["key"]
+                    .as_str()
+                    .expect("enrichment actor key");
+                assert_eq!(
+                    expected_provisional_dialogues.get(key),
+                    Some(&repair["before"])
+                );
+                expected_provisional_dialogues.insert(key, repair["after"].clone());
+            }
         }
     }
     assert_eq!(expected_provisional_dialogues.len(), 133);

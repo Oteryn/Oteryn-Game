@@ -51,6 +51,9 @@ fn fields_allowed(before: &[ProjectV2CandidateField], after: &[ProjectV2Candidat
     let mutable = [
         "quality",
         "profession",
+        "profession_selection",
+        "appearance_reference",
+        "dialogue_followup",
         "voices",
         "source_reference",
         "source_metadata",
@@ -185,6 +188,31 @@ pub(super) fn apply(
     let mut seen = BTreeSet::new();
     let mut npc_count = 0;
     for repair in &packet.repairs {
+        // R22 supplies selected replies only; keyword matching and flow remain unchanged.
+        if packet.from_project_revision == "g4-npc-provisional-enrichment-r21"
+            && let (
+                ProjectV2Declaration::Dialogue { keywords: k, .. },
+                ProjectV2Declaration::Dialogue { keywords: nk, .. },
+            ) = (&repair.before, &repair.after)
+        {
+            let retained = if nk.len() == k.len() + 1 {
+                let last = nk.last().ok_or("missing successor story")?;
+                if serde_json::to_value(last)?
+                    != serde_json::json!({
+                        "key":"story", "triggers":["story"], "reply":last.reply
+                    })
+                    || !(1..=2).contains(&last.reply.len())
+                {
+                    return Err("successor story is not a plain static leaf".into());
+                }
+                &nk[..nk.len() - 1]
+            } else {
+                nk.as_slice()
+            };
+            if !npc_dialogue_replies_allowed(k, retained) {
+                return Err("successor dialogue trigger/flow drifted".into());
+            }
+        }
         let (kind, id) =
             npc_repair_identity(&repair.before).ok_or("enrichment declaration family")?;
         if !seen.insert((kind, id.key.clone(), id.revision.clone()))
@@ -231,7 +259,7 @@ pub(super) fn apply(
     Ok(npc_count)
 }
 
-/// Test-only restoration of the exact predecessor, before older append fixtures reverse.
+/// Restore an exact chain using one complete predecessor validation, not one per wave.
 #[cfg(test)]
 pub(super) fn reverse_for_fixture(
     draft: &mut ProjectV2Draft,
@@ -239,48 +267,58 @@ pub(super) fn reverse_for_fixture(
     packet_sha256: &str,
     predecessor_sha256: &str,
 ) -> Result<()> {
-    if hex_sha256(bytes) != packet_sha256 {
-        return Err("fixture packet digest drifted".into());
-    }
-    let p: Packet = serde_json::from_slice(bytes)?;
-    if draft.core.project_revision == p.from_project_revision {
-        let documents = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
-        if document_tree_digest(&documents) == predecessor_sha256 {
-            return Ok(());
-        }
-        return Err("fixture existing predecessor drifted".into());
-    }
-    if draft.core.project_revision != p.project_revision {
-        return Err("fixture successor revision drifted".into());
-    }
+    let chain = if bytes == NPC_ENRICH {
+        vec![
+            (NPC_ENRICH_MORE, NPC_ENRICH_MORE_SHA256),
+            (bytes, packet_sha256),
+        ]
+    } else {
+        vec![(bytes, packet_sha256)]
+    };
     let mut next = draft.clone();
-    for repair in p.repairs {
-        let indices = next
-            .state
-            .declarations
-            .iter()
-            .enumerate()
-            .filter_map(|(i, d)| (d == &repair.after).then_some(i))
-            .collect::<Vec<_>>();
-        if indices.len() != 1 {
-            return Err("fixture successor declaration drifted".into());
+    for (bytes, sha) in chain {
+        if hex_sha256(bytes) != sha {
+            return Err("fixture packet digest drifted".into());
         }
-        next.state.declarations[indices[0]] = repair.before;
-    }
-    for repair in p.profile_repairs {
-        let indices = next
-            .state
-            .authoring_profiles
-            .iter()
-            .enumerate()
-            .filter_map(|(i, d)| (d == &repair.after).then_some(i))
-            .collect::<Vec<_>>();
-        if indices.len() != 1 {
-            return Err("fixture successor profile drifted".into());
+        let p: Packet = serde_json::from_slice(bytes)?;
+        if p.schema != "OTERYN_NPC_BULK_ENRICHMENT/v1" {
+            return Err("fixture packet schema drifted".into());
         }
-        next.state.authoring_profiles[indices[0]] = repair.before;
+        // R21 catalogues are also valid inputs for fixtures before R22 is installed.
+        if next.core.project_revision == p.from_project_revision {
+            continue;
+        }
+        if next.core.project_revision != p.project_revision {
+            return Err("fixture successor revision drifted".into());
+        }
+        for repair in p.repairs {
+            let indices = next
+                .state
+                .declarations
+                .iter()
+                .enumerate()
+                .filter_map(|(i, d)| (d == &repair.after).then_some(i))
+                .collect::<Vec<_>>();
+            if indices.len() != 1 {
+                return Err("fixture successor declaration drifted".into());
+            }
+            next.state.declarations[indices[0]] = repair.before;
+        }
+        for repair in p.profile_repairs {
+            let indices = next
+                .state
+                .authoring_profiles
+                .iter()
+                .enumerate()
+                .filter_map(|(i, d)| (d == &repair.after).then_some(i))
+                .collect::<Vec<_>>();
+            if indices.len() != 1 {
+                return Err("fixture successor profile drifted".into());
+            }
+            next.state.authoring_profiles[indices[0]] = repair.before;
+        }
+        next.core.project_revision = p.from_project_revision;
     }
-    next.core.project_revision = p.from_project_revision;
     let documents = CanonicalProjectDocuments::from_v2_draft(next.clone(), limits())?;
     if document_tree_digest(&documents) != predecessor_sha256 {
         return Err("fixture reverse tree drifted".into());
@@ -393,5 +431,44 @@ mod tests {
         let rows = value["repairs"].as_array_mut().unwrap();
         rows.push(rows[0].clone());
         rejects(value);
+    }
+    #[test]
+    fn r22_successor_cannot_change_matching_or_add_conversation_flow() {
+        let content = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
+        let fs_limits = ProjectFilesystemLimits {
+            project: limits(),
+            max_entries_per_directory_scan: 32,
+            max_total_directory_entries_scanned: 201,
+        };
+        let mut draft = capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
+            .expect("repository native project")
+            .migrate_to_v2();
+        reverse_for_fixture(
+            &mut draft,
+            NPC_ENRICH_MORE,
+            NPC_ENRICH_MORE_SHA256,
+            NPC_ENRICH_MORE_PREDECESSOR,
+        )
+        .expect("R21 predecessor");
+        let before = draft.clone();
+        let mut value: Value = serde_json::from_slice(NPC_ENRICH_MORE).unwrap();
+        let row = value["repairs"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|r| r["after"]["kind"] == "Dialogue")
+            .unwrap();
+        row["after"]["keywords"][0]["triggers"] = serde_json::json!(["changed"]);
+        let bytes = serde_json::to_vec(&value).unwrap();
+        assert!(
+            apply(
+                &mut draft,
+                &bytes,
+                &hex_sha256(&bytes),
+                NPC_ENRICH_MORE_PREDECESSOR
+            )
+            .is_err()
+        );
+        assert_eq!(draft, before);
     }
 }

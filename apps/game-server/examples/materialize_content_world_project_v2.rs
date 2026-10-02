@@ -159,6 +159,14 @@ const NPC_ENRICH: &[u8] = include_bytes!(
 const NPC_ENRICH_SHA256: &str = "fa06c44b10b6081b8389eb8cc3750b40dcc1fcb89dad71ab2e31807a6c0e2117";
 const NPC_ENRICH_PREDECESSOR: &str =
     "39019038fb7fbdd77b0b2f89e23d129cd41c316ee050c7a2508de3effb5af1a5";
+const NPC_ENRICH_MORE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r22/native-enrichment.json"
+);
+// Replace with actual staged packet SHA before validation.
+const NPC_ENRICH_MORE_SHA256: &str =
+    "c3a7322ddfe597ecba350b09bcac9ae224082362bcd67d84dcc796a96d9155f8";
+const NPC_ENRICH_MORE_PREDECESSOR: &str =
+    "c0d46eaa7380bea64e438f4d0855c582e0d2dc85d2e2adf388820ed1a263eb29";
 fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     let mut draft = documents
@@ -170,6 +178,17 @@ fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn s
         NPC_ENRICH,
         NPC_ENRICH_SHA256,
         NPC_ENRICH_PREDECESSOR,
+    )?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_ENRICH_MORE,
+        NPC_ENRICH_MORE_SHA256,
+        NPC_ENRICH_MORE_PREDECESSOR,
     )?;
     Ok(draft)
 }
@@ -313,6 +332,21 @@ fn materialize_from_predecessor(
     };
     let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    // Fast successor: accept only the complete pinned R21 canonical catalogue.
+    if document_tree_digest(&before) == NPC_ENRICH_MORE_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_ENRICH_MORE,
+            NPC_ENRICH_MORE_SHA256,
+            NPC_ENRICH_MORE_PREDECESSOR,
+        )?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!(
+            "npc_enrichment=133 total_npcs=1282 total_dialogues=836 tree_sha256={tree_sha256} predecessor_mode=true"
+        );
+        return Ok(());
+    }
     // Entire published 1149-NPC predecessor, including worlds, editor, assets and provenance.
     if document_tree_digest(&before) != NPC_BULK_PREDECESSOR {
         return Err("qualified predecessor package drifted".into());
