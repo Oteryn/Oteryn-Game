@@ -88,6 +88,10 @@ def inventory(config):
         if admitted == bool(deferred):
             raise LabError(f'Actor must be native or deferred, exclusively: {name}')
         flags = ['DONOR_OR_WIKI_PREPARED', 'GAMEPLAY_UNVERIFIED']
+        completion_flags = entry.get('completion_flags', [])
+        if not isinstance(completion_flags, list) or any(not isinstance(flag, str) or not flag for flag in completion_flags):
+            raise LabError(f'Malformed completion flags: {name}')
+        flags.extend(completion_flags)
         if 'mitigation_percent' not in creature['stats']:
             flags.append('MITIGATION_UNKNOWN')
         if 'bestiary' not in creature:

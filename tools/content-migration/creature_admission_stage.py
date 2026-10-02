@@ -734,25 +734,25 @@ def encounter_details(encounter: dict, m: Mapper) -> dict:
     return details
 
 
-def load_encounters(item_map: dict[int, str]) -> tuple[dict[str, dict], dict[str, str]]:
+def load_encounters(item_map: dict[int, str], directory: Path = ENCOUNTERS) -> tuple[dict[str, dict], dict[str, str]]:
     """Each encounter sample with the creatures it covers and references, or the reason it waits (E4)."""
     encounters, waiting = {}, {}
-    for directory in sorted(path.parent for path in ENCOUNTERS.glob('*/encounter.json')):
-        encounter = json.loads((directory / 'encounter.json').read_text(encoding='utf-8'))
-        manifest = json.loads((directory / 'manifest.json').read_text(encoding='utf-8'))
+    for sample in sorted(path.parent for path in directory.glob('*/encounter.json')):
+        encounter = json.loads((sample / 'encounter.json').read_text(encoding='utf-8'))
+        manifest = json.loads((sample / 'manifest.json').read_text(encoding='utf-8'))
         text = json.dumps(encounter)
         covers = sorted({creature for creatures in manifest['covers'].values() for creature in creatures})
-        encounters[directory.name] = {
+        encounters[sample.name] = {
             'encounter': encounter, 'covers': covers,
-            'manifest_sha256': hashlib.sha256((directory / 'manifest.json').read_bytes()).hexdigest(),
+            'manifest_sha256': hashlib.sha256((sample / 'manifest.json').read_bytes()).hexdigest(),
             'creatures': sorted(set(re.findall(r'"key": "(canary:creature/[^"]+)"', text))),
             'abilities': sorted(set(re.findall(r'"key": "(canary:ability/[^"]+)"', text)))}
         if any(entry['status'] == 'unresolved_semantics' for entry in manifest['entries']):
-            waiting[directory.name] = 'unresolved_semantics'
+            waiting[sample.name] = 'unresolved_semantics'
         elif any('location' not in anchor for anchor in encounter['anchors']):
-            waiting[directory.name] = 'anchor_unlocated'
+            waiting[sample.name] = 'anchor_unlocated'
         elif {int(item) for item in re.findall(r'canary:item/(\d+)', text)} - set(item_map):
-            waiting[directory.name] = 'unregistered_items'
+            waiting[sample.name] = 'unregistered_items'
     return encounters, waiting
 
 
@@ -798,6 +798,10 @@ def main() -> None:
     parser.add_argument('--bundles', type=Path, required=True)
     parser.add_argument('--item-map', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--index', type=Path, default=INDEX,
+                        help='Digest-bound bundle census; default preserves the original population')
+    parser.add_argument('--encounters', type=Path, default=ENCOUNTERS,
+                        help='Validated Encounter sample directory; default preserves original samples')
     parser.add_argument('--pilot', action='store_true')
     args = parser.parse_args()
 
@@ -821,8 +825,10 @@ def main() -> None:
         json.loads(ITEM_ALIASES.read_text(encoding='utf-8'))['entries'],
         json.loads(ITEM_BINDINGS.read_text(encoding='utf-8'))['bindings'], current_ids)
     mapper = Mapper(item_map)
-    index = json.loads(INDEX.read_text(encoding='utf-8'))
-    encounters, waiting = load_encounters(mapper.item_map)
+    index = json.loads(args.index.read_text(encoding='utf-8'))
+    if index.get('source', {}).get('revision') != CANARY_REVISION or index.get('source', {}).get('repository') != 'opentibiabr/canary':
+        raise StageError('census source differs from the pinned Canary admission source')
+    encounters, waiting = load_encounters(mapper.item_map, args.encounters)
     if args.pilot:
         waiting = {name: 'pilot' for name in encounters}
     covered_by: dict[str, set[str]] = {}
@@ -928,7 +934,7 @@ def main() -> None:
         'schema': SCHEMA,
         'wave': 'pilot' if args.pilot else 'A',
         'source': {'repository': index['source']['repository'], 'revision': CANARY_REVISION,
-                   'census_index_sha256': hashlib.sha256(INDEX.read_bytes()).hexdigest(),
+                   'census_index_sha256': hashlib.sha256(args.index.read_bytes()).hexdigest(),
                    'item_allocation_sha256': ITEM_ALLOCATION_SHA256, 'item_rekeys': rekeys,
                    'wiki_authored': {'revision': WIKI_AUTHORED_REVISION, 'sample_sha256': WIKI_AUTHORED_SHA256,
                                      'creatures': sorted(r['monster'] for r in index['monsters']
@@ -950,6 +956,13 @@ def main() -> None:
         'source_identity_bindings': sorted(stage.bindings, key=lambda b: b['external_id']),
         'deferred': deferred,
     }
+    completion_flags = {f"oteryn:creature.{row['monster']}": row['completion_flags']
+                        for row in index['monsters'] if row.get('completion_flags') and row['monster'] in admitted_set}
+    if completion_flags:
+        if any(not isinstance(flags, list) or any(not isinstance(flag, str) or not flag for flag in flags)
+               for flags in completion_flags.values()):
+            raise StageError('malformed completion quality flags')
+        staged['completion_flags'] = completion_flags
     args.out.write_bytes(canonical(staged))
     print(json.dumps(staged['counts']))
 

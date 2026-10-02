@@ -53,6 +53,21 @@ class InventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(lab.LabError, 'Malformed index'):
             lab.inventory(self.config)
 
+    def test_source_completion_flags_survive_inventory(self):
+        self.index['monsters'][0]['completion_flags'] = ['SOURCE_BEHAVIOR_PARTIAL']
+        self.write_inputs()
+        row = next(r for r in lab.inventory(self.config)['monsters'] if r['monster'] == 'rat')
+        self.assertIn('SOURCE_BEHAVIOR_PARTIAL', row['quality_flags'])
+        self.assertEqual(row['runtime_status'], 'GAMEPLAY_UNVERIFIED')
+
+    def test_malformed_completion_flags_cannot_be_hidden(self):
+        for flags in ('SOURCE_BEHAVIOR_PARTIAL', [None], ['']):
+            with self.subTest(flags=flags):
+                self.index['monsters'][0]['completion_flags'] = flags
+                self.write_inputs()
+                with self.assertRaisesRegex(lab.LabError, 'Malformed completion flags'):
+                    lab.inventory(self.config)
+
     def test_digest_mismatch(self):
         (self.root / 'bundles/rat/monster.json').write_text('{}')
         with self.assertRaisesRegex(lab.LabError, 'digest mismatch'):
