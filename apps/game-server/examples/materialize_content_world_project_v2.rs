@@ -174,6 +174,29 @@ const NPC_ENRICH_FINAL_SHA256: &str =
     "52022031c1b23ebaefbe3a42f4f324588935279f8601cd05b8cc89992c3ac898";
 const NPC_ENRICH_FINAL_PREDECESSOR: &str =
     "4c395bf099d057bae2619f49f4124f0eb5593aa7a297e19d53ee04f98f17d394";
+const NPC_ENRICH_UPGRADE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r24/native-enrichment.json"
+);
+const NPC_ENRICH_UPGRADE_SHA256: &str =
+    "ff2549f32a31799e26cfe3011a22edcb21748d7e6dca66b07337bb7126da01ed";
+const NPC_ENRICH_UPGRADE_PREDECESSOR: &str =
+    "c6a6e609c63e8965bce3ceb08df2681f4d00c0182384193fa68a3cd3ff64cb28";
+fn source_upgrade_provisional(
+    draft: ProjectV2Draft,
+) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_ENRICH_UPGRADE,
+        NPC_ENRICH_UPGRADE_SHA256,
+        NPC_ENRICH_UPGRADE_PREDECESSOR,
+    )?;
+    Ok(draft)
+}
 fn finish_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     let mut draft = documents
@@ -186,7 +209,7 @@ fn finish_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn s
         NPC_ENRICH_FINAL_SHA256,
         NPC_ENRICH_FINAL_PREDECESSOR,
     )?;
-    Ok(draft)
+    source_upgrade_provisional(draft)
 }
 fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
@@ -353,6 +376,19 @@ fn materialize_from_predecessor(
     };
     let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    // Source upgrade fast path accepts exactly the pinned full R23 catalogue.
+    if document_tree_digest(&before) == NPC_ENRICH_UPGRADE_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_ENRICH_UPGRADE,
+            NPC_ENRICH_UPGRADE_SHA256,
+            NPC_ENRICH_UPGRADE_PREDECESSOR,
+        )?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("npc_source_upgrade=133 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
     // R23 fast batch accepts only the full pinned R22 catalogue.
     if document_tree_digest(&before) == NPC_ENRICH_FINAL_PREDECESSOR {
         npc_bulk_enrichment::apply(
@@ -361,6 +397,7 @@ fn materialize_from_predecessor(
             NPC_ENRICH_FINAL_SHA256,
             NPC_ENRICH_FINAL_PREDECESSOR,
         )?;
+        let draft = source_upgrade_provisional(draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
         let tree_sha256 = write_documents(output, &documents)?;
         println!(

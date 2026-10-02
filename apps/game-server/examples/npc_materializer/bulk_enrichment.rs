@@ -222,7 +222,10 @@ pub(super) fn apply(
     {
         return Err("enrichment envelope drifted".into());
     }
-    let placeholders = if packet.from_project_revision == "g4-npc-provisional-enrichment-r22" {
+    let placeholders = if matches!(
+        packet.from_project_revision.as_str(),
+        "g4-npc-provisional-enrichment-r22" | "g4-npc-provisional-enrichment-r23"
+    ) {
         Some(placeholder_presentations()?)
     } else {
         None
@@ -235,7 +238,9 @@ pub(super) fn apply(
         // R22 supplies selected replies only; keyword matching and flow remain unchanged.
         if matches!(
             packet.from_project_revision.as_str(),
-            "g4-npc-provisional-enrichment-r21" | "g4-npc-provisional-enrichment-r22"
+            "g4-npc-provisional-enrichment-r21"
+                | "g4-npc-provisional-enrichment-r22"
+                | "g4-npc-provisional-enrichment-r23"
         ) && let (
             ProjectV2Declaration::Dialogue { keywords: k, .. },
             ProjectV2Declaration::Dialogue { keywords: nk, .. },
@@ -327,13 +332,20 @@ pub(super) fn reverse_for_fixture(
 ) -> Result<()> {
     let chain = if bytes == NPC_ENRICH {
         vec![
+            (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
             (NPC_ENRICH_FINAL, NPC_ENRICH_FINAL_SHA256),
             (NPC_ENRICH_MORE, NPC_ENRICH_MORE_SHA256),
             (bytes, packet_sha256),
         ]
     } else if bytes == NPC_ENRICH_MORE {
         vec![
+            (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
             (NPC_ENRICH_FINAL, NPC_ENRICH_FINAL_SHA256),
+            (bytes, packet_sha256),
+        ]
+    } else if bytes == NPC_ENRICH_FINAL {
+        vec![
+            (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
             (bytes, packet_sha256),
         ]
     } else {
