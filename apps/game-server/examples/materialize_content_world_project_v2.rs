@@ -181,6 +181,29 @@ const NPC_ENRICH_UPGRADE_SHA256: &str =
     "ff2549f32a31799e26cfe3011a22edcb21748d7e6dca66b07337bb7126da01ed";
 const NPC_ENRICH_UPGRADE_PREDECESSOR: &str =
     "c6a6e609c63e8965bce3ceb08df2681f4d00c0182384193fa68a3cd3ff64cb28";
+const NPC_APPEARANCE_VISUAL: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-appearance-r25/native-enrichment.json"
+);
+const NPC_APPEARANCE_VISUAL_SHA256: &str =
+    "c99f2328ece4d00437e38cc1e712baac58d5c065ca466589a87f388348d44641";
+const NPC_APPEARANCE_VISUAL_PREDECESSOR: &str =
+    "efebcf97c06dd68bfb7092ff0c4b420940e06c1663f25f92c0da3ff1d35f8b75";
+fn visual_appearance_provisional(
+    draft: ProjectV2Draft,
+) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_APPEARANCE_VISUAL,
+        NPC_APPEARANCE_VISUAL_SHA256,
+        NPC_APPEARANCE_VISUAL_PREDECESSOR,
+    )?;
+    Ok(draft)
+}
 fn source_upgrade_provisional(
     draft: ProjectV2Draft,
 ) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
@@ -195,7 +218,7 @@ fn source_upgrade_provisional(
         NPC_ENRICH_UPGRADE_SHA256,
         NPC_ENRICH_UPGRADE_PREDECESSOR,
     )?;
-    Ok(draft)
+    visual_appearance_provisional(draft)
 }
 fn finish_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
@@ -376,6 +399,18 @@ fn materialize_from_predecessor(
     };
     let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    if document_tree_digest(&before) == NPC_APPEARANCE_VISUAL_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_APPEARANCE_VISUAL,
+            NPC_APPEARANCE_VISUAL_SHA256,
+            NPC_APPEARANCE_VISUAL_PREDECESSOR,
+        )?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("npc_visual_appearance=133 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
     // Source upgrade fast path accepts exactly the pinned full R23 catalogue.
     if document_tree_digest(&before) == NPC_ENRICH_UPGRADE_PREDECESSOR {
         npc_bulk_enrichment::apply(
@@ -384,6 +419,7 @@ fn materialize_from_predecessor(
             NPC_ENRICH_UPGRADE_SHA256,
             NPC_ENRICH_UPGRADE_PREDECESSOR,
         )?;
+        let draft = visual_appearance_provisional(draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
         let tree_sha256 = write_documents(output, &documents)?;
         println!("npc_source_upgrade=133 tree_sha256={tree_sha256} predecessor_mode=true");
