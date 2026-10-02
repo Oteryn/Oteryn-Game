@@ -414,7 +414,7 @@
       "total": 1360,
       "with_keywords": 1161,
       "with_topics": 713,
-      "npc_in_npc_census": 0
+      "npc_in_npc_census": 1360
     },
     "transitions_in_both_servers": 1345,
     "storyline_quests_linked_to_wiki": 52,
@@ -2787,7 +2787,8 @@
         "quest": "canary:quest/serpentine_tower_quest",
         "source_paths": [
           "scripts/quests/others/actions_serpentine_tower_lever.lua",
-          "scripts/quests/others/actions_serpentine_tower_torch.lua"
+          "scripts/quests/others/actions_serpentine_tower_torch.lua",
+          "scripts/quests/white_pearl/movements_white_pearl.lua"
         ],
         "coverage_gap": "The unsolved/full tower quest, global puzzle ordering and map/runtime bindings remain UNKNOWN.",
         "classification": "UNKNOWN"

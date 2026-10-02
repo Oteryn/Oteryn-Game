@@ -583,6 +583,39 @@ class Script:
             if (m := VALUE_ALIAS.match(self.raw(n))) and static_name_is_immutable(callback_lines, m.group(1)):
                 self.value_aliases[m.group(1)] = (n, m.group(2), self.line_scopes[n])
 
+        # getId on a use target is an Item type only after its own isItem guard.
+        self.item_target_lines = set()
+        target = next((n for n, role in self.roles.items() if role == 'use_target'), None)
+        dynamic = re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadfile|loadstring|dofile|require|debug|getmetatable|setmetatable)\b',
+                            mask_code('\n'.join(self.lines)))
+        proof_lines = [re.sub(rf'(?<![\w.:])type\(\s*{re.escape(target or "missing_target")}\s*\)',
+                              f'{target}:__source_type__()', line) for line in callback_lines]
+        proof_lines = [re.sub(rf'\bnot\s+{re.escape(target or "missing_target")}\b(?!\s*[.:\[])',
+                              f'not {target}:__source_truthiness__()', line) for line in proof_lines]
+        if (target and not dynamic and pristine_constructor(self.lines, 'Item')
+                and pristine_constructor(self.lines, 'type') and builtin_binding_is_pristine(proof_lines, target)):
+            def item_guards(nodes, known=False):
+                for node in nodes:
+                    if known:
+                        self.item_target_lines.update([node[1]] if node[0] == 'stmt' else
+                                                      [n for _, n, _ in node[1]] if node[0] == 'if' else [])
+                    if node[0] != 'if':
+                        continue
+                    branches = node[1]
+                    header = self.condition_headers.get(branches[0][1], self.raw(branches[0][1]))
+                    test = re.sub(r'^if\s+|\s+then.*$', '', header).strip()
+                    cuts = [i for i, _, depth in delimiters(test) if depth == 0 and re.match(r'\bor\b', test[i:])]
+                    bounds = [-2, *cuts, len(test)]
+                    terms = [test[a + 2:b].strip() for a, b in zip(bounds, bounds[1:])]
+                    positive = len(branches) == 1 and test == f'{target}:isItem()'
+                    negative = len(branches) == 1 and f'not {target}:isItem()' in terms
+                    for _, _, body in branches:
+                        item_guards(body, known or positive)
+                    # lua_blocks models terminating returns by putting continuation
+                    # in otherwise; a false disjunction makes every term false.
+                    item_guards(node[2], known or negative)
+            item_guards(body_nodes)
+
     def proven_player(self, name, number):
         if self.callback == 'onUse' and self.roles.get(name) == 'actor':
             return True
@@ -783,10 +816,10 @@ class Script:
         Never execute the selector or replace it with an unconditional bundle of rewards.
         Unknown selectors retain the original opaque child through an otherwise branch.
         """
-        match = re.fullmatch(r'(\w+)\[(\w+)\.uid\]', expr.strip())
+        match = re.fullmatch(r'(\w+)\[(\w+)\.(uid|itemid)\]', expr.strip())
         if not match or self.roles.get(match.group(2)) != 'source':
             return None
-        root, selector = match.groups()
+        root, selector, _ = match.groups()
         if number not in self.line_scopes or any(p[0] == 'opaque' for p in self.line_scopes[number]):
             return None
         body = [self.lines[n - 1] for n in sorted(self.line_scopes)]
@@ -799,7 +832,10 @@ class Script:
         try:
             text = '\n'.join(self.lines[declarations[0] - 1:])
             parser = LiteralParser(text[text.index('{'):])
-            values = lua_tables.as_python(parser.table())
+            parsed = parser.table()
+            if not all(type(f['key']) is int and type(f['value']) in (int, str) for f in parsed['fields']):
+                return None  # original AST, before duplicate-key collapse, must be scalar/pure
+            values = lua_tables.as_python(parsed)
         except (lua_tables.LuaError, IndexError, TypeError, ValueError):
             return None
         if (not isinstance(values, dict) or not values or len(values) > 128
@@ -960,6 +996,7 @@ class Script:
                       lambda m: f':getItemCount({ident})' if (ident := self.item_id(m.group(1))) else m.group(0), text)
         text = re.sub(r'\b(\w+):getId\(\)',
                       lambda m: f'{m.group(1)}.itemid' if self.roles.get(m.group(1)) in ('source', 'contact')
+                      or (self.roles.get(m.group(1)) == 'use_target' and number in self.item_target_lines)
                       else m.group(0), text)
         # Player(actor) returns this actor or nil. Equality to nil/boolean
         # therefore uses the existing acting-player predicate, never another id.
@@ -1005,6 +1042,61 @@ class Script:
             return out[0]
         return {('any' if 'or' in joins else 'all'): out}
 
+    def local_relocation_helper(self, raw, number):
+        """Closed local helper: relocation plus owner-neutral presentation only."""
+        call = re.fullmatch(r'(\w+)\((.*)\)', raw)
+        if not call or any(p[0] == 'opaque' for p in self.line_scopes.get(number, ())):
+            return None
+        name, arguments = call.groups()
+        candidates = [node[1] for node in lua_blocks.parse(self.block_lines, list(range(1, len(self.lines) + 1)))
+                      if node[0] == 'block' and re.fullmatch(rf'local function {name}\([^)]*\)', self.raw(node[1][0]))]
+        if len(candidates) != 1 or candidates[0][0] >= number:
+            return None
+        block = candidates[0]
+        params = split_args(self.raw(block[0]).split('(', 1)[1][:-1])
+        args = split_args(arguments)
+        if (len(params) not in (2, 3) or len(set(params)) != len(params) or len(args) != len(params)
+                or not all(re.fullmatch(r'\w+', p) for p in params) or self.raw(block[-1]) != 'end'):
+            return None
+        actor, destination = params[:2]
+        body = [(n, self.raw(n)) for n in block[1:-1] if self.raw(n)]
+        if not body or body[0][1] != f'{actor}:teleportTo({destination})':
+            return None
+        presentations = []
+        for line, statement in body[1:]:
+            if re.fullmatch(rf'{actor}:getPosition\(\):sendMagicEffect\(CONST_ME_\w+\)', statement):
+                presentations.append({'owner': 'Presentation', 'effect': 'magic_effect', 'authoritative': False})
+            elif re.fullmatch(rf'{actor}:sendTextMessage\((?:\d+|MESSAGE_\w+),\s*(?:"[^"\\]*"|{params[2] if len(params) == 3 else "(?!)"})\)', statement):
+                presentations.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': line})
+            else:
+                return None
+        proof = self.lines[:]; proof[block[0] - 1] = ''
+        if not pristine_constructor(proof, name) or not self.proven_player(args[0], number):
+            return None
+        callback_lines = [self.lines[n - 1] for n in self.line_scopes]
+        actor_proof = [re.sub(rf'^(\s*){name}\(\s*{args[0]}\s*,', rf'\1{name}(0,', self.lines[n - 1])
+                       for n in self.line_scopes if n != self.player_aliases.get(args[0], (None,))[0]]
+        actor_proof = [re.sub(rf'^(\s*if\s+(?:not\s+)?){args[0]}(\s+then\s*)$',
+                              rf'\1{args[0]}.__identity_read__\2', line) for line in actor_proof]
+        if not builtin_binding_is_pristine(actor_proof, args[0]):
+            return None
+        if len(args) == 3 and not isinstance(self.literal(args[2]), str):
+            return None
+        position = self.position(args[1])
+        if position and all(v >= 0 for v in position):
+            target = {'kind': 'anchor', 'anchor': self.anchor(tuple(str(v) for v in position) + (None, None, None))}
+        elif args[1] == 'fromPosition':
+            declaration = max(n for n in range(1, number) if CALLBACK.match(self.lines[n - 1]))
+            if 'fromPosition' not in split_args(self.lines[declaration - 1].split('(', 1)[1].split(')', 1)[0]):
+                return None
+            if not static_name_is_immutable(['local fromPosition = nil', *callback_lines], 'fromPosition',
+                                            references=True, copy_calls={name}):
+                return None
+            target = {'kind': 'previous_position'}
+        else:
+            return None
+        return [{'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope', 'target': target}, *presentations]
+
     def children(self, number, in_loop=False):
         self.current_line = number
         if number in self.readonly_tables:
@@ -1012,6 +1104,8 @@ class Script:
         raw = self.raw(number)
         code = mask_code(raw).strip()
         found = []
+        if not in_loop and (helper_children := self.local_relocation_helper(raw, number)) is not None:
+            return helper_children
         for call in re.finditer(r'(\w+):\w+\(', mask_code(raw)):
             if call.group(1) in self.player_aliases and not self.proven_player(call.group(1), number):
                 self.unresolved.append({'line': number, 'reason': 'receiver outside its proven acting-player scope'})
@@ -1195,11 +1289,15 @@ class Script:
                 child['item'] = ref('Item', f'{self.namespace}:item/{ident}')
             if len(args) > 2:
                 self.unresolved.append({'line': number, 'reason': 'Item hand-out additional arguments outside the transcribed vocabulary'})
-            selection = (self.finite_reward_lookup(args[0], number, m.group(1))
-                         if args and len(args) <= 2 and type(count) is int and count > 0 and not in_loop else None)
+            from reward_aliases import selector_expression
+            reward_expr = selector_expression(self, args[0], number) if args else None
+            selection = (self.finite_reward_lookup(reward_expr, number, m.group(1))
+                         if reward_expr and len(args) <= 2 and type(count) is int and count > 0 and not in_loop else None)
             if selection:
                 found.append({'branch': [
-                    {'when': {'object': {'role': 'source', 'field': 'unique_id', 'op': '==', 'value': uid}, 'negate': False},
+                    {'when': {'object': {'role': 'source', 'op': '==',
+                               **({'field': 'item_type', 'item': ref('Item', f'{self.namespace}:item/{uid}')}
+                                  if reward_expr.endswith('.itemid]') else {'field': 'unique_id', 'value': uid})}, 'negate': False},
                      'then': [{'owner': 'Item', 'request': 'hand_out',
                                'item': ref('Item', f'{self.namespace}:item/{item_id}'), 'count': count}]}
                     for uid, item_id in sorted(selection.items())], 'otherwise': [child]})

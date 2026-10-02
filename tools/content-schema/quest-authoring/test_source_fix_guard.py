@@ -1,4 +1,4 @@
-"""Real cumulative R12 receipt regressions, with isolated copies and no helper monkeypatch."""
+"""Real cumulative R13 receipt regressions, with isolated copies and no helper monkeypatch."""
 import copy
 import json
 import os
@@ -39,9 +39,9 @@ class SourceFixGuardTests(unittest.TestCase):
   for row in self.approval['approved_core_digests']:
    if row['key']==change['key']:row['to_digest']=change['to_digest']
   with self.assertRaises(ValueError):guard.validate_change(change,self.baseline,change['new_core'],self.approval)
- def test_actual_seventeen_reviewed_core_changes_pass(self):
+ def test_actual_twenty_five_reviewed_core_changes_pass(self):
   expected,proof=guard.effective_digests(self.root,self.baseline,self.current)
-  self.assertEqual(len(self.receipt['changes']),17);self.assertIsNotNone(proof)
+  self.assertEqual(len(self.receipt['changes']),25);self.assertIsNotNone(proof)
   for change in self.receipt['changes']:
    self.assertEqual(expected[change['key']],change['to_digest'])
  def test_bad_immutable_baseline_sha(self):

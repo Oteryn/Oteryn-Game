@@ -7722,8 +7722,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 58104
                         },
                         "negate": false
@@ -13070,9 +13070,73 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 18
-                            }
+                            "any": [
+                              {
+                                "object": {
+                                  "role": "use_target",
+                                  "field": "item_type",
+                                  "op": "==",
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/2622",
+                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                  }
+                                },
+                                "negate": false
+                              },
+                              {
+                                "object": {
+                                  "role": "use_target",
+                                  "field": "item_type",
+                                  "op": "==",
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/2601",
+                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                  }
+                                },
+                                "negate": false
+                              },
+                              {
+                                "object": {
+                                  "role": "use_target",
+                                  "field": "item_type",
+                                  "op": "==",
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/2596",
+                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                  }
+                                },
+                                "negate": false
+                              },
+                              {
+                                "object": {
+                                  "role": "use_target",
+                                  "field": "item_type",
+                                  "op": "==",
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/2612",
+                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                  }
+                                },
+                                "negate": false
+                              },
+                              {
+                                "object": {
+                                  "role": "use_target",
+                                  "field": "item_type",
+                                  "op": "==",
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/2618",
+                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                  }
+                                },
+                                "negate": false
+                              }
+                            ]
                           },
                           "then": [
                             {
@@ -17189,9 +17253,17 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 20
-                            }
+                            "object": {
+                              "role": "use_target",
+                              "field": "item_type",
+                              "op": "==",
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/27494",
+                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                              }
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -17283,9 +17355,47 @@
                         },
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 33
-                            }
+                            "any": [
+                              {
+                                "object": {
+                                  "role": "use_target",
+                                  "field": "item_type",
+                                  "op": "==",
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/27495",
+                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                  }
+                                },
+                                "negate": false
+                              },
+                              {
+                                "object": {
+                                  "role": "use_target",
+                                  "field": "item_type",
+                                  "op": "==",
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/27496",
+                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                  }
+                                },
+                                "negate": false
+                              },
+                              {
+                                "object": {
+                                  "role": "use_target",
+                                  "field": "item_type",
+                                  "op": "==",
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/27497",
+                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                  }
+                                },
+                                "negate": false
+                              }
+                            ]
                           },
                           "then": [
                             {
@@ -44124,8 +44234,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 58001
                         },
                         "negate": false
@@ -46778,9 +46888,41 @@
                                     }
                                   ]
                                 }
+                              ],
+                              "otherwise": [
+                                {
+                                  "owner": "Movement",
+                                  "request": "relocate",
+                                  "scope": "in_scope",
+                                  "target": {
+                                    "kind": "previous_position"
+                                  }
+                                },
+                                {
+                                  "owner": "Presentation",
+                                  "effect": "message",
+                                  "authoritative": false,
+                                  "source_line": 55
+                                }
                               ]
                             }
                           ]
+                        }
+                      ],
+                      "otherwise": [
+                        {
+                          "owner": "Movement",
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "previous_position"
+                          }
+                        },
+                        {
+                          "owner": "Presentation",
+                          "effect": "message",
+                          "authoritative": false,
+                          "source_line": 55
                         }
                       ]
                     }
@@ -46819,9 +46961,41 @@
                                     }
                                   ]
                                 }
+                              ],
+                              "otherwise": [
+                                {
+                                  "owner": "Movement",
+                                  "request": "relocate",
+                                  "scope": "in_scope",
+                                  "target": {
+                                    "kind": "previous_position"
+                                  }
+                                },
+                                {
+                                  "owner": "Presentation",
+                                  "effect": "message",
+                                  "authoritative": false,
+                                  "source_line": 55
+                                }
                               ]
                             }
                           ]
+                        }
+                      ],
+                      "otherwise": [
+                        {
+                          "owner": "Movement",
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "previous_position"
+                          }
+                        },
+                        {
+                          "owner": "Presentation",
+                          "effect": "message",
+                          "authoritative": false,
+                          "source_line": 55
                         }
                       ]
                     }
@@ -46878,9 +47052,41 @@
                                     }
                                   ]
                                 }
+                              ],
+                              "otherwise": [
+                                {
+                                  "owner": "Movement",
+                                  "request": "relocate",
+                                  "scope": "in_scope",
+                                  "target": {
+                                    "kind": "previous_position"
+                                  }
+                                },
+                                {
+                                  "owner": "Presentation",
+                                  "effect": "message",
+                                  "authoritative": false,
+                                  "source_line": 55
+                                }
                               ]
                             }
                           ]
+                        }
+                      ],
+                      "otherwise": [
+                        {
+                          "owner": "Movement",
+                          "request": "relocate",
+                          "scope": "in_scope",
+                          "target": {
+                            "kind": "previous_position"
+                          }
+                        },
+                        {
+                          "owner": "Presentation",
+                          "effect": "message",
+                          "authoritative": false,
+                          "source_line": 55
                         }
                       ]
                     }
@@ -46946,30 +47152,6 @@
         }
       ],
       "unresolved": [
-        {
-          "line": 73,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 76,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 83,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 86,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 93,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 96,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 103,
           "reason": "statement outside the transcribed vocabulary"
@@ -52925,9 +53107,84 @@
               },
               "then": [
                 {
-                  "owner": "Item",
-                  "request": "hand_out",
-                  "value_source_line": 35
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "op": "==",
+                          "field": "unique_id",
+                          "value": 40033
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/31369",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "op": "==",
+                          "field": "unique_id",
+                          "value": 40034
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/31370",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "op": "==",
+                          "field": "unique_id",
+                          "value": 40035
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/31372",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "value_source_line": 35
+                    }
+                  ]
                 },
                 {
                   "owner": "Presentation",
@@ -55302,9 +55559,84 @@
               },
               "then": [
                 {
-                  "owner": "Item",
-                  "request": "hand_out",
-                  "value_source_line": 39
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "op": "==",
+                          "field": "unique_id",
+                          "value": 40033
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/31369",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "op": "==",
+                          "field": "unique_id",
+                          "value": 40034
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/31370",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "op": "==",
+                          "field": "unique_id",
+                          "value": 40035
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "Item",
+                          "request": "hand_out",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/31372",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          },
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "value_source_line": 39
+                    }
+                  ]
                 },
                 {
                   "owner": "Presentation",
@@ -59934,8 +60266,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57237
                         },
                         "negate": false
@@ -59957,8 +60289,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57238
                         },
                         "negate": false
@@ -59980,8 +60312,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57239
                         },
                         "negate": false
@@ -60003,8 +60335,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57240
                         },
                         "negate": false
@@ -60026,8 +60358,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57241
                         },
                         "negate": false
@@ -60049,8 +60381,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57242
                         },
                         "negate": false
@@ -60072,8 +60404,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57243
                         },
                         "negate": false
@@ -60095,8 +60427,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57244
                         },
                         "negate": false
@@ -60118,8 +60450,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57245
                         },
                         "negate": false
@@ -60141,8 +60473,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 57246
                         },
                         "negate": false
@@ -63843,8 +64175,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 58103
                         },
                         "negate": false
@@ -64486,9 +64818,17 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 8
-                    }
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/20216",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -67290,9 +67630,96 @@
           ],
           "otherwise": [
             {
-              "owner": "Item",
-              "request": "hand_out",
-              "value_source_line": 14
+              "branch": [
+                {
+                  "when": {
+                    "object": {
+                      "role": "source",
+                      "op": "==",
+                      "field": "item_type",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/897",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  "then": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/9598",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      },
+                      "count": 1
+                    }
+                  ]
+                },
+                {
+                  "when": {
+                    "object": {
+                      "role": "source",
+                      "op": "==",
+                      "field": "item_type",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/898",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  "then": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/9596",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      },
+                      "count": 1
+                    }
+                  ]
+                },
+                {
+                  "when": {
+                    "object": {
+                      "role": "source",
+                      "op": "==",
+                      "field": "item_type",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/899",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      }
+                    },
+                    "negate": false
+                  },
+                  "then": [
+                    {
+                      "owner": "Item",
+                      "request": "hand_out",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/9594",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      },
+                      "count": 1
+                    }
+                  ]
+                }
+              ],
+              "otherwise": [
+                {
+                  "owner": "Item",
+                  "request": "hand_out",
+                  "value_source_line": 14
+                }
+              ]
             },
             {
               "owner": "Presentation",
@@ -72294,9 +72721,17 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 18
-                        }
+                        "object": {
+                          "role": "use_target",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/19217",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -95586,8 +96021,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1300
                         },
                         "negate": false
@@ -95609,8 +96044,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1301
                         },
                         "negate": false
@@ -95632,8 +96067,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1302
                         },
                         "negate": false
@@ -95655,8 +96090,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1303
                         },
                         "negate": false
@@ -95678,8 +96113,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1304
                         },
                         "negate": false
@@ -95701,8 +96136,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1305
                         },
                         "negate": false
@@ -95724,8 +96159,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1306
                         },
                         "negate": false
@@ -95747,8 +96182,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1307
                         },
                         "negate": false
@@ -95770,8 +96205,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 1308
                         },
                         "negate": false
@@ -99579,8 +100014,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 47404
                         },
                         "negate": false
@@ -99602,8 +100037,8 @@
                       "when": {
                         "object": {
                           "role": "source",
-                          "field": "unique_id",
                           "op": "==",
+                          "field": "unique_id",
                           "value": 47405
                         },
                         "negate": false

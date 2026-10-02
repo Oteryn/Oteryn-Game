@@ -13,7 +13,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "0c1046128c4ed900e76f2a30633fac6cab65155644aa167cad0f54b4c0a22717"
+      "sha256": "7b4419d13391eaff5112230c2bafa1cd11af231b73fa8f5a9c8685dba960b718"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -25,7 +25,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
-      "sha256": "f4eb3f0e80dcfa10b4564796342549bc93397e42282e98777e0dd37a5d374dfa"
+      "sha256": "ee8da3933600645f33c3ef1418e249163ad60d7bfea9315b200dff0112734dc7"
     }
   ],
   "historical_coverage_ots_sources": {
@@ -29505,7 +29505,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 32,
-              "unresolved_items": 208
+              "unresolved_items": 207
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -30313,7 +30313,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 21,
-              "unresolved_items": 103
+              "unresolved_items": 101
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -63735,7 +63735,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 20,
-              "unresolved_items": 149
+              "unresolved_items": 143
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -110792,7 +110792,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 9,
-              "unresolved_items": 30
+              "unresolved_items": 29
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -116539,12 +116539,14 @@
             "classification": "DERIVED",
             "features": [
               "reward_claim",
+              "teleport",
+              "trigger_step",
               "trigger_use",
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 2,
-              "unresolved_items": 8
+              "interactions_with_gaps": 3,
+              "unresolved_items": 13
             },
             "runtime_readiness": "UNKNOWN"
           }

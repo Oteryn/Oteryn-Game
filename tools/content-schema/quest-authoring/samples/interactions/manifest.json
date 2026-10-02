@@ -14,11 +14,11 @@
       "Ability": 222,
       "Achievement": 28,
       "Experience": 9,
-      "Item": 368,
+      "Item": 377,
       "Mount": 2,
-      "Movement": 801,
+      "Movement": 807,
       "Outfit": 10,
-      "Presentation": 2681,
+      "Presentation": 2687,
       "Quest": 862,
       "WorldObject": 874
     },
@@ -28,7 +28,7 @@
     },
     "relocation_children": {
       "anchor": 304,
-      "previous_position": 203
+      "previous_position": 209
     },
     "overlay_operations": {
       "CREATE": 50,
@@ -38,8 +38,8 @@
     },
     "overlay_operations_with_revert_after": 0,
     "quest_children_naming_a_transition": 207,
-    "unresolved_lines": 1930,
-    "unresolved_conditions": 1728,
+    "unresolved_lines": 1924,
+    "unresolved_conditions": 1723,
     "by_status": {
       "conflict": 2,
       "mapped": 245,
@@ -16141,8 +16141,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1300
                               },
                               "negate": false
@@ -16164,8 +16164,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1301
                               },
                               "negate": false
@@ -16187,8 +16187,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1302
                               },
                               "negate": false
@@ -16210,8 +16210,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1303
                               },
                               "negate": false
@@ -16233,8 +16233,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1304
                               },
                               "negate": false
@@ -16256,8 +16256,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1305
                               },
                               "negate": false
@@ -16279,8 +16279,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1306
                               },
                               "negate": false
@@ -16302,8 +16302,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1307
                               },
                               "negate": false
@@ -16325,8 +16325,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1308
                               },
                               "negate": false
@@ -16461,8 +16461,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1300
                               },
                               "negate": false
@@ -16484,8 +16484,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1301
                               },
                               "negate": false
@@ -16507,8 +16507,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1302
                               },
                               "negate": false
@@ -16530,8 +16530,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1303
                               },
                               "negate": false
@@ -16553,8 +16553,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1304
                               },
                               "negate": false
@@ -16576,8 +16576,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1305
                               },
                               "negate": false
@@ -16599,8 +16599,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1306
                               },
                               "negate": false
@@ -16622,8 +16622,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1307
                               },
                               "negate": false
@@ -16645,8 +16645,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1308
                               },
                               "negate": false
@@ -16668,8 +16668,8 @@
                             "when": {
                               "object": {
                                 "role": "source",
-                                "field": "unique_id",
                                 "op": "==",
+                                "field": "unique_id",
                                 "value": 1309
                               },
                               "negate": false

@@ -7329,12 +7329,13 @@
     {
       "title": "Serpentine Tower Quest",
       "key": "serpentine_tower_quest",
-      "basis": "Dedicated Serpentine Tower lever and torch callbacks form exact named puzzle components. No other actions/others callback is attributed to this quest.",
+      "basis": "Dedicated Serpentine Tower lever and torch callbacks form exact named puzzle components. No other actions/others callback is attributed to this quest. Exact White Pearl step-in callback is the same tower pot-controlled entry/return component, supported by the pinned White Pearl method and local tower coordinates; no directory-wide owner inference.",
       "coverage_gap": "The unsolved/full tower quest, global puzzle ordering and map/runtime bindings remain UNKNOWN.",
       "coverage_scope": "partial_executable_component",
       "source_paths": [
         "scripts/quests/others/actions_serpentine_tower_lever.lua",
-        "scripts/quests/others/actions_serpentine_tower_torch.lua"
+        "scripts/quests/others/actions_serpentine_tower_torch.lua",
+        "scripts/quests/white_pearl/movements_white_pearl.lua"
       ],
       "source_evidence": [
         {
@@ -7384,11 +7385,36 @@
           "classification": "OTS_HYPOTHESIS_ONLY",
           "interaction_key": "canary:interaction/others/actions_serpentine_tower_torch",
           "blob_sha1": "0e918435656e385c94ebf012941cbc059452749a"
+        },
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/white_pearl/movements_white_pearl.lua",
+          "line": 15,
+          "blob_sha1": "65f3719a60663e1b3d322dea10e8f0ae7abaa9e6",
+          "blob_sha256": "216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/white_pearl/movements_white_pearl"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "path": "data-global/scripts/quests/white_pearl/movements_white_pearl.lua",
+          "line": 15,
+          "blob_sha1": "65f3719a60663e1b3d322dea10e8f0ae7abaa9e6",
+          "blob_sha256": "216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+          "role": "executable",
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "interaction_key": "canary:interaction/white_pearl/movements_white_pearl"
         }
       ],
       "interaction_keys": [
         "canary:interaction/others/actions_serpentine_tower_lever",
-        "canary:interaction/others/actions_serpentine_tower_torch"
+        "canary:interaction/others/actions_serpentine_tower_torch",
+        "canary:interaction/white_pearl/movements_white_pearl"
       ]
     },
     {

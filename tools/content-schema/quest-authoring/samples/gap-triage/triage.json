@@ -64,20 +64,20 @@
   ]
  },
  "counts": {
-  "unresolved_lines": 1930,
-  "unresolved_conditions": 1728,
+  "unresolved_lines": 1924,
+  "unresolved_conditions": 1723,
   "blocked_children": 466,
   "reference_gaps": 0,
-  "total_unresolved_items": 4124,
+  "total_unresolved_items": 4113,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3512
+   "bespoke": 3501
   },
   "quests_triaged": 284,
   "quests_with_bespoke_work": 110,
   "quests_fully_covered_by_owners_and_mechanisms": 1,
-  "interactions_unlinked_to_a_quest": 12
+  "interactions_unlinked_to_a_quest": 11
  },
  "owners_ranked_by_quests": [
   {
@@ -711,7 +711,7 @@
    "counts": {
     "owner_pending": 31,
     "shared_mechanism": 3,
-    "bespoke": 200
+    "bespoke": 199
    },
    "owners_needed": [
     "boss_cooldown",
@@ -728,7 +728,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:200"
+    "bespoke:199"
    ]
   },
   {
@@ -737,7 +737,7 @@
    "counts": {
     "owner_pending": 16,
     "shared_mechanism": 2,
-    "bespoke": 101
+    "bespoke": 99
    },
    "owners_needed": [
     "boss_cooldown",
@@ -752,7 +752,7 @@
     "owner:creature_removal",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:101"
+    "bespoke:99"
    ]
   },
   {
@@ -1531,7 +1531,7 @@
    "counts": {
     "owner_pending": 21,
     "shared_mechanism": 0,
-    "bespoke": 143
+    "bespoke": 137
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1543,7 +1543,7 @@
     "owner:boss_cooldown",
     "owner:creature_removal",
     "owner:scheduler",
-    "bespoke:143"
+    "bespoke:137"
    ]
   },
   {
@@ -2468,7 +2468,7 @@
    "counts": {
     "owner_pending": 5,
     "shared_mechanism": 1,
-    "bespoke": 29
+    "bespoke": 28
    },
    "owners_needed": [
     "scheduler"
@@ -2479,7 +2479,7 @@
    "to_finish": [
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:29"
+    "bespoke:28"
    ]
   },
   {
@@ -2617,12 +2617,12 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 7
+    "bespoke": 12
    },
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:7"
+    "bespoke:12"
    ]
   },
   {
@@ -2793,7 +2793,7 @@
    "counts": {
     "owner_pending": 1,
     "shared_mechanism": 3,
-    "bespoke": 42
+    "bespoke": 41
    },
    "owners_needed": [
     "condition"
@@ -2804,7 +2804,7 @@
    "to_finish": [
     "owner:condition",
     "mechanism:kill_reward_fanout",
-    "bespoke:42"
+    "bespoke:41"
    ]
   },
   {
@@ -4254,7 +4254,6 @@
   "canary:interaction/soulpit/exalted_core",
   "canary:interaction/soulpit/soul_prism",
   "canary:interaction/soulpit/soulpit_fight",
-  "canary:interaction/white_pearl/movements_white_pearl",
   "crystalserver:interaction/candia_bosses/sugar_daddy_teleports",
   "crystalserver:interaction/rookgaard_quests/quiver"
  ]

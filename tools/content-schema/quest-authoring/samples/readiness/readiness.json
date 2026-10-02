@@ -49,15 +49,15 @@
    "reward_claim": 135,
    "scheduler": 53,
    "summon": 38,
-   "teleport": 88,
+   "teleport": 89,
    "trigger_kill": 50,
-   "trigger_step": 84,
+   "trigger_step": 85,
    "trigger_use": 198,
    "world_object": 91
   },
   "quests_without_data_gaps": 103,
-  "interactions_joined": 1209,
-  "interactions_unlinked": 12
+  "interactions_joined": 1210,
+  "interactions_unlinked": 11
  },
  "unlock_order": [
   {
@@ -75,13 +75,13 @@
   {
    "feature": "world_object",
    "owner": "world-object overlay (D38)",
-   "quests_complete_on_engine_side": 148,
+   "quests_complete_on_engine_side": 147,
    "of_which_without_data_gaps": 84
   },
   {
    "feature": "teleport",
    "owner": "relocation owner (D37)",
-   "quests_complete_on_engine_side": 152,
+   "quests_complete_on_engine_side": 151,
    "of_which_without_data_gaps": 85
   },
   {
@@ -771,7 +771,7 @@
    "interactions": 38,
    "data_gaps": {
     "interactions_with_gaps": 32,
-    "unresolved_items": 208
+    "unresolved_items": 207
    }
   },
   {
@@ -796,7 +796,7 @@
    "interactions": 25,
    "data_gaps": {
     "interactions_with_gaps": 21,
-    "unresolved_items": 103
+    "unresolved_items": 101
    }
   },
   {
@@ -1620,7 +1620,7 @@
    "interactions": 24,
    "data_gaps": {
     "interactions_with_gaps": 20,
-    "unresolved_items": 149
+    "unresolved_items": 143
    }
   },
   {
@@ -2597,7 +2597,7 @@
    "interactions": 10,
    "data_gaps": {
     "interactions_with_gaps": 9,
-    "unresolved_items": 30
+    "unresolved_items": 29
    }
   },
   {
@@ -2740,13 +2740,15 @@
    "kind": "script_only",
    "features": [
     "reward_claim",
+    "teleport",
+    "trigger_step",
     "trigger_use",
     "world_object"
    ],
-   "interactions": 2,
+   "interactions": 3,
    "data_gaps": {
-    "interactions_with_gaps": 2,
-    "unresolved_items": 8
+    "interactions_with_gaps": 3,
+    "unresolved_items": 13
    }
   },
   {
@@ -2930,7 +2932,7 @@
    "interactions": 12,
    "data_gaps": {
     "interactions_with_gaps": 12,
-    "unresolved_items": 45
+    "unresolved_items": 44
    }
   },
   {
@@ -4463,7 +4465,6 @@
   "crystalserver:interaction/rookgaard_quests/quiver",
   "canary:interaction/soulpit/exalted_core",
   "canary:interaction/soulpit/soul_prism",
-  "canary:interaction/soulpit/soulpit_fight",
-  "canary:interaction/white_pearl/movements_white_pearl"
+  "canary:interaction/soulpit/soulpit_fight"
  ]
 }
