@@ -35,23 +35,23 @@
     "StarterKit": 1
   },
   "item_authoring_counts": {
-    "authoring": 411,
-    "relation_sources": 250,
+    "authoring": 700,
+    "relation_sources": 539,
     "taxonomy": 164
   },
   "legacy_blobs": {
-    "declarations": "74b3988c27a1c9aa19bcfc8670307014b7098f9f",
+    "declarations": "f50400dab48275bff3eeecf8be5b7e30a8df2130",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "196ce8be08c30f1f5583f4a56260ff983a95e143",
-    "reference": "fe87afacee0b0e7999f17c447e96163d396ffd10",
-    "sources": "56d7707c211d11c70cfb5ef7a3deed4b3af2244d"
+    "imports": "d1005db8ff9791c00935a1b920cdd5f12dba63da",
+    "reference": "77e5eaf85021c93fe860c8160857a8804c502aa3",
+    "sources": "f67394fc2da16069fb17e92fc89be255e2638a5c"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
     "Creature": 1503,
     "Encounter": 61,
-    "Item": 165,
+    "Item": 454,
     "Mount": 252,
     "NPC": 2376
   }

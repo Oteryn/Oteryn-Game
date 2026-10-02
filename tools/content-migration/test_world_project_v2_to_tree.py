@@ -19,6 +19,7 @@ def test_closed_weapon_metadata_admission():
     owners = {migration.target_id(row["item"]): copy.deepcopy(row) for row in receipt["parent_authoring"]}
     for key, row in rows.items():
         owners.setdefault(key, {"item": row["target"]}).update(copy.deepcopy(row["facts"]))
+    migration.extend_forge289_owners(owners)
     aliases = migration.item_alias_targets()
     staged = {migration.staged_item_target(row["target"], aliases): row for row in migration.load(
         ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")["items"]}
@@ -94,7 +95,7 @@ assert lock["family_counts"] == {
     "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
     "Proficiency": 443, "RewardClaim": 231, "StarterKit": 1,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1503, "Encounter": 61, "NPC": 2376}
+assert lock["source_binding_counts"] == {"Item": 454, "Mount": 252, "Creature": 1503, "Encounter": 61, "NPC": 2376}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]

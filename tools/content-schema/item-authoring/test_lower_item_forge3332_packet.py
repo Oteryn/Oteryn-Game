@@ -50,6 +50,7 @@ class ForgeSources(unittest.TestCase):
             owners.setdefault(weapon_key, {"item": row["target"]}).update(
                 copy.deepcopy(row["facts"])
             )
+        migration.extend_forge289_owners(owners)
         migration.validate_item_authoring_targets(owners, staged)
         for path, value in [
             ("classification", 3),

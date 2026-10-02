@@ -144,6 +144,51 @@ def extend_weapon_owners(expected):
     require(len(expected) == 411, "WEAPON_METADATA_OWNER_COUNT")
 
 
+def closed_forge289():
+    """Exactly289 qualified metadata pairs/bindings; no inferred maximum/default."""
+    raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json").read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == "376d668b5148d9c5f7b85eb3ef7e2f747c08fdc10170f62ed22e49ce4c6157ab", "FORGE289_PACKET_DIGEST")
+    packet = json.loads(raw)
+    proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json").read_bytes()
+    require(hashlib.sha256(proof_raw).hexdigest() == "e76b35928af82b02cc60eea1904b343e88588bd6765436acde39b70370b499a1", "FORGE289_PROOF_DIGEST")
+    proof = json.loads(proof_raw)
+    rows = {target_id(row["item"]): row for row in packet["promotions"]}
+    sources = {target_id(row["qualification"]["target"]): row["qualification"] for row in proof["records"]}
+    require(packet["schema"] == "OTERYN_ITEM_FORGE289_SOURCE_IMPORT/v1"
+            and len(rows) == len(packet["promotions"]) == len(sources) == 289
+            and set(rows) == set(sources), "FORGE289_CLOSED_SCOPE")
+    parent = {target_id(row["item"]): row for row in proof["current_parent_authoring"]}
+    require(len(parent) == len(proof["current_parent_authoring"]) == 411 and not set(parent).intersection(rows), "FORGE289_PARENT_SCOPE")
+    relations = {}
+    for key, row in rows.items():
+        q = sources[key]
+        require(canonical_bytes(row) == canonical_bytes({"item": q["target"], "forge": q["forge"]}), "FORGE289_LITERAL_PAIR")
+        slot = q["native_definition"]["semantics"].get("imbuement", {})
+        slot = slot.get("value", {}).get("slot_count", {}) if slot.get("state") == "KNOWN" else {}
+        refs = [{"relation": "CAPABILITY_GOVERNED_BY", "ruleset": "rulesets/items/exaltation-forge/", "basis": "forge"}]
+        if slot.get("state") == "KNOWN" and type(slot.get("value")) is int and slot["value"] >= 1:
+            refs.append({"relation": "CAPABILITY_GOVERNED_BY", "ruleset": "rulesets/items/imbuements/", "basis": "imbuement.slot_count>=1"})
+        relations[key] = {"source": row["item"], "relations": refs}
+    require(sum(len(r["relations"]) == 2 for r in relations.values()) == 138, "FORGE289_EXISTING_NATIVE_SLOT_SCOPE")
+    return rows, parent, relations, sources
+
+
+def extend_forge289_owners(expected):
+    rows, parent, _, _ = closed_forge289()
+    require(canonical_sorted(list(expected.values())) == canonical_sorted(list(parent.values())), "FORGE289_PARENT_OWNERS")
+    expected.update(rows)
+    require(len(expected) == 700, "FORGE289_OWNER_COUNT")
+
+
+def validate_forge289_relation(row, definition, closed, source):
+    require(canonical_bytes(row) == canonical_bytes(closed) and row["source"] == definition["identity"], "FORGE289_FULL_RELATION")
+    expected = source["native_definition"]["semantics"].get("imbuement", {})
+    expected = expected.get("value", {}).get("slot_count", {}) if expected.get("state") == "KNOWN" else {}
+    actual = definition["semantics"].get("imbuement", {})
+    actual = actual.get("value", {}).get("slot_count", {}) if actual.get("state") == "KNOWN" else {}
+    require(canonical_bytes(actual) == canonical_bytes(expected), "FORGE289_CURRENT_NATIVE_SLOT")
+
+
 def validate_item_authoring_targets(legacy_authoring, staged_items):
     """Retain every admitted cohort plus sealed103 intrinsic weapon properties."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
@@ -173,6 +218,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     require(len(expected) == 315 and forge_key not in expected, "CLOSED_FORGE_OWNER_SCOPE")
     expected[forge_key] = forge
     extend_weapon_owners(expected)
+    extend_forge289_owners(expected)
     require(set(legacy_authoring) == set(expected), "WAVE1_AUTHORING_TARGETS")
     for key, value in expected.items():
         # Canonical bytes distinguish bool from integer and reject extra/partial siblings.
@@ -259,6 +305,8 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     require(len(weapon_relations) == len(weapon_receipt["new_derived_relations"]) == 47
             and len(prior_relations) == len(weapon_receipt["parent_relations"]) == 203
             and not set(weapon_relations).intersection(prior_relations), "CLOSED_WEAPON_RELATION_SCOPE")
+    _, _, forge289_relations, forge289_sources = closed_forge289()
+    forge289_relation_count = 0
     weapon_relation_count = 0
     seen_sources = set()
     for row in relations["records"]:
@@ -266,7 +314,10 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         require(key in definitions and key not in seen_sources, "RELATION_SOURCE_UNRESOLVED")
         seen_sources.add(key)
         rulesets = sorted(relation["ruleset"] for relation in row["relations"])
-        if key in weapon_relations:
+        if key in forge289_relations:
+            validate_forge289_relation(row, definitions[key], forge289_relations[key], forge289_sources[key])
+            forge289_relation_count += 1
+        elif key in weapon_relations:
             validate_weapon_relation(row, definitions[key], weapon_rows, weapon_relations)
             weapon_relation_count += 1
         elif key in staged_items:
@@ -282,8 +333,8 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         for ruleset in rulesets:
             require((ROOT / ruleset / "index.json").is_file(), f"RELATION_RULESET_UNRESOLVED:{ruleset}")
         relation_count += len(rulesets)
-    require(use_relation_count == 55 and forge_relation_count == 1 and weapon_relation_count == 47
-            and sum(bool(item["capability_relations"]) for item in staged["items"]) + use_relation_count + forge_relation_count + weapon_relation_count == len(seen_sources), "RELATION_COVERAGE")
+    require(use_relation_count == 55 and forge_relation_count == 1 and weapon_relation_count == 47 and forge289_relation_count == 289
+            and sum(bool(item["capability_relations"]) for item in staged["items"]) + use_relation_count + forge_relation_count + weapon_relation_count + forge289_relation_count == len(seen_sources), "RELATION_COVERAGE")
     require(canonical_sorted([row for row in relations["records"] if target_id(row["source"]) in prior_relations])
             == canonical_sorted(list(prior_relations.values())), "WEAPON_PARENT_RELATIONS_CHANGED")
 

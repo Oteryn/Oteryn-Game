@@ -1,0 +1,86 @@
+{
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "closed_ids": [
+    36656,
+    36657,
+    36658,
+    36659,
+    36660,
+    36661,
+    36662,
+    36666,
+    36672,
+    36673,
+    39147,
+    39148,
+    39150,
+    45639,
+    45640,
+    50169,
+    50170
+  ],
+  "counts": {
+    "atoms": 50,
+    "origins": {
+      "observed_magic4": {
+        "atoms": 16,
+        "vectors": 4
+      },
+      "original13": {
+        "atoms": 34,
+        "vectors": 13
+      }
+    },
+    "vectors": 17
+  },
+  "current_parent_reference_historical_witness": {
+    "path": "content/world/definitions/reference.json",
+    "sha256": "debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2"
+  },
+  "cutoff": "2026-09-27T23:59:59Z",
+  "explicit_successor": {
+    "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json",
+    "sha256": "c950c0c89db442612b4822e857b86e70ac01056974f9752996aadda415f2d71f"
+  },
+  "global_own_id_frame": {
+    "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
+    "sha256": "86b06302b966219fc9199f954f85a59437c6078d982b4843d57a432b8b69dca5"
+  },
+  "inactive_initial13_packet": {
+    "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-promotion-v1.json",
+    "sha256": "d8c89a733e28a1d437b9bacde7be3be791e7d408f9ff5d5fa4dd2d72046c163c",
+    "status": "INITIAL_SOURCE_ONLY_INACTIVE_UNPUBLISHED; INITIAL_COMPILER_AND_RECEIPT_EXACT_EXTERNAL_CHECKPOINT_FD251646; NOT_A_RUNTIME_OR_CI_APPLIER"
+  },
+  "input_pins": {
+    "apps/game-server/src/content/reference_playable.rs": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+    "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json": "86b06302b966219fc9199f954f85a59437c6078d982b4843d57a432b8b69dca5",
+    "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+    "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
+    "imports/official/appearance-membership/appearances-17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1.json": "5d5d50c4dfbb527f73cc0993cb37f18d3ce83f4a8a72376df7c71b6b7d165f2a",
+    "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+    "imports/official/appearance-membership/appearances-6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1.json": "59455ce0dc9319f89ffd6eb4474c456c7ddfbc7d133c219b576008f32e758dd5",
+    "imports/official/appearance-membership/appearances-aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50.json": "466fdef535e3b7a8e8e574e2838d729a0f7386f4ffa2dbd7074c043a6e611c58",
+    "imports/tibiawiki/facts/items-stats.json": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a",
+    "tools/content-census/item_wiki_family_capture.py": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
+    "tools/content-schema/item-authoring/appearance_membership.py": "0746bb0e350fb04503919295a718907afc87866b0299fa277b914c74e85cfc09",
+    "tools/content-schema/item-authoring/engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+    "tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py": "ea3dcd372bbdc09cce03de483cb29dbac4ffc085f85688e618dfeff8801e72ea",
+    "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py": "3f144f1e8ed93e2606448f757695c43a24899f48e8aa6bce3f60ca164f4ae3c3",
+    "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "9e418a08ba951bc35d078b65689beb2e12f3da53af9470a8c55cfca7e36a5600",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "70d6244253ec7fcc557b29f8203abc8492cd261a62563213bd1a3298bc212dba",
+    "tools/content-schema/item-authoring/lower_wiki_stats_packet.py": "8303df188b111e5f3323585a331bd1587005c8ce64410a56d58fb3daaf6a07f4",
+    "tools/content-schema/item-authoring/source_field_catalogs.py": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc"
+  },
+  "live_guard": "Scoped17 full identity/name/four native headers/portable official membership/currentWorld absence/Unknown or identical wholevector. Global Native digest is historical only; sibling enrichment allowed.",
+  "schema": "OTERYN_ITEM_NUMERIC_MODIFIER17_CURRENT_SOURCE_RECEIPT/v1",
+  "source_proofs": [
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json",
+      "sha256": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json",
+      "sha256": "9aba058979f9376996377163964cbad2a9a20cd826c071ea40c9e1273213238f"
+    }
+  ]
+}

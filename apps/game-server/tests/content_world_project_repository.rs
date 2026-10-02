@@ -3,7 +3,7 @@
 
 use oteryn_game_server::content::*;
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "321c93321ea63bb8e9db2c2b4fe7ae630e44964bfb529e6a0f5061c3aee10997",
+        "0da232c6d662b68b0a50d19e6ab99191577cc2555c671f43a0b86a4378bac747",
     ),
     (
         "definitions/declarations.json",
-        15_187_971,
-        "b9ad3d8429f538f1d9459c0917d500c84168cc74ae0e6c969eb99425b98d7a3e",
+        15_225_274,
+        "e553a2a894ea15f7743a94fac91b588994b3b36a80df8ca669a3b4fbde753ff9",
     ),
     (
         "definitions/reference.json",
-        24_952_379,
-        "debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2",
+        25_072_677,
+        "08d905512d61f9d909daa532e02c7f249e25ef1c8e48c1d9835b16ebd99f93cd",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "eb8279c0e8c15a348f10a1aab7e6565664a2a3a3bf5a40fc91593256f14304cd",
+        "f05a79f3c74d74132a82678a18c98305559791985510826f8bf35cfb5877c552",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "320a5142b5344cda9aab3e5419ae2262832c6fca46c5701eac32eb89acda944f",
+        "ab30d2572e7243b9229c50e3a09f9cbea7f4e1c9773752fa00bffafbdeb699d0",
     ),
     (
         "provenance/imports.json",
-        33_077,
-        "a6865cf27269c6d3cabb80b9b7895aab202d11d829675e7fda17b1c2cda89763",
+        33_802,
+        "1f50c423b1acb046bc168cb167eeea70b5e2be55fa6a5c171ca32b7025782387",
     ),
     (
         "provenance/sources.json",
-        1_317_786,
-        "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1",
+        1_413_029,
+        "82dbf6d7133fd23818e0a248cee51a85ea977609bec732b81e730e55507f57c5",
     ),
     (
         "worlds/world.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "04b0f9a6428484137dfd9b8443c37308b301f9fdb9b11db70e29cbada2bda2e1";
+const TREE_SHA256: &str = "084e047fcbf89afa50105c4a58653691eb4a5ec4cd48bceb95577a8ef74f2218";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -326,8 +326,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     )
     .expect("capture tracked canonical package");
     assert_eq!(project.project_revision(), "g4-npc-wave-a-r9");
-    assert_eq!(project.imports().len(), 12);
-    let provenance = &project.imports()[1];
+    assert_eq!(project.imports().len(), 13);
+    let legacy_imports: Vec<_> = project
+        .imports()
+        .iter()
+        .filter(|b| b.batch_id != "g4-item-forge289-br-r1")
+        .collect();
+    assert_eq!(legacy_imports.len(), 12);
+    let provenance = &legacy_imports[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
     assert_eq!(
@@ -341,7 +347,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(provenance.candidates.is_empty());
     assert!(provenance.reimport_states.is_empty());
     // ITEM-ADD-1: the donor identity epoch 2 batch, from its pinned donor items.xml.
-    let donor_provenance = &project.imports()[0];
+    let donor_provenance = &legacy_imports[0];
     assert_eq!(
         donor_provenance.batch_id,
         "cw2-b1-donor-identity-epoch-2-r1"
@@ -361,7 +367,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert!(donor_provenance.candidates.is_empty());
     assert!(donor_provenance.reimport_states.is_empty());
-    let creature_import = &project.imports()[2];
+    let creature_import = &legacy_imports[2];
     assert_eq!(creature_import.batch_id, "g4-creature-canary-wave-a-r1");
     assert_eq!(creature_import.source_repository, "opentibiabr/canary");
     assert_eq!(
@@ -379,7 +385,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             && state.local == state.baseline
             && state.decision == ReimportDecision::Unchanged
     }));
-    let creature_crystal_import = &project.imports()[3];
+    let creature_crystal_import = &legacy_imports[3];
     assert_eq!(
         creature_crystal_import.batch_id,
         "g4-creature-crystal-1530-r1"
@@ -393,14 +399,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
     );
     assert!(creature_crystal_import.candidates.is_empty());
-    let wiki = &project.imports()[4];
+    let wiki = &legacy_imports[4];
     assert_eq!(wiki.batch_id, "g4-item-exact-165-tibiawiki-r1");
     assert_eq!(
         wiki.source_artifact_sha256,
         "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
     );
     assert!(wiki.candidates.is_empty());
-    let wave1_import = &project.imports()[5];
+    let wave1_import = &legacy_imports[5];
     assert_eq!(wave1_import.batch_id, "g4-item-wave1-tibiawiki-r1");
     assert_eq!(
         wave1_import.source_artifact_sha256,
@@ -411,7 +417,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "tibiawiki-item-wave1-snapshot:5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
     );
     assert!(wave1_import.candidates.is_empty());
-    let mount_import = &project.imports()[6];
+    let mount_import = &legacy_imports[6];
     assert_eq!(mount_import.batch_id, "g4-mount-252-tibiawiki-r1");
     assert_eq!(
         mount_import.source_revision,
@@ -578,8 +584,29 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(parent_keys.len(), 316);
     let weapon_new_keys: BTreeSet<_> = weapon_keys.difference(&parent_keys).copied().collect();
     assert_eq!(weapon_new_keys.len(), 95);
-    let expected_keys: BTreeSet<_> = parent_keys.union(&weapon_keys).copied().collect();
-    assert_eq!(v2.item_authoring.len(), 411);
+    let forge289_packet: serde_json::Value = serde_json::from_slice(
+        oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET,
+    )
+    .expect("sealed new Forge source data");
+    assert_eq!(
+        Sha256::digest(oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>(),
+        oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET_SHA256
+    );
+    let forge289_rows = forge289_packet["promotions"].as_array().expect("closed289");
+    let forge289_keys: BTreeSet<_> = forge289_rows
+        .iter()
+        .map(|r| r["item"]["key"].as_str().expect("full target"))
+        .collect();
+    assert_eq!(forge289_rows.len(), 289);
+    assert_eq!(forge289_keys.len(), 289);
+    let old411: BTreeSet<_> = parent_keys.union(&weapon_keys).copied().collect();
+    assert_eq!(old411.len(), 411);
+    assert!(old411.is_disjoint(&forge289_keys));
+    let expected_keys: BTreeSet<_> = old411.union(&forge289_keys).copied().collect();
+    assert_eq!(v2.item_authoring.len(), 700);
     assert_eq!(
         v2.item_authoring
             .iter()
@@ -631,6 +658,19 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 "unexpected intrinsic weapon source property"
             );
         }
+        if let Some(row) = forge289_rows
+            .iter()
+            .find(|r| r["item"]["key"] == owner.item.key)
+        {
+            assert_eq!(
+                serde_json::to_value(&owner.item).expect("new full target"),
+                row["item"]
+            );
+            assert_eq!(
+                stripped.as_object_mut().expect("owner").remove("forge"),
+                Some(row["forge"].clone())
+            );
+        }
         let expected = parent_rows
             .iter()
             .find(|row| row["item"]["key"] == owner.item.key)
@@ -664,7 +704,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .filter(|entry| entry.required_magic_level.is_none()
                 && !use_keys.contains(entry.item.key.as_str())
                 && entry.item.key != forge_owner.item.key
-                && !weapon_new_keys.contains(entry.item.key.as_str()))
+                && !weapon_new_keys.contains(entry.item.key.as_str())
+                && !forge289_keys.contains(entry.item.key.as_str()))
             .all(|entry| {
                 entry.item.family == ProjectV2Family::Item
                     && entry
@@ -684,7 +725,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .iter()
             .filter(|entry| entry.forge.is_some())
             .count(),
-        147
+        436
     );
     let hit_magic: serde_json::Value =
         serde_json::from_slice(item_hit_magic_promotion::ITEM_HIT_MAGIC_PACKET)
@@ -764,62 +805,77 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 11);
-    assert_eq!(v2.sources[0].key, "oteryn:source.canary");
-    assert_eq!(v2.sources[0].import_batch_id, creature_import.batch_id);
-    assert_eq!(v2.sources[0].revision, creature_import.source_revision);
-    assert_eq!(v2.sources[0].sha256, creature_import.source_artifact_sha256);
+    assert_eq!(v2.sources.len(), 12);
+    let legacy_sources: Vec<_> = v2
+        .sources
+        .iter()
+        .filter(|s| s.import_batch_id != "g4-item-forge289-br-r1")
+        .collect();
+    assert_eq!(legacy_sources.len(), 11);
+    assert_eq!(legacy_sources[0].key, "oteryn:source.canary");
+    assert_eq!(legacy_sources[0].import_batch_id, creature_import.batch_id);
+    assert_eq!(legacy_sources[0].revision, creature_import.source_revision);
     assert_eq!(
-        v2.sources[0].evidence,
+        legacy_sources[0].sha256,
+        creature_import.source_artifact_sha256
+    );
+    assert_eq!(
+        legacy_sources[0].evidence,
         ProjectV2EvidenceClass::OtsHypothesisOnly
     );
     // The creature Crystal batch has its own source revision, which keeps the commit.
-    assert_eq!(v2.sources[2].key, "oteryn:source.crystalserver");
+    assert_eq!(legacy_sources[2].key, "oteryn:source.crystalserver");
     assert_eq!(
-        v2.sources[2].import_batch_id,
+        legacy_sources[2].import_batch_id,
         creature_crystal_import.batch_id
     );
     assert_eq!(
-        v2.sources[2].revision,
+        legacy_sources[2].revision,
         "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
     );
     assert_eq!(
-        v2.sources[2].revision,
+        legacy_sources[2].revision,
         creature_crystal_import.source_revision
     );
     assert_eq!(
-        v2.sources[2].sha256,
+        legacy_sources[2].sha256,
         creature_crystal_import.source_artifact_sha256
     );
     assert_eq!(
-        v2.sources[2].evidence,
+        legacy_sources[2].evidence,
         ProjectV2EvidenceClass::OtsHypothesisOnly
     );
-    assert_eq!(v2.sources[3].key, "oteryn:source.crystalserver");
-    assert_eq!(v2.sources[3].import_batch_id, provenance.batch_id);
-    assert_eq!(v2.sources[3].revision, provenance.source_revision);
-    assert_eq!(v2.sources[3].sha256, provenance.source_artifact_sha256);
+    assert_eq!(legacy_sources[3].key, "oteryn:source.crystalserver");
+    assert_eq!(legacy_sources[3].import_batch_id, provenance.batch_id);
+    assert_eq!(legacy_sources[3].revision, provenance.source_revision);
+    assert_eq!(legacy_sources[3].sha256, provenance.source_artifact_sha256);
     assert_eq!(
-        v2.sources[3].evidence,
+        legacy_sources[3].evidence,
         ProjectV2EvidenceClass::OtsHypothesisOnly
     );
-    assert_eq!(v2.sources[5].key, "oteryn:source.tibiawiki");
-    assert_eq!(v2.sources[5].import_batch_id, wiki.batch_id);
-    assert_eq!(v2.sources[5].revision, wiki.source_revision);
-    assert_eq!(v2.sources[5].sha256, wiki.source_artifact_sha256);
-    assert_eq!(v2.sources[5].evidence, ProjectV2EvidenceClass::Derived);
-    assert_eq!(v2.sources[6].key, v2.sources[5].key);
-    assert_eq!(v2.sources[6].import_batch_id, wave1_import.batch_id);
-    assert_eq!(v2.sources[6].revision, wave1_import.source_revision);
-    assert_eq!(v2.sources[6].sha256, wave1_import.source_artifact_sha256);
-    assert_eq!(v2.sources[6].evidence, ProjectV2EvidenceClass::Derived);
-    assert_eq!(v2.sources[7].key, v2.sources[5].key);
-    assert_eq!(v2.sources[7].import_batch_id, mount_import.batch_id);
-    assert_eq!(v2.sources[7].revision, mount_import.source_revision);
-    assert_eq!(v2.sources[7].sha256, mount_import.source_artifact_sha256);
-    assert_eq!(v2.sources[7].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(legacy_sources[5].key, "oteryn:source.tibiawiki");
+    assert_eq!(legacy_sources[5].import_batch_id, wiki.batch_id);
+    assert_eq!(legacy_sources[5].revision, wiki.source_revision);
+    assert_eq!(legacy_sources[5].sha256, wiki.source_artifact_sha256);
+    assert_eq!(legacy_sources[5].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(legacy_sources[6].key, legacy_sources[5].key);
+    assert_eq!(legacy_sources[6].import_batch_id, wave1_import.batch_id);
+    assert_eq!(legacy_sources[6].revision, wave1_import.source_revision);
+    assert_eq!(
+        legacy_sources[6].sha256,
+        wave1_import.source_artifact_sha256
+    );
+    assert_eq!(legacy_sources[6].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(legacy_sources[7].key, legacy_sources[5].key);
+    assert_eq!(legacy_sources[7].import_batch_id, mount_import.batch_id);
+    assert_eq!(legacy_sources[7].revision, mount_import.source_revision);
+    assert_eq!(
+        legacy_sources[7].sha256,
+        mount_import.source_artifact_sha256
+    );
+    assert_eq!(legacy_sources[7].evidence, ProjectV2EvidenceClass::Derived);
     // D12: offer prices both wikis agree on also come from the committed TibiaWiki BR facts.
-    let npc_br_import = &project.imports()[8];
+    let npc_br_import = &legacy_imports[8];
     assert_eq!(npc_br_import.batch_id, "g4-npc-prices-tibiawiki-br-r1");
     assert_eq!(npc_br_import.source_repository, "tibiawiki.com.br");
     assert_eq!(
@@ -827,13 +883,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
     );
     assert!(npc_br_import.candidates.is_empty());
-    assert_eq!(v2.sources[4].key, "oteryn:source.tibiawiki");
-    assert_eq!(v2.sources[4].import_batch_id, npc_br_import.batch_id);
-    assert_eq!(v2.sources[4].revision, npc_br_import.source_revision);
-    assert_eq!(v2.sources[4].sha256, npc_br_import.source_artifact_sha256);
-    assert_eq!(v2.sources[4].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(legacy_sources[4].key, "oteryn:source.tibiawiki");
+    assert_eq!(legacy_sources[4].import_batch_id, npc_br_import.batch_id);
+    assert_eq!(legacy_sources[4].revision, npc_br_import.source_revision);
+    assert_eq!(
+        legacy_sources[4].sha256,
+        npc_br_import.source_artifact_sha256
+    );
+    assert_eq!(legacy_sources[4].evidence, ProjectV2EvidenceClass::Derived);
     // D14: NPC files Crystal added after its pinned revision come from the pinned summer-update commit.
-    let npc_supplement_import = &project.imports()[7];
+    let npc_supplement_import = &legacy_imports[7];
     assert_eq!(
         npc_supplement_import.batch_id,
         "g4-npc-crystal-summer-supplement-r1"
@@ -847,21 +906,21 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
     );
     assert!(npc_supplement_import.candidates.is_empty());
-    assert_eq!(v2.sources[1].key, "oteryn:source.crystalserver");
+    assert_eq!(legacy_sources[1].key, "oteryn:source.crystalserver");
     assert_eq!(
-        v2.sources[1].import_batch_id,
+        legacy_sources[1].import_batch_id,
         npc_supplement_import.batch_id
     );
     assert_eq!(
-        v2.sources[1].revision,
+        legacy_sources[1].revision,
         npc_supplement_import.source_revision
     );
     assert_eq!(
-        v2.sources[1].sha256,
+        legacy_sources[1].sha256,
         npc_supplement_import.source_artifact_sha256
     );
     // D13: offer prices two of three wikis agree on also come from the committed Tibiopedia facts.
-    let npc_tibiopedia_import = &project.imports()[9];
+    let npc_tibiopedia_import = &legacy_imports[9];
     assert_eq!(
         npc_tibiopedia_import.batch_id,
         "g4-npc-prices-tibiopedia-r1"
@@ -872,39 +931,45 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "OTERYN_NPC_TIBIOPEDIA_FACTS/v1"
     );
     assert!(npc_tibiopedia_import.candidates.is_empty());
-    assert_eq!(v2.sources[10].key, "oteryn:source.tibiawiki");
+    assert_eq!(legacy_sources[10].key, "oteryn:source.tibiawiki");
     assert_eq!(
-        v2.sources[10].import_batch_id,
+        legacy_sources[10].import_batch_id,
         npc_tibiopedia_import.batch_id
     );
     assert_eq!(
-        v2.sources[10].revision,
+        legacy_sources[10].revision,
         npc_tibiopedia_import.source_revision
     );
     assert_eq!(
-        v2.sources[10].sha256,
+        legacy_sources[10].sha256,
         npc_tibiopedia_import.source_artifact_sha256
     );
-    assert_eq!(v2.sources[10].evidence, ProjectV2EvidenceClass::Derived);
-    let npc_import = &project.imports()[10];
+    assert_eq!(legacy_sources[10].evidence, ProjectV2EvidenceClass::Derived);
+    let npc_import = &legacy_imports[10];
     assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r9");
     assert!(npc_import.candidates.is_empty());
-    assert_eq!(v2.sources[8].key, v2.sources[5].key);
-    assert_eq!(v2.sources[8].import_batch_id, npc_import.batch_id);
-    assert_eq!(v2.sources[8].revision, npc_import.source_revision);
-    assert_eq!(v2.sources[8].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(legacy_sources[8].key, legacy_sources[5].key);
+    assert_eq!(legacy_sources[8].import_batch_id, npc_import.batch_id);
+    assert_eq!(legacy_sources[8].revision, npc_import.source_revision);
+    assert_eq!(legacy_sources[8].evidence, ProjectV2EvidenceClass::Derived);
     // D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki.
-    let wiki_creature_import = &project.imports()[11];
+    let wiki_creature_import = &legacy_imports[11];
     assert_eq!(
         wiki_creature_import.batch_id,
         "g4-wiki-authored-creature-d44-r1"
     );
     assert_eq!(wiki_creature_import.source_repository, "tibia.fandom.com");
     assert!(wiki_creature_import.candidates.is_empty());
-    assert_eq!(v2.sources[9].key, "oteryn:source.tibiawiki");
-    assert_eq!(v2.sources[9].import_batch_id, wiki_creature_import.batch_id);
-    assert_eq!(v2.sources[9].revision, wiki_creature_import.source_revision);
-    assert_eq!(v2.sources[9].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(legacy_sources[9].key, "oteryn:source.tibiawiki");
+    assert_eq!(
+        legacy_sources[9].import_batch_id,
+        wiki_creature_import.batch_id
+    );
+    assert_eq!(
+        legacy_sources[9].revision,
+        wiki_creature_import.source_revision
+    );
+    assert_eq!(legacy_sources[9].evidence, ProjectV2EvidenceClass::Derived);
     assert_eq!(
         v2.source_identity_bindings
             .iter()
@@ -925,9 +990,56 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         v2.source_identity_bindings.len(),
-        550 + CREATURES + ENCOUNTERS + NPC_BINDINGS
+        550 + 289 + CREATURES + ENCOUNTERS + NPC_BINDINGS
     );
     assert_eq!(v2.editor.len(), 550);
+    let new_source = v2
+        .sources
+        .iter()
+        .filter(|s| s.import_batch_id == "g4-item-forge289-br-r1")
+        .collect::<Vec<_>>();
+    assert_eq!(new_source.len(), 1);
+    assert_eq!(
+        serde_json::to_value(new_source[0]).expect("new source"),
+        forge289_packet["source"]
+    );
+    let new_batch = project
+        .imports()
+        .iter()
+        .filter(|b| b.batch_id == "g4-item-forge289-br-r1")
+        .collect::<Vec<_>>();
+    assert_eq!(new_batch.len(), 1);
+    assert_eq!(
+        serde_json::to_value(new_batch[0]).expect("new batch"),
+        forge289_packet["import_batch"]
+    );
+    let new_bindings: Vec<_> = v2
+        .source_identity_bindings
+        .iter()
+        .filter(|b| {
+            b.source_revision == new_source[0].revision && b.source_key == new_source[0].key
+        })
+        .collect();
+    assert_eq!(new_bindings.len(), 289);
+    let actual_bindings: BTreeSet<_> = new_bindings
+        .iter()
+        .map(|b| serde_json::to_string(b).expect("new binding"))
+        .collect();
+    let expected_bindings: BTreeSet<_> = forge289_packet["bindings"]
+        .as_array()
+        .expect("sealedbindings")
+        .iter()
+        .map(|b| {
+            serde_json::to_string(
+                &serde_json::from_value::<
+                    oteryn_game_server::content::ProjectV2SourceIdentityBinding,
+                >(b.clone())
+                .expect("typedbinding"),
+            )
+            .expect("binding")
+        })
+        .collect();
+    assert_eq!(actual_bindings, expected_bindings);
     let mut outfit_ids = BTreeSet::new();
     let mut mount_ids = BTreeSet::new();
     let mut item_ids = BTreeSet::new();
@@ -936,6 +1048,13 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let mut crystal_creatures = 0;
     let mut encounter_bindings = 0;
     for binding in &v2.source_identity_bindings {
+        if binding.source_key == new_source[0].key
+            && binding.source_revision == new_source[0].revision
+        {
+            assert_eq!(binding.target.family, ProjectV2Family::Item);
+            assert!(forge289_keys.contains(binding.target.key.as_str()));
+            continue;
+        }
         assert_eq!(
             binding.disposition,
             ProjectV2SourceIdentityDisposition::Exact
@@ -943,12 +1062,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         if binding.target.family == ProjectV2Family::Creature {
             if binding.source_key == "oteryn:source.tibiawiki" {
                 // D44 wiki-authored creature, checked above.
-                assert_eq!(binding.source_revision, v2.sources[9].revision);
+                assert_eq!(binding.source_revision, legacy_sources[9].revision);
                 assert!(binding.target.key.starts_with("oteryn:creature."));
                 continue;
             }
             if binding.source_key == "oteryn:source.crystalserver" {
-                assert_eq!(binding.source_revision, v2.sources[2].revision);
+                assert_eq!(binding.source_revision, legacy_sources[2].revision);
                 assert_eq!(binding.identity_namespace, "crystalserver/monster-file");
                 assert!(binding.external_id.starts_with("data-global/monster/"));
                 assert!(binding.target.key.starts_with("oteryn:creature."));
@@ -957,7 +1076,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 continue;
             }
             assert_eq!(binding.source_key, "oteryn:source.canary");
-            assert_eq!(binding.source_revision, v2.sources[0].revision);
+            assert_eq!(binding.source_revision, legacy_sources[0].revision);
             assert_eq!(binding.identity_namespace, "canary/monster-file");
             assert!(binding.target.key.starts_with("oteryn:creature."));
             assert!(creature_files.insert(&binding.external_id));
@@ -965,7 +1084,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         }
         if binding.target.family == ProjectV2Family::Encounter {
             assert_eq!(binding.source_key, "oteryn:source.canary");
-            assert_eq!(binding.source_revision, v2.sources[0].revision);
+            assert_eq!(binding.source_revision, legacy_sources[0].revision);
             assert_eq!(binding.identity_namespace, "canary/encounter");
             assert!(binding.target.key.starts_with("oteryn:encounter."));
             encounter_bindings += 1;
@@ -993,16 +1112,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         );
         match binding.target.family {
             ProjectV2Family::Item => {
-                assert_eq!(binding.source_revision, v2.sources[5].revision);
+                assert_eq!(binding.source_revision, legacy_sources[5].revision);
                 assert!(item_ids.insert(&binding.external_id));
             }
             ProjectV2Family::Outfit => {
-                assert_eq!(binding.source_revision, v2.sources[7].revision);
+                assert_eq!(binding.source_revision, legacy_sources[7].revision);
                 assert!(binding.target.key.starts_with("oteryn:content.outfit."));
                 assert!(outfit_ids.insert(&binding.external_id));
             }
             ProjectV2Family::Mount => {
-                assert_eq!(binding.source_revision, v2.sources[7].revision);
+                assert_eq!(binding.source_revision, legacy_sources[7].revision);
                 assert!(binding.target.key.starts_with("oteryn:content.mount."));
                 assert!(mount_ids.insert(&binding.external_id));
             }
@@ -1121,6 +1240,131 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         assert_eq!(item.stack_class, ReferenceItemStackClass::Unknown);
         assert!(!item.materializable);
     }
+    // Each immutable source cohort is checked independently; overlapping targets
+    // contribute distinct fields, not a claim of complete Item semantics.
+    let mut description_rows = BTreeMap::new();
+    for (bytes, digest, expected) in [
+        (
+            item_description_promotion::ITEM_DESCRIPTION_PACKET,
+            item_description_promotion::ITEM_DESCRIPTION_PACKET_SHA256,
+            114,
+        ),
+        (
+            item_description_wiki_promotion::ITEM_DESCRIPTION_WIKI_PACKET,
+            item_description_wiki_promotion::ITEM_DESCRIPTION_WIKI_PACKET_SHA256,
+            1515,
+        ),
+    ] {
+        assert_eq!(
+            Sha256::digest(bytes)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>(),
+            digest
+        );
+        let packet: serde_json::Value =
+            serde_json::from_slice(bytes).expect("sealed description cohort");
+        let rows = packet["promotions"]
+            .as_array()
+            .expect("closed descriptions");
+        assert_eq!(rows.len(), expected);
+        for row in rows {
+            let key = row["target"]["key"]
+                .as_str()
+                .expect("full description target")
+                .to_owned();
+            assert!(description_rows.insert(key, row.clone()).is_none());
+        }
+    }
+    assert_eq!(description_rows.len(), 1629);
+    assert_eq!(
+        Sha256::digest(item_numeric_modifier_promotion::ITEM_NUMERIC_MODIFIER_PACKET)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>(),
+        item_numeric_modifier_promotion::ITEM_NUMERIC_MODIFIER_PACKET_SHA256
+    );
+    let numeric_packet: serde_json::Value =
+        serde_json::from_slice(item_numeric_modifier_promotion::ITEM_NUMERIC_MODIFIER_PACKET)
+            .expect("sealed explicit numeric modifiers");
+    let numeric_rows = numeric_packet["promotions"]
+        .as_array()
+        .expect("closed17 vectors");
+    assert_eq!(numeric_rows.len(), 17);
+    assert_eq!(
+        numeric_rows
+            .iter()
+            .map(|r| r["modifiers"].as_array().expect("atoms").len())
+            .sum::<usize>(),
+        50
+    );
+    let mut known_description_keys = BTreeSet::new();
+    let mut numeric_keys = BTreeSet::new();
+    for definition in &linked.definitions {
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            continue;
+        };
+        let key = definition.definition.key().as_str();
+        if let ReferenceItemField::Known(presentation) = &item.semantics.presentation
+            && let ReferenceItemField::Known(text) = &presentation.description
+        {
+            let row = description_rows.get(key).expect("only closed descriptions");
+            assert_eq!(
+                serde_json::to_value(&presentation.description).expect("exact UTF-8 literal"),
+                serde_json::json!({"state":"KNOWN", "value": row["description"]})
+            );
+            assert!(text.len() <= 200 && !text.is_empty());
+            assert!(known_description_keys.insert(key));
+        }
+        if let Some(row) = numeric_rows.iter().find(|r| r["target"]["key"] == key) {
+            assert_eq!(
+                serde_json::to_value(&item.semantics.skill_modifiers)
+                    .expect("whole explicit vector"),
+                serde_json::json!({"state":"KNOWN", "value":{"modifiers":{"state":"KNOWN", "value":row["modifiers"]}}})
+            );
+            assert!(numeric_keys.insert(key));
+        }
+    }
+    assert_eq!(known_description_keys.len(), 1629);
+    assert_eq!(numeric_keys.len(), 17);
+    assert_eq!(
+        Sha256::digest(item_name15_promotion::ITEM_NAME15_PACKET)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>(),
+        item_name15_promotion::ITEM_NAME15_PACKET_SHA256
+    );
+    let name15_packet: serde_json::Value =
+        serde_json::from_slice(item_name15_promotion::ITEM_NAME15_PACKET)
+            .expect("sealed fifteen Known-name corrections");
+    let name15_rows = name15_packet["promotions"]
+        .as_array()
+        .expect("closed15 names");
+    assert_eq!(name15_rows.len(), 15);
+    let mut name15_keys = BTreeSet::new();
+    for row in name15_rows {
+        let key = row["target"]["key"]
+            .as_str()
+            .expect("full correction target");
+        let definition = linked
+            .definitions
+            .iter()
+            .find(|d| d.definition.key().as_str() == key)
+            .expect("existing Item correction target");
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            panic!("Item correction required")
+        };
+        let ReferenceItemField::Known(presentation) = &item.semantics.presentation else {
+            panic!("existing Known presentation required")
+        };
+        assert_eq!(
+            serde_json::to_value(&presentation.name).expect("actual source name"),
+            serde_json::json!({"state":"KNOWN", "value":row["name"]})
+        );
+        assert!(!item.materializable);
+        assert!(name15_keys.insert(key));
+    }
+    assert_eq!(name15_keys.len(), 15);
     for row in hit_magic_rows
         .iter()
         .filter(|r| r["facts"]["hit_chance"].is_object())
@@ -1448,7 +1692,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(mantra_keys.len(), 49);
     assert_eq!(
         (modifier_vectors, modifier_atoms),
-        (419 + 26 + 49, 619 + 63 + 114)
+        (419 + 26 + 49 + 17, 619 + 63 + 114 + 50)
     );
     assert_eq!(resistance_vectors, 391);
     assert_eq!(resistance_atoms, 625);

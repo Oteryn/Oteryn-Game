@@ -35,6 +35,8 @@ on:
       - docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-forge3332*.json
       - docs/agents/evidence/OTV2-20261002-item-forge3332*.json
+      - docs/agents/evidence/OTV2-20261002-item-forge289*.json
+      - docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context*.json
       - docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-source-qualification-v1.json
@@ -44,8 +46,12 @@ on:
       - docs/agents/evidence/OTV2-20261001-item-document*.json
       - docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier*.json
       - docs/agents/evidence/OTV2-20261002-item-name*.json
+      - docs/agents/evidence/OTV2-20261002-item-description*.json
       - docs/agents/evidence/OTV2-20261002-item-hit-magic*.json
       - docs/agents/evidence/OTV2-20261002-item-mantra-bond*.json
+      - docs/agents/evidence/OTV2-20261002-item-numeric-modifier*.json
+      - docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json
+      - docs/agents/evidence/OTV2-20261002-item-magic-capacity4*.json
       - docs/agents/evidence/OTV2-20261002-item-weapon-metadata*.json
       - content/items/index.json
       - content/items/definitions/**
@@ -93,13 +99,13 @@ jobs:
       - name: Focused schema and validator checks
         run: |
           set -euo pipefail
-          python verify_formal_schema.py
+          python check_tibiawiki165_historical_context.py --cohort formal
           git diff --exit-code -- .
           python validate_item.py synthetic-valid-item.json synthetic-valid-dependencies.json \
             --manifest synthetic-valid-import-readiness.json
 
       - name: Converter fixture tests
-        run: python test_engine_items.py
+        run: python check_tibiawiki165_historical_context.py --cohort engine
 
       - name: Semantic promotion lowering fixture tests
         run: python test_lower_promotion_packet.py
@@ -149,12 +155,14 @@ jobs:
       - name: Singleton explicit Forge pair qualification guards and drift
         run: |
           python test_lower_item_forge3332_packet.py
-          python lower_item_forge3332_packet.py --check
+          python check_tibiawiki165_historical_context.py --cohort forge
+          python test_lower_item_forge289_packet.py
+          python lower_item_forge289_packet.py --check
 
       - name: Closed intrinsic weapon source metadata tests and drift
         run: |
-          python test_lower_item_weapon_metadata_packet.py
-          python lower_item_weapon_metadata_packet.py --check
+          python check_tibiawiki165_historical_context.py --cohort weapon-tests
+          python check_tibiawiki165_historical_context.py --cohort weapon
 
       - name: Closed successor eight documented stack defaults and source replay
         working-directory: tools/content-schema/item-authoring
@@ -184,16 +192,31 @@ jobs:
           python test_lower_item_document_packet.py
           python lower_item_document_packet.py --check
 
+      - name: Closed own-source descriptions guards and packet drift
+        run: |
+          python test_lower_item_description_packet.py
+          python lower_item_description_packet.py --check
+          python test_lower_item_description_wiki_packet.py
+          python lower_item_description_wiki_packet.py --check
+
       - name: Closed imported display name correction guards and packet drift
         run: |
           python test_lower_item_name_packet.py
           python lower_item_name_packet.py --check
+          python test_lower_item_name15_packet.py
+          python lower_item_name15_packet.py --check
         working-directory: tools/content-schema/item-authoring
 
       - name: Explicit relative hit and Rune magic level guards and packet drift
         run: |
           python test_lower_item_hit_magic_packet.py
           python lower_item_hit_magic_packet.py --check
+        working-directory: tools/content-schema/item-authoring
+
+      - name: Closed numeric13 plus observed Magic4 source successor guards
+        run: |
+          python test_lower_numeric_modifier17_packet.py
+          python lower_numeric_modifier17_packet.py --check
         working-directory: tools/content-schema/item-authoring
 
       - name: Whole Mantra and elemental Bond source qualification and packet drift

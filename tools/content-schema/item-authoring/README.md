@@ -24,7 +24,7 @@ Architecture and boundaries:
 | `source_field_catalogs.py` | Generated-ledger source of truth, aliases, defects and owner routing. |
 | `proficiency_profiles.py` | Pinned 15.30 client, Canary and Crystal proficiency sources; the admitted client crosswalks are the committed `content/proficiencies/` definitions. |
 | `real_item_examples.py` / `real-source-examples.json` | Six generated, validated real-item examples with source evidence and explicit blockers. |
-| `templates/*.json` | Thirteen valid starting points for materially different authoring shapes. |
+| `templates/*.json` | Twenty-three synthetic starting points cover all 22 catalog profiles; their values are not source facts. |
 | `validate_item.py` | Structural, semantic, exact-reference and import-readiness validation. |
 | `verify_formal_schema.py` | Focused positive/negative contract checks and deterministic fixtures. |
 | `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding, and the `delivery_task_eligible` decision from the `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` authoring rule. Digest-verifies every input artifact first (text artifacts after CRLF->LF normalization, `appearances.dat` as exact raw bytes); a missing pinned artifact is a hard error. |

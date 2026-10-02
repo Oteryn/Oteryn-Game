@@ -151,6 +151,7 @@ class Observations(unittest.TestCase):
                 copy.deepcopy(row["facts"])
             )
         self.assertEqual(len(legacy), 411)
+        migration.extend_forge289_owners(legacy)
         migration.validate_item_authoring_targets(legacy, staged)
         key = next(
             migration.target_id(row["target"])

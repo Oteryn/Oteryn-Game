@@ -20,8 +20,11 @@ use oteryn_game_server::content::{
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     item_admission::apply_item_admission_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
+    item_description_promotion::apply_item_description_promotion_v1,
+    item_description_wiki_promotion::apply_item_description_wiki_promotion_v1,
     item_document_promotion::apply_item_document_promotion_v1,
     item_elemental_magic_modifier_promotion::apply_item_elemental_magic_modifier_promotion_v1,
+    item_forge289_promotion::apply_item_forge289_promotion_v1,
     item_forge3332_promotion::apply_item_forge3332_promotion_v1,
     item_hit_magic_promotion::apply_item_hit_magic_promotion_v1,
     item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
@@ -29,6 +32,8 @@ use oteryn_game_server::content::{
     item_market_true_promotion::apply_item_market_true_promotion_v1,
     item_movable_promotion::apply_item_movable_promotion_v1,
     item_name_promotion::apply_item_name_promotion_v1,
+    item_name15_promotion::apply_item_name15_promotion_v1,
+    item_numeric_modifier_promotion::apply_item_numeric_modifier_promotion_v1,
     item_physical_promotion::apply_item_physical_promotion_v1,
     item_stack_default_promotion::apply_item_stack_default_promotion_v1,
     item_stack_default_successor8_promotion::apply_item_stack_default_successor8_promotion_v1,
@@ -1974,19 +1979,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_item_movable_promotion_v1(&mut draft)?;
     apply_item_document_promotion_v1(&mut draft)?;
     apply_item_name_promotion_v1(&mut draft)?;
+    apply_item_name15_promotion_v1(&mut draft)?;
     apply_item_hit_magic_promotion_v1(&mut draft)?;
     apply_item_mantra_bond_modifier_promotion_v1(&mut draft)?;
+    apply_item_numeric_modifier_promotion_v1(&mut draft)?;
     apply_item_use_observation_promotion_v1(&mut draft)?;
     apply_item_forge3332_promotion_v1(&mut draft)?;
     apply_item_weapon_metadata_promotion_v1(&mut draft, limits())?;
+    apply_item_description_promotion_v1(&mut draft)?;
+    apply_item_description_wiki_promotion_v1(&mut draft)?;
     apply_item_stack_default_successor8_promotion_v1(&mut draft)?;
+    apply_item_forge289_promotion_v1(&mut draft, limits())?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} pilot_item_bindings=165 pilot_item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         APPEARANCE_ONLY_ITEM_IDS.len(),
         promoted.promoted_items,
         promoted.promoted_fields,

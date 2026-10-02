@@ -131,6 +131,7 @@ class HitMagic(unittest.TestCase):
             legacy.setdefault(weapon_key, {"item": row["target"]}).update(
                 copy.deepcopy(row["facts"])
             )
+        migration.extend_forge289_owners(legacy)
         migration.validate_item_authoring_targets(legacy, staged)
         key = next(iter(keys))
         for bad in (

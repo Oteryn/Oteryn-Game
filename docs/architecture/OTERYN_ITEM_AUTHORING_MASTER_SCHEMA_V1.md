@@ -336,3 +336,5 @@ After this candidate is protected, the next bounded design/implementation slice 
 use the closed master schema to define the physical content-tree migration and then
 mechanically transform the existing Item corpus without losing canonical Oteryn
 identity or typed semantics.
+
+The closed Forge289 source-data supplement uses the existing optional `forge.classification`/`forge.max_tier` owner and existing Source/ImportBatch/SourceIdentityBinding carriers. Both fields require literal own BR parameters; neither a class-to-maximum table nor an absent default qualifies a value. Its 289 new page crosswalks are independently corroborated by own numeric Fandom ID, globally unique official name, explicit Crystal binding and at least two typed non-name stat agreements. Native definitions, admission, runtime/V4 semantics and existing authoring siblings remain unchanged. Governance relations are derived only from these exact Forge profiles and existing Known native imbuement slots.

@@ -1276,6 +1276,34 @@ def build_item_schema():
                 "family_profile_basis": ["family_profile_evidence"],
                 "family_profile_evidence": ["family_profile_basis"],
             },
+            allOf=[
+                {
+                    "if": {
+                        "properties": {"family_profile": {"const": profile}},
+                        "required": ["family_profile"],
+                    },
+                    "then": {
+                        "properties": {
+                            "taxonomy": {
+                                "properties": {
+                                    "item_class": {
+                                        "enum": {
+                                            "weapon_distance": ["weapon", "ammunition"],
+                                            "food": ["food", "consumable"],
+                                            "fluid": [
+                                                "fluid",
+                                                "container",
+                                                "fluid_container",
+                                            ],
+                                        }.get(profile, [item_class])
+                                    }
+                                }
+                            }
+                        }
+                    },
+                }
+                for profile, item_class in engine_items.PROFILE_ITEM_CLASS.items()
+            ],
         ),
         "$defs": d,
     }
@@ -1911,6 +1939,44 @@ def build_templates():
         }
     )
     result["portable-decoration-kit.json"] = item
+    # Synthetic starting points, never source facts or runtime admissions.
+    trade = {"tradeable": True, "marketable": False}
+    use_item = {"usable": True, "use_with": True}
+    missing_profiles = {
+        "container_equipment": {
+            "equipment": {
+                "slot": "ammo",
+                "hands": 0,
+                "reserved_slots": [],
+                "groups": [],
+            },
+            "container": {"capacity": 20, "content_kind": "items", "accepts": []},
+            "trade": trade,
+        },
+        "event_collectible": {"presentation": {}, "trade": trade},
+        "progression_material": {"trade": trade},
+        "transformation_item": {"lifecycle": {"transforms": []}, "use": use_item},
+        "quest_item": {},
+        "trash": {},
+        "key": {"use": use_item},
+        "light_source": {
+            "display_name": "Template Unlit Light Source",
+            "light": {"emits": False},
+        },
+        "tool": {"use": use_item, "trade": trade},
+        "plant": {"trade": trade},
+    }
+    for profile, capabilities in missing_profiles.items():
+        slug = profile.replace("_", "-")
+        item = base(
+            slug,
+            "Template " + slug.replace("-", " ").title(),
+            profile,
+            engine_items.PROFILE_ITEM_CLASS[profile],
+            slug,
+        )
+        item.update(copy.deepcopy(capabilities))
+        result[slug + ".json"] = item
     return result
 
 
