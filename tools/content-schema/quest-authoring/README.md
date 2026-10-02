@@ -215,3 +215,9 @@ raw quantities are not interpreted as charges. Donor alternatives remain conflic
 evidence, including the extra Crystal Inquisition reward.
 
 Canonical Quest DATA now includes all268 pinned donor definitions. Storyline/script_only records retain typed `source_data` missions, progress, interactions and source gaps; `quest_native_lowering_missing` prevents treating these imported records as executable Native quests. Regenerate with `quest_tree_authoring.py content` and qualify with `run_checks.py`.
+
+## Complete373-title wiki SOURCE inventory
+
+`wiki_all_source_inventory.py --check` validates all373 exact catalogue titles. Prior105 detailed entries remain equal JSON objects;268 additional entries retain729 pinned structured wiki fieldsets, requirements/rewards/locations/headings and unresolved expressions. Detail levels remain explicit; headings do not become executable mission steps. No record asserts complete definition or runtime readiness. Inputs are portable captured structured facts, not new rawbody captures. Access observations record current Fandom HTTP402/BR403 and offline approved browser fallback; historical captures retain their actual provenance.
+
+Run `wiki_all_source_inventory.py --schema-out wiki_all_source_specs.schema.json --check` from this tool directory to verify the closed generated schema. Both checks and all12 regressions are required by `run_checks.py`.
