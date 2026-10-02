@@ -152,6 +152,12 @@ d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range
     'path_requirement':obj({'max_search_tiles':integer(1),'clear_sight':use('bool')},('max_search_tiles','clear_sight'),
         description='D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight '
             'when clear_sight); without one the cast fails and nothing happens.'),
+    'target_selection':{**enum('caster_or_top_creature'),
+        'description':'Player Inflict Wound: own tile selects the caster, another tile selects its top creature. '
+            'Source-exact authoring only; an executor must implement this selector before admission.'},
+    'zero_damage_health_path':{'const':True,
+        'description':'Paralyze Rune: run the zero-magnitude health validation, block/change-health hooks before '
+            'condition/dispel. No direct damage is authored; reject admission until these hooks are implemented.'},
     'windup':obj({'delay_ms':integer(1),'caster_asset_binding':use('assetBinding')},('delay_ms','caster_asset_binding'),
         description='SW-1: at the cast the caster binding shows on the caster tile; after delay_ms the effects run, if the caster '
             'still exists, on its target at that moment (none: nothing happens). Only with needs_target and without area, '
@@ -223,6 +229,13 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
     'appearance_transform':obj({'creature':use('CreatureRef'),'item':use('ItemRef')},oneOf=[
         {'required':['creature'],**forbid('item')},{'required':['item'],**forbid('creature')}]),
     'created_item':use('ItemRef'),
+    'pvp_safe_item':use('ItemRef'),
+    'duration_range_ms':obj({'minimum':integer(1000,4294967000,multipleOf=1000),
+                             'maximum':integer(1000,4294967000,multipleOf=1000)},('minimum','maximum')),
+    'duration_selection':enum('uniform_integer_seconds'),
+    'safe_world_type':enum('optional_pvp'),
+    'refuse_on':{'const':['floor_change_tile','creature_on_tile']},
+    'description_template':{'const':'Casted by: {caster_name}'},
     'affects':obj({'kind':enum('masterless_monsters','non_player_side','player_side','players','named_creatures'),
         'creatures':array(use('CreatureRef'),1,True),'top_creature_only':use('bool'),'excludes_caster_name':use('bool'),
         'includes_caster':use('bool')},
@@ -245,8 +258,12 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
     'removed_condition':{**use('conditionType'),'description':'remove_condition: every condition of this type on the target '
         'ends (Canary/Crystal COMBAT_PARAM_DISPEL, Creature::removeCombatCondition).'},
     'presentation':obj({'impact_asset_binding':use('assetBinding'),'projectile_asset_binding':use('assetBinding'),
+        'caster_effect_asset_binding':use('assetBinding'),
+        'caster_effect_timing':enum('before_combat','after_success'),
         'path_asset_binding':{**use('assetBinding'),'description':'D18: shown on every tile of the walking path from the caster to '
-            'the target before the effect applies.'}})},
+            'the target before the effect applies.'}},allOf=[
+                {'if':{'required':['caster_effect_asset_binding']},'then':{'required':['caster_effect_timing']}},
+                {'if':{'required':['caster_effect_timing']},'then':{'required':['caster_effect_asset_binding']}}])},
     ('identity','operation'),allOf=[
     {'if':{'properties':{'operation':{'enum':['damage','heal']}},'required':['operation']},
      'then':{'required':['formula','damage_type'],**forbid('condition','appearance_transform','created_item')},
@@ -258,7 +275,10 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
     {'if':{'properties':{'operation':{'const':'appearance_transform'}},'required':['operation']},
      'then':{'required':['appearance_transform','duration_ms'],**forbid('created_item')},'else':forbid('appearance_transform')},
     {'if':{'properties':{'operation':{'const':'create_item'}},'required':['operation']},
-     'then':{'required':['created_item']},'else':forbid('created_item')},
+     'then':{'required':['created_item']},
+     'else':forbid('created_item','pvp_safe_item','duration_range_ms','duration_selection','safe_world_type','refuse_on','description_template')},
+    {'if':{'anyOf':[{'required':[field]} for field in ('pvp_safe_item','duration_range_ms','duration_selection','safe_world_type','refuse_on','description_template')]},
+     'then':{'required':['pvp_safe_item','duration_range_ms','duration_selection','safe_world_type','refuse_on','description_template'],**forbid('duration_ms')}},
     {'if':{'properties':{'operation':{'const':'presentation_only'}},'required':['operation']},
      'then':{'required':['presentation'],'properties':{'presentation':{'minProperties':1}},**forbid('duration_ms')}},
     {'if':{'properties':{'operation':{'const':'damage'}},'required':['operation']},'then':{},'else':forbid('mitigated_by')},
@@ -327,7 +347,13 @@ manifest={'$schema':DIALECT,'$id':MANIFEST_ID,'title':'Monster import dispositio
                  'captured':text(pattern=r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),'content_sha256':text(pattern=r'^[a-f0-9]{64}$')},
                 ('kind','url','title','captured','content_sha256'),
                 description='Spell S15: a dated capture of an official game-publisher page (tibia.com) that has no revision id; '
-                            'content_sha256 is that of the captured facts. source_file is the entry title.')]},1),
+                            'content_sha256 is that of the captured facts. source_file is the entry title.'),
+            obj({'kind':{'const':'community_capture'},'url':text(pattern=r'^https://'),'title':text(),
+                 'captured':text(pattern=r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),'content_sha256':text(pattern=r'^[a-f0-9]{64}$')},
+                ('kind','url','title','captured','content_sha256'),
+                description='A dated, hashed capture of a community reference without immutable page revisions. '
+                            'This is supplementary evidence, not an official publisher source. '
+                            'source_file is the entry title; the source selection rule remains with the importer.')]},1),
         'entries':array(obj({'source_index':integer(),'source_file':text(),'source_line':integer(1),'source_field':text(),
             'kind':enum('field','dependency','script','original_text'),
             'status':enum('mapped','metadata_only','resolved_native_behavior','approved_omission','unsupported_source_field','unresolved_semantics','unresolved_dependency','partial_text'),

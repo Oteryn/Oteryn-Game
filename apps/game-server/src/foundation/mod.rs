@@ -13,11 +13,30 @@ pub mod fnd04_verifier;
 // wiring into `ChannelRuntimeV1`'s owner cycle still awaits a `foundation`-owned follow-up:
 // `ScopeRuntimeFence`'s own scope-bound constructor (`from_external_grant`/`with_scope`) stays
 // private to this module, so no outside caller can yet obtain a fence to schedule/drain with.
+#[path = "../ability/condition.rs"]
+pub(crate) mod condition;
 #[allow(dead_code)]
 pub(crate) mod owner_timer;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
+#[allow(unused_imports)]
+pub(crate) use runtime_actor_carrier::runtime_actor_companion::{
+    CompanionMaster, CompanionSnapshot, CompanionState, CompiledCreaturePolicies,
+    CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags, CreatureResistance,
+    FamiliarDefenseClock, FamiliarSelfHealDefense, PreparedCompanionAssignment,
+    PreparedCompanionSpawn,
+};
+pub(crate) use runtime_actor_carrier::runtime_actor_source_step::{
+    SourceStepCommitProof, source_step_seal,
+};
+#[allow(unused_imports)]
+pub(crate) use runtime_actor_carrier::runtime_actor_spell::{
+    CreatureCombatFacts, QualifiedCompanionTouches, QualifiedSpellRelocation, StagedSpellBatch,
+};
+pub(crate) use runtime_actor_carrier::runtime_actor_spell_types;
+#[allow(unused_imports)]
+pub(crate) use runtime_actor_carrier::runtime_actor_spell_types::DeferredCommitAuthority;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
     ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AttackerCommand,
@@ -26,12 +45,13 @@ pub(crate) use runtime_actor_carrier::{
     ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark, CreatureDeathOccurrenceKey,
     CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
     CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
-    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
-    OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
+    MovementFacing, MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
+    OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
 };
 #[cfg(test)]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
 pub(crate) use runtime_actor_carrier::{CombatDeathFixture, MovementActorFixture};
+pub(crate) use runtime_actor_carrier::{SpellRelocationProof, relocation_seal};
 #[cfg(test)]
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
@@ -870,6 +890,7 @@ impl RuntimeExecutionOrdinal {
 pub struct RuntimeWorkStamp {
     generation: ScopeOwnershipGeneration,
     ordinal: RuntimeExecutionOrdinal,
+    scope: Option<RuntimeScopeRefV1>,
 }
 
 impl RuntimeWorkStamp {
@@ -967,12 +988,16 @@ impl ScopeRuntimeFence {
         RuntimeWorkStamp {
             generation: self.generation,
             ordinal,
+            scope: self.scope,
         }
     }
 
     #[must_use]
     pub fn accepts_stamp(&self, stamp: RuntimeWorkStamp) -> bool {
-        self.next_ordinal.is_some() && stamp.generation == self.generation
+        self.next_ordinal
+            .is_some_and(|next| stamp.ordinal.get() < next)
+            && stamp.generation == self.generation
+            && stamp.scope == self.scope
     }
 
     /// Whether `scope`/`generation` are this fence's *current* live owner authority for that
@@ -1389,6 +1414,33 @@ mod tests {
     }
 
     #[test]
+    fn runtime_stamp_requires_an_issued_ordinal_and_its_exact_scope() -> Result<(), Box<dyn Error>>
+    {
+        let identity = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
+        let world_id = WorldId::decode(&identity(40))?;
+        let scope = |channel_id| RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        };
+        let generation = ScopeOwnershipGeneration::new(3)?;
+        let mut a = ScopeRuntimeFence::from_external_grant(generation)
+            .with_scope(scope(ChannelId::decode(&identity(41))?));
+        let mut b = ScopeRuntimeFence::from_external_grant(generation)
+            .with_scope(scope(ChannelId::decode(&identity(42))?));
+        let future = a.stamp(RuntimeExecutionOrdinal::new(1)?);
+        assert!(!a.accepts_stamp(future));
+        let ordinal_a = a.accept_input(generation)?;
+        let ordinal_b = b.accept_input(generation)?;
+        assert!(a.accepts_stamp(a.stamp(ordinal_a)));
+        assert!(b.accepts_stamp(b.stamp(ordinal_b)));
+        assert!(!a.accepts_stamp(b.stamp(ordinal_b)));
+        assert!(!a.accepts_stamp(a.stamp(RuntimeExecutionOrdinal::new(2)?)));
+        a.invalidate();
+        assert!(!a.accepts_stamp(a.stamp(ordinal_a)));
+        Ok(())
+    }
+
+    #[test]
     fn reconnect_advances_generation_and_fences_stale_transport() -> Result<(), GenerationError> {
         let mut fence = ConnectionFence::fresh_admission();
         let first = ConnectionGeneration::new(1)?;
@@ -1435,3 +1487,18 @@ mod tests {
 pub mod admission_authority_publication;
 
 pub mod fresh_admission_durability;
+
+#[allow(unused_imports)]
+pub(crate) use runtime_actor_carrier::runtime_actor_periodic::{
+    CreaturePeriodicReceipt, PreparedCreaturePeriodicTurn,
+};
+
+pub(crate) use runtime_actor_carrier::runtime_actor_familiar_defense::{
+    FamiliarDefenseReceipt, PreparedFamiliarDefense,
+};
+pub(crate) use runtime_actor_carrier::runtime_actor_party::{
+    PartyAction, PartyCommand, PartyMemberSnapshot, PartyPresence, PartyReceipt, PartySnapshot,
+};
+pub(crate) use runtime_actor_carrier::runtime_actor_source_reservation::{
+    SourceActorReservation, SourceActorReservationProof, source_reservation_seal,
+};

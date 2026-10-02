@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/rune/sudden_death_rune",
-      "revision": "spell-p2-r14"
+      "revision": "spell-p2-r20"
     },
     "name": "sudden death rune",
     "carrier": "rune",
@@ -45,6 +45,7 @@
       "block_walls": true,
       "allow_on_self": true,
       "check_floor": true,
+      "range_tiles": 7,
       "parameter": "none"
     },
     "pz_locks_caster": false,
@@ -58,7 +59,7 @@
       "item": {
         "family": "Item",
         "key": "candidate:item/3155",
-        "revision": "spell-p2-r14"
+        "revision": "spell-p2-r20"
       },
       "charges": 3,
       "magic_level": 15,
@@ -72,7 +73,7 @@
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/rune/sudden_death_rune",
-        "revision": "spell-p2-r14"
+        "revision": "spell-p2-r20"
       }
     }
   }

@@ -1,0 +1,142 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/curse",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 3,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/curse/effect",
+          "revision": "spell-p2-r20"
+        },
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/curse/effect-condition-1",
+          "revision": "spell-p2-r20"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/curse/effect",
+        "revision": "spell-p2-r20"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/smallclouds",
+        "projectile_asset_binding": "canary.appearance:missile/death"
+      },
+      "operation": "presentation_only"
+    },
+    {
+      "identity": {
+        "key": "candidate:ability/spell/curse/effect-condition-1",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "condition",
+      "condition": {
+        "type": "cursed",
+        "lifetime": "damage_schedule",
+        "damage_over_time": {
+          "tick_profile": "fixed",
+          "first_tick": "after_interval",
+          "fixed_ticks": [
+            {
+              "count": 1,
+              "interval_ms": 3000,
+              "amount": 45
+            },
+            {
+              "count": 1,
+              "interval_ms": 3000,
+              "amount": 40
+            },
+            {
+              "count": 1,
+              "interval_ms": 3000,
+              "amount": 35
+            },
+            {
+              "count": 1,
+              "interval_ms": 3000,
+              "amount": 34
+            },
+            {
+              "count": 2,
+              "interval_ms": 3000,
+              "amount": 33
+            },
+            {
+              "count": 2,
+              "interval_ms": 3000,
+              "amount": 32
+            },
+            {
+              "count": 2,
+              "interval_ms": 3000,
+              "amount": 31
+            },
+            {
+              "count": 2,
+              "interval_ms": 3000,
+              "amount": 30
+            },
+            {
+              "count": 3,
+              "interval_ms": 3000,
+              "amount": 29
+            },
+            {
+              "count": 3,
+              "interval_ms": 3000,
+              "amount": 25
+            },
+            {
+              "count": 3,
+              "interval_ms": 3000,
+              "amount": 24
+            },
+            {
+              "count": 4,
+              "interval_ms": 3000,
+              "amount": 23
+            },
+            {
+              "count": 4,
+              "interval_ms": 3000,
+              "amount": 20
+            },
+            {
+              "count": 5,
+              "interval_ms": 3000,
+              "amount": 19
+            },
+            {
+              "count": 5,
+              "interval_ms": 3000,
+              "amount": 15
+            },
+            {
+              "count": 6,
+              "interval_ms": 3000,
+              "amount": 10
+            },
+            {
+              "count": 10,
+              "interval_ms": 3000,
+              "amount": 5
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "formulas": []
+}

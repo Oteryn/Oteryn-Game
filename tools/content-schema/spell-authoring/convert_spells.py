@@ -11,6 +11,8 @@ Field rules (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md section 5):
   wheel_unlock (S6), stated by the wiki or else by the Canary 15.30 needLearn.
 - S4: a value only one of Canary and Crystal has is taken from it. S21: a value they disagree on (with the engine
   default for an absent call) and that no wiki or tibia.com states follows the Canary 15.30 branch.
+- Owner gap-fill policy: only a missing rune cast range may use attributed Tibiopedia spellrange,
+  after primary wiki/official resolution and both engine registrars are silent; S13 stays unchanged.
 - S5: player damage/heal formulas are the source expression trees; `level / 5` and Canary's
   calculateFlatDamageHealing become the world curve `level_base_damage_healing`. When the sources'
   executions differ only in the formula, the formula that consumes the wiki base power wins.
@@ -22,6 +24,9 @@ Usage:
         [--out DIR] [--only NAME ...] [--readiness samples/spell-readiness.json]
 """
 import argparse
+import blocked_completions
+import formula_corrections
+import native_catalog
 import copy
 import hashlib
 import json
@@ -58,7 +63,10 @@ PARTY = json.loads((ROOT / 'party-behaviours.json').read_text(encoding='utf-8'))
 GUARDS = json.loads((ROOT / 'guard-behaviours.json').read_text(encoding='utf-8'))['spells']
 CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
-REVISION = 'spell-p2-r14'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells; r12: S26 Harmony role; r13: S27 party_buff; r14: S27 accepted guards, Train Party (D213)
+# Damage-model corrections below are explicit offline reference proposals, not source unanimity
+# or canonical acceptance. Healing fixes preserve the source expressions under the S5 curve.
+ITEM_REVISION = 'spell-p2-r21'  # Actual source-qualified Item provider namespace.
+REVISION = 'spell-p2-r20'  # r20: source-qualified native mechanics; retain r18 formula corrections.
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -94,7 +102,24 @@ def slug(name):
 
 
 def ref(family, key):
-    return {'family': family, 'key': key, 'revision': REVISION}
+    return {'family': family, 'key': key, 'revision': ITEM_REVISION if family == 'Item' else REVISION}
+
+
+def qualify_item_references(value):
+    """Attach source-created candidate Item refs to the real Item import revision.
+
+    Only the Item family changes; formal upstream refs and every other authored
+    family retain their actual original identity. The full producer verifies the
+    resulting exact refs against the independently source-qualified provider.
+    """
+    if isinstance(value, list):
+        return [qualify_item_references(child) for child in value]
+    if not isinstance(value, dict):
+        return value
+    result = {key: qualify_item_references(child) for key, child in value.items()}
+    if set(result) == {'family', 'key', 'revision'} and result['family'] == 'Item' and result['key'].startswith('candidate:item/'):
+        result['revision'] = ITEM_REVISION
+    return result
 
 
 def ident(key):
@@ -111,7 +136,8 @@ def git_blob(data):
 
 class Wikis:
     def __init__(self, fandom, br, official, tibiopedia=None, tibiacom=None):
-        # tibiopedia.pl only breaks a BR/Fandom tie (S13); it never states a value the wikis do not.
+        # S13 conflict resolution is unchanged. A separate bounded rune-range gap fill may use
+        # tibiopedia only after the primary resolution and both registrars state no range.
         # tibia.com decides every field it states (S15), ahead of the wikis.
         self.docs = {'fandom': fandom, 'br': br, **({'tibiopedia': tibiopedia} if tibiopedia else {}),
                      **({'tibiacom': tibiacom} if tibiacom else {})}
@@ -125,11 +151,15 @@ class Wikis:
                         by_words.setdefault(words, []).append(page)
                     by_name[ws.plain(page['fields'].get('name', page['title'])).lower()] = page
                 elif page.get('template') == 'Infobox Object':
-                    key = ws.rune_key(page['fields'])
-                    if key not in ('', None):
-                        runes.setdefault(key, page)
-                        name = ws.plain(page['fields'].get('name', page['title'])).lower()
-                        runes.setdefault(name, page)
+                    fields = page['fields']
+                    keys = {self.rune_name(fields.get(k, '')) for k in ('name', 'actualname')}
+                    keys.add(self.rune_name(page['title']))
+                    item_id = ws.wiki_number(str(fields.get('itemid', '')))
+                    if item_id is not None:
+                        keys.add(item_id)
+                    for key in keys:
+                        if key not in ('', None):
+                            runes.setdefault(key, []).append(page)
             self.spells[wiki], self.spell_names[wiki], self.runes[wiki] = by_words, by_name, runes
         self.official = {(c['spell'], c['field']): c for c in official['changes']}
 
@@ -149,11 +179,65 @@ class Wikis:
             return pages[0]
         return self.spell_names[wiki].get(str(record['name']).lower())
 
+    @staticmethod
+    def rune_name(value):
+        aliases = {'antidote rune': 'cure poison rune', 'desintegrate rune': 'disintegrate rune',
+                   'energybomb rune': 'energy bomb rune', 'firebomb rune': 'fire bomb rune',
+                   'paralyze rune': 'paralyse rune'}
+        name = re.sub(r'\s+\(item\)$', '', ws.plain(value).lower())
+        return aliases.get(name, name)
+
+    @staticmethod
+    def bounded_range(raw):
+        """A captured cast range is an unsigned integer, never an area size or boolean."""
+        if type(raw) is int:
+            value = raw
+        elif isinstance(raw, str) and re.fullmatch(r'[0-9]+', raw.strip()):
+            value = int(raw.strip())
+        else:
+            return None
+        return value if 0 <= value <= 0xFFFFFFFF else None
+
     def rune_page(self, wiki, record):
         if wiki == 'tibiacom':  # the list view describes spells, not rune use
             return None
-        reg = record['registrar']
-        return self.runes[wiki].get(reg.get('runeId')) or self.runes[wiki].get(str(record['name']).lower())
+        item_id = self.bounded_range(record['registrar'].get('runeId'))
+        by_id = self.runes[wiki].get(item_id, []) if item_id is not None else []
+        pages = by_id or self.runes[wiki].get(self.rune_name(str(record['name'])), [])
+        if len(pages) != 1:  # Neither duplicate IDs nor alias collisions justify picking the first page.
+            return None
+        page = pages[0]
+        reference_id = ws.wiki_number(str(page['fields'].get('itemid', '')))
+        if item_id is not None and reference_id is not None and item_id != reference_id:
+            return None
+        return page
+
+    def supplementary_rune_range(self, records):
+        """Owner gap-fill policy: only rune cast range, only if both engine calls are absent.
+
+        The caller first exhausts Fandom/BR/official and engine values; this is not an S13 vote.
+        """
+        if 'tibiopedia' not in self.docs or not {'canary', 'crystal'} <= records.keys():
+            return None, [], None
+        if any(record['spell_type'] != 'rune' or record['registrar'].get('range') is not None
+               for record in records.values()):
+            return None, [], None
+        item_ids = {self.bounded_range(records[source]['registrar'].get('runeId'))
+                    for source in ('canary', 'crystal')} - {None}
+        if len(item_ids) > 1:
+            return None, [], None
+        # Both source identities must independently select the same unambiguous captured rune.
+        pages = [self.rune_page('tibiopedia', records[source]) for source in ('canary', 'crystal')]
+        if pages[0] is None or pages[1] is not pages[0]:
+            return None, [], None
+        page = pages[0]
+        value = self.bounded_range(page['fields'].get('spellrange'))
+        if value is None:
+            return None, [], None
+        note = ('Owner gap-fill policy: captured tibiopedia.pl spellrange fills a missing rune cast range only; '
+                'Fandom/BR/official resolution and both engine registrars state none. S13 precedence is unchanged; '
+                'no area size or targeting behavior is inferred.')
+        return value, [('tibiopedia', page)], note
 
     def resolve(self, pages, field, spell_name, branch_vote=None):
         """(value, wiki provenance, note) for one wiki field; value None when no wiki states it.
@@ -173,18 +257,21 @@ class Wikis:
                 value = ws.crosswalk_value(field, page['fields'][field])
                 if value is not None:
                     values[wiki] = (value, page)
+        official = self.official.get((str(spell_name).lower(), field))
+        cut = self.docs['fandom'].get('target_cut', '2026-09-27')
+        if official and official['date'] <= cut:
+            value = ws.crosswalk_value(field, official['value'])
+            if value is None:
+                raise ValueError(f'official-changes.json: invalid {field} for {spell_name}')
+            note = (f'S24: the official change of {official["date"]} decides regardless of wiki agreement '
+                    f'({official["fact"]}; {official["source"]}).')
+            chosen = [(w, p) for w, (v, p) in values.items() if v == value]
+            return value, chosen or list((w, p) for w, (_, p) in values.items()), note
         if not values:
             return None, [], None
         distinct = {json.dumps(v[0], sort_keys=True) for v in values.values()}
         if len(distinct) == 1:
             return next(iter(values.values()))[0], [(w, p) for w, (_, p) in values.items()], None
-        official = self.official.get((str(spell_name).lower(), field))
-        if official:
-            value = ws.crosswalk_value(field, official['value'])
-            note = (f'S11: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree; the official change of '
-                    f'{official["date"]} decides ({official["fact"]}; {official["source"]}).')
-            chosen = [(w, p) for w, (v, p) in values.items() if v == value]
-            return value, chosen or list((w, p) for w, (_, p) in values.items()), note
         third = tie_breaker['fields'].get(field) if tie_breaker is not None else None
         third = ws.crosswalk_value(field, third) if third not in (None, '') else None
         # S13 + S14a: each wiki votes for its value, tibiopedia.pl and the Canary 15.30 branch vote for the wiki value
@@ -291,8 +378,11 @@ class Execution:
     def __init__(self, source, root):
         self.source, self.root = source, root
         self.converter = canary_batch.Converter(root, {}, {}, {}, {})
+        accepted = {n: {g['canary_body']} for n, g in GUARDS.items()}
+        for name, bodies in blocked_completions.accepted_cast_bodies(root, source).items():
+            accepted.setdefault(name, set()).update(bodies)
         self.converter.spell_scripts = spell_scripts.SpellScripts(
-            root, player_chains=True, accepted_guards={n: {g['canary_body']} for n, g in GUARDS.items()})
+            root, player_chains=True, accepted_guards=accepted)
         self.converter.pending_definitions = set()
         self.tag = SOURCES[source]['tag']
         self.canonical = self.converter  # S18: replaced by the Canary 15.30 tables once both sources exist
@@ -345,6 +435,10 @@ class Execution:
             combat = info['combats'][combat_index]
             guard = GUARDS.get(str(record['name']).lower(), {})
             dropped = guard.get('drop_params', []) if guard.get('spell_type') == record['spell_type'] else []
+            completion = blocked_completions.identify_completion(
+                record['name'], record['spell_type'], self.source, source_text(self.root, record['file']))
+            if completion:
+                dropped = list(dict.fromkeys([*dropped, *completion['drop_params']]))
             if dropped:
                 combat = {**combat, 'params': {k: v for k, v in combat['params'].items() if k not in dropped},
                           'param_calls': [c for c in combat['param_calls'] if c[0] not in dropped]}
@@ -389,7 +483,32 @@ class Execution:
                         raise Unresolved(f'{self.source}: damage/heal combat without exactly one player formula callback')
                     formula_key = (f'candidate:formula/spell/{"rune/" if record["spell_type"] == "rune" else ""}'
                                    f'{slug(record["name"])}/combat-{combat_index + 1}')
-                    body = player_formula(callbacks[0], base_power, notes)
+                    try:
+                        body = player_formula(callbacks[0], base_power, notes)
+                    except Unresolved:
+                        # Exactly the three source-qualified pre-Harmony callbacks. The actor
+                        # supplies the multiplier after cast checks; extracting it here twice
+                        # would apply Harmony both in the expression and in the owner.
+                        qualification = formula_corrections.monk.SPENDER_SOURCES.get(
+                            str(record['name']).casefold())
+                        body = None
+                        if (qualification and self.source == 'canary'
+                                and SOURCES[self.source]['revision'] == formula_corrections.monk.CANARY_PIN
+                                and record.get('blob') == qualification['blob']
+                                and record['registrar'].get('monkSpellType') == 'MonkSpell_Spender'):
+                            actual_text = source_text(self.root, record['file']).encode('utf-8')
+                            actual_blob = hashlib.sha1(
+                                b'blob ' + str(len(actual_text)).encode() + b'\0' + actual_text).hexdigest()
+                            if actual_blob == qualification['blob']:
+                                body = formula_corrections.monk.baseline_spender_formula(
+                                    record['name'], record['spell_type'], base_power, self.source,
+                                    callbacks[0].get('formula', {}).get('error'))
+                        if body is None:
+                            raise
+                        notes.add('Source-qualified pre-Harmony spender callback; original source order '
+                                  'and Tiger Clash floors retained. S5 world curve replaces only the flat helper. '
+                                  'Harmony stays in the actor owner and is not baked into the AST; the BP-only '
+                                  'calculator model is a separate unaccepted contract/core proposal.')
                     if not any(f['identity']['key'] == formula_key for f in deps['formulas']):
                         deps['formulas'].append({'identity': ident(formula_key), **body})
                     effect['formula'] = ref('Formula', formula_key)
@@ -399,7 +518,7 @@ class Execution:
         deps['formulas'] = [f for f in deps['formulas'] if f['identity']['key'] != canary_batch.CASTER_MAGNITUDE]
         text = self.canonical_visuals(json.dumps(deps).replace(canary_batch.REV, REVISION))
         items = sorted(int(k.rsplit('/', 1)[1]) for f, k in self.converter.pending_definitions if f == 'Item')
-        return key, json.loads(text.replace('canary:item/', 'candidate:item/')), items
+        return key, qualify_item_references(json.loads(text.replace('canary:item/', 'candidate:item/'))), items
 
 
 def execution_signature(deps):
@@ -419,6 +538,8 @@ class Bundle:
         self.name, self.records, self.wikis, self.executions, self.text = name, records, wikis, executions, sources_text
         self.rows, self.sources, self.source_index, self.notes = [], [], {}, set()
         self.catalog = set()
+        self.native = None
+        self.native_evidence = None
 
     # --- provenance -----------------------------------------------------------------------------
     def git_source(self, source):
@@ -428,11 +549,12 @@ class Bundle:
         return self.source_index[source]
 
     def wiki_source(self, wiki, page):
-        if wiki == 'tibiacom':
+        if wiki in ('tibiacom', 'tibiopedia'):
             key = (wiki, page['title'])
             if key not in self.source_index:
                 self.source_index[key] = len(self.sources)
-                self.sources.append({'kind': 'official_capture', 'url': page['url'], 'title': page['title'],
+                self.sources.append({'kind': 'official_capture' if wiki == 'tibiacom' else 'community_capture',
+                                     'url': page['url'], 'title': page['title'],
                                      'captured': self.wikis.docs[wiki]['target_cut'],
                                      'content_sha256': page['content_sha256']})
             return self.source_index[key]
@@ -467,6 +589,29 @@ class Bundle:
         self.rows.append(entry)
 
     # --- field resolution -----------------------------------------------------------------------
+    def selected_base_power(self, carrier, base_power):
+        """Apply the one explicit task decision without rewriting captured wiki facts."""
+        if (' '.join(self.name.casefold().split()), carrier) != ('strong ethereal spear', 'instant'):
+            return base_power
+        if isinstance(base_power, bool) or not isinstance(base_power, (int, float)) or base_power not in (25, 38):
+            return base_power
+        index_key = 'formula-repair-reference'
+        if index_key not in self.source_index:
+            self.source_index[index_key] = len(self.sources)
+            self.sources.append({'repository': formula_corrections.REFERENCE_REPOSITORY,
+                                 'revision': formula_corrections.REFERENCE_REVISION})
+        resolution = ('Task decision 2026-10-01: owner selects calculator BP25 for Strong Ethereal Spear. '
+                      f'Previously resolved BP{base_power} is superseded for this candidate; captured '
+                      'Fandom/BR/tibiopedia BP38 remains unchanged as attributed source disagreement. '
+                      'This decision does not establish wiki agreement or runtime admission.')
+        self.rows.append({'source_index': self.source_index[index_key],
+                          'source_file': 'src/data/spells.json', 'source_line': 1,
+                          'source_field': 'power/strong_ethereal_spear', 'kind': 'field',
+                          'status': 'mapped', 'destination': '/spell/spell/base_power',
+                          'resolution': resolution})
+        self.notes.add(resolution)
+        return 25
+
     def source_value(self, method, transform=lambda v: v):
         """{source: effective value} with engine defaults for an absent call."""
         out = {}
@@ -564,17 +709,28 @@ class Bundle:
         sources = self.source_value(method, transform) if method else {}
         if value is not None:
             value = wiki_transform(value)
+            if not provenance:
+                # No wiki stated this field. Preserve the explicit ledger URL/date in the
+                # resolution instead of fabricating a wiki page or losing the override.
+                self.row('mapped', wiki_field, destination, note, source=next(iter(self.records)), method=method)
             for wiki, page in provenance:
                 self.row('mapped', wiki_field, destination, note or 'S3: the wiki states this value.', wiki=(wiki, page))
             for source, source_value in sources.items():
                 if source_value is not None and source_value != value:
-                    rule = 'S15: superseded by the official tibia.com' if provenance[0][0] == 'tibiacom' else \
+                    rule = 'S24: superseded by the official change' if note and note.startswith('S24:') else \
+                        'S15: superseded by the official tibia.com' if provenance and provenance[0][0] == 'tibiacom' else \
                         'S3: superseded by the wiki'
                     self.row('approved_omission', method, resolution=f'{rule} value {value!r} '
                              f'(source {source_value!r}).', source=source, method=method)
             return value
         present = {s: v for s, v in sources.items() if v is not None}
         if not present:
+            if wiki_field == 'spellrange' and method == 'range' and destination.endswith('/targeting/range_tiles'):
+                gap_value, gap_provenance, gap_note = self.wikis.supplementary_rune_range(self.records)
+                if gap_value is not None:
+                    for wiki, page in gap_provenance:
+                        self.row('mapped', wiki_field, destination, gap_note, wiki=(wiki, page))
+                    return wiki_transform(gap_value)
             if required:
                 self.row('unresolved_semantics', method or wiki_field, resolution='no source or wiki states this value.',
                          source=next(iter(self.records)))
@@ -604,6 +760,10 @@ class Bundle:
     def convert(self):
         primary = self.records.get('crystal') or self.records['canary']
         carrier = primary['spell_type']
+        native = native_catalog.build(self.name, carrier, self.records, self.text)
+        if native is not None:
+            self.native, self.native_evidence = native
+            self.native = self.native_references(self.native)
         # S15: the official words (joined by name) also select the wiki pages, since the sources can swap words.
         official = self.wikis.spell_page('tibiacom', primary) if 'tibiacom' in self.wikis.docs else None
         official_words = official['fields'].get('words') if official is not None else None
@@ -663,15 +823,27 @@ class Bundle:
         spell['requirements'] = requirements
         costs = {}
         mana = self.field(base + '/costs/mana', 'mana', 'mana', pages if carrier == 'instant' else {}, required=False)
-        if isinstance(mana, int):
+        party_mana = PARTY['spells'].get(self.name, {}).get('mana')
+        if party_mana is not None:
+            costs['mana'] = 0  # The native party operation is the one authority charging this cost.
+            self.row('mapped', 'mana', base + '/costs/mana',
+                     'S27 C.3: party_buff charges its declared mana once; costs.mana is 0.',
+                     source=next(iter(self.records)), method='mana')
+        elif isinstance(mana, int):
             costs['mana'] = mana
         elif mana == 'varies' and 'base_mana' in PARTY['spells'].get(self.name, {}):
             self.row('mapped', 'mana', base + '/costs/mana', 'S27 C.3: the wiki mana varies; the party_buff parameters '
                      'define it and costs.mana is 0.', source=next(iter(self.records)), method='mana')
             costs['mana'] = 0
         elif mana == 'varies':
-            self.row('unresolved_semantics', 'mana', resolution='the wiki mana varies (party spells); a native '
-                     'behaviour must define it.', source=next(iter(self.records)), method='mana')
+            if self.native and self.native['key'] == 'acquire_summon':
+                self.row('resolved_native_behavior', 'mana', base + '/costs/mana',
+                         'Creature-dependent mana is charged once by acquire_summon from the authoritative '
+                         'Creature definition; the fixed spell cost is zero.',
+                         source=next(iter(self.records)), kind='script')
+            else:
+                self.row('unresolved_semantics', 'mana', resolution='the wiki mana varies; a native '
+                         'behaviour must define it.', source=next(iter(self.records)), method='mana')
             costs['mana'] = 0
         percent = self.source_value('manaPercent')
         if any(percent.values()) and 'mana' not in costs:
@@ -692,12 +864,18 @@ class Bundle:
         if role:
             spell['harmony_role'] = role
         spell['targeting'] = self.targeting(spell_pages)
+        if self.name == 'desintegrate rune' and carrier == 'rune' and self.native is not None:
+            spell['targeting']['aggressive'] = False
+            self.row('resolved_native_behavior', 'isAggressive', '/spell/spell/targeting/aggressive',
+                     'S27 D.2: Disintegrate is non-aggressive; protected item deletion remains '
+                     'governed by the native item operation.', source=next(iter(self.records)), kind='script')
         spell['pz_locks_caster'] = bool(self.field(base + '/pz_locks_caster', None, 'setPzLocked', pages))
         spell['needs_weapon'] = bool(self.field(base + '/needs_weapon', None, 'needWeapon', pages))
         presentation = self.sound_cues(base)
         if presentation:
             spell['presentation'] = presentation
         base_power = self.field(base + '/base_power', 'basepower', 'basePower', pages, required=False)
+        base_power = self.selected_base_power(carrier, base_power)
         if base_power:
             spell['base_power'] = base_power
         if carrier == 'rune':
@@ -890,7 +1068,37 @@ class Bundle:
             return {'conjure': body}
         if self.name in PARTY['spells']:
             return self.party_buff(PARTY['spells'][self.name], deps)
-        plain = {s for s, t in tiers.items() if t in ('plain_combat', 'random_combat') or self.guard()}
+        if self.native is not None:
+            for source in self.records:
+                self.row('resolved_native_behavior', 'onCastSpell', '/spell/spell/execution/native_behavior',
+                         'Complete source-qualified native mechanic: ' + self.native['key']
+                         + '; typed parameters validated by its closed family schema. '
+                         'Runtime/domain-owner admission remains separate.', source=source, kind='script')
+            self.notes.add('Native source qualification: ' + json.dumps(self.native_evidence,
+                           ensure_ascii=False, sort_keys=True))
+            return {'native_behavior': self.native}
+        barrier = native_catalog.barrier(self.name, next(iter(self.records.values()))['spell_type'],
+                                         self.records, self.text)
+        if barrier is not None:
+            barrier = self.native_references(barrier)
+            self.notes.add('Native source qualification: ' + json.dumps(
+                native_catalog.barrier_evidence(self.name, 'rune', self.records, self.text),
+                ensure_ascii=False, sort_keys=True))
+            key = f'candidate:ability/spell/rune/{slug(self.name)}'
+            effect_key = key + '/create-item'
+            deps['effects'].append({'identity': ident(effect_key), **barrier})
+            deps['abilities'].append({'identity': ident(key), 'kind': 'spell',
+                                     'range_tiles': 7, 'needs_target': False, 'needs_direction': False,
+                                     'effects': [ref('Effect', effect_key)]})
+            for source in self.records:
+                self.row('resolved_native_behavior', 'onCastSpell', '/spell/spell/execution/ability',
+                         'Source-qualified blocking-item creation preserves placement refusal, safe-world '
+                         'variant, per-instance lifetime and caster description.', source=source, kind='script')
+            return {'ability': ref('Ability', key)}
+        completions = {s: blocked_completions.identify_completion(
+            self.name, self.records[s]['spell_type'], s, self.text[(s, self.records[s]['file'])]) for s in tiers}
+        plain = {s for s, t in tiers.items() if t in ('plain_combat', 'random_combat') or self.guard()
+                 or completions[s] is not None}
         if not plain:
             patterns = sorted({p for r in self.records.values() for p in r['cast'].get('patterns', [])})
             self.row('unresolved_semantics', 'onCastSpell', resolution='custom script; needs a native behaviour (S7): '
@@ -934,6 +1142,30 @@ class Bundle:
                          + ('consumes the wiki base power' if with_power and base_power else 'is used')
                          + f'; the {other} formula is superseded.', source=other, method='setCallback')
         key, dep, items, notes = converted[chosen]
+        dep['formulas'], repair_notes = formula_corrections.correct_formulas(
+            self.name, self.records[chosen]['spell_type'], dep['formulas'], base_power)
+        for lane, note in repair_notes:
+            notes.add(note)
+            if lane == 'healing':
+                self.row('resolved_native_behavior', 'formula_repair/' + lane, '/dependencies/formulas',
+                         'Offline r17 source correction: ' + note, source=chosen, kind='script')
+            else:
+                index_key = 'formula-repair-reference'
+                if index_key not in self.source_index:
+                    self.source_index[index_key] = len(self.sources)
+                    self.sources.append({'repository': formula_corrections.REFERENCE_REPOSITORY,
+                                         'revision': formula_corrections.REFERENCE_REVISION})
+                self.rows.append({'source_index': self.source_index[index_key],
+                                  'source_file': 'src/data/spells.json', 'source_line': 1,
+                                  'source_field': 'formula_repair/' + lane, 'kind': 'script',
+                                  'status': 'resolved_native_behavior', 'destination': '/dependencies/formulas',
+                                  'resolution': 'Offline neutral reference-model proposal; not accepted Game truth. ' + note})
+        if completions[chosen]:
+            blocked_completions.apply_completion(completions[chosen], dep)
+            self.row('resolved_native_behavior', 'onCastSpell/completion', '/dependencies',
+                     'Source-exact r17 completion: ' + completions[chosen]['kind'] + '; '
+                     + completions[chosen]['contract'] + '; runtime support remains separately required.',
+                     source=chosen, kind='script')
         guard = self.guard()
         if guard:
             ability = next(a for a in dep['abilities'] if a['identity']['key'] == key)
@@ -958,6 +1190,22 @@ class Bundle:
         guard = GUARDS.get(self.name, {})
         return guard if guard.get('spell_type') == next(iter(self.records.values()))['spell_type'] else {}
 
+    def native_references(self, value):
+        """Attach every concrete native Item dependency at this candidate revision."""
+        if isinstance(value, list):
+            return [self.native_references(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        result = {key: self.native_references(item) for key, item in value.items()}
+        if set(result) == {'family', 'key', 'revision'} and result['key'].startswith('candidate:'):
+            result['revision'] = ITEM_REVISION if result['family'] == 'Item' else REVISION
+            if result['family'] == 'Item':
+                item = int(result['key'].rsplit('/', 1)[1])
+                if item <= 0:
+                    raise ValueError('native mechanic cannot emit a nonpositive item identity')
+                self.catalog.add(item)
+        return result
+
     def party_buff(self, party, deps):
         """S27 C.3: the party_buff execution from party-behaviours.json; the scripts are custom in both sources."""
         if 'blocked' in party:
@@ -966,7 +1214,8 @@ class Bundle:
             return {'native_behavior': {'key': 'unresolved', 'parameters': {'patterns': ['party']}}}
         condition = party['condition']
         key = f'candidate:spell/{slug(self.name)}/effect-{condition["type"]}'
-        deps['effects'].append({'identity': ident(key), 'operation': 'condition', 'duration_ms': 120000,
+        deps['effects'].append({'identity': ident(key), 'operation': 'condition',
+                                'duration_ms': party.get('duration_ms', 120000),
                                 'condition': {**condition, 'lifetime': 'fixed_duration', 'buff_spell': True}})
         for source in self.records:
             self.row('resolved_native_behavior', 'onCastSpell', '/spell/spell/execution/native_behavior',
@@ -974,7 +1223,8 @@ class Bundle:
                      kind='script')
         return {'native_behavior': {'key': 'party_buff', 'parameters': {
             'area': PARTY['area'], 'same_floor': True, 'min_affected': 2, 'requires_party': True,
-            'mana': {'mode': 'scaled', 'base': party['base_mana'], 'falloff': 0.9, 'rounding': 'up'},
+            'mana': copy.deepcopy(party['mana']) if 'mana' in party else
+                    {'mode': 'scaled', 'base': party['base_mana'], 'falloff': 0.9, 'rounding': 'up'},
             'effect': ref('Effect', key)}}}
 
 
@@ -987,6 +1237,11 @@ def run(args):
                   json.loads(TIBIOPEDIA_FACTS.read_text(encoding='utf-8')),
                   json.loads(TIBIACOM_LIST.read_text(encoding='utf-8')))
     roots = {'canary': args.canary, 'crystal': args.crystal}
+    for source, root in roots.items():
+        head = subprocess.run(['git', '-C', str(root), 'rev-parse', 'HEAD'],
+                              check=True, text=True, capture_output=True).stdout.strip()
+        if head != SOURCES[source]['revision']:
+            raise ValueError(f'{source}: source HEAD {head} differs from the pinned revision')
     executions = {s: Execution(s, r) for s, r in roots.items()}
     RUNE_ITEM_IDS.update(int(r['registrar']['runeId']) for s in ('canary', 'crystal') for r in census[s]
                          if r['spell_type'] == 'rune' and isinstance(r['registrar'].get('runeId'), int))
@@ -997,6 +1252,7 @@ def run(args):
         for record in census[source]:
             if str(record['registrar'].get('words', '')).startswith('#'):
                 continue
+            record['source_root'] = roots[source]
             groups.setdefault((record['spell_type'], str(record['name']).lower()), {})[source] = record
     texts = {}
     for (spell_type, name), records in groups.items():

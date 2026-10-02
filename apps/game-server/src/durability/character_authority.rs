@@ -795,7 +795,8 @@ async fn verify_character_integrity(
     // gap-free immutable receipt chain must explain the global revision and the
     // current state.  The chain has one receipt per revision of any kind: XP
     // award (0009), death (0016), stance (0017), Bestiary kill (0019), charm
-    // command (0020), monk state save (0026) or build change (0030), each
+    // command (0020), monk state save (0026), build change (0030), or familiar
+    // state change (0032), each
     // `before` equal to its predecessor's `after` across kinds.  The bootstrap
     // receipt remains bound to initial revision 1.
     sqlx::query(
@@ -834,7 +835,12 @@ async fn verify_character_integrity(
                   level_before, level_after, experience_before, experience_after, \
                   profile_revision, ruleset_revision, content_revision, simulation_revision, \
                   evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_build_receipts) \
+              FROM game_character_build_receipts \
+           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
+                  level_before, level_after, experience_before, experience_after, \
+                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                  evidence_revision, declaration_revision, policy_revision, reward_revision \
+              FROM game_character_familiar_receipts) \
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
@@ -893,6 +899,9 @@ async fn verify_character_integrity(
     .await?
     .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
     verify_character_build_chain(tx).await?;
+    super::character_familiar::verify_familiar_chain(tx).await?;
+    super::spell_familiar_group::verify_familiar_group(tx).await?;
+    super::spell_item_transaction::verify_spell_item_chain(tx).await?;
     // A self-consistent hash is not semantic evidence: every retained payload
     // must be exactly the registered encoding of its root's identities.
     let mut after = String::from("00000000-0000-0000-0000-000000000000");

@@ -1,3 +1,7 @@
+#[path = "spell_reconnect.rs"]
+pub(crate) mod spell_reconnect;
+#[path = "party_target_binding.rs"]
+pub(crate) mod party_target_binding;
 #[cfg(test)]
 use crate::durability::schema;
 use crate::durability::{DurabilityError, DurabilityRoot, db};

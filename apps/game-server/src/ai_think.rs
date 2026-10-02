@@ -382,7 +382,7 @@ pub fn act_step(
     actor: ExactActorRef,
     expected: MovementPositionSnapshot,
     selection: &MovementEngineeringSelection<'_>,
-    index: &EngineeringStaticCellIndex,
+    index: &(impl crate::content::native_cell_lookup::NativeStaticCellLookup + ?Sized),
 ) -> Result<ThinkAction, MovementError> {
     match outcome {
         ThinkOutcome::AttackIntent(target) => Ok(ThinkAction::AttackIntentSurfaced(target)),

@@ -7,11 +7,33 @@
 pub mod account_achievement;
 pub mod account_characters_projection;
 pub mod admission_authority_guards;
-mod admission_journal;
+pub(crate) mod admission_journal;
 pub mod bestiary_progress;
 pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
+pub mod character_stance;
+pub mod character_familiar;
+pub mod character_equipment;
+pub(crate) mod equipment_policy_abi;
+pub(crate) mod spell_familiar_group;
+pub(crate) mod spell_entitlements;
+pub(crate) mod spell_premium_abi;
+pub(crate) mod spell_wheel_abi;
+pub(crate) mod spell_house_abi;
+pub(crate) mod world_house_instance;
+pub(crate) mod world_party;
+pub(crate) mod spell_field_policy;
+pub(crate) mod native_map_items_abi;
+pub(crate) mod native_map_items;
+pub(crate) mod character_wheel;
+pub(crate) mod spell_character_lookup;
+pub(crate) mod spell_item_transaction;
+pub(crate) mod spell_items_abi;
+pub(crate) mod spell_privacy;
+pub(crate) mod spell_owner_commit;
+pub(crate) mod spell_parameter_result;
+pub(crate) mod spell_item_temporal;
 pub mod character_death;
 pub mod character_progression;
 pub mod charm_state;
@@ -3239,3 +3261,5 @@ mod terminal_replacement_foundation_red_tests {
         }
     }
 }
+
+pub(crate) mod house_spell_acl;

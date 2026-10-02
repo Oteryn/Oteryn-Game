@@ -1461,9 +1461,11 @@ pub(super) fn validate_v2_roles(
 /// declarations document schema.
 fn role_specs(admission: ProjectAdmission) -> [(&'static str, &'static str, &'static str); 8] {
     let mut specs = ROLE_SPECS;
-    if admission == ProjectAdmission::NativeEntry {
-        specs[1].2 = NATIVE_ENTRY_DECLARATIONS_SCHEMA;
-    }
+    specs[1].2 = match admission {
+        ProjectAdmission::Ordinary => DECLARATIONS_SCHEMA,
+        ProjectAdmission::NativeEntry => NATIVE_ENTRY_DECLARATIONS_SCHEMA,
+        ProjectAdmission::NativeSpellEntry => NATIVE_SPELL_ENTRY_DECLARATIONS_SCHEMA,
+    };
     specs
 }
 
@@ -1497,9 +1499,14 @@ pub(super) fn parse_v2_snapshot(
             parse_strict::<DeclarationsDocument>(declarations_bytes, limits)?,
             None,
         ),
-        ProjectAdmission::NativeEntry => {
+        ProjectAdmission::NativeEntry | ProjectAdmission::NativeSpellEntry => {
             let native: NativeDeclarationsDocument = parse_strict(declarations_bytes, limits)?;
-            if native.schema != NATIVE_ENTRY_DECLARATIONS_SCHEMA {
+            let expected = if plan.admission == ProjectAdmission::NativeEntry {
+                NATIVE_ENTRY_DECLARATIONS_SCHEMA
+            } else {
+                NATIVE_SPELL_ENTRY_DECLARATIONS_SCHEMA
+            };
+            if native.schema != expected {
                 return Err(ProjectError::InvalidProject(
                     "v2 managed document schema mismatch",
                 ));
@@ -2249,6 +2256,202 @@ fn validate_v2_encounter_bindings(
     Ok(())
 }
 
+/// Candidate artifact adapter reuses the authoring validators. Exact active presentation links
+/// are resolved by the artifact loader; retained non-runtime references remain authoring data.
+pub(crate) fn validate_native_gameplay_profile(
+    profile: &ProjectV2AuthoringProfile,
+) -> Result<(), ProjectError> {
+    let limits = ProjectEvidenceLimits {
+        max_documents: 8,
+        max_document_bytes: 8 * 1024 * 1024,
+        max_total_bytes: 16 * 1024 * 1024,
+        max_json_depth: 64,
+        max_decoded_fields: 131_072,
+        max_string_bytes: 4096,
+        max_locator_bytes: 512,
+        max_locator_segments: 16,
+        max_reference_records: 4096,
+        max_import_records: 4096,
+        max_reimport_states: 4096,
+    };
+    validate_v2_authoring_profile(profile, &|reference| reference.validate(), limits)
+}
+
+pub(crate) fn validate_native_gameplay_item(
+    item: &ProjectV2ItemAuthoring,
+) -> Result<(), ProjectError> {
+    validate_v2_item_authoring(
+        item,
+        &|reference| reference.validate(),
+        ProjectEvidenceLimits {
+            max_documents: 8,
+            max_document_bytes: 8 * 1024 * 1024,
+            max_total_bytes: 16 * 1024 * 1024,
+            max_json_depth: 64,
+            max_decoded_fields: 131_072,
+            max_string_bytes: 4096,
+            max_locator_bytes: 512,
+            max_locator_segments: 16,
+            max_reference_records: 4096,
+            max_import_records: 4096,
+            max_reimport_states: 4096,
+        },
+    )
+}
+fn validate_v2_item_authoring(
+    item: &ProjectV2ItemAuthoring,
+    require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    if item.item.family != ProjectV2Family::Item {
+        return Err(ProjectError::InvalidProject(
+            "v2 Item authoring requires Item target",
+        ));
+    }
+    require_ref(&item.item)?;
+    if let Some(presentation) = &item.presentation {
+        if presentation.family != ProjectV2Family::Presentation {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item presentation family mismatch",
+            ));
+        }
+        require_ref(presentation)?;
+    }
+    if let Some(document) = &item.document {
+        if document.family != ProjectV2Family::Document {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item document family mismatch",
+            ));
+        }
+        require_ref(document)?;
+    }
+    if let Some(taxonomy) = &item.taxonomy {
+        validate_v2_source_text("v2 Item primary taxonomy", &taxonomy.primary, limits)?;
+        if let Some(value) = &taxonomy.secondary {
+            validate_v2_source_text("v2 Item secondary taxonomy", value, limits)?;
+        }
+        if let Some(value) = &taxonomy.tertiary {
+            validate_v2_source_text("v2 Item tertiary taxonomy", value, limits)?;
+        }
+    }
+    if let Some(forge) = item.forge
+        && (forge.classification == 0 || forge.max_tier == 0)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Item Forge profile requires nonzero class and max tier",
+        ));
+    }
+    if let Some(ability) = &item.use_ability {
+        if ability.family != ProjectV2Family::Ability {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item use Ability family mismatch",
+            ));
+        }
+        require_ref(ability)?;
+    }
+    if let Some(consumable) = item.consumable
+        && consumable.regeneration_seconds == Some(0)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Item regeneration seconds must be positive when present",
+        ));
+    }
+    if let Some(observation) = &item.use_observation {
+        if let Some(damage) = &observation.damage {
+            match damage {
+                ProjectV2ItemDamageObservation::Range { min, max } if min > max => {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 Item damage observation range is inverted",
+                    ));
+                }
+                ProjectV2ItemDamageObservation::Text(value) => {
+                    validate_v2_source_text("v2 Item damage source text", value, limits)?;
+                }
+                ProjectV2ItemDamageObservation::Integer(_)
+                | ProjectV2ItemDamageObservation::Range { .. } => {}
+            }
+        }
+        if let Some(value) = &observation.damage_type {
+            validate_v2_source_text("v2 Item damage type source text", value, limits)?;
+        }
+    }
+    limits.check(
+        "v2 Item augments",
+        item.augments.len(),
+        limits.max_reference_records,
+    )?;
+    if item
+        .augments
+        .windows(2)
+        .any(|pair| pair[0].key >= pair[1].key)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Item augments are not key sorted and unique",
+        ));
+    }
+    for augment in &item.augments {
+        validate_v2_augment(augment, &require_ref, limits)?;
+    }
+    if let Some(proficiency) = &item.proficiency {
+        validate_v2_item_proficiency(proficiency, &require_ref)?;
+    }
+    limits.check(
+        "v2 Item on-use interactions",
+        item.on_use_interactions.len(),
+        limits.max_reference_records,
+    )?;
+    if item
+        .on_use_interactions
+        .windows(2)
+        .any(|pair| pair[0] >= pair[1])
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Item on-use interactions are not sorted and unique",
+        ));
+    }
+    for interaction in &item.on_use_interactions {
+        if interaction.family != ProjectV2Family::Interaction {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item on-use Interaction family mismatch",
+            ));
+        }
+        require_ref(interaction)?;
+    }
+    if let Some(lifecycle) = &item.lifecycle {
+        for interactions in [
+            &lifecycle.enchant_interactions,
+            &lifecycle.destroy_interactions,
+        ] {
+            limits.check(
+                "v2 Item lifecycle interactions",
+                interactions.len(),
+                limits.max_reference_records,
+            )?;
+            if interactions.windows(2).any(|pair| pair[0] >= pair[1]) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Item lifecycle interactions are not sorted and unique",
+                ));
+            }
+            for interaction in interactions {
+                if interaction.family != ProjectV2Family::Interaction {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 Item lifecycle Interaction family mismatch",
+                    ));
+                }
+                require_ref(interaction)?;
+            }
+        }
+    }
+    if let Some(source_lifecycle) = &item.source_lifecycle {
+        if let Some(value) = &source_lifecycle.implemented {
+            validate_v2_source_text("v2 Item implemented source text", value, limits)?;
+        }
+        if let Some(value) = &source_lifecycle.removed {
+            validate_v2_source_text("v2 Item removed source text", value, limits)?;
+        }
+    }
+    Ok(())
+}
 fn validate_v2_authoring_profile(
     profile: &ProjectV2AuthoringProfile,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
@@ -2734,153 +2937,7 @@ fn validate_v2_state(
         ));
     }
     for item in &state.item_authoring {
-        if item.item.family != ProjectV2Family::Item {
-            return Err(ProjectError::InvalidProject(
-                "v2 Item authoring requires Item target",
-            ));
-        }
-        require_ref(&item.item)?;
-        if let Some(presentation) = &item.presentation {
-            if presentation.family != ProjectV2Family::Presentation {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Item presentation family mismatch",
-                ));
-            }
-            require_ref(presentation)?;
-        }
-        if let Some(document) = &item.document {
-            if document.family != ProjectV2Family::Document {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Item document family mismatch",
-                ));
-            }
-            require_ref(document)?;
-        }
-        if let Some(taxonomy) = &item.taxonomy {
-            validate_v2_source_text("v2 Item primary taxonomy", &taxonomy.primary, limits)?;
-            if let Some(value) = &taxonomy.secondary {
-                validate_v2_source_text("v2 Item secondary taxonomy", value, limits)?;
-            }
-            if let Some(value) = &taxonomy.tertiary {
-                validate_v2_source_text("v2 Item tertiary taxonomy", value, limits)?;
-            }
-        }
-        if let Some(forge) = item.forge
-            && (forge.classification == 0 || forge.max_tier == 0)
-        {
-            return Err(ProjectError::InvalidProject(
-                "v2 Item Forge profile requires nonzero class and max tier",
-            ));
-        }
-        if let Some(ability) = &item.use_ability {
-            if ability.family != ProjectV2Family::Ability {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Item use Ability family mismatch",
-                ));
-            }
-            require_ref(ability)?;
-        }
-        if let Some(consumable) = item.consumable
-            && consumable.regeneration_seconds == Some(0)
-        {
-            return Err(ProjectError::InvalidProject(
-                "v2 Item regeneration seconds must be positive when present",
-            ));
-        }
-        if let Some(observation) = &item.use_observation {
-            if let Some(damage) = &observation.damage {
-                match damage {
-                    ProjectV2ItemDamageObservation::Range { min, max } if min > max => {
-                        return Err(ProjectError::InvalidProject(
-                            "v2 Item damage observation range is inverted",
-                        ));
-                    }
-                    ProjectV2ItemDamageObservation::Text(value) => {
-                        validate_v2_source_text("v2 Item damage source text", value, limits)?;
-                    }
-                    ProjectV2ItemDamageObservation::Integer(_)
-                    | ProjectV2ItemDamageObservation::Range { .. } => {}
-                }
-            }
-            if let Some(value) = &observation.damage_type {
-                validate_v2_source_text("v2 Item damage type source text", value, limits)?;
-            }
-        }
-        limits.check(
-            "v2 Item augments",
-            item.augments.len(),
-            limits.max_reference_records,
-        )?;
-        if item
-            .augments
-            .windows(2)
-            .any(|pair| pair[0].key >= pair[1].key)
-        {
-            return Err(ProjectError::InvalidProject(
-                "v2 Item augments are not key sorted and unique",
-            ));
-        }
-        for augment in &item.augments {
-            validate_v2_augment(augment, &require_ref, limits)?;
-        }
-        if let Some(proficiency) = &item.proficiency {
-            validate_v2_item_proficiency(proficiency, &require_ref)?;
-        }
-        limits.check(
-            "v2 Item on-use interactions",
-            item.on_use_interactions.len(),
-            limits.max_reference_records,
-        )?;
-        if item
-            .on_use_interactions
-            .windows(2)
-            .any(|pair| pair[0] >= pair[1])
-        {
-            return Err(ProjectError::InvalidProject(
-                "v2 Item on-use interactions are not sorted and unique",
-            ));
-        }
-        for interaction in &item.on_use_interactions {
-            if interaction.family != ProjectV2Family::Interaction {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Item on-use Interaction family mismatch",
-                ));
-            }
-            require_ref(interaction)?;
-        }
-        if let Some(lifecycle) = &item.lifecycle {
-            for interactions in [
-                &lifecycle.enchant_interactions,
-                &lifecycle.destroy_interactions,
-            ] {
-                limits.check(
-                    "v2 Item lifecycle interactions",
-                    interactions.len(),
-                    limits.max_reference_records,
-                )?;
-                if interactions.windows(2).any(|pair| pair[0] >= pair[1]) {
-                    return Err(ProjectError::InvalidProject(
-                        "v2 Item lifecycle interactions are not sorted and unique",
-                    ));
-                }
-                for interaction in interactions {
-                    if interaction.family != ProjectV2Family::Interaction {
-                        return Err(ProjectError::InvalidProject(
-                            "v2 Item lifecycle Interaction family mismatch",
-                        ));
-                    }
-                    require_ref(interaction)?;
-                }
-            }
-        }
-        if let Some(source_lifecycle) = &item.source_lifecycle {
-            if let Some(value) = &source_lifecycle.implemented {
-                validate_v2_source_text("v2 Item implemented source text", value, limits)?;
-            }
-            if let Some(value) = &source_lifecycle.removed {
-                validate_v2_source_text("v2 Item removed source text", value, limits)?;
-            }
-        }
+        validate_v2_item_authoring(item, &require_ref, limits)?;
     }
     limits.check(
         "v2 worlds",
@@ -3227,7 +3284,7 @@ impl CanonicalProjectDocuments {
         draft: ProjectV2Draft,
         limits: ProjectEvidenceLimits,
     ) -> Result<Self, ProjectError> {
-        Self::from_v2_draft_for(draft, limits, None)
+        Self::from_v2_draft_for(draft, limits, None, false)
     }
 
     /// Canonical writer for the native entry variant (#937 §2): the ordinary v2 documents with the
@@ -3241,6 +3298,19 @@ impl CanonicalProjectDocuments {
             draft,
             native_entry_first_slice_limits().project,
             Some(overlay),
+            false,
+        )
+    }
+
+    pub fn from_native_spell_entry_draft(
+        draft: ProjectV2Draft,
+        overlay: NativeFirstEntryDocument,
+    ) -> Result<Self, ProjectError> {
+        Self::from_v2_draft_for(
+            draft,
+            native_entry_first_slice_limits().project,
+            Some(overlay),
+            true,
         )
     }
 
@@ -3248,10 +3318,15 @@ impl CanonicalProjectDocuments {
         mut draft: ProjectV2Draft,
         limits: ProjectEvidenceLimits,
         native: Option<NativeFirstEntryDocument>,
+        spell_candidate: bool,
     ) -> Result<Self, ProjectError> {
         let limits = limits.validate()?;
         let admission = if native.is_some() {
-            ProjectAdmission::NativeEntry
+            if spell_candidate {
+                ProjectAdmission::NativeSpellEntry
+            } else {
+                ProjectAdmission::NativeEntry
+            }
         } else {
             ProjectAdmission::Ordinary
         };
@@ -3343,7 +3418,12 @@ impl CanonicalProjectDocuments {
                 authoring_profiles: draft.state.authoring_profiles,
             })?,
             Some(native_first_entry) => budget.encode(&NativeDeclarationsDocument {
-                schema: NATIVE_ENTRY_DECLARATIONS_SCHEMA.to_owned(),
+                schema: if spell_candidate {
+                    NATIVE_SPELL_ENTRY_DECLARATIONS_SCHEMA
+                } else {
+                    NATIVE_ENTRY_DECLARATIONS_SCHEMA
+                }
+                .to_owned(),
                 records: draft.state.declarations,
                 item_authoring: draft.state.item_authoring,
                 authoring_profiles: draft.state.authoring_profiles,
@@ -3441,6 +3521,7 @@ impl CanonicalProjectDocuments {
             source_profile: match admission {
                 ProjectAdmission::Ordinary => WORLD_PROJECT_V2_SOURCE_PROFILE,
                 ProjectAdmission::NativeEntry => NATIVE_ENTRY_SOURCE_PROFILE,
+                ProjectAdmission::NativeSpellEntry => NATIVE_SPELL_ENTRY_SOURCE_PROFILE,
             }
             .to_owned(),
             project_revision: draft.core.project_revision,
@@ -3459,6 +3540,9 @@ impl CanonicalProjectDocuments {
             }
             ProjectAdmission::NativeEntry => {
                 snapshot.parse_native_entry()?;
+            }
+            ProjectAdmission::NativeSpellEntry => {
+                snapshot.parse_native_spell_entry()?;
             }
         }
         Ok(Self {

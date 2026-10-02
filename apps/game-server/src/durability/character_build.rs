@@ -281,7 +281,7 @@ pub struct BuildChangeRequest {
 /// The content formula table (SKILLS-0 §3.5) the writer checks a change against: `req(L)` per
 /// vocation and family, and the digest of the table revision, which the receipt binds as its
 /// policy digest.
-pub trait BuildFormula {
+pub trait BuildFormula: Send + Sync {
     /// Progress needed to go from `level - 1` to `level` in `family` (0 is magic level, 1..=7 the
     /// skills in the order of [`SKILLS`]) under `vocation`. `None` means unreachable.
     fn required(&self, vocation: &str, family: usize, level: u16) -> Option<u64>;
@@ -315,6 +315,324 @@ pub fn convert_vocation(
 
 /// Every level up to the current one is reachable, and progress is held within the current level
 /// (SKILLS-0 §3.1): no family has paid for its next reachable level without advancing.
+
+/// An uncommitted build successor. It grants no durable or gameplay authority.
+/// Only a proof of COMMIT of this same physical transaction exposes its receipt.
+pub(crate) struct PendingBuildChange {
+    outcome: BuildCommitOutcome,
+    physical_transaction: String,
+    source_transaction: Option<String>,
+}
+impl PendingBuildChange {
+    pub(super) fn historical_outcome(&self) -> Option<BuildCommitOutcome> {
+        match &self.outcome {
+            BuildCommitOutcome::AlreadyCommitted(_) => Some(self.outcome.clone()),
+            BuildCommitOutcome::Committed(_) => None,
+        }
+    }
+    pub(crate) fn after_commit(
+        self,
+        proof: &super::spell_owner_commit::CommittedSpellOwnerTransaction,
+    ) -> Result<BuildCommitOutcome> {
+        if self.source_transaction.as_deref() != Some(proof.physical_transaction())
+            || (matches!(self.outcome, BuildCommitOutcome::Committed(_))
+                && self.physical_transaction != proof.physical_transaction())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        Ok(self.outcome)
+    }
+}
+
+/// Join a genuine Character build write to the caster's existing transaction.
+/// Current recovery, session, lease, root revision and node are verified here;
+/// a preceding write in this transaction cannot substitute for current authority.
+pub(crate) async fn prepare_character_build_in_transaction(
+    root: &DurabilityRoot,
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    request: BuildChangeRequest,
+    formula: &dyn BuildFormula,
+) -> Result<PendingBuildChange> {
+    let recovery = authority
+        .record_for(root)
+        .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+    prepare_character_build_with_recovery(tx, &recovery, node, fence, request, formula).await
+}
+
+/// Sibling writers may carry an actual pre-qualified recovery record into the
+/// SQL-only semantic-pass callback. This never reconstructs a current token:
+/// the record and every independent current DB fence are verified in this TX.
+pub(super) async fn prepare_character_build_with_recovery(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    request: BuildChangeRequest,
+    formula: &dyn BuildFormula,
+) -> Result<PendingBuildChange> {
+    if fence.character_lease_generation == 0
+        || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+        || !request.cause.admits(&request.before, &request.after)
+        || !normalized(formula, &request.after)
+        || request
+            .pruned_stance
+            .as_deref()
+            .is_some_and(|stance| request.cause == BuildCause::Training || !valid_revision(stance))
+        || (request.cause == BuildCause::VocationChoice
+            && convert_vocation(formula, &request.before, &request.after.vocation)?
+                != request.after)
+    {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    assert_recovery_fence(tx, recovery).await?;
+    lock_admission_relations(tx).await?;
+    let policy_digest = formula.digest();
+    let binding = command_binding(&fence, &request, &policy_digest);
+    let outcome = apply_build_in_transaction(
+        tx,
+        node,
+        &fence,
+        request,
+        policy_digest,
+        formula.content_revision().to_owned(),
+        binding,
+    )
+    .await??;
+    let physical_transaction: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(DurabilityError::from)?;
+    let occurrence = match &outcome {
+        BuildCommitOutcome::Committed(receipt) | BuildCommitOutcome::AlreadyCommitted(receipt) => {
+            receipt.occurrence
+        }
+    };
+    let source_transaction:Option<String>=sqlx::query_scalar(
+        "SELECT created_xact_id::text FROM game_character_build_receipts WHERE build_occurrence_id=encode($1,'hex')::uuid")
+        .bind(occurrence.as_bytes().as_slice()).fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
+    Ok(PendingBuildChange {
+        outcome,
+        physical_transaction,
+        source_transaction,
+    })
+}
+
+async fn apply_build_in_transaction(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterGameplayFence,
+    request: BuildChangeRequest,
+    policy_digest: [u8; 32],
+    content_revision: String,
+    binding: Vec<u8>,
+) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+                         'oteryn:character-build:' || encode($1, 'hex'), 0))",
+    )
+    .bind(request.occurrence.0.as_slice())
+    .execute(&mut **tx)
+    .await?;
+
+    if let Some(row) = load_receipt(tx, request.occurrence).await? {
+        let stored: Vec<u8> = row.try_get("command_binding")?;
+        if stored != binding {
+            return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+        }
+        let committed = decode_receipt(&row)?;
+        return Ok(Ok(BuildCommitOutcome::AlreadyCommitted(committed)));
+    }
+
+    let root = match assert_gameplay_fence(tx, &fence, &node).await? {
+        Ok(root) => root,
+        Err(error) => return Ok(Err(error)),
+    };
+    let character = fence.character_id.as_bytes().as_slice();
+    let state = sqlx::query(
+        "SELECT character_revision::text, profile_revision, ruleset_revision, \
+                                content_revision \
+                           FROM game_character_progression_state \
+                          WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
+    )
+    .bind(character)
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(state) = state else {
+        return Ok(Err(CharacterProgressionError::MissingProgressionState));
+    };
+    if numeric_u64(&state, "character_revision")? != root.revision {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    if !state_matches_root(&state, &root)
+        || state.try_get::<String, _>("content_revision")? != content_revision
+    {
+        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+    }
+    let pending: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_character_pending_respawns \
+                          WHERE character_id = encode($1,'hex')::uuid)",
+    )
+    .bind(character)
+    .fetch_one(&mut **tx)
+    .await?;
+    if pending {
+        return Ok(Err(CharacterProgressionError::RespawnPending));
+    }
+    let stored = sqlx::query(concat!(
+        "SELECT vocation, ",
+        family_columns!("", ""),
+        " FROM game_character_build_state \
+                          WHERE character_id = encode($1,'hex')::uuid FOR UPDATE"
+    ))
+    .bind(character)
+    .fetch_optional(&mut **tx)
+    .await?
+    .map(|row| DurableBuildState::stored(&row, "vocation", ""))
+    .transpose()?
+    .unwrap_or_default();
+    if stored != request.before {
+        return Ok(Err(CharacterProgressionError::BuildStateMismatch));
+    }
+    if let Some(pruned) = &request.pruned_stance {
+        let stance: Option<Option<String>> = sqlx::query_scalar(
+            "SELECT stance_key FROM game_character_stance \
+                              WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
+        )
+        .bind(character)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if stance.flatten().as_ref() != Some(pruned) {
+            return Ok(Err(CharacterProgressionError::BuildStateMismatch));
+        }
+    }
+
+    let committed_revision = root
+        .revision
+        .checked_add(1)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let (original, committed) = (root.revision.to_string(), committed_revision.to_string());
+    for successor in [
+        "UPDATE game_character_roots \
+                            SET character_revision = $2::text::numeric(20,0) \
+                          WHERE character_id = encode($1,'hex')::uuid \
+                            AND character_revision = $3::text::numeric(20,0)",
+        "UPDATE game_character_progression_state \
+                            SET character_revision = $2::text::numeric(20,0) \
+                          WHERE character_id = encode($1,'hex')::uuid \
+                            AND character_revision = $3::text::numeric(20,0)",
+    ] {
+        let updated = sqlx::query(successor)
+            .bind(character)
+            .bind(&committed)
+            .bind(&original)
+            .execute(&mut **tx)
+            .await?;
+        if updated.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
+    let receipt = sqlx::query(concat!(
+        "INSERT INTO game_character_build_receipts(\
+                           build_occurrence_id, command_binding, policy_digest, character_id, \
+                           original_character_revision, committed_character_revision, cause, \
+                           level_before, level_after, experience_before, experience_after, \
+                           vocation_before, ",
+        family_columns!("", "_before"),
+        ", vocation_after, ",
+        family_columns!("", "_after"),
+        ", stance_before, stance_after, profile_revision, ruleset_revision, \
+                           content_revision, simulation_revision, evidence_revision, \
+                           declaration_revision, policy_revision, reward_revision, committed_at) \
+                         SELECT encode($1,'hex')::uuid, $2, $3, s.character_id, \
+                           $4::text::numeric(20,0), $5::text::numeric(20,0), $6, s.level, \
+                           s.level, s.total_experience, s.total_experience, \
+                           $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, \
+                           $21, $22, $23, \
+                           $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, \
+                           $37, $38, $39, $40, \
+                           $41, NULL, s.profile_revision, s.ruleset_revision, \
+                           s.content_revision, s.simulation_revision, s.evidence_revision, \
+                           s.declaration_revision, s.policy_revision, s.reward_revision, \
+                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
+                           FROM game_character_progression_state s \
+                          WHERE s.character_id = encode($42,'hex')::uuid"
+    ))
+    .bind(request.occurrence.0.as_slice())
+    .bind(&binding)
+    .bind(policy_digest.as_slice())
+    .bind(&original)
+    .bind(&committed)
+    .bind(request.cause.key());
+    let receipt = request.after.bind(request.before.bind(receipt));
+    let receipt = receipt
+        .bind(request.pruned_stance.clone())
+        .bind(character)
+        .execute(&mut **tx)
+        .await?;
+    if receipt.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let row = sqlx::query(concat!(
+        "INSERT INTO game_character_build_state(character_id, vocation, ",
+        family_columns!("", ""),
+        ", committed_character_revision, last_build_occurrence_id) \
+                         VALUES (encode($1,'hex')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, \
+                           $11, $12, $13, $14, $15, $16, $17, $18, $19::text::numeric(20,0), \
+                           encode($20,'hex')::uuid) \
+                         ON CONFLICT (character_id) DO UPDATE SET (vocation, ",
+        family_columns!("", ""),
+        ", committed_character_revision, last_build_occurrence_id) = \
+                           (EXCLUDED.vocation, ",
+        family_columns!("EXCLUDED.", ""),
+        ", EXCLUDED.committed_character_revision, \
+                           EXCLUDED.last_build_occurrence_id)"
+    ))
+    .bind(character);
+    let row = request
+        .after
+        .bind(row)
+        .bind(&committed)
+        .bind(request.occurrence.0.as_slice())
+        .execute(&mut **tx)
+        .await?;
+    if row.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    if request.pruned_stance.is_some() {
+        let pruned = sqlx::query(
+            "UPDATE game_character_stance \
+                                SET stance_key = NULL, \
+                                    committed_character_revision = $2::text::numeric(20,0), \
+                                    last_stance_occurrence_id = encode($3,'hex')::uuid \
+                              WHERE character_id = encode($1,'hex')::uuid",
+        )
+        .bind(character)
+        .bind(&committed)
+        .bind(request.occurrence.0.as_slice())
+        .execute(&mut **tx)
+        .await?;
+        if pruned.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
+
+    let committed = CommittedBuildChange {
+        occurrence: request.occurrence,
+        character_id: fence.character_id,
+        original_character_revision: fence.expected_character_revision,
+        committed_character_revision: CharacterRevision::new(committed_revision)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        cause: request.cause,
+        before: request.before,
+        after: request.after,
+        pruned_stance: request.pruned_stance,
+    };
+    Ok(Ok(BuildCommitOutcome::Committed(committed)))
+}
+
 fn normalized(formula: &dyn BuildFormula, state: &DurableBuildState) -> bool {
     state
         .families()
@@ -392,211 +710,20 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
 
-                    sqlx::query(
-                        "SELECT pg_advisory_xact_lock(hashtextextended(\
-                         'oteryn:character-build:' || encode($1, 'hex'), 0))",
+                    let outcome = apply_build_in_transaction(
+                        &mut tx,
+                        &node,
+                        &fence,
+                        request,
+                        policy_digest,
+                        content_revision,
+                        binding,
                     )
-                    .bind(request.occurrence.0.as_slice())
-                    .execute(&mut *tx)
                     .await?;
-
-                    if let Some(row) = load_receipt(&mut tx, request.occurrence).await? {
-                        let stored: Vec<u8> = row.try_get("command_binding")?;
-                        if stored != binding {
-                            return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
-                        }
-                        let committed = decode_receipt(&row)?;
+                    if outcome.is_ok() {
                         commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(Ok(BuildCommitOutcome::AlreadyCommitted(committed)));
                     }
-
-                    let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
-                        Ok(root) => root,
-                        Err(error) => return Ok(Err(error)),
-                    };
-                    let character = fence.character_id.as_bytes().as_slice();
-                    let state = sqlx::query(
-                        "SELECT character_revision::text, profile_revision, ruleset_revision, \
-                                content_revision \
-                           FROM game_character_progression_state \
-                          WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
-                    )
-                    .bind(character)
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    let Some(state) = state else {
-                        return Ok(Err(CharacterProgressionError::MissingProgressionState));
-                    };
-                    if numeric_u64(&state, "character_revision")? != root.revision {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    if !state_matches_root(&state, &root)
-                        || state.try_get::<String, _>("content_revision")? != content_revision
-                    {
-                        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
-                    }
-                    let pending: bool = sqlx::query_scalar(
-                        "SELECT EXISTS (SELECT 1 FROM game_character_pending_respawns \
-                          WHERE character_id = encode($1,'hex')::uuid)",
-                    )
-                    .bind(character)
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    if pending {
-                        return Ok(Err(CharacterProgressionError::RespawnPending));
-                    }
-                    let stored = sqlx::query(concat!(
-                        "SELECT vocation, ",
-                        family_columns!("", ""),
-                        " FROM game_character_build_state \
-                          WHERE character_id = encode($1,'hex')::uuid FOR UPDATE"
-                    ))
-                    .bind(character)
-                    .fetch_optional(&mut *tx)
-                    .await?
-                    .map(|row| DurableBuildState::stored(&row, "vocation", ""))
-                    .transpose()?
-                    .unwrap_or_default();
-                    if stored != request.before {
-                        return Ok(Err(CharacterProgressionError::BuildStateMismatch));
-                    }
-                    if let Some(pruned) = &request.pruned_stance {
-                        let stance: Option<Option<String>> = sqlx::query_scalar(
-                            "SELECT stance_key FROM game_character_stance \
-                              WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
-                        )
-                        .bind(character)
-                        .fetch_optional(&mut *tx)
-                        .await?;
-                        if stance.flatten().as_ref() != Some(pruned) {
-                            return Ok(Err(CharacterProgressionError::BuildStateMismatch));
-                        }
-                    }
-
-                    let committed_revision = root
-                        .revision
-                        .checked_add(1)
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    let (original, committed) =
-                        (root.revision.to_string(), committed_revision.to_string());
-                    for successor in [
-                        "UPDATE game_character_roots \
-                            SET character_revision = $2::text::numeric(20,0) \
-                          WHERE character_id = encode($1,'hex')::uuid \
-                            AND character_revision = $3::text::numeric(20,0)",
-                        "UPDATE game_character_progression_state \
-                            SET character_revision = $2::text::numeric(20,0) \
-                          WHERE character_id = encode($1,'hex')::uuid \
-                            AND character_revision = $3::text::numeric(20,0)",
-                    ] {
-                        let updated = sqlx::query(successor)
-                            .bind(character)
-                            .bind(&committed)
-                            .bind(&original)
-                            .execute(&mut *tx)
-                            .await?;
-                        if updated.rows_affected() != 1 {
-                            return Err(DurabilityError::InvalidStoredState);
-                        }
-                    }
-                    let receipt = sqlx::query(concat!(
-                        "INSERT INTO game_character_build_receipts(\
-                           build_occurrence_id, command_binding, policy_digest, character_id, \
-                           original_character_revision, committed_character_revision, cause, \
-                           level_before, level_after, experience_before, experience_after, \
-                           vocation_before, ",
-                        family_columns!("", "_before"),
-                        ", vocation_after, ",
-                        family_columns!("", "_after"),
-                        ", stance_before, stance_after, profile_revision, ruleset_revision, \
-                           content_revision, simulation_revision, evidence_revision, \
-                           declaration_revision, policy_revision, reward_revision, committed_at) \
-                         SELECT encode($1,'hex')::uuid, $2, $3, s.character_id, \
-                           $4::text::numeric(20,0), $5::text::numeric(20,0), $6, s.level, \
-                           s.level, s.total_experience, s.total_experience, \
-                           $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, \
-                           $21, $22, $23, \
-                           $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, \
-                           $37, $38, $39, $40, \
-                           $41, NULL, s.profile_revision, s.ruleset_revision, \
-                           s.content_revision, s.simulation_revision, s.evidence_revision, \
-                           s.declaration_revision, s.policy_revision, s.reward_revision, \
-                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
-                           FROM game_character_progression_state s \
-                          WHERE s.character_id = encode($42,'hex')::uuid"
-                    ))
-                    .bind(request.occurrence.0.as_slice())
-                    .bind(&binding)
-                    .bind(policy_digest.as_slice())
-                    .bind(&original)
-                    .bind(&committed)
-                    .bind(request.cause.key());
-                    let receipt = request.after.bind(request.before.bind(receipt));
-                    let receipt = receipt
-                        .bind(request.pruned_stance.clone())
-                        .bind(character)
-                        .execute(&mut *tx)
-                        .await?;
-                    if receipt.rows_affected() != 1 {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    let row = sqlx::query(concat!(
-                        "INSERT INTO game_character_build_state(character_id, vocation, ",
-                        family_columns!("", ""),
-                        ", committed_character_revision, last_build_occurrence_id) \
-                         VALUES (encode($1,'hex')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, \
-                           $11, $12, $13, $14, $15, $16, $17, $18, $19::text::numeric(20,0), \
-                           encode($20,'hex')::uuid) \
-                         ON CONFLICT (character_id) DO UPDATE SET (vocation, ",
-                        family_columns!("", ""),
-                        ", committed_character_revision, last_build_occurrence_id) = \
-                           (EXCLUDED.vocation, ",
-                        family_columns!("EXCLUDED.", ""),
-                        ", EXCLUDED.committed_character_revision, \
-                           EXCLUDED.last_build_occurrence_id)"
-                    ))
-                    .bind(character);
-                    let row = request
-                        .after
-                        .bind(row)
-                        .bind(&committed)
-                        .bind(request.occurrence.0.as_slice())
-                        .execute(&mut *tx)
-                        .await?;
-                    if row.rows_affected() != 1 {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    if request.pruned_stance.is_some() {
-                        let pruned = sqlx::query(
-                            "UPDATE game_character_stance \
-                                SET stance_key = NULL, \
-                                    committed_character_revision = $2::text::numeric(20,0), \
-                                    last_stance_occurrence_id = encode($3,'hex')::uuid \
-                              WHERE character_id = encode($1,'hex')::uuid",
-                        )
-                        .bind(character)
-                        .bind(&committed)
-                        .bind(request.occurrence.0.as_slice())
-                        .execute(&mut *tx)
-                        .await?;
-                        if pruned.rows_affected() != 1 {
-                            return Err(DurabilityError::InvalidStoredState);
-                        }
-                    }
-
-                    let committed = CommittedBuildChange {
-                        occurrence: request.occurrence,
-                        character_id: fence.character_id,
-                        original_character_revision: fence.expected_character_revision,
-                        committed_character_revision: CharacterRevision::new(committed_revision)
-                            .map_err(|_| DurabilityError::InvalidStoredState)?,
-                        cause: request.cause,
-                        before: request.before,
-                        after: request.after,
-                        pruned_stance: request.pruned_stance,
-                    };
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(BuildCommitOutcome::Committed(committed)))
+                    Ok(outcome)
                 })
             })
             .await?

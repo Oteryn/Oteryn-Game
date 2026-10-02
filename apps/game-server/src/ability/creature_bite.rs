@@ -13,8 +13,8 @@
 //! applies damage twice, and a rejected bite is never buffered for later. AI reads the result only
 //! through its next snapshot.
 
+use super::{intent::AiAbilityAdapter, RevisionSet};
 use super::{AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource};
-use super::{RevisionSet, intent::AiAbilityAdapter};
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 
@@ -97,7 +97,11 @@ pub(crate) const fn floor_creature_damage(health: u32, magnitude: u32) -> Floore
         health
     } else {
         let remaining = health.saturating_sub(magnitude);
-        if remaining < 1 { 1 } else { remaining }
+        if remaining < 1 {
+            1
+        } else {
+            remaining
+        }
     };
     FlooredDamage {
         applied: health - health_after,
@@ -146,6 +150,7 @@ pub(crate) trait CreatureBiteVitals {
         target: ExactActorRef,
         target_session: GameSessionId,
         magnitude: u32,
+        now: SemanticTimeMicros,
     ) -> Option<(FlooredDamage, u64)>;
 }
 
@@ -278,7 +283,13 @@ fn resolve_and_apply(
         _ => return Err(BiteRejection::InvalidPlan),
     };
     let (damage, vitals_revision) = vitals
-        .apply_creature_damage(runtime, intent.target, intent.target_session, magnitude)
+        .apply_creature_damage(
+            runtime,
+            intent.target,
+            intent.target_session,
+            magnitude,
+            now,
+        )
         .ok_or(BiteRejection::StaleTarget)?;
     Ok(AppliedBite {
         requested: magnitude,

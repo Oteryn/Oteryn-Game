@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/rune/great_fireball_rune",
-      "revision": "spell-p2-r14"
+      "revision": "spell-p2-r20"
     },
     "name": "great fireball rune",
     "carrier": "rune",
@@ -45,6 +45,7 @@
       "block_walls": true,
       "allow_on_self": true,
       "check_floor": true,
+      "range_tiles": 7,
       "parameter": "none"
     },
     "pz_locks_caster": false,
@@ -58,7 +59,7 @@
       "item": {
         "family": "Item",
         "key": "candidate:item/3191",
-        "revision": "spell-p2-r14"
+        "revision": "spell-p2-r20"
       },
       "charges": 4,
       "magic_level": 4,
@@ -72,7 +73,7 @@
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/rune/great_fireball_rune",
-        "revision": "spell-p2-r14"
+        "revision": "spell-p2-r20"
       }
     }
   }

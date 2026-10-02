@@ -391,7 +391,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // switch stands even if the runtime mark could not be cleared.
         {
             let mut runtime = self.runtime.lock().await;
-            let _ = runtime.restore_control(actor, session_id, epoch.get());
+            let _ = runtime.restore_control_after_committed_reentry(
+                actor,
+                session_id,
+                epoch.get(),
+                self.owner_now().get(),
+            );
             // SPELL-D8 §8.2: the Serene initialization evaluation runs in this owner step,
             // before the resumed actor's first command. An actor without spell state has none.
             let _ = self.spell_states.lock().await.resume(

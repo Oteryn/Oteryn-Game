@@ -2296,6 +2296,12 @@ mod account_characters_projection_postgres_cases;
 #[path = "support/character_build_postgres_cases.rs"]
 mod character_build_postgres_cases;
 
+#[path = "support/character_stance_writer_postgres_cases.rs"]
+mod character_stance_writer_postgres_cases;
+
+#[path = "support/character_familiar_writer_postgres_cases.rs"]
+mod character_familiar_writer_postgres_cases;
+
 // SPELL-D8 H-1 durable monk Harmony and remaining forced Serene time (migration
 // 0026, `durability::monk_state`) run in the same protected lane, on the
 // CHARM-2 harness included above.

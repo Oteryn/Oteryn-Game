@@ -42,6 +42,11 @@ pub mod item_stats_promotion;
 mod model;
 mod production;
 mod project;
+pub(crate) mod native_gameplay;
+pub(crate) mod spell_wheel_profile;
+pub(crate) mod native_cell_lookup;
+pub(crate) mod native_source_world_carrier;
+pub(crate) mod native_spell_appearances;
 mod project_fs;
 mod reference_artifact;
 mod reference_playable;
@@ -99,3 +104,8 @@ pub use reference_playable::*;
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) mod spell_familiar_config;
+pub(crate) mod spell_familiar_defenses;
+
+pub(crate) use project::{SourceFloorChange, QualifiedSourceStepTile};

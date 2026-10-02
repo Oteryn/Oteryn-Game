@@ -1,0 +1,61 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/great_death_beam",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Great Death Beam",
+    "carrier": "instant",
+    "words": "exevo max mort",
+    "reference_spell_id": 260,
+    "library_text": "To all of the great fighting vocations there comes a point, where dabbling in the arts of their trade just doesn't cut it anymore. This is when talent and force have to make room to dedication and training. The point where the amateurs are left behind by the committed. The true skill of their vocation's trade comes into play and creates the experts that become the reference for their traditions. Yet there are a few skilled individuals, that push their skill and knowledge further. They leave behind the assumed restrictions of their trade and become the epitome of their line of training. Those individuals are beyond the confinement of training and their abilities begin to base on the understanding of their art. One of the trademark skills of such individuals is the ability to concentrate the essence of their tradition and release it in one powerful beam attack. Though it's theorized that with a longer build-up an even more powerful beam could be produced, in practise the attempts to contain the raw energies for longer are more disastrous for the wielder then for the intended targets. Research of the great scientist Kameha lead to the discovery of the ideal build up and cooldown tomes to maximise the beams effectiveness.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 66,
+      "premium": true,
+      "learning_required": false,
+      "wheel_unlock": false
+    },
+    "costs": {
+      "mana": 140,
+      "soul": 0
+    },
+    "cooldown_ms": 6000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      },
+      {
+        "group": "greatbeams",
+        "cooldown_ms": 6000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": true,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none",
+      "aim_at_target": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "base_power": 155,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/great_death_beam",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

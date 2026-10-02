@@ -1,0 +1,60 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/ice_wave",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Ice Wave",
+    "carrier": "instant",
+    "words": "exevo frigo hur",
+    "reference_spell_id": 121,
+    "library_text": "The Ice Wave was invented by druids to attack all foes in a small range in front of the caster. Everybody that is unlucky enough to be hit by this wave of freezing air, will suffer great pain, especially when having an affiliation to the element fire. Like most spells, also the Ice Wave becomes more powerful with the growing magic abilities of its user. In the hands of an experienced druid it becomes a powerful weapon which can cause heavy damage to a remarkable number of enemies.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 18,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 25,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": true,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 4,
+      "parameter": "none",
+      "aim_at_target": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_ice_wave"
+    },
+    "base_power": 35,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/ice_wave",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

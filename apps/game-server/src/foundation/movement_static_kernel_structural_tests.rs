@@ -689,6 +689,7 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
             committed: true,
             position: Some(fixture.snapshot.version),
             control_loss: None,
+            spell_combat: Box::default(),
         }
     );
 }

@@ -1,0 +1,3377 @@
+{
+  "schema": "OTERYN_MISSING_COMPANION_SOURCE_DEPENDENCY_PROFILES/v1",
+  "records": [
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/tame_terror_bird/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/tame_terror_bird/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/tame_terror_bird/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/tame_terror_bird/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/tame_terror_bird/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "canary:behavior/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "canary:loot/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "canary:presentation/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "canary:behavior/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Loot",
+      "identity": {
+        "family": "Loot",
+        "key": "canary:loot/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "algorithm": "IndependentBernoulliPpm",
+      "entries": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3492",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 3,
+          "probability_ppm": 95400
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3577",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 3,
+          "probability_ppm": 476190
+        }
+      ]
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/white_tiger/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/white_tiger/defense-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/white_tiger/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/white_tiger/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/white_tiger/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/white_tiger/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/white_tiger/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "canary:behavior/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "canary:loot/white_tiger",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "canary:presentation/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "canary:behavior/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Loot",
+      "identity": {
+        "family": "Loot",
+        "key": "canary:loot/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "algorithm": "IndependentBernoulliPpm",
+      "entries": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/10293",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 3,
+          "probability_ppm": 97051
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3577",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 4,
+          "probability_ppm": 348080
+        }
+      ]
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-2-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-3-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-4-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/bloated_man_maggot/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/bloated_man_maggot/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-2-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/bloated_man_maggot/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-3-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/bloated_man_maggot/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-4-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:ability/spell/largefirering/effect",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/bloated_man_maggot/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/bloated_man_maggot/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/bloated_man_maggot/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/bloated_man_maggot/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/bloated_man_maggot/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/bloated_man_maggot/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/bloated_man_maggot/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/bloated_man_maggot/attack-4",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/spell/largefirering",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:ability/spell/largefirering/effect",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "canary:behavior/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "canary:loot/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "canary:presentation/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "canary:behavior/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Loot",
+      "identity": {
+        "family": "Loot",
+        "key": "canary:loot/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "algorithm": "IndependentBernoulliPpm",
+      "entries": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/43856",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 37975
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/43849",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 39783
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3052",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 54250
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/9057",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 3,
+          "probability_ppm": 57866
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3356",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 63291
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3065",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 70524
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3036",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 70840
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3041",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 78080
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/7412",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 79670
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3032",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 5,
+          "probability_ppm": 91330
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3048",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 100200
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/43778",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 258590
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3043",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 551537
+        }
+      ]
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-2-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-3-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-4-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/rotten_man_maggot/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/rotten_man_maggot/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-2-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/rotten_man_maggot/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-3-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/rotten_man_maggot/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-4-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:ability/spell/largeicering/effect",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/rotten_man_maggot/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/rotten_man_maggot/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/rotten_man_maggot/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/rotten_man_maggot/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/rotten_man_maggot/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/rotten_man_maggot/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/rotten_man_maggot/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/rotten_man_maggot/attack-4",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/spell/largeicering",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:ability/spell/largeicering/effect",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "canary:behavior/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "canary:loot/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "canary:presentation/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "canary:behavior/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Loot",
+      "identity": {
+        "family": "Loot",
+        "key": "canary:loot/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "algorithm": "IndependentBernoulliPpm",
+      "entries": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/43857",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 36254
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3575",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 36254
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3039",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 57402
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/6299",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 57402
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/43849",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 66465
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3033",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 2,
+          "probability_ppm": 78550
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3037",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 78550
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/43782",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 102719
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3043",
+            "revision": "canary-47dfd51f"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 447130
+        }
+      ]
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/travelling_merchant/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/travelling_merchant/attack-2-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/travelling_merchant/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/travelling_merchant/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/travelling_merchant/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/travelling_merchant/attack-2-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/travelling_merchant/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/travelling_merchant/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/travelling_merchant/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/travelling_merchant/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "canary:behavior/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "loot": null
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "canary:presentation/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "canary:behavior/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "canary:formula/enpa_yolo/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "canary:effect/enpa_yolo/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/enpa_yolo/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "canary:ability/enpa_yolo/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/enpa_yolo/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "canary:behavior/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "loot": null
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "canary:presentation/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "canary:behavior/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "client_projection": "ServerOnly"
+    }
+  ],
+  "authoring_profiles": [
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/tame_terror_bird/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 0,
+          "maximum": 90
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/tame_terror_bird/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/tame_terror_bird/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Melee",
+            "range_tiles": 1,
+            "needs_target": true,
+            "needs_direction": false,
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/tame_terror_bird/attack-1",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 300,
+          "experience": 0,
+          "speed": 106,
+          "armor": 13,
+          "resistances": [],
+          "immunities": [],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "canary:ability/tame_terror_bird/attack-1",
+              "revision": "canary-47dfd51f"
+            }
+          ],
+          "mitigation": {
+            "numerator": 27,
+            "denominator": 50
+          },
+          "details": {
+            "display_name": "Tame Terror Bird",
+            "inspection": "a tame terror bird",
+            "defense": 13,
+            "critical_chance_ppm": 0,
+            "flags": {
+              "attackable": true,
+              "illusionable": true,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "article": "a",
+            "corpse_item": {
+              "family": "Item",
+              "key": "canary:item/6057",
+              "revision": "canary-47dfd51f"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/2886",
+                "revision": "canary-47dfd51f"
+              },
+              "fluid_type": "blood"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "canary:behavior/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": true,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": true,
+            "sense_invisible": false,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 4000,
+              "chance_ppm": 100000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 30,
+              "health": 0,
+              "random": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/tame_terror_bird/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            }
+          ],
+          "voices": {
+            "interval_ms": 5000,
+            "chance_ppm": 100000,
+            "entries": [
+              {
+                "text": "Carrah! Carrah!",
+                "mode": "Say"
+              },
+              {
+                "text": "Gruuuh Gruuuh.",
+                "mode": "Say"
+              },
+              {
+                "text": "CRAAAHHH!",
+                "mode": "Yell"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/218"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/white_tiger/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 0,
+          "maximum": 40
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/white_tiger/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "SpeedModifier",
+          "minimum_multiplier": {
+            "numerator": 3,
+            "denominator": 5
+          },
+          "minimum_offset": 40,
+          "maximum_multiplier": {
+            "numerator": 6,
+            "denominator": 5
+          },
+          "maximum_offset": 40
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/white_tiger/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/white_tiger/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Melee",
+            "range_tiles": 1,
+            "needs_target": true,
+            "needs_direction": false,
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/white_tiger/attack-1",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/white_tiger/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "effects": [
+              {
+                "kind": "Inline",
+                "effect": {
+                  "key": "oteryn:effect.creature.white_tiger.defense-1",
+                  "operation": {
+                    "operation": "Condition",
+                    "condition": {
+                      "condition_type": "haste",
+                      "lifetime": "FixedDuration",
+                      "speed_formula": {
+                        "family": "Formula",
+                        "key": "canary:formula/white_tiger/defense-1-1",
+                        "revision": "canary-47dfd51f"
+                      }
+                    },
+                    "duration_ms": 5000
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 75,
+          "experience": 40,
+          "speed": 110,
+          "armor": 12,
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": -10,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": -10,
+                "denominator": 1
+              }
+            }
+          ],
+          "immunities": [],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "canary:ability/white_tiger/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/white_tiger/defense-1",
+              "revision": "canary-47dfd51f"
+            }
+          ],
+          "mitigation": {
+            "numerator": 89,
+            "denominator": 100
+          },
+          "bestiary": {
+            "difficulty": "easy",
+            "occurrence": "common",
+            "kill_thresholds": [
+              25,
+              250,
+              500
+            ],
+            "charm_points": 15
+          },
+          "details": {
+            "display_name": "White Tiger",
+            "inspection": "a white tiger",
+            "defense": 15,
+            "critical_chance_ppm": 0,
+            "flags": {
+              "attackable": true,
+              "illusionable": true,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "article": "a",
+            "bestiary": {
+              "class": "Mammal",
+              "taxonomy": "mammal",
+              "stars": 2,
+              "locations": "Oskayaat"
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "canary:item/43771",
+              "revision": "canary-47dfd51f"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/2886",
+                "revision": "canary-47dfd51f"
+              },
+              "fluid_type": "blood"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "canary:behavior/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": true,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": false,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 700000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 4000,
+              "chance_ppm": 0
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 30,
+              "health": 0,
+              "random": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/white_tiger/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/white_tiger/defense-1",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/1649"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 0,
+          "maximum": 1500
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 1400,
+          "maximum": 1700
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 1400,
+          "maximum": 1900
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/bloated_man_maggot/attack-4-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 1400,
+          "maximum": 1550
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "CasterMagnitude"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/bloated_man_maggot/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/bloated_man_maggot/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor"
+          ],
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/ghostly_bite"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/bloated_man_maggot/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "earth",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/bigplants"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/bloated_man_maggot/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor"
+          ],
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/groundshaker"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:ability/spell/largefirering/effect",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "fire",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/fireattack"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/bloated_man_maggot/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Melee",
+            "range_tiles": 1,
+            "needs_target": true,
+            "needs_direction": false,
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/bloated_man_maggot/attack-1",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/bloated_man_maggot/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": true,
+            "needs_direction": false,
+            "area": {
+              "shape": "Circle",
+              "radius_tiles": 5
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/bloated_man_maggot/attack-2",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/bloated_man_maggot/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Circle",
+              "radius_tiles": 5
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/bloated_man_maggot/attack-3",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/bloated_man_maggot/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": true,
+            "area": {
+              "shape": "Beam",
+              "length_tiles": 8,
+              "spread_tiles": 3
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/bloated_man_maggot/attack-4",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/spell/largefirering",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                "......x......",
+                ".....xxx.....",
+                "....xxxxx....",
+                "...xxxxxxx...",
+                "..xxx...xxx..",
+                ".xxx.....xxx.",
+                "xxxx..C..xxxx",
+                ".xxx.....xxx.",
+                "..xxx...xxx..",
+                "...xxxxxxx...",
+                "....xxxxx....",
+                ".....xxx.....",
+                "......x......"
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:ability/spell/largefirering/effect",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 31700,
+          "experience": 21570,
+          "speed": 195,
+          "armor": 104,
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 40,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": -15,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": 15,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": -5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": -15,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "numerator": 45,
+                "denominator": 1
+              }
+            }
+          ],
+          "immunities": [],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "canary:ability/bloated_man_maggot/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/bloated_man_maggot/attack-2",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/bloated_man_maggot/attack-3",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/bloated_man_maggot/attack-4",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/spell/largefirering",
+              "revision": "canary-47dfd51f"
+            }
+          ],
+          "mitigation": {
+            "numerator": 507,
+            "denominator": 100
+          },
+          "bestiary": {
+            "difficulty": "challenging",
+            "occurrence": "common",
+            "kill_thresholds": [
+              200,
+              2000,
+              5000
+            ],
+            "charm_points": 100
+          },
+          "details": {
+            "display_name": "Bloated Man-Maggot",
+            "inspection": "a bloated man-maggot",
+            "defense": 104,
+            "critical_chance_ppm": 0,
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "article": "a",
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "bestiary": {
+              "class": "Vermin",
+              "taxonomy": "vermin",
+              "stars": 5,
+              "locations": "Jaded Roots"
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "canary:item/43816",
+              "revision": "canary-47dfd51f"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "canary:behavior/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": true,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 5000,
+              "chance_ppm": 100000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/bloated_man_maggot/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/bloated_man_maggot/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2500,
+              "chance_ppm": 250000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/bloated_man_maggot/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2500,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/bloated_man_maggot/attack-4",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/spell/largefirering",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2500,
+              "chance_ppm": 150000,
+              "magnitude": {
+                "minimum": 1400,
+                "maximum": 1800
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/1654"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 0,
+          "maximum": 900
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 1100,
+          "maximum": 1400
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 1300,
+          "maximum": 1800
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/rotten_man_maggot/attack-4-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 1200,
+          "maximum": 1700
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/rotten_man_maggot/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/rotten_man_maggot/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "death",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/mortarea"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/rotten_man_maggot/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "ice",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/ghostly_bite"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/rotten_man_maggot/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "ice",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/icearea"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:ability/spell/largeicering/effect",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "ice",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/icearea"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/rotten_man_maggot/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Melee",
+            "range_tiles": 1,
+            "needs_target": true,
+            "needs_direction": false,
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/rotten_man_maggot/attack-1",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/rotten_man_maggot/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": true,
+            "needs_direction": false,
+            "area": {
+              "shape": "Circle",
+              "radius_tiles": 5
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/rotten_man_maggot/attack-2",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/rotten_man_maggot/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": true,
+            "needs_direction": false,
+            "area": {
+              "shape": "Circle",
+              "radius_tiles": 5
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/rotten_man_maggot/attack-3",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/rotten_man_maggot/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": true,
+            "area": {
+              "shape": "Beam",
+              "length_tiles": 8,
+              "spread_tiles": 5
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/rotten_man_maggot/attack-4",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/spell/largeicering",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                "......x......",
+                ".....xxx.....",
+                "....xxxxx....",
+                "...xxxxxxx...",
+                "..xxx...xxx..",
+                ".xxx.....xxx.",
+                "xxxx..C..xxxx",
+                ".xxx.....xxx.",
+                "..xxx...xxx..",
+                "...xxxxxxx...",
+                "....xxxxx....",
+                ".....xxx.....",
+                "......x......"
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:ability/spell/largeicering/effect",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 31100,
+          "experience": 22625,
+          "speed": 195,
+          "armor": 110,
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 30,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": -15,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 55,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": -10,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": -15,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 40,
+                "denominator": 1
+              }
+            }
+          ],
+          "immunities": [],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "canary:ability/rotten_man_maggot/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/rotten_man_maggot/attack-2",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/rotten_man_maggot/attack-3",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/rotten_man_maggot/attack-4",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/spell/largeicering",
+              "revision": "canary-47dfd51f"
+            }
+          ],
+          "mitigation": {
+            "numerator": 439,
+            "denominator": 100
+          },
+          "bestiary": {
+            "difficulty": "challenging",
+            "occurrence": "common",
+            "kill_thresholds": [
+              200,
+              2000,
+              5000
+            ],
+            "charm_points": 100
+          },
+          "details": {
+            "display_name": "Rotten Man-Maggot",
+            "inspection": "a rotten man-maggot",
+            "defense": 110,
+            "critical_chance_ppm": 0,
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "article": "a",
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "bestiary": {
+              "class": "Vermin",
+              "taxonomy": "vermin",
+              "stars": 5,
+              "locations": "Putrefactory."
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "canary:item/43820",
+              "revision": "canary-47dfd51f"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "canary:behavior/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": true,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 5000,
+              "chance_ppm": 100000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/rotten_man_maggot/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/rotten_man_maggot/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/rotten_man_maggot/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/rotten_man_maggot/attack-4",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 100000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/spell/largeicering",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000,
+              "magnitude": {
+                "minimum": 800,
+                "maximum": 1200
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/1655"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/travelling_merchant/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 0,
+          "maximum": 45
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/travelling_merchant/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 0,
+          "maximum": 40
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/travelling_merchant/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/travelling_merchant/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor"
+          ],
+          "presentation": {
+            "projectile_asset_binding": "canary.appearance:missile/throwingknife"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/travelling_merchant/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Melee",
+            "range_tiles": 1,
+            "needs_target": true,
+            "needs_direction": false,
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/travelling_merchant/attack-1",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/travelling_merchant/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 5,
+            "needs_target": false,
+            "needs_direction": false,
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/travelling_merchant/attack-2",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 100,
+          "experience": 65,
+          "speed": 86,
+          "armor": 11,
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": -5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "numerator": -10,
+                "denominator": 1
+              }
+            }
+          ],
+          "immunities": [],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "canary:ability/travelling_merchant/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            {
+              "family": "Ability",
+              "key": "canary:ability/travelling_merchant/attack-2",
+              "revision": "canary-47dfd51f"
+            }
+          ],
+          "mitigation": {
+            "numerator": 7,
+            "denominator": 25
+          },
+          "details": {
+            "display_name": "Travelling Merchant",
+            "inspection": "a travelling merchant",
+            "defense": 10,
+            "critical_chance_ppm": 0,
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "article": "a",
+            "corpse_item": {
+              "family": "Item",
+              "key": "canary:item/18042",
+              "revision": "canary-47dfd51f"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/2886",
+                "revision": "canary-47dfd51f"
+              },
+              "fluid_type": "blood"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "canary:behavior/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": true,
+            "push_items": true,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": false,
+            "target_distance_tiles": 4,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 4000,
+              "chance_ppm": 100000
+            },
+            "strategy_weights": {
+              "nearest": 100,
+              "damage": 0,
+              "health": 0,
+              "random": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/travelling_merchant/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/travelling_merchant/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/132",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/112"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/109"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/109"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/95"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "canary:formula/enpa_yolo/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 0,
+          "maximum": 40
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "canary:effect/enpa_yolo/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "canary:ability/enpa_yolo/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Melee",
+            "range_tiles": 1,
+            "needs_target": true,
+            "needs_direction": false,
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "canary:effect/enpa_yolo/attack-1",
+                  "revision": "canary-47dfd51f"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 65,
+          "experience": 0,
+          "speed": 58,
+          "armor": 8,
+          "resistances": [],
+          "immunities": [],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "canary:ability/enpa_yolo/attack-1",
+              "revision": "canary-47dfd51f"
+            }
+          ],
+          "mitigation": {
+            "numerator": 7,
+            "denominator": 25
+          },
+          "details": {
+            "display_name": "Enpa Yolo",
+            "inspection": "an enpa yolo",
+            "defense": 10,
+            "critical_chance_ppm": 0,
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "article": "an",
+            "corpse_item": {
+              "family": "Item",
+              "key": "canary:item/5967",
+              "revision": "canary-47dfd51f"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/2886",
+                "revision": "canary-47dfd51f"
+              },
+              "fluid_type": "blood"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "canary:behavior/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": false,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 700000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 4000,
+              "chance_ppm": 0
+            },
+            "strategy_weights": {
+              "nearest": 100,
+              "damage": 0,
+              "health": 0,
+              "random": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/enpa_yolo/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/26"
+        }
+      }
+    }
+  ],
+  "exact_source_bindings": [
+    {
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "identity_namespace": "canary/monster-file",
+      "external_id": "birds/tame_terror_bird",
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "identity_namespace": "canary/monster-file",
+      "external_id": "mammals/white_tiger",
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "identity_namespace": "canary/monster-file",
+      "external_id": "quests/rotten_blood/bloated_man-maggot",
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "identity_namespace": "canary/monster-file",
+      "external_id": "quests/rotten_blood/rotten_man-maggot",
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "identity_namespace": "canary/monster-file",
+      "external_id": "quests/rottin_wood_and_the_married_men_quest/travelling_merchant",
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "identity_namespace": "canary/monster-file",
+      "external_id": "vermins/enpa_yolo",
+      "target": {
+        "family": "Creature",
+        "key": "canary:creature/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "disposition": "EXACT"
+    }
+  ]
+}

@@ -774,6 +774,27 @@ pub struct CompiledFirstProductionContent {
 }
 
 impl CompiledFirstProductionContent {
+    pub(crate) fn with_native_artifact_pair(&self, server: Vec<u8>, client: Vec<u8>) -> Self {
+        let server_digest = sha256(&server);
+        let client_digest = sha256(&client);
+        let mut expectation = self.expectation.clone();
+        expectation.server_artifact_digest = server_digest;
+        expectation.client_artifact_digest = client_digest;
+        Self { server_artifact: server, client_artifact: client,
+            server_digest, client_digest, expectation }
+    }
+    pub(crate) fn with_native_server_artifact(&self, bytes: Vec<u8>) -> Self {
+        let server_digest = sha256(&bytes);
+        let mut expectation = self.expectation.clone();
+        expectation.server_artifact_digest = server_digest;
+        Self {
+            server_artifact: bytes,
+            client_artifact: self.client_artifact.clone(),
+            server_digest,
+            client_digest: self.client_digest,
+            expectation,
+        }
+    }
     pub fn server_digest(&self) -> [u8; 32] {
         self.server_digest
     }
@@ -1725,9 +1746,17 @@ pub(crate) struct ParsedRecord {
 pub(crate) struct FirstProductionRuntimeState {
     server_records: Vec<ParsedRecord>,
     client_records: Vec<ParsedRecord>,
+    native_gameplay: Option<super::native_gameplay::NativeGameplayState>,
+    native_source_world: Option<std::sync::Arc<[u8]>>,
 }
 
 impl FirstProductionRuntimeState {
+    pub(crate) fn native_source_world(&self) -> Option<&[u8]> {
+        self.native_source_world.as_deref()
+    }
+    pub(crate) fn native_gameplay(&self) -> Option<&super::native_gameplay::NativeGameplayState> {
+        self.native_gameplay.as_ref()
+    }
     pub(crate) fn server_record_count(&self) -> usize {
         self.server_records.len()
     }
@@ -1859,6 +1888,66 @@ impl StagedGeneration {
         client_bytes: &[u8],
         expected: &FirstProductionExpectation,
     ) -> Result<Self, ContentError> {
+        if super::native_source_world_carrier::is_envelope(server_bytes) {
+            FirstProductionLimits::v1().check("native source world server bytes", server_bytes.len(),
+                super::native_source_world_carrier::MAX_SERVER_BYTES)?;
+            FirstProductionLimits::v1().check("native source world client bytes", client_bytes.len(),
+                super::native_source_world_carrier::MAX_CLIENT_BYTES)?;
+            if sha256(server_bytes) != expected.server_artifact_digest
+                || sha256(client_bytes) != expected.client_artifact_digest {
+                return Err(ContentError::RevisionMismatch("native source world outer issuance pins"));
+            }
+            let decoded = super::native_source_world_carrier::decode(server_bytes, client_bytes)?;
+            let mut inner_expected = expected.clone();
+            inner_expected.server_artifact_digest =
+                if super::native_gameplay::is_envelope(decoded.baseline_server) {
+                    sha256(decoded.baseline_server)
+                } else {
+                    stage_artifact(decoded.baseline_server,
+                        ProductionProjection::ServerAuthoritative)?.artifact_digest
+                };
+            // Outer issuance pins the complete source-world envelopes. The retained
+            // production client uses its canonical payload digest, excluding its trailer.
+            inner_expected.client_artifact_digest =
+                stage_artifact(decoded.baseline_client, ProductionProjection::ClientSafe)?
+                    .artifact_digest;
+            let mut staged = Self::stage(decoded.baseline_server, decoded.baseline_client, &inner_expected)?;
+            if staged.runtime_state.native_source_world.is_some() {
+                return Err(ContentError::InvalidArtifact("nested native source world"));
+            }
+            staged.identity.server_artifact_digest = expected.server_artifact_digest;
+            staged.identity.client_artifact_digest = expected.client_artifact_digest;
+            staged.identity.server_body_digest = sha256(server_bytes);
+            staged.identity.client_body_digest = sha256(client_bytes);
+            if let Some(native) = staged.runtime_state.native_gameplay.as_mut() {
+                native.bind_qualified_outer_artifact(expected.server_artifact_digest)?;
+            }
+            staged.runtime_state.native_source_world = Some(std::sync::Arc::from(decoded.source_world));
+            return Ok(staged);
+        }
+        if super::native_gameplay::is_envelope(server_bytes) {
+            FirstProductionLimits::v1().check(
+                "native gameplay server artifact bytes",
+                server_bytes.len(),
+                super::native_gameplay::MAX_ARTIFACT_BYTES,
+            )?;
+            // The independent expected issuance pins ALL extension bytes before decoding.
+            if sha256(server_bytes) != expected.server_artifact_digest {
+                return Err(ContentError::RevisionMismatch(
+                    "native gameplay outer artifact pin",
+                ));
+            }
+            let decoded = super::native_gameplay::decode(server_bytes)?;
+            let baseline =
+                stage_artifact(decoded.baseline, ProductionProjection::ServerAuthoritative)?;
+            let mut baseline_expected = expected.clone();
+            baseline_expected.server_artifact_digest = baseline.artifact_digest;
+            let mut staged = Self::stage(decoded.baseline, client_bytes, &baseline_expected)?;
+            staged.identity.server_artifact_digest = expected.server_artifact_digest;
+            staged.identity.server_body_digest = sha256(server_bytes);
+            staged.runtime_state.native_gameplay = Some(decoded.state);
+            return Ok(staged);
+        }
         check_pair_lengths(server_bytes.len(), client_bytes.len())?;
         let server = stage_artifact(server_bytes, ProductionProjection::ServerAuthoritative)?;
         let client = stage_artifact(client_bytes, ProductionProjection::ClientSafe)?;
@@ -1902,6 +1991,8 @@ impl StagedGeneration {
         let runtime_state = FirstProductionRuntimeState {
             server_records: server.records,
             client_records: client.records,
+            native_gameplay: None,
+            native_source_world: None,
         };
         Ok(Self {
             identity,

@@ -101,6 +101,22 @@ mod world_object_revert;
 pub(crate) mod world_runtime;
 
 #[cfg(test)]
+#[path = "../tests/support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
+#[cfg(test)]
+#[path = "../tests/support/spell_stance_runtime_postgres_cases.rs"]
+mod spell_stance_runtime_postgres_cases;
+
+#[cfg(test)]
+#[path = "../tests/support/spell_familiar_runtime_postgres_cases.rs"]
+mod spell_familiar_runtime_postgres_cases;
+
+#[cfg(test)]
+#[path = "durability/world_party_tests.rs"]
+mod world_party_runtime_postgres_cases;
+
+#[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]
 mod foundation_recovery_tests;
 

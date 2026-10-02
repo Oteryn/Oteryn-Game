@@ -135,6 +135,9 @@ pub enum CharacterProgressionError {
     HeldBlessingsMismatch,
     /// A build change does not start from the stored build (or stance, for a prune).
     BuildStateMismatch,
+    /// The stance transition does not start from the committed durable slot.
+    StanceStateMismatch,
+    FamiliarStateMismatch,
     Calculation(ProgressionCalculationError),
     Unavailable(DurabilityError),
 }
@@ -170,6 +173,12 @@ impl std::fmt::Display for CharacterProgressionError {
             }
             Self::BuildStateMismatch => {
                 formatter.write_str("build change does not start from the stored build")
+            }
+            Self::StanceStateMismatch => {
+                formatter.write_str("stance change does not start from the stored stance")
+            }
+            Self::FamiliarStateMismatch => {
+                formatter.write_str("familiar change does not start from the stored state")
             }
             Self::Calculation(error) => {
                 write!(formatter, "progression calculation rejected: {error:?}")

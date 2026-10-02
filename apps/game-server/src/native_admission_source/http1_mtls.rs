@@ -142,7 +142,9 @@ async fn exchange_status(
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
-        if require_ok {
+        if operation == Operation::ReadPremiumSnapshotV1 {
+            read_response_bounded(&mut tls, require_ok, 1024, true).await
+        } else if require_ok {
             read_response(&mut tls).await.map(|body| (200, body))
         } else {
             read_response_status(&mut tls, false).await
@@ -184,6 +186,17 @@ async fn read_response_status<S: AsyncRead + Unpin>(
     stream: &mut S,
     require_ok: bool,
 ) -> Result<(u16, Vec<u8>), SourceError> {
+    read_response_bounded(stream, require_ok, 8192, false).await
+}
+pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    require_ok: bool,
+    body_max: usize,
+    require_json: bool,
+) -> Result<(u16, Vec<u8>), SourceError> {
+    if body_max == 0 || body_max > 8192 {
+        return Err(SourceError::InvalidInput);
+    }
     let mut head = Vec::with_capacity(1024);
     let mut one = [0_u8; 1];
     let mut line_bytes = 0usize;
@@ -219,6 +232,7 @@ async fn read_response_status<S: AsyncRead + Unpin>(
     let mut length = None;
     let mut chunked = false;
     let mut identity_encoding = false;
+    let mut content_type = None;
     for line in lines.filter(|line| !line.is_empty()) {
         fields = fields.checked_add(1).ok_or(SourceError::CapacityExceeded)?;
         if fields > 32 || line.len() + 2 > 2048 {
@@ -257,31 +271,47 @@ async fn read_response_status<S: AsyncRead + Unpin>(
                 return Err(SourceError::InvalidInput);
             }
             identity_encoding = true;
+        } else if name.eq_ignore_ascii_case("content-type") {
+            if content_type.is_some() {
+                return Err(SourceError::InvalidInput);
+            }
+            content_type = Some(value.to_owned());
         } else if name.eq_ignore_ascii_case("location") {
             return Err(SourceError::InvalidInput);
         }
     }
+    if require_json
+        && content_type.as_deref().is_none_or(|value| {
+            let mut parts = value.split(';');
+            !parts
+                .next()
+                .is_some_and(|mime| mime.trim().eq_ignore_ascii_case("application/json"))
+                || parts.any(|parameter| !parameter.trim().eq_ignore_ascii_case("charset=utf-8"))
+        })
+    {
+        return Err(SourceError::InvalidInput);
+    }
     let body = async {
         if chunked {
-            return read_chunked(stream).await;
+            return read_chunked_bounded(stream, body_max).await;
         }
         let Some(length) = length else {
-            let mut body = Vec::with_capacity(8192);
+            let mut body = Vec::with_capacity(body_max);
             let mut scratch = [0u8; 1024];
             loop {
                 // At the cap, probe one byte without retaining any excess body.
-                let available = (8192 - body.len()).clamp(1, scratch.len());
+                let available = (body_max - body.len()).clamp(1, scratch.len());
                 let n = stream.read(&mut scratch[..available]).await?;
                 if n == 0 {
                     return Ok(body);
                 }
-                if n > 8192 - body.len() {
+                if n > body_max - body.len() {
                     return Err(SourceError::CapacityExceeded);
                 }
                 body.extend_from_slice(&scratch[..n]);
             }
         };
-        if length > 8192 {
+        if length > body_max {
             return Err(SourceError::CapacityExceeded);
         }
         let mut body = vec![0; length];
@@ -292,6 +322,12 @@ async fn read_response_status<S: AsyncRead + Unpin>(
     Ok((code, body))
 }
 async fn read_chunked<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SourceError> {
+    read_chunked_bounded(stream, 8192).await
+}
+async fn read_chunked_bounded<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    body_max: usize,
+) -> Result<Vec<u8>, SourceError> {
     let mut body = Vec::new();
     let mut chunks = 0_usize;
     let mut framing = 0_usize;
@@ -327,7 +363,7 @@ async fn read_chunked<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, S
             .len()
             .checked_add(size)
             .ok_or(SourceError::CapacityExceeded)?;
-        if chunks > 64 || next > 8192 {
+        if chunks > 64 || next > body_max {
             return Err(SourceError::CapacityExceeded);
         }
         body.resize(next, 0);
@@ -386,5 +422,43 @@ mod tests {
                 Ok::<(), io::Error>(())
             })?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod premium_response_tests {
+    use super::*;
+    async fn read(bytes: &[u8]) -> Result<(u16, Vec<u8>), SourceError> {
+        let mut stream = bytes;
+        read_response_bounded(&mut stream, true, 1024, true).await
+    }
+    #[test]
+    fn premium_transport_enforces_actual_bound_and_framing() {
+        tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap()
+            .block_on(async {
+                let mut fixed = b"HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 1024\r\n\r\n".to_vec();
+                fixed.extend_from_slice(&[b' ';1024]);
+                assert_eq!(read(&fixed).await.unwrap().1.len(), 1024);
+                // Oversized declaration refuses without needing any body bytes.
+                assert!(matches!(read(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 1025\r\n\r\n").await, Err(SourceError::CapacityExceeded)));
+                let mut eof = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n".to_vec();
+                eof.extend_from_slice(&[b' ';1024]);
+                assert_eq!(read(&eof).await.unwrap().1.len(), 1024);
+                eof.push(b' ');
+                assert!(matches!(read(&eof).await, Err(SourceError::CapacityExceeded)));
+                let chunk = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n401\r\n";
+                assert!(matches!(read(chunk).await, Err(SourceError::CapacityExceeded)));
+                assert_eq!(read(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n2\r\n{}\r\n0\r\n\r\n").await.unwrap().1, b"{}");
+                for invalid in [
+                    &b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}"[..],
+                    &b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 2\r\n\r\n{}"[..],
+                    &b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n{}"[..],
+                    &b"HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=iso-8859-1\r\nContent-Length: 2\r\n\r\n{}"[..],
+                    &b"HTTP/1.1 302 Found\r\nContent-Type: application/json\r\nLocation: https://example.org\r\nContent-Length: 2\r\n\r\n{}"[..],
+                    &b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\nTransfer-Encoding: chunked\r\n\r\n{}"[..],
+                ] {
+                    assert!(read(invalid).await.is_err());
+                }
+            });
     }
 }

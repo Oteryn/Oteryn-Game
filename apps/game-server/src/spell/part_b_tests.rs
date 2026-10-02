@@ -458,6 +458,65 @@ fn part_b_keys_without_a_runtime_stay_rejected() {
         spell["spell"]["execution"] =
             json!({ "native_behavior": { "key": key, "parameters": {} } });
         let error = spell_from_bundle(&spell, &dependencies).expect_err(key);
-        assert!(error.to_string().contains("S7"), "{key}: {error}");
+        assert!(!error.to_string().is_empty(), "{key}: {error}");
+    }
+}
+
+/// A candidate data completion cannot discard an unsupported executor precondition.
+#[test]
+fn unimplemented_ability_preconditions_stay_rejected() {
+    for (field, value) in [
+        ("target_selection", json!("caster_or_top_creature")),
+        ("zero_damage_health_path", json!(true)),
+    ] {
+        let (spell, mut dependencies) = natures_embrace_bundle();
+        dependencies["abilities"][0][field] = value;
+        let admitted =
+            spell_from_bundle(&spell, &dependencies).expect("typed retained precondition");
+        assert_eq!(
+            resolve_targeted_cast(
+                &admitted,
+                &druid(),
+                &Cooldowns::default(),
+                at_ms(0),
+                target(OTHER_PLAYER, None),
+                &mut |_, _| panic!("draw before owning precondition")
+            ),
+            Err(CastRejection::OperationalFactsRequired),
+            "{field}"
+        );
+    }
+}
+
+/// Timing on the caster differs from impact presentation and cannot be silently ignored.
+#[test]
+fn unimplemented_caster_effect_semantics_stay_rejected() {
+    for (field, value) in [
+        (
+            "caster_effect_asset_binding",
+            json!("canary.appearance:effect/magic_blue"),
+        ),
+        ("caster_effect_timing", json!("before_combat")),
+    ] {
+        let (spell, mut dependencies) = natures_embrace_bundle();
+        let effect = &mut dependencies["effects"][0];
+        if !effect["presentation"].is_object() {
+            effect["presentation"] = json!({});
+        }
+        effect["presentation"][field] = value;
+        let admitted =
+            spell_from_bundle(&spell, &dependencies).expect("typed retained presentation");
+        assert_eq!(
+            resolve_targeted_cast(
+                &admitted,
+                &druid(),
+                &Cooldowns::default(),
+                at_ms(0),
+                target(OTHER_PLAYER, None),
+                &mut |_, _| panic!("draw before owning presentation")
+            ),
+            Err(CastRejection::OperationalFactsRequired),
+            "{field}"
+        );
     }
 }

@@ -1,0 +1,8 @@
+{
+  "checks": "PASS",
+  "active_entries": 246,
+  "field_rows": 3162,
+  "original_report_sha256": "2c401625bfe79bf133f1a3c503c9e366deb1eb67aa0f266cf27f407a286f8c49",
+  "applicability_report_sha256": "550aae4dcaff698cc7d85a9db81483f136d7ed29d57c1c7e5c7a9e7c83bb28d4",
+  "source_candidate_unchanged": true
+}

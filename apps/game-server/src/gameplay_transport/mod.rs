@@ -9,6 +9,13 @@ mod monk_save;
 #[cfg(test)]
 mod qualification;
 mod resume;
+mod source_item_cycle;
+mod spell_access_facts;
+mod spell_character_facts;
+pub(crate) mod spell_entitlements;
+pub(crate) mod spell_premium_coordinator;
+mod spell_presentation_publisher;
+pub(crate) use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 mod tcp_tls;
 pub(crate) mod world_object;
 pub(crate) mod world_spatial;
@@ -62,6 +69,7 @@ use connection::{
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
+mod condition_snapshots;
 use std::future::{Future, poll_fn};
 use std::pin::{Pin, pin};
 use std::sync::Arc;
@@ -284,16 +292,27 @@ async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
     shutdown: &CancellationToken,
 ) {
     let lifecycle = async {
-        match authority.lose_control(lost.session, lost.wait).await {
-            ControlLossResult::Recorded => {
-                let _ = authority.expire_control_loss(lost.session).await;
+        let mut wait = lost.wait;
+        let mut backoff = RECONCILE_BACKOFF;
+        loop {
+            match authority.lose_control(lost.session, wait).await {
+                ControlLossResult::Recorded => {
+                    let _ = authority.expire_control_loss(lost.session).await;
+                    break;
+                }
+                ControlLossResult::ResumedHistory => {
+                    let _ = authority.release_abandoned(lost.session).await;
+                    break;
+                }
+                ControlLossResult::Unknown => {
+                    // Retained uncertain owner work remains the same operation.
+                    // The independently current session ends a superseded loop.
+                    tokio::time::sleep(backoff).await;
+                    backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                    wait = Duration::ZERO;
+                }
+                ControlLossResult::NotApplicable | ControlLossResult::Refused => break,
             }
-            ControlLossResult::ResumedHistory => {
-                let _ = authority.release_abandoned(lost.session).await;
-            }
-            ControlLossResult::NotApplicable
-            | ControlLossResult::Refused
-            | ControlLossResult::Unknown => {}
         }
     };
     let _ = first(lifecycle, shutdown.cancelled()).await;
@@ -337,6 +356,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub(crate) chest: &'a crate::content::CanonicalReferencePlayableContent,
     /// The V1 spell book the cast intent's index resolves against (spell cast §3, SPELL-D1).
     pub(crate) spells: &'a crate::spell::SpellBook,
+    pub(crate) active_generation: Option<&'a crate::content::ActiveGeneration>,
+    pub(crate) premium_coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
+    pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
     /// The Achievement catalogue the `ACCOUNT_ACHIEVEMENTS_QUERY` display read resolves every
     /// fact against (display contract §2.1, §4), and a chest's achievement resolves in (C2).
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
@@ -411,12 +433,15 @@ pub async fn serve_gameplay(
         door: owners.door,
         chest: owners.chest,
         spells: owners.spells,
+        active_generation: owners.active_generation,
+        premium_coordinator: owners.premium_coordinator,
+        qualified_room: owners.qualified_room,
         achievements: owners.achievements,
         spell_states: Mutex::default(),
         clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
     };
-    serve_listener(
+    let serving = serve_listener(
         listener,
         &tls,
         limits,
@@ -424,7 +449,24 @@ pub async fn serve_gameplay(
         &SecureIdentifiers,
         &(),
         shutdown,
-    )
+    );
+    let mut serving = pin!(serving);
+    let mut cycles = pin!(authority.run_source_owner_cycles(shutdown));
+    let mut serving_done = false;
+    let mut cycles_done = false;
+    poll_fn(|context| {
+        if !serving_done && serving.as_mut().poll(context).is_ready() {
+            serving_done = true;
+        }
+        if !cycles_done && cycles.as_mut().poll(context).is_ready() {
+            cycles_done = true;
+        }
+        if serving_done && cycles_done {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
+    })
     .await;
     Ok(())
 }
@@ -485,6 +527,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// C2: the entry-room Content with the injected reward chest; never locked, read-only.
     pub(crate) chest: &'a crate::content::CanonicalReferencePlayableContent,
     pub(crate) spells: &'a crate::spell::SpellBook,
+    pub(crate) active_generation: Option<&'a crate::content::ActiveGeneration>,
+    pub(crate) premium_coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
+    pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
@@ -498,6 +543,79 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Complete only retained original occurrences while their current active
+    /// session still owns the actor. A loss must not detach an uncertain payment.
+    async fn reconcile_spells_before_control_loss(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let access = self.refresh_spell_access(actor, session).await;
+        if matches!(
+            self.reconcile_pending_native_for_control_loss(actor, session, &access)
+                .await,
+            Some(actor_spell::NativeCastDispatch::Pending)
+        ) {
+            return false;
+        }
+        if matches!(
+            self.reconcile_pending_familiar_for_control_loss(actor, session, &access)
+                .await,
+            Some(actor_spell::NativeCastDispatch::Pending)
+        ) {
+            return false;
+        }
+        if matches!(
+            self.reconcile_pending_world_items(actor, session, &access)
+                .await,
+            actor_spell::NativeCastDispatch::Pending
+        ) {
+            return false;
+        }
+        if self
+            .reconcile_pending_parameters_for_control_loss(actor, session, &access)
+            .await
+            .is_some_and(|result| matches!(result.cast, actor_spell::NativeCastDispatch::Pending))
+        {
+            return false;
+        }
+        let _ = self
+            .reconcile_pending_stance_for_control_loss(actor, session)
+            .await;
+        let cleanup_access = self.refresh_spell_access(actor, session).await;
+        let _ = self
+            .drain_familiar_deaths(actor, session, &cleanup_access)
+            .await;
+        let _ = self.save_spell_training(actor, session, true).await;
+        let runtime = self.runtime.lock().await;
+        let states = self.spell_states.lock().await;
+        !states.has_pending_spell_commit(actor, session) && !runtime.actor_spell_reserved(actor)
+    }
+
+    async fn save_familiar_at_actor_end(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> actor_spell::FamiliarLogoutSave {
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let Ok((current, now)) = store.current_session_at(session).await else {
+            return actor_spell::FamiliarLogoutSave::Unknown;
+        };
+        if current.session_state() != GameSessionState::Reconnectable {
+            return actor_spell::FamiliarLogoutSave::NotApplicable;
+        }
+        let Some(deadline) = current.current_original_grace_deadline() else {
+            return actor_spell::FamiliarLogoutSave::Unknown;
+        };
+        if now < deadline {
+            return actor_spell::FamiliarLogoutSave::NotApplicable;
+        }
+        let Some(epoch) = current.current_control_loss_epoch() else {
+            return actor_spell::FamiliarLogoutSave::Unknown;
+        };
+        self.save_familiar_logout(actor, session, epoch).await
+    }
+
     /// Drop the lost entry of `session` only if it is still the one that ended at
     /// `generation`; a later resumed and lost again connection keeps its own entry.
     fn forget_lost(&self, session: GameSessionId, generation: u64) {
@@ -520,6 +638,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // exponentially, and the bounds only guard an owner that never recovers.
         let mut backoff = RECONCILE_BACKOFF;
         for _ in 0..EXPIRY_ATTEMPTS {
+            if self
+                .save_familiar_at_actor_end(actor, admitted.game_session_id)
+                .await
+                == actor_spell::FamiliarLogoutSave::Unknown
+                || self
+                    .save_spell_training(actor, admitted.game_session_id, true)
+                    .await
+                    == actor_spell::TrainingSave::Unknown
+            {
+                tokio::time::sleep(backoff).await;
+                backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                continue;
+            }
             // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
             // before the release can end the Character lease.
             if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
@@ -723,6 +854,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// The Channel's current door `WORLD_OBJECT_OVERLAY` (USE-WIRE-V1, #162 5868482467), for
     /// the join/resync snapshot. Channel-global, unlike `observe`: no actor is involved.
     async fn observe_world_object_overlay(&self) -> Option<world_object::WorldObjectOverlayEntry> {
+        if self
+            .qualified_room
+            .is_some_and(|room| room.source_world().is_some())
+        {
+            return None;
+        }
         let runtime = self.runtime.lock().await;
         let door = self.door.lock().await;
         Some(world_object::WorldObjectOverlayEntry {
@@ -737,90 +874,97 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// direct lookup in the active generation's qualified cells (`MOVE-RL-03` = 1) and the
     /// owner's compare-commit. A blocked or out-of-room destination is `Blocked`; any stale,
     /// unpositioned or mismatched binding is `Rejected`. Nothing moves unless the step commits.
-    async fn step(&self, actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
-        use crate::movement::{
-            CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
-            MovementTurnOutcome,
-        };
-        use std::num::NonZeroUsize;
-        let mut runtime = self.runtime.lock().await;
-        // The cells must be the pinned generation's own: same World and server artifact.
-        let scope = self.movement_cells.scope();
-        if scope.world_id != self.world_id
-            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
-        {
+    async fn step(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        direction: StepDirection,
+    ) -> StepOutcome {
+        if !self.ensure_source_map_initialized().await {
             return StepOutcome::rejected();
         }
-        let owner_context = runtime.pinned_movement_context();
+        use crate::movement::{CardinalStep, MovementError};
+        use actor_spell::StepInChannel;
+        let Ok(command) = crate::foundation::CommandId::new(command_id) else {
+            return StepOutcome::rejected();
+        };
         let cardinal = match direction {
             StepDirection::North => CardinalStep::North,
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
         };
-        // M2b (#162 5868482467): the door cell is now ordinary `Walkable` terrain in
-        // `self.movement_cells.index()` (native_entry.rs), so a closed door must be refused
-        // here, before the terrain lookup, from the door `LocalObjectRuntime`'s own current
-        // `blocking_cells()` — the exact same Channel-owner turn, so no path can observe a
-        // closed door as walkable. An open door (or any other destination) falls through to the
-        // unchanged terrain lookup below.
-        if let Ok(expected) = runtime.borrow_movement_position().read(actor) {
-            let position = expected.position();
-            let delta = match direction {
-                StepDirection::North => (0, -1),
-                StepDirection::East => (1, 0),
-                StepDirection::South => (0, 1),
-                StepDirection::West => (-1, 0),
-            };
-            if let (Some(x), Some(y)) = (
-                position.x.checked_add(delta.0),
-                position.y.checked_add(delta.1),
-            ) {
-                let target = crate::content::LogicalCell {
-                    x,
-                    y,
-                    z: i32::from(position.floor),
+        loop {
+            let equipment = self.read_movement_equipment(actor, game_session_id).await;
+            let now = self.owner_now().get();
+            let (outcome, observation) = {
+                let mut runtime = self.runtime.lock().await;
+                let mut states = self.spell_states.lock().await;
+                if states.has_pending_spell_commit(actor, game_session_id) {
+                    return StepOutcome::rejected();
+                }
+                let blocking = if self
+                    .qualified_room
+                    .is_some_and(|room| room.source_world().is_some())
+                {
+                    std::collections::BTreeSet::new()
+                } else {
+                    self.door.lock().await.blocking_cells().clone()
                 };
-                if self.door.lock().await.blocking_cells().contains(&target) {
+                let equipped_speed_delta = equipment
+                    .as_ref()
+                    .and_then(|read| read.current_delta(&runtime, &states, actor, game_session_id));
+                let outcome = self
+                    .step_with_field_ingress(
+                        &mut runtime,
+                        &mut states,
+                        actor,
+                        game_session_id,
+                        command,
+                        now,
+                        cardinal,
+                        &blocking,
+                        equipped_speed_delta,
+                    )
+                    .await;
+                let observation = match &outcome {
+                    StepInChannel::Completed(Ok(snapshot)) => {
+                        Some(Self::observation(&runtime, snapshot.position()))
+                    }
+                    _ => None,
+                };
+                (outcome, observation)
+            };
+            match outcome {
+                StepInChannel::Pending { ready_at } => {
+                    let wait = ready_at.saturating_sub(now).min(1_000_000);
+                    if wait == 0 {
+                        return StepOutcome::rejected();
+                    }
+                    // Release all owner locks before the wake; the next pass proves
+                    // session, content, condition time, position and door afresh.
+                    tokio::time::sleep(std::time::Duration::from_micros(wait)).await;
+                }
+                StepInChannel::Completed(Ok(_)) => {
+                    return StepOutcome {
+                        disposition: StepDisposition::Moved,
+                        moved_to: observation,
+                    };
+                }
+                StepInChannel::Completed(Err(
+                    MovementError::Blocked
+                    | MovementError::Cell(
+                        crate::content::static_cell_engine::StaticCellEngineError::Absent,
+                    ),
+                )) => {
                     return StepOutcome {
                         disposition: StepDisposition::Blocked,
                         moved_to: None,
                     };
                 }
+                StepInChannel::Completed(Err(_)) => return StepOutcome::rejected(),
             }
-        }
-        let outcome = {
-            let mut turn = MovementOwnerTurn::begin(&mut runtime, NonZeroUsize::MIN);
-            let Ok(expected) = turn.read(actor) else {
-                return StepOutcome::rejected();
-            };
-            let selection = MovementEngineeringSelection {
-                owner_context,
-                content_scope: scope,
-            };
-            turn.try_step(
-                actor,
-                expected,
-                &selection,
-                self.movement_cells.index(),
-                cardinal,
-            )
-        };
-        match outcome {
-            Ok(MovementTurnOutcome::Applied(snapshot)) => StepOutcome {
-                disposition: StepDisposition::Moved,
-                moved_to: Some(Self::observation(&runtime, snapshot.position())),
-            },
-            Err(
-                MovementError::Blocked
-                | MovementError::Cell(
-                    crate::content::static_cell_engine::StaticCellEngineError::Absent,
-                ),
-            ) => StepOutcome {
-                disposition: StepDisposition::Blocked,
-                moved_to: None,
-            },
-            Ok(MovementTurnOutcome::Deferred) | Err(_) => StepOutcome::rejected(),
         }
     }
 
@@ -841,6 +985,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         target: world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        if self
+            .qualified_room
+            .is_some_and(|room| room.source_world().is_some())
+        {
+            return UseOutcome::rejected();
+        }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
             return self.use_chest(actor, command, chest).await;
         }
@@ -929,6 +1079,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: actor_spell::SpellCastIntent,
     ) -> actor_spell::SpellCastOutcome {
+        if let Some(outcome) = self
+            .cast_durable_stance(actor, game_session_id, command_id, &intent)
+            .await
+        {
+            return outcome;
+        }
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
@@ -942,6 +1098,70 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             &intent,
             now,
         )
+    }
+
+    async fn cast_spell_completion(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        intent: actor_spell::SpellCastIntent,
+    ) -> Option<actor_spell::SpellCastOutcome> {
+        if !self.ensure_source_map_initialized().await {
+            return None;
+        }
+        if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some()
+        {
+            let _ = self
+                .refresh_source_party_presence(actor, game_session_id)
+                .await;
+        }
+        // This explicit unavailable producer grants no commercial, Wheel or
+        // control benefit. A configured authenticated owner replaces this port.
+        let access = self
+            .refresh_and_apply_spell_access(actor, game_session_id)
+            .await;
+        match self
+            .cast_native_familiar(actor, game_session_id, command_id, &intent, &access)
+            .await
+        {
+            actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
+            actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::NotApplicable => (),
+        }
+        match self
+            .cast_world_items(actor, game_session_id, command_id, &intent, &access)
+            .await
+        {
+            actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
+            actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::NotApplicable => (),
+        }
+        match self
+            .cast_native_combat(actor, game_session_id, command_id, &intent, &access)
+            .await
+        {
+            actor_spell::NativeCastDispatch::Outcome(outcome) => Some(outcome),
+            actor_spell::NativeCastDispatch::Pending => None,
+            actor_spell::NativeCastDispatch::NotApplicable => {
+                let outcome = self
+                    .cast_spell(actor, game_session_id, command_id, intent)
+                    .await;
+                if self
+                    .spell_states
+                    .lock()
+                    .await
+                    .has_pending_spell_commit(actor, game_session_id)
+                {
+                    None
+                } else {
+                    Some(outcome)
+                }
+            }
+        }
     }
 
     /// Display contract §4: a read-only query of the facts, no Character fence and no Channel
@@ -971,10 +1191,54 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        let now = self.owner_now();
-        let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
-        states.tick(&runtime, actor, game_session_id, now)
+        if !self.ensure_source_map_initialized().await {
+            return None;
+        }
+        self.drain_source_item_deadlines().await;
+        self.drain_source_party_deadlines_bounded().await;
+        if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some()
+        {
+            let _ = self
+                .refresh_source_party_presence(actor, game_session_id)
+                .await;
+        }
+        let _ = self
+            .refresh_and_apply_spell_access(actor, game_session_id)
+            .await;
+        let party_vitals = self
+            .refresh_source_party_serene(actor, game_session_id)
+            .await;
+        let result = if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some()
+        {
+            self.tick_spell_periodic(actor, game_session_id).await
+        } else {
+            let now = self.owner_now();
+            let mut runtime = self.runtime.lock().await;
+            let mut states = self.spell_states.lock().await;
+            states.tick_in_environment(
+                &mut runtime,
+                self.movement_cells,
+                actor,
+                game_session_id,
+                now,
+            )
+        };
+        let _ = self
+            .save_spell_training(actor, game_session_id, false)
+            .await;
+        let cleanup_access = self.refresh_spell_access(actor, game_session_id).await;
+        let _ = self
+            .drain_familiar_deaths(actor, game_session_id, &cleanup_access)
+            .await;
+        let _ = self.tick_familiar_defenses(actor, game_session_id).await;
+        let _ = self.drain_native_ai_timers().await;
+        result.or(party_vitals)
     }
 
     async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
@@ -1016,9 +1280,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let account_id = canonical_uuid(&controller.account_id);
         let mut backoff = RECONCILE_BACKOFF;
         for _ in 0..EXPIRY_ATTEMPTS {
+            if self
+                .save_familiar_at_actor_end(actor, admitted.game_session_id)
+                .await
+                == actor_spell::FamiliarLogoutSave::Unknown
+            {
+                tokio::time::sleep(backoff).await;
+                backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                continue;
+            }
             // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
             // before the release can end the Character lease.
             if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
+                tokio::time::sleep(backoff).await;
+                backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                continue;
+            }
+            if self
+                .save_spell_training(actor, admitted.game_session_id, true)
+                .await
+                == actor_spell::TrainingSave::Unknown
+            {
                 tokio::time::sleep(backoff).await;
                 backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
                 continue;
@@ -1315,6 +1597,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         controller: ControllerBinding,
     ) -> ControlLossResult {
+        if !self
+            .reconcile_spells_before_control_loss(actor, game_session_id)
+            .await
+        {
+            return ControlLossResult::Unknown;
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone());
         // Loss is timed on the durable owner's clock, the same clock that
         // samples the final decision time.
@@ -1532,6 +1820,144 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
         };
+        match self.reserve_precondition().await {
+            Ok(()) => {}
+            Err(AdmissionRefusal::Unavailable) => {
+                return (FirstEntryOutcome::RefusedUnavailable, None);
+            }
+            Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
+        }
+        // SPELL-D8 §8.2: a new runtime actor loads the durable Harmony and remaining forced
+        // Serene time, read before the Channel-owner lock; a failed or corrupt load fails closed.
+        let character_id =
+            match domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes()) {
+                Ok(character_id) => character_id,
+                Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+            };
+        let (facts, character_revision) = match spell_character_facts::load_character_cast_facts(
+            self.root,
+            self.character,
+            character_id,
+        )
+        .await
+        {
+            spell_character_facts::CastFactsLoad::Ready {
+                facts,
+                character_revision,
+            } => (Some(facts), character_revision),
+            spell_character_facts::CastFactsLoad::NoVocation { character_revision } => {
+                (None, character_revision)
+            }
+            spell_character_facts::CastFactsLoad::Unavailable => {
+                return (FirstEntryOutcome::RefusedUnavailable, None);
+            }
+        };
+        let monk = match facts {
+            Some(_) => {
+                let Ok(character_id) =
+                    domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+                else {
+                    return (FirstEntryOutcome::RefusedUnavailable, None);
+                };
+                match self.load_monk_state(character_id).await {
+                    Some(values) => values,
+                    None => return (FirstEntryOutcome::RefusedUnavailable, None),
+                }
+            }
+            None => (0, 0),
+        };
+        let build = match self
+            .root
+            .read_character_build_state(self.character, character_id)
+            .await
+        {
+            Ok(build) => build,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+        };
+        let stance = match self
+            .root
+            .read_character_stance(self.character, character_id)
+            .await
+        {
+            Ok(stance) => stance,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+        };
+        if let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        {
+            let Some(fence) = item_fence_of(current) else {
+                return (FirstEntryOutcome::RefusedStaleAuthority, None);
+            };
+            if self
+                .root
+                .initialize_admission_equipment(
+                    self.character,
+                    self.holder,
+                    &fence,
+                    native.source_digest(),
+                    request.operation(),
+                )
+                .await
+                .is_err()
+            {
+                return (FirstEntryOutcome::RefusedUnavailable, None);
+            }
+            if let Some(profile) = native.wheel_profile() {
+                if self
+                    .root
+                    .initialize_admission_wheel(
+                        self.character,
+                        self.holder,
+                        &fence,
+                        profile,
+                        request.operation(),
+                    )
+                    .await
+                    .is_err()
+                {
+                    return (FirstEntryOutcome::RefusedUnavailable, None);
+                }
+            }
+            let gameplay =
+                crate::durability::character_progression::CurrentCharacterGameplayFence {
+                    character_id,
+                    game_session_id,
+                    connection_generation: current.current_connection_generation(),
+                    character_lease_generation: current.current_character_lease().generation(),
+                    runtime_scope: current.current_runtime_scope(),
+                    scope_ownership_generation: current.current_scope_generation(),
+                    expected_character_revision: character_revision,
+                };
+            if self
+                .root
+                .initialize_familiar_group(self.character, self.holder, gameplay)
+                .await
+                .is_err()
+            {
+                return (FirstEntryOutcome::RefusedUnavailable, None);
+            }
+        }
+        // Character facts, monk and stance loads are data reads, never current session authority.
+        // Reject a changed root and resolve session, guard and assignment again after them.
+        let Ok(latest_character) = self
+            .root
+            .read_current_character(self.character, character_id)
+            .await
+        else {
+            return (FirstEntryOutcome::RefusedUnavailable, None);
+        };
+        if latest_character.revision != character_revision {
+            return (FirstEntryOutcome::RefusedStaleAuthority, None);
+        }
+        let current = match store.reconcile(request.operation()).await {
+            Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
+            Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+        };
+        if current.commit().character_id().as_bytes() != character_id.as_bytes() {
+            return (FirstEntryOutcome::RefusedStaleAuthority, None);
+        }
         let key = AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id());
         let character = match AdmissionGuardStore::from_root(self.root.clone())
             .load(&[key])
@@ -1547,23 +1973,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
         }
-        // SPELL-D8 §8.2: a new runtime actor loads the durable Harmony and remaining forced
-        // Serene time, read before the Channel-owner lock; a failed or corrupt load fails closed.
-        let facts = character_cast_facts(current.commit().character_id());
-        let monk = match facts {
-            Some(_) => {
-                let Ok(character_id) =
-                    domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                else {
-                    return (FirstEntryOutcome::RefusedUnavailable, None);
-                };
-                match self.load_monk_state(character_id).await {
-                    Some(values) => values,
-                    None => return (FirstEntryOutcome::RefusedUnavailable, None),
-                }
-            }
-            None => (0, 0),
-        };
         // One Channel-owner lock covers the binding comparison and the write.
         let mut runtime = self.runtime.lock().await;
         let expected = FirstEntryExpectation {
@@ -1604,6 +2013,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_none()
         {
             return (FirstEntryOutcome::RefusedByChannel, None);
+        }
+        if facts.is_some()
+            && !self.spell_states.lock().await.load_owned_stance(
+                &runtime,
+                actor,
+                game_session_id,
+                &stance,
+                self.spells,
+            )
+        {
+            return (FirstEntryOutcome::RefusedByChannel, None);
+        }
+        if facts.is_some()
+            && !self.spell_states.lock().await.load_owned_build(
+                &runtime,
+                actor,
+                game_session_id,
+                &build,
+            )
+        {
+            return (FirstEntryOutcome::RefusedByChannel, None);
+        }
+        if facts.is_some() {
+            if let Some(formula) = self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .and_then(|native| native.training_formula())
+            {
+                let mut states = self.spell_states.lock().await;
+                if states
+                    .get_mut(&runtime, actor, game_session_id)
+                    .is_none_or(|state| state.enable_owned_training(&build, formula).is_err())
+                {
+                    return (FirstEntryOutcome::RefusedByChannel, None);
+                }
+            }
+        }
+        drop(runtime);
+        if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some()
+        {
+            let _ = self
+                .refresh_source_party_presence(actor, game_session_id)
+                .await;
+        }
+        if let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            && let Some(config) = native.familiar_config()
+        {
+            let access = self
+                .refresh_and_apply_spell_access(actor, game_session_id)
+                .await;
+            let _ = self
+                .initialize_familiar_login(actor, game_session_id, request, native, &access, config)
+                .await;
         }
         (outcome, item_fence)
     }
@@ -1767,16 +2234,6 @@ impl FreshAdmissionDurabilityPortV1 for PreparedRequest {
     fn reconcile(&mut self, _: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
         FreshAdmissionSubmissionV1::Unavailable
     }
-}
-
-/// Spell cast §4 and SPELL-D4: the Character-owned cast facts of an admitted Character. Level is
-/// Character progression (R7 P03, D88), but vocation and magic level have no GAME-CHAR owner yet,
-/// so no Character has cast facts: casting stays gated (`REJECTED`, no `ACTOR_VITALS`) until that
-/// owner supplies them here. The client is never a source.
-const fn character_cast_facts(
-    _character: crate::foundation::CharacterId,
-) -> Option<crate::spell::cast::CharacterCastFacts> {
-    None
 }
 
 fn unix_seconds() -> Option<i64> {
@@ -2967,3 +3424,20 @@ mod tests {
         );
     }
 }
+
+mod party_spell_owner;
+mod spell_parameter_cast;
+#[cfg(test)]
+pub(crate) use actor_spell::ChannelSpellStates;
+#[cfg(test)]
+pub(crate) use party_spell_owner::{SourcePartyWorld, read_source_party_world_in_transaction};
+#[cfg(test)]
+pub(crate) use spell_character_facts::{CastFactsLoad, load_character_cast_facts};
+#[cfg(test)]
+pub(crate) use spell_presentation_publisher::{
+    CandidatePresentationTurn, CandidateSessionPublisher, ObserverSource,
+};
+#[cfg(test)]
+pub(crate) use spell_presentations::SpellPresentationOwner;
+
+mod spell_presentations;

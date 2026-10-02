@@ -30,6 +30,7 @@ impl CreatureBiteVitals for Vitals {
         _target: ExactActorRef,
         _target_session: GameSessionId,
         magnitude: u32,
+        _now: SemanticTimeMicros,
     ) -> Option<(FlooredDamage, u64)> {
         let damage = floor_creature_damage(self.health, magnitude);
         if damage.applied > 0 {

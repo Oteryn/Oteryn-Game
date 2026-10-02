@@ -103,6 +103,8 @@ pub(crate) struct SessionContinuity {
     /// Channel-global, so this field is written from the live value actually sent, not trusted
     /// to already match it — see `serve_admitted`.
     pub(crate) overlay_revision: u64,
+    /// Last complete own-actor vitals state actually transmitted.
+    pub(crate) vitals_revision: u64,
 }
 
 impl SessionContinuity {
@@ -115,6 +117,7 @@ impl SessionContinuity {
         server_sequence: 0,
         spatial_revision: 1,
         overlay_revision: 0,
+        vitals_revision: 0,
     };
 }
 
@@ -220,6 +223,8 @@ pub(crate) trait FreshAdmissionAuthority {
     fn step(
         &self,
         _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _command_id: u64,
         _direction: StepDirection,
     ) -> impl Future<Output = StepOutcome> {
         async { StepOutcome::rejected() }
@@ -259,6 +264,18 @@ pub(crate) trait FreshAdmissionAuthority {
         _intent: SpellCastIntent,
     ) -> impl Future<Output = SpellCastOutcome> {
         async { SpellCastOutcome::rejected() }
+    }
+
+    /// None keeps an ambiguously committed original spell outstanding. It is
+    /// never encoded as a terminal rejection or advanced to the next CommandId.
+    fn cast_spell_completion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: SpellCastIntent,
+    ) -> impl Future<Output = Option<SpellCastOutcome>> {
+        async move { Some(self.cast_spell(actor, session, command_id, intent).await) }
     }
 
     /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of the request's account's earned facts (display
@@ -699,6 +716,9 @@ where
     if let Some(entry) = &overlay {
         admitted.continuity.overlay_revision = entry.revision;
     }
+    if let Some((vitals_revision, _)) = &vitals {
+        admitted.continuity.vitals_revision = *vitals_revision;
+    }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
     let mut frames = FrameReader::default();
@@ -751,13 +771,24 @@ where
         };
         let frame = match next {
             Next::Serene => {
-                let Some((to, value)) =
-                    authority.tick_vitals(actor, admitted.game_session_id).await
+                let changed = authority.tick_vitals(actor, admitted.game_session_id).await;
+                let current = authority
+                    .observe_vitals(actor, admitted.game_session_id)
+                    .await;
+                let Some((to, value)) = current
+                    .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                    .or(changed
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision))
                 else {
                     continue;
                 };
-                let Some((delta_sequence, delta)) = vitals_delta(generation, sequence, to, &value)
-                else {
+                let Some((delta_sequence, delta)) = vitals_delta(
+                    generation,
+                    sequence,
+                    admitted.continuity.vitals_revision,
+                    to,
+                    &value,
+                ) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };
                 sequence = delta_sequence;
@@ -765,6 +796,7 @@ where
                 if write_frame(stream, &delta).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
+                admitted.continuity.vitals_revision = to;
                 continue;
             }
             Next::Frame(Ok(frame)) => frame,
@@ -862,7 +894,16 @@ where
         }
         let mut dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
             match decode_step_intent(command.payload) {
-                Ok(direction) => Dispatch::Step(authority.step(actor, direction).await),
+                Ok(direction) => Dispatch::Step(
+                    authority
+                        .step(
+                            actor,
+                            admitted.game_session_id,
+                            command.command_id,
+                            direction,
+                        )
+                        .await,
+                ),
                 Err(_) => Dispatch::Step(StepOutcome::rejected()),
             }
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
@@ -884,11 +925,20 @@ where
             }
         } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
             match decode_spell_cast_intent(command.payload) {
-                Ok(intent) => Dispatch::Spell(
-                    authority
-                        .cast_spell(actor, admitted.game_session_id, command.command_id, intent)
-                        .await,
-                ),
+                Ok(intent) => match authority
+                    .cast_spell_completion(
+                        actor,
+                        admitted.game_session_id,
+                        command.command_id,
+                        intent,
+                    )
+                    .await
+                {
+                    Some(outcome) => Dispatch::Spell(outcome),
+                    // Preserve continuity's original next command and no terminal
+                    // outcome; reconnect/reconciliation cannot pay or reroll twice.
+                    None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                },
                 Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
             }
         } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
@@ -1043,10 +1093,22 @@ where
             Dispatch::Spell(outcome) => {
                 // ACTOR_VITALS (domain 3, delta type 1) carries the owner's own per-actor
                 // revision: a committed cast advances it by exactly one.
-                if let Some((to, value)) = outcome.vitals {
-                    let Some((delta_sequence, delta)) =
-                        vitals_delta(generation, sequence, to, &value)
-                    else {
+                let observed = authority
+                    .observe_vitals(actor, admitted.game_session_id)
+                    .await;
+                if let Some((to, value)) = observed
+                    .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                    .or(outcome
+                        .vitals
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision))
+                {
+                    let Some((delta_sequence, delta)) = vitals_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.vitals_revision,
+                        to,
+                        &value,
+                    ) else {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     };
                     sequence = delta_sequence;
@@ -1054,6 +1116,7 @@ where
                     if write_frame(stream, &delta).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
+                    admitted.continuity.vitals_revision = to;
                 }
             }
             Dispatch::Achievements(_) | Dispatch::Unregistered => {}
@@ -1061,16 +1124,20 @@ where
     }
 }
 
-/// The `ACTOR_VITALS` delta (domain 3, delta type 1) from revision `to - 1` to `to`, at the
-/// sequence after `sequence`; `None` on an encoding fault.
+/// The `ACTOR_VITALS` delta (domain 3, delta type 1) from the last transmitted revision to `to`, at the
+/// sequence after `sequence`; `None` on an encoding fault. The complete value
+/// may coalesce multiple actual owner changes from the last transmitted revision.
 fn vitals_delta(
     generation: u64,
     sequence: u64,
+    from: u64,
     to: u64,
     value: &ActorVitals,
 ) -> Option<(u64, Vec<u8>)> {
     let delta_sequence = sequence.checked_add(1)?;
-    let from = to.checked_sub(1)?;
+    if from == 0 || to <= from {
+        return None;
+    }
     let payload = encode_actor_vitals(value).ok()?;
     let delta = encode_state_delta(
         generation,
@@ -1125,6 +1192,106 @@ mod tests {
     const SESSION: [u8; 16] = uuid_v7(0x22);
     const WORLD: [u8; 16] = uuid_v7(0x33);
     const CHANNEL: [u8; 16] = uuid_v7(0x44);
+
+    #[test]
+    fn vitals_publication_coalesces_real_changes_from_last_transmitted_revision()
+    -> Result<(), Box<dyn Error>> {
+        let (sequence, wire) = vitals_delta(2, 11, 40, 43, &SERENE_VITALS).ok_or("delta")?;
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&wire)?;
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+        assert_eq!(
+            (sequence, delta.base_revision, delta.new_revision),
+            (12, 40, 43)
+        );
+        assert_eq!(
+            delta.payload,
+            encode_actor_vitals(&SERENE_VITALS).map_err(|_| "vitals")?
+        );
+        assert!(vitals_delta(2, 11, 0, 43, &SERENE_VITALS).is_none());
+        assert!(vitals_delta(2, 11, 43, 43, &SERENE_VITALS).is_none());
+        assert!(vitals_delta(2, 11, 44, 43, &SERENE_VITALS).is_none());
+        Ok(())
+    }
+
+    struct PendingSpellAuthority;
+    impl FreshAdmissionAuthority for PendingSpellAuthority {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+        async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+        async fn observe_vitals(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+        ) -> Option<(u64, ActorVitals)> {
+            Some((1, SERENE_VITALS))
+        }
+        async fn cast_spell_completion(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+            _: u64,
+            _: SpellCastIntent,
+        ) -> Option<SpellCastOutcome> {
+            None
+        }
+    }
+
+    #[test]
+    fn unknown_spell_commit_preserves_original_command_and_emits_no_terminal_result()
+    -> Result<(), Box<dyn Error>> {
+        use super::super::actor_spell::tests as spell;
+        run(async {
+            let (_, actor, session) = spell::runtime_with_player(0x73);
+            let admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: WorldId::decode(&uuid_v7(0x60))?,
+                channel_id: ChannelId::decode(&uuid_v7(0x61))?,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let intent = SpellCastIntent {
+                spell: std::num::NonZeroU32::new(1).ok_or("index")?,
+                target: oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
+                aim_at_target: false,
+            };
+            let payload = super::super::actor_spell::encode_spell_cast_intent(&intent);
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            write_frame(&mut client, &cast_command(1, &payload)).await?;
+            let end =
+                serve_admitted(&mut server, admitted, &PendingSpellAuthority, IDLE_LIVENESS).await;
+            let ConnectionEnd::AdmittedThenDisconnected(retained) = end else {
+                return Err("unexpected end".into());
+            };
+            assert_eq!(retained.continuity.next_command_id, 1);
+            assert_eq!(retained.continuity.server_sequence, 0);
+            assert_eq!(retained.continuity.vitals_revision, 1);
+            drop(server);
+            let mut bytes = Vec::new();
+            client.read_to_end(&mut bytes).await?;
+            let mut remaining = bytes.as_slice();
+            while !remaining.is_empty() {
+                let prefix: [u8; 4] = remaining.get(..4).ok_or("prefix")?.try_into()?;
+                let length = usize::try_from(u32::from_be_bytes(prefix))?;
+                let wire = remaining.get(4..4 + length).ok_or("frame")?;
+                let envelope = oteryn_protocol_oteryn::decode_wire_envelope(wire)?;
+                assert_ne!(
+                    envelope.message_type(),
+                    oteryn_protocol_oteryn::MessageType::CommandResult
+                );
+                remaining = remaining.get(4 + length..).ok_or("tail")?;
+            }
+            Ok(())
+        })
+    }
 
     const fn uuid_v7(tag: u8) -> [u8; 16] {
         let mut bytes = [tag; 16];
@@ -1292,7 +1459,13 @@ mod tests {
             Some(at(0))
         }
 
-        async fn step(&self, _actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
+        async fn step(
+            &self,
+            _actor: ExactActorRef,
+            _game_session_id: GameSessionId,
+            _command_id: u64,
+            direction: StepDirection,
+        ) -> StepOutcome {
             self.steps.borrow_mut().push(direction);
             if direction == StepDirection::East {
                 StepOutcome {
@@ -1756,6 +1929,7 @@ mod tests {
                     server_sequence: 4,
                     spatial_revision: 2,
                     overlay_revision: 0,
+                    vitals_revision: 0,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.

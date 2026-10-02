@@ -10,7 +10,7 @@
 
 pub(crate) mod commit;
 #[allow(dead_code)]
-pub(crate) mod condition;
+pub(crate) use crate::foundation::condition;
 #[allow(dead_code)]
 pub(crate) mod creature_bite;
 mod effects;
@@ -89,3 +89,5 @@ impl Error for AbilityError {}
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) mod field_condition;

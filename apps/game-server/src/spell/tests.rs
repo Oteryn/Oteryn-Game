@@ -245,19 +245,20 @@ fn sudden_death_rune_needs_magic_level_and_uses_base_power() {
     );
     let low = resolve_cast(rune, &mage, &none, at(0), true, &mut lowest).expect("cast");
     let high = resolve_cast(rune, &mage, &none, at(0), true, &mut highest).expect("cast");
-    // floor((20 + 50 * sqrt(150 * 0.4) + 150 / 6) * 0.88) and the same with 1.12 (base power 150).
+    // P150, buckets70: F20 + floor((1 ± 70/150/2) * (150/25*ML50 + 150/4)).
+    // The independent sorcerer level100/ML50 reference returns 278..436. F is outside variation.
     assert_eq!(
         low.effects,
         vec![ResolvedEffect::Damage {
             damage_type: "death".into(),
-            magnitude: 380
+            magnitude: 278
         }]
     );
     assert_eq!(
         high.effects,
         vec![ResolvedEffect::Damage {
             damage_type: "death".into(),
-            magnitude: 484
+            magnitude: 436
         }]
     );
     assert_eq!(low.mana_spent, 0);
@@ -487,12 +488,23 @@ fn a_conjure_has_no_ability_effects() {
 }
 
 #[test]
-fn a_wheel_spell_is_not_admitted() {
+fn a_wheel_spell_retains_its_requirement_and_refuses_missing_owner_facts() {
     let (spell, dependencies) = STARTER[0];
     let mut spell: Value = serde_json::from_str(spell).expect("spell");
     let dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
     spell["spell"]["requirements"]["wheel_unlock"] = Value::Bool(true);
-    assert!(spell_from_bundle(&spell, &dependencies).is_err());
+    let admitted = spell_from_bundle(&spell, &dependencies).expect("typed Wheel requirement");
+    assert_eq!(
+        resolve_cast(
+            &admitted,
+            &caster(Vocation::Druid, 300, 100, 10000),
+            &Cooldowns::default(),
+            at(0),
+            false,
+            &mut |_, _| panic!("draw before Wheel proof")
+        ),
+        Err(CastRejection::WheelUnlockRequired)
+    );
     spell["spell"]["requirements"]["wheel_unlock"] = Value::from("yes");
     assert!(spell_from_bundle(&spell, &dependencies).is_err());
     spell["spell"]["requirements"]["wheel_unlock"] = Value::Null;
@@ -502,12 +514,23 @@ fn a_wheel_spell_is_not_admitted() {
 }
 
 #[test]
-fn a_positional_spell_is_not_admitted() {
+fn a_positional_spell_retains_its_requirement_and_refuses_missing_owner_facts() {
     let (spell, dependencies) = STARTER[0];
     let mut spell: Value = serde_json::from_str(spell).expect("spell");
     let dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
     spell["spell"]["targeting"]["cast_at_position"] = Value::Bool(true);
-    assert!(spell_from_bundle(&spell, &dependencies).is_err());
+    let admitted = spell_from_bundle(&spell, &dependencies).expect("typed position requirement");
+    assert_eq!(
+        resolve_cast(
+            &admitted,
+            &caster(Vocation::Druid, 300, 100, 10000),
+            &Cooldowns::default(),
+            at(0),
+            false,
+            &mut |_, _| panic!("draw before position proof")
+        ),
+        Err(CastRejection::OperationalFactsRequired)
+    );
     spell["spell"]["targeting"]["cast_at_position"] = Value::Null;
     assert!(spell_from_bundle(&spell, &dependencies).is_err());
     spell["spell"]["targeting"]["cast_at_position"] = Value::Bool(false);

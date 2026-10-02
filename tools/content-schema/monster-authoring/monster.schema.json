@@ -1844,6 +1844,16 @@
           ],
           "description": "D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight when clear_sight); without one the cast fails and nothing happens."
         },
+        "target_selection": {
+          "enum": [
+            "caster_or_top_creature"
+          ],
+          "description": "Player Inflict Wound: own tile selects the caster, another tile selects its top creature. Source-exact authoring only; an executor must implement this selector before admission."
+        },
+        "zero_damage_health_path": {
+          "const": true,
+          "description": "Paralyze Rune: run the zero-magnitude health validation, block/change-health hooks before condition/dispel. No direct damage is authored; reject admission until these hooks are implemented."
+        },
         "windup": {
           "type": "object",
           "additionalProperties": false,
@@ -2615,6 +2625,50 @@
         "created_item": {
           "$ref": "#/$defs/ItemRef"
         },
+        "pvp_safe_item": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "duration_range_ms": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 4294967000,
+              "multipleOf": 1000
+            },
+            "maximum": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 4294967000,
+              "multipleOf": 1000
+            }
+          },
+          "required": [
+            "minimum",
+            "maximum"
+          ]
+        },
+        "duration_selection": {
+          "enum": [
+            "uniform_integer_seconds"
+          ]
+        },
+        "safe_world_type": {
+          "enum": [
+            "optional_pvp"
+          ]
+        },
+        "refuse_on": {
+          "const": [
+            "floor_change_tile",
+            "creature_on_tile"
+          ]
+        },
+        "description_template": {
+          "const": "Casted by: {caster_name}"
+        },
         "affects": {
           "type": "object",
           "additionalProperties": false,
@@ -2767,12 +2821,47 @@
             "projectile_asset_binding": {
               "$ref": "#/$defs/assetBinding"
             },
+            "caster_effect_asset_binding": {
+              "$ref": "#/$defs/assetBinding"
+            },
+            "caster_effect_timing": {
+              "enum": [
+                "before_combat",
+                "after_success"
+              ]
+            },
             "path_asset_binding": {
               "$ref": "#/$defs/assetBinding",
               "description": "D18: shown on every tile of the walking path from the caster to the target before the effect applies."
             }
           },
-          "required": []
+          "required": [],
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "caster_effect_asset_binding"
+                ]
+              },
+              "then": {
+                "required": [
+                  "caster_effect_timing"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "caster_effect_timing"
+                ]
+              },
+              "then": {
+                "required": [
+                  "caster_effect_asset_binding"
+                ]
+              }
+            }
+          ]
         }
       },
       "required": [
@@ -2969,6 +3058,91 @@
                 {
                   "required": [
                     "created_item"
+                  ]
+                },
+                {
+                  "required": [
+                    "pvp_safe_item"
+                  ]
+                },
+                {
+                  "required": [
+                    "duration_range_ms"
+                  ]
+                },
+                {
+                  "required": [
+                    "duration_selection"
+                  ]
+                },
+                {
+                  "required": [
+                    "safe_world_type"
+                  ]
+                },
+                {
+                  "required": [
+                    "refuse_on"
+                  ]
+                },
+                {
+                  "required": [
+                    "description_template"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "pvp_safe_item"
+                ]
+              },
+              {
+                "required": [
+                  "duration_range_ms"
+                ]
+              },
+              {
+                "required": [
+                  "duration_selection"
+                ]
+              },
+              {
+                "required": [
+                  "safe_world_type"
+                ]
+              },
+              {
+                "required": [
+                  "refuse_on"
+                ]
+              },
+              {
+                "required": [
+                  "description_template"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "pvp_safe_item",
+              "duration_range_ms",
+              "duration_selection",
+              "safe_world_type",
+              "refuse_on",
+              "description_template"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
                   ]
                 }
               ]
