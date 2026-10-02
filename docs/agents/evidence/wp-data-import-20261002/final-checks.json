@@ -1,0 +1,19 @@
+{
+  "focused_tests": 3,
+  "actual_import": "PASS_FULL_CORPUS_EXACT_DECIMAL_FRACTION",
+  "package": {
+    "suites": 58,
+    "passed": 16291,
+    "failed": 0,
+    "ignored": 7,
+    "postgres_environment": "ABSENT; no persistence change or actual-PG claim"
+  },
+  "locked_all_target_clippy": "PASS_WARNINGS_DENIED",
+  "format": "PASS",
+  "governance_tests": 36,
+  "source_sha256": {
+    "apps/game-server/src/content/project/v2/proficiency/import.rs": "6e4289ef0ca634a7d62e04ed71f68a0544b63ca2c623eb7e7a07bc5e849abf49",
+    "apps/game-server/src/content/project/v2/proficiency.rs": "d14f2bcbb3ebc4daeeefd75b2a9357e5c522f56c125ae3baeebe4ab47dae17d9",
+    "apps/game-server/src/bin/oteryn-game-import-proficiencies.rs": "6ea557e9fc1beae69fa9b294930569318def6cdbd56bb7585ac0fcd7954abd8d"
+  }
+}
