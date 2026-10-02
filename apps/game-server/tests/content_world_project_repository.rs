@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "fac590ba8e9bab3d9448aea99d7415b623fdf197d863add12e7742427508f937",
+        415,
+        "d0df16d4b47c12b8606890980d8c8b21c0a3b44cbd4fea6e1ce6b4be3b8535ff",
     ),
     (
         "definitions/declarations.json",
-        17565521,
-        "3d77692bacf81cea3ad958c7834a972c77edc0cb21409da91c504ee9c6dd5f53",
+        18541878,
+        "7dc51df8e4f61a1c191adad50d678e7de9100eda64ea9e398bdd462999aee7c7",
     ),
     (
         "definitions/reference.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1955,
-        "91179f16225065e9c1ad6f1767c90017c985df8e42dd5f4dcd9cd66c53ea276d",
+        1954,
+        "ecc8e3b441e43eca670eabe01322b2eeaf622a05deb8440489114e853a568893",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "d26291afecfd2ad884be07d45a944c77a6169c307f81f97ec3ad4692f482068a",
+        407,
+        "d3e5aa6b7ef586a13346d24a3256de35d4fed3c26b04e6d44c221f7c03f6f6f2",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "39019038fb7fbdd77b0b2f89e23d129cd41c316ee050c7a2508de3effb5af1a5";
+const TREE_SHA256: &str = "c0d46eaa7380bea64e438f4d0855c582e0d2dc85d2e2adf388820ed1a263eb29";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -323,7 +323,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "g4-npc-provisional-remaining88-r20"
+        "g4-npc-provisional-enrichment-r21"
     );
     assert_eq!(project.imports().len(), 25);
     let import_for = |batch: &str| {
@@ -502,6 +502,44 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .map(|row| row["identity"]["key"].as_str().expect("dialogue key"))
         .collect::<BTreeSet<_>>();
     assert_eq!(provisional_dialogues.len(), 133);
+    let enrichment: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r21/native-enrichment.json"
+    ))
+    .expect("closed enrichment packet");
+    let mut expected_provisional_dialogues = provisional_packet["native_additions"]["declarations"]
+        .as_array()
+        .expect("closed enrichment value")
+        .iter()
+        .chain(
+            remaining_packet["native_additions"]["declarations"]
+                .as_array()
+                .expect("closed enrichment value"),
+        )
+        .filter(|r| r["kind"] == "Dialogue")
+        .map(|r| {
+            (
+                r["identity"]["key"].as_str().expect("enrichment actor key"),
+                r.clone(),
+            )
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    for repair in enrichment["repairs"]
+        .as_array()
+        .expect("closed enrichment array")
+    {
+        if repair["after"]["kind"] == "Dialogue" {
+            let key = repair["before"]["identity"]["key"]
+                .as_str()
+                .expect("enrichment actor key");
+            assert_eq!(
+                expected_provisional_dialogues.get(key),
+                Some(&repair["before"])
+            );
+            expected_provisional_dialogues.insert(key, repair["after"].clone());
+        }
+    }
+    assert_eq!(expected_provisional_dialogues.len(), 133);
+
     assert!(v2.declarations.iter().all(|declaration| {
         match declaration {
             ProjectV2Declaration::Outfit {
@@ -538,19 +576,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 identity, fields, ..
             } => {
                 if provisional_dialogues.contains(identity.key.as_str()) {
-                    fields.len() == 2
-                        && fields.iter().all(|field| match field.field_path.as_str() {
-                            "oteryn:source.npc.bulk.status" => {
-                                field.value == ProjectV2CandidateValue::Text("provisional".into())
-                            }
-                            "oteryn:source.npc.bulk.quality" => {
-                                field.value
-                                    == ProjectV2CandidateValue::Text(
-                                        "{\"dialogue\":\"placeholder\"}".into(),
-                                    )
-                            }
-                            _ => false,
-                        })
+                    serde_json::to_value(declaration).ok().as_ref()
+                        == expected_provisional_dialogues.get(identity.key.as_str())
                 } else {
                     fields.iter().all(|field| {
                         field.field_path == "oteryn:source.npc.static_speech_corrections"

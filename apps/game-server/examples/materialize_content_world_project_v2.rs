@@ -151,6 +151,29 @@ const NPC_BULK_MORE_SHA256: &str =
 const NPC_BULK_MORE_PREDECESSOR: &str =
     "92faa0e8052c16593811a1841476de3cc9897469b2a77bc83247653ecea0ed1c";
 const NPC_BULK_MORE_COUNT: usize = 88;
+#[path = "npc_materializer/bulk_enrichment.rs"]
+mod npc_bulk_enrichment;
+const NPC_ENRICH: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r21/native-enrichment.json"
+);
+const NPC_ENRICH_SHA256: &str = "fa06c44b10b6081b8389eb8cc3750b40dcc1fcb89dad71ab2e31807a6c0e2117";
+const NPC_ENRICH_PREDECESSOR: &str =
+    "39019038fb7fbdd77b0b2f89e23d129cd41c316ee050c7a2508de3effb5af1a5";
+fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_ENRICH,
+        NPC_ENRICH_SHA256,
+        NPC_ENRICH_PREDECESSOR,
+    )?;
+    Ok(draft)
+}
+
 #[path = "npc_materializer/qualified_bounded.rs"]
 mod npc_qualified_bounded;
 #[path = "npc_materializer/qualified_nine.rs"]
@@ -313,6 +336,7 @@ fn materialize_from_predecessor(
         NPC_BULK_MORE_PREDECESSOR,
         NPC_BULK_MORE_COUNT,
     )?;
+    let draft = enrich_provisional(draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     let tree_sha256 = write_documents(output, &documents)?;
     println!(
@@ -2340,6 +2364,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         NPC_BULK_MORE_PREDECESSOR,
         NPC_BULK_MORE_COUNT,
     )?;
+    let draft = enrich_provisional(draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());

@@ -236,6 +236,13 @@ mod tests {
         let mut draft = capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
             .expect("repository native project")
             .migrate_to_v2();
+        npc_bulk_enrichment::reverse_for_fixture(
+            &mut draft,
+            NPC_ENRICH,
+            NPC_ENRICH_SHA256,
+            NPC_ENRICH_PREDECESSOR,
+        )
+        .expect("enrichment fixture predecessor");
         let p: Packet = serde_json::from_slice(NPC_BULK).unwrap();
         let more: Packet = serde_json::from_slice(NPC_BULK_MORE).unwrap();
         let ids = p
