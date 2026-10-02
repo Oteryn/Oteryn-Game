@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Agent governance / validate
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'main' && 'Agent governance / stack preflight' || 'Agent governance / validate' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
@@ -55,6 +55,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
           EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           DISPATCH_PR_NUMBER: ${{ github.event.inputs.pull_request_number }}
           DISPATCH_EXPECTED_HEAD_SHA: ${{ github.event.inputs.expected_head_sha }}
         run: |
@@ -105,6 +106,8 @@ jobs:
                   errors.append("pull request event is missing a valid PR number")
               if re.fullmatch(r"[0-9a-f]{40}", expected_head) is None:
                   errors.append("pull request event head SHA is invalid")
+              if not os.environ.get("EVENT_PR_BASE_REF", ""):
+                  errors.append("pull request event is missing its base ref")
 
           if errors:
               for error in errors:
@@ -141,7 +144,9 @@ jobs:
               )
           if head_repository != repository:
               errors.append("governance validation only accepts same-repository pull request heads")
-          if base_ref != "main":
+          if event_name == "pull_request" and base_ref != os.environ["EVENT_PR_BASE_REF"]:
+              errors.append("pull request base moved after the triggering event")
+          if event_name == "workflow_dispatch" and base_ref != "main":
               errors.append("governance validation only accepts pull requests targeting main")
           if re.fullmatch(r"[0-9a-f]{40}", head_sha) is None:
               errors.append("live pull request head SHA is invalid")
@@ -182,6 +187,8 @@ jobs:
               env_file.write(f"TARGET_SHA={head_sha}\n")
 
           print(f"Validated live PR metadata and exact target head {head_sha}.")
+          if base_ref != "main":
+              print("::notice title=Stack preflight::Prepared-branch checks only; not integration qualification.")
           PY
 
       - name: Check out exact target
@@ -197,6 +204,9 @@ jobs:
           actual_sha="$(git rev-parse HEAD)"
           test "$actual_sha" = "$EXPECTED_SHA"
           echo "Validated exact checkout: $actual_sha"
+
+      - name: Test PR target admission
+        run: python tools/repository/test_agent_governance_pr_targets.py
 
       - name: Validate agent governance
         run: python tools/agents/validate_governance.py
