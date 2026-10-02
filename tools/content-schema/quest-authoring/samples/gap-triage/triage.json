@@ -64,15 +64,15 @@
   ]
  },
  "counts": {
-  "unresolved_lines": 1937,
-  "unresolved_conditions": 1752,
-  "blocked_children": 486,
+  "unresolved_lines": 1936,
+  "unresolved_conditions": 1732,
+  "blocked_children": 466,
   "reference_gaps": 0,
-  "total_unresolved_items": 4175,
+  "total_unresolved_items": 4134,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3563
+   "bespoke": 3522
   },
   "quests_triaged": 284,
   "quests_with_bespoke_work": 109,
@@ -84,7 +84,7 @@
    "owner": "scheduler",
    "lines": 287,
    "interactions": 183,
-   "quests": 52
+   "quests": 53
   },
   {
    "owner": "condition",
@@ -143,43 +143,43 @@
  "unlock_order": [
   {
    "adds": "owner:scheduler",
-   "quests_owner_mechanism_complete": 17,
-   "of_which_still_have_bespoke_gaps": 17
+   "quests_owner_mechanism_complete": 18,
+   "of_which_still_have_bespoke_gaps": 18
   },
   {
    "adds": "mechanism:kill_reward_fanout",
-   "quests_owner_mechanism_complete": 29,
-   "of_which_still_have_bespoke_gaps": 28
+   "quests_owner_mechanism_complete": 30,
+   "of_which_still_have_bespoke_gaps": 29
   },
   {
    "adds": "owner:condition",
-   "quests_owner_mechanism_complete": 41,
-   "of_which_still_have_bespoke_gaps": 40
+   "quests_owner_mechanism_complete": 42,
+   "of_which_still_have_bespoke_gaps": 41
   },
   {
    "adds": "owner:creature_removal",
-   "quests_owner_mechanism_complete": 47,
-   "of_which_still_have_bespoke_gaps": 46
+   "quests_owner_mechanism_complete": 48,
+   "of_which_still_have_bespoke_gaps": 47
   },
   {
    "adds": "owner:kv_state",
-   "quests_owner_mechanism_complete": 55,
-   "of_which_still_have_bespoke_gaps": 54
+   "quests_owner_mechanism_complete": 56,
+   "of_which_still_have_bespoke_gaps": 55
   },
   {
    "adds": "owner:boss_cooldown",
-   "quests_owner_mechanism_complete": 62,
-   "of_which_still_have_bespoke_gaps": 61
+   "quests_owner_mechanism_complete": 63,
+   "of_which_still_have_bespoke_gaps": 62
   },
   {
    "adds": "mechanism:boss_room_entry_gate",
-   "quests_owner_mechanism_complete": 71,
-   "of_which_still_have_bespoke_gaps": 70
+   "quests_owner_mechanism_complete": 72,
+   "of_which_still_have_bespoke_gaps": 71
   },
   {
    "adds": "mechanism:boss_portal_spectator_gate",
-   "quests_owner_mechanism_complete": 74,
-   "of_which_still_have_bespoke_gaps": 73
+   "quests_owner_mechanism_complete": 75,
+   "of_which_still_have_bespoke_gaps": 74
   }
  ],
  "quests": [
@@ -203,12 +203,12 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 148
+    "bespoke": 144
    },
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:148"
+    "bespoke:144"
    ]
   },
   {
@@ -459,7 +459,7 @@
    "counts": {
     "owner_pending": 20,
     "shared_mechanism": 2,
-    "bespoke": 80
+    "bespoke": 79
    },
    "owners_needed": [
     "boss_cooldown",
@@ -474,7 +474,7 @@
     "owner:condition",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:80"
+    "bespoke:79"
    ]
   },
   {
@@ -536,14 +536,17 @@
    "quest": "canary:quest/brotherhood_outfits_quest",
    "kind": "script_only",
    "counts": {
-    "owner_pending": 0,
+    "owner_pending": 6,
     "shared_mechanism": 0,
-    "bespoke": 11
+    "bespoke": 23
    },
-   "owners_needed": [],
+   "owners_needed": [
+    "scheduler"
+   ],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:11"
+    "owner:scheduler",
+    "bespoke:23"
    ]
   },
   {
@@ -874,12 +877,12 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 14
+    "bespoke": 12
    },
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:14"
+    "bespoke:12"
    ]
   },
   {
@@ -940,12 +943,12 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 5
+    "bespoke": 4
    },
    "owners_needed": [],
    "mechanisms_needed": [],
    "to_finish": [
-    "bespoke:5"
+    "bespoke:4"
    ]
   },
   {
@@ -1028,7 +1031,7 @@
    "counts": {
     "owner_pending": 8,
     "shared_mechanism": 0,
-    "bespoke": 91
+    "bespoke": 72
    },
    "owners_needed": [
     "scheduler"
@@ -1036,7 +1039,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:91"
+    "bespoke:72"
    ]
   },
   {
@@ -1293,7 +1296,7 @@
    "counts": {
     "owner_pending": 24,
     "shared_mechanism": 7,
-    "bespoke": 130
+    "bespoke": 129
    },
    "owners_needed": [
     "boss_cooldown",
@@ -1310,7 +1313,7 @@
     "owner:scheduler",
     "mechanism:boss_room_entry_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:130"
+    "bespoke:129"
    ]
   },
   {
@@ -1776,7 +1779,7 @@
    "counts": {
     "owner_pending": 2,
     "shared_mechanism": 26,
-    "bespoke": 71
+    "bespoke": 63
    },
    "owners_needed": [
     "boss_cooldown"
@@ -1789,7 +1792,7 @@
     "owner:boss_cooldown",
     "mechanism:boss_portal_spectator_gate",
     "mechanism:kill_reward_fanout",
-    "bespoke:71"
+    "bespoke:63"
    ]
   },
   {
@@ -3334,7 +3337,7 @@
    "counts": {
     "owner_pending": 5,
     "shared_mechanism": 0,
-    "bespoke": 67
+    "bespoke": 63
    },
    "owners_needed": [
     "scheduler"
@@ -3342,7 +3345,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:67"
+    "bespoke:63"
    ]
   },
   {
@@ -4174,7 +4177,7 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 3,
-    "bespoke": 35
+    "bespoke": 34
    },
    "owners_needed": [],
    "mechanisms_needed": [
@@ -4182,7 +4185,7 @@
    ],
    "to_finish": [
     "mechanism:kill_reward_fanout",
-    "bespoke:35"
+    "bespoke:34"
    ]
   },
   {

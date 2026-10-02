@@ -79,7 +79,7 @@ class QuestCompletionTests(unittest.TestCase):
         index = next(i for i, r in enumerate(source) if r['definition']['identity'] == self.payload['records'][0]['identity'])
         source[index] = copy.deepcopy(source[index])
         source[index]['definition']['requirements']['min_level'] = 999
-        with self.assertRaisesRegex(ValueError, 'SOURCE core changed'):
+        with self.assertRaisesRegex(ValueError, 'SOURCE core changed|missing or unrelated effective core changes|to_digest mismatch'):
             tool.completion_records(self.root, source)
 
 

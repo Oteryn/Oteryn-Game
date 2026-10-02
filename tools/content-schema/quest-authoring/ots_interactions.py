@@ -442,6 +442,11 @@ class Script:
         self.readonly_tables = readonly_table_lines(self.commentless_lines)
         self.player_constructor_safe = pristine_constructor(self.lines, "Player")
         self.builtin_proofs = {root: builtin_binding_is_pristine(self.lines, root) for root in ('Game', 'table')}
+        # Pinned Tile(position) only reads coordinates; qualified/shadowed calls
+        # are excluded before admitting this constructor as a non-aliasing copy.
+        self.position_copy_calls = {'Game.createMonster', 'Game.createItem'}
+        if pristine_constructor(self.lines, 'Tile') and pristine_constructor(self.lines, 'Position'):
+            self.position_copy_calls.add('Tile')
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
         self.roles, self.players, self.declared, self.containers = {}, set(), {}, {}
@@ -508,7 +513,7 @@ class Script:
                     expression = m.group(2)
                     if expression.startswith('Position('):
                         if not static_name_is_immutable(self.lines, m.group(1), references=True,
-                                                        copy_calls={'Game.createMonster', 'Game.createItem'}):
+                                                        copy_calls=self.position_copy_calls):
                             continue
                     elif CHAIN.fullmatch(expression):
                         value = self.literal(expression, before=n)
@@ -622,13 +627,18 @@ class Script:
             try:
                 parser = LiteralParser(text)
                 while parser.peek()[0] != 'eof':
-                    kind, token, _ = parser.next()
+                    kind, token, declaration_line = parser.next()
                     if kind == 'name' and token == name and parser.peek()[1] == '=' and parser.peek(1)[1] == '{':
                         parser.next()
                         value = lua_tables.as_python(parser.table())
+                        # The new copy proof admits only fully pure original ASTs,
+                        # before any duplicate-key collapse performed by as_python.
+                        copies = self.position_copy_calls
+                        if declaration_line not in self.readonly_tables:
+                            copies = copies - {'Tile'}
                         if static_name_is_immutable(self.lines, name, references=True,
                                                     scalar_paths=scalar_leaf_paths(value, name),
-                                                    copy_calls={'Game.createMonster', 'Game.createItem'}):
+                                                    copy_calls=copies):
                             out[name] = value
             except (lua_tables.LuaError, IndexError, TypeError, ValueError):
                 pass

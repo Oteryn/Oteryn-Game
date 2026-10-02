@@ -47,13 +47,13 @@
    "outfit": 4,
    "quest_state": 113,
    "reward_claim": 135,
-   "scheduler": 52,
-   "summon": 37,
+   "scheduler": 53,
+   "summon": 38,
    "teleport": 88,
    "trigger_kill": 50,
    "trigger_step": 84,
    "trigger_use": 197,
-   "world_object": 90
+   "world_object": 91
   },
   "quests_without_data_gaps": 103,
   "interactions_joined": 1209,
@@ -111,25 +111,25 @@
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 191,
+   "quests_complete_on_engine_side": 190,
    "of_which_without_data_gaps": 94
   },
   {
    "feature": "door_progress",
    "owner": "door gate: quest progress",
-   "quests_complete_on_engine_side": 205,
+   "quests_complete_on_engine_side": 203,
    "of_which_without_data_gaps": 102
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
-   "quests_complete_on_engine_side": 211,
+   "quests_complete_on_engine_side": 210,
    "of_which_without_data_gaps": 102
   },
   {
    "feature": "item_hand_out",
    "owner": "DUR-03 inventory mint",
-   "quests_complete_on_engine_side": 223,
+   "quests_complete_on_engine_side": 222,
    "of_which_without_data_gaps": 103
   },
   {
@@ -211,6 +211,7 @@
     "door_progress",
     "item_consume",
     "quest_state",
+    "summon",
     "teleport",
     "trigger_kill",
     "trigger_step",
@@ -220,7 +221,7 @@
    "interactions": 27,
    "data_gaps": {
     "interactions_with_gaps": 26,
-    "unresolved_items": 148
+    "unresolved_items": 144
    }
   },
   {
@@ -499,7 +500,7 @@
    "interactions": 30,
    "data_gaps": {
     "interactions_with_gaps": 25,
-    "unresolved_items": 83
+    "unresolved_items": 82
    }
   },
   {
@@ -569,14 +570,16 @@
     "item_consume",
     "npc_dialogue",
     "quest_state",
+    "scheduler",
     "teleport",
     "trigger_step",
-    "trigger_use"
+    "trigger_use",
+    "world_object"
    ],
-   "interactions": 2,
+   "interactions": 4,
    "data_gaps": {
-    "interactions_with_gaps": 1,
-    "unresolved_items": 12
+    "interactions_with_gaps": 3,
+    "unresolved_items": 24
    }
   },
   {
@@ -932,7 +935,7 @@
    "interactions": 3,
    "data_gaps": {
     "interactions_with_gaps": 3,
-    "unresolved_items": 14
+    "unresolved_items": 12
    }
   },
   {
@@ -1004,7 +1007,7 @@
    "interactions": 2,
    "data_gaps": {
     "interactions_with_gaps": 2,
-    "unresolved_items": 5
+    "unresolved_items": 4
    }
   },
   {
@@ -1103,7 +1106,7 @@
    "interactions": 20,
    "data_gaps": {
     "interactions_with_gaps": 17,
-    "unresolved_items": 92
+    "unresolved_items": 73
    }
   },
   {
@@ -1383,7 +1386,7 @@
    "interactions": 39,
    "data_gaps": {
     "interactions_with_gaps": 35,
-    "unresolved_items": 143
+    "unresolved_items": 142
    }
   },
   {
@@ -1878,7 +1881,7 @@
    "interactions": 69,
    "data_gaps": {
     "interactions_with_gaps": 38,
-    "unresolved_items": 105
+    "unresolved_items": 97
    }
   },
   {
@@ -3514,8 +3517,8 @@
    ],
    "interactions": 27,
    "data_gaps": {
-    "interactions_with_gaps": 26,
-    "unresolved_items": 68
+    "interactions_with_gaps": 25,
+    "unresolved_items": 64
    }
   },
   {
@@ -4393,7 +4396,7 @@
    "interactions": 17,
    "data_gaps": {
     "interactions_with_gaps": 12,
-    "unresolved_items": 38
+    "unresolved_items": 37
    }
   },
   {

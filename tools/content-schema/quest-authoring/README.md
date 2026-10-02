@@ -256,3 +256,20 @@ Chosen completeness and original SOURCE fidelity/readiness are separate fields.
 Rollout marks the chosen proof without asserting `definition_fields_ready` or
 runtime admission. All game smoke journeys remain `NOT_RUN`. Historical wiki pins
 and donor references are evidence; this does not certify exhaustive official fidelity.
+
+## Reviewed Tile coordinate-copy repair
+
+A bare, pristine donor `Tile(position)` reads copied coordinates. The importer can
+retain pure immutable literal config used by that call; shadowed/qualified calls,
+mutations, aliases and unknown calls remain held. Full regeneration changes24
+SOURCE graphs and10 canonical source cores. It recovers20 WorldObject CREATE
+operations,11 summon effects and20 conditions. Two additional Brotherhood joins
+are exact symbolic readers in both Dreamers Challenge lever scripts; their newly
+visible Source diagnostics are retained.
+
+Original completion242 recipes, selection and core-digest baseline remain immutable.
+`source_fix_guard.py` accepts only separately reviewed old-to-new core pairs and
+exact input/compiler/proof hashes in the derived receipt. Changed supplements keep
+both original and current Source digests. Original donor ownership, requirements,
+claims, progress, gates and Native holds survive. This offline authored approval is
+not a signature or runtime authority; all actual game journeys remain NOT_RUN.

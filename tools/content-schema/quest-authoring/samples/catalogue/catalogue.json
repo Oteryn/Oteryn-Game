@@ -13,7 +13,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "43f08897dc741ea9dc13196423ca2e5653a128e3f48191ba2af2edd4aee2cb4c"
+      "sha256": "b0a290a5d236730e3a6c6cb7f788864493a5f2f8209159f6b42a10c7ece515ab"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -3333,6 +3333,7 @@
               "door_progress",
               "item_consume",
               "quest_state",
+              "summon",
               "teleport",
               "trigger_kill",
               "trigger_step",
@@ -3341,7 +3342,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 26,
-              "unresolved_items": 148
+              "unresolved_items": 144
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -18555,7 +18556,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 25,
-              "unresolved_items": 83
+              "unresolved_items": 82
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -22369,13 +22370,15 @@
               "item_consume",
               "npc_dialogue",
               "quest_state",
+              "scheduler",
               "teleport",
               "trigger_step",
-              "trigger_use"
+              "trigger_use",
+              "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 1,
-              "unresolved_items": 12
+              "interactions_with_gaps": 3,
+              "unresolved_items": 24
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -33921,7 +33924,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 3,
-              "unresolved_items": 14
+              "unresolved_items": 12
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -35670,7 +35673,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 2,
-              "unresolved_items": 5
+              "unresolved_items": 4
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -41098,7 +41101,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 17,
-              "unresolved_items": 92
+              "unresolved_items": 73
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -53718,7 +53721,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 35,
-              "unresolved_items": 143
+              "unresolved_items": 142
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -74837,7 +74840,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 38,
-              "unresolved_items": 105
+              "unresolved_items": 97
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -130250,7 +130253,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 12,
-              "unresolved_items": 38
+              "unresolved_items": 37
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -154488,8 +154491,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 26,
-              "unresolved_items": 68
+              "interactions_with_gaps": 25,
+              "unresolved_items": 64
             },
             "runtime_readiness": "UNKNOWN"
           }

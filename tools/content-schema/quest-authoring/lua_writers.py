@@ -251,6 +251,9 @@ def static_name_is_immutable(lines, name, references=False, scalar_paths=(), cop
     for i, (kind, value, number) in enumerate(tokens):
         if value == '(':
             caller = tokens[i - 1][1] if i and tokens[i - 1][0] == 'name' else None
+            # A proven bare constructor never licenses same-named object methods.
+            if caller in copy_calls and i >= 2 and tokens[i - 2][1] in ('.', ':'):
+                caller = None
             if i >= 3 and tokens[i - 2][1] == '.' and tokens[i - 3][1] == 'Game':
                 qualified = 'Game.' + str(caller)
                 if qualified in copy_calls:

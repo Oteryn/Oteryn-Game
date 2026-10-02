@@ -11,7 +11,7 @@
       "USE": 599
     },
     "children_by_owner": {
-      "Ability": 211,
+      "Ability": 222,
       "Achievement": 28,
       "Experience": 9,
       "Item": 368,
@@ -24,22 +24,22 @@
     },
     "blocked_children": {
       "Movement": 294,
-      "WorldObject": 192
+      "WorldObject": 172
     },
     "relocation_children": {
       "anchor": 304,
       "previous_position": 203
     },
     "overlay_operations": {
-      "CREATE": 30,
+      "CREATE": 50,
       "REMOVE": 134,
       "RETAG": 39,
       "TRANSFORM": 479
     },
     "overlay_operations_with_revert_after": 0,
     "quest_children_naming_a_transition": 207,
-    "unresolved_lines": 1937,
-    "unresolved_conditions": 1752,
+    "unresolved_lines": 1936,
+    "unresolved_conditions": 1732,
     "by_status": {
       "conflict": 2,
       "mapped": 245,

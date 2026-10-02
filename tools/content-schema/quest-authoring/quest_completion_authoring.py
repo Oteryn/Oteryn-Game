@@ -55,6 +55,8 @@ def completion_records(root, source_records):
     source = {r['definition']['identity']['key']: r['definition'] for r in source_records}
     if {k for k, d in source.items() if d['readiness'] == 'waiting_data'} != set(selected_by_key):
         raise ValueError('completion must cover exact waiting SOURCE definitions')
+    from source_fix_guard import effective_digests
+    expected, source_change = effective_digests(root, baseline, source)
     payload_path = directory / 'recipes.json'
     payload = read(payload_path)
     if payload['base_head'] != selection['base_head'] or payload['runtime_enabled'] is not False:
@@ -78,7 +80,7 @@ def completion_records(root, source_records):
         validator.validate(row)
         key = row['identity']['key']
         original = source[key]
-        if digest(original) != baseline[key]:
+        if digest(original) != expected[key]:
             raise ValueError('original SOURCE core changed: ' + key)
         if row['source_identity'] != original['source_refs']['quest']:
             raise ValueError('SOURCE owner or revision substitution: ' + key)
@@ -108,11 +110,16 @@ def completion_records(root, source_records):
         completed[key] = {
             'profile': 'chosen_source_completion_v1', 'chosen_data_complete': True,
             'readiness': 'waiting_native_bindings', 'source_fidelity': 'ORIGINAL_HOLDS_PRESERVED',
-            'runtime_enabled': False, 'source_definition_sha256': baseline[key],
+            'runtime_enabled': False, 'source_definition_sha256': expected[key],
             'payload': copy.deepcopy(row),
             'provenance': {'path': DIRECTORY + 'recipes.json',
                            'sha256': hashlib.sha256(payload_path.read_bytes()).hexdigest()},
         }
+        if expected[key] != baseline[key]:
+            completed[key].update(
+                source_fidelity='REVIEWED_TRANSCRIPTION_CORRECTIONS_OTHER_HOLDS_PRESERVED',
+                original_source_definition_sha256=baseline[key],
+                source_change_provenance=source_change)
     return completed
 
 
@@ -139,7 +146,7 @@ def main():
                 for r in json.loads(expected[path])['records'])
     if count != 242:
         raise ValueError('completion projection must contain exactly 242 supplements')
-    print('242 chosen recipes complete; original SOURCE holds and Native non-admission preserved')
+    print('242 chosen recipes complete; original SOURCE witnesses and Native non-admission preserved')
 
 
 if __name__ == '__main__':
