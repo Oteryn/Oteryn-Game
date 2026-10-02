@@ -1,0 +1,59 @@
+{
+  "schema": "FORGE865_RAW_DISCOVERY_V2_SUPERSESSION_RECEIPT/v1",
+  "status": "SOURCE_SCAN_CORRECTION_NO_BINDINGS_OR_ITEM_EDITS",
+  "original_report": {
+    "path": "/workspace/audit-continuation/forge865-independent-raw-source-discovery-20261002.json",
+    "sha256": "4e849ce737b7d563b7dcf9329a0740a8e04ce5ca6d4cb97689c5c8e81de2ea5c",
+    "reason": "v1 exploratory line-regex whitespace crossed empty source lines. v2 positively selects one balanced own InfoboxItem outside comments and splits named parameters only at top level, retaining duplicates. No source bytes or native records changed."
+  },
+  "successor_report": {
+    "path": "/workspace/audit-continuation/forge865-independent-raw-source-discovery-v2-20261002.json",
+    "sha256": "908e8ec5a14448998d7fa3411bd95be253e006be4b79cc76045c25d21acb6422"
+  },
+  "counts": {
+    "read_raw_articles": 865,
+    "literal_positive_pairs": 862,
+    "precut_literal_pair_name_class_agreement": 861,
+    "single_balanced_own_boxes": 865,
+    "duplicate_parameter_pages": 2,
+    "postcut": 0,
+    "source_limited_hold_memberships": {
+      "NO_SINGLE_LITERAL_INDEPENDENT_MAXIMUM": 1,
+      "DUPLICATE_TOP_LEVEL_OWN_PARAMETER": 2,
+      "CLASSIFICATION_DIFFERS_CURRENT_OFFICIAL": 1
+    }
+  },
+  "source_bytes_unchanged": [
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-00-browser-cdp-source.json",
+      "sha256": "681d740f26f8880d9939bff98db7f0c719909e1ed313d6d6082e54e397cb31fe"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-01-browser-cdp-source.json",
+      "sha256": "56e098b58c6f4c47bc2e18bc08a8322f4a44917d8af2dd6971090a5b93dfd484"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-02-browser-cdp-source.json",
+      "sha256": "7ae2f356f26e9cdd19d3796a1efb0416a0a87c33af74c713d7bc10bbc3a9a116"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-03-browser-cdp-source.json",
+      "sha256": "3ccd1218a0e975001770e292523ba40386228ff32055e701640eb6b697c7cbc7"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-04-browser-cdp-source.json",
+      "sha256": "4da2d557448de4eda16403cda8255f756464c4f21b494aba6fcf9f235018568c"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-05-browser-cdp-source.json",
+      "sha256": "2f8a4db5f20b6e10b2c89f64bcd61d8c7da5484c8e35f81a38d5a00296c8725c"
+    }
+  ],
+  "parser": {
+    "path": "/workspace/audit-continuation/forge-own-infobox-literal-parser-v2.py",
+    "sha256": "945146a042c9626c460c6d17dfafaa606263ec9b8246f755f3116632f844f38d",
+    "focused_negatives_and_blankline_checks": 8
+  },
+  "v1_source_and_report_immutable": true,
+  "v2_claim": "Only independent perItem top-level rawparameter discovery, not accepted source-identity binding/admission."
+}

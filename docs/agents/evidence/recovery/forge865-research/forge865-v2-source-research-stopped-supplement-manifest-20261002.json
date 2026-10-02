@@ -1,0 +1,39 @@
+{
+  "schema": "FORGE865_V2_SOURCE_RESEARCH_STOPPED_SUPPLEMENT_MANIFEST/v1",
+  "status": "PASS_SOURCE_SCAN_NOT_FORMAL_BINDING_OR_ADMISSION",
+  "baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "owned_files": [
+    {
+      "path": "/workspace/audit-continuation/forge865-independent-raw-source-discovery-v2-20261002.json",
+      "sha256": "908e8ec5a14448998d7fa3411bd95be253e006be4b79cc76045c25d21acb6422",
+      "bytes": 3316766
+    },
+    {
+      "path": "/workspace/audit-continuation/forge865-source-discovery-v2-supersession-receipt-20261002.json",
+      "sha256": "aaed1e818c53ff68b15e8f9e9e4c8f77cb732d751a19b986f28c411cd6e8c67c",
+      "bytes": 3060
+    },
+    {
+      "path": "/workspace/audit-continuation/forge-own-infobox-literal-parser-v2.py",
+      "sha256": "945146a042c9626c460c6d17dfafaa606263ec9b8246f755f3116632f844f38d",
+      "bytes": 2717
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge-binding-links-probe-and-last-five-browser-cdp-source.json",
+      "sha256": "86acf92787efee8254fd7d20f97e3c35de4bb8453a6125cbdbfee65662360f72",
+      "bytes": 13980
+    },
+    {
+      "path": "/workspace/audit-continuation/forge-last-five-own-raw-maximum-discovery-v2-20261002.json",
+      "sha256": "346d6a21df25353eae4c6c0cb2e431f2a38ddad1eb8dac7ff5d537a3f6a1056c",
+      "bytes": 3616
+    }
+  ],
+  "checks": {
+    "own_parser8": "PASS",
+    "original6fullrawcapturebytes": "UNCHANGED",
+    "nativeimport": "NONE",
+    "projectmutations": "NONE"
+  },
+  "interpretation": "WholeRaw conservativeholds duplicate10391/50162 are not invented Forgepair conflicts. Pairintrinsic holds: max0 ID8027,classopposition37609. Last5 actualmaxima absent/empty. Priorv1 scanner survives forensic; v2 supersedes it explicitly."
+}

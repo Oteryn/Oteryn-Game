@@ -1,0 +1,112 @@
+{
+  "schema": "FORGE_LAST_FIVE_TOP_LEVEL_OWN_RAW_MAXIMUM_DISCOVERY/v2",
+  "source_capture": {
+    "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge-binding-links-probe-and-last-five-browser-cdp-source.json",
+    "sha256": "86acf92787efee8254fd7d20f97e3c35de4bb8453a6125cbdbfee65662360f72"
+  },
+  "bounded_langlink_probe": {
+    "pages": 50,
+    "explicit_langlinks": 0,
+    "scope": "Only50sourcepages; no source-wide absence claim"
+  },
+  "records": [
+    {
+      "item_id": 21350,
+      "official_name": "the chiller",
+      "title_matches": [],
+      "page_id": 34145,
+      "title": "The Chiller",
+      "revision_id": 443761,
+      "revision_timestamp": "2026-09-01T02:36:18Z",
+      "raw_sha256": "970e6e0fc47bf49415016160b6106c1ecefd79d8d97c73e0486b026e5cd18537",
+      "literal_name": [
+        "The Chiller"
+      ],
+      "literal_classificacao": [],
+      "literal_max_tier": [],
+      "source_status": "INDEPENDENT_OWN_MAXIMUM_ABSENT_OR_EMPTY_NO_NEW_BINDING",
+      "identity_status": "NAME_TITLE_DISCOVERY_ONLY"
+    },
+    {
+      "item_id": 21348,
+      "official_name": "the scorcher",
+      "title_matches": [],
+      "page_id": 34171,
+      "title": "The Scorcher",
+      "revision_id": 436843,
+      "revision_timestamp": "2026-06-16T19:28:19Z",
+      "raw_sha256": "ee0f6af6cfd62d5d5f5921c7f9762cd64e7ca59fb4dc5e1f0a21dfc25b4a05d0",
+      "literal_name": [
+        "The Scorcher"
+      ],
+      "literal_classificacao": [],
+      "literal_max_tier": [],
+      "source_status": "INDEPENDENT_OWN_MAXIMUM_ABSENT_OR_EMPTY_NO_NEW_BINDING",
+      "identity_status": "NAME_TITLE_DISCOVERY_ONLY"
+    },
+    {
+      "item_id": 47376,
+      "official_name": "amber cudgel",
+      "title_matches": [],
+      "page_id": 62097,
+      "title": "Amber Cudgel",
+      "revision_id": 426868,
+      "revision_timestamp": "2025-07-04T18:31:43Z",
+      "raw_sha256": "fcf4937c108a586513ef1c6db4f4e6c7778ab29b5141da52a6c78c1b71c52c30",
+      "literal_name": [
+        "Amber Cudgel"
+      ],
+      "literal_classificacao": [
+        ""
+      ],
+      "literal_max_tier": [
+        ""
+      ],
+      "source_status": "INDEPENDENT_OWN_MAXIMUM_ABSENT_OR_EMPTY_NO_NEW_BINDING",
+      "identity_status": "NAME_TITLE_DISCOVERY_ONLY"
+    },
+    {
+      "item_id": 47370,
+      "official_name": "amber bludgeon",
+      "title_matches": [],
+      "page_id": 62098,
+      "title": "Amber Bludgeon",
+      "revision_id": 426867,
+      "revision_timestamp": "2025-07-04T18:31:23Z",
+      "raw_sha256": "c3d50c280325d06f4fe2f1ed66d82187d30cc88dd2abe0c82b7857e809927857",
+      "literal_name": [
+        "Amber Bludgeon"
+      ],
+      "literal_classificacao": [
+        ""
+      ],
+      "literal_max_tier": [
+        ""
+      ],
+      "source_status": "INDEPENDENT_OWN_MAXIMUM_ABSENT_OR_EMPTY_NO_NEW_BINDING",
+      "identity_status": "NAME_TITLE_DISCOVERY_ONLY"
+    },
+    {
+      "item_id": 50166,
+      "official_name": "light jo staff",
+      "title_matches": [],
+      "page_id": 64049,
+      "title": "Light Jo Staff",
+      "revision_id": 429299,
+      "revision_timestamp": "2025-10-24T12:58:12Z",
+      "raw_sha256": "7a9e7beb4b3c353a71cd15bd11cbdb9f6a9c9fa27b14a945176453a8d6ff1ad1",
+      "literal_name": [
+        "Light Jo Staff"
+      ],
+      "literal_classificacao": [
+        ""
+      ],
+      "literal_max_tier": [
+        ""
+      ],
+      "source_status": "INDEPENDENT_OWN_MAXIMUM_ABSENT_OR_EMPTY_NO_NEW_BINDING",
+      "identity_status": "NAME_TITLE_DISCOVERY_ONLY"
+    }
+  ],
+  "method": "Public anonymous Chrome/CDP MediaWiki rawrevision query; top-levelownboxparser8checks"
+}
