@@ -486,8 +486,33 @@ def test_cli_fallback(module):
     print("CLI fallback PASS: malformed classifier inputs remain conservative FULL")
 
 
+def test_repository_tool_dependencies(module):
+    path = "tools/repository/test_validate_game_atlas_semantic_search_triggers.py"
+    result = classify(module, [path])
+    assert not result["rust"] and not result["windows"], result
+    for consumer in (module.CONTROL_CONSUMER, "oteryn-client"):
+        result = classify(module, [path], consumers={path: {consumer}})
+        assert result["rust"] and result["windows"], result
+    result = classify(module, [path], consumers={path: {module.SERVER}})
+    assert result["rust"] and not result["windows"], result
+    for control in (
+        "classify_pr_test_lanes.py", "apply_github_settings.py",
+        "validate_repository_policy.py", "validate_repository_policy_core.py",
+        "validate_pr_gate_pg_sim.py", "validate_pr_routing_contract.py",
+        "test_validate_pr_gate_pg_sim.py", "test_validate_merge_group_pg_sim.py",
+        "test_classify_pr_test_lanes.py", "test_classify_post_merge_lanes.py",
+        "test_classify_content_routing.py", "future_unknown_controller.py",
+    ):
+        result = classify(module, ["tools/repository/" + control])
+        assert result["rust"] and result["windows"], (control, result)
+    result = module.classify([{"filename": path}], 1, fixture(), candidate_modes_verified=False)
+    assert result["rust"] and result["windows"], result
+    print("Repository tool dependencies PASS: auxiliary case, consumer promotion, security and unknown FULL")
+
+
 def main() -> int:
     module = load_module()
+    test_repository_tool_dependencies(module)
     test_routing_matrix(module)
     test_exact_candidate_reference_scan(module)
     test_candidate_modes(module)
