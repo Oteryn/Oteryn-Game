@@ -1,0 +1,967 @@
+{
+  "schema": "RESTORED_ORIGINAL_WORKER_BACKUP_V1",
+  "original_manifest_verification": [
+    {
+      "batch": "Name139",
+      "manifest": "name139-source-owned-manifest.json",
+      "verified": 8,
+      "status": "PASS"
+    },
+    {
+      "batch": "Name139-generated",
+      "manifest": "name139-generated-worker-checkpoint.json",
+      "verified": 24,
+      "status": "PASS"
+    },
+    {
+      "batch": "Compatibility",
+      "manifest": "default-context-worker-owned-manifest.json",
+      "verified": 6,
+      "status": "PASS"
+    },
+    {
+      "batch": "HitML67",
+      "manifest": "hit-magic67-preparatory-source-owned-manifest.json",
+      "verified": 4,
+      "status": "PASS"
+    },
+    {
+      "batch": "Mantra49",
+      "manifest": "mantra-bond49-source-only-manifest.json",
+      "verified": 5,
+      "status": "PASS"
+    },
+    {
+      "batch": "Use345",
+      "manifest": "use-observation345-worker-owned-manifest.json",
+      "verified": 9,
+      "status": "PASS"
+    },
+    {
+      "batch": "Forge3332",
+      "manifest": "forge3332-source-authoring-manifest.json",
+      "verified": 9,
+      "status": "PASS"
+    },
+    {
+      "batch": "Weapon79",
+      "manifest": "weapon79-source-authoring-checkpoint-20261002/checkpoint.json",
+      "verified": 11,
+      "status": "PASS"
+    }
+  ],
+  "files": [
+    {
+      "path": "restored-originals/audit-continuation/additional-imported-known-name-closed-proposal.json",
+      "bytes": 3926820,
+      "sha256": "57cd9d92425b8e71f8b4755fa2023597ae5820e437aacd70184227d0e907bb23"
+    },
+    {
+      "path": "restored-originals/audit-continuation/additional-imported-name115-sealed-manifest.json",
+      "bytes": 2318,
+      "sha256": "bde21a5a2bc9c63712765a94858f50cfb0fe28d51bc34926b001457f297c46fe"
+    },
+    {
+      "path": "restored-originals/audit-continuation/default-context-branch-input.json",
+      "bytes": 123,
+      "sha256": "298cb44f8d372835aebf537766b8e4fe92e49e2afa4e78aec20391b9c74a133a"
+    },
+    {
+      "path": "restored-originals/audit-continuation/default-context-independent-source-peer.json",
+      "bytes": 16761,
+      "sha256": "47d393423a883e332ee3c96dd4c819b22f662fd2b6c8ba03e528b54a0fc4162c"
+    },
+    {
+      "path": "restored-originals/audit-continuation/default-context-independent-source-peer.py",
+      "bytes": 5752,
+      "sha256": "6593f8af85bb57fe74cec5e86ae2251279b0159c09e302af3779439eedc5cccd"
+    },
+    {
+      "path": "restored-originals/audit-continuation/default-context-pr-create.json",
+      "bytes": 867,
+      "sha256": "1ed9ba2662f3d44d47db2978a7ad896133b52b3358444e49917e697c1e529a4a"
+    },
+    {
+      "path": "restored-originals/audit-continuation/default-context-pr-final.json",
+      "bytes": 3214,
+      "sha256": "89db73cc11b8277cea71c792bbaab7e27fe65d27ad45f959cf7d1260996ba2aa"
+    },
+    {
+      "path": "restored-originals/audit-continuation/default-context-publication.state.json",
+      "bytes": 530,
+      "sha256": "d8c6885f0ae55e531db36f4b2f4b014a55af5cd63624b77615f2cc6ba1f62097"
+    },
+    {
+      "path": "restored-originals/audit-continuation/default-context-root-owned-paths.json",
+      "bytes": 164,
+      "sha256": "4c740fe6489bed6e99dfa67c876dccf4a1a12eb6f011963ef305c301dbe30a32"
+    },
+    {
+      "path": "restored-originals/audit-continuation/default-context-worker-owned-manifest.json",
+      "bytes": 13313,
+      "sha256": "981a7412d9f42de1c3667c5206e80dfc8c8872bb597f71c0cb09ce6e736783de"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-branch-input.json",
+      "bytes": 114,
+      "sha256": "7fee626603f60fdf10feb851a53a3ec727311641d9da82d8f04b94150b44a8d7"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-closed-sourcepair-proof.json",
+      "bytes": 60364,
+      "sha256": "2ae8206fa72883fac6251f8a85d4574ec0dc29a2c88572b9889f08a59a3bb7d7"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-existing-owner-implementation-proposal.md",
+      "bytes": 4327,
+      "sha256": "169f44944f73620d453f0ce5383ac56d5cf6c576fad1c97ef9c38f8f7de86284"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-old10-packet-checks.log",
+      "bytes": 497,
+      "sha256": "841fa0f50f248bf4041e4af56e796e57166d5ab9dd6772c6e27a2d35187264a1"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-packet-check.log",
+      "bytes": 35,
+      "sha256": "a7da37e3b907fa5203c69f4d23103419e3161752926433006806d76eecca64f3"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-pr-create.json",
+      "bytes": 1038,
+      "sha256": "78fb20bb1cc67bfbed83b1c5fbd6c540eea1712c3d5f411c00b8dce7a0b5d5c0"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-publication.state.json",
+      "bytes": 573,
+      "sha256": "da4ea9bb0f7b009d2e66c05db9813ea033605928a429d8a1ed138ba298506575"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-ruff.log",
+      "bytes": 45,
+      "sha256": "afa20b27dacc9bf0aba3c1d265964c21e04ab42f6e39e2dd4769718ceded003a"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-rustfmt-source-only.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/.github/workflows/item-authoring-schema.yml",
+      "bytes": 10908,
+      "sha256": "33d8d359685d59226392659622beeee726b7f8660eb2cfa05eb538f6233598dd"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "bytes": 86833,
+      "sha256": "3a4c13de9e0eeadda6b03c77498eabf807b093c83670d89ad42ab3593e01139e"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/apps/game-server/src/content/item_forge3332_promotion.rs",
+      "bytes": 7624,
+      "sha256": "58ce0533c289ff2d87f9cf97a0630a526d7a5d5e5766af67440d9fab2a6751cb"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/apps/game-server/src/content/mod.rs",
+      "bytes": 4782,
+      "sha256": "8017799a4d0eadf7e28e009b0f1f9984a13f2ae9513abedf1c852a6674fec963"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json",
+      "bytes": 7250,
+      "sha256": "295cc4749294ef487593f5e3f3e4d33a9f8812db7447fa5d40a4674bdf2545c9"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/docs/agents/evidence/OTV2-20261001-item-forge3332-source-qualification-v1.json",
+      "bytes": 60364,
+      "sha256": "2ae8206fa72883fac6251f8a85d4574ec0dc29a2c88572b9889f08a59a3bb7d7"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json",
+      "bytes": 84928,
+      "sha256": "a22405164b549aff06849db98ede92d48d0b72606a25a3d8685054c8b6b324c3"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/manifest.json",
+      "bytes": 5038,
+      "sha256": "399dd6365828cb78985bc2e85af3ef31363b2ce94e8c97915b044b5d51537546"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/tools/content-schema/item-authoring/lower_item_forge3332_packet.py",
+      "bytes": 8852,
+      "sha256": "59058f141b6b7b8d410f6023969f34df53dbec7b4542e58de1cdad2ef744a2d8"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-checkpoint-20261002/tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py",
+      "bytes": 3387,
+      "sha256": "2e9681e8c84a7ed48120cc03d616bc528a8bbba273dc949e9555392a9c91a6a5"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-authoring-manifest.json",
+      "bytes": 5038,
+      "sha256": "399dd6365828cb78985bc2e85af3ef31363b2ce94e8c97915b044b5d51537546"
+    },
+    {
+      "path": "restored-originals/audit-continuation/forge3332-source-tests.log",
+      "bytes": 102,
+      "sha256": "3b0dbb90387b342ccecc50446a0fb5e4385d86a3f467e5b97d63f8924fc08aff"
+    },
+    {
+      "path": "restored-originals/audit-continuation/hit-magic67-branch-input.json",
+      "bytes": 105,
+      "sha256": "003607da38f1fe7b446280600f85242dfd247ab24ee354e7c4c68a24d0c25179"
+    },
+    {
+      "path": "restored-originals/audit-continuation/hit-magic67-pr-create.json",
+      "bytes": 1019,
+      "sha256": "eb6df5cd4c6995de5f7a90b7f3eb9fe3d165dab954f91b3fb42059513759de5f"
+    },
+    {
+      "path": "restored-originals/audit-continuation/hit-magic67-pre-name-native-guard-diagnostic.json",
+      "bytes": 8801,
+      "sha256": "363c94d9010ba6f80c034dcd6c072a3dfd248710333a6a51a288067f485832c3"
+    },
+    {
+      "path": "restored-originals/audit-continuation/hit-magic67-preparatory-source-owned-manifest.json",
+      "bytes": 1820,
+      "sha256": "2cdc80714bea6a6e94906577eb3680faef2a51f26a4e762065cdbdb3310f363a"
+    },
+    {
+      "path": "restored-originals/audit-continuation/hit-magic67-publication.state.json",
+      "bytes": 630,
+      "sha256": "10fc0d89ed93d4240f5168a02aaf45d90172f289446ad7af56abbf96d2c55548"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-cutoff-independent-peer.py",
+      "bytes": 11841,
+      "sha256": "f06b98a89880df02901e01d76e464b0a2f269fca36caf1b2be2b01436f367424"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-cutoff-independent-source-peer.json",
+      "bytes": 2978,
+      "sha256": "832691583ec6c415ed6580db25dfc404d079445f317cf2d4b5ba6fc41fee13b7"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-postcarry-native-tests.rs",
+      "bytes": 2832,
+      "sha256": "fcb507fc8e325b7370024284d901b913d65c1f465157f2f2124abea87da55425"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-source-only-checkpoint/apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs",
+      "bytes": 4127,
+      "sha256": "ba8fe6dd0917f0e88d2461fa4ff45ca576a243f5182d1a72e730be43ffea1d43"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-source-only-checkpoint/docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json",
+      "bytes": 48711,
+      "sha256": "eecfca5562dbe8f1cbb271061b58ca20b883b9c751368dd3fd0cfac9119ef2bf"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-source-only-checkpoint/docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json",
+      "bytes": 691977,
+      "sha256": "fece04bb34ccdf8c6718442ed31ba25ee4bf7bd7b5aa7c7eea7991785e7e8ced"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-source-only-checkpoint/tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+      "bytes": 10684,
+      "sha256": "3f144f1e8ed93e2606448f757695c43a24899f48e8aa6bce3f60ca164f4ae3c3"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-source-only-checkpoint/tools/content-schema/item-authoring/test_lower_mantra_bond_modifier_packet.py",
+      "bytes": 10448,
+      "sha256": "8bc0304cc1f0e8bddc4c337bcaf0a844e75aeed6d9f8fde47caf1b43da599a25"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond49-source-only-manifest.json",
+      "bytes": 3250,
+      "sha256": "bb23ce0defd4f612bccc5f49979499a7caa667013bbac4f92712e1f390d06d3b"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-branch-input.json",
+      "bytes": 107,
+      "sha256": "7ad00367b811f274e6cb8b42d9ba62416a92bc4c10ea7bd2a348bde9e7638b93"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-complete-source-proof-v2.json",
+      "bytes": 466120,
+      "sha256": "4e283147a8bf3aa6b3b6cf5f40438cee651dafb2d469d864e8e7d5547ec02499"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-complete-source-proof.json",
+      "bytes": 462013,
+      "sha256": "f80dff9bfeb17d6a356d5852bc912501f6a17b86270e3e9bcfa99313688f0c7c"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-independent-review.py",
+      "bytes": 13772,
+      "sha256": "5266059c72d3b90ed32f98b1b60ea437a7610ae42e60231fec68e46e0fec7b5f"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-independent-source-review.json",
+      "bytes": 4357,
+      "sha256": "4c3c19bbb7ebdd6e940edd9a24a05031e477e90e29ebc085c505eddaaff05ef7"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-native-element-owner-review-erratum.json",
+      "bytes": 1396,
+      "sha256": "e812be2a0e25824d0c09a7f6fd955c828ca3d1eab655e05bdfe507a2a7a43d7c"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-pr-create.json",
+      "bytes": 812,
+      "sha256": "5cdd4c10989720ab34be2634d9b6ac5cb279f2d03bca048827b351f821e4bdcd"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-publication.state.json",
+      "bytes": 642,
+      "sha256": "d31499d350d83db41bfd19610c7ef087405801880cc1907c9ab3c8ac2fba9730"
+    },
+    {
+      "path": "restored-originals/audit-continuation/mantra-bond57-source-only-manifest.json",
+      "bytes": 2705,
+      "sha256": "7a3790a4c71905d4605d10edcfb3e6985a8d0b597949ac079cca58de1a0af160"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name-hit-ml91-branch-input.json",
+      "bytes": 110,
+      "sha256": "f8b71851f173ff45f64a4c7d93e56cf6c2224590528c1ca8a0024da103c56606"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name-hit-ml91-pr-create.json",
+      "bytes": 902,
+      "sha256": "0f7dd8dd59fc5e0fbfe5505b33d7491baf0cecc233d097fa420471ec8fec77bb"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name-hit-ml91-publication.state.json",
+      "bytes": 1106,
+      "sha256": "64eef23e9f4020fa260f0eebe28d6f67ba0a48164af58e41b17a085e2b938145"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-clippy.log",
+      "bytes": 618,
+      "sha256": "efa2c482f04142e5e906a9e6497c0c2cb083e2c23ec67b38f119437b1f944f5f"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-default8-global-coordinate-readback.json",
+      "bytes": 5414,
+      "sha256": "faf2872db547e6e8ad32964a17f3b3c0679836d7fcd1e99ce79485442bb8b1f6"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-default8-source-unlock-diagnostic.json",
+      "bytes": 19736,
+      "sha256": "1d4aa6177b754928d7e4e97e1e1f158ad5bb058a0e40d7bb41ba2f0521a10129"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-exact-semantic-comparison-2ec.json",
+      "bytes": 5381,
+      "sha256": "bfed21821463c860b165aa01ebff33bb740d25e0eb0c2066ab707575424af59d"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-generated-worker-checkpoint.json",
+      "bytes": 5325,
+      "sha256": "53b4afd77de9ea1aa8258ccc9379efa7e13ba630849d84b48684250f395b787a"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-independent-authoring-peer.py",
+      "bytes": 10621,
+      "sha256": "ac86812f4af58d2e211228b3506157ffcfe3899f213eefd6281254b301bafeda"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-independent-authoring-source-peer.json",
+      "bytes": 16430,
+      "sha256": "b8ce47cc2e079a264532f514c26ec9cb99048b7a48a15005b42eeda0d6930168"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-library.log",
+      "bytes": 143577,
+      "sha256": "bc87e394a9d5a7cc980ca2b8f4d0807cb85c03ffabe78b08c28f59627fd96f54"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_client_market_packet-check.log",
+      "bytes": 35,
+      "sha256": "20faae33d501ddb8c552ec612730d1fdf132a4c84c4369aacfeb53199b366cb9"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_client_physical_packet-check.log",
+      "bytes": 122,
+      "sha256": "28362e07af342492aadeac12178de78bd7c53bd649237242cbdfa8c0b31a7b8b"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_elemental_magic_modifier_packet-check.log",
+      "bytes": 96,
+      "sha256": "431eb082264c540804bde8f6d213945e3ff8663ff6f2bacf18bc5d3aa559fe48"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_item_document_packet-check.log",
+      "bytes": 27,
+      "sha256": "7fbbc3ec2fa97bb654c55b2eb0edac2c37bcfa4a03e9af4c3b6124b946d2ae3d"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_item_name_packet-check.log",
+      "bytes": 25,
+      "sha256": "305acf14547656f25ac56bc8e72a0d75567c71c66317cc50f88229e44a0c856d"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_wiki_capacity_packet-check.log",
+      "bytes": 32,
+      "sha256": "ccf0946630852fe1254849f52ec5a7b6bf2b22b00dcb25199a7d13f0bdaa2f35"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_wiki_movable_packet-check.log",
+      "bytes": 50,
+      "sha256": "9fc3c240b89c3544bce897e59a530d3f30e9213cd1bbd2b566bb663f9672b577"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_wiki_stack_default_packet-check.log",
+      "bytes": 581,
+      "sha256": "003c3e730cd3090fc3ae8c29baaf17fee0be1cede9de03d31313f3bed20b01d9"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_wiki_stack_false_packet-check.log",
+      "bytes": 34,
+      "sha256": "e475959022683da7ab45b9a73184b1e9fdae246fff7868e78e0e74d3d556dedb"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_wiki_stack_historical_packet-check.log",
+      "bytes": 786,
+      "sha256": "96ae1c776352ea7f4d7d8a7719ebf518fcb99363d318513bfaca272016f1292d"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-lower_wiki_stats_packet-check.log",
+      "bytes": 36,
+      "sha256": "cc316a1a90f3074391f02ead28ca0eb0420c9d1845cd3283779313e77b373dc0"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-modifier26-authoring-baseline.bundle",
+      "bytes": 63221,
+      "sha256": "977aa6830aa1c10a7549b4eb6970797c59e04bf225a724e8f7700708aba7a922"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-regeneration.log",
+      "bytes": 1893,
+      "sha256": "b276f719bf70e978621fb36ef51ef52c2a8ae96be35e9aa6759e25445c8f64dc"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-repository.log",
+      "bytes": 1151,
+      "sha256": "43e8c618f6cefe78df4b3ebaab9c92474956d1338ed83481108936a149fec5ad"
+    },
+    {
+      "path": "restored-originals/audit-continuation/name139-source-owned-manifest.json",
+      "bytes": 2708,
+      "sha256": "b2c913bb673cce3574d0b7fa2654cc61b0c125f292cc5d38daf17599dff1caab"
+    },
+    {
+      "path": "restored-originals/audit-continuation/physical8-native-schema-abi-read-only-proposal.json",
+      "bytes": 21614,
+      "sha256": "ab11dc92cab546efcdd547d19dcdbd3b8db5d2d158e24550a4896bddb1e65226"
+    },
+    {
+      "path": "restored-originals/audit-continuation/physical8-v5-prototype/tree/apps/game-server/src/content/item_stats_promotion.rs",
+      "bytes": 47482,
+      "sha256": "a5f260934697a5877467824dac4680dd95d5a6d63bde1f383fc8489ceb8c1587"
+    },
+    {
+      "path": "restored-originals/audit-continuation/physical8-v5-prototype/tree/apps/game-server/src/content/reference_artifact.rs",
+      "bytes": 149617,
+      "sha256": "7df6a07d3ee7b444f68789fef87dae1ba615f303fe79ef751523f813af8b25c2"
+    },
+    {
+      "path": "restored-originals/audit-continuation/physical8-v5-prototype/tree/apps/game-server/src/content/reference_playable.rs",
+      "bytes": 107430,
+      "sha256": "340305ad7f918a97e9df45de05986678670e2dac2aa296ac7a7733cda0361caa"
+    },
+    {
+      "path": "restored-originals/audit-continuation/physical8-v5-prototype/tree/tools/reference-item-resource-profile/item_resource_profile.py",
+      "bytes": 83237,
+      "sha256": "b77934f4b3c1c7a99442ecadc854b5d81412a83a3cbd52485971d334ccfb2d87"
+    },
+    {
+      "path": "restored-originals/audit-continuation/stack-default-context-independent-git-readback.json",
+      "bytes": 20167,
+      "sha256": "611e4075fe78ae69dc110745f3e95989872cb7ae7ea4be969696cadf2c749dc0"
+    },
+    {
+      "path": "restored-originals/audit-continuation/stack-default-context-independent-git-readback.py",
+      "bytes": 3223,
+      "sha256": "9ca5f8fcd78f9264282310a9d03114e042dc50f9b2f2d625ec4520d16dbfc98c"
+    },
+    {
+      "path": "restored-originals/audit-continuation/use-observation273-branch-input.json",
+      "bytes": 112,
+      "sha256": "9f3f6b7cc4d192e6995ee5b0d2eb2434159625c8e9b28445b0fc90e764287e83"
+    },
+    {
+      "path": "restored-originals/audit-continuation/use-observation273-independent-review.py",
+      "bytes": 14388,
+      "sha256": "b1164beba340e5ca8f1de9e69ec55eec03f3d976a2ce15749aa333a4d12b41d6"
+    },
+    {
+      "path": "restored-originals/audit-continuation/use-observation273-independent-source-review.json",
+      "bytes": 6517,
+      "sha256": "8cfe0901c6a1c27e73af6fdf3f61fd0ae20f442c148e8b1670c6131ac38ac859"
+    },
+    {
+      "path": "restored-originals/audit-continuation/use-observation273-pr-create.json",
+      "bytes": 988,
+      "sha256": "e42193a4d135ea68577a064d1147c15ee92905e0931a16990225146a337bb977"
+    },
+    {
+      "path": "restored-originals/audit-continuation/use-observation273-publication.state.json",
+      "bytes": 661,
+      "sha256": "7e7d88de6ac5e1605a36a7cebc4d5d2a43fc15419f9d21182ca4eb198e6bb677"
+    },
+    {
+      "path": "restored-originals/audit-continuation/use-observation345-worker-owned-manifest.json",
+      "bytes": 3613,
+      "sha256": "7ebc3d21bdf6d195ec6f131723e0971cbc7a605e1380625192f63f5090b087b6"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-2ec-source-qualification-checkpoint.json",
+      "bytes": 343200,
+      "sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-existing-decoder-dependency-reseal-scope.json",
+      "bytes": 1314,
+      "sha256": "3d5b354d3e7530b4c9d5202e8ae4fdbd0073939a5c13e385e5636bf4ccd9f706"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-legacy-unchanged-checkpoint.json",
+      "bytes": 661,
+      "sha256": "cdbf9531ffca8a86648152a95479f1ca5807bc534f56df9565e44670569d26f8"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-owner-source-independent-check.json",
+      "bytes": 4740,
+      "sha256": "eb2779c32f7aaf9d99b3ccd254f145d4de5dc2b39f865d7981ae0ffaf5e71546"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "bytes": 86811,
+      "sha256": "6b4a5d74590ce0977c5f91b59401cffbba81c5d0a35621f6f8063a814e12c4f7"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/apps/game-server/src/content/item_weapon_metadata_promotion.rs",
+      "bytes": 10854,
+      "sha256": "cb71411525d1b287bb55d220ee90dbd6e1b89a40e212429d04e6e2242a4790bf"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/apps/game-server/src/content/project/v2.rs",
+      "bytes": 131152,
+      "sha256": "966f5e9e6e011d3ff547abeb76753c067f4eabdfd26c6738ae670e684c3e6569"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/apps/game-server/tests/content_world_project_v2.rs",
+      "bytes": 64908,
+      "sha256": "e48d48ce4812e7a3ba331a8e4a66f9de6eecfb8213290bc23e7d2ac19553ff87"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/checkpoint.json",
+      "bytes": 2596,
+      "sha256": "f0708b99a2ad75e369ba173195e51b350059bb21aeffe2ef7618d0ab651cd0ac"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v1.json",
+      "bytes": 343200,
+      "sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+      "bytes": 11082,
+      "sha256": "766594837a39dd1d8d08b8c8e2b382bd84dfd1fee4f312751d1391d32332c727"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "bytes": 17621,
+      "sha256": "b3c2f858f3a5e5ff677e601749deb8a9e511a49444921dc06699082654cea382"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/tools/content-schema/item-authoring/fandom-weapon-metadata-alias-supplement.json",
+      "bytes": 835,
+      "sha256": "f2c9808e9ca9ab7a4c57cc2554a28a6de50b870f8a0eb25e7c5fffe79a97e4dc"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/tools/content-schema/item-authoring/lower_item_weapon_metadata_packet.py",
+      "bytes": 10078,
+      "sha256": "d95d34459a02fa96a995a413bbb47d4bb814215bb259d5e660152078e13871da"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/tools/content-schema/item-authoring/test_lower_item_weapon_metadata_packet.py",
+      "bytes": 3739,
+      "sha256": "fec980b2c5049f76492161da1c1bacdf743a64f5472a3d6a4dadd14f7d7d2bc9"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-authoring-checkpoint-20261002/tools/content-schema/item-authoring/weapon_metadata_source_aliases.py",
+      "bytes": 1204,
+      "sha256": "d053127b4e63496b0b8e721cc3c712e98574199073b6990b55a550bb221b38c5"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-source-packet-checkpoint.json",
+      "bytes": 20116,
+      "sha256": "0d87f5a4183e92a71f7e52f2f9274626aee81a91c2d7c0d5e103057b8133a19f"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-two-property-itemauthoring-owner-proposal.json",
+      "bytes": 767947,
+      "sha256": "9bbbaace7b2fcdfc539cf3abcb58018bf4bd0cd7397fabff3e00c5c63b2c8f82"
+    },
+    {
+      "path": "restored-originals/audit-continuation/weapon79-two-property-owner-independent-peer-review.json",
+      "bytes": 14408,
+      "sha256": "7459bb72f07abc02ab549d5691562e33b133c35f8ae91277f236767cc77f9404"
+    },
+    {
+      "path": "restored-originals/pr1437-default-context/.github/workflows/item-authoring-schema.yml",
+      "bytes": 10663,
+      "sha256": "a127a0249de6ec206c28a550e688ea97f1ae8f0928bf7c75506f322a2db69790"
+    },
+    {
+      "path": "restored-originals/pr1437-default-context/docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json",
+      "bytes": 2685926,
+      "sha256": "44143ceedbb00e843267d58d8463c7ec36dbb9886ea63f6e0d97b909465b574f"
+    },
+    {
+      "path": "restored-originals/pr1437-default-context/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+      "bytes": 9833,
+      "sha256": "506382249115863545323b72c5cd52a330cc56f4678dcd13f72eae50a8a4c9b1"
+    },
+    {
+      "path": "restored-originals/pr1437-default-context/tools/content-schema/item-authoring/test_lower_wiki_stack_default_packet.py",
+      "bytes": 8758,
+      "sha256": "b8b305d67db2592ffd7ee2f27a406e2c482c3005d5613d035818c044fcac63f5"
+    },
+    {
+      "path": "restored-originals/pr1437-default-context/tools/content-schema/item-authoring/test_lower_wiki_stack_historical_packet.py",
+      "bytes": 5080,
+      "sha256": "ba0af33fc7463d688b97da1f7d96d2bc7b7c7496a8469c78d8bdf079d7a1a936"
+    },
+    {
+      "path": "restored-originals/pr1437-default-context/tools/content-schema/item-authoring/test_stack_default_historical_context.py",
+      "bytes": 4004,
+      "sha256": "0f1929c959cf535e72df87db11aa7bf0f468d16eeb5747462553b1b2188ea852"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/.github/workflows/item-authoring-schema.yml",
+      "bytes": 10887,
+      "sha256": "af3d2a5b52f25adcc86db9768326a3e0c555069640bdfa461c51a3d3e1eb2443"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "bytes": 86818,
+      "sha256": "1b71e8b60536698fc4cf076dd55bdb17c43121df06df3d7edf3abe4d275e83f9"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/apps/game-server/src/content/item_name_promotion.rs",
+      "bytes": 9813,
+      "sha256": "3c407b26c614e24230b8cd16dd979da09eb3fae72d9240ae8290583b24285dee"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/apps/game-server/src/content/mod.rs",
+      "bytes": 4777,
+      "sha256": "cc8cb2a617a156c5e8e35985732ff555f1bc1683a6f3fb0806558cbbb34eadb5"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/apps/game-server/tests/content_world_project_repository.rs",
+      "bytes": 51985,
+      "sha256": "d55fa604cd440f6b87f72fde38fad2b5fe610e16c2d8867f112de2799b423d3f"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/abilities/definitions/index.json",
+      "bytes": 1054,
+      "sha256": "dd9eae449b3d5aa435e3777a10fc5570ef80750337a933f21bc464ede1df915a"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/abilities/effects/index.json",
+      "bytes": 875,
+      "sha256": "682c2f5b788ca6f07ff410948a0d8df62db906b0abef888b452f5c796ef1cc57"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/abilities/formulas/index.json",
+      "bytes": 896,
+      "sha256": "3a3ca44451657fdd64b4ebe4bf5cbdbaf6db0e3f9d74b222c14776bb74cf66fb"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/behaviors/index.json",
+      "bytes": 629,
+      "sha256": "3b37e61501ad622dd56059f19b1512393a41a07692010b7f72276341c6642452"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/content.lock.json",
+      "bytes": 1411,
+      "sha256": "d61a5a0a8d5666ca4e6419209a578cbd0f4d8df7bed5fb406e3826dd0313bb10"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/creatures/definitions/index.json",
+      "bytes": 586,
+      "sha256": "d8c70bfedc10c3225a29f2b271b5d2609a351489bd6c094057541fe89503cee2"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/items/definitions/items-12000-12499.json",
+      "bytes": 512607,
+      "sha256": "d7d6acb2dafa79c4da338dcd4ef9d3bfd1ea1ffe811e8c619a4a8f452aecd944"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/items/definitions/items-19000-19499.json",
+      "bytes": 335239,
+      "sha256": "be24926c81587b621b12fde89c2d326da5553b3a310ed1b773517da3fb324844"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/items/index.json",
+      "bytes": 3985,
+      "sha256": "464b79484f5d0b1479789a549b631d485b1005cb11c4e774d3d4021e6fe02fc3"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/loot/index.json",
+      "bytes": 452,
+      "sha256": "dbf137c88a7daa7101208ec2bc4dcc3ecf30bc0ba7c07720704a634be5e5f68c"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/presentations/definitions/index.json",
+      "bytes": 753,
+      "sha256": "dbe50161768ebb65171e4346ecb339789196abd397ab0dc3a586cc1d12fb85b1"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/world/content.lock.json",
+      "bytes": 364,
+      "sha256": "3ac2bf9f52fc35367cfd768bc25e50855c955698ba4d157e987fcd56ee5c620d"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/world/definitions/reference.json",
+      "bytes": 24925192,
+      "sha256": "7373eff572607be537b445dfe682a79e916e9e9cdbb4a837de1dcdcdfd4dfca9"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/world/manifest.json",
+      "bytes": 1937,
+      "sha256": "e435f5629c34ed78ec1c3c0253019aba062494f30e9604351c122bbca33edd03"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/content/world/project.json",
+      "bytes": 390,
+      "sha256": "722da4f04b3b9a15e100c9619efd5d569af521b98dd2f2c16f84fce08fda4c3b"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
+      "bytes": 27656,
+      "sha256": "f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json",
+      "bytes": 448810,
+      "sha256": "5650ab936c222a3771dec95c7bd058c3d398883f14b6ecb7e982e10f2592482c"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/tools/content-schema/item-authoring/lower_item_name_packet.py",
+      "bytes": 9754,
+      "sha256": "c8a16f552fda31d4858a258f114d5a4d74c47c249c14aa265065cd2f270540ce"
+    },
+    {
+      "path": "restored-originals/pr1437-native-publish/tools/content-schema/item-authoring/test_lower_item_name_packet.py",
+      "bytes": 5541,
+      "sha256": "f96d5964fe4c584071693b9907515fc4fa588d371c366db4c6a1b02408c751c8"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/.github/workflows/item-authoring-schema.yml",
+      "bytes": 10908,
+      "sha256": "33d8d359685d59226392659622beeee726b7f8660eb2cfa05eb538f6233598dd"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "bytes": 86833,
+      "sha256": "3a4c13de9e0eeadda6b03c77498eabf807b093c83670d89ad42ab3593e01139e"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/apps/game-server/src/content/item_forge3332_promotion.rs",
+      "bytes": 7624,
+      "sha256": "58ce0533c289ff2d87f9cf97a0630a526d7a5d5e5766af67440d9fab2a6751cb"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/apps/game-server/src/content/mod.rs",
+      "bytes": 4782,
+      "sha256": "8017799a4d0eadf7e28e009b0f1f9984a13f2ae9513abedf1c852a6674fec963"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json",
+      "bytes": 7250,
+      "sha256": "295cc4749294ef487593f5e3f3e4d33a9f8812db7447fa5d40a4674bdf2545c9"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/docs/agents/evidence/OTV2-20261001-item-forge3332-source-qualification-v1.json",
+      "bytes": 60364,
+      "sha256": "2ae8206fa72883fac6251f8a85d4574ec0dc29a2c88572b9889f08a59a3bb7d7"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json",
+      "bytes": 84928,
+      "sha256": "a22405164b549aff06849db98ede92d48d0b72606a25a3d8685054c8b6b324c3"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/tools/content-schema/item-authoring/lower_item_forge3332_packet.py",
+      "bytes": 8852,
+      "sha256": "59058f141b6b7b8d410f6023969f34df53dbec7b4542e58de1cdad2ef744a2d8"
+    },
+    {
+      "path": "restored-originals/pr1437-resistances/tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py",
+      "bytes": 3387,
+      "sha256": "2e9681e8c84a7ed48120cc03d616bc528a8bbba273dc949e9555392a9c91a6a5"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-default-completion/apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs",
+      "bytes": 4127,
+      "sha256": "ba8fe6dd0917f0e88d2461fa4ff45ca576a243f5182d1a72e730be43ffea1d43"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-default-completion/docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json",
+      "bytes": 48711,
+      "sha256": "eecfca5562dbe8f1cbb271061b58ca20b883b9c751368dd3fd0cfac9119ef2bf"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-default-completion/docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json",
+      "bytes": 691977,
+      "sha256": "fece04bb34ccdf8c6718442ed31ba25ee4bf7bd7b5aa7c7eea7991785e7e8ced"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-default-completion/tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+      "bytes": 10684,
+      "sha256": "3f144f1e8ed93e2606448f757695c43a24899f48e8aa6bce3f60ca164f4ae3c3"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-default-completion/tools/content-schema/item-authoring/test_lower_mantra_bond_modifier_packet.py",
+      "bytes": 10448,
+      "sha256": "8bc0304cc1f0e8bddc4c337bcaf0a844e75aeed6d9f8fde47caf1b43da599a25"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-publish/apps/game-server/src/content/item_hit_magic_promotion.rs",
+      "bytes": 14038,
+      "sha256": "2daa928c9e4370149e35b732d5c12434f502153038b53c0d77449659b33b8975"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-publish/docs/agents/evidence/OTV2-20261002-item-hit-magic-source-qualification-v1.json",
+      "bytes": 181579,
+      "sha256": "cc86385588101584a2940af7e71ab8db6550e30d9fa28b912fd1c449c9145210"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-publish/tools/content-schema/item-authoring/lower_item_hit_magic_packet.py",
+      "bytes": 5191,
+      "sha256": "559f0250a3261bfdc74b8325d1ef0a7dc3009fcea3294a952e03286645301eaf"
+    },
+    {
+      "path": "restored-originals/pr1437-stack-publish/tools/content-schema/item-authoring/test_lower_item_hit_magic_packet.py",
+      "bytes": 4786,
+      "sha256": "adc0106606f78f216b947a393ad29259ae0cfb64aaed18e2e999fc90c22faf70"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "bytes": 86689,
+      "sha256": "f473d69a14eabc2772940c0f02d2191c49361027902b7c47bcff1f8f651c4c81"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/apps/game-server/src/content/item_use_observation_promotion.rs",
+      "bytes": 11295,
+      "sha256": "d91cf3cc82d6775ab6e1eb83a91a60c203dfc9aa0585b9dde835c6f250a2a076"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/apps/game-server/src/content/mod.rs",
+      "bytes": 4739,
+      "sha256": "d44d358fe39366e9315e31a49cd80d906cace2a04ce5e8e3872502658f2fe10b"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json",
+      "bytes": 34703,
+      "sha256": "fbbb6e191da097ceaae3059a55259ef7fe55ed5c56397f2e0f178b9ea66b7f56"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v1.json",
+      "bytes": 1041485,
+      "sha256": "8ba83021a503ac7cbca60fe7f53448b2347a87ab7f23f8c62be956a9fd97139c"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/tools/content-schema/item-authoring/fandom-use-observation-alias-supplement.json",
+      "bytes": 944,
+      "sha256": "60fea3939b46fd958f5b39c3f3bef1e3243c553f6ae90010c0ea9e729738939f"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/tools/content-schema/item-authoring/lower_item_use_observation_packet.py",
+      "bytes": 11912,
+      "sha256": "953d08a54f2744e6c7a1eedbdd8badf32e0a67d1c06501f7554afe367cb597b6"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/tools/content-schema/item-authoring/source_field_catalogs.py",
+      "bytes": 68480,
+      "sha256": "be586a07d6da18f67605c20923dd77f2b219e3752ac26e06c8e2a1f90d37fb02"
+    },
+    {
+      "path": "restored-originals/pr1437-timed-fields/tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py",
+      "bytes": 3842,
+      "sha256": "63ad6a0f99524d4103f5297dab84ff5e0e86f8adc3fc6db0a66db3a30fded98b"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "bytes": 86811,
+      "sha256": "6b4a5d74590ce0977c5f91b59401cffbba81c5d0a35621f6f8063a814e12c4f7"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/apps/game-server/src/content/item_weapon_metadata_promotion.rs",
+      "bytes": 10854,
+      "sha256": "cb71411525d1b287bb55d220ee90dbd6e1b89a40e212429d04e6e2242a4790bf"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/apps/game-server/src/content/project/v2.rs",
+      "bytes": 131152,
+      "sha256": "966f5e9e6e011d3ff547abeb76753c067f4eabdfd26c6738ae670e684c3e6569"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/apps/game-server/tests/content_world_project_v2.rs",
+      "bytes": 64908,
+      "sha256": "e48d48ce4812e7a3ba331a8e4a66f9de6eecfb8213290bc23e7d2ac19553ff87"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v1.json",
+      "bytes": 343200,
+      "sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+      "bytes": 11082,
+      "sha256": "766594837a39dd1d8d08b8c8e2b382bd84dfd1fee4f312751d1391d32332c727"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "bytes": 17621,
+      "sha256": "b3c2f858f3a5e5ff677e601749deb8a9e511a49444921dc06699082654cea382"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/tools/content-schema/item-authoring/fandom-weapon-metadata-alias-supplement.json",
+      "bytes": 835,
+      "sha256": "f2c9808e9ca9ab7a4c57cc2554a28a6de50b870f8a0eb25e7c5fffe79a97e4dc"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_weapon_metadata_packet.py",
+      "bytes": 10078,
+      "sha256": "d95d34459a02fa96a995a413bbb47d4bb814215bb259d5e660152078e13871da"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/tools/content-schema/item-authoring/test_lower_item_weapon_metadata_packet.py",
+      "bytes": 3739,
+      "sha256": "fec980b2c5049f76492161da1c1bacdf743a64f5472a3d6a4dadd14f7d7d2bc9"
+    },
+    {
+      "path": "restored-originals/pr1437-world-owner-completion/tools/content-schema/item-authoring/weapon_metadata_source_aliases.py",
+      "bytes": 1204,
+      "sha256": "d053127b4e63496b0b8e721cc3c712e98574199073b6990b55a550bb221b38c5"
+    }
+  ],
+  "limits": "Source/generation backup, not new Item readiness certification. Raw research files outside selected paths and .git/build caches not included.",
+  "archive": {
+    "path": "/workspace/audit-continuation/restored-originals-backup-20261002.tar.gz",
+    "bytes": 2386678,
+    "sha256": "b364a8b24a261c25335aa2054e1643ced9142d8a4db4d4cc519b7173f8bbed48",
+    "full_archive_readback": "PASS"
+  }
+}
