@@ -222,7 +222,7 @@ jobs:
               '              test -f "$path" && test ! -L "$path"\n',
               '              test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"\n',
               '              verify_registered_target_binding "$name" "$path"\n',
-              '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n',
+              '              cargo +1.94.0 test --locked --workspace --test "$name"\n',
               '          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs\n',
               '          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs\n',
               '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',
